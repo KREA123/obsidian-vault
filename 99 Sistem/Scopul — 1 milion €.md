@@ -21,7 +21,8 @@ actualizat: 2026-09-23
 | [[MundiShop]] | **~−9.700 lei** (estimat, MER 1,07) | vezi [[Cifre cheie MundiShop]] |
 | [[KREA]] | **0** | spus de Andu, 23.09 |
 | [[Expandly]] | 0 | aproape gata de App Store — motorul cu cel mai mare tavan |
-| Altele | 0 | [[PRIVATE PROPERTY]], [[Gadget WISP]], [[Solterra]] — idei, fără venit |
+| [[Micul Șmecher]] | 0 | prototip software gata (24.09); primele încasări posibile la ~4–6 săpt. după clipul cu prototipul — vezi [[Planul de bani Micul Șmecher]] |
+| Altele | 0 | [[PRIVATE PROPERTY]], [[Solterra]] — idei, fără venit |
 | **Total** | **~−9.700 lei/lună** | distanța până la ținta lunară: ~427.000 lei/lună |
 
 ## Adevărul pe cifre (2026-09-23)

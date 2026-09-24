@@ -1,0 +1,7 @@
+# build outputs and caches
+firmware/.pio/
+**/__pycache__/
+**/.pytest_cache/
+ai/data/
+*.rgb
+*.tmp

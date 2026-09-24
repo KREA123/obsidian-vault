@@ -15,7 +15,8 @@ Regula de bază: **deciziile se iau pe date, nu pe păreri** — vezi [[JARVIS]]
 - [[KREA]] — agenția
 - [[Aplicații]] — Google Play, iOS, Shopify App Store
 - Clienți KREA: [[MI-DA PRO TRADE]] · [[SIGMALUX]] · [[Alți clienți KREA]]
-- Proiecte noi: [[PRIVATE PROPERTY]] · [[Gadget WISP]] · [[Solterra]]
+- [[Micul Șmecher]] — companionul AI cu ochi vii (SUFLET): firmware + AI + plan de bani, 24.09
+- Proiecte noi: [[PRIVATE PROPERTY]] · [[Gadget WISP]] (→ Micul Șmecher) · [[Solterra]]
 
 ## Parteneri
 - [[Clever Toys]] — furnizorul unic · [[Profi]] — cadouri corporate / raft · [[Fundația GEFE]]
