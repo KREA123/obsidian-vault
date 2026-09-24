@@ -65,3 +65,4 @@ Andu a cerut obiectiv de cost 15–20 lei și a lăsat alegerea ad seturilor la 
   - 27.09 seara: un ad set care a cheltuit peste 60 lei de la schimbare, cu 0 comenzi → revine fără limită și primește produse sub 200 lei.
   - 27.09 seara: un ad set care a cheltuit sub 10 lei → Meta nu găsește comenzi la ~20 lei acolo. Pasul următor pe el e schimbarea produselor, nu limita.
   - 01.10: un ad set cu comenzi ≤ ~25 lei în medie → păstrat, apoi discutăm creșterea bugetului.
+- **Stabilit cu Andu (24.09):** nu se modifică nimic în campanie o săptămână, până pe 01.10, când se dă verdictul. Singura excepție e siguranța de pe 27.09: dacă un ad set a cheltuit peste 60 lei fără nicio comandă, se discută cu Andu înainte de orice modificare. Până atunci doar citim cifrele.
