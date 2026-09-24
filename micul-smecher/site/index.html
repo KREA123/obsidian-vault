@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SUFLET</title>
-<meta name="description" content="SUFLET is a small frosted-glass stone with two living eyes. It breathes, blinks and looks back at you, with no internet. It works with Claude. Reserve a numbered Founders Desk Edition.">
-<meta property="og:title" content="SUFLET · Your AI, alive.">
+<title>SOUL</title>
+<meta name="description" content="SOUL is a small frosted-glass stone with two living eyes. It breathes, blinks and looks back at you, with no internet. It works with Claude. Reserve a numbered Founders Desk Edition.">
+<meta property="og:title" content="SOUL · Your AI, alive.">
 <meta property="og:description" content="The AI labs make the brain. We make the body and the soul.">
 <meta property="og:image" content="media/posters/idle.jpg">
 <meta name="theme-color" content="#000000">
@@ -14,7 +14,7 @@
 /* ==========================================================================
    SITE CONFIG — the only place to change prices, dates, endpoint and contact.
    ========================================================================== */
-window.SUFLET_CONFIG = {
+window.SOUL_CONFIG = {
   // Where the waitlist form POSTs JSON {email, edition, consent, lang, ts, source}.
   // Leave "" to keep sign-ups only in the visitor's browser (demo mode).
   WAITLIST_ENDPOINT: "",
@@ -30,7 +30,7 @@ window.SUFLET_CONFIG = {
     founders: { en: "spring 2027", ro: "primăvara 2027" },
     voice:    { en: "autumn 2027", ro: "toamna 2027" }
   },
-  CONTACT_EMAIL: "hello@suflet.example"
+  CONTACT_EMAIL: "hello@soul.example"
 };
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -432,7 +432,7 @@ select.input option{background:#101114;color:#F6F3EC}
 
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="SUFLET, back to top"><span class="brand-eyes" aria-hidden="true"><i></i><i></i></span>SUFLET</a>
+    <a class="brand" href="#top" aria-label="SOUL, back to top"><span class="brand-eyes" aria-hidden="true"><i></i><i></i></span>SOUL</a>
     <nav class="nav-links" aria-label="Sections">
       <a href="#three" data-i18n="nav.what">What it is</a>
       <a href="#alive" data-i18n="nav.alive">Alive</a>
@@ -459,7 +459,7 @@ select.input option{background:#101114;color:#F6F3EC}
       <h1 id="hero-title" data-i18n="hero.h1">Your AI, <span class="glow">alive.</span></h1>
     </div>
     <div class="hero-stone">
-      <div class="stone"><canvas data-soul="hero" tabindex="0" role="button" data-i18n-attr="aria-label:hero.aria" aria-label="SUFLET's living eyes. Press Enter to boop it, press twice quickly to make it laugh."></canvas></div>
+      <div class="stone"><canvas data-soul="hero" tabindex="0" role="button" data-i18n-attr="aria-label:hero.aria" aria-label="SOUL's living eyes. Press Enter to boop it, press twice quickly to make it laugh."></canvas></div>
       <p class="hint" data-i18n="hero.hint">Tap to boop. Double-tap to make it laugh. Leave it alone and it dozes off.</p>
     </div>
     <div class="hero-copy">
@@ -477,6 +477,7 @@ select.input option{background:#101114;color:#F6F3EC}
 <section class="sec thesis" id="soul" aria-label="Thesis">
   <div class="wrap">
     <p class="h-l"><span class="dim" data-i18n="soul.brain">The AI labs make the brain.</span><span class="full" data-i18n="soul.body">We make the body and the soul.</span></p>
+    <p class="lead" style="margin-top:28px;max-width:640px" data-i18n="soul.name">In Romanian, where it was born, its name is <em>suflet</em>. It means soul. Your AI already has a brain. You give it the soul.</p>
   </div>
 </section>
 
@@ -588,7 +589,7 @@ select.input option{background:#101114;color:#F6F3EC}
       </div>
     </div>
     <figure class="fig scene">
-      <img class="shot" id="desk-render" src="media/render-desk.jpg" srcset="media/render-desk-sm.jpg 800w, media/render-desk.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of a SUFLET Coin on a small walnut stand beside an open laptop, its glowing eyes looking up." data-i18n-attr="alt:claude.alt">
+      <img class="shot" id="desk-render" src="media/render-desk.jpg" srcset="media/render-desk-sm.jpg 800w, media/render-desk.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of a SOUL Coin on a small walnut stand beside an open laptop, its glowing eyes looking up." data-i18n-attr="alt:claude.alt">
       <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="claude.cap">On its stand next to your laptop. While Claude works, you can look away. When Claude needs you, the stone looks at you.</span></figcaption>
     </figure>
   </div>
@@ -601,7 +602,7 @@ select.input option{background:#101114;color:#F6F3EC}
       <div class="sec-head" style="margin-bottom:28px">
         <p class="eyebrow" data-i18n="born.eyebrow">Born, not manufactured</p>
         <h2 class="h-l" id="born-title" data-i18n="born.h2">No two are the same.</h2>
-        <p class="lead" data-i18n="born.lead">At first power-on, each SUFLET is born from its chip's unique ID. Its personality, eye colour and the shape of its gaze stay with it for life. Nobody chooses them. Not even us.</p>
+        <p class="lead" data-i18n="born.lead">At first power-on, each SOUL is born from its chip's unique ID. Its personality, eye colour and the shape of its gaze stay with it for life. Nobody chooses them. Not even us.</p>
       </div>
       <div class="rbar" role="img" data-i18n-attr="aria-label:born.bar" aria-label="Eye colour odds: Cream 58%, Ice 16%, Mint 10%, Peach 9%, Lilac 6%, Gold 1%.">
         <span style="--c:#FFF0C8;flex:58"></span><span style="--c:#D8F0FF;flex:16"></span><span style="--c:#D2FFE6;flex:10"></span><span style="--c:#FFDCC8;flex:9"></span><span style="--c:#E6DAFF;flex:6"></span><span style="--c:#FFD76B;flex:1"></span>
@@ -614,14 +615,14 @@ select.input option{background:#101114;color:#F6F3EC}
         <li class="chip"><span class="sw" style="--c:#E6DAFF"></span><b data-i18n="t.lilac">Lilac</b><span class="pct">6%</span><span class="rar" data-i18n="r.veryrare">Very rare</span></li>
         <li class="chip"><span class="sw" style="--c:#FFD76B"></span><b data-i18n="t.gold">Gold</b><span class="pct">1%</span><span class="rar" data-i18n="r.legendary">Legendary</span></li>
       </ul>
-      <p class="born-note" data-i18n="born.note">Rarity changes only the colour. Every SUFLET has the same 24 reactions and the same features.</p>
+      <p class="born-note" data-i18n="born.note">Rarity changes only the colour. Every SOUL has the same 24 reactions and the same features.</p>
     </div>
 
     <article class="cert" aria-labelledby="cert-title">
       <div class="cert-head">
         <div><p class="cert-title" id="cert-title" data-i18n="cert.title">Birth certificate</p>
         <p class="cert-sub" data-i18n="cert.sub">Certificat de naștere</p></div>
-      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="sealpath" d="M50 50 m-36 0 a36 36 0 1 1 72 0 a36 36 0 1 1 -72 0"/></defs><circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" stroke-width="1"/><text font-family="JetBrains Mono,monospace" font-size="8.6" letter-spacing="1.6" fill="currentColor"><textPath href="#sealpath">SUFLET · BUCUREȘTI · MMXXVI ·</textPath></text><ellipse cx="42" cy="51" rx="4" ry="7" fill="currentColor"/><ellipse cx="58" cy="51" rx="4" ry="7" fill="currentColor"/></svg>
+      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="sealpath" d="M50 50 m-36 0 a36 36 0 1 1 72 0 a36 36 0 1 1 -72 0"/></defs><circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" stroke-width="1"/><text font-family="JetBrains Mono,monospace" font-size="8.6" letter-spacing="1.6" fill="currentColor"><textPath href="#sealpath">SOUL · BUCUREȘTI · MMXXVI ·</textPath></text><ellipse cx="42" cy="51" rx="4" ry="7" fill="currentColor"/><ellipse cx="58" cy="51" rx="4" ry="7" fill="currentColor"/></svg>
       </div>
       <div class="cert-body">
         <div class="stone"><canvas data-soul="cert" role="img" id="cert-canvas" aria-label="Mira's eyes"></canvas></div>
@@ -657,9 +658,9 @@ select.input option{background:#101114;color:#F6F3EC}
     <div class="design-top">
       <figure class="fig">
         <div class="design-stage">
-          <img id="hero-render" src="media/render-hero.jpg" srcset="media/render-hero-sm.jpg 800w, media/render-hero.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 680px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render of SUFLET: a frosted white coin-shaped stone with two glowing cream eyes and a steel split ring." data-i18n-attr="alt:design.alt1" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+          <img id="hero-render" src="media/render-hero.jpg" srcset="media/render-hero-sm.jpg 800w, media/render-hero.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 680px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL: a frosted white coin-shaped stone with two glowing cream eyes and a steel split ring." data-i18n-attr="alt:design.alt1" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
           <div class="fallback" hidden>
-            <svg viewBox="-80 -80 160 150" role="img" aria-label="Coin-shaped SUFLET on a dome desk stand">
+            <svg viewBox="-80 -80 160 150" role="img" aria-label="Coin-shaped SOUL on a dome desk stand">
               <ellipse cx="0" cy="66" rx="58" ry="4" fill="#000" opacity=".12"/>
               <path d="M-44 66 A44 38 0 0 1 44 66 Z" fill="#EDE7DA" stroke="rgba(22,24,29,.14)"/>
               <circle cx="0" cy="-4" r="54" fill="url(#frost)" stroke="rgba(22,24,29,.16)"/>
@@ -672,13 +673,13 @@ select.input option{background:#101114;color:#F6F3EC}
         <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap1">The Coin in white frost, with a split ring for your keys.</span></figcaption>
       </figure>
       <figure class="fig">
-        <img class="shot" id="bag-render" src="media/render-bag.jpg" srcset="media/render-bag-sm.jpg 480w, media/render-bag.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 410px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of a sea-green SUFLET Drop hanging on a short chain from the handle of a brown leather bag." data-i18n-attr="alt:design.alt3">
+        <img class="shot" id="bag-render" src="media/render-bag.jpg" srcset="media/render-bag-sm.jpg 480w, media/render-bag.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 410px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of a sea-green SOUL Drop hanging on a short chain from the handle of a brown leather bag." data-i18n-attr="alt:design.alt3">
         <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap3">The Drop, on a bag handle.</span></figcaption>
       </figure>
     </div>
     <figure class="fig design-row">
       <div class="lineup">
-        <img id="lineup-render" src="media/render-lineup.jpg" srcset="media/render-lineup-sm.jpg 800w, media/render-lineup.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="800" loading="lazy" decoding="async" alt="Concept render of the four SUFLET shapes side by side: cloud, coin, cabochon and drop, each with a different eye colour." data-i18n-attr="alt:design.alt2" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+        <img id="lineup-render" src="media/render-lineup.jpg" srcset="media/render-lineup-sm.jpg 800w, media/render-lineup.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="800" loading="lazy" decoding="async" alt="Concept render of the four SOUL shapes side by side: cloud, coin, cabochon and drop, each with a different eye colour." data-i18n-attr="alt:design.alt2" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
         <div class="shapes" hidden>
           <figure>
             <svg viewBox="-75 -90 150 155" aria-hidden="true"><circle cx="0" cy="13.8" r="46.2" fill="url(#frost)" stroke="rgba(22,24,29,.18)"/><use href="#face" x="-29" y="-15.2" width="58" height="58"/></svg>
@@ -730,7 +731,7 @@ select.input option{background:#101114;color:#F6F3EC}
       <h2 class="h-l" id="charter-title" data-i18n="charter.h2">Our promises, in writing.</h2>
     </div>
     <figure class="fig charter-fig">
-      <img class="shot" id="night-render" src="media/render-night.jpg" srcset="media/render-night-sm.jpg 800w, media/render-night.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of a SUFLET Coin glowing warm amber on a dark bedside table at night." data-i18n-attr="alt:charter.alt">
+      <img class="shot" id="night-render" src="media/render-night.jpg" srcset="media/render-night-sm.jpg 800w, media/render-night.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of a SOUL Coin glowing warm amber on a dark bedside table at night." data-i18n-attr="alt:charter.alt">
       <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="charter.cap">By the bed at night it is a warm night-light. It has no camera, and it never listens unless your finger is on it.</span></figcaption>
     </figure>
     <ul class="charter">
@@ -815,14 +816,14 @@ select.input option{background:#101114;color:#F6F3EC}
     </div>
     <div class="faq">
       <details><summary data-i18n="q1">When will it ship?</summary><div class="a" data-i18n="a1">Founders Desk Edition: estimated <span data-cfg="shipFounders">spring 2027</span>. Voice Edition: estimated <span data-cfg="shipVoice">autumn 2027</span>. If we're late, you can cancel for a full refund at any time before it ships. After delivery you have the EU 14-day right of withdrawal and a 2-year legal guarantee.</div></details>
-      <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">No. SUFLET is alive with no internet and no account, forever. The Voice Edition includes <span data-cfg="months">6</span> months of voice AI. After that, an optional plan keeps the voice features on. Without it, your SUFLET stays a full offline companion.</div></details>
+      <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">No. SOUL is alive with no internet and no account, forever. The Voice Edition includes <span data-cfg="months">6</span> months of voice AI. After that, an optional plan keeps the voice features on. Without it, your SOUL stays a full offline companion.</div></details>
       <details><summary data-i18n="q3">Which AI does it use?</summary><div class="a" data-i18n="a3">For voice conversations (Voice Edition, in development): Claude by default, or ChatGPT if you prefer. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so the stone can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
       <details><summary data-i18n="q4">Does it need my phone or computer?</summary><div class="a" data-i18n="a4">Not to be alive. To work with Claude, it pairs over Bluetooth with the Claude desktop app on your Mac or Windows PC.</div></details>
       <details><summary data-i18n="q5">How long does the battery last?</summary><div class="a" data-i18n="a5">The Founders Desk Edition has no battery: it runs on USB-C. The Voice Edition has a small, user-replaceable battery that charges over USB-C. We'll publish measured battery life before we ask for full payment.</div></details>
-      <details><summary data-i18n="q6">Is it a toy?</summary><div class="a" data-i18n="a6">No. SUFLET is made for adults and teens 16 and over. It contains small parts and, in the Voice Edition, a lithium battery. Keep it away from young children.</div></details>
+      <details><summary data-i18n="q6">Is it a toy?</summary><div class="a" data-i18n="a6">No. SOUL is made for adults and teens 16 and over. It contains small parts and, in the Voice Edition, a lithium battery. Keep it away from young children.</div></details>
       <details><summary data-i18n="q7">What happens to my voice and my data?</summary><div class="a" data-i18n="a7">It listens only while your finger is on the stone. Voice requests go to servers in the EU and to the AI you chose, and nowhere else. Its memory is a list you can read and delete. No camera, no ads, and we never sell your data.</div></details>
       <details><summary data-i18n="q8">Can I choose its eye colour?</summary><div class="a" data-i18n="a8">No, and that's the point. Each stone is born with its own colour and personality, decided by its chip. Every colour has the same features: rarity changes only the colour.</div></details>
-      <details><summary data-i18n="q9">What if your company disappears?</summary><div class="a" data-i18n="a9">Your SUFLET keeps living, because its personality runs on the device. We'll also publish the firmware, so it never becomes a brick.</div></details>
+      <details><summary data-i18n="q9">What if your company disappears?</summary><div class="a" data-i18n="a9">Your SOUL keeps living, because its personality runs on the device. We'll also publish the firmware, so it never becomes a brick.</div></details>
       <details><summary data-i18n="q10">Where is it made?</summary><div class="a" data-i18n="a10">Designed in Bucharest, Romania. We'll name our manufacturing partner before we ask for full payment.</div></details>
     </div>
   </div>
@@ -855,14 +856,14 @@ select.input option{background:#101114;color:#F6F3EC}
           </div>
         </div>
         <div class="hp" aria-hidden="true"><label for="wl-web">Website</label><input id="wl-web" name="website" type="text" tabindex="-1" autocomplete="off"></div>
-        <label class="consent" for="wl-consent"><input id="wl-consent" name="consent" type="checkbox" required><span data-i18n="res.consent">I agree to receive emails about SUFLET and can unsubscribe at any time. Read the <a href="#privacy">Privacy Policy</a>.</span></label>
+        <label class="consent" for="wl-consent"><input id="wl-consent" name="consent" type="checkbox" required><span data-i18n="res.consent">I agree to receive emails about SOUL and can unsubscribe at any time. Read the <a href="#privacy">Privacy Policy</a>.</span></label>
         <p class="form-msg" id="wl-msg" role="alert"></p>
         <button class="btn btn-primary" type="submit" id="wl-submit" data-i18n="res.submit">Join the list</button>
         <p class="form-fine" data-i18n="res.fine">Nothing is charged here. The Voice Edition deposit is paid later, through a secure link, and is fully refundable.</p>
       </form>
       <div class="thanks" id="wl-thanks" hidden tabindex="-1">
         <h3 data-i18n="res.th">You're on the list.</h3>
-        <p data-i18n="res.tp">We'll write before anyone else. Your SUFLET will be born soon.</p>
+        <p data-i18n="res.tp">We'll write before anyone else. Your SOUL will be born soon.</p>
       </div>
     </div>
   </div>
@@ -872,7 +873,7 @@ select.input option{background:#101114;color:#F6F3EC}
 <footer class="foot" id="legal">
   <div class="wrap">
     <div class="foot-top">
-      <a class="brand" href="#top"><span class="brand-eyes" aria-hidden="true"><i></i><i></i></span>SUFLET</a>
+      <a class="brand" href="#top"><span class="brand-eyes" aria-hidden="true"><i></i><i></i></span>SOUL</a>
       <nav class="foot-links" aria-label="Legal">
         <a href="#privacy" id="privacy" data-i18n="f.privacy">Privacy Policy</a>
         <a href="#terms" id="terms" data-i18n="f.terms">Terms of Sale</a>
@@ -883,22 +884,22 @@ select.input option{background:#101114;color:#F6F3EC}
     <div class="legal">
       <div>
         <h4 data-i18n="f.seller">Seller</h4>
-        <p><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span><br><span data-i18n="f.addr">Address:</span> <span class="ph">[street, number, Bucharest, Romania]</span><br>CUI: <span class="ph">[RO00000000]</span> · Reg. Com.: <span class="ph">[J40/0000/2026]</span><br><span data-i18n="f.contact">Contact:</span> <span class="email" data-cfg="email">hello@suflet.example</span></p>
+        <p><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span><br><span data-i18n="f.addr">Address:</span> <span class="ph">[street, number, Bucharest, Romania]</span><br>CUI: <span class="ph">[RO00000000]</span> · Reg. Com.: <span class="ph">[J40/0000/2026]</span><br><span data-i18n="f.contact">Contact:</span> <span class="email" data-cfg="email">hello@soul.example</span></p>
       </div>
       <div>
         <h4 data-i18n="f.gpsr">Manufacturer (GPSR)</h4>
-        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SUFLET, models <span class="ph">[SF-143]</span> Founders Desk Edition and <span class="ph">[SF-175]</span> Voice Edition. Not a toy. For ages 16+. Voice Edition contains a lithium battery.</p>
+        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SOUL, models <span class="ph">[SL-143]</span> Founders Desk Edition and <span class="ph">[SL-175]</span> Voice Edition. Not a toy. For ages 16+. Voice Edition contains a lithium battery.</p>
       </div>
     </div>
-    <p class="tm" data-i18n="f.tm">Claude is a trademark of Anthropic. SUFLET is independent and not affiliated with or endorsed by Anthropic. 'Works with Claude' uses the Hardware Buddy developer API of the Claude desktop apps. ChatGPT is a trademark of OpenAI; SUFLET is not affiliated with OpenAI.</p>
-    <p data-i18n="f.made">© 2026 SUFLET. Designed in Bucharest.</p>
+    <p class="tm" data-i18n="f.tm">Claude is a trademark of Anthropic. SOUL is independent and not affiliated with or endorsed by Anthropic. 'Works with Claude' uses the Hardware Buddy developer API of the Claude desktop apps. ChatGPT is a trademark of OpenAI; SOUL is not affiliated with OpenAI.</p>
+    <p data-i18n="f.made">© 2026 SOUL. Designed in Bucharest.</p>
   </div>
 </footer>
 
 <script>
 (() => {
 "use strict";
-const CFG = window.SUFLET_CONFIG || {};
+const CFG = window.SOUL_CONFIG || {};
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -913,12 +914,12 @@ const RO = {
   "nav.what": "Ce este", "nav.alive": "Viu", "nav.claude": "Claude", "nav.born": "Născut", "nav.editions": "Ediții", "nav.faq": "Întrebări", "nav.reserve": "Rezervă",
   "hero.eyebrow": "Orice AI merită un suflet.",
   "hero.h1": "AI-ul tău, <span class=\"glow\">viu.</span>",
-  "hero.aria": "Ochii vii ai lui SUFLET. Apasă Enter ca să-l atingi, apasă de două ori repede ca să râdă.",
+  "hero.aria": "Ochii vii ai lui SOUL. Apasă Enter ca să-l atingi, apasă de două ori repede ca să râdă.",
   "hero.hint": "Atinge-l. Atinge-l de două ori și râde. Lasă-l în pace și ațipește.",
   "hero.sub": "O mică piatră de sticlă mată cu doi ochi vii. Respiră, clipește și se uită înapoi la tine, fără pic de internet. <strong>Și lucrează cu Claude.</strong>",
   "hero.cta1": "Rezervă-l", "hero.cta2": "Vezi-l în acțiune",
   "hero.meta1": "<b>Founders Desk Edition</b>", "hero.meta2": "numerotat <span data-cfg=\"range\">001–300</span>",
-  "soul.brain": "Laboratoarele de AI fac creierul.", "soul.body": "Noi facem corpul și sufletul.",
+  "soul.brain": "Laboratoarele de AI fac creierul.", "soul.body": "Noi facem corpul și sufletul.", "soul.name": "În română, acolo unde s-a născut, numele lui e <em>suflet</em>. AI-ul tău are deja un creier. Sufletul i-l dai tu.",
   "three.eyebrow": "Trei lucruri, o singură piatră",
   "three.h2": "Azi vă prezentăm trei lucruri.",
   "three.a1": "Ochi care reacționează singuri: fericiți, rușinați, amețiți, râzând.",
@@ -956,15 +957,15 @@ const RO = {
   "claude.s2t": "Claude întreabă.", "claude.s2p": "Când Claude are nevoie de permisiune, se aprinde un inel cald, chihlimbariu, și ochii se uită la tine.",
   "claude.s3t": "Tu decizi.", "claude.s3p": "Ține apăsat 1,2 secunde ca să aprobi. Atinge de două ori ca să refuzi. Fără să schimbi ferestre.",
   "claude.video": "Firmware-ul real: ocupat, întreabă, aprobat. Înregistrat din simulatorul ecranului AMOLED de 466 × 466.",
-  "claude.alt": "Randare de concept: un SUFLET Monedă pe un suport mic din nuc, lângă un laptop deschis, cu ochii luminoși privind în sus.",
+  "claude.alt": "Randare de concept: un SOUL Monedă pe un suport mic din nuc, lângă un laptop deschis, cu ochii luminoși privind în sus.",
   "claude.cap": "Pe suport, lângă laptop. Cât lucrează Claude, poți să te uiți în altă parte. Când Claude are nevoie de tine, piatra se uită la tine.",
   "born.eyebrow": "Născut, nu fabricat",
   "born.h2": "Nu există doi la fel.",
-  "born.lead": "La prima pornire, fiecare SUFLET se naște din ID-ul unic al cipului său. Personalitatea, culoarea ochilor și forma privirii rămân ale lui pe viață. Nu le alege nimeni. Nici măcar noi.",
+  "born.lead": "La prima pornire, fiecare SOUL se naște din ID-ul unic al cipului său. Personalitatea, culoarea ochilor și forma privirii rămân ale lui pe viață. Nu le alege nimeni. Nici măcar noi.",
   "born.bar": "Șansele culorii ochilor: Crem 58%, Gheață 16%, Mentă 10%, Piersică 9%, Liliac 6%, Aur 1%.",
   "t.cream": "Crem", "t.ice": "Gheață", "t.mint": "Mentă", "t.peach": "Piersică", "t.lilac": "Liliac", "t.gold": "Aur",
   "r.common": "Comun", "r.common2": "Comun", "r.rare": "Rar", "r.rare2": "Rar", "r.veryrare": "Foarte rar", "r.legendary": "Legendar",
-  "born.note": "Raritatea schimbă doar culoarea. Fiecare SUFLET are aceleași 24 de reacții și aceleași funcții.",
+  "born.note": "Raritatea schimbă doar culoarea. Fiecare SOUL are aceleași 24 de reacții și aceleași funcții.",
   "cert.title": "Certificat de naștere",
   "cert.name": "Nume", "cert.arche": "Arhetip", "cert.eyes": "Ochi", "cert.born": "Născut", "cert.chip": "ID cip",
   "cert.sub": "Birth certificate",
@@ -973,9 +974,9 @@ const RO = {
   "design.eyebrow": "Design",
   "design.h2": "O mică piatră de lumină.",
   "design.lead": "Un ecran AMOLED rotund, 466 × 466 pixeli, într-o carcasă mată. Poartă-l pe geantă sau ține-l pe birou. Patru forme. Un singur suflet.",
-  "design.alt1": "Randare de concept SUFLET: o piatră albă, mată, în formă de monedă, cu doi ochi crem luminoși și un inel de oțel.",
-  "design.alt2": "Randare de concept a celor patru forme SUFLET una lângă alta: nor, monedă, cabochon și picătură, fiecare cu altă culoare a ochilor.",
-  "design.alt3": "Randare de concept: un SUFLET Picătură verde-apă, atârnat cu un lănțișor scurt de mânerul unei genți din piele maro.",
+  "design.alt1": "Randare de concept SOUL: o piatră albă, mată, în formă de monedă, cu doi ochi crem luminoși și un inel de oțel.",
+  "design.alt2": "Randare de concept a celor patru forme SOUL una lângă alta: nor, monedă, cabochon și picătură, fiecare cu altă culoare a ochilor.",
+  "design.alt3": "Randare de concept: un SOUL Picătură verde-apă, atârnat cu un lănțișor scurt de mânerul unei genți din piele maro.",
   "design.alt4": "Vedere explodată din CAD a Monedei de 1,43″: lentilă dom transparentă, carcasă mată, placa rotundă AMOLED și capacul din spate.",
   "fig.render": "Randare de concept",
   "design.cap1": "Moneda, în alb mat, cu inel pentru chei.",
@@ -994,7 +995,7 @@ const RO = {
   "design.note": "Randări de concept, nu fotografii. Materialele și finisajele finale se pot schimba înainte de producție.",
   "charter.eyebrow": "Carta companionului",
   "charter.h2": "Promisiunile noastre, în scris.",
-  "charter.alt": "Randare de concept: un SUFLET Monedă care strălucește cald, chihlimbariu, pe o noptieră întunecată.",
+  "charter.alt": "Randare de concept: un SOUL Monedă care strălucește cald, chihlimbariu, pe o noptieră întunecată.",
   "charter.cap": "Noaptea, lângă pat, e o lampă de veghe caldă. Nu are cameră și nu ascultă niciodată dacă nu ții degetul pe el.",
   "ch1t": "Spune mereu că e un AI.", "ch1p": "Nu se dă niciodată drept om.",
   "ch2t": "Ascultă doar cât îl ții.", "ch2p": "Fără cuvânt de trezire. Fără microfon mereu pornit.",
@@ -1036,7 +1037,7 @@ const RO = {
   "q1": "Când se livrează?",
   "a1": "Founders Desk Edition: estimat <span data-cfg=\"shipFounders\">primăvara 2027</span>. Voice Edition: estimat <span data-cfg=\"shipVoice\">toamna 2027</span>. Dacă întârziem, poți anula oricând înainte de livrare și primești toți banii înapoi. După livrare ai dreptul UE de retragere în 14 zile și garanția legală de 2 ani.",
   "q2": "Am nevoie de abonament?",
-  "a2": "Nu. SUFLET e viu fără internet și fără cont, pentru totdeauna. Voice Edition include <span data-cfg=\"months\">6</span> luni de AI vocal. După aceea, un plan opțional păstrează funcțiile de voce. Fără el, SUFLET-ul tău rămâne un companion offline complet.",
+  "a2": "Nu. SOUL e viu fără internet și fără cont, pentru totdeauna. Voice Edition include <span data-cfg=\"months\">6</span> luni de AI vocal. După aceea, un plan opțional păstrează funcțiile de voce. Fără el, SOUL-ul tău rămâne un companion offline complet.",
   "q3": "Ce AI folosește?",
   "a3": "Pentru conversațiile vocale (Voice Edition, în dezvoltare): Claude implicit, sau ChatGPT dacă preferi. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy din aplicațiile desktop Claude, așa că piatra îți arată ce fac Claude Code și Claude Cowork și te lasă să le aprobi cererile.",
   "q4": "Are nevoie de telefon sau de calculator?",
@@ -1044,13 +1045,13 @@ const RO = {
   "q5": "Cât ține bateria?",
   "a5": "Founders Desk Edition nu are baterie: merge prin USB-C. Voice Edition are o baterie mică, înlocuibilă de utilizator, care se încarcă prin USB-C. Publicăm autonomia măsurată înainte să cerem plata integrală.",
   "q6": "E o jucărie?",
-  "a6": "Nu. SUFLET e făcut pentru adulți și adolescenți de peste 16 ani. Conține piese mici și, la Voice Edition, o baterie cu litiu. Nu-l lăsa la îndemâna copiilor mici.",
+  "a6": "Nu. SOUL e făcut pentru adulți și adolescenți de peste 16 ani. Conține piese mici și, la Voice Edition, o baterie cu litiu. Nu-l lăsa la îndemâna copiilor mici.",
   "q7": "Ce se întâmplă cu vocea și datele mele?",
   "a7": "Ascultă doar cât timp ții degetul pe piatră. Cererile vocale ajung pe servere din UE și la AI-ul pe care l-ai ales, nicăieri altundeva. Memoria lui e o listă pe care o poți citi și șterge. Fără cameră, fără reclame, și nu îți vindem niciodată datele.",
   "q8": "Pot să-i aleg culoarea ochilor?",
   "a8": "Nu, și tocmai asta e magia. Fiecare piatră se naște cu culoarea și personalitatea ei, decise de cip. Toate culorile au aceleași funcții: raritatea schimbă doar culoarea.",
   "q9": "Ce se întâmplă dacă firma voastră dispare?",
-  "a9": "SUFLET-ul tău trăiește mai departe, pentru că personalitatea lui rulează pe dispozitiv. În plus, publicăm firmware-ul, ca să nu devină niciodată o cărămidă.",
+  "a9": "SOUL-ul tău trăiește mai departe, pentru că personalitatea lui rulează pe dispozitiv. În plus, publicăm firmware-ul, ca să nu devină niciodată o cărămidă.",
   "q10": "Unde e fabricat?",
   "a10": "Proiectat în București, România. Anunțăm partenerul de producție înainte să cerem plata integrală.",
   "res.eyebrow": "Rezervă",
@@ -1058,17 +1059,17 @@ const RO = {
   "res.lead": "Lasă-ne emailul. Îți scriem când se deschid rezervările, înaintea tuturor.",
   "res.email": "Email", "res.edition": "Ediția",
   "res.o1": "Founders Desk Edition", "res.o2": "Voice Edition", "res.o3": "Ediții Legendare", "res.o4": "Încă nu știu",
-  "res.consent": "Sunt de acord să primesc emailuri despre SUFLET și mă pot dezabona oricând. Citește <a href=\"#privacy\">Politica de confidențialitate</a>.",
+  "res.consent": "Sunt de acord să primesc emailuri despre SOUL și mă pot dezabona oricând. Citește <a href=\"#privacy\">Politica de confidențialitate</a>.",
   "res.submit": "Intră pe listă",
   "res.fine": "Aici nu se plătește nimic. Avansul pentru Voice Edition se plătește mai târziu, printr-un link securizat, și e rambursabil integral.",
   "res.th": "Ești pe listă.",
-  "res.tp": "Îți scriem înaintea tuturor. SUFLET-ul tău se naște în curând.",
+  "res.tp": "Îți scriem înaintea tuturor. SOUL-ul tău se naște în curând.",
   "f.privacy": "Politica de confidențialitate", "f.terms": "Termeni de vânzare", "f.cookies": "Cookie-uri",
   "f.seller": "Vânzător", "f.addr": "Adresă:", "f.contact": "Contact:",
   "f.gpsr": "Producător (GPSR)",
-  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SUFLET, modelele <span class=\"ph\">[SF-143]</span> Founders Desk Edition și <span class=\"ph\">[SF-175]</span> Voice Edition. Nu e o jucărie. Pentru 16+. Voice Edition conține o baterie cu litiu.",
-  "f.tm": "Claude este o marcă comercială a Anthropic. SUFLET este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude. ChatGPT este o marcă comercială a OpenAI; SUFLET nu este afiliat cu OpenAI.",
-  "f.made": "© 2026 SUFLET. Proiectat în București."
+  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelele <span class=\"ph\">[SL-143]</span> Founders Desk Edition și <span class=\"ph\">[SL-175]</span> Voice Edition. Nu e o jucărie. Pentru 16+. Voice Edition conține o baterie cu litiu.",
+  "f.tm": "Claude este o marcă comercială a Anthropic. SOUL este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude. ChatGPT este o marcă comercială a OpenAI; SOUL nu este afiliat cu OpenAI.",
+  "f.made": "© 2026 SOUL. Proiectat în București."
 };
 const DYN = {
   en: {
@@ -1149,7 +1150,7 @@ function applyLang(lang, save) {
   fillConfig();
   renderCert();
   if (demoSoul) demoSoul.onPhase(demoSoul.ph.n, true);
-  if (save) store.set("suflet-lang", LANG);
+  if (save) store.set("soul-lang", LANG);
 }
 
 /* -------------------------------------------------------------- renderer */
@@ -1677,7 +1678,7 @@ if (form) form.addEventListener("submit", async e => {
       if (!r.ok) throw new Error(String(r.status));
     } catch (err) { msg.textContent = d.net; btn.disabled = false; btn.textContent = old; return; }
   } else {
-    try { const k = "suflet-waitlist"; const arr = JSON.parse(store.get(k) || "[]"); arr.push(data); store.set(k, JSON.stringify(arr)); } catch (err) {}
+    try { const k = "soul-waitlist"; const arr = JSON.parse(store.get(k) || "[]"); arr.push(data); store.set(k, JSON.stringify(arr)); } catch (err) {}
   }
   done();
   function done() {
@@ -1688,7 +1689,7 @@ if (form) form.addEventListener("submit", async e => {
 
 /* ------------------------------------------------------------- language */
 $$(".lang button").forEach(b => b.addEventListener("click", () => applyLang(b.dataset.lang, true)));
-const saved = store.get("suflet-lang");
+const saved = store.get("soul-lang");
 const start = location.hash === "#ro" ? "ro" : saved === "ro" ? "ro" : "en";
 applyLang(start, false);
 })();

@@ -1,6 +1,6 @@
-# Pagina de lansare / precomandă SUFLET
+# Pagina de lansare / precomandă SOUL
 
-Pagina de lansare pentru SUFLET („Micul Șmecher”). Totul e într-un singur fișier, `index.html` (~120 KB, cu CSS și JS inline), plus folderul `media/`. `preview.html` e o prezentare scurtă, în română, a ce s-a construit (pentru telefon).
+Pagina de lansare pentru SOUL („Micul Șmecher”). Totul e într-un singur fișier, `index.html` (~120 KB, cu CSS și JS inline), plus folderul `media/`. `preview.html` e o prezentare scurtă, în română, a ce s-a construit (pentru telefon).
 
 ```
 site/
@@ -15,17 +15,17 @@ site/
 
 ## Ce face pagina
 
-- **Hero cu ochi vii** pe `<canvas>`. Este portul în JS al `firmware/lib/Suflet/src/Face.cpp`: elipse crem #FFF0C8 (0,12 × 0,19 din diametru, centre la ±0,19), pleoapa înclinată 0,16 rad, highlight și halo. Ochii clipesc (la 2,2–6 s, uneori de două ori), urmăresc cursorul sau degetul cu un arc elastic, se uită singuri în jur și respiră (±2 % la 4 s). O atingere face „boop” (^ ^, obraji roșii, inimioare, turtire), două atingeri îi fac să râdă (> <). După 15 s fără activitate SUFLET-ul ațipește, apoi adoarme (arce închise și z z), iar orice mișcare îl trezește. Cu `prefers-reduced-motion` totul rămâne static.
+- **Hero cu ochi vii** pe `<canvas>`. Este portul în JS al `firmware/lib/Suflet/src/Face.cpp`: elipse crem #FFF0C8 (0,12 × 0,19 din diametru, centre la ±0,19), pleoapa înclinată 0,16 rad, highlight și halo. Ochii clipesc (la 2,2–6 s, uneori de două ori), urmăresc cursorul sau degetul cu un arc elastic, se uită singuri în jur și respiră (±2 % la 4 s). O atingere face „boop” (^ ^, obraji roșii, inimioare, turtire), două atingeri îi fac să râdă (> <). După 15 s fără activitate SOUL-ul ațipește, apoi adoarme (arce închise și z z), iar orice mișcare îl trezește. Cu `prefers-reduced-motion` totul rămâne static.
 - **Pietrele din pagină sunt toate vii**: cele trei din secțiunea 3-în-1 (viu / ascultă / Claude), demo-ul interactiv „Works with Claude” (ții apăsat 1,2 s ca să aprobi, atingi de două ori ca să refuzi; de la tastatură, Space ține, Esc refuză), certificatul de naștere (butonul „Hatch another” naște un suflet nou, cu raritățile din firmware) și piatra de la formular, care doarme până începi să scrii.
 - Clipurile rulează doar când sunt vizibile pe ecran (IntersectionObserver).
 - Alegerea limbii se păstrează în `localStorage`. Pagina se poate deschide direct în română cu `index.html#ro`.
 
 ## Cum schimbi prețurile, datele și endpoint-ul
 
-Toate aceste valori sunt într-un singur obiect, `window.SUFLET_CONFIG`, chiar la începutul lui `index.html`:
+Toate aceste valori sunt într-un singur obiect, `window.SOUL_CONFIG`, chiar la începutul lui `index.html`:
 
 ```js
-window.SUFLET_CONFIG = {
+window.SOUL_CONFIG = {
   WAITLIST_ENDPOINT: "",          // URL-ul la care formularul trimite JSON (gol = mod demo)
   CURRENCY: "EUR",
   PRICES: { founders: 119, voiceDeposit: 10, voiceExpected: 149 },
@@ -33,7 +33,7 @@ window.SUFLET_CONFIG = {
   VOICE_AI_MONTHS: 6,
   SHIP: { founders: { en: "spring 2027", ro: "primăvara 2027" },
           voice:    { en: "autumn 2027", ro: "toamna 2027" } },
-  CONTACT_EMAIL: "hello@suflet.example"
+  CONTACT_EMAIL: "hello@soul.example"
 };
 ```
 
@@ -53,7 +53,7 @@ Formatul prețului: în EN „€119”, în RO „119 €”.
 
 Trimite prin `POST` un JSON `{email, edition, consent, lang, ts, source}` la `WAITLIST_ENDPOINT`, cu `Content-Type: application/json`.
 
-- **Endpoint gol (acum):** înscrierea se salvează doar în browserul vizitatorului (`localStorage`, cheia `suflet-waitlist`) și apare mesajul de mulțumire. **În acest mod nu primești niciun email.** E bun doar pentru demo.
+- **Endpoint gol (acum):** înscrierea se salvează doar în browserul vizitatorului (`localStorage`, cheia `soul-waitlist`) și apare mesajul de mulțumire. **În acest mod nu primești niciun email.** E bun doar pentru demo.
 - Variante reale (endpoint-ul trebuie să accepte CORS și JSON):
   - **Formspree / Getform / Basin**: creezi un formular, primești un URL `https://formspree.io/f/xxxx` și îl pui în `WAITLIST_ENDPOINT`.
   - **Brevo / Mailchimp / Klaviyo**: printr-o funcție serverless mică (Netlify Function sau Cloudflare Worker) care primește JSON-ul și îl adaugă în listă. Cheia API nu se pune niciodată în pagină.
@@ -100,8 +100,8 @@ python3 -m http.server 8000     # apoi deschide http://localhost:8000
 1. **GitHub Pages**: pui conținutul folderului `site/` într-un repo (sau în `/docs`), apoi Settings → Pages → Deploy from branch. Poți adăuga un domeniu propriu (fișier `CNAME`). Gratuit, HTTPS inclus.
 2. **Netlify**: tragi folderul `site/` în app.netlify.com/drop, sau conectezi repo-ul cu publish directory `site`. Primești HTTPS, domeniu propriu, Netlify Forms sau Functions pentru waitlist. Cea mai simplă variantă.
 3. **Shopify** (dacă magazinul e pe Shopify):
-   - *Varianta simplă*: găzduiești pagina pe Netlify sau GitHub Pages (de exemplu `suflet.ro` sau `launch.suflet.ro`) și din Shopify faci link sau redirect spre ea.
-   - *Varianta în temă*: Online Store → Themes → Edit code → creezi template-ul `page.suflet.liquid` (sau o secțiune „Custom Liquid”) și lipești conținutul din `<style>`, `<body>` și `<script>`. Clipurile și PNG-urile le urci în Content → Files și schimbi căile `media/...` cu URL-urile Shopify CDN. Pagina de conținut simplă din editorul Shopify elimină scripturile, deci ai nevoie de template.
+   - *Varianta simplă*: găzduiești pagina pe Netlify sau GitHub Pages (de exemplu `soul.example` sau `launch.soul.example`) și din Shopify faci link sau redirect spre ea.
+   - *Varianta în temă*: Online Store → Themes → Edit code → creezi template-ul `page.soul.liquid` (sau o secțiune „Custom Liquid”) și lipești conținutul din `<style>`, `<body>` și `<script>`. Clipurile și PNG-urile le urci în Content → Files și schimbi căile `media/...` cu URL-urile Shopify CDN. Pagina de conținut simplă din editorul Shopify elimină scripturile, deci ai nevoie de template.
    - Precomanda cu plată se face apoi prin produse Shopify (avans de 10 € ca produs separat) și aplicații de pre-order. Nu se face prin formularul acesta.
 
 Pagina se poate previzualiza și ca artifact pe claude.ai: are tokenuri de culoare, temă întunecată, lățime de telefon și fonturi Google.
@@ -110,14 +110,14 @@ Pagina se poate previzualiza și ca artifact pe claude.ai: are tokenuri de culoa
 
 **Legal și firmă**
 - [ ] Footer: denumirea reală (acum `ARTEMIS DIGITAL S.R.L. [placeholder]`), adresă, CUI, Nr. Reg. Com. și email de contact (`CONTACT_EMAIL`). Toate câmpurile marcate cu portocaliu sunt placeholdere.
-- [ ] **GPSR** (Reg. UE 2023/988): numele și adresa poștală și electronică a producătorului, identificatorul produsului (tip, model, lot sau serie; acum `[SF-143]`/`[SF-175]` sunt inventate), avertismente („Nu este jucărie”, 16+, baterie litiu la Voice Edition), instrucțiuni în română.
+- [ ] **GPSR** (Reg. UE 2023/988): numele și adresa poștală și electronică a producătorului, identificatorul produsului (tip, model, lot sau serie; acum `[SL-143]`/`[SL-175]` sunt inventate), avertismente („Nu este jucărie”, 16+, baterie litiu la Voice Edition), instrucțiuni în română.
 - [ ] Politica de confidențialitate, Termenii de vânzare și Cookies: acum sunt linkuri `#privacy`, `#terms`, `#cookies`. Trebuie pagini reale (GDPR: operator, scop, temei, durată, drepturi, transferuri).
 - [ ] Linkul ANPC SAL e deja pus. Adaugă și pictogramele ANPC dacă vinzi efectiv.
 - [ ] Când începi să încasezi bani: butonul de retragere (obligatoriu din 19.06.2026, Directiva 2023/2673), dreptul de retragere de 14 zile, garanția legală de 2 ani, data estimată de livrare și dreptul de anulare cu rambursare dacă întârzii (vezi `../research/03-compliance-2026-09-24.md`). Nu încasa plata integrală înainte de DVT.
 - [ ] Disclaimer-ul despre Claude/Anthropic rămâne în footer. Nu folosi logo-ul Anthropic sau Claude.
 
 **Prețuri și promisiuni**
-- [ ] `PRICES`, `SHIP` și `FOUNDERS_RANGE` în `SUFLET_CONFIG`, apoi verifică textul „Prices include VAT”.
+- [ ] `PRICES`, `SHIP` și `FOUNDERS_RANGE` în `SOUL_CONFIG`, apoi verifică textul „Prices include VAT”.
 - [ ] Tot ce promite pagina trebuie să fie adevărat la lansare: servere în UE, memorie care poate fi citită și ștearsă, publicarea firmware-ului dacă firma dispare, baterie înlocuibilă, fără cameră, 6 luni de AI vocal incluse. Șterge ce nu poți garanta.
 - [ ] „Voice Edition · in development” rămâne până funcția e gata.
 
