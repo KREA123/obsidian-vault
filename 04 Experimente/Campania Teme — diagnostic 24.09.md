@@ -54,3 +54,14 @@ Cost pe comandă = cost pe click ÷ procentul de click-uri care cumpără.
 - Meta dă bugetul reclamei de catalog. Staticele din același ad set nu se testează de fapt.
 
 Legat: [[Campania Teme]] · [[Experimente]] · [[Reclame Meta MundiShop]]
+
+## Decizie 24.09 ~13:00 — obiectiv de cost 20 lei
+Andu a cerut obiectiv de cost 15–20 lei și a lăsat alegerea ad seturilor la Claude.
+- **Aplicat (verificat în cont):** COST_CAP 20 lei (bid_amount 2000) pe Colecționari, Mașini & F1, Copii 2–5, Halloween, City Classic Friends, Botanicals. Bugetele au rămas neschimbate.
+- **Neatins:** Creator 3in1, fără limită (LOWEST_COST_WITHOUT_CAP), singurul ad set cu comenzi.
+- **De ce 20, nu 15:** o limită agresivă nu livrează. Costul-țintă de 45 lei din septembrie a cheltuit 14 lei și apoi zero. 20 e capătul de sus al intervalului cerut.
+- **Așteptare:** cele 6 ad seturi cheltuie mult mai puțin. În învățare, costul poate trece temporar peste 20 lei. Schimbarea resetează învățarea pe cele 6, care aveau 0 comenzi.
+- **Criterii scrise înainte:**
+  - 27.09 seara: un ad set care a cheltuit peste 60 lei de la schimbare, cu 0 comenzi → revine fără limită și primește produse sub 200 lei.
+  - 27.09 seara: un ad set care a cheltuit sub 10 lei → Meta nu găsește comenzi la ~20 lei acolo. Pasul următor pe el e schimbarea produselor, nu limita.
+  - 01.10: un ad set cu comenzi ≤ ~25 lei în medie → păstrat, apoi discutăm creșterea bugetului.
