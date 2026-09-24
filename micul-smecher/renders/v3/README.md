@@ -16,20 +16,18 @@ Toate conceptele păstrează **aceeași față**: sticlă neagră bombată (Ø49
 AMOLED activ Ø44 și ochii crem vii (`src/eyes.py`, portul lui `Face.cpp`). Toate sunt mai mari decât v1 (Ø52).
 Specificațiile vin din `../../research/08-wow-design-cmf-2026-09-24.md`.
 
-## Conceptele (`concepts/`, toate 1600×1200)
+## Conceptele randate (`concepts/`, 1600×1200)
+
+Runda de concepte a fost oprită de feedback-ul fondatorului: cercurile simple i s-au părut „un cerc mic și urât”.
+Direcția finală e **familia v4** (`../v4/`). Au rămas randate doar:
 
 | Fișier | Ce arată |
 |---|---|
-| `concept_A_lens.png` | **A · LENS**: corp Ø60 × 16 mm din titan natur sablat, frezat CNC (ca un obiectiv Leica sau un Apple Watch Ultra). Are o **ramă rotativă moletată** în jurul sticlei (inputul de scroll), cu teșitura interioară lustruită oglindă, și o **linie de lumină foarte subțire** (halo-ul) între sticlă și metal. Sus e o urechiușă mică detașabilă din titan, pentru curea. Pe flanc e gravat laser un „SOUL” micro. Studio grafit, lumină de contur. |
-| `concept_A_desk.png` | A pe un birou din nuc, lângă marginea unui laptop generic. |
-| `concept_B_orb.png` | **B · ORB**: corp Ø62 × 23 mm din sticlă optică transparentă (în stilul Nothing). Ochiul negru plutește în sticlă, iar prin flancul transparent se văd plăcile interioare „designed” și un inel de lumină. Spatele are un difuzor mat luminat din interior, iar la ecuator trece o spină subțire din oțel lustruit. |
-| `concept_B_desk.png` | B pe un birou din stejar, lângă laptop. |
-| `concept_C_eve.png` | **C · EVE**: ou vertical de 62 × 72 × 48 mm din ceramică zirconia albă lucioasă (puritate Braun/Rams). Fața din sticlă neagră e o vizieră. Stă pe o bază plată lestată, cu un inel de lumină moale pe masă. Fundal gri cald. |
-| `concept_C_desk.png` | C pe birou din nuc, lângă laptop și o cană. |
-| `concept_D_soul.png` | **D · SOUL** (hibridul recomandat în research/08): Ø61 × 17 mm, titan sablat, **o singură teșitură lustruită**, ramă moletată rotativă. Sticla neagră „infinity” Ø53 are bordura în negrul real al panoului, așa că toată sticla pare ecran și ochii plutesc în negru. Sticla ocupă peste 75 % din față. Între sticlă și metal e un inel mat subțire care strălucește discret. La ora 12 are un punct portocaliu ca accent. Studio întunecat. |
-| `concept_D_dock.png` | D în dock-ul său: un **cuib din porțelan alb lucios în formă de ou**, care îl ține vertical (~75°), pe un birou din stejar, lângă laptop. |
-| `concept_D_back.png` | Spatele lui D la 3/4: **capac din zirconia albă lustruită**, cu închidere baionetă (twist-off) și inelul gravat laser „SOUL · No. 0001 · born 24.09.2026”. Contactele de încărcare aurii și fanta pentru monedă sunt spre dock. |
-| `concept_lineup.png` | A, B, C, D unul lângă altul (D în dock) și v1 (Ø52) pentru scară, cu etichete subțiri adăugate în post. |
+| `concept_A_lens.png` | **A · LENS**: corp Ø60 × 16 mm din titan natur sablat (ca un obiectiv Leica sau un Apple Watch Ultra). Are o ramă rotativă moletată cu teșitura lustruită și o linie de lumină foarte subțire (halo) între sticlă și metal. Sus e o urechiușă mică detașabilă. Pe flanc e gravat laser un „SOUL” micro. Studio grafit. |
+| `concept_B_orb.png` | **B · ORB**: corp Ø62 × 23 mm din sticlă optică transparentă. Ochiul negru plutește în sticlă, iar prin flanc se văd plăcile interioare și un inel de lumină. Are o spină subțire din oțel lustruit. |
+
+Scripturile pentru C (EVE), D (hibridul din research/08, cu dock din porțelan) și E (pietricica-lentilă Ø64 cu
+accesorii) sunt în `src/concepts.py` și `src/concept_e.py`. Au fost doar previzualizate și nu au imagini finale.
 
 Referință: `v3_amulet_ref.png` (1600×1200) e amuleta v3 atârnată pe un șnur (Ø56, halo mat, coroană cu
 belciug). A fost în afara brief-ului final și a rămas doar ca referință de formă și lumină.
@@ -42,7 +40,7 @@ OpenEXR opencolorio oidn==0.2.1`. Blender-ul din Ubuntu nu are OIDN, așa că de
 ```bash
 cd micul-smecher/renders/v3/src
 ./render_concepts.sh                     # toate conceptele -> ../concepts/concept_*.png
-./render_concepts.sh D_soul D_dock       # doar unele (A_lens A_desk B_orb B_desk C_eve C_desk D_soul D_dock D_back lineup)
+./render_concepts.sh A_lens B_orb       # doar unele (A_lens A_desk B_orb B_desk C_eve C_desk D_soul D_dock D_back lineup)
 PREVIEW=1 ./render_concepts.sh A_lens    # previzualizare la jumătate de rezoluție, în /tmp/soul_concepts_render
 ./cprev.sh B_orb test --samples 24       # previzualizare rapidă în $SP (implicit /tmp/soul_v3_preview)
 ```
