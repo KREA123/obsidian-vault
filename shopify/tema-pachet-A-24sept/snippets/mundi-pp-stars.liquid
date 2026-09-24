@@ -1,0 +1,41 @@
+{%- comment -%}
+  Stelele sub preț (24.09 · pachet A, punctul 6). Apar DOAR dacă produsul
+  are cel puțin o recenzie reală; la 0 recenzii nu se afișează nimic (stele
+  goale scad încrederea). Fără JavaScript: citește ce scrie Judge.me în
+  metafield-urile produsului — întâi cele standard Shopify
+  (reviews.rating / reviews.rating_count), apoi insigna proprie Judge.me
+  (judgeme.badge), ca rezervă. Tema doar citește, nu scrie nimic pe produs.
+
+  Folosire: {% render 'mundi-pp-stars', product: product %}
+{%- endcomment -%}
+{%- liquid
+  assign jm_count = product.metafields.reviews.rating_count.value | default: 0 | plus: 0
+  assign jm_avg = product.metafields.reviews.rating.value.rating | default: 0 | plus: 0
+
+  if jm_count == 0
+    assign jm_badge = product.metafields.judgeme.badge.value | default: '' | replace: '"', "'"
+    if jm_badge contains 'data-number-of-reviews'
+      assign jm_count = jm_badge | split: "data-number-of-reviews='" | last | split: "'" | first | plus: 0
+      assign jm_avg = jm_badge | split: "data-average-rating='" | last | split: "'" | first | plus: 0
+    endif
+  endif
+
+  assign jm_mod = jm_count | modulo: 100
+  if jm_count == 1
+    assign jm_word = 'recenzie'
+  elsif jm_mod == 0 or jm_mod >= 20
+    assign jm_word = 'de recenzii'
+  else
+    assign jm_word = 'recenzii'
+  endif
+-%}
+{%- if jm_count > 0 and jm_avg > 0 -%}
+  {%- assign jm_fill = jm_avg | times: 20 | round: 1 -%}
+  {%- assign jm_label = jm_avg | round: 1 | append: '' -%}
+  {%- unless jm_label contains '.' -%}{%- assign jm_label = jm_label | append: '.0' -%}{%- endunless -%}
+  {%- assign jm_label = jm_label | replace: '.', ',' -%}
+  <a class="pp-stars" href="#judgeme_product_reviews" aria-label="Nota {{ jm_label }} din 5, din {{ jm_count }} {{ jm_word }}">
+    <span class="pp-stars-s" aria-hidden="true"><span style="width:{{ jm_fill }}%">★★★★★</span></span>
+    <span class="pp-stars-n">{{ jm_label }} · {{ jm_count }} {{ jm_word }}</span>
+  </a>
+{%- endif -%}

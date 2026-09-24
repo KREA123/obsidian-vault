@@ -1,0 +1,17 @@
+{%- comment -%}
+  Preîncărcarea pozei principale de produs (24.09 · pachet A, punctul 8, viteză).
+  Poza e elementul LCP pe telefon, dar tagul <img> apare abia după ~180 KB de
+  HTML (head + meniu). Linkul de mai jos o cere din <head>. Lățimile și
+  „sizes” sunt identice cu cele din galeria din main-product.liquid, ca
+  browserul să folosească același fișier (fără descărcare dublă).
+  Dacă galeria schimbă lățimile sau „sizes”, se schimbă și aici.
+
+  Se randează în layout/theme.liquid, imediat după <meta name="viewport">:
+  {% render 'mundi-lcp-preload' %}
+{%- endcomment -%}
+{%- if request.page_type == 'product' and product.featured_media -%}
+  {%- assign m = product.featured_media -%}
+  <link rel="preload" as="image" fetchpriority="high"
+    imagesrcset="{{ m | image_url: width: 400 }} 400w, {{ m | image_url: width: 640 }} 640w, {{ m | image_url: width: 700 }} 700w, {{ m | image_url: width: 900 }} 900w"
+    imagesizes="(max-width: 900px) 84vw, 600px">
+{%- endif -%}
