@@ -97,7 +97,7 @@ VARIANTS = {
     'cream_look': dict(color='#FFF0C8', gx=0.35, gy=-0.25),              # glance to the camera
     'cream_front': dict(color='#FFF0C8', gx=0.1, gy=-0.1),
     'cream_down': dict(color='#FFF0C8', gx=-0.1, gy=0.45, lid_top=0.24),  # worn: looking down, calm
-    'listen_up': dict(color='#FFF0C8', gx=0.1, gy=-1.0, lid_top=0.08),   # listening: looking up
+    'listen_up': dict(color='#FFF0C8', gx=0.2, gy=-2.6, lid_top=0.05, scale=0.92),   # listening: looking up
     'amber_sleepy': dict(color='#FFC96B', lid_top=0.36, gy=0.2, extra_glow=0.25),  # night light
     'ice': dict(color='#D8F0FF', gx=0.25, gy=-0.15),
     'mint': dict(color='#D2FFE6', gx=0.1, gy=-0.3),

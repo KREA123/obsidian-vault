@@ -4,6 +4,7 @@
 White = engraved (cut) area. The texture spans the full disc: 0..N px = -20..+20 mm.
   * the serial ring  "SOUL · No. 0001 · born 24.09.2026"  on the top arc (reads clockwise)
   * two fine circles framing the text band
+  * OPEN / CLOSE arrows of the bayonet (twist-off) back beside the coin slot at 6 o'clock
 Run:  python3 engrave.py [outdir]    -> tex/caseback_engrave.png
 """
 import math
@@ -52,6 +53,24 @@ def main():
             y = c - px(rr) * math.sin(a_mid)
             im.paste(255, (int(x - g.width / 2), int(y - g.height / 2)), g)
         ang -= w / r_base
+    # bottom arc (reads left -> right, upright): the bayonet directions either side of the coin slot
+    small = ImageFont.truetype(FONT, int(px(1.0) / 0.73))
+    r_b = 18.35
+    for txt, centre_deg in (('OPEN \u21ba', -90 - 21), ('\u21bb CLOSE', -90 + 21)):
+        ws = [small.getlength(ch) / N * 2 * R_MM + 0.22 for ch in txt]
+        tot = sum(ws) - 0.22
+        ang = math.radians(centre_deg) - (tot / 2) / r_b
+        for ch, w in zip(txt, ws):
+            a_mid = ang + (w - 0.22) / 2 / r_b
+            if ch.strip():
+                gw, gh = int(small.getlength(ch)) + 8, int(small.size * 1.3)
+                g = Image.new('L', (gw, gh), 0)
+                ImageDraw.Draw(g).text((4, 0), ch, font=small, fill=255)
+                g = g.rotate(math.degrees(a_mid + math.pi / 2), resample=Image.BICUBIC, expand=True)
+                x = c + px(r_b) * math.cos(a_mid)
+                y = c - px(r_b) * math.sin(a_mid)
+                im.paste(255, (int(x - g.width / 2), int(y - g.height / 2)), g)
+            ang += w / r_b
     im.save(os.path.join(out, 'caseback_engrave.png'))
     print('wrote caseback_engrave.png')
 
