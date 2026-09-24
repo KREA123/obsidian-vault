@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /multumesc
+
+Sitemap: https://krea.ro/sitemap.xml
