@@ -69,8 +69,10 @@ world_color, area_light, aim, camera, flag, glossy_card, plane, sweep = (
 MM = V1['MM']
 
 # look parameters (override with --set key=value)
-TUNE = dict(frost_rough=0.30, frost_dens=12.0, frost_bump=0.035, glow=1.0, eye=3.0, module_grey=0.28,
-            caustics=1, chassis_grey=0.22, aqua=1.0)
+TUNE = dict(frost_rough=0.30, frost_dens=60.0, frost_bump=0.06, glow=1.0, eye=3.0, module_grey=0.3, absk=0.35, aniso=0.8,
+            darkfield=0,
+            caustics=1, chassis_grey=0.0, aqua=1.0, core=0.0, core_inset=2.2, core_mfp=6.0)
+TUNE['aqua'] = 1.3
 for kv in ARGS.set:
     k, v = kv.split('=')
     TUNE[k] = float(v)
@@ -80,7 +82,7 @@ POST = dict(look='AgX - Medium High Contrast', exposure=0.0, bloom=0.06)
 # pebble dimensions (mm).  Outline 70 x 64, 21.9 mm thick at the centre (8.6 front + 1.35 lens + 11.6 back
 # + 0.35 back cap), screen: 1.75" AMOLED, Ø44 visible under a Ø46.4 domed black lens.
 P2 = dict(a=35.0, b_top=30.6, b_bot=33.4, n=2.45, HF=8.6, HB=11.6, R_REC=23.2, FIL=0.8, R_SCREEN=22.0,
-          dome=1.35, lug_deg=222.0, button_deg=-24.0)
+          dome=1.35, lug_deg=205.0, button_deg=-24.0)
 NRES = 400
 
 
@@ -116,23 +118,34 @@ def outline_at(P, deg):
     return p, nrm, tng
 
 
-def build_pebble_body(name, P):
-    O = np.asarray(P)
-    r_o = np.hypot(O[:, 0], O[:, 1])
-    d = O / r_o[:, None]
-    HF, HB, R_REC, FIL = P2['HF'], P2['HB'], P2['R_REC'], P2['FIL']
+def build_pebble_body(name, P, inset=0.0):
+    """Outer glass body (inset=0, with the screen recess) or the milky inner core (inset>0: the same
+    river-stone form shrunk by `inset` mm, with a flat top under the display)."""
+    O0 = np.asarray(P)
+    r0 = np.hypot(O0[:, 0], O0[:, 1])
+    d = O0 / r0[:, None]
+    O = O0 - d * inset
+    HF, HB, R_REC, FIL = P2['HF'] - inset, P2['HB'] - inset, P2['R_REC'], P2['FIL']
     r_lip = R_REC + FIL
     L = d * r_lip
 
     def ring(xy, z):
         return np.column_stack([xy, np.full(len(xy), z)]) * MM
 
-    z_floor = HF - 2.4
     rings = []
-    for f in (0.5, 1.0):
-        rings.append(ring(d * R_REC * f, z_floor))
-    for t in np.linspace(math.pi, math.pi / 2, 8):
-        rings.append(ring(d * (r_lip + FIL * math.cos(t)), HF - FIL + FIL * math.sin(t)))
+    if inset == 0:
+        z_floor = HF - 2.4
+        for f in (0.5, 1.0):
+            rings.append(ring(d * R_REC * f, z_floor))
+        for t in np.linspace(math.pi, math.pi / 2, 8):
+            rings.append(ring(d * (r_lip + FIL * math.cos(t)), HF - FIL + FIL * math.sin(t)))
+        top = z_floor
+    else:
+        top = P2['HF'] - 2.4 - 0.25          # just under the display module
+        HF = top
+        for f in (0.5, 0.85):
+            rings.append(ring(L * f, top))
+        rings.append(ring(L, top))
     # front shoulder: quarter ellipse lip -> equator (very soft), denser near the equator
     nf = 34
     for i in range(1, nf + 1):
@@ -144,9 +157,27 @@ def build_pebble_body(name, P):
     for i in range(1, nb):
         ps = (math.pi / 2) * (i / nb) ** 0.9
         rings.append(ring(O * math.cos(ps) ** eb, -HB * math.sin(ps) ** eb))
-    ob = mesh_from_rings(name + '_body', rings, cap_start=np.array([0, 0, z_floor]) * MM,
-                         cap_end=np.array([0, 0, -HB - 0.05]) * MM)
+    ob = mesh_from_rings(name + ('_body' if inset == 0 else '_core'), rings,
+                         cap_start=np.array([0, 0, top]) * MM, cap_end=np.array([0, 0, -HB - 0.05]) * MM)
     return ob
+
+
+def mat_core(name, tint, dark=False):
+    """Milky inner core (opal diffuser) under the clear frosted shell: sub-surface scattering, so light
+    that enters anywhere glows through the whole stone."""
+    m, nt, p, out = new_mat(name)
+    c = srgb(tint)
+    set_in(p, 'Base Color', c)
+    set_in(p, 'Roughness', 0.6)
+    set_in(p, 'Subsurface Weight', 1.0)
+    set_in(p, 'Subsurface Radius', (1.0, 0.95, 0.9) if not dark else (0.6, 0.6, 0.65))
+    set_in(p, 'Subsurface Scale', TUNE['core_mfp'] * MM)
+    set_in(p, 'Specular IOR Level', 0.2)
+    try:
+        p.subsurface_method = 'RANDOM_WALK'
+    except Exception:
+        pass
+    return m
 
 
 # ------------------------------------------------------------------------------------------
@@ -182,11 +213,11 @@ def mat_frost(name, tint, rough=None, dens=None, dark=False):
     sc = tuple(min(1, x * 0.7 + 0.3) for x in c[:3]) if not dark else tuple(x * 0.6 + 0.05 for x in c[:3])
     vs.inputs['Color'].default_value = (*sc, 1)
     vs.inputs['Density'].default_value = dens
-    vs.inputs['Anisotropy'].default_value = 0.45
+    vs.inputs['Anisotropy'].default_value = TUNE['aniso']
     va = nt.nodes.new('ShaderNodeVolumeAbsorption')
     aq = (1 - 0.10 * TUNE['aqua'], 1 - 0.025 * TUNE['aqua'], 1 - 0.04 * TUNE['aqua'])   # soda-lime edge tint
     va.inputs['Color'].default_value = (c[0] ** 1.5 * aq[0], c[1] ** 1.5 * aq[1], c[2] ** 1.5 * aq[2], 1)
-    va.inputs['Density'].default_value = dens * (0.5 if min(c[:3]) > 0.8 else 1.2) * (3.0 if dark else 1.0)
+    va.inputs['Density'].default_value = dens * TUNE['absk'] * (1.0 if min(c[:3]) > 0.8 else 2.0) * (3.0 if dark else 1.0)
     add = nt.nodes.new('ShaderNodeAddShader')
     nt.links.new(vs.outputs[0], add.inputs[0])
     nt.links.new(va.outputs[0], add.inputs[1])
@@ -315,6 +346,10 @@ def build_pebble(tag, tint, screen, eye_strength=None, glow_w=0.0, glow_col=2700
     body = build_pebble_body(tag, P)
     assign(body, mat_frost('frost_' + tag, tint, rough, dens, dark))
     parts.append(body)
+    if TUNE['core'] > 0:
+        core = build_pebble_body(tag, P, inset=TUNE['core_inset'])
+        assign(core, mat_core('core_' + tag, tint, dark))
+        parts.append(core)
     HF, R_REC = P2['HF'], P2['R_REC']
     # black domed lens over the emissive AMOLED
     z_floor = HF - 2.4
@@ -573,7 +608,7 @@ def on_stand(par, stand_top, a, yaw_deg):
 
 # ------------------------------------------------------------------------------------------
 # reflections on the black domed lens
-def lens_card(par, cam, dist=0.28, size=0.22, up_deg=12.0, side_deg=-9.0, strip=(0.012, 0.2), tilt_deg=-30.0,
+def lens_card(par, cam, dist=0.28, size=0.22, up_deg=15.0, side_deg=-15.0, strip=(0.012, 0.12), tilt_deg=-30.0,
               strength=5.0, card=True):
     """Glossy-only black card where the lens reflects (keeps the screen black) + a soft strip light
     for the thin crescent highlight on the dome."""
@@ -627,14 +662,29 @@ def dark_field(tgt, cam, dist=0.07, h=0.03, size=(0.05, 0.10)):
         ob.rotation_euler = (Vector(tgt) - loc).to_track_quat('Z', 'Y').to_euler()
 
 
+def glass_lights(tgt, k=1.0, back=1.0, bg=(0, 0.55, 0.25), bg_power=7.0, fill_side=1.0):
+    """Back-lit glass setup: the main light is BEHIND the object (shadow falls towards the camera and
+    the light that crosses the frosted body shows up as a warm caustic glow inside the shadow and as
+    glowing edges); a big soft front box fills the face; bounce from the paper does the rest."""
+    area_light('back', (tgt.x - 0.20 * fill_side, tgt.y + 0.36, tgt.z + 0.30), tgt, 0.22, 4.5 * back,
+               blackbody_rgb(5200), spread=60)
+    area_light('back2', (tgt.x + 0.26 * fill_side, tgt.y + 0.30, tgt.z + 0.12), tgt, 0.18, 1.6 * back,
+               blackbody_rgb(4800), spread=50)
+    area_light('front', (tgt.x + 0.30 * fill_side, tgt.y - 0.45, tgt.z + 0.35), tgt, 0.9, 1.0 * k,
+               blackbody_rgb(5600), spread=80)
+    area_light('top', (tgt.x, tgt.y, tgt.z + 0.55), tgt, 0.6, 0.35 * k, blackbody_rgb(5600), spread=60)
+    area_light('bg', (0.0, -0.1, 0.9), bg, 1.2, bg_power, blackbody_rgb(4500), spread=60)
+
+
 def studio_lights(tgt, k=1.0, rim=1.0, warm=5600, bg=(0, 0.55, 0.25), bg_power=9.0):
     area_light('key', (tgt.x - 0.42, tgt.y - 0.26, tgt.z + 0.46), tgt, 0.5, 1.6 * k, blackbody_rgb(warm), spread=70)
     area_light('fill', (tgt.x + 0.55, tgt.y - 0.30, tgt.z + 0.20), tgt, 0.9, 0.55 * k, blackbody_rgb(5000),
                glossy=False)
     # rims from behind: light passes through the thin frosted edges -> glowing rim
-    area_light('rim_l', (tgt.x - 0.28, tgt.y + 0.36, tgt.z + 0.10), tgt, 0.25, 5.0 * rim * TUNE.get('rimk', 1), blackbody_rgb(5200),
+    rz = TUNE.get('rimz', 0.10)
+    area_light('rim_l', (tgt.x - 0.28, tgt.y + 0.36, tgt.z + rz), tgt, 0.25, 5.0 * rim * TUNE.get('rimk', 1), blackbody_rgb(5200),
                spread=45)
-    area_light('rim_r', (tgt.x + 0.30, tgt.y + 0.30, tgt.z + 0.08), tgt, 0.22, 3.5 * rim * TUNE.get('rimk', 1), blackbody_rgb(4800),
+    area_light('rim_r', (tgt.x + 0.30, tgt.y + 0.30, tgt.z + rz * 0.8), tgt, 0.22, 3.5 * rim * TUNE.get('rimk', 1), blackbody_rgb(4800),
                spread=45)
     area_light('top', (tgt.x, tgt.y + 0.05, tgt.z + 0.6), tgt, 0.5, 0.6 * k, blackbody_rgb(5600), spread=60)
     area_light('bg', (0.0, -0.1, 0.9), bg, 1.2, bg_power, blackbody_rgb(4500), spread=60)
@@ -648,22 +698,25 @@ ANNOT = []
 def shot_hero(social=False):
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
-    sweep('#DCD2C5', wall_y=0.5)
+    sweep(TUNE.get('paper', '#DCD2C5') if isinstance(TUNE.get('paper'), str) else ('#D8CDBF' if not TUNE.get('darkbg') else '#3A3A3C'), wall_y=0.5)
     p = build_pebble('hero', '#F4F6F8', 'eyes_cream_look')
     lay_flat(p, 0, 0, -8)
-    strap_flat('hero', p, L_loop=140, W_loop=40, bend=0.45, col='#BFAE95')
+    strap_flat('hero', p, L_loop=112, W_loop=50, bend=-0.30, col='#BFAE95')
     tgt = world_point(p, (0, -2, 2))
     focus = world_point(p, (0, -6, 10))
     if social:
         cam = camera((0.075, -0.235, 0.215), tgt + Vector((-0.006, 0.012, 0)), lens=70, fstop=8.0, focus=focus,
                      shift=(0, -0.02))
     else:
-        cam = camera(tgt + Vector((0.10, -0.29, 0.21)), tgt, lens=70, fstop=8.0, focus=focus, shift=(-0.09, -0.03))
+        cam = camera(tgt + Vector((0.085, -0.25, 0.185)), tgt, lens=TUNE.get('lens', 55), fstop=8.0, focus=focus, shift=(TUNE.get('sx', -0.0), TUNE.get('sy', 0.0)))
     flag(cam, tgt)
     lens_card(p, cam)
     if TUNE.get('darkfield', 1):
         dark_field(world_point(p, (0, 0, 0)), cam)
-    studio_lights(tgt, TUNE.get('keyk', 1.0), bg_power=TUNE.get('bgp', 9.0))
+    if TUNE.get('glassl', 1):
+        glass_lights(tgt, TUNE.get('keyk', 1.0), TUNE.get('backk', 1.0), bg_power=TUNE.get('bgp', 7.0))
+    else:
+        studio_lights(tgt, TUNE.get('keyk', 1.0), bg_power=TUNE.get('bgp', 9.0))
     return sc
 
 
@@ -799,7 +852,7 @@ def build_hand(name, loc, yaw_deg=0.0, scale=1.0):
         e.radius = r * MM
         e.stiffness = stiff
         if size is not None:
-            e.size_x, e.size_y, e.size_z = [s * MM for s in size]
+            e.size_x, e.size_y, e.size_z = [s * r * MM for s in size]
         if rot is not None:
             e.rotation = rot
 
@@ -896,6 +949,8 @@ def main():
     fn, W, H, S = SHOTS[ARGS.shot]
     t0 = time.time()
     sc = fn()
+    if os.environ.get('DBG'):          # debugging hook: python snippet run after the scene is built
+        exec(open(os.environ['DBG']).read())
     sc.render.resolution_x = ARGS.w or W
     sc.render.resolution_y = ARGS.h or H
     sc.render.resolution_percentage = 50 if ARGS.preview else 100
