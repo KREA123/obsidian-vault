@@ -898,6 +898,292 @@ def sheet_exploded(theme):
     return sh
 
 
+# ================================================================ SHEET 4 : DEV PROTOTYPE ON WAVESHARE 1.75
+# z = 0 at the rim face, glass front at +0.6. Board data (V) from the STEP model, native orientation
+# (USB-C at 6 o'clock); STEP depths d are measured from the glass front -> z = 0.6 - d.
+QR, QTB, QRF, QRB, QRD = 30.0, 19.6, 1.5, 2.0, 3000.0
+Q_SPLIT = -15.0
+Q_HIN, Q_HOUT = 24.78, 25.78
+Q_SPI, Q_SPO, Q_SKI = 27.8, 28.8, 28.9
+Q_PROF, Q_INFO = profile(QR, QTB, QRD, QRF, QRB)
+Q_FCZ = Q_INFO['fc'][1]
+Q_ZC = -QTB + QRD
+QZ = lambda d: GP - d
+Q_SO = [(14.70, 13.75), (14.70, -13.75), (-20.50, 0.0)]
+Q_PWR, Q_BOOT = ((-11.31, 17.20), 123.3), ((11.31, 17.10), 56.5)
+Q_MICS = [((-10.96, -17.54), 238.0), ((11.74, -17.35), 304.1)]
+Q_HDR = dict(x0=17.4, x1=20.0, y0=-10.0, y1=10.0)            # extent (E), depth 12.70 (V)
+Q_USB = dict(x=4.5, y0=-23.8, y1=-16.5, zc=QZ(8.55))
+Q_CELL = dict(x0=-23.0, x1=17.0, y=15.0, z0=-12.08, z1=-18.08)
+Q_SPK = dict(x=6.0, y0=16.0, y1=24.0, z0=-12.08, z1=-14.58)
+Q_LRA = dict(c=(0.0, -20.0), r=4.0, z0=-12.08, z1=-15.28)
+Q_CR = dict(dy=2.0, z0=-4.0, z1=-14.0)
+Q_CAR, Q_FL0, Q_FL1 = (23.4, 24.4), QZ(10.43), QZ(10.43) - 0.8     # carrier wall, floor
+Q_MP0, Q_MP1 = Q_FL1 - 0.45, Q_FL1 - 1.25                          # mid-plate
+
+
+def qzo(r):
+    return Q_ZC - math.sqrt(QRD * QRD - r * r)
+
+
+def qzi(r):
+    return Q_ZC - math.sqrt((QRD - 1.2) ** 2 - r * r)
+
+
+def q_crown():
+    return [(x, y + Q_CR['dy']) for x, y in crown_head()]
+
+
+def q_ray(o, a):
+    dx, dy = math.cos(math.radians(a)), math.sin(math.radians(a))
+    t = 0.0
+    while math.hypot(o[0] + dx * t, o[1] + dy * t) < QR:
+        t += 0.05
+    return (o[0] + dx * t, o[1] + dy * t)
+
+
+def q_case_half(sg):
+    if sg > 0:
+        pts = [(Q_HOUT, 0.0), (QR - QRF, 0.0)] + arc_pts(QR - QRF, -QRF, QRF, 90, 0, 8) + [
+            (QR, Q_SPLIT), (Q_SPO, Q_SPLIT), (Q_SPO, -15.85), (28.4, -15.85), (28.4, -16.55), (Q_SPO, -16.55),
+            (Q_SPO, -17.3), (Q_SPI, -17.3), (Q_SPI, -6.0), (24.6, -6.0), (24.6, -5.05), (Q_HOUT, -5.05)]
+        return [pts]
+    up = [(Q_HOUT, 0.0), (QR - QRF, 0.0)] + arc_pts(QR - QRF, -QRF, QRF, 90, 0, 8) + [(QR, -4.45), (Q_HOUT, -4.45)]
+    lo = [(QR, -11.45), (QR, Q_SPLIT), (Q_SPO, Q_SPLIT), (Q_SPO, -15.85), (28.4, -15.85), (28.4, -16.55), (Q_SPO, -16.55),
+          (Q_SPO, -17.3), (Q_SPI, -17.3), (Q_SPI, -11.45)]
+    return [[(-a, b) for a, b in up], [(-a, b) for a, b in lo]]
+
+
+def q_caseback():
+    out = back_curve(QR, QTB, QRD, QRB)
+    inner = [(s_, qzi(abs(s_))) for s_ in [-Q_SPI + 0.5 * i for i in range(int(2 * Q_SPI / 0.5) + 1)]] + [(Q_SPI, qzi(Q_SPI))]
+    return [(QR, Q_SPLIT)] + out + [(-QR, Q_SPLIT), (-Q_SKI, Q_SPLIT), (-Q_SKI, -17.5), (-Q_SPI, -17.5)] + inner + \
+           [(Q_SPI, -17.5), (Q_SKI, -17.5), (Q_SKI, Q_SPLIT)]
+
+
+def sheet_proto(theme):
+    sh = Sheet3(theme)
+    sh.frame()
+    k = 2.0
+    VF = View(95, 166, k)
+    VT = View(95, 72, k)
+    VS = View(192, 166, k)
+    TY = 238.0
+    cx, cy = VF.p(0, 0)
+
+    # ---------- FRONT ----------
+    sh.poly(VF.pl(q_crown()), 'o')
+    sh.circle(cx, cy, QR * k, 'o')
+    sh.circle(cx, cy, (QR - QRF) * k, 'o3')
+    sh.circle(cx, cy, Q_HOUT * k, 'o')
+    sh.circle(cx, cy, Q_HIN * k, 'o2')
+    sh.circle(cx, cy, G_R * k, 'o')
+    sh.circle(cx, cy, ACT_R * k, 'ph')
+    sh.circle(*VF.p(0, CR['eye_y'] + Q_CR['dy']), CR['eye_r'] * k, 'o')
+    eyes(sh, VF, 0, 1.5)
+    sh.circle(cx, cy, MOD_R * k, 'h')
+    sh.circle(cx, cy, Q_CAR[1] * k, 'h')
+    for x, y in Q_SO:
+        px, py = VF.p(x, y)
+        sh.circle(px, py, 1.6 * k, 'h')
+        sh.line(px - 2.4 * k, py, px + 2.4 * k, py, 'c')
+        sh.line(px, py - 2.4 * k, px, py + 2.4 * k, 'c')
+    H = Q_HDR
+    sh.poly(VF.pl(box(H['x0'], H['x1'], H['y0'], H['y1'])), 'h')
+    U = Q_USB
+    sh.poly(VF.pl(box(-U['x'], U['x'], U['y1'], U['y0'])), 'h')
+    for sx in (-1, 1):
+        sh.line(*VF.p(sx * 6.2, -math.sqrt(Q_HOUT ** 2 - 6.2 ** 2)), *VF.p(sx * 6.2, -math.sqrt(QR ** 2 - 6.2 ** 2)), 'o2')
+    C = Q_CELL
+    sh.poly(VF.pl(box(C['x0'], C['x1'], -C['y'], C['y'])), 'ph')
+    sh.poly(VF.pl(rrect(2 * Q_SPK['x'], Q_SPK['y1'] - Q_SPK['y0'], 0.8, 0, (Q_SPK['y0'] + Q_SPK['y1']) / 2)), 'h')
+    sh.poly(VF.pl(circ(Q_LRA['r'], *Q_LRA['c'], 40)), 'h')
+    sh.poly(VF.pl(circ(2.5, 0, 0, 30)), 'h')
+    holes = []
+    for (o, a), d in ((Q_PWR, 2.6), (Q_BOOT, 1.6)):
+        e = q_ray(o, a)
+        sh.line(*VF.p(*o), *VF.p(*e), 'h')
+        sh.circle(*VF.p(*o), 0.9 * k, 'o3')
+        sh.circle(*VF.p(*e), d / 2 * k, 'o2')
+        holes.append(e)
+    for o, a in Q_MICS:
+        e = q_ray(o, a)
+        sh.line(*VF.p(*o), *VF.p(*e), 'h')
+        holes.append(e)
+    sh.line(cx, VF.p(0, 38.5)[1], cx, VF.p(0, -33)[1], 'c')
+    sh.line(VF.p(-33, 0)[0], cy, VF.p(33, 0)[0], cy, 'c')
+    ya, yb = VF.p(0, 40.5)[1], VF.p(0, -33.5)[1]
+    sh.line(cx, ya, cx, yb, 'cut')
+    sh.section_arrow(cx, ya, 'B', (-1, 0))
+    sh.section_arrow(cx, yb, 'B', (-1, 0))
+    lead_l(sh, VF.p(*holes[0]), 98, ['PWR PIN HOLE Ø2.6', '(V position)'])
+    lead_l(sh, VF.p(*polar(150, Q_HOUT - 0.5)), 110, ['HALO Ø49.56/Ø51.56', 'clear resin, sanded'])
+    lead_l(sh, VF.p(-20.5 - 1.1, 1.1), 150, ['3× M2 STANDOFF (V)', '→ carrier screws'])
+    lead_l(sh, VF.p(C['x0'], -8), 170, ['CELL 603040', '3.0 OFF-CENTRE'])
+    lead_l(sh, VF.p(*holes[2]), 216, ['2× MIC Ø1.0', '(port dir. ?)'])
+    lead_l(sh, VF.p(-6.2, -28.5), 228, ['USB-C CUT 12.4×7.0', 'dev charging (V pos.)'])
+    lead_r(sh, VF.p(*holes[1]), 158, 100, ['BOOT Ø1.6'])
+    lead_r(sh, VF.p(Q_SPK['x'], 21), 158, 110, ['SPK 1208'])
+    lead_r(sh, VF.p(H['x1'], 6), 158, 142, ['8-PIN', 'HEADER', '12.70 (V)'])
+    lead_r(sh, VF.p(1.8, -1.8), 158, 168, ['DOME Ø5', '(centre)'])
+    lead_r(sh, VF.p(Q_LRA['r'], -20), 158, 214, ['LRA Ø8'])
+    sh.text(cx, TY, 'FRONT VIEW · BOARD PLACEMENT', 3.2, 'middle', 'tx', weight='bold')
+
+    # ---------- TOP ----------
+    def pt(x, z):
+        return VT.p(x, -z)
+    sh.poly([pt(s_, z) for s_, z in Q_PROF], 'o')
+    sh.poly([pt(*q) for q in glass_prof()], 'o', close=False)
+    sh.line(*pt(-QR, Q_SPLIT), *pt(QR, Q_SPLIT), 'o2')
+    sh.line(*pt(-QR, -QRF), *pt(QR, -QRF), 'o3')
+    sh.poly([pt(x, z) for x, z in rrect(2 * CR['hw'], Q_CR['z0'] - Q_CR['z1'], 0.8, 0, (Q_CR['z0'] + Q_CR['z1']) / 2)], 'ob')
+    for sx in (-1, 1):
+        sh.poly([pt(sx * 2.9, -12.4), pt(sx * 4.2, -12.4), pt(sx * 4.2, -13.6), pt(sx * 2.9, -13.6)], 'h')
+    for (o, a), d in ((Q_PWR, 2.6), (Q_BOOT, 1.6)):
+        e = q_ray(o, a)
+        sh.circle(*pt(e[0], QZ(7.60)), d / 2 * k, 'o2')
+    sh.line(*pt(0, 2.2), *pt(0, -21.5), 'c')
+    ytop = pt(0, -QTB)[1]
+    sh.dim_h(*pt(-QR, -8), *pt(QR, -8), ytop - 6, '60.0')
+    sh.dim_v(*pt(-QR, 0), *pt(-QR, Q_FCZ), pt(-QR, 0)[0] - 6, '17.5')
+    lead_r(sh, pt(4.5, -9.0), 158, 34, ['PROTO CROWN 9×6×10', 'covers speaker slot'])
+    lead_r(sh, pt(4.2, -13.0), 158, 46, ['SPEAKER SLOTS z −13'])
+    lead_r(sh, pt(QR, Q_SPLIT), 158, 58, ['BAYONET z −15.0 (E)'])
+    lead_r(sh, pt(*q_ray(*Q_BOOT)[:1], QZ(7.6)) if False else pt(q_ray(*Q_BOOT)[0], QZ(7.6)), 158, 68, ['PWR / BOOT z −7.0 (V)'])
+    sh.text(pt(0, 0)[0], ytop - 11.5, 'TOP VIEW', 3.2, 'middle', 'tx', weight='bold')
+
+    # ---------- SECTION B-B ----------
+    th = sh.th
+
+    def ps(z, y):
+        return VS.p(-z, y)
+
+    class VSV:
+        @staticmethod
+        def pl(pts):
+            return [ps(z, s_) for s_, z in pts]
+
+        @staticmethod
+        def p(s_, z):
+            return ps(z, s_)
+    V = VSV
+    for sg in (1, -1):
+        for part in q_case_half(sg):
+            region(sh, V, part, 'hA')
+    region(sh, V, q_caseback(), 'hB')
+    for sg in (1, -1):
+        m = lambda pts: [(sg * a, b) for a, b in pts]
+        region(sh, V, m(box(Q_HIN, Q_HOUT, 0.0, -4.4)), cls='o2', fill=th['acc'] + '" fill-opacity="0.22')
+        if sg > 0:
+            region(sh, V, m(box(24.8, 25.7, -4.45, -4.95)), cls='o3', fill=th['acc'])
+            region(sh, V, m(box(24.6, Q_HOUT, -4.95, -5.05)), cls='o3', fill=th['dim'])
+            region(sh, V, m(box(Q_CAR[0], Q_CAR[1], -0.5, Q_FL0)), 'hC')
+            region(sh, V, m(box(20.0, 24.2, Q_FL1, Q_MP0)), 'hD', cls='o3')
+            region(sh, V, box(0, Q_SPI, Q_MP0, Q_MP1), 'hA')
+            region(sh, V, box(0, Q_CAR[1], Q_FL0, Q_FL1), 'hC')
+        else:
+            region(sh, V, m(box(Q_CAR[0], Q_CAR[1], -0.5, -5.8)), 'hC')
+            region(sh, V, m(box(20.0, 23.6, Q_FL1, Q_MP0)), 'hD', cls='o3')
+            region(sh, V, box(-23.6, 0, Q_MP0, Q_MP1), 'hA')
+            region(sh, V, box(-23.6, 0, Q_FL0, Q_FL1), 'hC')
+        sh.circle(*V.p(sg * 28.55, -16.2), 0.33 * k, 'o3', extra='style="fill:%s"' % th['fg'])
+    sh.poly(V.pl(glass_prof()), 'gl')
+    region(sh, V, box(-MOD_R, MOD_R, -0.5, QZ(5.70)), cls='f2')
+    region(sh, V, box(-MOD_R, MOD_R, QZ(5.70), QZ(6.90)), 'hC')
+    for s0, s1, d in ((-14.0, -4.0, 8.9), (2.0, 13.0, 8.9), (13.5, 16.0, 7.9)):
+        region(sh, V, box(s0, s1, QZ(6.90), QZ(d)), cls='f2')
+    region(sh, V, box(U['y0'], U['y1'], U['zc'] + 1.6, U['zc'] - 1.6), 'hS')
+    for zz in (-4.45, -11.45):
+        sh.line(*V.p(-QR, zz), *V.p(-Q_HOUT, zz), 'o3')
+    sh.poly(V.pl(box(H['y0'], H['y1'], QZ(6.90), QZ(12.70))), 'h')
+    sh.poly(V.pl(box(Q_SO[0][1] - 1.6, Q_SO[0][1] + 1.6, QZ(6.90), QZ(10.43))), 'h')
+    sh.poly(V.pl(box(-Q_SO[0][1] - 1.6, -Q_SO[0][1] + 1.6, QZ(6.90), QZ(10.43))), 'h')
+    region(sh, V, box(-4.0, 4.0, Q_MP0 + 0.1, Q_MP0), cls='o3', fill=th['dim'])
+    dm = [(-2.5, Q_MP0 + 0.1)] + [(2.5 * math.cos(math.radians(a)), Q_MP0 + 0.1 + 0.35 * math.sin(math.radians(a))) for a in range(180, -1, -10)]
+    sh.poly(V.pl(dm), 'o2', extra='style="fill:url(#hS)"')
+    C = Q_CELL
+    region(sh, V, box(-C['y'], C['y'], C['z0'], C['z1']), cls='fb')
+    region(sh, V, box(-12, 12, C['z1'], qzi(12) + 0.02), 'hD', cls='o3')
+    region(sh, V, box(Q_SPK['y0'], Q_SPK['y1'], Q_SPK['z0'], Q_SPK['z1']), cls='f2')
+    for zz in (-12.4, -13.6):
+        sh.line(*V.p(Q_SPK['y1'], zz), *V.p(QR, zz), 'h')
+    region(sh, V, box(-24.0, -16.0, Q_LRA['z0'], Q_LRA['z1']), cls='f2')
+    region(sh, V, box(28.3, QR + 0.02, -8.0, -10.0), 'hS')
+    ey = CR['eye_y'] + Q_CR['dy']
+    region(sh, V, box(QR, ey - CR['eye_r'], Q_CR['z0'], Q_CR['z1']), 'hS')
+    tp = CR['top'] + Q_CR['dy']
+    top = [(ey + CR['eye_r'], Q_CR['z0'])] + arc_pts(tp - 0.8, Q_CR['z0'] - 0.8, 0.8, 90, 0, 6) + \
+          arc_pts(tp - 0.8, Q_CR['z1'] + 0.8, 0.8, 0, -90, 6) + [(ey + CR['eye_r'], Q_CR['z1'])]
+    region(sh, V, top, 'hS')
+    sh.poly(V.pl(Q_PROF), 'o')
+    sh.poly(V.pl(glass_prof()), 'o', close=False)
+    sh.line(*ps(2.2, 0), *ps(-21.5, 0), 'c')
+    xr = ps(-QTB, 0)[0]
+    sh.dim_v(*ps(-8, QR), *ps(-8, -QR), xr + 6, '60.0')
+    sh.dim_v(*ps(Q_CR['z1'], tp), *ps(-12, -QR), xr + 13, '66.0 OVERALL')
+    yy = ps(0, -9)[1]
+    sh.line(ps(GP, -9)[0], yy, ps(qzo(9), -9)[0], yy, 't')
+    sh.arrow(ps(GP, -9), ps(-5, -9))
+    sh.arrow(ps(qzo(9), -9), ps(-10, -9))
+    tw_ = sh.tw('20.2 @ CL', 2.4)
+    sh.rect(ps(-10, 0)[0] - tw_ / 2 - 0.8, yy + 0.9, tw_ + 1.6, 3.4, 'bgf')
+    sh.text(ps(-10, 0)[0], yy + 3.4, '20.2 @ CL', 2.4, 'middle', 'td')
+    xa = xr + 21
+    lead_r(sh, ps(QZ(6.3), 20.0), xa, 104, ['PCB 5.70/6.90 (V)'])
+    lead_r(sh, ps(Q_FL0 - 0.4, 22), xa, 114, ['FLOATING CARRIER', 'on standoffs'])
+    lead_r(sh, ps(Q_MP0 + 0.2, 1.0), xa, 126, ['DOME Ø5 ON', 'MID-PLATE'])
+    lead_r(sh, ps(QZ(12.70), 8), xa, 138, ['HEADER 12.70', '(projected)'])
+    lead_r(sh, ps(-15.0, 10), xa, 152, ['CELL 603040', 'z −12.1…−18.1'])
+    lead_r(sh, ps(-13.3, 22), xa, 92, ['SPK 1208', 'fires under crown'])
+    lead_r(sh, ps(-16.2, -28.55), xa, 176, ['O-RING, BAYONET', 'z −15.0 (E)'])
+    lead_r(sh, ps(U['zc'], -20), xa, 196, ['USB-C z −7.95 (V)', 'plug blocks press'])
+    lead_r(sh, ps(-13.5, -20), xa, 208, ['LRA Ø8'])
+    lead_r(sh, ps(qzo(18) + 0.3, -18), xa, 220, ['FLAT BACK', 'WALL 1.2 (E)'])
+    sh.text(ps(-10, 0)[0], TY, 'SECTION B-B', 3.2, 'middle', 'tx', weight='bold')
+
+    # ---------- table ----------
+    tx0, ty0 = 298.0, 16.0
+    sh.text(tx0, ty0 + 2.5, 'WAVESHARE ESP32-S3-TOUCH-AMOLED-1.75', 2.45, 'start', 'tx', weight='bold')
+    sh.text(tx0, ty0 + 6.3, 'native orientation, USB-C at 6 o\'clock', 2.0, 'start', 'td')
+    rows = [
+        ('Cover glass', 'Ø48.96 × 1.10', 'V'),
+        ('Active / touch area', 'Ø43.76', 'V'),
+        ('Display module + PCB', 'Ø46.0', 'V'),
+        ('PCB front / back depth', '5.70 / 6.90', 'V'),
+        ('Deepest: 8-pin header, edge', '12.70', 'V'),
+        ('Deepest under cell footprint', '8.90', 'V'),
+        ('M2 standoffs (3), end depth', '10.43', 'V'),
+        ('USB-C face r / tongue depth', '23.80 / 8.55', 'V'),
+        ('PWR / BOOT key depth', '7.60', 'V'),
+        ('Cell 603040 ≈650 mAh', '6×30×40', 'K'),
+        ('Carrier floor / mid-plate', '0.8 / 0.8 SLA', 'E'),
+        ('Dome travel / gasket', '0.35 / 0.45', 'E'),
+        ('Envelope (glass → back)', 'Ø60 × 20.2', 'E'),
+        ('Mass (SLA, est.)', '≈70-75 g', 'E'),
+    ]
+    yend = table(sh, tx0, ty0 + 9, [0, 64, 101, 112], ['ITEM', 'VALUE (mm)', 'SRC'], rows, rh=5.9, size=2.05)
+    notes = [
+        'PROTOTYPE NOTES / FIT CHECK',
+        '1. Stack at CL: glass +0.6, board to 10.43,',
+        '   carrier 0.8, dome 0.45, mid-plate 0.8,',
+        '   cell 6.0, pad 0.3, back 1.2 = 20.2.',
+        '2. 603040 cannot sit centred: the 8-pin',
+        '   header (x 17.4-20, 12.7 deep) is in the',
+        '   cell band. Shifted 3.0 → 0.4 to header,',
+        '   corner r 27.46 → 0.34 to the spigot.',
+        '3. Ø58 does NOT fit this cell + header;',
+        '   Ø58 only with header desoldered or a',
+        '   503040 / 502535 cell. Ø60 drawn.',
+        '4. Halo LEDs: 1010 on a flex ring (no LED',
+        '   rim on the Waveshare board).',
+        '5. Raise AXP2101 charge to ~325 mA (0.5C).',
+    ]
+    for i, n_ in enumerate(notes):
+        sh.text(tx0, yend + 5 + i * 3.45, n_, 2.4 if i == 0 else 2.05, 'start', 'tx', weight='bold' if i == 0 else None)
+    sh.title_block('GA · DEV PROTOTYPE', 'WAVESHARE 1.75 · Ø60 × 20.2', '2:1', '4 / 4', 'SOUL-V3-004')
+    return sh
+
+
 def write(sh, name):
     p = os.path.join(OUT, name)
     open(p, 'w', encoding='utf-8').write(sh.svg())
