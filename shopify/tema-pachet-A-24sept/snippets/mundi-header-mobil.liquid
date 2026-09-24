@@ -13,7 +13,8 @@
   {% render 'mundi-header-mobil' %}
 {%- endcomment -%}
 <style>
-  .mh-sbtn{display:none}
+  /* #mh-bar în selector: mundi-nav.css are .mh-act button{display:flex}, care altfel ar arăta lupa și pe desktop */
+  #mh-bar .mh-sbtn{display:none}
   @media (max-width:1023px){
     #mh-bar .mh-wrap{gap:0 4px;padding-block:6px}
     #mh-bar .mh-logo{flex:0 1 auto;min-width:0;gap:8px}
