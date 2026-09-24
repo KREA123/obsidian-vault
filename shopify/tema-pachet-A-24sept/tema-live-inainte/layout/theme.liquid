@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  {%- comment -%}
+    Indicii de rețea, primele lucruri din <head>: cât timp browserul citește
+    restul capului, deschide în paralel conexiunea către CDN-ul de imagini.
+
+    A rămas UNUL SINGUR. Ce s-a scos și de ce:
+
+      dns-prefetch cdn.shopify.com — dublura preconnect-ului de deasupra.
+        preconnect face deja tot ce face dns-prefetch (nume + conexiune +
+        TLS), deci a doua linie nu adăuga nimic, doar umfla lista.
+
+      dns-prefetch connect.facebook.net — pixelul Meta există, dar e
+        injectat de Shopify prin Web Pixels Manager, DUPĂ încărcare. Un
+        indiciu de rețea din <head> pentru o cerere care pleacă peste
+        câteva secunde nu ajută cu nimic — doar ocupă un loc în listă.
+
+      dns-prefetch googletagmanager.com — același motiv: eticheta se cere
+        acum după `load` (vezi mai jos).
+
+    Lighthouse se plânge explicit („More than 4 preconnect connections were
+    found") fiindcă Shopify mai adaugă de la el încă patru-cinci (shop.app,
+    monorail, judge.me). Fiecare indiciu în plus ia din bugetul de conexiuni
+    exact în secunda în care se descarcă poza cea mare din hero.
+  {%- endcomment -%}
+  <link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+
+  {%- comment -%}
+    Google Analytics 4 — flux „mundi", G-TS3NDM80PQ.
+    Pornim cu consimțământul refuzat (Consent Mode v2, cerut în UE) și îl
+    actualizăm din API-ul de confidențialitate al Shopify. Dacă magazinul nu
+    are niciun cadru de consimțământ configurat, permitem doar analiza — nu
+    și urmărirea publicitară.
+
+    CE S-A SCHIMBAT: eticheta nu mai e cerută din <head>, ci după ce pagina
+    s-a încărcat de tot.
+
+    Blocul de mai jos (dataLayer, consimțământ, `config`) rămâne exact unde
+    era și rulează la fel de devreme — sunt câteva sute de octeți scriși în
+    pagină, nu o cerere de rețea. Ce se amână e DOAR descărcarea lui
+    gtag.js de la Google: un domeniu străin, cu nume de rezolvat și
+    conexiune de deschis, exact în secundele în care telefonul trage poza
+    cea mare din hero. Nimic nu se pierde: apelurile stau în coadă în
+    dataLayer și sunt citite de gtag.js în clipa în care sosește.
+
+    ATENȚIE, DE VERIFICAT ÎN AFARA TEMEI: adresa
+    googletagmanager.com/gtag/js?id=G-TS3NDM80PQ răspunde cu 404, deci
+    măsurătoarea nu ajunge nicăieri. Ori identificatorul fluxului s-a
+    schimbat, ori proprietatea a fost ștearsă. Codul de mai jos e corect și
+    începe să adune date în clipa în care identificatorul e pus la loc.
+  {%- endcomment -%}
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('consent', 'default', {
+      ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied',
+      analytics_storage: 'denied', wait_for_update: 500
+    });
+    function mundiSyncConsent() {
+      try {
+        var p = window.Shopify && window.Shopify.customerPrivacy;
+        if (!p) return false;
+        var mk = p.marketingAllowed();
+        gtag('consent', 'update', {
+          analytics_storage:  p.analyticsProcessingAllowed() ? 'granted' : 'denied',
+          ad_storage:         mk ? 'granted' : 'denied',
+          ad_user_data:       mk ? 'granted' : 'denied',
+          ad_personalization: mk ? 'granted' : 'denied'
+        });
+        return true;
+      } catch (e) { return false; }
+    }
+    document.addEventListener('visitorConsentCollected', mundiSyncConsent);
+    gtag('config', 'G-TS3NDM80PQ');
+
+    (function () {
+      var pornit = false;
+      function adu() {
+        if (pornit) return;
+        pornit = true;
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-TS3NDM80PQ';
+        document.head.appendChild(s);
+      }
+      window.addEventListener('load', function () {
+        if (!mundiSyncConsent()) gtag('consent', 'update', { analytics_storage: 'granted' });
+        /* requestIdleCallback: așteptăm primul moment în care firul principal
+           chiar n-are treabă. Rezerva de 3 secunde e pentru Safari, care nu-l
+           are. Dacă omul pleacă mai devreme de pe pagină, tot se trimite:
+           `load` s-a produs deja, iar 3 secunde e sub durata unei vizite. */
+        if (window.requestIdleCallback) requestIdleCallback(adu, { timeout: 3000 });
+        else setTimeout(adu, 3000);
+      });
+    })();
+  </script>
+
+  {%- comment -%}
+    Google Ads — eticheta AW-18376254111 (contul 750-778-2449), pusă direct
+    în <head> pe 18 sept 2026. Aplicația Google & YouTube o încărca deja, dar
+    doar prin pixelul Shopify, pe care verificarea Google Ads („Testați
+    conexiunea”) nu-l vedea → campania PMax era „configurată greșit”.
+    Vine DUPĂ blocul GA4, ca să moștenească consimțământul setat acolo.
+    Doar config (vizite + legătura gclid). Achizițiile rămân trimise de
+    aplicația Google & YouTube — NU se adaugă aici evenimente de conversie.
+  {%- endcomment -%}
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18376254111"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'AW-18376254111');
+  </script>
+
+  {%- comment -%}
+    ------------------------------------------------------------------
+    FOILE DE STIL: CERUTE TOATE DE AICI, NICIUNA CU @import
+    ------------------------------------------------------------------
+    Ordinea de mai jos E CASCADA. Cine o schimbă, schimbă tema.
+
+    Cum era înainte: de aici se cerea un singur fișier, iar el aducea
+    restul cu @import, iar acela mai aducea unul. Browserul nu poate
+    ghici ce scrie într-un fișier pe care încă nu l-a primit, deci
+    lanțul se desfășura pe rând:
+
+        HTML → mundi-blue.css → mundi-aurora.css → mundi-base.css
+
+    Trei drumuri dus-întors puse cap la cap, toate blocând prima
+    afișare. Pe fibră nu se simte; pe 4G, unde un drum costă 150–200
+    ms, e o treime de secundă de ecran alb, plătită în FCP și LCP.
+
+    Mai era ceva: Shopify anunță din timp, prin Early Hints, doar
+    fișierele cerute cu <link> din <head>. Cele aduse cu @import n-au
+    cum să apară acolo, fiind încă ascunse într-un fișier nedescărcat.
+    Așa că tocmai straturile care desenează toată tema porneau ultimele.
+
+    Acum toate șase pleacă odată, din prima citire a paginii:
+
+      mundi.css        — structura și tokenii (nemodificat)
+      mundi-skin.css   — mundishop-theme + mundi-mobile + mundi-mobile-2,
+                         lipite în aceeași ordine
+      mundi-base.css   — stratul de bază; aici stă și @font-face pentru
+                         Nunito, de-asta preload-ul fontului de mai jos
+      mundi-aurora.css — sistemul luminos, se sprijină pe base
+      mundi-badges.css — insignele de pe cardurile de produs
+      mundi-card-meta.css — tema, codul, vârsta și piesele de pe card.
+                         Cerut printr-un snippet de trei rânduri, ca să
+                         nu fie nevoie să rescriem tot capul paginii
+                         când se schimbă ceva la carduri.
+
+    Ordinea e IDENTICĂ cu cea de dinainte: @import se rezolva pe loc,
+    deci base intra oricum înaintea aurorei. Doar că acum o spune
+    <head>-ul, nu un fișier care trebuie mai întâi descărcat și citit.
+  {%- endcomment -%}
+  {{ 'mundi-legacy.css' | asset_url | stylesheet_tag }}
+  {% render 'mundi-card-meta-styles' %}
+  {{ 'mundi-v4.css' | asset_url | stylesheet_tag }}
+  {{ 'mundi-nav.css' | asset_url | stylesheet_tag }}
+
+  {%- comment -%}
+    Fontul Nunito, găzduit la noi în /assets, nu la Google.
+    Preîncărcat aici pentru că altfel browserul îl descoperă abia după ce
+    parsează mundi-base.css. crossorigin e obligatoriu chiar și pentru
+    fonturi de pe același domeniu: fără el browserul descarcă fontul a
+    doua oară.
+
+    ATENȚIE LA COADA DE VERSIUNE. @font-face din mundi-base.css scrie
+    `url(nunito-latin.woff2)` — adresă relativă, fără `?v=`. Preload-ul
+    de dinainte cerea `nunito-latin.woff2?v=8989…`, adică ALTĂ adresă.
+    Rezultatul, măsurat în browser: 39 KB descărcați de două ori pe fiecare
+    pagină, o dată de preload și o dată de CSS, iar preîncărcarea nu folosea
+    nimănui. Cu `split: '?' | first` cele două adrese coincid și fontul vine
+    o singură dată. (Coada de versiune de pe <link>-ul lui mundi-base.css nu
+    strică nimic: un `?v=` nu schimbă față de ce se rezolvă adresele
+    relative din interiorul foii.)
+
+    Doar subsetul latin e preîncărcat; latin-ext (diacriticele) vine la
+    cerere, fiindcă apare în mult mai puțin text.
+  {%- endcomment -%}
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="{{ 'nunito-latin.woff2' | asset_url | split: '?' | first }}">
+
+  {%- comment -%}
+    Dovada pentru Google Search Console că site-ul e al nostru. Nu șterge linia —
+    dacă dispare, Google pierde accesul la datele de căutare ale magazinului.
+  {%- endcomment -%}
+  <meta name="google-site-verification" content="66opHq-NEttii9dPeD6BieGUgGySLYSdu6qrLm1mtG4">
+
+  {%- comment -%}
+    Titlul folosește „MundiShop.ro” scris direct, nu shop.name, pentru ca titlul
+    din rezultatele Google să nu depindă de o setare care se poate schimba.
+
+    Google taie titlul pe la 60 de caractere, așa că numele magazinului stă la
+    coadă — se pierde el, nu numele produsului.
+  {%- endcomment -%}
+  {%- assign site_name = 'MundiShop.ro' -%}
+  {%- liquid
+    assign seo_title = page_title
+    assign seo_desc = page_description
+    comment
+      Colecțiile fără titlu/descriere SEO scrise de mână primesc un tipar cu
+      cifre reale: numărul de produse din stoc, livrarea, returul. Cele care
+      au deja titlu/descriere SEO în admin rămân neatinse (page_title diferă
+      de collection.title doar când există un titlu SEO scris de mână).
+    endcomment
+    if template.name == 'collection' and collection != blank
+      if collection.handle contains 'lego'
+        assign seo_unit = 'seturi'
+      else
+        assign seo_unit = 'produse'
+      endif
+      if page_title == collection.title
+        assign seo_title = collection.title | append: ': ' | append: collection.products_count | append: ' ' | append: seo_unit | append: ' în stoc, livrare 24–72 h'
+      endif
+      if seo_desc == blank or seo_desc == shop.description
+        assign seo_desc = collection.title | append: ': ' | append: collection.products_count | append: ' ' | append: seo_unit | append: ' LEGO® originale, noi și sigilate, cu factură și garanție. Livrare în 24–72 de ore în toată România, retur în 14 zile.'
+      endif
+    endif
+  -%}
+  <title>{{ seo_title }}{% unless seo_title contains site_name %} | {{ site_name }}{% endunless %}</title>
+  {%- if seo_desc != blank -%}<meta name="description" content="{{ seo_desc | escape }}">{%- endif -%}
+  <link rel="canonical" href="{{ canonical_url }}">
+
+  {%- comment -%} Favicon: pictograma Mundi (planeta pe Deep Space), conform ghidului de brand. {%- endcomment -%}
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Cdefs%3E%3ClinearGradient id='r' gradientUnits='userSpaceOnUse' x1='17.13' y1='58.48' x2='78.87' y2='37.52'%3E%3Cstop offset='0' stop-color='%237C3AED'/%3E%3Cstop offset='1' stop-color='%2300D5C0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='96' height='96' rx='22' fill='%23131022'/%3E%3Ccircle cx='48' cy='48' r='17.2' fill='%23FFB300'/%3E%3Cpath d='M 76.93 48.36 A 28.95 10.21 0 0 1 19.09 48.53 A 28.95 10.21 0 0 1 76.67 46.58' fill='none' stroke='url(%23r)' stroke-width='7.3' stroke-linecap='round' transform='rotate(-18.75 48 48)'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#0055D4">
+
+  {%- comment -%} Carduri sociale + date structurate. Vezi snippets/seo.liquid. {%- endcomment -%}
+  {% render 'seo' %}
+
+  {%- comment -%}
+    1. Plasă de siguranță împotriva derulării laterale.
+
+       overflow-x stă pe <html>, NU pe <body>. Motivul: valoarea de overflow a
+       elementului rădăcină se propagă la fereastră, iar <html> rămâne el însuși
+       „visible” — deci nu devine container de derulare. Dacă am pune-o pe
+       <body>, body ar deveni container de derulare și header-ul lipit sus pe
+       telefon (position:sticky, din mundi-mobile.css) s-ar rupe.
+
+       E doar plasă de siguranță. Cauza reală a derulării laterale de pe
+       /collections/lego a fost reparată la sursă, în sections/lego-home.liquid
+       (paginarea fără flex-wrap).
+
+    2. box-sizing și pentru pseudo-elemente.
+
+    3. content-visibility: sărim peste așezarea și pictura a ceea ce nu se vede
+       încă. contain-intrinsic-size e scris de două ori intenționat: browserele
+       vechi țin prima linie, cele noi pe a doua, unde „auto” înseamnă „după ce
+       ai desenat-o o dată, ține minte înălțimea reală”.
+
+    4. Cardurile de produs. Stau aici, nu în secțiuni, pentru că aceleași
+       reguli trebuie să prindă și rândurile de pe prima pagină (.pc) și feedul
+       din pagina de colecție (.lgh-card). Selectoarele .lgh ... sunt scrise cu
+       două clase intenționat: secțiunea lego-home își are stilurile în <body>,
+       adică după blocul ăsta, deci la specificitate egală ar câștiga ea.
+
+       Rândul de temă/cod și eticheta de vârstă/piese NU sunt aici, ci în
+       assets/mundi-card-meta.css — cu selectoare de o clasă în plus, ca să
+       bată regulile de mai jos.
+  {%- endcomment -%}
+  <style>
+    html{overflow-x:hidden}
+    body{max-width:100%}
+    *,*::before,*::after{box-sizing:border-box}
+
+    .pagew > .shopify-section:nth-child(n+3){content-visibility:auto;contain-intrinsic-size:700px;contain-intrinsic-size:auto 700px}
+    #shopify-section-newsletter{content-visibility:auto;contain-intrinsic-size:260px;contain-intrinsic-size:auto 260px}
+    #shopify-section-footer{content-visibility:auto;contain-intrinsic-size:560px;contain-intrinsic-size:auto 560px}
+
+    .lgh-pagecue{margin:var(--flow-sm) 0 var(--s-2);text-align:center;font-size:12.5px;color:var(--mut)}
+
+    /* ---- cardul de pe prima pagină ---- */
+    .pc{padding:var(--s-2);transition:box-shadow .15s,transform .15s,border-color .12s}
+    .pimg{height:210px;margin-bottom:var(--s-2)}
+    .pt{font-size:13px;line-height:1.35;min-height:calc(13px * 1.35 * 2);margin-bottom:var(--s-1)}
+    .pcat{font-size:11px;margin-bottom:var(--s-1)}
+    .pold{font-size:12px;min-height:14px}
+    .pnew{font-size:21px;font-weight:700;letter-spacing:-.03em;line-height:1.2}
+    .pstock{display:block;min-height:15px;margin:2px 0 var(--s-2);font-size:11.5px;line-height:1.3;font-weight:700;color:#B3400F}
+    .pc--out .pimg img{filter:grayscale(1);opacity:.5}
+    .pc--out .pt{color:var(--mut)}
+
+    /* ---- cardul din pagina de colecție ---- */
+    .lgh .lgh-card{transition:box-shadow .15s,transform .15s,border-color .12s}
+    .lgh .lgh-card-img{height:210px}
+    .lgh .lgh-card-info{padding:var(--s-2) var(--s-3) var(--s-3)}
+    .lgh .lgh-price{font-size:21px;font-weight:700;letter-spacing:-.03em}
+    .lgh .lgh-old{font-size:12px;color:#8C8C8C;font-weight:400}
+    .lgh .lgh-stock{display:block;min-height:15px;margin-top:2px;font-size:11.5px;line-height:1.3;font-weight:700;color:#B3400F}
+    .lgh .lgh-card--out .lgh-card-img img{filter:grayscale(1);opacity:.5}
+    .lgh .lgh-card--out .lgh-card-info h3 a{color:var(--mut)}
+
+    /* ---- butonul de cumpărare: plin, nu conturat ---- */
+    .addc{background:var(--accent);border-color:var(--accent);color:#fff;
+      min-height:44px;display:flex;align-items:center;justify-content:center}
+    .addc:hover{background:var(--accent-d);border-color:var(--accent-d);color:#fff}
+    .addc--out,.addc--out:hover{background:#E4E4E4;border-color:#E4E4E4;color:#8C8C8C;cursor:not-allowed}
+
+    /* ---- a doua poză, la trecerea cu mouse-ul ----
+       Elementul există doar la produsele cu cel puțin două poze și primește
+       src abia la hover (vezi mundi.js). Clasa .ready se pune după ce poza
+       chiar s-a încărcat, ca să nu apară un dreptunghi gol peste produs. */
+    .pimg .ph2,.lgh-card-img .ph2{
+      position:absolute;inset:0;width:100%;height:100%;
+      object-fit:contain;padding:var(--s-3);mix-blend-mode:multiply;
+      opacity:0;transition:opacity .25s ease;pointer-events:none;z-index:1;
+    }
+    @media(hover:hover){
+      .pc:hover{box-shadow:var(--sh-2);border-color:var(--line-2);transform:translateY(-2px)}
+      .lgh .lgh-card:hover{box-shadow:var(--sh-2);border-color:var(--line-2);transform:translateY(-2px)}
+      .pc:hover .ph2.ready,.lgh-card:hover .ph2.ready{opacity:1}
+    }
+
+    @media(max-width:640px){
+      .pimg,.lgh .lgh-card-img{height:150px}
+      .pgrid{column-gap:var(--s-2);row-gap:var(--s-3)}
+      .lgh .lgh-products{column-gap:var(--s-2);row-gap:var(--s-3)}
+      .pnew,.lgh .lgh-price{font-size:18px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .pc,.lgh .lgh-card,.pimg .ph2,.lgh-card-img .ph2{transition:none}
+      .pc:hover,.lgh .lgh-card:hover{transform:none}
+    }
+  </style>
+
+  {%- comment -%} Stratul „de jucării”: mărimi, bara lipită sus, carduri mari. Ultimul, ca să bată restul. {%- endcomment -%}
+  {{ 'mundi-toy.css' | asset_url | stylesheet_tag }}
+
+  {{ content_for_header }}
+</head>
+<body>
+  {% render 'icons' %}
+  {% section 'mundi-header' %}
+  <main class="pagew">
+    {{ content_for_layout }}
+  </main>
+  {% section 'footer' %}
+
+  <div class="drawer-bg" id="favbg"></div>
+  <aside class="drawer" id="favdrawer" aria-label="Favorite">
+    <div class="dh"><h3>{{ 'wishlist.title' | t }}</h3><button type="button" id="favclose">✕</button></div>
+    <div class="dl" id="favlist"></div>
+  </aside>
+  <div class="toast" id="toast"></div>
+
+  <script>window.mundiI18n = { added: {{ 'wishlist.added' | t | json }}, removed: {{ 'wishlist.removed' | t | json }}, addedCart: {{ 'wishlist.added_to_cart' | t | json }}, empty: {{ 'wishlist.empty' | t | json }} };</script>
+  <script src="{{ 'mundi.js' | asset_url }}" defer></script>
+
+  {%- comment -%}
+    Săgeți pentru banda de categorii.
+
+    Banda stă pe un rând și derulează lateral, dar derularea nu se
+    vede — pe desktop, unde nu tragi cu degetul, categoriile din
+    dreapta erau practic ascunse. Butoanele se construiesc din JS,
+    nu din Liquid, ca să nu existe în pagină dacă scriptul nu rulează:
+    fără el banda rămâne exact cum era, funcțională.
+
+    Stă aici, nu în mundi.js, ca să nu adăugăm o a doua cerere — sunt
+    sub 1 KB. Stilurile sunt în mundi-base.css, la .navsg.
+
+    Nu produce sărituri de layout: stratul e position:absolute peste
+    bandă, deci nu ocupă loc în flux.
+  {%- endcomment -%}
+  <script>
+  (function () {
+    var wrap = document.querySelector('.nav .wrap');
+    var nav  = document.querySelector('.nav');
+    if (!wrap || !nav) return;
+
+    function sageata(cls, eticheta, cale) {
+      return '<button type="button" class="' + cls + '" aria-label="' + eticheta + '">' +
+             '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + cale + '"/></svg>' +
+             '</button>';
+    }
+    var layer = document.createElement('div');
+    layer.className = 'navsg';
+    layer.innerHTML = sageata('sgp', 'Categoriile anterioare', 'M15 5 L8 12 L15 19') +
+                      sageata('sgn', 'Categoriile următoare',  'M9 5 L16 12 L9 19');
+    nav.appendChild(layer);
+
+    /* Un pas = 70% din lățimea vizibilă. Nu 100%: lăsând o cărămidă
+       din ecranul precedent, ochiul păstrează firul. */
+    function pas() { return Math.round(wrap.clientWidth * 0.7); }
+
+    function stare() {
+      var max = wrap.scrollWidth - wrap.clientWidth;
+      /* pragul de 2px acoperă rotunjirile la zoom sau la ecrane retina */
+      layer.hidden = max <= 2;
+      layer.setAttribute('data-start', wrap.scrollLeft <= 2 ? '1' : '0');
+      layer.setAttribute('data-end', wrap.scrollLeft >= max - 2 ? '1' : '0');
+    }
+
+    layer.querySelector('.sgp').addEventListener('click', function () {
+      wrap.scrollBy({ left: -pas(), behavior: 'smooth' });
+    });
+    layer.querySelector('.sgn').addEventListener('click', function () {
+      wrap.scrollBy({ left: pas(), behavior: 'smooth' });
+    });
+
+    wrap.addEventListener('scroll', stare, { passive: true });
+    window.addEventListener('resize', stare);
+    stare();
+  })();
+  </script>
+{% render 'mundi-crew' %}
+
+  {%- comment -%} bara de comandă lipită jos, doar pe telefon, doar pe pagina de produs {%- endcomment -%}
+  {%- if template.name == 'product' and product != blank -%}{% render 'mundi-buybar', product: product %}{%- endif -%}
+</body>
+</html>

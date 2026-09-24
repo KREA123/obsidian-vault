@@ -1,0 +1,13 @@
+{%- comment -%}
+  Linia de livrare sub preț, pe produs (24.09 · pachet A, punctele 2 și 5).
+  Promisiunea de livrare e scrisă o singură dată, aici. Când Andu alege
+  între „24–72 de ore” și „24–48 de ore”, se schimbă ship_promise și
+  celelalte locuri din lista din docs/mundishop-funnel-executie-24sept.md.
+  Nu apare la produsele epuizate (acolo n-are ce să „ajungă”).
+
+  Folosire: {% render 'mundi-pp-ship', product: product, cls: 'pp-mtop-ship' %}
+{%- endcomment -%}
+{%- assign ship_promise = '24–72 de ore' -%}
+{%- if product.available -%}
+  <p class="pp-ship {{ cls }}">Livrare 25 lei · Cargus · ajunge în {{ ship_promise }}</p>
+{%- endif -%}

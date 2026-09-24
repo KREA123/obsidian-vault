@@ -1,0 +1,25 @@
+{%- comment -%}
+  Stiluri pentru pachetul A pe produs (24.09): linia de livrare, stelele,
+  „Retur 14 zile” ca link, ancora recenziilor. Se randează o singură dată,
+  în sections/main-product.liquid, imediat după blocul <style> existent.
+{%- endcomment -%}
+<style>
+  .pp-ship{margin:4px 0 0;font-size:13.5px;line-height:1.35;font-weight:700;color:#14161A}
+  .pp-stars{display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;font-size:13px;font-weight:700;color:#5B6270;text-decoration:none}
+  .pp-stars-s{position:relative;display:inline-block;font-size:15px;line-height:1;letter-spacing:1px;color:#D5D9E0}
+  .pp-stars-s::before{content:"★★★★★"}
+  .pp-stars-s>span{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#F5A300}
+  .pp-stars:hover .pp-stars-n{text-decoration:underline}
+  .pp-mtop-s a,.pinfo .trust a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+  /* Recenzii (widgetul Judge.me existent, mutat imediat după descriere): margini ca restul
+     paginii și culorile magazinului în loc de verdele implicit Judge.me. Variabilele stau pe
+     :root ca să prindă și fereastra „Scrie o recenzie”, care se deschide în afara secțiunii. */
+  :root{--jdgm-primary-color:#0055D4;--jdgm-secondary-color:rgba(0,85,212,.08);--jdgm-star-color:#F5A300;--jdgm-write-review-text-color:#fff;--jdgm-write-review-bg-color:#0055D4;--jdgm-paginate-color:#0055D4;--jdgm-reviewer-name-color:#14161A}
+  #judgeme_product_reviews{max-width:1200px;margin:var(--flow-lg,36px) auto 0;padding:0 var(--gutter,16px);scroll-margin-top:84px;font-family:var(--ui)}
+  @media (max-width:749px){
+    /* 32 px de margine deasupra cardului de produs → 0: poza încape întreagă deasupra barei #mbb */
+    .pagew>.shopify-section:has(.pp-mtop){margin-top:0}
+    .pp-mtop .pp-ship{margin-top:6px;font-size:13px}
+    .pp-mtop .pp-ship+.pp-mtop-s{margin-top:2px}
+  }
+</style>

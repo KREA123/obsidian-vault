@@ -1,0 +1,96 @@
+{%- comment -%}
+  Bara de comandă lipită jos, DOAR pe telefon și doar pe pagina de produs.
+  Apare după ce butonul mare „Adaugă în coș" a ieșit din ecran, ca omul să poată
+  comanda din orice punct al paginii, fără să deruleze înapoi.
+
+  Nu dublează nicio logică: apasă exact butonul din formularul temei, deci merg
+  la fel coșul, evenimentele (inclusiv pixelul Meta) și aplicațiile.
+  Se poate scoate ștergând linia care o cheamă din layout/theme.liquid.
+{%- endcomment -%}
+{%- liquid
+  assign v = product.selected_or_first_available_variant
+-%}
+<div class="mbb" id="mbb" hidden>
+  <a class="mbb-l" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+    {%- if product.featured_image -%}
+      <span class="mbb-img">
+        <img src="{{ product.featured_image | image_url: width: 160 }}" alt="" width="52" height="52" loading="lazy" decoding="async">
+      </span>
+    {%- endif -%}
+    <span class="mbb-t">
+      <span class="mbb-n">{{ product.title }}</span>
+      <span class="mbb-p">
+        {{ v.price | money }}
+        {%- if v.compare_at_price > v.price -%}
+          <s class="mbb-o">{{ v.compare_at_price | money }}</s>
+        {%- endif -%}
+      </span>
+    </span>
+  </a>
+  {%- if product.available -%}
+    <button type="button" class="mbb-b" id="mbb-b">Adaugă în coș</button>
+  {%- else -%}
+    <button type="button" class="mbb-b mbb-b--out" disabled>Stoc epuizat</button>
+  {%- endif -%}
+</div>
+
+<style>
+  .mbb{
+    position:fixed; left:0; right:0; bottom:0; z-index:58; display:none;
+    align-items:center; gap:10px; background:#fff;
+    padding:8px 12px; padding-bottom:calc(8px + env(safe-area-inset-bottom));
+    border-top:1px solid rgba(20,22,26,.1);
+    box-shadow:0 -10px 24px -16px rgba(20,22,26,.65);
+    transform:translateY(105%); transition:transform .22s ease;
+  }
+  .mbb-l{display:flex; align-items:center; gap:10px; min-width:0; flex:1; text-decoration:none; color:inherit}
+  .mbb-img{width:46px; height:46px; flex:none; border-radius:10px; background:#F5F7FB; overflow:hidden; display:block}
+  .mbb-img img{width:100%; height:100%; object-fit:contain; padding:3px; box-sizing:border-box; mix-blend-mode:multiply}
+  .mbb-t{min-width:0; display:block}
+  .mbb-n{display:block; font-size:12.5px; font-weight:700; color:#5B6270; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .mbb-p{display:block; font-size:19px; font-weight:900; letter-spacing:-.02em; line-height:1.2}
+  .mbb-o{margin-left:6px; font-size:12.5px; font-weight:700; color:#8B93A1}
+  .mbb-b{
+    flex:none; min-height:48px; padding:0 18px; border:0; border-radius:12px;
+    background:#0055D4; color:#fff; font-size:15.5px; font-weight:900; cursor:pointer;
+  }
+  .mbb-b:active{transform:translateY(1px)}
+  .mbb-b--out{background:#E6E8EC; color:#8B93A1}
+  @media (max-width:759px){
+    .mbb{display:flex}
+    .mbb.is-on{transform:translateY(0)}
+    body.mbb-pad{padding-bottom:80px}
+  }
+  @media (prefers-reduced-motion: reduce){ .mbb{transition:none} }
+</style>
+
+<script>
+(function(){
+  var bar = document.getElementById('mbb');
+  if(!bar) return;
+  var real = document.querySelector('form.js-atc button.btn-buy')
+          || document.querySelector('form[action*="/cart/add"] button[type="submit"]');
+  if(!real){ bar.remove(); return; }
+
+  bar.hidden = false;
+  document.body.classList.add('mbb-pad');
+
+  var mine = document.getElementById('mbb-b');
+  if(mine){ mine.addEventListener('click', function(){ real.click(); }); }
+
+  var tick = false;
+  function update(){
+    tick = false;
+    var r = real.getBoundingClientRect();
+    var seen = r.top < window.innerHeight && r.bottom > 0;   // butonul real e pe ecran
+    var deep = true;                                          // 23.09: bara apare de la aterizare (înainte: după 140px de derulare)
+    var open = document.body.style.overflow === 'hidden';     // un sertar/fereastră e deschis
+    bar.classList.toggle('is-on', !seen && deep && !open);
+  }
+  function onScroll(){ if(!tick){ tick = true; requestAnimationFrame(update); } }
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll, {passive:true});
+  update();
+})();
+</script>

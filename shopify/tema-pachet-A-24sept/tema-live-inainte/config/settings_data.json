@@ -1,0 +1,106 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "current": {
+    "sections": {
+      "header": {
+        "type": "header",
+        "settings": {
+          "logo_text": "MundiShop.ro",
+          "strip_left": "Livrare 25 lei în toată România, în 24–72 ore",
+          "strip_r1": "Retur în 14 zile",
+          "strip_r2": "RO · RON",
+          "search_placeholder": "Caută seturi, teme sau număr de set…",
+          "allcat_label": "Toate Categoriile",
+          "allcat_link": "",
+          "menu": "main-menu",
+          "sale_label": "",
+          "sale_link": ""
+        }
+      },
+      "newsletter": {
+        "type": "newsletter",
+        "settings": {
+          "title": "Noutăți și lansări LEGO®",
+          "text": "Seturi noi, precomenzi și oferte. Fără spam, maximum două e-mailuri pe lună."
+        }
+      },
+      "footer": {
+        "type": "footer",
+        "settings": {
+          "logo_text": "MundiShop.ro",
+          "news_title": "Abonează-te la noutăți",
+          "news_text": "Seturi noi, precomenzi și reduceri. Maximum două e-mailuri pe lună.",
+          "col1_title": "Cumpără",
+          "col1_builtin": true,
+          "menu1": "main-menu",
+          "col2_title": "Informații",
+          "menu2": "footer",
+          "col3_title": "Contact",
+          "about": "Magazin specializat în seturi LEGO® și accesorii. Produse noi, sigilate, cu factură și garanție — livrate oriunde în România.",
+          "contact3": "0771 530 286",
+          "contact2": "office@krea.ro",
+          "contact1": "București, România",
+          "program": "",
+          "social_facebook": "",
+          "social_instagram": "",
+          "social_tiktok": "",
+          "social_youtube": "",
+          "show_payments": true,
+          "firma": "ARTEMIS DIGITAL S.R.L. · J2025098748009 · CUI 53145290 · Sediu social: București, Sectorul 3, Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123 · Capital social: 200 lei · Neînregistrată în scopuri de TVA.",
+          "legal": "LEGO®, logo-ul LEGO, minifigurina și configurația cărămizii și a bumbilor sunt mărci ale Grupului LEGO, care nu sponsorizează, nu autorizează și nu aprobă acest magazin. MundiShop.ro este un comerciant independent.",
+          "anpc_sal_link": "https://anpc.ro/ce-este-sal/",
+          "anpc_sol_link": "https://ec.europa.eu/consumers/odr",
+          "tagline": "The whole world, delivered."
+        }
+      },
+      "mundi-header": {
+        "type": "mundi-header",
+        "settings": {
+          "logo_text": "MundiShop.ro",
+          "search_placeholder": "Caută un set, o temă sau un număr",
+          "strip_1": "Livrare în 24–72 de ore, în toată România",
+          "strip_link": "",
+          "strip_2": "Retur în 14 zile",
+          "strip_3": "Seturi originale, sigilate, cu factură",
+          "catalog_label": "Catalog",
+          "menu_links": "",
+          "menu_teme": "",
+          "menu_interese": "",
+          "menu_accesorii": "",
+          "menu_colectionari": ""
+        }
+      }
+    },
+    "content_for_index": [],
+    "blocks": {
+      "14060646107696862457": {
+        "type": "shopify://apps/judge-me-reviews/blocks/judgeme_core/61ccd3b1-a9f2-4160-9fe9-4fec8413e5d8",
+        "disabled": false,
+        "settings": {}
+      },
+      "3979034072534932226": {
+        "type": "shopify://apps/metashop-instagram-facebook/blocks/app-embed/a2ba3b6f-1992-4528-a81d-226ccc4d2a86",
+        "disabled": true,
+        "settings": {}
+      },
+      "13768625480086291342": {
+        "type": "shopify://apps/forms/blocks/forms/8744a304-fcb1-4347-b211-bb6b4759a76a",
+        "disabled": false,
+        "settings": {}
+      },
+      "15620043091132039688": {
+        "type": "shopify://apps/hoppy-trust-badges/blocks/trust_badges_icon/6e9703d9-56af-47d9-80bb-0abc8eb8c38b",
+        "disabled": true,
+        "settings": {}
+      }
+    }
+  }
+}

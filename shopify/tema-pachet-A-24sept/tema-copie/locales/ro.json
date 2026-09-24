@@ -1,0 +1,160 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin language editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "general": {
+    "all_categories": "Toate categoriile",
+    "all_products": "Toate produsele",
+    "categories": "Categorii",
+    "view_all": "Vezi toate",
+    "products_count": "produse",
+    "search": "Caută",
+    "search_title": "Căutare",
+    "search_placeholder": "Caută produse…",
+    "results_for": "rezultate pentru",
+    "no_results_title": "N-am găsit nimic pentru",
+    "no_results_text": "Încearcă numărul setului (ex: 75328) sau numele temei.",
+    "not_found_title": "Pagina asta nu există",
+    "not_found_text": "Linkul e greșit sau pagina a fost mutată. Caută setul sau pornește de la teme.",
+    "back_to_shop": "Înapoi la magazin",
+    "all_collections_title": "Toate categoriile",
+    "no_articles_title": "Încă nu sunt articole",
+    "no_articles_text": "Primul articol apare în curând.",
+    "sort_label": "Sortare",
+    "sort_best": "Cele mai vândute",
+    "sort_new": "Noutăți",
+    "sort_price_asc": "Preț crescător",
+    "sort_price_desc": "Preț descrescător",
+    "sort_az": "Alfabetic A–Z"
+  },
+  "header": {
+    "account": "Contul meu",
+    "sign_in": "Intră în cont",
+    "wishlist": "Favorite",
+    "cart": "Coșul meu"
+  },
+  "product": {
+    "add_to_cart": "Adaugă în coș",
+    "choose_options": "Alege opțiunile",
+    "sold_out": "Stoc epuizat",
+    "in_stock": "● În stoc — livrare în 24–72 ore",
+    "out_of_stock": "● Stoc epuizat",
+    "quantity": "Cantitate",
+    "choose_variant": "Alege varianta",
+    "description": "Descriere",
+    "badge_originals": "ORIGINALS",
+    "badge_originals_long": "MUNDI ORIGINALS · MADE IN ROMÂNIA",
+    "badge_top": "TOP VÂNZĂRI",
+    "badge_preorder": "PRECOMANDĂ",
+    "trust_shipping": "Livrare în 24–72 ore în toată România",
+    "trust_original": "Produs 100% original, sigilat",
+    "trust_returns": "Retur simplu în 14 zile",
+    "trust_payment": "Plată securizată — card sau ramburs",
+    "in_stock_short": "● În stoc",
+    "gallery": "Galerie foto",
+    "prev_image": "Poza anterioară",
+    "next_image": "Poza următoare",
+    "go_to_image": "Poza"
+  },
+  "collection": {
+    "empty_title": "Încă nu sunt produse aici",
+    "empty_text": "Adaugă produse în această colecție din adminul Shopify.",
+    "editor_hint": "Alege o colecție pentru secțiunea asta în editorul temei, sau adaugă produse în admin — apar aici automat."
+  },
+  "cart": {
+    "title": "Coșul meu",
+    "per_item": "/ buc",
+    "total": "Total produse (+ 25 lei livrare Cargus, 24–72 h):",
+    "update": "Actualizează coșul",
+    "checkout": "Finalizează comanda",
+    "empty_title": "Coșul tău e gol",
+    "empty_text": "Alege un set și îl trimitem în 24–72 de ore.",
+    "explore": "Explorează magazinul"
+  },
+  "wishlist": {
+    "title": "Favoritele tale",
+    "empty": "Nu ai încă favorite.<br>Apasă pe inimioara unui produs ca să-l salvezi aici.",
+    "added": "Adăugat la favorite",
+    "removed": "Scos de la favorite",
+    "added_to_cart": "Adăugat în coș"
+  },
+  "newsletter": {
+    "success": "✓ Te-ai abonat. Bine ai venit în lumea Mundi!",
+    "placeholder": "Emailul tău…",
+    "button": "Mă abonez"
+  },
+  "footer": {
+    "rights": "Toate drepturile rezervate"
+  },
+  "account": {
+    "login_title": "Intră în cont",
+    "email": "Email",
+    "password": "Parolă",
+    "login_button": "Autentificare",
+    "forgot": "Ai uitat parola?",
+    "create": "Creează-ți cont",
+    "recover_title": "Recuperează parola",
+    "recover_sent": "Ți-am trimis un email cu instrucțiunile de resetare.",
+    "recover_button": "Trimite linkul de resetare",
+    "back_to_login": "Înapoi la autentificare",
+    "register_title": "Creează-ți cont",
+    "first_name": "Prenume",
+    "last_name": "Nume",
+    "register_button": "Creează contul",
+    "have_account": "Ai deja cont?",
+    "greeting": "Salut",
+    "greeting_fallback": "colecționarule",
+    "logout": "Ieși din cont",
+    "orders_title": "Comenzile tale",
+    "order": "Comanda",
+    "date": "Data",
+    "status": "Status",
+    "total": "Total",
+    "no_orders": "Nicio comandă încă.",
+    "go_shopping": "Hai la cumpărături →",
+    "details_title": "Datele contului",
+    "addresses": "Adresele mele",
+    "addresses_title": "Adresele mele",
+    "back_to_account": "← Înapoi la cont",
+    "new_address": "Adresă nouă",
+    "address": "Adresă",
+    "city": "Oraș",
+    "province": "Județ",
+    "zip": "Cod poștal",
+    "country": "Țară",
+    "phone": "Telefon",
+    "save_address": "Salvează adresa",
+    "saved_addresses": "Adrese salvate",
+    "no_addresses": "Nicio adresă salvată încă.",
+    "default_address": "implicită",
+    "shipping": "Livrare",
+    "activate_title": "Activează-ți contul",
+    "confirm_password": "Confirmă parola",
+    "activate_button": "Activează contul",
+    "reset_title": "Resetează parola",
+    "new_password": "Parolă nouă",
+    "reset_button": "Salvează parola"
+  },
+  "gift_card": {
+    "title": "Card cadou",
+    "value": "Valoare:",
+    "code": "Codul tău:",
+    "use": "Folosește-l în magazin"
+  },
+  "accessibility": {
+    "featured_product": "Produs recomandat"
+  },
+  "shopify": {
+    "checkout": {
+      "general": {
+        "pay_now_button_label": "Finalizează comanda"
+      }
+    }
+  }
+}

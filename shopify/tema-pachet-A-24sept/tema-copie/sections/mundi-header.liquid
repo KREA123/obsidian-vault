@@ -1,0 +1,297 @@
+{%- comment -%}
+  Header-ul site-ului nou: bară de anunț, rândul principal (logo, căutare,
+  cont, favorite, coș), bara de meniu cu butonul „Catalog” care deschide
+  mega-meniul (snippets/mundi-mega-menu.liquid) și sertarul de pe telefon.
+
+  Stilurile stau în assets/mundi-nav.css. Id-urile favopen, fav-count și
+  cart-count sunt citite de assets/mundi.js — nu le schimba.
+
+  Linkurile plate din bara de meniu vin din meniul ales în setări; dacă nu e
+  ales niciunul, se folosește lista de rezervă de mai jos (colecții existente).
+{%- endcomment -%}
+{%- liquid
+  assign flat_menu = linklists[section.settings.menu_links]
+  assign flat_def = 'Noutăți:noutati-hituri|Reduceri:reduceri|Sub 100 lei:lego-sub-100-lei|Sub 200 lei:lego-sub-200-lei|Pentru adulți:lego-icons-creator-expert|Back to School:back-to-school|Calendare advent:calendare-advent-lego-2026' | split: '|'
+  assign search_val = ''
+  if search.terms != blank
+    assign search_val = search.terms
+  endif
+-%}
+
+<div class="mh-strip">
+  <div class="mh-wrap">
+    {%- if section.settings.strip_1 != blank -%}<span>{% if section.settings.strip_link != blank %}<a href="{{ section.settings.strip_link }}">{{ section.settings.strip_1 }}</a>{% else %}{{ section.settings.strip_1 }}{% endif %}</span>{%- endif -%}
+    {%- if section.settings.strip_2 != blank -%}<span>{{ section.settings.strip_2 }}</span>{%- endif -%}
+    {%- if section.settings.strip_3 != blank -%}<span>{{ section.settings.strip_3 }}</span>{%- endif -%}
+  </div>
+</div>
+
+<header class="mh-bar{% if request.page_type == 'index' %} mh-bar--home{% endif %}" id="mh-bar">
+  <div class="mh-wrap">
+    <button type="button" class="mh-burger" id="mh-open" aria-label="Deschide meniul" aria-expanded="false" aria-controls="mh-drawer">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="mh-logo" href="{{ routes.root_url }}" aria-label="{{ section.settings.logo_text | escape }}">
+      <svg aria-hidden="true"><use href="#planet"/></svg>
+      <span class="mh-wm">{{ section.settings.logo_text | replace: '.ro', '<b>.ro</b>' }}</span>
+    </a>
+    <form class="mh-search" id="mh-sform" action="{{ routes.search_url }}" method="get" role="search">
+      <input type="search" name="q" value="{{ search_val | escape }}" placeholder="{{ section.settings.search_placeholder | escape }}" aria-label="{{ section.settings.search_placeholder | escape }}" autocomplete="off">
+      <input type="hidden" name="options[prefix]" value="last">
+      <input type="hidden" name="type" value="product">
+      <button type="submit" aria-label="Caută">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+      </button>
+      <div class="mh-sugg" id="mh-sugg" hidden aria-live="polite"></div>
+    </form>
+    <div class="mh-act">
+      <button type="button" class="mh-sbtn" id="mh-sbtn" aria-label="Caută" aria-expanded="false" aria-controls="mh-sform">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+      </button>
+      <a class="mh-acc" href="{{ routes.account_url }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        {% if customer %}{{ 'header.account' | t }}{% else %}{{ 'header.sign_in' | t }}{% endif %}
+      </a>
+      <button type="button" class="mh-fav" id="favopen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.6-9-9c-1.3-3 1-7 4.5-7C10 4 12 7 12 7s2-3 4.5-3C20 4 22.3 8 21 11c-2 4.4-9 9-9 9z"/></svg>
+        {{ 'header.wishlist' | t }}<span class="bubble" id="fav-count" style="display:none">0</span>
+      </button>
+      <a class="mh-cart" href="{{ routes.cart_url }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.6a1 1 0 0 0 1-.8L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/></svg>
+        {{ 'header.cart' | t }}<span class="bubble" id="cart-count" {% if cart.item_count == 0 %}style="display:none"{% endif %}>{{ cart.item_count }}</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<nav class="mh-nav" id="mh-nav" aria-label="Meniu principal">
+  <div class="mh-wrap">
+    <button type="button" class="mh-catbtn" id="mh-catbtn" aria-expanded="false" aria-controls="mh-mega">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      {{ section.settings.catalog_label }}
+      <svg class="mh-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="mh-links">
+      {%- if flat_menu.links.size > 0 -%}
+        {%- for link in flat_menu.links -%}
+          <a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}{% if link.title == 'Reduceri' %} class="mh-sale"{% endif %}>{{ link.title }}</a>
+        {%- endfor -%}
+      {%- else -%}
+        {%- for item in flat_def -%}
+          {%- assign p = item | split: ':' -%}
+          {%- assign c = collections[p[1]] -%}
+          {%- if c != blank and c.products_count > 0 -%}
+            <a href="{{ c.url }}"{% if collection.handle == p[1] %} aria-current="page"{% endif %}{% if p[1] == 'reduceri' %} class="mh-sale"{% endif %}>{{ p[0] }}</a>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+  </div>
+  <div class="mh-mega" id="mh-mega">
+    <div class="mh-wrap">
+      {% render 'mundi-mega-menu', mode: 'desktop', menu_teme: section.settings.menu_teme, menu_interese: section.settings.menu_interese, menu_accesorii: section.settings.menu_accesorii, menu_colectionari: section.settings.menu_colectionari %}
+    </div>
+  </div>
+</nav>
+<div class="mh-mega-bg" id="mh-mega-bg"></div>
+
+<div class="mh-drawer-bg" id="mh-drawer-bg"></div>
+<aside class="mh-drawer" id="mh-drawer" aria-label="Meniu" aria-hidden="true">
+  <div class="mh-drawer-h">
+    <strong>{{ section.settings.catalog_label }}</strong>
+    <button type="button" id="mh-close" aria-label="Închide meniul">✕</button>
+  </div>
+  <nav class="mh-dnav">
+    {% render 'mundi-mega-menu', mode: 'mobile', menu_teme: section.settings.menu_teme, menu_interese: section.settings.menu_interese, menu_accesorii: section.settings.menu_accesorii, menu_colectionari: section.settings.menu_colectionari %}
+    <div class="mh-dsep">Rapid</div>
+    {%- if flat_menu.links.size > 0 -%}
+      {%- for link in flat_menu.links -%}
+        <a href="{{ link.url }}"{% if link.title == 'Reduceri' %} class="mh-sale"{% endif %}>{{ link.title }}</a>
+      {%- endfor -%}
+    {%- else -%}
+      {%- for item in flat_def -%}
+        {%- assign p = item | split: ':' -%}
+        {%- assign c = collections[p[1]] -%}
+        {%- if c != blank and c.products_count > 0 -%}
+          <a href="{{ c.url }}"{% if p[1] == 'reduceri' %} class="mh-sale"{% endif %}>{{ p[0] }}</a>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    <div class="mh-dsep">{{ 'header.account' | t }}</div>
+    <a href="{{ routes.account_url }}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>{% if customer %}{{ 'header.account' | t }}{% else %}{{ 'header.sign_in' | t }}{% endif %}</a>
+    <button type="button" class="mh-dbtn" id="mh-navfav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.6-9-9c-1.3-3 1-7 4.5-7C10 4 12 7 12 7s2-3 4.5-3C20 4 22.3 8 21 11c-2 4.4-9 9-9 9z"/></svg>{{ 'header.wishlist' | t }}</button>
+    <a href="{{ routes.cart_url }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.6a1 1 0 0 0 1-.8L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/></svg>{{ 'header.cart' | t }}</a>
+  </nav>
+</aside>
+
+<script>
+(function () {
+  /* Sugestii la căutare: produse și teme, din API-ul de sugestii al
+     magazinului (/search/suggest.json). Nu schimbă nimic la produse. */
+  var form = document.querySelector('.mh-search');
+  var inp = form ? form.querySelector('input[type="search"]') : null;
+  var box = document.getElementById('mh-sugg');
+  if (!form || !inp || !box) return;
+  var timer = null, last = '', ctrl = null;
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+  function lei(c) { var n = (c / 100).toFixed(2).split('.'); return n[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + n[1] + ' lei'; }
+  function close() { box.hidden = true; box.innerHTML = ''; }
+  function render(q, data) {
+    var r = data && data.resources && data.resources.results ? data.resources.results : {};
+    var prods = r.products || [], cols = r.collections || [];
+    if (!prods.length && !cols.length) { close(); return; }
+    var h = '';
+    if (cols.length) {
+      h += '<div class="mh-sg-t">Teme</div>';
+      cols.slice(0, 4).forEach(function (c) { h += '<a class="mh-sg-c" href="' + c.url + '">' + esc(c.title) + '</a>'; });
+    }
+    if (prods.length) {
+      h += '<div class="mh-sg-t">Seturi</div>';
+      prods.forEach(function (p) {
+        var img = p.featured_image && p.featured_image.url ? p.featured_image.url + (p.featured_image.url.indexOf('?') > -1 ? '&' : '?') + 'width=120' : '';
+        h += '<a class="mh-sg-p" href="' + p.url + '">' +
+          (img ? '<img src="' + img + '" alt="" width="48" height="48" loading="lazy">' : '<span class="mh-sg-ph"></span>') +
+          '<span class="mh-sg-b"><span class="mh-sg-n">' + esc(p.title) + '</span>' +
+          (p.type ? '<span class="mh-sg-m">' + esc(p.type) + '</span>' : '') + '</span>' +
+          '<b>' + (p.price ? lei(Math.round(parseFloat(p.price) * 100)) : '') + '</b></a>';
+      });
+    }
+    h += '<a class="mh-sg-all" href="/search?type=product&options%5Bprefix%5D=last&q=' + encodeURIComponent(q) + '">Toate rezultatele pentru „' + esc(q) + '”</a>';
+    box.innerHTML = h; box.hidden = false;
+  }
+  function ask() {
+    var q = inp.value.trim();
+    if (q.length < 2) { close(); return; }
+    if (q === last && !box.hidden) return;
+    last = q;
+    if (ctrl) ctrl.abort();
+    ctrl = window.AbortController ? new AbortController() : null;
+    var url = '/search/suggest.json?q=' + encodeURIComponent(q) +
+      '&resources[type]=product,collection&resources[limit]=6&resources[options][unavailable_products]=last&resources[options][fields]=title,product_type,variants.sku,tag';
+    fetch(url, { credentials: 'same-origin', signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (inp.value.trim() === q) render(q, d); })
+      ['catch'](function () {});
+  }
+  inp.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(ask, 180); });
+  inp.addEventListener('focus', function () { if (inp.value.trim().length >= 2) ask(); });
+  document.addEventListener('click', function (e) { if (!form.contains(e.target)) close(); });
+  inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
+(function () {
+  var nav = document.getElementById('mh-nav');
+  var btn = document.getElementById('mh-catbtn');
+  var mega = document.getElementById('mh-mega');
+  var mbg = document.getElementById('mh-mega-bg');
+  var timer = null;
+
+  function openMega() {
+    if (!mega) return;
+    mega.classList.add('open'); mbg.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+  function closeMega() {
+    if (!mega) return;
+    mega.classList.remove('open'); mbg.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+  function isOpen() { return mega && mega.classList.contains('open'); }
+  function select(name) {
+    var tabs = mega.querySelectorAll('[data-mh-tab]');
+    for (var i = 0; i < tabs.length; i++) {
+      var on = tabs[i].getAttribute('data-mh-tab') === name;
+      tabs[i].setAttribute('aria-selected', on ? 'true' : 'false');
+      var pane = document.getElementById('mh-pane-' + tabs[i].getAttribute('data-mh-tab'));
+      if (pane) pane.classList.toggle('on', on);
+    }
+  }
+
+  if (btn && mega) {
+    btn.addEventListener('click', function () { if (isOpen()) closeMega(); else openMega(); });
+    /* deschidere la trecerea cu mouse-ul, cu o mică întârziere ca să nu
+       sară panoul când doar treci pe lângă buton */
+    btn.addEventListener('mouseenter', function () {
+      clearTimeout(timer);
+      timer = setTimeout(openMega, 140);
+    });
+    nav.addEventListener('mouseleave', function () {
+      clearTimeout(timer);
+      timer = setTimeout(closeMega, 260);
+    });
+    nav.addEventListener('mouseenter', function () { clearTimeout(timer); });
+    mbg.addEventListener('click', closeMega);
+
+    var tabs = mega.querySelectorAll('[data-mh-tab]');
+    for (var i = 0; i < tabs.length; i++) {
+      (function (t) {
+        var n = t.getAttribute('data-mh-tab');
+        t.addEventListener('mouseenter', function () { select(n); });
+        t.addEventListener('focus', function () { select(n); });
+        t.addEventListener('click', function () { select(n); });
+      })(tabs[i]);
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isOpen()) { closeMega(); btn.focus(); }
+    });
+    document.addEventListener('click', function (e) {
+      if (isOpen() && !nav.contains(e.target)) closeMega();
+    });
+  }
+
+  /* sertarul de pe telefon */
+  var dr = document.getElementById('mh-drawer');
+  var dbg = document.getElementById('mh-drawer-bg');
+  var ob = document.getElementById('mh-open');
+  var cb = document.getElementById('mh-close');
+  if (!dr || !dbg) return;
+  function openNav() {
+    dr.classList.add('open'); dbg.classList.add('open');
+    dr.setAttribute('aria-hidden', 'false');
+    if (ob) ob.setAttribute('aria-expanded', 'true');
+    document.documentElement.style.overflow = 'hidden';
+  }
+  function closeNav() {
+    dr.classList.remove('open'); dbg.classList.remove('open');
+    dr.setAttribute('aria-hidden', 'true');
+    if (ob) ob.setAttribute('aria-expanded', 'false');
+    document.documentElement.style.overflow = '';
+    var groups = dr.querySelectorAll('details[open]');
+    for (var i = 0; i < groups.length; i++) groups[i].removeAttribute('open');
+  }
+  if (ob) ob.addEventListener('click', openNav);
+  if (cb) cb.addEventListener('click', closeNav);
+  dbg.addEventListener('click', closeNav);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && dr.classList.contains('open')) closeNav();
+  });
+  var nf = document.getElementById('mh-navfav');
+  if (nf) nf.addEventListener('click', function () {
+    closeNav();
+    var fo = document.getElementById('favopen');
+    if (fo) setTimeout(function () { fo.click(); }, 230);
+  });
+})();
+</script>
+{% render 'mundi-header-mobil' %}
+
+{% schema %}
+{
+  "name": "Header Mundi (nou)",
+  "settings": [
+    { "type": "text", "id": "logo_text", "label": "Text logo", "default": "MundiShop.ro" },
+    { "type": "text", "id": "search_placeholder", "label": "Text în căutare", "default": "Caută un set, o temă sau numărul setului" },
+    { "type": "header", "content": "Bara de anunț" },
+    { "type": "text", "id": "strip_1", "label": "Mesaj 1", "default": "Livrare în 24–72 de ore, în toată România" },
+    { "type": "url", "id": "strip_link", "label": "Link pentru mesajul 1 (opțional)" },
+    { "type": "text", "id": "strip_2", "label": "Mesaj 2", "default": "Retur în 14 zile" },
+    { "type": "text", "id": "strip_3", "label": "Mesaj 3", "default": "Seturi originale, sigilate, cu factură" },
+    { "type": "header", "content": "Meniu" },
+    { "type": "text", "id": "catalog_label", "label": "Buton catalog", "default": "Catalog" },
+    { "type": "link_list", "id": "menu_links", "label": "Linkuri rapide (dreapta butonului Catalog)", "info": "Gol = Noutăți, Reduceri, Sub 100 lei, Sub 200 lei, Pentru adulți, Back to School, Calendare advent." },
+    { "type": "link_list", "id": "menu_teme", "label": "Meniu teme", "info": "Gol = toate temele LEGO din magazin, ordonate după numărul de seturi." },
+    { "type": "link_list", "id": "menu_interese", "label": "Meniu interese (2 niveluri)", "info": "Gol = gruparea implicită pe interese din colecțiile existente." },
+    { "type": "link_list", "id": "menu_accesorii", "label": "Meniu accesorii", "info": "Gol = ghiozdane, penare, recipiente, saci sport, depozitare, lămpi, lenjerii." },
+    { "type": "link_list", "id": "menu_colectionari", "label": "Meniu colecționari", "info": "Gol = Icons, Botanică, Architecture, Art, Ideas, Seturi emblematice, Editions." }
+  ]
+}
+{% endschema %}

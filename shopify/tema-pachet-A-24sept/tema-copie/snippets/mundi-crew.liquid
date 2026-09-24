@@ -1,0 +1,229 @@
+{%- comment -%}
+  Echipa de minifigurine a site-ului (randată din layout/theme.liquid, pe toate paginile).
+
+  1. SALUTUL: la prima pagină din vizită (o dată pe sesiune), 2–3 minifigurine sar din
+     marginea de jos a ecranului, fac cu mâna și coboară la loc. ~3 secunde.
+     Din 24.09 nu și pe paginile de produs: acolo acopereau poza și bara „Adaugă în coș”
+     exact la aterizarea din reclamă.
+  2. PE MARGINI (doar pe colecțiile din PEEK_ON, acum doar Halloween): pe măsură ce
+     derulezi, câte o minifigurină se uită din marginea ecranului. Pe desktop lat stă în
+     spațiul liber de lângă conținut, la hover spune ce e, click duce la produs; pe
+     telefon e mai mică, se vede pe jumătate și nu blochează atingerile. Toate sunt produse reale
+     din magazin (brelocuri LEGO cu LED), cu prețul din Shopify.
+  Între 15 septembrie și 2 noiembrie, fantoma deschide ambele.
+
+  Nimic nu ocupă loc în pagină (position:fixed), pozele se cer abia după ce pagina
+  s-a încărcat, iar cine are „reducere mișcare” activat nu vede nimic din toate astea.
+  Figuri fără stoc nu apar.
+{%- endcomment -%}
+{%- unless request.design_mode -%}
+{%- liquid
+  assign md = 'now' | date: '%m%d' | plus: 0
+  assign spooky = false
+  if md >= 915 and md <= 1102
+    assign spooky = true
+  endif
+  assign crew = 'ghost|lego-lgl-ke48|164|Fantoma~banana|lego-lgl-ke118|149|Tipul Banană~hotdog|lego-lgl-ke119|181|Băiatul Hot Dog~cactus|lego-lgl-ke157|231|Băiatul Cactus~butterfly|lego-lgl-ke171h|297|Fata Fluture~pizza|lego-lgl-ke176h|239|Tipul Pizza~astro|lego-lgl-ke10-r|188|Astronautul~chef|lego-lgl-ke218h|184|Bucătăreasa' | split: '~'
+-%}
+<style>
+  .mcrew{position:fixed;left:0;right:0;bottom:0;height:0;z-index:55;pointer-events:none}
+  .mcrew-hi{position:absolute;bottom:0;width:0;height:0}
+  .mcrew-hi img{position:absolute;bottom:-10px;left:0;height:150px;width:auto;max-width:none;transform:translate(-50%,115%);filter:drop-shadow(0 8px 14px rgba(20,22,26,.22))}
+  .mcrew-hi b{position:absolute;bottom:150px;left:0;transform:translate(-50%,6px) scale(.9);padding:7px 12px;border-radius:12px;background:#fff;color:#14161A;font:800 14px/1.2 var(--ui,inherit);white-space:nowrap;box-shadow:0 6px 18px rgba(20,22,26,.18);opacity:0}
+  .mcrew-hi b::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}
+  .mcrew.hi-go .mcrew-hi img{animation:mcrew-up 2.7s cubic-bezier(.3,1.35,.5,1) var(--d) both}
+  .mcrew.hi-go .mcrew-hi b{animation:mcrew-say 2.1s ease calc(var(--d) + .55s) both}
+  .mcrew.hi-out .mcrew-hi img{animation:mcrew-down .45s ease-in var(--d) both}
+  .mcrew.hi-out .mcrew-hi b{animation:none;opacity:0}
+  @keyframes mcrew-up{0%{transform:translate(-50%,115%)}20%{transform:translate(-50%,0)}30%{transform:translate(-50%,-16px) rotate(-7deg)}38%{transform:translate(-50%,0) rotate(5deg)}46%{transform:translate(-50%,-7px) rotate(-3deg)}54%,100%{transform:translate(-50%,0) rotate(0)}}
+  @keyframes mcrew-down{from{transform:translate(-50%,0)}to{transform:translate(-50%,120%)}}
+  @keyframes mcrew-say{0%{opacity:0;transform:translate(-50%,6px) scale(.9)}15%,85%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,0) scale(1)}}
+
+  .mcrew-pk{position:fixed;height:132px;width:auto;display:block;transition:transform .55s cubic-bezier(.3,1.3,.5,1);text-decoration:none;color:#14161A}
+  .mcrew-pk img{display:block;height:100%;width:auto;max-width:none;filter:drop-shadow(0 6px 12px rgba(20,22,26,.2))}
+  .mcrew-pk--l{left:0;transform-origin:0 100%;transform:translateX(-115%)}
+  .mcrew-pk--r{right:0;transform-origin:100% 100%;transform:translateX(115%)}
+  .mcrew-pk.on{pointer-events:auto}
+  .mcrew-pk--l.on{transform:translateX(calc((var(--peek,1) - 1) * 100%)) rotate(9deg)}
+  .mcrew-pk--r.on{transform:translateX(calc((1 - var(--peek,1)) * 100%)) rotate(-9deg)}
+  .mcrew-pk--l.on:hover{transform:translateX(calc((var(--peek,1) - 1) * 60%)) rotate(3deg)}
+  .mcrew-pk--r.on:hover{transform:translateX(calc((1 - var(--peek,1)) * 60%)) rotate(-3deg)}
+  .mcrew-bub{position:absolute;top:4px;width:max-content;max-width:190px;padding:8px 11px;border-radius:12px;background:#fff;box-shadow:0 6px 18px rgba(20,22,26,.18);font:600 12.5px/1.35 var(--ui,inherit);opacity:0;transform:scale(.92);transition:opacity .16s,transform .16s;pointer-events:none}
+  .mcrew-bub b{display:block;font-weight:800}
+  .mcrew-bub em{display:block;margin-top:3px;font-style:normal;font-weight:800;color:var(--accent,#0055D4)}
+  .mcrew-pk--l .mcrew-bub{left:calc(100% + 4px)}
+  .mcrew-pk--r .mcrew-bub{right:calc(100% + 4px)}
+  .mcrew-pk.on:hover .mcrew-bub{opacity:1;transform:none}
+  .mcrew-pk--m{height:88px}
+  .mcrew-pk--m.on{pointer-events:none}
+  .mcrew-pk--m .mcrew-bub{display:none}
+  .pagew > .shopify-section:empty,.pagew > .shopify-section:not(:has(*)){display:none}
+  .mcrew-sq{position:absolute;right:60px;bottom:-6px;display:flex;align-items:flex-end;gap:10px;z-index:2}
+  .mcrew-sq a{position:relative;display:block;height:112px;opacity:0;transform:translateY(30px) scale(.5);transform-origin:50% 100%;transition:transform .65s cubic-bezier(.3,1.6,.5,1),opacity .2s;transition-delay:var(--d)}
+  .mcrew-sq.go a{opacity:1;transform:none}
+  .mcrew-sq a img{display:block;height:100%;width:auto;max-width:none;transform-origin:50% 100%;filter:drop-shadow(0 6px 10px rgba(20,22,26,.18))}
+  .mcrew-sq a.hop img,.mcrew-sq a:hover img{animation:mcrew-hop .6s ease}
+  .mcrew-sq .mcrew-bub{top:auto;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) scale(.92);z-index:3}
+  .mcrew-sq a:hover .mcrew-bub{opacity:1;transform:translateX(-50%)}
+  @keyframes mcrew-hop{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-14px) rotate(-6deg)}60%{transform:translateY(0) rotate(4deg)}80%{transform:translateY(-4px) rotate(0)}}
+  @media(max-width:1023px){.mcrew-sq{display:none}}
+  @media(max-width:699px){.mcrew-hi img{height:108px}.mcrew-hi b{bottom:108px;font-size:13px}}
+  @media(prefers-reduced-motion:reduce){.mcrew{display:none}}
+</style>
+<script>
+(function () {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var SP = {{ spooky | json }};
+  var TPL = {{ template.name | json }};
+  var HANDLE = {% if template.name == 'collection' and collection %}{{ collection.handle | json }}{% else %}""{% endif %};
+  var PEEK_ON = ['halloween'];
+  var C = [
+    {%- for row in crew -%}
+      {%- assign f = row | split: '|' -%}
+      {%- assign p = all_products[f[1]] -%}
+      {%- if p != blank -%}
+        { k: {{ f[0] | json }}, src: {{ 'mfig-' | append: f[0] | append: '.webp' | asset_url | json }}, w: {{ f[2] }}, name: {{ f[3] | json }}, url: {{ p.url | json }}, price: {{ p.price | money | strip_html | json }}, ok: {{ p.available | json }} }{% unless forloop.last %},{% endunless %}
+      {%- endif -%}
+    {%- endfor -%}
+  ];
+  C = C.filter(function (f) { return f && f.ok; });
+  if (!C.length) return;
+
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  var ghost = null;
+  for (var g = 0; g < C.length; g++) if (C[g].k === 'ghost') ghost = C[g];
+  function pick(n) {
+    var rest = shuffle(C.filter(function (f) { return f.k !== 'ghost'; }));
+    if (SP && ghost) rest.unshift(ghost);
+    return rest.slice(0, n);
+  }
+
+  var wrap = document.createElement('div');
+  wrap.className = 'mcrew';
+  wrap.setAttribute('aria-hidden', 'true');
+
+  function intro() {
+    var seen = null;
+    try { seen = sessionStorage.getItem('mcrew-hi'); sessionStorage.setItem('mcrew-hi', '1'); } catch (e) { return; }
+    if (seen) return;
+    var mobile = window.innerWidth < 700;
+    var list = pick(mobile ? 2 : 3);
+    var xs = mobile ? [66, 88] : [50, 17, 83];
+    var hello = SP && list[0] && list[0].k === 'ghost' ? 'Bau!' : 'Salut!';
+    var imgs = [];
+    list.forEach(function (f, i) {
+      var el = document.createElement('div');
+      el.className = 'mcrew-hi';
+      el.style.left = xs[i] + '%';
+      el.style.setProperty('--d', (i * 0.15) + 's');
+      el.innerHTML = '<img alt="" src="' + esc(f.src) + '">' + (i === 0 ? '<b>' + hello + '</b>' : '');
+      wrap.appendChild(el);
+      imgs.push(el.querySelector('img'));
+    });
+    var left = imgs.length, started = false;
+    function start() {
+      if (started) return; started = true;
+      wrap.classList.add('hi-go');
+      setTimeout(function () { wrap.classList.add('hi-out'); }, 2900);
+      setTimeout(function () {
+        var n = wrap.querySelectorAll('.mcrew-hi');
+        for (var i = 0; i < n.length; i++) n[i].parentNode.removeChild(n[i]);
+        wrap.classList.remove('hi-go', 'hi-out');
+      }, 3700);
+    }
+    imgs.forEach(function (im) {
+      function done() { if (--left === 0) setTimeout(start, 200); }
+      if (im.complete && im.naturalWidth) done(); else { im.onload = done; im.onerror = done; }
+    });
+    setTimeout(start, 4000);
+  }
+
+  var pk = [], ticking = false, mobileMode = false;
+  function peekers() {
+    if (TPL !== 'collection' || PEEK_ON.indexOf(HANDLE) < 0) return;
+    mobileMode = !window.matchMedia('(hover: hover) and (min-width: 1180px)').matches;
+    var spots = [
+      { side: 'r', top: 30, from: 0.08, to: 0.28 },
+      { side: 'l', top: 56, from: 0.24, to: 0.46 },
+      { side: 'r', top: 60, from: 0.44, to: 0.66 },
+      { side: 'l', top: 28, from: 0.62, to: 0.84 }
+    ];
+    pick(4).forEach(function (f, i) {
+      var s = spots[i];
+      var a = document.createElement('a');
+      a.className = 'mcrew-pk mcrew-pk--' + s.side + (mobileMode ? ' mcrew-pk--m' : '');
+      a.href = f.url;
+      a.tabIndex = -1;
+      a.style.top = s.top + '%';
+      a.innerHTML = '<img alt="" width="' + f.w + '" height="320" data-src="' + esc(f.src) + '">' + bubble(f);
+      a._s = s; a._w = f.w * (mobileMode ? 88 : 132) / 320;
+      wrap.appendChild(a);
+      pk.push(a);
+    });
+    window.addEventListener('scroll', tick, { passive: true });
+    window.addEventListener('resize', tick);
+    tick();
+  }
+  function tick() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      ticking = false;
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      var pr = max > 0 ? window.scrollY / max : 0;
+      var room = (window.innerWidth - 1280) / 2 + 20;
+      for (var i = 0; i < pk.length; i++) {
+        var a = pk[i], s = a._s;
+        var peek = mobileMode ? 0.5 : Math.max(0, Math.min(1, (room - 6) / a._w));
+        var on = pr >= s.from && pr <= s.to && (mobileMode || peek >= 0.45);
+        if (on && !a._l) { var im = a.querySelector('img'); im.src = im.getAttribute('data-src'); a._l = 1; }
+        a.style.setProperty('--peek', peek.toFixed(3));
+        if (on !== a.classList.contains('on')) a.classList.toggle('on', on);
+      }
+    });
+  }
+
+  function bubble(f) {
+    return '<span class="mcrew-bub"><b>' + esc(f.name) + '</b>Breloc LEGO cu LED, ' + esc(f.price) + '<em>Mă iei acasă?</em></span>';
+  }
+  function squad() {
+    if (TPL !== 'collection' || document.querySelector('.msx')) return;
+    var box = document.querySelector('.colintro-wrap');
+    if (!box || window.innerWidth < 1024) return;
+    if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+    var sq = document.createElement('div');
+    sq.className = 'mcrew-sq';
+    sq.setAttribute('aria-hidden', 'true');
+    var list = pick(3), left = list.length;
+    list.forEach(function (f, i) {
+      var a = document.createElement('a');
+      a.href = f.url;
+      a.tabIndex = -1;
+      a.style.setProperty('--d', (0.15 + i * 0.12) + 's');
+      a.innerHTML = '<img alt="" src="' + esc(f.src) + '" width="' + f.w + '" height="320">' + bubble(f);
+      var im = a.querySelector('img');
+      im.onload = im.onerror = function () { if (--left === 0) requestAnimationFrame(function () { sq.classList.add('go'); }); };
+      sq.appendChild(a);
+    });
+    box.appendChild(sq);
+    setTimeout(function () { sq.classList.add('go'); }, 2500);
+    var kids = sq.querySelectorAll('a');
+    setInterval(function () {
+      if (document.hidden) return;
+      var a = kids[Math.floor(Math.random() * kids.length)];
+      a.classList.remove('hop'); void a.offsetWidth; a.classList.add('hop');
+    }, 3800);
+  }
+
+  function boot() {
+    document.body.appendChild(wrap);
+    if (TPL !== 'product') intro();   /* 24.09: nu pe produs: acolo omul vine din reclamă și trebuie să vadă poza și butonul */
+    peekers();
+    squad();
+  }
+  if (document.readyState === 'complete') setTimeout(boot, 300);
+  else window.addEventListener('load', function () { setTimeout(boot, 300); });
+})();
+</script>
+{%- endunless -%}

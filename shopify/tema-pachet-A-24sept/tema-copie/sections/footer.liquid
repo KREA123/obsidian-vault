@@ -1,0 +1,168 @@
+{%- comment -%}
+  Subsolul site-ului nou. Stilurile stau în assets/mundi-v4.css (.mf-*).
+
+  Coloane: abonare la noutăți · Cumpără · Ajutor · Contact (cu program).
+  Sub ele: rețele sociale (doar cele completate) și metodele de plată
+  acceptate de magazin (din shop.enabled_payment_types, nu scrise de mână).
+  Jos: date de identificare (cu telefon și e-mail, vizibile și pe telefon, unde
+  coloana Contact e strânsă), nota de marcă LEGO®, drepturi. Apoi banda cu
+  sigla ANPC SAL; dacă nu s-a încărcat imaginea oficială, apare ca buton text.
+  SOL (ec.europa.eu/consumers/odr) a fost scos pe 24.09: platforma UE a fost
+  desființată pe 20.07.2025. Linkul e filtrat și din meniul coloanei 2.
+{%- endcomment -%}
+{%- liquid
+  assign st = section.settings
+  assign has_social = false
+  if st.social_facebook != blank or st.social_instagram != blank or st.social_tiktok != blank or st.social_youtube != blank
+    assign has_social = true
+  endif
+-%}
+<footer class="mf">
+  <div class="mf-wrap">
+    <div class="mf-cols">
+      <div class="mf-col mf-col--news">
+        <h3>{{ st.news_title }}</h3>
+        <p>{{ st.news_text }}</p>
+        {%- form 'customer', class: 'mf-form' -%}
+          {%- if form.posted_successfully? -%}
+            <span class="mf-ok">{{ 'newsletter.success' | t }}</span>
+          {%- else -%}
+            <input type="hidden" name="contact[tags]" value="newsletter">
+            <input type="email" name="contact[email]" required placeholder="{{ 'newsletter.placeholder' | t }}" aria-label="Email" autocomplete="email">
+            <button type="submit" aria-label="{{ 'newsletter.button' | t }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          {%- endif -%}
+        {%- endform -%}
+      </div>
+
+      <details class="mf-col" open>
+        <summary><h4>{{ st.col1_title }}</h4><span class="mf-caret" aria-hidden="true"></span></summary>
+        <div class="mf-links">
+          {%- if st.col1_builtin -%}
+            {%- assign f1 = 'Noutăți:noutati-hituri|Reduceri:reduceri|Sub 100 lei:lego-sub-100-lei|Sub 200 lei:lego-sub-200-lei|Pentru adulți:lego-icons-creator-expert|Back to School:back-to-school|Calendare advent:calendare-advent-lego-2026|Toate seturile LEGO®:lego|Toate categoriile:' | split: '|' -%}
+            {%- for item in f1 -%}
+              {%- assign p = item | split: ':' -%}
+              {%- if p[1] == blank -%}
+                <a href="{{ routes.collections_url }}">{{ p[0] }}</a>
+              {%- else -%}
+                {%- assign c = collections[p[1]] -%}
+                {%- if c != blank and c.products_count > 0 -%}<a href="{{ c.url }}">{{ p[0] }}</a>{%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- else -%}
+            {%- for link in linklists[st.menu1].links -%}
+              <a href="{{ link.url }}">{{ link.title }}</a>
+            {%- endfor -%}
+          {%- endif -%}
+        </div>
+      </details>
+
+      <details class="mf-col" open>
+        <summary><h4>{{ st.col2_title }}</h4><span class="mf-caret" aria-hidden="true"></span></summary>
+        <div class="mf-links">
+          {%- for link in linklists[st.menu2].links -%}
+            {%- unless link.url contains 'ec.europa.eu/consumers/odr' -%}
+              <a href="{{ link.url }}">{{ link.title }}</a>
+            {%- endunless -%}
+          {%- endfor -%}
+        </div>
+      </details>
+
+      <details class="mf-col" open>
+        <summary><h4>{{ st.col3_title }}</h4><span class="mf-caret" aria-hidden="true"></span></summary>
+        <div class="mf-links mf-contact">
+          {%- if st.about != blank -%}<p class="mf-about">{{ st.about }}</p>{%- endif -%}
+          {%- if st.contact3 != blank -%}<a href="tel:{{ st.contact3 | remove: ' ' }}">{{ st.contact3 }}</a>{%- endif -%}
+          {%- if st.contact2 != blank -%}<a href="mailto:{{ st.contact2 }}">{{ st.contact2 }}</a>{%- endif -%}
+          {%- if st.contact1 != blank -%}<span>{{ st.contact1 }}</span>{%- endif -%}
+          {%- if st.program != blank -%}<span>{{ st.program }}</span>{%- endif -%}
+        </div>
+      </details>
+    </div>
+
+    <div class="mf-row">
+      <div class="mf-social">
+        {%- if st.social_facebook != blank -%}<a href="{{ st.social_facebook }}" aria-label="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4 1.8-4 4v2H7v4h3v6h4v-6h3l1-4h-4V8.5c0-.3.2-.5.5-.5Z"/></svg></a>{%- endif -%}
+        {%- if st.social_instagram != blank -%}<a href="{{ st.social_instagram }}" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2"/></svg></a>{%- endif -%}
+        {%- if st.social_tiktok != blank -%}<a href="{{ st.social_tiktok }}" aria-label="TikTok" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h3c.2 2.2 1.6 3.7 4 4v3c-1.5 0-2.9-.5-4-1.3V15a6 6 0 1 1-6-6v3a3 3 0 1 0 3 3V3Z"/></svg></a>{%- endif -%}
+        {%- if st.social_youtube != blank -%}<a href="{{ st.social_youtube }}" aria-label="YouTube" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 8.2c-.2-1.5-1-2.3-2.5-2.5C17.6 5.4 12 5.4 12 5.4s-5.6 0-7.5.3C3 5.9 2.2 6.7 2 8.2 1.8 9.7 1.8 12 1.8 12s0 2.3.2 3.8c.2 1.5 1 2.3 2.5 2.5 1.9.3 7.5.3 7.5.3s5.6 0 7.5-.3c1.5-.2 2.3-1 2.5-2.5.2-1.5.2-3.8.2-3.8s0-2.3-.2-3.8ZM10 15V9l5.2 3L10 15Z"/></svg></a>{%- endif -%}
+        {%- unless has_social -%}<span class="mf-brand"><svg aria-hidden="true"><use href="#planet"/></svg>{{ st.logo_text }}</span>{%- endunless -%}
+      </div>
+      {%- if st.show_payments -%}
+        <div class="mf-pay" aria-label="Metode de plată">
+          {%- for type in shop.enabled_payment_types -%}{{ type | payment_type_svg_tag: class: 'mf-pay-icon' }}{%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    <div class="mf-legal">
+      {%- if st.firma != blank -%}<p>{{ st.firma }}{% if st.contact3 != blank %} · Tel. <a href="tel:{{ st.contact3 | remove: ' ' }}" style="color:inherit">{{ st.contact3 }}</a>{% endif %}{% if st.contact2 != blank %} · <a href="mailto:{{ st.contact2 }}" style="color:inherit">{{ st.contact2 }}</a>{% endif %}</p>{%- endif -%}
+      {%- if st.legal != blank -%}<p>{{ st.legal }}</p>{%- endif -%}
+      <p class="mf-copy">© {{ 'now' | date: '%Y' }} {{ st.logo_text }}. {{ 'footer.rights' | t }}.</p>
+    </div>
+  </div>
+
+  <div class="mf-band">
+    <div class="mf-wrap mf-badges">
+      <a href="{{ st.anpc_sal_link }}" target="_blank" rel="noopener">
+        {%- if st.anpc_sal_image -%}
+          <img src="{{ st.anpc_sal_image | image_url: width: 500 }}" alt="ANPC — Soluționarea alternativă a litigiilor" width="250" height="62" loading="lazy">
+        {%- else -%}
+          <span class="mf-badge"><b>ANPC</b>Soluționarea alternativă a litigiilor</span>
+        {%- endif -%}
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var mq = window.matchMedia('(max-width:700px)');
+  var cols = document.querySelectorAll('.mf details.mf-col');
+  function sync() {
+    for (var i = 0; i < cols.length; i++) {
+      if (mq.matches) cols[i].removeAttribute('open'); else cols[i].setAttribute('open', '');
+    }
+  }
+  sync();
+  if (mq.addEventListener) mq.addEventListener('change', sync); else if (mq.addListener) mq.addListener(sync);
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    { "type": "text", "id": "logo_text", "label": "Numele magazinului", "default": "MundiShop.ro" },
+    { "type": "header", "content": "Abonare la noutăți" },
+    { "type": "text", "id": "news_title", "label": "Titlu", "default": "Abonează-te la noutăți" },
+    { "type": "text", "id": "news_text", "label": "Text", "default": "Seturi noi, precomenzi și reduceri. Maximum două e-mailuri pe lună." },
+    { "type": "header", "content": "Coloane" },
+    { "type": "text", "id": "col1_title", "label": "Titlu coloana 1", "default": "Cumpără" },
+    { "type": "checkbox", "id": "col1_builtin", "label": "Coloana 1: lista scurtă din temă (Noutăți, Reduceri, Sub 100 lei…)", "default": true },
+    { "type": "link_list", "id": "menu1", "label": "Meniu coloana 1 (dacă lista scurtă e oprită)", "default": "main-menu" },
+    { "type": "text", "id": "col2_title", "label": "Titlu coloana 2", "default": "Ajutor" },
+    { "type": "link_list", "id": "menu2", "label": "Meniu coloana 2", "default": "footer" },
+    { "type": "text", "id": "col3_title", "label": "Titlu coloana 3", "default": "Contact" },
+    { "type": "textarea", "id": "about", "label": "Descriere scurtă", "default": "Magazin specializat în seturi LEGO® și accesorii. Produse noi, sigilate, cu factură și garanție, livrate oriunde în România." },
+    { "type": "text", "id": "contact3", "label": "Telefon" },
+    { "type": "text", "id": "contact2", "label": "E-mail", "default": "office@krea.ro" },
+    { "type": "text", "id": "contact1", "label": "Oraș", "default": "București, România" },
+    { "type": "text", "id": "program", "label": "Program (ex: Luni–Vineri 9–18)" },
+    { "type": "header", "content": "Rețele sociale (gol = nu apare)" },
+    { "type": "url", "id": "social_facebook", "label": "Facebook" },
+    { "type": "url", "id": "social_instagram", "label": "Instagram" },
+    { "type": "url", "id": "social_tiktok", "label": "TikTok" },
+    { "type": "url", "id": "social_youtube", "label": "YouTube" },
+    { "type": "checkbox", "id": "show_payments", "label": "Arată metodele de plată", "default": true },
+    { "type": "header", "content": "Legal" },
+    { "type": "textarea", "id": "firma", "label": "Date de identificare firmă" },
+    { "type": "textarea", "id": "legal", "label": "Notă de marcă", "default": "LEGO®, logo-ul LEGO, minifigurina și configurația cărămizii și a bumbilor sunt mărci ale Grupului LEGO, care nu sponsorizează, nu autorizează și nu aprobă acest magazin. MundiShop.ro este un comerciant independent." },
+    { "type": "header", "content": "ANPC și SOL" },
+    { "type": "image_picker", "id": "anpc_sal_image", "label": "Sigla ANPC SAL (oficială)" },
+    { "type": "text", "id": "anpc_sal_link", "label": "Link ANPC SAL", "default": "https://anpc.ro/ce-este-sal/" },
+    { "type": "image_picker", "id": "anpc_sol_image", "label": "Sigla SOL (oficială)" },
+    { "type": "text", "id": "anpc_sol_link", "label": "Link SOL", "default": "https://ec.europa.eu/consumers/odr" },
+    { "type": "text", "id": "tagline", "label": "Tagline (nefolosit)" }
+  ]
+}
+{% endschema %}

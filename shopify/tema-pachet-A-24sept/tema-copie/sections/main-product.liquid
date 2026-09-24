@@ -1,0 +1,269 @@
+<style>
+  .fastbuy{margin-top:10px}
+  .fastbuy .shopify-payment-button__button{border-radius:12px;font-weight:800;min-height:52px;width:100%}
+  .fastbuy .shopify-payment-button__more-payment-options-link{margin-top:8px;font-size:13px}
+  /* Telefon: nume + preț + plată la curier deasupra pozei; fără breadcrumb; fără fereastra „Reducere 5%” peste bara de comandă (23.09) */
+  .pp-mtop{display:none}
+  @media (max-width:749px){
+    .pp-bc{display:none}
+    .pp-mtop{display:block;grid-column:1/-1;padding:2px 0 10px}
+    .pp-mtop-t{margin:0 0 6px;font-size:17px;line-height:1.3;font-weight:800;color:#14161A}
+    .pp-mtop-p{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+    .pp-mtop-now{font-size:24px;line-height:1.1;font-weight:900;color:#14161A}
+    .pp-mtop-was{font-size:15px;color:#7A7F87}
+    .pp-mtop-d{font-size:13px;font-weight:800;color:#fff;background:#D42B1F;border-radius:999px;padding:3px 9px}
+    .pp-mtop-s{margin:6px 0 0;font-size:13px;line-height:1.35;font-weight:700;color:#0A7A2F}
+    shopify-forms-embed{display:none!important}
+  }
+</style>
+{% render 'mundi-pp-style' %}
+<div class="wrap">
+  <div class="pp-bc">{% render 'mundi-breadcrumb' %}</div>
+  <div class="pp">
+    {%- assign mt_v = product.selected_or_first_available_variant -%}
+    <div class="pp-mtop">
+      <p class="pp-mtop-t">{{ product.title }}</p>
+      <div class="pp-mtop-p">
+        <span class="pp-mtop-now">{{ mt_v.price | money }}</span>
+        {%- if mt_v.compare_at_price > mt_v.price -%}
+          <s class="pp-mtop-was">{{ mt_v.compare_at_price | money }}</s>
+          <span class="pp-mtop-d">−{{ mt_v.compare_at_price | minus: mt_v.price | times: 100 | divided_by: mt_v.compare_at_price }}%</span>
+        {%- endif -%}
+      </div>
+      {% render 'mundi-pp-stars', product: product %}
+      {% render 'mundi-pp-ship', product: product, cls: 'pp-mtop-ship' %}
+      <p class="pp-mtop-s">{% if mt_v.available %}În stoc{% else %}Momentan indisponibil{% endif %} · Plătești la curier, la primire · <a href="/pages/politica-de-retur">Retur 14 zile</a></p>
+    </div>
+    {%- comment -%}
+      Galeria produsului.
+
+      Pistă cu scroll-snap, nu schimbare de `src`. Diferența practică:
+      pe telefon se trage cu degetul fără o linie de JavaScript (o face
+      browserul), iar pozele nu mai clipesc la schimbare, fiindcă sunt
+      toate în pagină, nu una singură căreia îi rescriem adresa.
+
+      Toate pozele, nu primele șase ca înainte.
+
+      Prima poză e elementul cel mai mare de pe pagină (LCP): rămâne
+      `eager` cu prioritate mare. Restul sunt `lazy` — nu se descarcă
+      până nu ajungi la ele.
+
+      width/height pe fiecare imagine + aspect-ratio pe pistă: rezervă
+      locul din prima, deci pagina nu sare când sosesc pozele.
+
+      SRCSET, adăugat pentru telefon. Până acum fiecare poză pleca la 900px
+      lățime, indiferent de ecran. Pe telefon caseta are 320px, adică 640
+      puncte pe ecran retina — trimiteam cu o treime mai mulți octeți decât
+      încap. Și nu e vorba de o poză: pista fiind derulabilă lateral,
+      browserul socotește primele trei „aproape în ecran" și le aduce pe
+      toate, deși scrie loading="lazy". Pe pagina de produs a lui 72160 asta
+      însemna 245 KB de poze pe o conexiune mobilă.
+
+      Cu srcset + sizes, un telefon obișnuit (390px, retina) cere varianta de
+      700px în loc de 900: ~23 KB mai puțin de fiecare poză, ~68 KB pe pagină.
+
+      Scara se oprește intenționat la 900px — exact cât se trimitea și
+      înainte. Așa nicio combinație de ecran și densitate nu poate ajunge să
+      ceară mai mult decât până acum: schimbarea doar scade, nu crește.
+    {%- endcomment -%}
+    <div class="gal">
+      {%- assign nr = product.images.size -%}
+      <div class="galv"{% if nr > 1 %} data-gal{% endif %}>
+        <div class="galt" id="galt"
+             {% if nr > 1 %}tabindex="0" role="region" aria-label="{{ 'product.gallery' | t | default: 'Galerie foto' }}"{% endif %}>
+          {%- if nr > 0 -%}
+            {%- for image in product.images -%}
+              <figure class="gals">
+                <img src="{{ image | image_url: width: 900 }}"
+                     srcset="{{ image | image_url: width: 400 }} 400w, {{ image | image_url: width: 640 }} 640w, {{ image | image_url: width: 700 }} 700w, {{ image | image_url: width: 900 }} 900w"
+                     sizes="(max-width: 900px) 84vw, 600px"
+                     alt="{{ image.alt | default: product.title | escape }}"
+                     width="{{ image.width }}" height="{{ image.height }}"
+                     {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>
+              </figure>
+            {%- endfor -%}
+          {%- else -%}
+            <figure class="gals">{% render 'placeholder-tile', index: 1 %}</figure>
+          {%- endif -%}
+        </div>
+
+        {%- if nr > 1 -%}
+          <button type="button" class="galn galn--prev" data-dir="-1" aria-label="{{ 'product.prev_image' | t | default: 'Poza anterioară' }}">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5 L8 12 L15 19"/></svg>
+          </button>
+          <button type="button" class="galn galn--next" data-dir="1" aria-label="{{ 'product.next_image' | t | default: 'Poza următoare' }}">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5 L16 12 L9 19"/></svg>
+          </button>
+          <div class="galnr" aria-hidden="true"><b>1</b>/{{ nr }}</div>
+        {%- endif -%}
+      </div>
+
+      {%- if nr > 1 -%}
+        <div class="thumbs" id="galth">
+          {%- for image in product.images -%}
+            <button type="button" data-i="{{ forloop.index0 }}"
+                    aria-label="{{ 'product.go_to_image' | t | default: 'Vezi poza' }} {{ forloop.index }}"
+                    {% if forloop.first %}aria-current="true"{% endif %}>
+              <img src="{{ image | image_url: width: 160 }}" alt="" loading="lazy" width="70" height="70">
+            </button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    <div class="pinfo">
+      <div class="vend">{{ product.vendor }}{% if product.type != blank %} · {{ product.type }}{% endif %}</div>
+      <h1>{{ product.title }}</h1>
+      {%- if product.tags contains 'originals' or product.tags contains 'Originals' -%}
+        <span class="badge or" style="position:static;display:inline-block;margin-bottom:8px">{{ 'product.badge_originals_long' | t }}</span>
+      {%- endif -%}
+
+      {%- assign cv = product.selected_or_first_available_variant -%}
+      <div class="pr">
+        <span class="now" id="pp-price">{{ cv.price | money }}</span>
+        {%- if cv.compare_at_price > cv.price -%}
+          <span class="was" id="pp-was">{{ cv.compare_at_price | money }}</span>
+          {%- assign disc = cv.compare_at_price | minus: cv.price | times: 100 | divided_by: cv.compare_at_price -%}
+          <span class="sv">−{{ disc }}%</span>
+        {%- endif -%}
+      </div>
+      {% render 'mundi-pp-stars', product: product %}
+      {%- if product.available -%}
+        <div class="stock">{{ 'product.in_stock_short' | t }}</div>
+      {%- else -%}
+        <div class="stock no">{{ 'product.out_of_stock' | t }}</div>
+      {%- endif -%}
+      {% render 'mundi-pp-ship', product: product %}
+
+      {%- form 'product', product, class: 'js-atc' -%}
+        {%- unless product.has_only_default_variant -%}
+          <label for="variant-select">{{ 'product.choose_variant' | t }}</label>
+          <select name="id" id="variant-select">
+            {%- for variant in product.variants -%}
+              <option value="{{ variant.id }}" {% unless variant.available %}disabled{% endunless %} {% if variant == cv %}selected{% endif %}>
+                {{ variant.title }} — {{ variant.price | money }}{% unless variant.available %} ({{ 'product.sold_out' | t }}){% endunless %}
+              </option>
+            {%- endfor -%}
+          </select>
+        {%- else -%}
+          <input type="hidden" name="id" value="{{ cv.id }}">
+        {%- endunless -%}
+        <label for="qty">{{ 'product.quantity' | t }}</label>
+        <div class="qty">
+          <input type="number" id="qty" name="quantity" value="1" min="1">
+        </div>
+        <div class="buyrow">
+          <button type="submit" class="btn-buy" {% unless product.available %}disabled{% endunless %}>
+            {% if product.available %}{{ 'product.add_to_cart' | t }}{% else %}{{ 'product.sold_out' | t }}{% endif %}
+          </button>
+          <button type="button" class="btn-fav js-fav" aria-label="{{ 'header.wishlist' | t }}"
+            data-handle="{{ product.handle }}" data-title="{{ product.title | escape }}"
+            data-url="{{ product.url }}" data-price="{{ product.price | money }}"
+            data-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 120 }}{% endif %}">
+            <svg><use href="#heart"/></svg>
+          </button>
+        </div>
+        <div class="fastbuy">{{ form | payment_button }}</div>
+      {%- endform -%}
+
+      <div class="trust">
+        <div><svg><use href="#truck"/></svg>{{ 'product.trust_shipping' | t }}</div>
+        <div><svg><use href="#shield"/></svg>{{ 'product.trust_original' | t }}</div>
+        <div><svg><use href="#ret"/></svg><a href="/pages/politica-de-retur">{{ 'product.trust_returns' | t }}</a></div>
+        <div><svg><use href="#lock"/></svg>{{ 'product.trust_payment' | t }}</div>
+      </div>
+    </div>
+  </div>
+
+  {%- if product.description != blank -%}
+    <div class="pdesc">
+      <h2>{{ 'product.description' | t }}</h2>
+      {{ product.description }}
+    </div>
+  {%- endif -%}
+</div>
+
+<script>
+/* Galeria. Derularea o face browserul (scroll-snap); JS-ul doar
+   sincronizează miniaturile, numărătoarea și săgețile cu ea. Dacă
+   scriptul nu rulează, pista tot se trage cu degetul — pierzi doar
+   săgețile și evidențierea miniaturii. */
+(function () {
+  var v = document.querySelector('[data-gal]');
+  if (!v) return;
+  var pista  = v.querySelector('.galt');
+  var thumbs = document.getElementById('galth');
+  var nr     = v.querySelector('.galnr b');
+  var poze   = pista.querySelectorAll('.gals');
+  if (poze.length < 2) return;
+
+  function indexCurent() {
+    /* rotunjim la cea mai apropiată poză: la derulare cu degetul
+       poziția rareori cade exact pe un multiplu */
+    return Math.round(pista.scrollLeft / pista.clientWidth);
+  }
+
+  function mergiLa(i) {
+    i = Math.max(0, Math.min(poze.length - 1, i));
+    pista.scrollTo({ left: i * pista.clientWidth, behavior: 'smooth' });
+  }
+
+  function sincronizeaza() {
+    var i = indexCurent();
+    if (nr) nr.textContent = i + 1;
+    if (thumbs) {
+      var b = thumbs.children;
+      for (var k = 0; k < b.length; k++) {
+        if (k === i) {
+          b[k].setAttribute('aria-current', 'true');
+          /* ține miniatura activă în ecran când banda de miniaturi
+             derulează lateral. DOAR lateral, pe banda ei: scrollIntoView
+             mișca și pagina pe verticală — pe telefon, la fiecare
+             ascundere a barei de adresă (resize), pagina sărea înapoi
+             la galerie. */
+          if (thumbs.scrollWidth > thumbs.clientWidth + 2) {
+            thumbs.scrollTo({ left: b[k].offsetLeft - thumbs.clientWidth / 2 + b[k].clientWidth / 2, behavior: 'smooth' });
+          }
+        } else {
+          b[k].removeAttribute('aria-current');
+        }
+      }
+    }
+    var p = v.querySelector('.galn--prev'), n = v.querySelector('.galn--next');
+    if (p) p.disabled = i === 0;
+    if (n) n.disabled = i === poze.length - 1;
+  }
+
+  var asteapta = false;
+  pista.addEventListener('scroll', function () {
+    if (asteapta) return;
+    asteapta = true;
+    requestAnimationFrame(function () { asteapta = false; sincronizeaza(); });
+  }, { passive: true });
+
+  var sageti = v.querySelectorAll('.galn');
+  for (var s = 0; s < sageti.length; s++) {
+    sageti[s].addEventListener('click', function () {
+      mergiLa(indexCurent() + parseInt(this.getAttribute('data-dir'), 10));
+    });
+  }
+
+  if (thumbs) thumbs.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (b) mergiLa(parseInt(b.getAttribute('data-i'), 10));
+  });
+
+  /* săgețile de pe tastatură, când pista are focus */
+  pista.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') { e.preventDefault(); mergiLa(indexCurent() + 1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); mergiLa(indexCurent() - 1); }
+  });
+
+  window.addEventListener('resize', sincronizeaza);
+  sincronizeaza();
+})();
+</script>
+
+{% schema %}
+{ "name": "Pagina de produs", "settings": [] }
+{% endschema %}

@@ -1,0 +1,55 @@
+{%- comment -%}
+  Header pe un singur rând pe telefon (24.09 · pachet A, punctul 4).
+  Înainte: logo pe un rând, Favorite/Coș pe al doilea, căutarea pe al treilea
+  (~174 px + banda de 34 px = o treime din primul ecran). Acum: meniu · logo ·
+  lupă · favorite · coș pe un rând; câmpul de căutare se deschide din lupă.
+  Pe prima pagină câmpul rămâne deschis (acolo căutarea e drumul principal).
+  Cauza ruperii pe rânduri: mundi-toy.css repune etichetele „Favorite” /
+  „Coșul meu” pe telefon (.mh-bar .mh-act a {font-size:12.5px}), deci
+  iconițele nu mai încap lângă logo. Regulile de mai jos folosesc #mh-bar ca
+  să treacă peste mundi-toy.css fără !important.
+
+  Se randează la finalul sections/mundi-header.liquid:
+  {% render 'mundi-header-mobil' %}
+{%- endcomment -%}
+<style>
+  .mh-sbtn{display:none}
+  @media (max-width:1023px){
+    #mh-bar .mh-wrap{gap:0 4px;padding-block:6px}
+    #mh-bar .mh-logo{flex:0 1 auto;min-width:0;gap:8px}
+    #mh-bar .mh-logo svg{width:36px;height:23px}
+    #mh-bar .mh-wm{font-size:19px}
+    #mh-bar .mh-act{gap:0}
+    #mh-bar .mh-act a,#mh-bar .mh-act button{min-width:42px;min-height:44px;padding:0;gap:0;font-size:0}
+    #mh-bar .mh-act svg{width:24px;height:24px}
+    #mh-bar .mh-act .bubble{top:3px;right:0}
+    #mh-bar .mh-sbtn{display:flex}
+    #mh-bar .mh-search{display:none;margin-top:6px}
+    #mh-bar.is-search .mh-search,#mh-bar.mh-bar--home .mh-search{display:flex}
+    #mh-bar.mh-bar--home .mh-sbtn{display:none}
+  }
+  @media (max-width:374px){
+    #mh-bar .mh-wm{font-size:17px}
+    #mh-bar .mh-act a,#mh-bar .mh-act button{min-width:38px}
+  }
+</style>
+<script>
+(function () {
+  var bar = document.getElementById('mh-bar');
+  var btn = document.getElementById('mh-sbtn');
+  if (!bar || !btn) return;
+  var input = bar.querySelector('.mh-search input[type="search"]');
+  function set(on) {
+    bar.classList.toggle('is-search', on);
+    btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function () {
+    var on = !bar.classList.contains('is-search');
+    set(on);
+    if (on && input) input.focus();   /* în același gest, ca iOS să deschidă tastatura */
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && bar.classList.contains('is-search')) { set(false); btn.focus(); }
+  });
+})();
+</script>
