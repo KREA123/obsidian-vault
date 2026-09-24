@@ -1,0 +1,1185 @@
+<title>SoulOS</title>
+<meta name="description" content="Prototip interactiv pentru SoulOS, interfața rotundă a lui SOUL.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#E4E6E1; --surface:#EFF0EC; --ink:#161819; --muted:#5A615F; --line:#C9CDC6;
+  --chip:#F7F7F3; --chip-ink:#161819; --on:#161819; --on-ink:#F3F1E8;
+  --amber-ink:#9A5A00; --mint-ink:#1D6E54;
+  --peb-hi:rgba(255,255,255,.96); --peb-mid:rgba(233,236,236,.92); --peb-lo:rgba(190,196,198,.95); --peb-edge:rgba(150,158,160,.9);
+  --peb-shadow:rgba(40,46,44,.28);
+  --display:"Fredoka","Nunito",system-ui,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* device (always AMOLED) */
+  --cream:#FFF0C8; --amber:#FFB347; --mint:#C9F2E4; --ice:#9FC6FF;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0B0D0D; --surface:#141717; --ink:#ECEAE2; --muted:#8C9490; --line:#262B2A;
+    --chip:#191D1C; --chip-ink:#ECEAE2; --on:#ECEAE2; --on-ink:#0B0D0D;
+    --amber-ink:#FFB347; --mint-ink:#C9F2E4;
+    --peb-hi:rgba(236,240,240,.92); --peb-mid:rgba(196,202,204,.9); --peb-lo:rgba(140,148,150,.92); --peb-edge:rgba(96,104,106,.95);
+    --peb-shadow:rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0B0D0D; --surface:#141717; --ink:#ECEAE2; --muted:#8C9490; --line:#262B2A;
+  --chip:#191D1C; --chip-ink:#ECEAE2; --on:#ECEAE2; --on-ink:#0B0D0D;
+  --amber-ink:#FFB347; --mint-ink:#C9F2E4;
+  --peb-hi:rgba(236,240,240,.92); --peb-mid:rgba(196,202,204,.9); --peb-lo:rgba(140,148,150,.92); --peb-edge:rgba(96,104,106,.95);
+  --peb-shadow:rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding-inline:16px;overflow-x:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+
+.top{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 0}
+.brand{font:500 17px/1 var(--display);letter-spacing:.01em;display:flex;align-items:center;gap:10px}
+@media (max-width:480px){.brand small{display:none}}
+.brand small{font:400 12px/1 var(--mono);color:var(--muted);letter-spacing:.02em}
+.mark{width:22px;height:22px;border-radius:50%;background:#000;position:relative;flex:none;box-shadow:0 0 0 3px var(--peb-mid)}
+.mark::before,.mark::after{content:"";position:absolute;top:6px;width:4px;height:9px;border-radius:3px;background:var(--cream);box-shadow:0 0 4px rgba(255,240,200,.8)}
+.mark::before{left:6px}.mark::after{right:6px}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.lang button{border:0;background:none;padding:5px 12px;border-radius:999px;cursor:pointer;font:500 13px/1 var(--mono);color:var(--muted)}
+.lang button[aria-pressed="true"]{background:var(--on);color:var(--on-ink)}
+
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:56px;padding-block:24px 48px;align-items:start}
+@media (max-width:920px){.wrap{grid-template-columns:minmax(0,1fr);gap:28px}}
+
+.stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;align-items:center;gap:18px;min-width:0}
+@media (max-width:920px){.stage{position:static}}
+/* SOUL body: soft oval 60 x 68 mm, frosted translucent PC; 1.75" screen centred ~3.5 mm above centre, speaker in the lower lobe */
+.pebble{position:relative;width:min(460px,calc(100% - 12px));aspect-ratio:60/68;max-width:100%;
+  border-radius:50% 50% 50% 50% / 46% 46% 54% 54%;
+  background:
+    radial-gradient(ellipse 56% 36% at 46% 16%,var(--peb-hi) 0,transparent 72%),
+    radial-gradient(ellipse 71% 71% at 50% 47%,var(--peb-mid) 52%,var(--peb-lo) 84%,var(--peb-edge) 100%);
+  box-shadow:0 34px 60px -24px var(--peb-shadow),0 10px 20px -10px var(--peb-shadow),inset 0 -14px 30px rgba(0,0,0,.14),inset 0 8px 16px rgba(255,255,255,.7),inset 0 0 40px rgba(255,240,200,.18);
+  transition:transform .12s}
+.pebble::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:repeating-radial-gradient(circle at 40% 30%,rgba(255,255,255,.05) 0 1px,transparent 1px 3px);mix-blend-mode:soft-light}
+.pebble:has(.screen:focus-visible){outline:2px dashed var(--muted);outline-offset:8px}
+.pebble.buzz{animation:buzz .32s linear 2}
+@keyframes buzz{0%,100%{transform:translate(0,0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(2px,1px)}}
+.glass{position:absolute;left:12.9%;width:74.2%;top:12.1%;aspect-ratio:1;border-radius:50%;background:#000;
+  box-shadow:0 0 0 2px rgba(0,0,0,.9),0 0 0 5px rgba(255,255,255,.4),0 0 0 6px rgba(120,128,130,.25),inset 0 0 18px rgba(0,0,0,.9)}
+.screen{position:absolute;left:0;top:0;width:466px;height:466px;transform-origin:0 0;border-radius:50%;overflow:hidden;background:#000;
+  color:var(--cream);font-family:var(--display);touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer;outline:none}
+.glass::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:linear-gradient(155deg,rgba(255,255,255,.10),transparent 38%)}
+.grille{position:absolute;left:50%;top:88.2%;width:17%;height:3.2%;transform:translate(-50%,-50%);pointer-events:none;
+  background:radial-gradient(circle,rgba(60,66,68,.55) 38%,transparent 44%) 0 0/calc(100%/9) 50%}
+.side{position:absolute;right:-4px;top:21%;width:10px;height:13%;border-radius:6px;border:0;cursor:pointer;padding:0;touch-action:none;
+  background:linear-gradient(90deg,var(--peb-lo),var(--peb-hi) 60%,var(--peb-mid));box-shadow:1px 2px 5px var(--peb-shadow)}
+.side:active,.side.down{transform:translateX(-2px)}
+#face{position:absolute;inset:0;width:466px;height:466px;display:block}
+
+.keys{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:0;font-size:13px;color:var(--muted);max-width:540px}
+.keys span{white-space:nowrap}
+kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:3px 6px;background:var(--surface);color:var(--ink)}
+
+/* ---------- device UI (466px space) ---------- */
+#cards{position:absolute;inset:0}
+.card{position:absolute;inset:0;transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .32s ease}
+.card.in-left{transform:translateX(62%);opacity:0}
+.card.in-right{transform:translateX(-62%);opacity:0}
+.card.in-up{transform:translateY(40%);opacity:0}
+.card.in-down{transform:translateY(-40%);opacity:0}
+.card.in-fade{transform:scale(.94);opacity:0}
+.card.out-left{transform:translateX(-62%);opacity:0}
+.card.out-right{transform:translateX(62%);opacity:0}
+.card.out-up{transform:translateY(-30%);opacity:0}
+.card.out-down{transform:translateY(40%);opacity:0}
+.card.out-fade{transform:scale(1.04);opacity:0}
+.c{position:absolute;left:68px;right:68px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.lbl{position:absolute;left:0;right:0;top:136px;text-align:center;font:500 19px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,240,200,.56)}
+.lbl.amber{color:var(--amber)}.lbl.mint{color:var(--mint)}.lbl.ice{color:var(--ice)}
+.t1{font:500 34px/1.15 var(--display);text-wrap:balance}
+.t2{font:400 27px/1.22 var(--display);text-wrap:balance}
+.t3{font:400 22px/1.25 var(--display);color:rgba(255,240,200,.62);text-wrap:balance}
+.mono{font-family:var(--mono)}
+.clock{position:absolute;top:34px;left:0;right:0;text-align:center;font:500 25px/1 var(--display);color:rgba(255,240,200,.5);letter-spacing:.04em;transition:opacity .3s;font-variant-numeric:tabular-nums}
+.homeTag{position:absolute;bottom:52px;left:0;right:0;text-align:center;font:500 21px/1 var(--display)}
+.homeTag.amber{color:var(--amber)}.homeTag.cream{color:rgba(255,240,200,.6)}
+.screen.has-pill .clock{opacity:0}
+.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.chip{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 22px;border-radius:26px;font:500 22px/1 var(--display);background:#1d1b16;color:var(--cream);border:2px solid rgba(255,240,200,.18)}
+.chip.ok{background:rgba(201,242,228,.14);border-color:rgba(201,242,228,.55);color:var(--mint)}
+.chip.warn{background:rgba(255,179,71,.12);border-color:rgba(255,179,71,.55);color:var(--amber)}
+.chip.btn{cursor:pointer}
+.tool{font:400 17px/1 var(--mono);color:rgba(159,198,255,.8)}
+
+.dots{position:absolute;left:0;right:0;bottom:27px;display:flex;justify-content:center;gap:9px;transition:opacity .3s;pointer-events:none}
+.dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,240,200,.25);transition:background .3s,transform .3s}
+.dots i.on{background:var(--cream);transform:scale(1.25)}
+.dots i.home{width:9px;border-radius:2px}
+.dots.hide{opacity:0}
+
+.pill{position:absolute;top:18px;left:50%;transform:translate(-50%,-140%);max-width:320px;min-height:54px;padding:8px 24px;border-radius:27px;
+  display:flex;align-items:center;gap:12px;background:#1f1d18;color:var(--cream);font:500 22px/1.1 var(--display);white-space:nowrap;
+  transition:transform .45s cubic-bezier(.2,.9,.25,1.2);border:2px solid rgba(255,240,200,.15);z-index:5}
+.pill.show{transform:translate(-50%,0)}
+.pill .who{color:rgba(255,240,200,.6)}
+.pill.amber{border-color:var(--amber);color:var(--amber);background:#241a0c;box-shadow:0 0 18px rgba(255,179,71,.35)}
+.pill.mint{border-color:rgba(201,242,228,.6);color:var(--mint);background:#10201b}
+.pill span{overflow:hidden;text-overflow:ellipsis}
+
+.stack{position:absolute;top:168px;left:74px;right:74px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:14px;text-align:left}
+.row .dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--cream);box-shadow:0 0 8px currentColor}
+.row .dot.ice{background:var(--ice);color:var(--ice)}.row .dot.amber{background:var(--amber);color:var(--amber)}.row .dot.mint{background:var(--mint);color:var(--mint)}.row .dot.cream{color:var(--cream)}
+.row div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.row small{font:500 15px/1 var(--display);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,240,200,.5)}
+.row b{font:500 24px/1.1 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row b.amber{color:var(--amber)}
+
+.list{position:absolute;top:176px;left:72px;right:72px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.list li{display:flex;align-items:center;gap:14px;min-height:62px;padding:0 6px;border-radius:18px;text-align:left}
+.list .tm{font:500 20px/1 var(--mono);color:rgba(255,240,200,.55);flex:none;width:66px;font-variant-numeric:tabular-nums}
+.list .tx{font:400 24px/1.15 var(--display);flex:1;min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.list li.col{flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;padding:8px 6px}
+.list .ck{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,240,200,.35);flex:none;display:grid;place-items:center}
+.list li.done .tx{color:rgba(255,240,200,.4);text-decoration:line-through;text-decoration-color:rgba(201,242,228,.6)}
+.list li.done .ck{border-color:var(--mint);background:var(--mint)}
+.list li.done .ck::after{content:"";width:12px;height:7px;border:3px solid #10201b;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-2px)}
+.list li.new{background:rgba(201,242,228,.08)}
+.list .st{font:400 17px/1 var(--display);color:rgba(255,240,200,.45);flex:none}
+.list .st.ok{color:var(--mint)}
+
+.ring{position:absolute;inset:0;width:466px;height:466px;pointer-events:none}
+.fdig{font:500 104px/1 var(--display);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.cmd{font:500 25px/1.2 var(--mono);background:#15120c;border:2px solid rgba(255,179,71,.4);color:var(--cream);border-radius:16px;padding:12px 18px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.langs{display:flex;align-items:center;gap:14px}
+.lp{font:500 24px/1 var(--display);padding:12px 20px;border-radius:24px;border:2px solid rgba(255,240,200,.25)}
+.lp.a{background:var(--cream);color:#16130c;border-color:var(--cream)}
+.swap{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,240,200,.25);cursor:pointer}
+.ctrls{display:flex;gap:22px;align-items:center}
+.cb{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,240,200,.22);cursor:pointer}
+.cb.big{width:92px;height:92px;background:var(--cream);border-color:var(--cream)}
+.cb svg{width:30px;height:30px;fill:var(--cream)}
+.cb.big svg{width:38px;height:38px;fill:#16130c}
+.bar{width:220px;height:6px;border-radius:3px;background:rgba(255,240,200,.18);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--cream);border-radius:3px}
+.set{position:absolute;top:170px;left:76px;right:76px;display:flex;flex-direction:column}
+.set div{display:flex;justify-content:space-between;align-items:center;gap:12px;height:58px;border-bottom:1px solid rgba(255,240,200,.1);cursor:pointer}
+.set div:last-child{border-bottom:0}
+.set span{font:400 24px/1 var(--display)}
+.set b{font:500 22px/1 var(--display);color:var(--mint)}
+.set b.dim{color:rgba(255,240,200,.55)}
+.fade-in{animation:fin .4s ease both}
+@keyframes fin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.caret{display:inline-block;width:3px;height:1em;background:var(--ice);vertical-align:-.12em;margin-left:3px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- panel ---------- */
+.panel{display:flex;flex-direction:column;gap:30px;min-width:0}
+.panel h1{font:500 40px/1 var(--display);margin:0;letter-spacing:-.01em}
+.lede{margin:10px 0 0;color:var(--muted);max-width:52ch;text-wrap:pretty}
+.panel h2{font:600 12px/1 var(--body);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 12px}
+.say{display:flex;flex-wrap:wrap;gap:8px}
+.say button{border:1px solid var(--line);background:var(--chip);color:var(--chip-ink);border-radius:999px;padding:8px 14px;cursor:pointer;text-align:left;font-size:14px;line-height:1.3;max-width:100%}
+.say button:hover{border-color:var(--ink)}
+.say button.claude{border-color:var(--amber-ink);color:var(--amber-ink)}
+.screens{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.screens button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:22px 104px minmax(0,1fr);gap:10px;align-items:baseline;padding:10px 6px;border-bottom:1px solid var(--line);cursor:pointer}
+.screens button:focus-visible{outline:2px solid var(--ink)}
+.screens button:hover{background:var(--surface)}
+.screens .n{font:400 11px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.screens .nm{font:500 16px/1.2 var(--display)}
+.screens .ds{font-size:14px;color:var(--muted);line-height:1.35}
+.screens button[aria-current="true"]{background:var(--surface)}
+.screens button[aria-current="true"] .nm{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
+.ctrl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;margin:0;font-size:14px}
+.ctrl dt{font-weight:600}
+.ctrl dd{margin:0;color:var(--muted)}
+.sens{display:flex;flex-wrap:wrap;gap:8px}
+.sens button{border:1px solid var(--line);background:var(--chip);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:14px}
+.sens button:hover{border-color:var(--ink)}
+.foot{font-size:13px;color:var(--muted);margin:0;max-width:52ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:#000;box-shadow:inset 0 0 0 3px var(--c)}
+@media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in{animation:none}}
+</style>
+
+<header class="top">
+  <div class="brand"><span class="mark" aria-hidden="true"></span>SoulOS <small>SOUL · 466 px AMOLED</small></div>
+  <div class="lang" role="group" aria-label="Limba / Language">
+    <button id="lang-ro" type="button" data-lang="ro" aria-pressed="true">RO</button>
+    <button id="lang-en" type="button" data-lang="en" aria-pressed="false">EN</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="stage" aria-label="Device">
+    <div class="pebble" id="pebble">
+      <div class="glass" id="glass">
+        <div class="screen" id="screen" tabindex="0" role="application" aria-label="SOUL screen">
+          <canvas id="face" aria-hidden="true"></canvas>
+          <div id="cards"></div>
+          <div class="dots hide" id="dots" aria-hidden="true"></div>
+          <div class="pill" id="pill" aria-live="polite"></div>
+        </div>
+      </div>
+      <span class="grille" aria-hidden="true"></span>
+      <button class="side" id="side" type="button" aria-label="Side button"></button>
+    </div>
+    <p class="keys" id="keys"></p>
+  </section>
+
+  <aside class="panel">
+    <div>
+      <h1>SoulOS</h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <section>
+      <h2 id="sayH"></h2>
+      <div class="say" id="say"></div>
+    </section>
+    <section>
+      <h2 id="scrH"></h2>
+      <ul class="screens" id="screens"></ul>
+    </section>
+    <section>
+      <h2 id="ctlH"></h2>
+      <dl class="ctrl" id="ctrl"></dl>
+    </section>
+    <section>
+      <h2 id="senH"></h2>
+      <div class="sens" id="sens"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <p class="foot" id="foot"></p>
+  </aside>
+</main>
+
+<script>
+"use strict";
+/* ================================================================ strings */
+const STR = {
+ro: {
+  lede: "Sistemul de operare al lui SOUL. Acasă e fața vie; tot restul e un cartonaș care alunecă peste ea, iar ochii reacționează la tot ce se întâmplă.",
+  sayH: "Spune-i (demo cu răspunsuri scriptate)", scrH: "Ecrane", ctlH: "Gesturi", senH: "Senzori (IMU)",
+  claudeNow: "Trimite acum o cerere Claude",
+  foot: "Prototip. Niciun răspuns nu vine de la un AI real: totul e scriptat ca să arate ritmul și reacțiile. Cererea Claude apare singură după ~20 s.",
+  keys: [["←", "→", "aplicații"], ["↑", "Azi"], ["↓", "înapoi"], ["Space", "ține = vorbește"], ["Enter", "atinge"], ["D", "atinge de 2×"], ["Esc", "buton"]],
+  ctrl: [["Atinge", "Acțiunea principală a ecranului. Pe față: bup."], ["Atinge de 2×", "Refuză o cerere Claude. Pe față: râde."], ["Ține apăsat", "Vorbești cu el (inel albastru = ascultă). Pe o cerere Claude: aprobă."], ["Glisează ← →", "Aplicațiile, pe rând, în cerc."], ["Glisează ↑ / ↓", "Azi / înapoi la față."], ["Butonul lateral", "Apasă: acasă. Ține: vorbești (microfonul pornește doar cu butonul sau degetul pe ecran). Apăsat de 2×: anulează."]],
+  sens: { pick: "Ridică-l", shake: "Scutură-l", down: "Cu fața în jos" },
+  legend: [["#FFF0C8", "cream = informație"], ["#FFB347", "chihlimbar = are nevoie de tine"], ["#C9F2E4", "mentă = gata"], ["#9FC6FF", "gheață = ascultă"]],
+  lblToday: "Azi", listen: "Ascult…", thinking: p => `${p} se gândește…`, speaking: "",
+  home: "Acasă", today: "Azi", talk: "Vorbește", reminders: "Mementouri", notes: "Notițe", focus: "Focus", claude: "Claude", diary: "Jurnal", translate: "Traduce", music: "Muzică", settings: "Setări",
+  d: {
+    home: "Fața vie. Mereu aici; totul se întoarce la ea.",
+    today: "Glisează în sus: următorul memento, vremea, Claude, bateria.",
+    talk: "Ține apăsat și întreabă. Răspuns scurt, cu fața care vorbește.",
+    reminders: "Ce urmează azi. Atinge un rând ca să-l bifezi.",
+    notes: "Ține apăsat și dictează. Notița ajunge pe telefon.",
+    focus: "Atinge ca să pornești 25 min. Ochii păzesc timpul.",
+    claude: "Aprobi ce vrea Claude: ține = da, atinge de 2× = nu.",
+    diary: "Ziua voastră, în trei rânduri scrise de el.",
+    translate: "Două limbi. Ține apăsat și vorbește; atinge ⇄ ca să inversezi.",
+    music: "Telecomandă pentru telefon: înapoi, pauză, înainte.",
+    settings: "Luminozitate, AI (Claude/ChatGPT), memorie, „sunt un AI”."
+  },
+  nextRem: "Memento", weather: "Vremea", battery: "Baterie", weatherV: "17° înnorat · mâine 19°", batteryV: "78% · ~2 zile",
+  cBusy: "lucrează · site", cWait: "te așteaptă", cIdle: "liniștit",
+  holdAsk: "Ține apăsat<br>și întreabă", lastQ: "Ultima întrebare",
+  holdNote: "Ține apăsat și dictează", toPhone: "pe telefon ✓", sending: "se trimite…",
+  focusTap: "Atinge = start", focusRun: "Atinge = pauză", focusPaused: "Pauză · atinge = continuă", focusDone: "Gata! Bravo.",
+  cAsk: "Claude cere voie", cHint: "Ține = da · 2× = nu", cWorking: "Claude lucrează", cProj: "proiect „site” · 3 aprobări azi", cCalm: "Nicio cerere. Stau cu ochii pe el.",
+  diaryT: "Jurnal · azi",
+  trHint: "Ține apăsat și vorbește",
+  musT: "Muzică · telefon", song: "Perfect fără tine", artist: "Vama Veche",
+  setBright: "Luminozitate", setAi: "AI", setMem: "Memorie", setMemV: n => n ? `${n} lucruri` : "goală", setAbout: "Sunt un AI", setAboutV: "citește",
+  memT: "Ce îmi amintesc", memWipe: "Ține apăsat = șterge tot", memEmpty: "Nu-mi amintesc nimic. Încă.", memDone: "Memorie ștearsă",
+  aboutT: "Sunt un AI.", aboutB: "Nu sunt om și pot greși. Ascult doar cât ții degetul pe mine, iar ce-mi spui trece prin telefon la AI-ul tău.",
+  msgT: "Mesaj", msgFrom: "Ana", msgBody: "Ajungi la 6?", reply1: "Da, ajung", reply2: "Întârzii 10 min", sent: "Trimis ✓",
+  approved: "Aprobat ✓", denied: "Refuzat", claudePill: "Claude cere voie", focusPill: "Focus gata ✓", dnd: "Nu deranja",
+  mem: ["Îți place ceaiul fără zahăr", "Ana e sora ta", "Lucrezi la „site” dimineața"],
+  phrases: [
+    { q: "Amintește-mi la 5 să sun la bancă", a: "Gata. Te anunț la 17:00.", chips: [["ok", "17:00 · Sună la bancă ✓"]], tool: "reminders.create", fx: "rem" },
+    { q: "Ce vreme e mâine?", a: "Mâine, 19° și soare. Plouă după 16:00.", chips: [["", "Ia umbrela"]], tool: "weather.forecast" },
+    { q: "Notează: idee de breloc", a: "Am notat. E în Notițe, pe telefon.", chips: [["ok", "Notiță salvată ✓"]], tool: "notes.append", fx: "note" },
+    { q: "Pornește focus 25 min", a: "Focus 25 de minute. Te păzesc.", chips: [["ok", "Focus pornit ✓"]], tool: "timer.focus", fx: "focus" },
+    { q: "Scrie-i Anei că întârzii 10 minute", a: "I-am scris Anei: „Întârzii 10 minute.”", chips: [["ok", "Mesaj trimis ✓"]], tool: "messages.send", fx: "msg" },
+    { q: "Stinge lumina în sufragerie", a: "Am stins lumina în sufragerie.", chips: [["ok", "Sufragerie · stins ✓"]], tool: "mcp · home.lights", fx: "light" }
+  ],
+  notePhrase: { q: "Cumpără baterii pentru telecomandă", a: "Notat.", chips: [["ok", "Notiță pe telefon ✓"]], tool: "notes.append", fx: "note2" },
+  trPhrase: { q: "Unde e gara, vă rog?", a: "Where is the train station, please?", tool: "translate" },
+  diaryInit: [["08:40", "M-ai luat la cafea."], ["11:15", "Am râs de două ori."], ["13:05", "Am dormit în buzunar."]],
+  dx: { rem: "Am pus un memento pentru bancă.", note: "Am notat ideea de breloc.", note2: "Am notat bateriile.", focus: "Am stat de pază 25 min.", msg: "I-am scris Anei.", light: "Am stins lumina.", ok: "Am aprobat ceva pentru Claude.", no: "Am refuzat o cerere.", wipe: "Am uitat tot, cum ai cerut." },
+  rems: [["11:30", "Cafea cu Ana", 1], ["15:00", "Coletul de la poștă", 0], ["19:30", "Udă florile", 0]],
+  remNew: "Sună la bancă",
+  notesInit: [["Nume pentru pisică: Pufu", 1], ["Cadou pentru tata: termos", 1]],
+  noteNew: "Idee de breloc", noteNew2: "Baterii pentru telecomandă",
+  replay: "Redă din nou", pickup: "Hei!", homeClaude: "Claude te așteaptă", homeFocus: t => `Focus · ${t}`
+},
+en: {
+  lede: "The operating system of SOUL. Home is the living face; everything else is a card that slides over it, and the eyes react to whatever happens.",
+  sayH: "Say to it (scripted demo answers)", scrH: "Screens", ctlH: "Gestures", senH: "Sensors (IMU)",
+  claudeNow: "Send a Claude request now",
+  foot: "Prototype. No answer comes from a real AI: everything is scripted to show the rhythm and the reactions. The Claude request arrives on its own after ~20 s.",
+  keys: [["←", "→", "apps"], ["↑", "Today"], ["↓", "back"], ["Space", "hold = talk"], ["Enter", "tap"], ["D", "double-tap"], ["Esc", "button"]],
+  ctrl: [["Tap", "The screen's main action. On the face: boop."], ["Double-tap", "Deny a Claude request. On the face: it laughs."], ["Hold", "Talk to it (blue ring = listening). On a Claude request: approve."], ["Swipe ← →", "The apps, one by one, in a loop."], ["Swipe ↑ / ↓", "Today / back to the face."], ["Side button", "Press: home. Hold: talk (the mic only opens with the button or a finger on the screen). Double-press: cancel."]],
+  sens: { pick: "Pick it up", shake: "Shake it", down: "Face down" },
+  legend: [["#FFF0C8", "cream = information"], ["#FFB347", "amber = needs you"], ["#C9F2E4", "mint = done"], ["#9FC6FF", "ice = listening"]],
+  lblToday: "Today", listen: "Listening…", thinking: p => `${p} is thinking…`, speaking: "",
+  home: "Home", today: "Today", talk: "Talk", reminders: "Reminders", notes: "Notes", focus: "Focus", claude: "Claude", diary: "Diary", translate: "Translate", music: "Music", settings: "Settings",
+  d: {
+    home: "The living face. Always here; everything returns to it.",
+    today: "Swipe up: next reminder, weather, Claude, battery.",
+    talk: "Hold and ask. A short answer, with the face speaking it.",
+    reminders: "What's next today. Tap a row to tick it off.",
+    notes: "Hold and dictate. The note lands on your phone.",
+    focus: "Tap to start 25 min. The eyes guard the time.",
+    claude: "Approve what Claude wants: hold = yes, double-tap = no.",
+    diary: "Your day, in three lines it writes itself.",
+    translate: "Two languages. Hold and speak; tap ⇄ to swap.",
+    music: "Remote for your phone: back, pause, next.",
+    settings: "Brightness, AI (Claude/ChatGPT), memory, “I'm an AI”."
+  },
+  nextRem: "Reminder", weather: "Weather", battery: "Battery", weatherV: "17° cloudy · 19° tomorrow", batteryV: "78% · ~2 days",
+  cBusy: "working · site", cWait: "waiting for you", cIdle: "quiet",
+  holdAsk: "Hold<br>and ask", lastQ: "Last question",
+  holdNote: "Hold and dictate", toPhone: "on phone ✓", sending: "sending…",
+  focusTap: "Tap = start", focusRun: "Tap = pause", focusPaused: "Paused · tap = resume", focusDone: "Done! Well done.",
+  cAsk: "Claude asks", cHint: "Hold = yes · 2× = no", cWorking: "Claude is working", cProj: "project “site” · 3 approvals today", cCalm: "No requests. I'm keeping an eye on it.",
+  diaryT: "Diary · today",
+  trHint: "Hold and speak",
+  musT: "Music · phone", song: "Perfect fără tine", artist: "Vama Veche",
+  setBright: "Brightness", setAi: "AI", setMem: "Memory", setMemV: n => n ? `${n} things` : "empty", setAbout: "I'm an AI", setAboutV: "read",
+  memT: "What I remember", memWipe: "Hold = forget everything", memEmpty: "I remember nothing. Yet.", memDone: "Memory wiped",
+  aboutT: "I'm an AI.", aboutB: "I'm not a person and I can be wrong. I only listen while your finger is on me, and what you say goes through your phone to your AI.",
+  msgT: "Message", msgFrom: "Ana", msgBody: "Will you be there at 6?", reply1: "Yes, see you", reply2: "10 min late", sent: "Sent ✓",
+  approved: "Approved ✓", denied: "Denied", claudePill: "Claude needs you", focusPill: "Focus done ✓", dnd: "Do not disturb",
+  mem: ["You like tea without sugar", "Ana is your sister", "You work on “site” in the mornings"],
+  phrases: [
+    { q: "Remind me at 5 to call the bank", a: "Done. I'll ping you at 17:00.", chips: [["ok", "17:00 · Call the bank ✓"]], tool: "reminders.create", fx: "rem" },
+    { q: "What's the weather tomorrow?", a: "Tomorrow, 19° and sunny. Rain after 16:00.", chips: [["", "Take an umbrella"]], tool: "weather.forecast" },
+    { q: "Note: keychain idea", a: "Noted. It's in Notes, on your phone.", chips: [["ok", "Note saved ✓"]], tool: "notes.append", fx: "note" },
+    { q: "Start focus 25 min", a: "Focus for 25 minutes. I'll guard it.", chips: [["ok", "Focus started ✓"]], tool: "timer.focus", fx: "focus" },
+    { q: "Tell Ana I'm 10 minutes late", a: "I told Ana: “Running 10 minutes late.”", chips: [["ok", "Message sent ✓"]], tool: "messages.send", fx: "msg" },
+    { q: "Turn off the living room light", a: "The living room light is off.", chips: [["ok", "Living room · off ✓"]], tool: "mcp · home.lights", fx: "light" }
+  ],
+  notePhrase: { q: "Buy batteries for the remote", a: "Noted.", chips: [["ok", "Note on phone ✓"]], tool: "notes.append", fx: "note2" },
+  trPhrase: { q: "Where is the train station, please?", a: "Unde e gara, vă rog?", tool: "translate" },
+  diaryInit: [["08:40", "You took me for coffee."], ["11:15", "I laughed twice."], ["13:05", "I napped in your pocket."]],
+  dx: { rem: "Set a reminder for the bank.", note: "Noted the keychain idea.", note2: "Noted the batteries.", focus: "Guarded 25 min of focus.", msg: "Messaged Ana.", light: "Turned off the light.", ok: "Approved something for Claude.", no: "Denied a request.", wipe: "Forgot everything, as asked." },
+  rems: [["11:30", "Coffee with Ana", 1], ["15:00", "Parcel at the post office", 0], ["19:30", "Water the plants", 0]],
+  remNew: "Call the bank",
+  notesInit: [["Cat name: Fluff", 1], ["Gift for dad: thermos", 1]],
+  noteNew: "Keychain idea", noteNew2: "Batteries for the remote",
+  replay: "Play again", pickup: "Hey!", homeClaude: "Claude is waiting", homeFocus: t => `Focus · ${t}`
+}};
+let LANG = "ro";
+try { const l = localStorage.getItem("soulos-lang"); if (l === "en" || l === "ro") LANG = l; } catch (e) {}
+const T = () => STR[LANG];
+
+/* ================================================================ eye renderer (port of Face.cpp, from the site) */
+const TAU = Math.PI * 2;
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const approach = (v, t, rate, dt) => v + (t - v) * (1 - Math.exp(-rate * dt));
+const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const PAL = { blush: hex("#FF7A9A"), heart: hex("#FF6B8A"), mint: hex("#C9F2E4"), ice: hex("#9FC6FF"), gold: hex("#FFD76B"), amber: hex("#FFB347") };
+function hash01(i) { i = i >>> 0; i ^= i >>> 16; i = Math.imul(i, 0x7feb352d); i ^= i >>> 15; i = Math.imul(i, 0x846ca68b); i ^= i >>> 16; return (i & 0xFFFFFF) / 16777216; }
+function ellipsePts(cx, cy, rx, ry, n) { const a = []; for (let i = 0; i < n; i++) { const t = i / n * TAU; a.push([cx + Math.cos(t) * rx, cy + Math.sin(t) * ry]); } return a; }
+function clipHalf(pts, fn) {
+  const out = [], n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const a = pts[i], b = pts[(i + 1) % n], fa = fn(a), fb = fn(b);
+    if (fa >= 0) out.push(a);
+    if ((fa >= 0) !== (fb >= 0)) { const t = fa / (fa - fb); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+  }
+  return out;
+}
+function poly(ctx, pts) { if (pts.length < 3) return; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); ctx.fill(); }
+function glow(ctx, c, a, r) { ctx.shadowColor = rgba(c, a); ctx.shadowBlur = r; }
+function noGlow(ctx) { ctx.shadowBlur = 0; ctx.shadowColor = "transparent"; }
+function heartPath(ctx, x, y, s) { ctx.beginPath(); ctx.moveTo(x, y + s * 0.36); ctx.bezierCurveTo(x - s * 0.62, y - s * 0.02, x - s * 0.36, y - s * 0.56, x, y - s * 0.2); ctx.bezierCurveTo(x + s * 0.36, y - s * 0.56, x + s * 0.62, y - s * 0.02, x, y + s * 0.36); ctx.closePath(); }
+function starPath(ctx, x, y, r, rot) { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = rot - Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.closePath(); }
+function drawZ(ctx, x, y, s) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s, y); ctx.lineTo(x, y + s); ctx.lineTo(x + s, y + s); ctx.stroke(); }
+
+function drawEye(ctx, f, e, side, S, cx0, cy0, col) {
+  const par = 1 - 0.07 * f.gx * side;
+  const ex = cx0 + (side * f.spacing + f.gx * 0.055 + e.dx) * S;
+  const ey = cy0 + (f.cy + f.gy * 0.06 + e.dy) * S;
+  const rx = f.eyeW * e.scale * e.sx * par * S;
+  const ry0 = f.eyeH * e.scale * e.sy * par * S;
+  const squint = 1 - 0.85 * Math.max(f.happy, f.styleAmt);
+  const ry = ry0 * Math.max(0, e.open) * squint;
+  const B = f.bright, G = S * 0.075 * f.glow;
+  const wN = (1 - f.happy) * (1 - f.styleAmt);
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  if (wN > 0.01 && ry > 0.6) {
+    const k = Math.tan(e.lidTilt) * (-side);
+    const yTop = ey + (-1 + 2 * e.lidTop) * ry, yBot = ey + (1 - 2 * e.lidBot) * ry;
+    const lid = p => p[1] - (yTop + k * (p[0] - ex));
+    const bot = p => yBot - p[1];
+    let pts = clipHalf(ellipsePts(ex, ey, rx, ry, 72), lid);
+    if (e.lidBot > 0.001) pts = clipHalf(pts, bot);
+    ctx.globalAlpha = wN * B; ctx.fillStyle = rgba(col, 1); glow(ctx, col, 0.62, G);
+    poly(ctx, pts); noGlow(ctx);
+    const hx = ex + rx * 0.22, hy = ey - ry * 0.12, hrx = rx * 0.34, hry = ry * 0.46;
+    if (hry > 0.8) {
+      let h = clipHalf(ellipsePts(hx, hy, hrx, hry, 40), lid);
+      if (e.lidBot > 0.001) h = clipHalf(h, bot);
+      ctx.globalAlpha = 0.45 * wN * B; ctx.fillStyle = "#fff"; poly(ctx, h);
+    }
+  }
+  const th = 0.042 * S;
+  ctx.strokeStyle = rgba(col, 1);
+  if (f.happy > 0.01) {
+    ctx.globalAlpha = f.happy * (1 - f.styleAmt) * B; ctx.lineWidth = th; glow(ctx, col, 0.6, G);
+    ctx.beginPath(); ctx.arc(ex, ey + ry0 * 0.45, rx, Math.PI + 0.35, TAU - 0.35); ctx.stroke(); noGlow(ctx);
+  }
+  if (f.styleAmt > 0.01) {
+    ctx.globalAlpha = f.styleAmt * B; glow(ctx, col, 0.6, G);
+    switch (f.style) {
+      case "closed": ctx.lineWidth = th * 0.85; ctx.beginPath(); ctx.arc(ex, ey - ry0 * 0.25, rx * 0.95, 0.35, Math.PI - 0.35); ctx.stroke(); break;
+      case "squeeze": { const s = -side, tipX = ex + s * rx * 0.55, backX = ex - s * rx * 0.7; ctx.lineWidth = th; ctx.beginPath(); ctx.moveTo(backX, ey - ry0 * 0.45); ctx.lineTo(tipX, ey); ctx.lineTo(backX, ey + ry0 * 0.45); ctx.stroke(); break; }
+      case "heart": { const pulse = 1 + 0.08 * Math.sin(f.ot * TAU * 2); glow(ctx, PAL.heart, 0.6, G); ctx.fillStyle = rgba(PAL.heart, 1); heartPath(ctx, ex, ey, rx * 2.1 * pulse); ctx.fill(); break; }
+      case "star": glow(ctx, PAL.gold, 0.6, G); ctx.fillStyle = rgba(PAL.gold, 1); starPath(ctx, ex, ey, rx * 1.3, f.spin * side); ctx.fill(); break;
+      case "spiral": noGlow(ctx); ctx.lineWidth = th * 0.7; for (let i = 0; i < 3; i++) { const a0 = f.spin * side + i * 2.1; ctx.beginPath(); ctx.arc(ex, ey, rx * (0.32 + 0.3 * i), a0, a0 + 3.9); ctx.stroke(); } break;
+    }
+    noGlow(ctx);
+  }
+  if (f.blush > 0.01) {
+    ctx.globalAlpha = 0.55 * f.blush * B; ctx.fillStyle = rgba(PAL.blush, 1); glow(ctx, PAL.blush, 0.4, S * 0.04);
+    ctx.beginPath(); ctx.ellipse(ex + side * rx * 0.25, ey + f.eyeH * S * 1.02, rx * 0.85, f.eyeH * S * 0.24, 0, 0, TAU); ctx.fill(); noGlow(ctx);
+  }
+}
+
+/* The OS adds one thing to Face: a layout (scale k + vertical offset cy)
+   so the same eyes can be the whole home screen or a small header on a card. */
+function drawFace(ctx, S, f, lay) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S);
+  if (f.bright <= 0.01) return;
+  const Sk = S * lay.k, cx = S / 2, cy = S / 2 + lay.cy * S, col = f.color, t = f.ot, B = f.bright;
+  drawEye(ctx, f, f.L, -1, Sk, cx, cy, col);
+  drawEye(ctx, f, f.R, 1, Sk, cx, cy, col);
+  const th = 0.018 * Sk;
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  if (f.zzz > 0.01) {
+    const drift = (t * 0.25) % 1, a = (0.55 + 0.45 * Math.sin(t * 2)) * f.zzz * B;
+    ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = th; ctx.globalAlpha = a; glow(ctx, col, 0.5, Sk * 0.03);
+    drawZ(ctx, cx + 0.25 * Sk, cy - (0.21 + 0.04 * drift) * Sk, 0.065 * Sk);
+    ctx.lineWidth = th * 0.8; ctx.globalAlpha = a * 0.8;
+    drawZ(ctx, cx + 0.34 * Sk, cy - (0.31 + 0.04 * drift) * Sk, 0.045 * Sk); noGlow(ctx);
+  }
+  if (f.hearts >= 0) {
+    for (let i = 0; i < 3; i++) {
+      const p = f.hearts / 1.4 - i * 0.22; if (p <= 0 || p >= 1) continue;
+      const x = cx + (hash01(i + 11) - 0.5) * 0.36 * Sk, y = cy + (0.26 - 0.55 * p) * Sk;
+      ctx.globalAlpha = (p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8) * B;
+      ctx.fillStyle = rgba(PAL.heart, 1); glow(ctx, PAL.heart, 0.5, Sk * 0.03);
+      heartPath(ctx, x, y, (0.05 + 0.02 * hash01(i + 3)) * Sk); ctx.fill(); noGlow(ctx);
+    }
+  }
+  if (f.orbit > 0.01) {
+    for (let i = 0; i < 3; i++) {
+      const ang = t * 3.2 + i * 2.094;
+      ctx.globalAlpha = 0.9 * f.orbit * B; ctx.fillStyle = rgba(PAL.gold, 1);
+      starPath(ctx, cx + Math.cos(ang) * 0.13 * Sk, cy - 0.31 * Sk + Math.sin(ang) * 0.035 * Sk, 0.026 * Sk, t * 4); ctx.fill();
+    }
+  }
+  if (f.think > 0.01) {
+    ctx.fillStyle = rgba(col, 1);
+    for (let i = 0; i < 3; i++) {
+      const b = Math.max(0, Math.sin(t * 6 - i * 0.9));
+      ctx.globalAlpha = (0.5 + 0.5 * b) * f.think * B;
+      ctx.beginPath(); ctx.arc(cx + (-0.06 + 0.06 * i) * Sk, cy + (0.27 - 0.012 * b) * Sk, 0.018 * Sk, 0, TAU); ctx.fill();
+    }
+  }
+  /* full-screen rings (edge of the round display) */
+  const R = S / 2;
+  if (f.listen > 0.01) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3), thick = 0.010 * S + 0.022 * S * f.level;
+    ctx.globalAlpha = (0.25 + 0.35 * pulse + 0.4 * f.level) * f.listen * B; ctx.strokeStyle = rgba(PAL.ice, 1); ctx.lineWidth = thick;
+    glow(ctx, PAL.ice, 0.5, S * 0.04); ctx.beginPath(); ctx.arc(R, R, 0.47 * S - thick * 0.5, 0, TAU); ctx.stroke(); noGlow(ctx);
+  }
+  if (f.alert > 0.01) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 5), thick = 0.012 * S + 0.008 * S * pulse;
+    ctx.globalAlpha = (0.3 + 0.45 * pulse) * f.alert * B; ctx.strokeStyle = rgba(PAL.amber, 1); ctx.lineWidth = thick;
+    glow(ctx, PAL.amber, 0.6, S * 0.045); ctx.beginPath(); ctx.arc(R, R, 0.47 * S - thick * 0.5, 0, TAU); ctx.stroke(); noGlow(ctx);
+  }
+  if (f.progress > 0.005) {
+    const a0 = -Math.PI / 2, c = f.progCol || PAL.mint;
+    ctx.globalAlpha = 0.95 * B; ctx.strokeStyle = rgba(c, 1); ctx.lineWidth = 0.028 * S;
+    glow(ctx, c, 0.6, S * 0.04);
+    ctx.beginPath(); ctx.arc(R, R, 0.445 * S, a0, a0 + TAU * Math.min(0.999, f.progress)); ctx.stroke(); noGlow(ctx);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ================================================================ soul (a trimmed Brain for the OS) */
+const DUR = { boop: 1.7, laugh: 1.5, happy: 2.0, love: 2.2, dizzy: 2.4, star: 2.4, wake: 1.0, nope: 1.2, shy: 2.0, intro: 2.2 };
+class Soul {
+  constructor(cv) {
+    this.cv = cv; this.ctx = cv.getContext("2d"); this.S = 0; this.t = 0;
+    this.g = { x: 0, y: 0, vx: 0, vy: 0 }; this.sq = { x: 0, v: 0 };
+    this.openS = 1; this.scaleS = 1; this.brightS = 0;
+    this.nextBlink = 1.6; this.blinkAt = -9; this.dbl = false; this.nextGlance = 1; this.glance = [0, 0];
+    this.rx = null; this.st = "idle"; this.alert = false; this.prog = 0; this.progCol = PAL.mint; this.look = null;
+    this.level = 0; this.lvlT = 0; this.lvlNext = 0; this.dim = 1;
+    this.lay = { k: 1, cy: 0 }; this.layS = { k: 1, cy: 0 }; this.follow = null;
+    const p = this.p = { eyeW: 0.12, eyeH: 0.19, spacing: 0.19, lidTilt: 0.16, lidTop: 0.19 };
+    const eye = () => ({ open: 1, scale: 1, sx: 1, sy: 1, lidTop: p.lidTop, lidTilt: p.lidTilt, lidBot: 0, dx: 0, dy: 0 });
+    this.f = { L: eye(), R: eye(), gx: 0, gy: 0, spacing: p.spacing, eyeW: p.eyeW, eyeH: p.eyeH, cy: 0.02, bright: 0, glow: 1, color: hex("#FFF0C8"),
+      style: "normal", styleAmt: 0, happy: 0, blush: 0, zzz: 0, hearts: -1, orbit: 0, listen: 0, alert: 0, progress: 0, think: 0, level: 0, ot: 0, spin: 0 };
+  }
+  react(n, d) {
+    this.rx = { n, t0: this.t, d: d || DUR[n] || 1.5 };
+    if (RM) return;
+    if (n === "boop") this.sq.v += 7;
+    if (n === "laugh") this.sq.v += 4;
+    if (n === "happy") this.sq.v += 3;
+    if (n === "wake" || n === "intro") { this.blinkAt = this.t + (n === "intro" ? 1.3 : 0.15); this.dbl = true; }
+    if (n === "intro") { this.brightS = 0; this.openS = 0.05; }
+  }
+  lookAt(x, y, d) { this.look = { x, y, until: this.t + d }; }
+  update(dt) {
+    const t = (this.t += dt), f = this.f, p = this.p, R = RM ? 400 : 1;
+    let happy = 0, blush = 0, style = "normal", lid = p.lidTop, tilt = p.lidTilt, open = 1, bright = 1, scale = 1, dy = 0,
+      zzz = 0, think = 0, listen = 0, orbit = 0, hearts = -1, gaze = null, voice = false, bAmp = 0.02, bPer = 4, blinkLen = 0.17;
+    switch (this.st) {
+      case "sleep": style = "closed"; zzz = 1; bright = 0.55; gaze = [0, 0.25]; bAmp = 0.03; bPer = 5.5; break;
+      case "listen": listen = 1; voice = true; gaze = [0, -0.25]; scale = 1.04; break;
+      case "think": think = 1; gaze = [0.45, -0.55]; break;
+      case "speak": voice = true; scale = 1 + 0.07 * this.level; gaze = [0, 0.1]; break;
+      case "focus": lid = 0.36; gaze = [0, 0.85]; bPer = 6; blinkLen = 0.3; break;
+      case "busy": think = 1; lid = 0.3; gaze = RM ? [0, 0.4] : [-0.6 + 1.2 * ((t * 0.5) % 1), 0.45]; break;
+    }
+    const r = this.rx;
+    if (r) {
+      const v = t - r.t0;
+      if (v > r.d) this.rx = null;
+      else switch (r.n) {
+        case "intro": bright = Math.min(1, v / 0.7); if (v < 0.75) open = 0.05; if (v < 1.2) gaze = [-0.55, 0.42]; break;
+        case "boop": happy = 1; blush = 1; hearts = RM ? -1 : v; break;
+        case "happy": happy = 1; blush = 0.45; break;
+        case "laugh": style = "squeeze"; blush = 0.6; dy = RM ? 0 : -0.022 * Math.abs(Math.sin(v * 15)) * Math.max(0, 1 - v / r.d); break;
+        case "love": style = "heart"; blush = 0.4; break;
+        case "dizzy": style = "spiral"; orbit = 1; break;
+        case "star": style = "star"; break;
+        case "shy": blush = 1; lid = 0.36; gaze = [0.6, 0.6]; break;
+        case "nope": gaze = [0.75 * Math.sin(v * 18) * Math.max(0, 1 - v / 1.1), 0.12]; tilt = -0.2; lid = 0.3; break;
+        case "wake": scale = 1.07 - 0.07 * Math.min(1, v / 0.6); gaze = [0, 0]; break;
+      }
+    }
+    if (t > this.lvlNext) { this.lvlT = Math.pow(Math.random(), 1.4); this.lvlNext = t + rnd(0.07, 0.16); }
+    this.level = RM ? (voice ? 0.5 : 0) : approach(this.level, voice ? this.lvlT : 0, 18, dt);
+
+    let tx = 0, ty = 0;
+    const lk = this.look && t < this.look.until ? this.look : null;
+    if (lk && !(r && ["nope", "intro", "shy"].includes(r.n))) { tx = lk.x; ty = lk.y; }
+    else if (gaze) { tx = gaze[0]; ty = gaze[1]; }
+    else if (this.follow && performance.now() - this.follow.t < 2200) { tx = this.follow.x; ty = this.follow.y; }
+    else if (!RM) {
+      if (t > this.nextGlance) {
+        const onCard = this.lay.k < 0.9;
+        this.glance = onCard ? (Math.random() < 0.75 ? [rnd(-0.5, 0.5), rnd(0.35, 0.8)] : [rnd(-0.7, 0.7), rnd(-0.3, 0.2)])
+          : (Math.random() < 0.7 ? [rnd(-0.85, 0.85), rnd(-0.55, 0.45)] : [0, 0]);
+        this.nextGlance = t + rnd(0.9, 2.6);
+        if (Math.random() < 0.3 && t - this.blinkAt > 0.5) this.blinkAt = t + 0.03;
+      }
+      tx = this.glance[0]; ty = this.glance[1];
+    }
+    if (RM) { this.g.x = tx; this.g.y = ty; }
+    else {
+      const K = 120, C = 11;
+      this.g.vx += (K * (tx - this.g.x) - C * this.g.vx) * dt; this.g.x += this.g.vx * dt;
+      this.g.vy += (K * (ty - this.g.y) - C * this.g.vy) * dt; this.g.y += this.g.vy * dt;
+    }
+    let bl = 0;
+    if (!RM) {
+      if (t >= this.nextBlink && this.st !== "sleep") { this.blinkAt = t; this.dbl = Math.random() < 0.22; this.nextBlink = t + rnd(2.2, 6); }
+      const q = (t - this.blinkAt) / blinkLen;
+      if (q >= 0 && q < 1) bl = q < 0.45 ? q / 0.45 : 1 - (q - 0.45) / 0.55;
+      else if (q >= 1 && this.dbl) { this.dbl = false; this.blinkAt = t + 0.08; }
+    }
+    if (!RM) { this.sq.v += (-260 * this.sq.x - 10 * this.sq.v) * dt; this.sq.x += this.sq.v * dt; } else this.sq.x = 0;
+    const br = RM ? 1 : 1 + bAmp * Math.sin(t * TAU / bPer);
+    this.openS = approach(this.openS, open, 12 * R, dt);
+    this.scaleS = approach(this.scaleS, scale, 10 * R, dt);
+    this.brightS = r && r.n === "intro" ? bright : approach(this.brightS, bright, 4 * R, dt);
+    this.layS.k = approach(this.layS.k, this.lay.k, 9 * R, dt);
+    this.layS.cy = approach(this.layS.cy, this.lay.cy, 9 * R, dt);
+    const sx = 1 + 0.14 * this.sq.x, sy = 1 - 0.14 * this.sq.x;
+    for (const e of [f.L, f.R]) {
+      e.lidTop = approach(e.lidTop, lid, 9 * R, dt); e.lidTilt = approach(e.lidTilt, tilt, 9 * R, dt);
+      e.scale = br * this.scaleS; e.sx = sx; e.sy = sy; e.open = this.openS * (1 - bl); e.dy = dy;
+    }
+    f.gx = this.g.x; f.gy = this.g.y; f.bright = this.brightS * this.dim;
+    f.happy = approach(f.happy, happy, 12 * R, dt);
+    f.blush = approach(f.blush, blush, 6 * R, dt);
+    if (style !== f.style) { if (f.styleAmt > 0.02) f.styleAmt = approach(f.styleAmt, 0, 16 * R, dt); else f.style = style; }
+    else f.styleAmt = approach(f.styleAmt, style === "normal" ? 0 : 1, 10 * R, dt);
+    f.zzz = approach(f.zzz, zzz, 3 * R, dt); f.think = approach(f.think, think, 8 * R, dt);
+    f.alert = approach(f.alert, this.alert ? 1 : 0, 8 * R, dt); f.listen = approach(f.listen, listen, 8 * R, dt);
+    f.orbit = approach(f.orbit, orbit, 8 * R, dt); f.progress = this.prog; f.progCol = this.progCol; f.hearts = hearts; f.level = this.level;
+    f.ot = RM ? 0.3 : t; f.spin = RM ? 0 : f.spin + dt * 6;
+  }
+  draw() { if (this.S) drawFace(this.ctx, this.S, this.f, this.layS); }
+}
+
+/* ================================================================ OS state */
+const $ = s => document.querySelector(s);
+const screen = $("#screen"), cards = $("#cards"), pillEl = $("#pill"), dotsEl = $("#dots"), pebble = $("#pebble");
+const soul = new Soul($("#face"));
+const RING = ["home", "talk", "reminders", "notes", "focus", "claude", "diary", "translate", "music", "settings"];
+const OVERLAY = ["today", "voice", "msg", "memory", "about"];
+const LAYOUT = {
+  home: { k: 1, cy: 0 }, talk: { k: 0.62, cy: -0.11 }, today: { k: 0.25, cy: -0.35 },
+  focus: { k: 0.28, cy: -0.34 }, card: { k: 0.3, cy: -0.33 },
+  listen: { k: 0.7, cy: -0.1 }, answer: { k: 0.42, cy: -0.26 }, about: { k: 0.34, cy: -0.3 }
+};
+const S = {
+  view: "home", ret: "home", provider: "Claude", bright: 1, sleeping: false,
+  rems: null, notes: null, diary: null, remDoneNew: false,
+  focus: { run: false, left: 1500, total: 1500, done: false },
+  claude: { pending: null }, music: { play: true, pos: 0.38 },
+  tr: { a: "RO", b: "EN", last: null },
+  voice: null, pill: null, phraseIdx: 0, memCount: 12, memWiped: false, lastQA: null
+};
+function initData() {
+  const L = T();
+  if (!S.rems) S.rems = L.rems.map((r, i) => ({ time: r[0], key: "r" + i, done: !!r[2] }));
+  if (!S.notes) S.notes = L.notesInit.map((n, i) => ({ key: "n" + i, sync: true }));
+  if (!S.diary) S.diary = L.diaryInit.map((d, i) => ({ time: d[0], key: "d" + i }));
+}
+function remText(r) { const L = T(); if (r.key === "new") return L.remNew; return L.rems[+r.key.slice(1)][1]; }
+function noteText(n) { const L = T(); if (n.key === "new") return L.noteNew; if (n.key === "new2") return L.noteNew2; return L.notesInit[+n.key.slice(1)][0]; }
+function diaryText(d) { const L = T(); if (d.key.startsWith("x:")) return L.dx[d.key.slice(2)]; return L.diaryInit[+d.key.slice(1)][1]; }
+const hhmm = (d = new Date()) => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+const mmss = s => { s = Math.max(0, Math.ceil(s)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+function addDiary(k) { S.diary.push({ time: hhmm(), key: "x:" + k }); }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* ---------------------------------------------------------------- timers */
+let timers = [];
+const after = (ms, fn, tag) => { const id = setTimeout(() => { timers = timers.filter(x => x.id !== id); fn(); }, ms); timers.push({ id, tag }); return id; };
+const cancel = tag => { timers.filter(x => x.tag === tag).forEach(x => clearTimeout(x.id)); timers = timers.filter(x => x.tag !== tag); };
+
+/* ---------------------------------------------------------------- icons */
+const IC = {
+  prev: '<svg viewBox="0 0 24 24"><path d="M6 5h2.5v14H6zM20 5v14L9.5 12z"/></svg>',
+  next: '<svg viewBox="0 0 24 24"><path d="M15.5 5H18v14h-2.5zM4 5l10.5 7L4 19z"/></svg>',
+  play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24"><path d="M6 4.5h4.2v15H6zM13.8 4.5H18v15h-4.2z"/></svg>',
+  swap: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#FFF0C8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h15l-4-4M20 16H5l4 4"/></svg>'
+};
+
+/* ---------------------------------------------------------------- card renderers */
+function cardHTML(v) {
+  const L = T();
+  switch (v) {
+    case "home": {
+      let tag = "";
+      if (S.claude.pending) tag = `<div class="homeTag amber">${L.homeClaude}</div>`;
+      else if (S.focus.run) tag = `<div class="homeTag cream" data-live="homefocus">${L.homeFocus(mmss(S.focus.left))}</div>`;
+      return `<div class="clock" data-live="clock">${hhmm()}</div>${tag}`;
+    }
+    case "today": {
+      const next = S.rems.filter(r => !r.done).sort((a, b) => a.time.localeCompare(b.time))[0];
+      const c = S.claude.pending ? [`amber`, L.cWait] : [`ice`, L.cBusy];
+      const date = new Date().toLocaleDateString(LANG === "ro" ? "ro-RO" : "en-GB", { weekday: "short", day: "numeric", month: "short" });
+      return `<div class="lbl" style="top:118px">${L.lblToday} · ${esc(date)}</div>
+      <div class="stack">
+        <div class="row"><i class="dot cream"></i><div><small>${L.nextRem}</small><b>${next ? next.time + " " + esc(remText(next)) : "—"}</b></div></div>
+        <div class="row"><i class="dot mint"></i><div><small>${L.weather}</small><b>${L.weatherV}</b></div></div>
+        <div class="row"><i class="dot ${c[0]}"></i><div><small>Claude</small><b class="${S.claude.pending ? "amber" : ""}">${c[1]}</b></div></div>
+        <div class="row"><i class="dot mint"></i><div><small>${L.battery}</small><b>${L.batteryV}</b></div></div>
+      </div>`;
+    }
+    case "talk": {
+      const qa = S.lastQA;
+      return `<div class="c" style="top:300px">${qa ? `<div class="t3">${L.lastQ}</div><div class="t2" style="font-size:24px">„${esc(qa)}”</div>`
+        : `<div class="t2">${L.holdAsk}</div>`}<div class="tool">${esc(S.provider)}</div></div>`;
+    }
+    case "reminders": {
+      let list = S.rems.slice().sort((a, b) => a.time.localeCompare(b.time));
+      if (list.length > 3) list = list.filter(r => !r.done || r.key === "new").slice(-3);
+      return `<div class="lbl">${L.reminders}</div><ul class="list">${list.map(r =>
+        `<li data-act="rem" data-k="${r.key}" class="${r.done ? "done" : ""} ${r.key === "new" && !r.done ? "new" : ""}"><span class="tm">${r.time}</span><span class="tx">${esc(remText(r))}</span><i class="ck"></i></li>`).join("")}</ul>`;
+    }
+    case "notes": {
+      const list = S.notes.slice(-2).reverse();
+      return `<div class="lbl">${L.notes}</div>
+      <div class="c" style="top:178px"><div class="t2">${L.holdNote}</div></div>
+      <ul class="list" style="top:236px">${list.map(n => `<li class="col ${n.fresh ? "new" : ""}"><span class="tx" style="font-size:23px">${esc(noteText(n))}</span><span class="st ${n.sync ? "ok" : ""}">${n.sync ? L.toPhone : L.sending}</span></li>`).join("")}</ul>`;
+    }
+    case "focus": {
+      const F = S.focus, frac = F.left / F.total, C = 2 * Math.PI * 222;
+      const sub = F.done ? L.focusDone : F.run ? L.focusRun : F.left < F.total ? L.focusPaused : L.focusTap;
+      return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(255,240,200,.12)" stroke-width="10"/>
+        <circle data-live="fring" cx="233" cy="233" r="222" fill="none" stroke="${F.done ? "#C9F2E4" : "#FFF0C8"}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 233 233)"/></svg>
+        <div class="c" style="top:188px;gap:14px"><div class="fdig" data-live="fdig">${mmss(F.left)}</div><div class="t3">${sub}</div></div>`;
+    }
+    case "claude": {
+      const P = S.claude.pending;
+      if (P) return `<div class="lbl amber">${L.cAsk}</div><div class="c" style="top:184px;gap:16px"><div class="t3">site · Bash</div><div class="cmd">${esc(P.cmd)}</div><div class="t2" style="font-size:25px">${L.cHint}</div></div>`;
+      return `<div class="lbl">Claude</div><div class="c" style="top:196px;gap:14px"><div class="t1">${L.cWorking}</div><div class="t3">${L.cProj}</div></div>`;
+    }
+    case "diary": {
+      const list = S.diary.slice(-3);
+      return `<div class="lbl">${L.diaryT}</div><ul class="list">${list.map(d => `<li><span class="tm">${d.time}</span><span class="tx" style="white-space:normal;font-size:23px">${esc(diaryText(d))}</span></li>`).join("")}</ul>`;
+    }
+    case "translate": {
+      const tr = S.tr, last = tr.last;
+      return `<div class="lbl">${L.translate}</div>
+      <div class="c" style="top:178px;gap:22px"><div class="langs"><span class="lp a">${tr.a}</span><span class="swap" data-act="swap" role="button" aria-label="swap">${IC.swap}</span><span class="lp">${tr.b}</span></div>
+      ${last ? `<div class="t3" style="font-size:21px">${esc(last.q)}</div><div class="t2" style="color:var(--mint);font-size:26px">${esc(last.a)}</div>` : `<div class="t2">${L.trHint}</div>`}</div>`;
+    }
+    case "music": {
+      const M = S.music;
+      return `<div class="lbl">${L.musT}</div>
+      <div class="c" style="top:176px;gap:8px"><div class="t1" style="font-size:31px">${L.song}</div><div class="t3">${L.artist}</div>
+      <div class="ctrls" style="margin-top:14px"><span class="cb" data-act="prev" role="button" aria-label="prev">${IC.prev}</span><span class="cb big" data-act="play" role="button" aria-label="play">${M.play ? IC.pause : IC.play}</span><span class="cb" data-act="next" role="button" aria-label="next">${IC.next}</span></div>
+      <div class="bar" style="margin-top:16px"><i style="width:${Math.round(M.pos * 100)}%"></i></div></div>`;
+    }
+    case "settings":
+      return `<div class="lbl">${L.settings}</div><div class="set">
+        <div data-act="bright"><span>${L.setBright}</span><b>${Math.round(S.bright * 100)}%</b></div>
+        <div data-act="ai"><span>${L.setAi}</span><b>${S.provider}</b></div>
+        <div data-act="mem"><span>${L.setMem}</span><b class="dim">${L.setMemV(S.memWiped ? 0 : S.memCount)} ›</b></div>
+        <div data-act="about"><span>${L.setAbout}</span><b class="dim">${L.setAboutV} ›</b></div></div>`;
+    case "memory":
+      if (S.memWiped) return `<div class="lbl mint">${L.memDone}</div><div class="c" style="top:210px"><div class="t2">${L.memEmpty}</div></div>`;
+      return `<div class="lbl">${L.memT}</div><ul class="list" style="top:170px">${L.mem.map(m => `<li style="min-height:54px"><span class="tx" style="font-size:22px">${esc(m)}</span></li>`).join("")}</ul>
+        <div class="c" style="top:360px"><div class="t3" style="color:var(--amber)">${L.memWipe}</div></div>`;
+    case "about":
+      return `<div class="c" style="top:150px;gap:14px;left:74px;right:74px"><div class="t1">${L.aboutT}</div><div class="t3" style="font-size:21px;color:rgba(255,240,200,.75)">${L.aboutB}</div></div>`;
+    case "msg":
+      return `<div class="lbl">${L.msgT} · ${L.msgFrom}</div><div class="c" style="top:180px;gap:22px"><div class="t1">${L.msgBody}</div>
+        <div class="chips" style="flex-direction:column;align-items:center"><span class="chip btn" data-act="reply" data-r="1">${L.reply1}</span><span class="chip btn" data-act="reply" data-r="2">${L.reply2}</span></div></div>`;
+    case "voice": {
+      const V = S.voice; if (!V) return "";
+      if (V.phase === "listen") return `<div class="lbl ice" style="top:44px">${L.listen}</div><div class="c" style="top:318px"><div class="t2" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>`;
+      if (V.phase === "think") return `<div class="lbl" style="top:44px">${L.thinking(S.provider)}</div><div class="c" style="top:318px;gap:14px"><div class="t3">„${esc(V.p.q)}”</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
+      const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips;
+      return `<div class="c fade-in" style="top:${V.kind === "tr" ? 196 : 206}px;gap:18px">${V.kind === "tr" ? `<div class="t3" style="font-size:21px">${esc(V.p.q)}</div>` : ""}
+        <div class="t1" style="font-size:${V.kind === "tr" ? 30 : 32}px">${esc(V.p.a)}</div>
+        <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div></div>`;
+    }
+  }
+  return "";
+}
+
+/* ---------------------------------------------------------------- navigation */
+let curCard = null;
+function layoutFor(v) {
+  if (v === "voice") { const V = S.voice; return V && V.phase === "answer" ? LAYOUT.answer : LAYOUT.listen; }
+  if (v === "home" || v === "talk" || v === "today" || v === "focus") return LAYOUT[v];
+  return LAYOUT.card;
+}
+function applyFaceState() {
+  const v = S.view;
+  const lay = Object.assign({}, layoutFor(v));
+  if (S.pill && lay.k < 0.9) { lay.k = Math.min(lay.k, 0.22); lay.cy = S.view === "today" ? -0.31 : -0.28; }
+  soul.lay = lay;
+  if (S.sleeping) { soul.st = "sleep"; return; }
+  if (v === "voice") soul.st = S.voice.phase === "listen" ? "listen" : S.voice.phase === "think" ? "think" : S.voice.speaking ? "speak" : "idle";
+  else if (v === "focus" && S.focus.run) soul.st = "focus";
+  else if (v === "claude" && !S.claude.pending) soul.st = "busy";
+  else soul.st = "idle";
+  soul.alert = !!S.claude.pending && v !== "voice";
+}
+function renderDots() {
+  const i = RING.indexOf(S.view);
+  dotsEl.classList.toggle("hide", i <= 0);
+  dotsEl.innerHTML = RING.map((r, j) => `<i class="${j === 0 ? "home" : ""} ${j === i ? "on" : ""}"></i>`).join("");
+}
+function go(v, dir = "fade") {
+  if (S.view === v && curCard) { refresh(); return; }
+  const prev = S.view;
+  if (!OVERLAY.includes(v) || v === "today") S.ret = v;
+  if (OVERLAY.includes(v) && v !== "today" && !OVERLAY.includes(prev)) S.ret = prev;
+  S.view = v;
+  if (S.pill && S.pill.act && S.pill.act === v) hidePill();
+  if (v !== "voice") cancel("answer");
+  const el = document.createElement("div");
+  el.className = "card" + (RM ? "" : " in-" + dir);
+  el.innerHTML = cardHTML(v);
+  cards.appendChild(el);
+  if (curCard) {
+    const old = curCard;
+    if (RM) old.remove();
+    else { old.className = "card out-" + dir; setTimeout(() => old.remove(), 450); }
+  }
+  curCard = el;
+  void el.offsetWidth; el.className = "card";
+  // eyes follow the card in, then settle on it
+  if (dir === "left") soul.lookAt(0.8, 0.3, 0.45);
+  else if (dir === "right") soul.lookAt(-0.8, 0.3, 0.45);
+  else if (dir === "up") soul.lookAt(0, 0.9, 0.5);
+  if (v === "home" && prev !== "home") soul.lookAt(0, 0, 0.4);
+  applyFaceState(); renderDots(); syncPanel();
+}
+function refresh() { if (curCard) curCard.innerHTML = cardHTML(S.view); applyFaceState(); renderDots(); }
+function back() { const r = S.ret && S.ret !== S.view ? S.ret : "home"; go(RING.includes(r) || r === "today" ? r : "home", "down"); }
+
+/* ---------------------------------------------------------------- pill (notifications) */
+function showPill(o) {
+  S.pill = o; cancel("pill");
+  pillEl.className = "pill " + (o.kind || "");
+  pillEl.innerHTML = (o.who ? `<span class="who">${esc(o.who)}</span>` : "") + `<span>${esc(o.text)}</span>`;
+  void pillEl.offsetWidth; pillEl.classList.add("show"); screen.classList.add("has-pill");
+  if (!S.sleeping) soul.lookAt(0, -1, 1.4);
+  applyFaceState();
+  if (o.dur) after(o.dur, hidePill, "pill");
+}
+function hidePill() { S.pill = null; pillEl.classList.remove("show"); screen.classList.remove("has-pill"); applyFaceState(); }
+function buzz() { if (RM) return; pebble.classList.remove("buzz"); void pebble.offsetWidth; pebble.classList.add("buzz"); }
+
+/* ---------------------------------------------------------------- voice pipeline (scripted) */
+function nextPhrase(kind) {
+  const L = T();
+  if (kind === "note") return L.notePhrase;
+  if (kind === "tr") return S.tr.a === "RO" ? STR.ro.trPhrase : STR.en.trPhrase;
+  const p = L.phrases[S.phraseIdx % L.phrases.length]; S.phraseIdx++; return p;
+}
+function startVoice(kind, preset) {
+  if (S.sleeping) return;
+  cancel("voice"); cancel("answer");
+  const p = preset || nextPhrase(kind);
+  S.voice = { kind, p, phase: "listen", shown: "", i: 0, speaking: false, idx: preset ? preset._i : null };
+  go("voice", "fade");
+  const total = p.q.length, step = Math.max(28, 1300 / total);
+  const type = () => {
+    if (!S.voice || S.voice.phase !== "listen") return;
+    S.voice.i++; S.voice.shown = p.q.slice(0, S.voice.i);
+    const t2 = curCard && curCard.querySelector(".t2");
+    if (t2) t2.innerHTML = esc(S.voice.shown) + '<span class="caret"></span>';
+    if (S.voice.i < total) after(step, type, "voice");
+  };
+  after(250, type, "voice");
+}
+function endListen() {
+  const V = S.voice; if (!V || V.phase !== "listen") return;
+  cancel("voice");
+  V.shown = V.p.q; V.phase = "think"; refresh();
+  after(RM ? 500 : 1400, answer, "voice");
+}
+function answer() {
+  const V = S.voice; if (!V) return;
+  V.phase = "answer"; V.speaking = true; refresh();
+  after(1700, () => { if (S.voice === V) { V.speaking = false; applyFaceState(); soul.react("happy", 2.2); } }, "voice");
+  if (V.kind === "ask") S.lastQA = V.p.q;
+  if (V.kind === "tr") S.tr.last = { q: V.p.q, a: V.p.a };
+  const fx = V.p.fx;
+  if (fx === "rem") { if (!S.rems.find(r => r.key === "new")) S.rems.push({ time: "17:00", key: "new", done: false }); addDiary("rem"); }
+  if (fx === "note" || fx === "note2") {
+    const key = fx === "note" ? "new" : "new2";
+    if (!S.notes.find(n => n.key === key)) { const n = { key, sync: false, fresh: true }; S.notes.push(n); after(2600, () => { n.sync = true; if (S.view === "notes") refresh(); }, "sync"); }
+    addDiary(fx);
+  }
+  if (fx === "msg") addDiary("msg");
+  if (fx === "light") addDiary("light");
+  if (fx === "focus") { S.focus = { run: true, left: 1500, total: 1500, done: false }; addDiary("focus"); }
+  const dest = fx === "focus" ? "focus" : V.kind === "note" ? "notes" : V.kind === "tr" ? "translate" : S.ret;
+  after(fx === "focus" ? 3400 : 6500, () => { if (S.view === "voice") { S.voice = null; go(RING.includes(dest) ? dest : "home", "fade"); } }, "answer");
+}
+function runPhrase(i) {
+  const p = T().phrases[i];
+  if (S.sleeping) wake();
+  if (S.view === "voice") { S.voice = null; }
+  startVoice("ask", Object.assign({ _i: i }, p));
+  after(Math.max(1500, p.q.length * 45 + 700), endListen, "voice");
+}
+
+/* ---------------------------------------------------------------- Claude permission */
+function claudeArrive() {
+  if (S.claude.pending) return;
+  if (S.view === "voice" || S.sleeping) { after(4000, claudeArrive, "claude"); return; }
+  S.claude.pending = { cmd: "npm run build" };
+  buzz();
+  if (S.view !== "claude") showPill({ kind: "amber", text: T().claudePill, act: "claude", dur: 5000 });
+  if (S.view === "claude" || S.view === "home" || S.view === "today") refresh();
+}
+function claudeDecide(ok) {
+  if (!S.claude.pending) return;
+  S.claude.pending = null; soul.prog = 0;
+  hidePill();
+  if (ok) { soul.react("happy", 2.2); showPill({ kind: "mint", text: T().approved, dur: 2200 }); addDiary("ok"); }
+  else { soul.react("nope"); showPill({ text: T().denied, dur: 2000 }); addDiary("no"); }
+  refresh();
+}
+
+/* ---------------------------------------------------------------- input: gestures */
+let hold = null; // {kind, p}
+function holdStart() {
+  if (S.sleeping) { wake(); return; }
+  const v = S.view;
+  if (v === "claude" && S.claude.pending) { hold = { kind: "approve", p: 0 }; soul.progCol = PAL.mint; return; }
+  if (v === "memory" && !S.memWiped) { hold = { kind: "wipe", p: 0 }; soul.progCol = PAL.amber; return; }
+  if (v === "voice" && S.voice && S.voice.phase !== "listen") { S.voice = null; }
+  const kind = v === "notes" ? "note" : v === "translate" ? "tr" : "ask";
+  hold = { kind: "voice" };
+  startVoice(kind);
+}
+function holdEnd() {
+  if (!hold) return;
+  const h = hold; hold = null;
+  if (h.kind === "voice") endListen();
+  else if (h.p < 1) soul.prog = 0;
+}
+let lastTap = 0;
+function tap(target) {
+  const now = performance.now(), dbl = now - lastTap < 330;
+  lastTap = dbl ? 0 : now;
+  if (S.sleeping) { wake(); return; }
+  if (dbl) { doubleTap(); return; }
+  const actEl = target && target.closest && target.closest("[data-act]");
+  if (actEl) { act(actEl.dataset.act, actEl); return; }
+  switch (S.view) {
+    case "home": soul.react("boop"); break;
+    case "focus": {
+      const F = S.focus;
+      if (F.done) { S.focus = { run: true, left: 1500, total: 1500, done: false }; }
+      else F.run = !F.run;
+      refresh(); break;
+    }
+    case "voice": if (S.voice && S.voice.phase === "answer") { S.voice = null; cancel("answer"); go(S.ret && RING.includes(S.ret) ? S.ret : "home", "fade"); } break;
+    case "talk": soul.react("boop"); break;
+    case "about": back(); break;
+    case "music": act("play"); break;
+  }
+}
+function doubleTap() {
+  if (S.view === "claude" && S.claude.pending) { claudeDecide(false); return; }
+  if (S.view === "home" || S.view === "talk") soul.react("laugh");
+}
+function act(a, el) {
+  const L = T();
+  switch (a) {
+    case "rem": {
+      const r = S.rems.find(x => x.key === el.dataset.k); if (!r) return;
+      r.done = !r.done; if (r.done) soul.react("happy"); refresh(); break;
+    }
+    case "swap": { const t = S.tr.a; S.tr.a = S.tr.b; S.tr.b = t; S.tr.last = null; soul.lookAt(0.8, 0.2, 0.3); refresh(); break; }
+    case "play": S.music.play = !S.music.play; refresh(); break;
+    case "prev": case "next": S.music.pos = a === "next" ? 0.02 : 0; soul.lookAt(a === "next" ? 0.9 : -0.9, 0.4, 0.5); refresh(); break;
+    case "bright": S.bright = S.bright >= 1 ? 0.4 : S.bright >= 0.7 ? 1 : 0.7; screen.style.filter = S.bright < 1 ? `brightness(${0.35 + 0.65 * S.bright})` : ""; refresh(); break;
+    case "ai": S.provider = S.provider === "Claude" ? "ChatGPT" : "Claude"; soul.react("wake"); refresh(); break;
+    case "mem": go("memory", "left"); break;
+    case "about": go("about", "left"); break;
+    case "reply": hidePill(); showPill({ kind: "mint", text: L.sent, dur: 1800 }); soul.react("happy"); addDiary("msg"); go("home", "down"); break;
+  }
+}
+function swipe(dir) {
+  if (S.sleeping) return;
+  const v = S.view;
+  if (v === "voice") { if (S.voice && S.voice.phase === "answer") { S.voice = null; cancel("answer"); go("home", "down"); } return; }
+  if (v === "today") { if (dir === "down") go("home", "down"); return; }
+  if (OVERLAY.includes(v)) { if (dir === "down" || dir === "right") { const r = v === "memory" || v === "about" ? "settings" : S.ret; go(RING.includes(r) ? r : "home", dir === "right" ? "right" : "down"); } return; }
+  if (dir === "up") { if (v === "home") go("today", "up"); return; }
+  if (dir === "down") { if (v !== "home") go("home", "down"); return; }
+  const i = RING.indexOf(v), n = RING.length;
+  go(RING[(i + (dir === "left" ? 1 : -1) + n) % n], dir);
+}
+function sideButton() {
+  if (S.sleeping) { wake(); return; }
+  if (hold) holdEnd();
+  if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); }
+  if (S.view === "home") { soul.react("wake"); soul.lookAt(0.9, 0, 0.6); return; }
+  go("home", "down");
+}
+function wake() {
+  if (!S.sleeping) return;
+  S.sleeping = false; soul.dim = 1; screen.style.opacity = "";
+  soul.react("wake"); hidePill(); go("home", "fade"); applyFaceState();
+}
+function imu(k) {
+  const L = T();
+  if (k === "pick") { if (S.sleeping) wake(); else { soul.react("wake"); showPill({ text: L.pickup + " " + hhmm(), dur: 1600 }); } }
+  if (k === "shake") { if (S.sleeping) wake(); soul.react("dizzy"); if (S.pill && S.pill.kind !== "amber") hidePill(); }
+  if (k === "down") {
+    if (hold) holdEnd();
+    S.voice = null; cancel("voice"); cancel("answer");
+    go("home", "fade"); S.sleeping = true; hidePill(); applyFaceState();
+    showPill({ text: L.dnd, dur: 1600 });
+  }
+}
+
+/* pointer on the round screen */
+let ptr = null;
+screen.addEventListener("pointerdown", e => {
+  e.preventDefault(); screen.focus({ preventScroll: true });
+  try { screen.setPointerCapture(e.pointerId); } catch (x) {}
+  ptr = { x: e.clientX, y: e.clientY, target: e.target, held: false, id: e.pointerId };
+  const pEl = e.target.closest && e.target.closest(".pill");
+  if (pEl && S.pill) { ptr.pill = true; }
+  cancel("hold"); after(380, () => { if (ptr && !ptr.moved && !ptr.pill) { ptr.held = true; holdStart(); } }, "hold");
+});
+screen.addEventListener("pointermove", e => {
+  const b = screen.getBoundingClientRect();
+  soul.follow = S.view === "home" ? { x: clamp((e.clientX - b.left) / b.width * 2 - 1, -1, 1), y: clamp((e.clientY - b.top) / b.height * 2 - 1, -1, 1), t: performance.now() } : null;
+  if (!ptr) return;
+  if (Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > 14 && !ptr.held) { ptr.moved = true; cancel("hold"); }
+});
+const ptrUp = e => {
+  if (!ptr) return; cancel("hold");
+  const p = ptr; ptr = null;
+  if (p.held) { holdEnd(); return; }
+  if (e.type === "pointercancel") return;
+  const dx = e.clientX - p.x, dy = e.clientY - p.y, b = screen.getBoundingClientRect(), th = Math.max(22, b.width * 0.1);
+  if (p.pill && Math.hypot(dx, dy) < th) { const a = S.pill && S.pill.act; if (a === "claude") { hidePill(); go("claude", "up"); } else if (a === "msg") { hidePill(); go("msg", "up"); } else hidePill(); return; }
+  if (Math.abs(dx) > th || Math.abs(dy) > th) {
+    if (p.pill && dy < 0) { hidePill(); return; }
+    swipe(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down"));
+  } else tap(p.target);
+};
+screen.addEventListener("pointerup", ptrUp);
+screen.addEventListener("pointercancel", ptrUp);
+screen.addEventListener("contextmenu", e => e.preventDefault());
+/* side button: press = home, hold = talk (the mic is gated by hardware), double-press = cancel */
+const sideEl = $("#side"); let sideP = null, sideLast = 0;
+sideEl.addEventListener("pointerdown", e => {
+  e.preventDefault(); try { sideEl.setPointerCapture(e.pointerId); } catch (x) {}
+  sideEl.classList.add("down"); sideP = { held: false };
+  cancel("shold"); after(380, () => { if (sideP) { sideP.held = true; if (S.sleeping) wake(); if (S.view === "claude" && S.claude.pending) return; hold = { kind: "voice" }; startVoice("ask"); } }, "shold");
+});
+const sideUp = e => {
+  sideEl.classList.remove("down"); cancel("shold");
+  const p = sideP; sideP = null; if (!p) return;
+  if (p.held) { holdEnd(); return; }
+  if (e.type === "pointercancel") return;
+  const now = performance.now();
+  if (now - sideLast < 350) { sideLast = 0; cancelAll(); return; }
+  sideLast = now; sideButton();
+};
+sideEl.addEventListener("pointerup", sideUp); sideEl.addEventListener("pointercancel", sideUp);
+sideEl.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sideButton(); } });
+function cancelAll() { if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); } if (S.pill) hidePill(); go("home", "down"); soul.react("nope"); }
+
+/* keyboard */
+let spaceT = null;
+document.addEventListener("keydown", e => {
+  const inPanel = e.target.closest && e.target.closest(".panel, .lang, .side");
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+    if (e.target.closest && e.target.closest(".screens")) return;
+    e.preventDefault();
+    swipe({ ArrowRight: "left", ArrowLeft: "right", ArrowUp: "up", ArrowDown: "down" }[e.key]); return;
+  }
+  if (inPanel) return;
+  if (e.key === " ") {
+    e.preventDefault(); if (e.repeat || spaceT) return;
+    spaceT = { t: performance.now(), held: false };
+    cancel("khold"); after(380, () => { if (spaceT) { spaceT.held = true; holdStart(); } }, "khold");
+  } else if (e.key === "Enter") { e.preventDefault(); tap(null); }
+  else if (e.key === "d" || e.key === "D") { doubleTap(); }
+  else if (e.key === "Escape" || e.key === "Backspace") { e.preventDefault(); sideButton(); }
+});
+document.addEventListener("keyup", e => {
+  if (e.key !== " " || !spaceT) return;
+  cancel("khold");
+  const s = spaceT; spaceT = null;
+  if (s.held) holdEnd(); else if (S.pill && S.pill.act) { const a = S.pill.act; hidePill(); go(a, "up"); } else tap(null);
+});
+window.addEventListener("blur", () => { if (spaceT && spaceT.held) holdEnd(); spaceT = null; });
+
+/* ---------------------------------------------------------------- panel */
+function syncPanel() {
+  document.querySelectorAll("#screens button").forEach(b => b.setAttribute("aria-current", String(b.dataset.v === S.view || (S.view === "voice" && b.dataset.v === "talk") || ((S.view === "memory" || S.view === "about") && b.dataset.v === "settings"))));
+}
+function renderPanel() {
+  const L = T();
+  document.documentElement.lang = LANG;
+  $("#lede").textContent = L.lede; $("#sayH").textContent = L.sayH; $("#scrH").textContent = L.scrH;
+  $("#ctlH").textContent = L.ctlH; $("#senH").textContent = L.senH; $("#foot").textContent = L.foot;
+  $("#keys").innerHTML = L.keys.map(k => `<span>${k.slice(0, -1).map(x => `<kbd>${x}</kbd>`).join(" ")} ${k[k.length - 1]}</span>`).join("");
+  $("#say").innerHTML = L.phrases.map((p, i) => `<button type="button" id="say-${i}" data-i="${i}">„${esc(p.q)}”</button>`).join("") + `<button type="button" id="say-claude" class="claude" data-c="1">${L.claudeNow}</button>`;
+  const order = ["home", "today", ...RING.slice(1)];
+  $("#screens").innerHTML = order.map((v, i) => `<li><button type="button" id="scr-${v}" data-v="${v}"><span class="n">${v === "today" ? "↑" : i === 0 ? "●" : String(i - 1).padStart(2, "0")}</span><span class="nm">${L[v]}</span><span class="ds">${L.d[v]}</span></button></li>`).join("");
+  $("#ctrl").innerHTML = L.ctrl.map(c => `<dt>${c[0]}</dt><dd>${c[1]}</dd>`).join("");
+  $("#sens").innerHTML = Object.entries(L.sens).map(([k, v]) => `<button type="button" id="imu-${k}" data-imu="${k}">${v}</button>`).join("");
+  $("#legend").innerHTML = L.legend.map(l => `<span><i style="--c:${l[0]}"></i>${l[1]}</span>`).join("");
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
+  $("#side").setAttribute("aria-label", LANG === "ro" ? "Buton lateral" : "Side button");
+  syncPanel();
+}
+$("#say").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  screen.focus({ preventScroll: true });
+  if (b.dataset.c) { cancel("claude"); if (S.sleeping) wake(); claudeArrive(); return; }
+  runPhrase(+b.dataset.i);
+});
+$("#screens").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (S.sleeping) wake();
+  if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); }
+  const v = b.dataset.v, i = RING.indexOf(v), j = RING.indexOf(S.view);
+  go(v, v === "today" ? "up" : v === "home" ? "down" : i > j ? "left" : "right");
+});
+$("#screens").addEventListener("click", () => screen.focus({ preventScroll: true }));
+$("#sens").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { imu(b.dataset.imu); screen.focus({ preventScroll: true }); } });
+document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
+  LANG = b.dataset.lang; try { localStorage.setItem("soulos-lang", LANG); } catch (e) {}
+  renderPanel(); refresh();
+  if (S.pill && S.pill.kind === "amber") showPill({ kind: "amber", text: T().claudePill, act: "claude", dur: 3000 });
+}));
+
+/* ---------------------------------------------------------------- sizing + loop */
+const glassEl = $("#glass");
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+function size() {
+  const w = glassEl.clientWidth; if (!w) return;
+  const k = w / 466; screen.style.transform = `scale(${k})`;
+  const px = Math.round(w * DPR);
+  if (px !== soul.S) { soul.cv.width = px; soul.cv.height = px; soul.S = px; soul.draw(); }
+}
+if ("ResizeObserver" in window) new ResizeObserver(size).observe(glassEl);
+window.addEventListener("resize", size);
+
+let last = performance.now(), lastSec = -1;
+function frame(ts) {
+  const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
+  // hold-to-approve / hold-to-wipe progress
+  if (hold && (hold.kind === "approve" || hold.kind === "wipe")) {
+    hold.p = Math.min(1, hold.p + dt / 1.2); soul.prog = hold.p;
+    if (hold.p >= 1) {
+      const k = hold.kind; hold = null; soul.prog = 0;
+      if (k === "approve") claudeDecide(true);
+      else { S.memWiped = true; addDiary("wipe"); soul.react("wake"); showPill({ kind: "mint", text: T().memDone, dur: 1800 }); refresh(); }
+    }
+  }
+  // focus timer
+  const F = S.focus;
+  if (F.run) {
+    F.left -= dt;
+    if (F.left <= 0) { F.left = 0; F.run = false; F.done = true; soul.react("star", 2.6); showPill({ kind: "mint", text: T().focusPill, dur: 2600 }); buzz(); if (S.view === "focus") refresh(); }
+    const sec = Math.ceil(F.left);
+    if (sec !== lastSec && curCard) {
+      lastSec = sec;
+      const d = curCard.querySelector('[data-live="fdig"]'); if (d) d.textContent = mmss(F.left);
+      const hf = curCard.querySelector('[data-live="homefocus"]'); if (hf) hf.textContent = T().homeFocus(mmss(F.left));
+      const r = curCard.querySelector('[data-live="fring"]'); if (r) { const C = 2 * Math.PI * 222; r.setAttribute("stroke-dashoffset", C * (1 - F.left / F.total)); }
+    }
+  }
+  if (S.sleeping) soul.dim = approach(soul.dim, 0.7, 3, dt);
+  soul.update(dt); soul.draw();
+  requestAnimationFrame(frame);
+}
+
+/* ---------------------------------------------------------------- boot */
+initData();
+renderPanel();
+size();
+go("home", "fade");
+soul.react("intro");
+requestAnimationFrame(frame);
+setInterval(() => { const c = curCard && curCard.querySelector('[data-live="clock"]'); if (c) c.textContent = hhmm(); }, 10000);
+after(9000, () => { if (!S.pill && !S.sleeping && S.view !== "voice") { buzz(); showPill({ kind: "", who: T().msgFrom, text: T().msgBody, act: "msg", dur: 6000 }); } }, "msg");
+after(20000, claudeArrive, "claude");
+</script>
