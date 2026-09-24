@@ -16,7 +16,8 @@ actualizat: 2026-09-24
 | [[Expandly]] | motorul mare | aproape gata de review; 0 costuri de găzduire; se vinde global pe abonament; merge fără Andu | practic nelimitat — dar categoria e aglomerată (Kaching, Fast Bundle cu mii de recenzii) |
 | [[MundiShop]] | bani în Q4, apoi laborator | vârful LEGO e Q4; magazin-vitrină pentru aplicații | ~20.500 €/an profit brut cât e neplătitor de TVA |
 | Aplicația #2, aplicația MundiShop | din Q1 2027 | se decid pe date ([[Aplicații]]) | — |
-| [[KREA]], [[PRIVATE PROPERTY]], [[Gadget WISP]] | în așteptare | nu pot aduce bani acum / cer capital | se decid la S30 |
+| [[Micul Șmecher]] | experiment cu porți (decis de Andu, 24.09) | firmware + AI gata; Founders Desk Edition „works with Claude” fără stoc până la rezervări | Poarta A: ≥ 100 rezervări în 14 zile de la clip — [[Planul de bani Micul Șmecher]] |
+| [[KREA]], [[PRIVATE PROPERTY]] | în așteptare | nu pot aduce bani acum / cer capital | se decid la S30 |
 
 ## Porțile — cifrele după care decidem
 | Poarta | Când | MundiShop | Expandly / aplicații |

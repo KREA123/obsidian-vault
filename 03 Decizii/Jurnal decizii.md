@@ -17,6 +17,9 @@ Format: `YYYY-MM-DD — decizie — de ce — sursa`. Cele mai noi sus. Se adaug
 - „Nu punem la dispoziție ce nu avem în stoc.”
 
 ## Septembrie 2026
+- 2026-09-24 — [[Gadget WISP]] devine [[Micul Șmecher]] (brand de lucru SUFLET): companion viu + AI personal (Claude/ChatGPT) + „works with Claude” (Hardware Buddy) — Andu: „dezvoltă la maxim, să fim revoluționari, să se lege cu Claude/ChatGPT” — [[Viziunea — momentul iPhone]]
+- 2026-09-24 — Rulează ca experiment cu porți, în paralel cu [[Expandly]] (trimiterea în review rămâne în S2); fără bani din MundiShop; nicio matriță/stoc fără comenzi plătite — filtrul celor 5 întrebări — [[Planul de bani Micul Șmecher]]
+- 2026-09-24 — Propunere Claude (de confirmat de Andu): Founders Desk Edition pe USB, fără baterie, €119 numerotat 001–300; Voice Edition cu rezervare €10 returnabilă — la €99 rămân doar ~€33/buc., la €119 ~€49 — [[Planul de bani Micul Șmecher]]
 - 2026-09-24 — Importat pachetul extern de cercetare MundiShop (36 note) în `MundiShop_Research_2026-09-23`, neatins; filtrul în [[Pachet cercetare MundiShop 23.09 — ce am învățat]] — metodă utilă, exemple ipotetice; cifrele din vault câștigă — cerut de Andu
 - 2026-09-24 — CPA maxim estimat pe cifrele noastre: ~47 lei (0 profit) / ~37 lei (rezervă 10 lei) vs ~237 lei azi — de validat cu q și comisioanele reale din Shopify — [[Pachet cercetare MundiShop 23.09 — ce am învățat]]
 - 2026-09-24 — Roadmap refăcut pe Expandly: trimitere în review în S2 (până pe 11.10), ca să prindă Black Friday; aplicația MundiShop amânată pentru Q1 2027 (60 clienți, 0 reveniți) — Claude, după nota [[Expandly]] — [[Roadmap 1 milion €]]

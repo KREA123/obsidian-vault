@@ -1,7 +1,10 @@
 ---
 tip: proiect
-status: idee
+status: evoluat
+actualizat: 2026-09-24
 ---
+> [!important] Proiectul a evoluat în [[Micul Șmecher]] (brand de lucru SUFLET) — companion AI cu ochi vii, firmware funcțional, legătură cu Claude, plan de bani. Nota de mai jos rămâne ca istoric.
+
 # Gadget WISP — accesoriu hardware cu software propriu
 
 - Accesoriu mic de purtat (la geantă, pe afară), vândut global, cost cât mai mic. Reper: STARBOY de la CREATURE (lilguy.net).
