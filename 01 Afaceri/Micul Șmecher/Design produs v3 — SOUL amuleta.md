@@ -1,50 +1,58 @@
 ---
 tip: afacere
 afacere: Micul Șmecher
-status: direcție aleasă
+status: direcție în lucru (concept E)
 actualizat: 2026-09-24
 ---
 
-# Design produs v3 — SOUL, amuleta
+# Design produs v3 — SOUL (concept E: „piatra-lentilă”, fără toartă)
 
-> **Decizia lui Andu (2026-09-24):** prima variantă (medalionul care atârnă, cu fereastra neagră și ochii vii) are suflet; piatra culcată din v2 nu. Mergem pe **amuletă**, puțin mai mare ca să poată face mai multe. Numele: **SOUL**, un singur cuvânt.
+> **Ce a spus Andu (2026-09-24), în ordine:**
+> 1. Prima variantă (rotundă, fereastra neagră, ochii vii) are suflet; piatra culcată v2 părea plastic ieftin.
+> 2. „Amuletă” = **forma**, nu purtat la gât.
+> 3. Trebuie să fie **ieftin de făcut**, **mai mare**, **bun de ținut în mână**, și **fără toartă** — toarta de agățat arată ieftin. Agățatul vine dintr-o **husă** separată.
 
-Cercetarea completă: `micul-smecher/research/07-amulet-design-language-2026-09-24.md`. Randări: `micul-smecher/renders/v3/`.
+Cercetări: `micul-smecher/research/07-amulet-design-language-2026-09-24.md`, `08-wow-design-cmf-2026-09-24.md`. Randări: `micul-smecher/renders/v3/concepts/`.
 
-## De ce v2 a pierdut sufletul
-O amuletă se recunoaște după trei lucruri: **un punct de care atârnă**, **un „ochi” rotund, centrat, într-o ramă** și **un sus și un jos clar**. Piatra v2 le pierduse pe toate trei. v3 le aduce înapoi.
+## Strategia AirTag
+AirTag e plastic lucios + oțel, și totuși arată scump. Secretul: **un obiect curat, fără nimic agățat de el**, materiale ieftine dar lucioase și precise, și **accesoriile se vând separat** (husă, breloc, curea). Facem la fel.
 
-## Cum arată SOUL v3
+## Cum arată
 | | |
 |---|---|
-| Formă | amuletă rotundă, coroniță-toartă la ora 12, ochiul de sticlă neagră bombată într-un inel mat („aura”), spate prețios |
-| Mărime | producție **Ø56 × 16,5 mm** (≈11,5 la margine); prototip pe placa Waveshare Ø58–60 × 19–20 |
-| Greutate | ~50 g (≈56 g cu spate din oțel) — de aceea colierul e mod ocazional; zilnic: lanț de ceas de buzunar, breloc pe geantă, în palmă, pe „altar” (suportul de birou care îl și încarcă) |
-| Baterie | ~650 mAh (603040), ~2 zile utilizare obișnuită [estimare] |
-| Spate | capac cu baionetă (fără șuruburi), gravat: „SOUL · No. 0001 · născut 24.09.2026”; înăuntru certificatul de naștere și bateria înlocuibilă |
-| Culori | Bone, Onyx, **ediția Mărțișor** (alb pe șnur roșu-alb) + nuanțele de ochi din firmware |
-| Preț orientativ | €149 bază · €249 ediția „Heirloom” |
+| Formă | piatră-lentilă rotundă **Ø64 mm**, 18 mm la centru, ~9 mm la margine; spatele bombat, se așază în palmă ca o piatră de râu |
+| Față | sticlă neagră ușor bombată **Ø56** — marginea vopsită negru-adevărat, deci toată sticla pare ecran; ochii plutesc în negru (≥85% din față e sticlă) |
+| Ramă | inel subțire de aluminiu sablat, **o singură muchie lustruită** care prinde lumina |
+| Spate | plastic (PC) injectat, **lucios**, colorat: alb, grafit, salvie, nisip, lila |
+| Nimic sus | fără toartă, fără șuruburi vizibile |
+| Greutate | ~75 g (cu o plăcuță de oțel înăuntru → se simte dens și ține de suportul magnetic) |
+| Ecran | 1,75" AMOLED rotund (cel mai mare rotund cu negru adevărat pentru placa noastră) |
 
-## Semnătura (ce îl face unic)
-1. **„Apasă ochiul. Te ascultă.”** — toată fața de sticlă e butonul (ca butonul Home al iPhone-ului, dar e toată fața). Ții apăsat = vorbești; microfonul e oprit fizic până apeși.
-2. **Aura** — inelul mat din jurul ochiului luminează în culori: albastru când ascultă, chihlimbar când Claude cere voie, cald noaptea. „Când ochii dorm, vorbește lumina.”
-3. **Două SOUL-uri se recunosc** prin Bluetooth și își fac cu ochiul.
-4. **Spatele gravat** — fața e simplă, spatele e prețios; se dă mai departe.
-5. **Coronița** — toarta care se prinde de lanț, geantă, curea de mână sau altar.
+## Accesorii (bani în plus, ca la AirTag)
+- Husă din silicon cu buclă (breloc / geantă) — preț țintă €19
+- Husă din piele cu șnur scurt — €39
+- Suport magnetic de birou, înclinat ~15° — €29
 
-## Regulile SOUL
-- Un ochi rotund într-o ramă, atârnat de o coroniță.
-- Fața e sufletul și singurul buton.
-- Când ochii dorm, vorbește lumina.
-- Fața e modestă, spatele e prețios.
-- Se poartă, nu se operează.
+## Cât costă carcasa [estimări, de confirmat cu oferte reale]
+| Piesă | 1.000 buc. | 10.000 buc. |
+|---|---|---|
+| Sticlă față cu margine neagră | $2,5–4 | $1,5–2,5 |
+| Inel aluminiu (CNC / extrudat + sablat) | $4–7 | $2–4 |
+| Spate PC lucios | $1,5–3 | $0,5–1,5 |
+| Plăcuță oțel, garnituri, adeziv | $1–2 | $0,5–1 |
+| **Carcasă total** | **~$9–16** | **~$5–9** |
+| Matriță spate (o singură dată) | $15–30k | — |
+| Husă silicon (cost) | $1–2 | $0,6–1,2 |
 
-**Fraza de lansare:** „Un talisman. O voce pentru AI-ul tău. Un păzitor al zilei tale… nu trei obiecte — un singur suflet.”
+Față de titan ($30–100/buc.) sau ceramică (matriță $40–120k), e de ~5–10× mai ieftin. Prețul la client poate rămâne în zona €149–179 cu marjă sănătoasă.
 
-## Risc de urmărit
-Meta Muse Charm (sept. 2026: breloc cu avatar și voce) ocupă deja ideea „breloc + avatar + voce” în presă. Diferența noastră trebuie să fie **obiectul**: forma prețioasă de amuletă și gestul „apasă ochiul”.
+## Semnătura
+- **„Apasă ochiul. Te ascultă.”** — toată fața e butonul.
+- **Inel de lumină** subțire între sticlă și ramă (albastru = ascultă, chihlimbar = Claude cere voie).
+- Merge **fără AI**, cu **Claude-ul tău** sau cu **ChatGPT-ul tău**.
 
 ## Pașii următori
-1. Trei machete printate (Ø54 / 56 / 58 mm, 45 / 50 / 56 g), purtate câte 3 zile fiecare.
-2. Prototip funcțional pentru „apasă ochiul” (dome switch sub ecranul care „plutește”).
-3. Planurile tehnice refăcute pentru amuletă (cele din `micul-smecher/blueprints/` sunt pentru v2).
+1. Andu alege din randările concept E (culoare, mărime Ø60 / 64).
+2. Trei machete printate 3D la Ø60 / 62 / 64, ținute în mână câteva zile.
+3. Oferte reale: sticlă (furnizori de sticlă pentru ceasuri), inel de aluminiu, matriță PC.
+4. Refacem planurile tehnice pentru concept E.

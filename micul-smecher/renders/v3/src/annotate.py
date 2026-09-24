@@ -23,6 +23,7 @@ def main():
     ov = Image.new('RGBA', (W * ss, H * ss), (0, 0, 0, 0))
     d = ImageDraw.Draw(ov)
     col = (92, 84, 74, 235)
+    col_lab = tuple(meta.get('label_rgba', (92, 84, 74, 235)))
     size = int(H * 0.024) * ss
     # thin sans (DejaVu Sans ExtraLight ships with Ubuntu: fonts-dejavu-extra)
     f = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-ExtraLight.ttf', size)
@@ -31,6 +32,9 @@ def main():
         (ax, ay), (bx, by) = a['a'], a['b']
         ax, ay, bx, by = ax * W * ss, ay * H * ss, bx * W * ss, by * H * ss
         tick = H * 0.012 * ss
+        if (ax, ay) == (bx, by):          # label only
+            d.text((ax, ay), a['label'], font=f, fill=a.get('col', col_lab), anchor='mt')
+            continue
         d.line([(ax, ay), (bx, by)], fill=col, width=lw)
         for x, y in ((ax, ay), (bx, by)):
             d.line([(x, y - tick), (x, y + tick)], fill=col, width=lw)

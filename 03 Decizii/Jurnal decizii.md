@@ -17,6 +17,7 @@ Format: `YYYY-MM-DD — decizie — de ce — sursa`. Cele mai noi sus. Se adaug
 - „Nu punem la dispoziție ce nu avem în stoc.”
 
 ## Septembrie 2026
+- 2026-09-24 — Design SOUL: **fără toartă** (agățatul vine din husă, ca la AirTag), **mai mare** (Ø64, bun de ținut în palmă), **ieftin de făcut** (sticlă + inel aluminiu + spate PC lucios, carcasă ~$5–9/buc. la 10k); titanul/ceramica scoase — Andu — [[Design produs v3 — SOUL amuleta]]
 - 2026-09-24 — SOUL merge în 3 moduri: **fără AI** (offline, fără cont), **cu Claude-ul tău** (conector în contul Claude + Claude Code/Cowork), **cu ChatGPT-ul tău** (aplicație în ChatGPT); vocea prin serviciul SOUL sau cheia API proprie — Andu. Abonamentul Claude Pro/ChatGPT Plus nu poate fi folosit direct de un dispozitiv extern → conector + cheie API — pe pagina de lansare
 - 2026-09-24 — Numele produsului: **SOUL** (un singur cuvânt, fără sub-nume); „suflet” rămâne povestea numelui — Andu. De verificat EUIPO/domeniu înainte de orice cheltuială (există SOUL Electronics, căști) — [[Brand și lansare Micul Șmecher]]
 - 2026-09-24 — Designul: înapoi la **amuletă** (v3, Ø56, fereastra neagră cu ochi, aură luminoasă, „apasă ochiul”); piatra culcată v2 abandonată — Andu: „era mai tare prima variantă… să pară amuletă, cu suflet” — [[Design produs v3 — SOUL amuleta]]
