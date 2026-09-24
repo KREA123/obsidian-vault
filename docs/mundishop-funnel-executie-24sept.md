@@ -4,6 +4,9 @@ Handoff: `docs/mundishop-funnel-handoff-claude-code-24sept.md` · Pachetul A (te
 
 ## Stare pe 24.09
 
+**Actualizare, 12:08: copia a fost publicată de Andu și e acum tema live.** Verificat după publicare: pe telefon, header de 57 px, linia de livrare prezentă, `#buybar` absent, 0 erori.
+
+
 - **Pachetul A e aplicat pe o copie nepublicată a temei.** Copia se numește „Mundi — pachet A 24.09 (previzualizare)” și are ID-ul **206388068684**. A fost făcută pe 24.09 la 11:45 (ora României) din tema live 204842565964.
   - Previzualizare pe telefon: `https://mundishop.ro/?preview_theme_id=206388068684`.
   - Publicarea o face Andu, din Online Store → Themes → copia → Publish. Conectorul Shopify nu are voie să scrie pe tema live și nici să publice.
@@ -22,7 +25,8 @@ Handoff: `docs/mundishop-funnel-handoff-claude-code-24sept.md` · Pachetul A (te
 | 24.09 | Audit pe telefon și viteză (cifrele de mai jos) | — | făcut |
 | 24.09 | **Pachetul A** pregătit: A1 fără `#buybar` · A2 linie livrare · A3 retur ca link · A4 header pe un rând · A5 o singură promisiune (24–72 h) · A6 stele doar cu recenzii · A7 fără SOL + telefon vizibil · A8 preîncărcare poză, fără minifigurine pe produs, fără Hoppy · widgetul de recenzii mutat sub descriere | produs → **rata de coș pe telefon, landing = produs** | pregătit și verificat în simulare |
 | 24.09, 11:45 | Pachetul A încărcat în copia nepublicată 206388068684 (13 fișiere, sume MD5 verificate) | — | aplicat pe copie, **nepublicat** |
-| — | Pachetul A **publicat** (data și ora se completează la publicare; de aici pornesc cele 14 zile) | | |
+| **24.09, 12:08** | **Pachetul A publicat** de Andu: tema 206388068684 e acum live, iar vechea temă 204842565964 e nepublicată și neatinsă, pentru revenire. **De aici pornesc cele 14 zile (până pe 08.10).** | produs → rata de coș pe telefon | **live** |
+| 24.09, după publicare | Pe desktop apare în plus lupa de căutare (câmpul e cu 68 px mai îngust). Reparația e un singur rând în `snippets/mundi-header-mobil.liquid`: `.mh-sbtn{display:none}` devine `#mh-bar .mh-sbtn{display:none}`. Se face de mână din Edit code, pentru că conectorul nu scrie pe tema live. Pe telefon nu se schimbă nimic. | — | de aplicat |
 | — | B1 Breeze: ramburs primul + redenumit | checkout → **checkout→comandă** | de făcut |
 | — | B2 Checkout abandonat 1 h / 24 h / 72 h | după checkout → comenzi recuperate | de făcut |
 | — | B3 Judge.me: transparență, cerere la 7 zile, cererea pentru comenzile trecute, culori | produs (parte din A) | de făcut |
