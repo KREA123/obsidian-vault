@@ -2,13 +2,14 @@
 
 Handoff: `docs/mundishop-funnel-handoff-claude-code-24sept.md` · Pachetul A (temă): `shopify/tema-pachet-A-24sept/README.md` · Pachetul B (admin): `docs/mundishop-pachet-B-admin-24sept.md` · Capturi: `docs/audit-24sept/`
 
-## Stare pe 24.09, seara
+## Stare pe 24.09
 
-- **Pachetul A (temă) e pregătit și verificat în simulare, dar NU e aplicat pe site.** Conectorul Shopify din Claude cere re-autentificare, deci nu am putut citi sau scrie tema. Codul e scris ca snippet-uri Liquid plus instrucțiuni exacte pe fișier. L-am verificat rescriind în Chromium paginile live cu exact ce produce codul.
+- **Pachetul A e aplicat pe o copie nepublicată a temei.** Copia se numește „Mundi — pachet A 24.09 (previzualizare)” și are ID-ul **206388068684**. A fost făcută pe 24.09 la 11:45 (ora României) din tema live 204842565964.
+  - Previzualizare pe telefon: `https://mundishop.ro/?preview_theme_id=206388068684`.
+  - Publicarea o face Andu, din Online Store → Themes → copia → Publish. Conectorul Shopify nu are voie să scrie pe tema live și nici să publice.
+- **Tema live nu e modificată.** Fișierele încărcate în copie sunt în `shopify/tema-pachet-A-24sept/tema-copie/`, iar originalele din live în `shopify/tema-pachet-A-24sept/tema-live-inainte/`. Toate cele 13 fișiere au fost verificate după încărcare, cu suma MD5 identică.
 - **Pachetul B** nu e aplicat. Se face din admin, în aplicații. Pașii exacți sunt în `docs/mundishop-pachet-B-admin-24sept.md`.
-- **Nimic din site nu s-a schimbat azi prin mine.** Nicio scriere de produs, nicio comandă, nicio campanie atinsă.
-
-Ca să continui: reconectezi conectorul Shopify în claude.ai. Apoi fac o copie a temei live, aplic pachetul A pe copie și îți dau linkul de previzualizare. Publici tu (conectorul nu permite scrieri pe tema publicată).
+- Nicio scriere de produs, nicio comandă, nicio campanie atinsă.
 
 ## Jurnal
 
@@ -19,8 +20,9 @@ Ca să continui: reconectezi conectorul Shopify în claude.ai. Apoi fac o copie 
 | 24.09 | Instalat Breeze (fără reguli) | — | aplicat (conform handoff) |
 | 24.09 | **Baza de măsurare începe** (noua definiție de sesiune Shopify) | toate | — |
 | 24.09 | Audit pe telefon și viteză (cifrele de mai jos) | — | făcut |
-| 24.09 | **Pachetul A** pregătit: A1 fără `#buybar` · A2 linie livrare · A3 retur ca link · A4 header pe un rând · A5 o singură promisiune (24–72 h) · A6 stele doar cu recenzii · A7 fără SOL + telefon vizibil · A8 preîncărcare poză, fără minifigurine pe produs, fără Hoppy · widgetul de recenzii mutat sub descriere | produs → **rata de coș pe telefon, landing = produs** | pregătit, verificat în simulare, **neaplicat** |
-| — | Pachetul A publicat (data și ora se completează la publicare) | | |
+| 24.09 | **Pachetul A** pregătit: A1 fără `#buybar` · A2 linie livrare · A3 retur ca link · A4 header pe un rând · A5 o singură promisiune (24–72 h) · A6 stele doar cu recenzii · A7 fără SOL + telefon vizibil · A8 preîncărcare poză, fără minifigurine pe produs, fără Hoppy · widgetul de recenzii mutat sub descriere | produs → **rata de coș pe telefon, landing = produs** | pregătit și verificat în simulare |
+| 24.09, 11:45 | Pachetul A încărcat în copia nepublicată 206388068684 (13 fișiere, sume MD5 verificate) | — | aplicat pe copie, **nepublicat** |
+| — | Pachetul A **publicat** (data și ora se completează la publicare; de aici pornesc cele 14 zile) | | |
 | — | B1 Breeze: ramburs primul + redenumit | checkout → **checkout→comandă** | de făcut |
 | — | B2 Checkout abandonat 1 h / 24 h / 72 h | după checkout → comenzi recuperate | de făcut |
 | — | B3 Judge.me: transparență, cerere la 7 zile, cererea pentru comenzile trecute, culori | produs (parte din A) | de făcut |
@@ -34,6 +36,7 @@ Ca să continui: reconectezi conectorul Shopify în claude.ai. Apoi fac o copie 
   - Coș→checkout = Sessions that reached checkout ÷ Sessions with cart additions.
   - Checkout→comandă (B1) = Sessions that completed checkout ÷ Sessions that reached checkout.
 - 14 zile după fiecare publicare, fără alte schimbări pe aceeași etapă în perioada asta.
+- **Vizitele de test din 24.09.** Auditul de dimineață a făcut ~60 de încărcări automate de pagini (mai ales `/products/lego-75456`, ca „telefon” din browserul Facebook), cu pixelii activi. Au plecat dintr-un IP din **SUA**. În raport se adaugă filtrul **Country = Romania**, ca să nu intre în bază. Verificările făcute după aplicarea pe copie au rulat cu toți pixelii, analiza și raportarea de viteză blocate.
 - **Fereastra „înainte” e scurtă.** Dacă pachetul A se publică pe 25–26.09, „înainte” are doar 1–2 zile (24.09 → publicare). Comparația va fi orientativă, nu o dovadă. Varianta curată: publicare pe 08.10, după 14 zile de bază. Costă două săptămâni. **Decide Andu.** B1 (checkout) poate merge în paralel, pentru că e altă etapă.
 
 | Metrică | Înainte (24.09 → publicare) | După (14 zile) |
@@ -65,11 +68,11 @@ La 375×812 rezultatele sunt identice (header 57 px, poza la 278–583 px, o sin
 |---|---|---|
 | Azi | ~3,5 s | ~6,3 s |
 | Fără Shopify Forms | ~3,7 s | ~4,5 s |
-| Fără Forms + fără tagul Google Ads dublat | ~4,1 s | ~4,6 s |
+| Fără Forms + fără tagul Google Ads din temă (doar test; tagul rămâne, vezi mai jos) | ~4,1 s | ~4,6 s |
 
 - LCP-ul din laborator **nu** coboară sub 2,5 s prin ce se poate face din temă sau prin cele două decizii. Diferențele de LCP de mai sus sunt în zgomotul măsurătorii. Nu pot promite ținta ≤2,5 s din laborator.
 - Oprirea Forms scade timpul blocat cu ~1,8 s. Contează pentru cât de repede răspunde butonul „Adaugă în coș” în primele secunde.
-- Fără tagul Google Ads dublat nu s-a văzut un câștig suplimentar în laborator.
+- Fără tagul Google Ads din temă nu s-a văzut un câștig suplimentar în laborator. Oricum rămâne, fiind necesar pentru verificarea din Google Ads.
 - LCP-ul real se urmărește în **Shopify admin → Online Store → Themes → Web performance** (date de la vizitatori reali). Asta e sursa pentru ținta ≤2,5 s.
 - Pe telefonul simulat, 25 s de lucru pe firul principal, din care ~12 s execuție de scripturi. Cel mai mult cer: pixelii Shopify, Meta, Google Tag Manager, Shopify Forms și Judge.me. Detalii: `docs/audit-24sept/lighthouse-24sept.json`.
 - Observat, fără throttling: TTFB ~0,4–0,8 s, iar poza principală are 37 KB (webp, 640 px). Poza nu e problema.
@@ -88,13 +91,13 @@ La 375×812 rezultatele sunt identice (header 57 px, poza la 278–583 px, o sin
 ## Găsite în afara temei (decizii pentru Andu)
 
 1. **Pixel personalizat Google Ads stricat** (Settings → Customer events → „Google Ads – conversie Google Shopping App Purchase”, instalat pe 07.09). Linia 10 începe cu un `s` rătăcit, așa că pixelul aruncă „ReferenceError: s is not defined” pe fiecare pagină și nu face nimic. Conversia de cumpărare **nu** se pierde: aplicația Google & YouTube o trimite deja pe aceeași etichetă `AW-18376254111/kg0fCMi4xd0cEJ_FvbpE`. Dacă se repară, riscă să dubleze conversiile. Recomandare: se șterge.
-2. **Tagul Google Ads dublat în `theme.liquid`** (`gtag/js?id=AW-18376254111` + `config`), pe lângă aplicația Google & YouTube: 166 KB în plus pe fiecare pagină. Tot aici, GA4 (`G-TS3NDM80PQ`) e configurat și în temă, și în aplicație, deci probabil numără de două ori vizualizările de pagină **în GA4**. Cifrele din Shopify Analytics nu sunt afectate.
-3. **GA4 pe colecții:** cererea `g/collect` primește 413 (prea mare, probabil lista de produse din `view_item_list`), deci evenimentul se pierde. Afectează doar GA4.
+2. **Tagul Google Ads din `theme.liquid`** (`gtag/js?id=AW-18376254111`) **rămâne.** Comentariul din temă spune că a fost pus acolo pe 18.09, intenționat: verificarea din Google Ads („Testați conexiunea”) nu vedea tagul pus doar prin pixelul aplicației, iar campania PMax apărea „configurată greșit”. Costul lui (~166 KB de JS) e prețul acestei verificări. Se scoate doar dacă Google Ads confirmă că îl vede prin aplicație. (Corectez aici recomandarea din prima versiune a jurnalului, care îl trata drept dublură.)
+3. **GA4 pe colecții:** o cerere `g/collect` către `G-TS3NDM80PQ` a primit 413 (prea mare), deci evenimentul respectiv se pierde. Afectează doar GA4. Comentariul din temă mai spune că `gtag/js?id=G-TS3NDM80PQ` răspundea cu 404. Starea GA4 merită o verificare separată; Shopify Analytics nu e afectat.
 4. **Shopify Forms** („Reducere 5%”): 906 KB de JS pe fiecare pagină, inclusiv pe produs, unde e ascuns. Varianta: se oprește sau rămâne (item 8 din handoff).
 5. **Bannerul de cookie-uri pentru SEE** trebuie verificat de pe un telefon din România. Testele de aici au rulat din SUA, unde Shopify nu arată bannerul.
 
 ## Ce urmează
 
-1. Reconectarea conectorului Shopify. Apoi: copie a temei → pachetul A aplicat pe copie → linkul de previzualizare → verificare pe telefon (lista din README) → Andu publică → data în jurnal.
+1. Andu se uită pe telefon la previzualizare (lista din README). Înainte de publicare pornește în Judge.me insignele de transparență (B3.4), pentru că widgetul de recenzii urcă sub descriere. Apoi publică copia și trece data și ora în jurnal.
 2. B1 (Breeze) și B3 (Judge.me, întâi transparența) din admin. B1 poate merge în paralel cu A (altă etapă).
 3. După 14 zile de la publicarea lui A: completarea tabelului de măsurare, apoi punctele 9–10 (coșul și specificațiile).

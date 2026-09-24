@@ -5,15 +5,15 @@ Tot pachetul e o singură schimbare de măsurat. Pe durata celor 14 zile nu se m
 
 Nimic de aici nu scrie date de produs (titlu, descriere, preț, poze, taguri, metafield-uri, colecții). Toate modificările sunt în temă: Liquid, CSS, JS, `templates/product.json`, `config/settings_data.json` și `locales`.
 
-## Cum se aplică (fără risc pentru site-ul live)
+## Stare: aplicat pe copia nepublicată 206388068684 (24.09, 11:45)
 
-1. **Online Store → Themes → tema live „Copie a Mundi — SEO colectii (H1 + descriere)” → ⋯ → Duplicate.** Redenumește copia „Mundi — pachet A 24.09”. Toate modificările se fac pe copie.
-2. Aplici pașii de mai jos pe copie (Edit code).
-3. Verifici pe telefon cu **Preview** pe copie (lista de verificare de la final).
-4. Publici copia doar după verificare și notezi data și ora publicării în `docs/mundishop-funnel-executie-24sept.md`.
-   Dacă ceva nu e în regulă, republici tema veche: e neatinsă.
+- Copia „Mundi — pachet A 24.09 (previzualizare)” a fost făcută din tema live 204842565964 cu `themeDuplicate`. Cele 13 fișiere din `tema-copie/` au fost încărcate cu `themeFilesUpsert` și verificate după încărcare, cu sume MD5 identice.
+- Originalele din tema live sunt în `tema-live-inainte/`, pentru comparație (`diff -r tema-live-inainte tema-copie`) și pentru revenire.
+- **Previzualizare pe telefon:** `https://mundishop.ro/?preview_theme_id=206388068684`.
+- **Publicare:** Andu, din Online Store → Themes → „Mundi — pachet A 24.09 (previzualizare)” → Publish. Data și ora se notează în `docs/mundishop-funnel-executie-24sept.md`. Pentru revenire se republică tema anterioară, care rămâne neatinsă.
+- Înainte de publicare: insignele de transparență pornite în Judge.me (pachetul B, B3.4).
 
-Notă: conectorul Shopify din Claude permite scrieri doar pe teme nepublicate. Fluxul „copie → previzualizare → publicare de către Andu” e oricum cel corect.
+Pașii de mai jos descriu exact ce s-a schimbat, ca să poată fi refăcuți de mână pe altă temă.
 
 ## Fișiere noi (se copiază ca atare în `snippets/`)
 
@@ -51,7 +51,7 @@ Opțional: regulile `.buybar…` și `body.buybar-on .pagew{…}` din `assets/mu
 
 **A2 + A6 · în coloana de informații (`.pinfo`).**
 - Imediat după `</div>`-ul care închide `.pr` (prețul): `{% render 'mundi-pp-stars', product: product %}`
-- În `.stock`: se scoate sufixul „ — livrare în 24–72 ore”, pentru că livrarea are acum linia ei. Logica de stoc (în stoc / epuizat) rămâne cum e.
+- În `.stock`: cheia `product.in_stock` („● În stoc — livrare în 24–72 ore”) e înlocuită cu una nouă, `product.in_stock_short` („● În stoc”), pentru că livrarea are acum linia ei. Cheia veche rămâne în `locales/ro.json` pentru alte eventuale utilizări. Logica de stoc (în stoc / epuizat) rămâne cum e.
 - Imediat după `</div>`-ul care închide `.stock`: `{% render 'mundi-pp-ship', product: product %}`
 
 **A3 · „Retur 14 zile” ca link, lângă buton.** În lista `.trust`, sub butoane, textul „Retur simplu în 14 zile” se înfășoară în `<a href="/pages/politica-de-retur">…</a>`. Iconița rămâne în afara linkului.
@@ -72,7 +72,7 @@ Cauza ruperii pe rânduri: `assets/mundi-toy.css` repune etichetele „Favorite�
 
 ### 3. Subsolul (secțiunea `footer`, `class="mf"`) · A7
 
-- Se scoate linkul „Soluționarea online a litigiilor (SOL)” din coloana „Informații”. Dacă lista vine dintr-un meniu (Online Store → Navigation), se șterge elementul din meniu, fiindcă e o setare, nu date de produs.
+- Linkul „Soluționarea online a litigiilor (SOL)” din coloana „Informații” vine din meniul `footer` (Online Store → Navigation). În temă, bucla meniului sare peste orice link către `ec.europa.eu/consumers/odr`, deci dispare odată cu publicarea temei. Elementul se poate șterge și din meniu, oricând după aceea.
 - Se scoate insigna **SOL** din banda `.mf-band` (`<a href="https://ec.europa.eu/consumers/odr" …>`).
 - Rămân linkul „ANPC - SAL” și insigna ANPC SAL (`https://anpc.ro/ce-este-sal/`).
 - Datele firmei sunt vizibile în `.mf-legal`: ARTEMIS DIGITAL S.R.L., J2025098748009, CUI 53145290, sediul din Sectorul 3. **Telefonul** e însă doar în coloana „Contact”, care pe telefon e strânsă. Se adaugă la finalul primului paragraf din `.mf-legal`: ` · Tel. <a href="tel:0771530286">0771 530 286</a> · <a href="mailto:office@krea.ro">office@krea.ro</a>`.
@@ -103,14 +103,15 @@ Echivalent în editorul de temă: Produs → trage secțiunea cu „Judge.me Rev
 
 **Condiție:** întâi se pornesc în Judge.me insignele de transparență (pachetul B, Judge.me, punctul 4). Recenziile de magazin afișate azi nu arată de unde vin, iar secțiunea devine mult mai vizibilă.
 
-### 7. `config/settings_data.json` · Hoppy Trust Badges
+### 7. Hoppy Trust Badges
 
-Aplicația e dezactivată, dar embed-ul ei încă încarcă `animation.css` (4,8 KB) ca fișier care blochează afișarea paginii. În editorul de temă → App embeds → Hoppy Trust Badges → oprit (echivalent: `"disabled": true` pe blocul Hoppy din `settings_data.json`).
+Embed-ul aplicației e deja oprit în `config/settings_data.json`. `animation.css` (4,8 KB, blochează afișarea) venea din **blocul** Hoppy din `templates/product.json`, adică secțiunea `…1789386595a051a3c4`, care se scoate la punctul 6. În `settings_data.json` nu mai e nimic de schimbat.
 
 ### 8. `locales/ro.json` · texte lipsă pentru cititoarele de ecran
 
 Galeria afișează azi „Translation missing: ro.product.gallery” în atributele `aria-label`. Sub cheia `"product"` se adaugă:
 ```json
+"in_stock_short": "● În stoc",
 "gallery": "Galerie foto",
 "prev_image": "Poza anterioară",
 "next_image": "Poza următoare",
@@ -120,7 +121,7 @@ Galeria afișează azi „Translation missing: ro.product.gallery” în atribut
 ## Ce NU face pachetul (decizii pentru Andu, cu cifrele în jurnal)
 
 - **Shopify Forms** („Reducere 5%”): se încarcă pe fiecare produs (906 KB de JavaScript, blocare de ~1,1 s pe un telefon mediu), deși e ascuns pe produs din 23.09. Doar oprirea embed-ului îl scoate, iar asta îl scoate de pe tot site-ul.
-- **Tagul Google Ads dublat**: `theme.liquid` încarcă din nou `gtag/js?id=AW-18376254111` (166 KB), deși aplicația Google & YouTube trimite deja toate evenimentele către același cont. E legat de campanii, deci nu se atinge fără Andu.
+- **Tagul Google Ads din `theme.liquid`** (`gtag/js?id=AW-18376254111`) **rămâne.** A fost pus pe 18.09 ca verificarea din Google Ads să vadă tagul pentru PMax (comentariul din temă explică de ce).
 - **Pixelul personalizat „Google Ads – conversie Google Shopping App Purchase”** (Settings → Customer events): are un `s` rătăcit la începutul liniei 10 (`s// Google Ads…`). Aruncă „ReferenceError: s is not defined” pe fiecare pagină și nu rulează deloc. Conversia de cumpărare nu se pierde: aplicația Google & YouTube o trimite deja pe aceeași etichetă (`AW-18376254111/kg0fCMi4xd0cEJ_FvbpE`). De aceea, dacă se „repară”, riscă să dubleze conversiile. Recomandare: se șterge pixelul, după acordul lui Andu.
 - Punctele 9–10 din handoff (coșul și blocul „Specificații”) vin după măsurarea acestui pachet.
 
