@@ -29,6 +29,7 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 - [[Viziunea — momentul iPhone]] — ce lansăm, de ce e altceva, scenariul filmului de lansare
 - [[Planul de bani Micul Șmecher]] — fazele, cifrele pe bucată, scenarii, finanțare, filtrul celor 5 întrebări
 - [[Produs și dezvoltare Micul Șmecher]] — plăci, piese, ce cumperi azi, prototipul în 14 zile, drumul spre producție
+- [[Design produs v2 — SUFLET Pebble]] — v2 mai mare, de buzunar: forma, materiale, input, funcții „face lucruri pentru tine”, baterie
 - [[Brand și lansare Micul Șmecher]] — nume, carta companionului, mecanica de lansare, conținut
 - [[Conformitate și riscuri Micul Șmecher]] — CE, baterie, AI Act, Anthropic, pre-mortem
 - [[Piață și concurență Micul Șmecher]] — cine a vândut ce, la ce preț
