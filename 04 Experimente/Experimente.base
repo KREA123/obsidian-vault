@@ -1,0 +1,27 @@
+filters:
+  and:
+    - file.inFolder("04 Experimente")
+    - file.ext == "md"
+    - tip == "experiment"
+views:
+  - type: table
+    name: Deschise
+    filters:
+      and:
+        - status != "încheiat"
+    order:
+      - file.name
+      - platforma
+      - status
+      - data_start
+      - verdict_la
+  - type: table
+    name: Toate
+    order:
+      - file.name
+      - platforma
+      - status
+      - data_start
+      - cost_cheltuit
+      - comenzi
+      - cost_comanda
