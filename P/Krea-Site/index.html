@@ -52,10 +52,10 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {"@type": "Question", "name": "Am mai lucrat cu agenții. Promisiuni multe, rezultate puține.", "acceptedAnswer": {"@type": "Answer", "text": "De aceea nu promitem, ci arătăm. Primești obiective clare de la început și rapoarte transparente în fiecare lună. Dacă cifrele nu cresc, o vezi imediat. La fel și noi."}},
-    {"@type": "Question", "name": "E prea scump pentru afacerea mea?", "acceptedAnswer": {"@type": "Answer", "text": "Marketingul prost e scump. Cel care funcționează se plătește singur. Construim bugete care aduc profit, nu care îl consumă."}},
-    {"@type": "Question", "name": "Nu am timp să mă ocup de încă un furnizor.", "acceptedAnswer": {"@type": "Answer", "text": "Preluăm tot: strategie, execuție, raportare. Tu primești rezultate, nu sarcini în plus."}},
-    {"@type": "Question", "name": "Sunt o afacere mică. O să fiu o prioritate?", "acceptedAnswer": {"@type": "Answer", "text": "Da. Fiecare client e tratat ca singurul. Afacerile mici cresc cel mai spectaculos și ne place să fim acolo când se întâmplă."}},
+    {"@type": "Question", "name": "Am mai lucrat cu agenții. Promisiuni multe, rezultate puține.", "acceptedAnswer": {"@type": "Answer", "text": "Te înțelegem, de aceea nu promitem, ci arătăm. Primești obiective clare de la început și rapoarte transparente în fiecare lună. Dacă cifrele nu cresc, o vezi imediat. La fel și noi."}},
+    {"@type": "Question", "name": "E prea scump pentru afacerea mea.", "acceptedAnswer": {"@type": "Answer", "text": "Marketingul prost e scump. Cel care funcționează se plătește singur. Construim bugete care aduc profit, nu care îl consumă. Întrebarea reală nu e cât costă, ci cât pierzi fără el."}},
+    {"@type": "Question", "name": "Nu am timp să mă ocup de încă un furnizor.", "acceptedAnswer": {"@type": "Answer", "text": "Exact de asta existăm. Preluăm tot: strategie, execuție, raportare. Tu primești rezultate, nu sarcini în plus."}},
+    {"@type": "Question", "name": "Sunt o afacere mică. O să fiu o prioritate?", "acceptedAnswer": {"@type": "Answer", "text": "Fiecare client e tratat ca singurul. Afacerile mici cresc cel mai spectaculos și ne place să fim acolo când se întâmplă."}},
     {"@type": "Question", "name": "Ce se întâmplă după ce completez formularul?", "acceptedAnswer": {"@type": "Answer", "text": "Te sunăm în maximum 24 de ore pentru o discuție de aproximativ 30 de minute, fără obligații. Ne uităm împreună pe afacerea ta și îți spunem sincer ce ar funcționa și cât ar costa."}},
     {"@type": "Question", "name": "Pot să încep cu un singur serviciu?", "acceptedAnswer": {"@type": "Answer", "text": "Da. Prețurile sunt pe serviciu, așa că poți începe cu un singur videoclip, un site sau o singură platformă de reclame și crești de acolo."}}
   ]
@@ -85,6 +85,7 @@ a{color:inherit}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 :focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:6px}
 .bg-ink :focus-visible{outline-color:var(--blue)}
+.vm :focus-visible{outline-color:#fff}
 .skip{position:fixed;left:16px;top:-80px;z-index:200;background:#fff;border:var(--line);padding:10px 14px;font-weight:800;border-radius:8px}
 .skip:focus{top:16px}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -131,6 +132,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .js .rv{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
 .js .rv.in{opacity:1;transform:none}
 .js .rv.d1{transition-delay:.08s}.js .rv.d2{transition-delay:.16s}.js .rv.d3{transition-delay:.24s}
+.js .hero .rv{opacity:1;transform:none;transition:none}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
@@ -193,7 +195,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .phone:hover .play{transform:scale(1.08)}
 .phone .badge{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(10,10,10,.86);color:#fff;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
 .phone .badge svg{width:12px;height:12px;fill:var(--blue);flex:none}
-.sticker{position:absolute;z-index:2;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px 14px 11px;box-shadow:5px 5px 0 var(--ink);line-height:1.05;animation:bob 5s ease-in-out infinite}
+.sticker{position:absolute;z-index:2;pointer-events:none;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px 14px 11px;box-shadow:5px 5px 0 var(--ink);line-height:1.05;animation:bob 5s ease-in-out infinite}
 .sticker b{display:block;font-size:clamp(22px,2.2vw,28px);font-weight:800;letter-spacing:-.04em}
 .sticker span{display:block;margin-top:3px;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(10,10,10,.66)}
 .st1{left:-20%;top:12%;rotate:-6deg}
@@ -207,7 +209,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 @media (max-width:980px){
   .hero-grid{grid-template-columns:1fr}
   .hero-media{width:min(300px,74vw);margin-top:18px}
-  .st1{left:-18%}.st2{right:-16%}
+  .st1{left:-18%}.st2{right:-16%;top:70%}
 }
 
 /* ═════════ PROOF BAND ═════════ */
@@ -300,6 +302,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   .stamp{right:-6px}
   .kpi{padding:10px}
 }
+@media (max-width:380px){.dr{flex-wrap:wrap;row-gap:8px}.dv{margin-left:auto}.kpi{padding:10px 8px}.kpi span{letter-spacing:.04em}}
 
 /* ═════════ VIDEO ═════════ */
 .views{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,64px);align-items:center;margin-bottom:clamp(56px,8vw,96px)}
@@ -375,7 +378,7 @@ a.pf:hover .pf-img img{transform:scale(1.03)}
 a.pf:hover .go svg{transform:translate(3px,-3px)}
 .mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
 .mp{background:var(--sky-l);border:var(--line);border-radius:18px;padding:24px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:6px 6px 0 var(--ink)}
-.mp .cat{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-d)}
+.mp .cat{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
 .mp h3{font-size:21px;font-weight:800;letter-spacing:-.02em}
 .mp p{font-size:14.5px;line-height:1.55;color:var(--muted);flex:1}
 .mp-stats{display:flex;gap:16px;border-top:2px solid rgba(10,10,10,.12);padding-top:12px;margin-top:4px}
@@ -395,7 +398,9 @@ a.pf:hover .go svg{transform:translate(3px,-3px)}
 .bts{margin-top:clamp(56px,8vw,96px);overflow:hidden;position:relative;padding:34px 0 10px}
 .bts-label{position:absolute;top:0;left:50%;transform:translateX(-50%) rotate(-2deg);z-index:2;background:var(--ink);color:#fff;font-weight:800;font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding:9px 16px;box-shadow:4px 4px 0 var(--blue);white-space:nowrap}
 .bts-track{display:flex;gap:24px;width:max-content;padding:26px 0 14px;animation:mq 46s linear infinite}
-.bts:hover .bts-track{animation-play-state:paused}
+.bts:hover .bts-track,.bts.paused .bts-track{animation-play-state:paused}
+.bts-pause{position:absolute;top:2px;right:var(--pad);z-index:3;min-height:40px;padding:8px 14px;background:#fff;border:3px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink);font-weight:800;font-size:13px}
+@media (prefers-reduced-motion:reduce){.bts-pause{display:none}}
 .bts-card{flex:none;width:280px;aspect-ratio:3/2;border:5px solid #fff;outline:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink);overflow:hidden;position:relative;background:#fff}
 .bts-card:nth-child(odd){rotate:-2deg}.bts-card:nth-child(even){rotate:2deg}
 .bts-card img{width:100%;height:100%;object-fit:cover}
@@ -435,7 +440,7 @@ a.pf:hover .go svg{transform:translate(3px,-3px)}
 .pr-n{font-size:15.5px;font-weight:800;line-height:1.25}
 .pr-d{font-size:13px;line-height:1.45;color:var(--muted);margin-top:3px}
 .pr-r{text-align:right;flex:none}
-.pr-o{font-size:12.5px;color:rgba(10,10,10,.5);text-decoration:line-through;font-weight:600;white-space:nowrap}
+.pr-o{font-size:12.5px;color:rgba(10,10,10,.62);text-decoration:line-through;font-weight:600;white-space:nowrap}
 .pr-c{font-size:20px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;line-height:1.15}
 .pr-c small{font-size:12px;letter-spacing:0;font-weight:700}
 .pr-b{display:inline-block;margin-top:4px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:#fff;border-radius:5px;padding:3px 6px}
@@ -510,7 +515,7 @@ a.pf:hover .go svg{transform:translate(3px,-3px)}
 .form-note{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;font-size:13px;color:var(--muted);font-weight:500}
 .form-note svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .form-note a{color:inherit}
-.or{display:flex;align-items:center;gap:14px;margin:26px 0 16px;font-size:12.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(10,10,10,.55)}
+.or{display:flex;align-items:center;gap:14px;margin:26px 0 16px;font-size:12.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(10,10,10,.6)}
 .or::before,.or::after{content:"";height:2px;background:rgba(10,10,10,.14);flex:1}
 .alt{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .alt .btn{min-height:52px;font-size:15px;box-shadow:4px 4px 0 var(--ink)}
@@ -522,7 +527,7 @@ a.pf:hover .go svg{transform:translate(3px,-3px)}
 .foot-grid{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));gap:36px}
 .foot .logo{color:#fff;margin:0 0 12px}
 .foot .logo i{background:var(--blue);box-shadow:none}
-.foot h4{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-bottom:16px}
+.foot h2{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-bottom:16px}
 .foot ul{list-style:none;display:flex;flex-direction:column;gap:10px}
 .foot a{text-decoration:none;color:rgba(255,255,255,.82);font-weight:600;font-size:15px}
 .foot a:hover{color:#fff;text-decoration:underline;text-underline-offset:4px}
@@ -539,7 +544,7 @@ a.pf:hover .go svg{transform:translate(3px,-3px)}
 .mcta .btn{flex:1;min-height:54px;box-shadow:4px 4px 0 var(--ink)}
 .mcta .btn-wa{flex:0 0 58px;padding:0}
 .mcta .btn-wa svg{width:26px;height:26px}
-@media (max-width:760px){.mcta{display:flex}.foot{padding-bottom:96px}}
+@media (max-width:760px){.mcta{display:flex}.foot{padding-bottom:96px}html{scroll-padding-bottom:90px}}
 
 /* ═════════ VIDEO MODAL ═════════ */
 .vm{position:fixed;inset:0;z-index:120;background:rgba(5,8,12,.94);display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,28px);padding:64px clamp(8px,2vw,24px) 24px;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
@@ -550,12 +555,12 @@ a.pf:hover .go svg{transform:translate(3px,-3px)}
 .vm-btn{width:52px;height:52px;flex:none;border-radius:50%;background:#fff;border:3px solid var(--ink);display:grid;place-items:center;box-shadow:3px 3px 0 var(--blue)}
 .vm-btn svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .vm-x{position:absolute;top:14px;right:14px}
-.vm-count{position:absolute;top:24px;left:20px;color:rgba(255,255,255,.7);font-size:13px;font-weight:800;letter-spacing:.1em}
+.vm-count{position:absolute;top:24px;left:20px;right:80px;color:rgba(255,255,255,.7);font-size:13px;font-weight:800;letter-spacing:.1em}
 @media (max-width:700px){
-  .vm{padding:64px 0 16px}
+  .vm{padding:64px 0 88px}
   .vm-nav{position:absolute;bottom:22px;z-index:2}
   .vm-prev{left:calc(50% - 64px)}.vm-next{right:calc(50% - 64px)}
-  .vm-stage{height:min(76vh,calc((100vw - 24px) * 16 / 9))}
+  .vm-stage{height:min(76vh,calc(100vh - 160px),calc((100vw - 24px) * 16 / 9))}
 }
 body.lock{overflow:hidden}
 body.lock .mcta{visibility:hidden}
@@ -591,7 +596,7 @@ body.lock .mcta{visibility:hidden}
     <button class="burger" id="burger" aria-label="Deschide meniul" aria-expanded="false" aria-controls="mnav"><span></span></button>
   </div>
 </nav>
-<div class="mnav" id="mnav" aria-label="Meniu mobil">
+<nav class="mnav" id="mnav" aria-label="Meniu mobil">
   <a class="ml" href="#servicii">Servicii</a>
   <a class="ml" href="#rezultate">Rezultate</a>
   <a class="ml" href="#video">Video</a>
@@ -603,7 +608,7 @@ body.lock .mcta{visibility:hidden}
     <a href="tel:+40771530286">0771 530 286</a>
     <a href="mailto:office@krea.ro">office@krea.ro</a>
   </div>
-</div>
+</nav>
 
 <main id="main">
 
@@ -612,7 +617,7 @@ body.lock .mcta{visibility:hidden}
   <span class="alias" id="hero"></span>
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <span class="pill rv"><span class="stars" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg></span>5.0 · Agenție de marketing &amp; IT<span class="city"> · București</span></span>
+      <span class="pill rv"><span class="stars" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg></span>5,0 · Agenție de marketing &amp; IT<span class="city"> · București</span></span>
       <h1 class="rv d1">Reclame care <span class="box">opresc scroll-ul.</span> Campanii care <span class="ul">aduc clienți.</span></h1>
       <p class="lead rv d2">Filmăm reclamele, rulăm campaniile pe Meta, Google și TikTok și construim site-urile care transformă click-urile în comenzi. <strong>Totul în casă, cu cifrele la vedere.</strong></p>
       <div class="acts rv d3">
@@ -628,10 +633,10 @@ body.lock .mcta{visibility:hidden}
     </div>
     <div class="hero-media rv d2">
       <div class="sticker st1" aria-hidden="true"><b>7,47x</b><span>ROAS pe cont</span></div>
-      <button class="phone" id="heroPhone" data-clip="0" aria-label="Pornește reclama video cu sunet">
+      <button class="phone" id="heroPhone" data-clip="0">
         <img src="assets/img06.jpg" alt="" width="608" height="1080" fetchpriority="high">
         <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span>
-        <span class="badge"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg>2,1M vizualizări · reclamă produsă de noi</span>
+        <span class="badge"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg>Reclamă produsă de noi · apasă pentru sunet</span>
       </button>
       <div class="sticker st2" aria-hidden="true"><b>381</b><span>comenzi într-o lună</span></div>
     </div>
@@ -688,7 +693,7 @@ body.lock .mcta{visibility:hidden}
           <div class="kpi"><b>7,4M</b><span>Afișări</span></div>
         </div>
       </div>
-      <div class="dash" aria-label="Rezumat cont Google Ads">
+      <div class="dash" role="group" aria-label="Rezumat cont Google Ads">
         <div class="stamp"><b>0,94 lei</b><span>CPC mediu</span></div>
         <div class="dash-bar"><i></i><i></i><i></i>Google Ads · cont e-commerce</div>
         <div class="dash-body">
@@ -711,7 +716,7 @@ body.lock .mcta{visibility:hidden}
           <div class="kpi"><b>454K</b><span>Afișări</span></div>
         </div>
       </div>
-      <div class="dash" aria-label="Rezumat campanii Meta">
+      <div class="dash" role="group" aria-label="Rezumat campanii Meta">
         <div class="stamp"><b>5.255 lei</b><span>buget / 30 zile</span></div>
         <div class="dash-bar"><i></i><i></i><i></i>Manager Campanii · Meta</div>
         <div class="dash-body">
@@ -734,7 +739,7 @@ body.lock .mcta{visibility:hidden}
           <div class="kpi"><b>81,6K</b><span>Afișări</span></div>
         </div>
       </div>
-      <div class="dash" aria-label="Rezumat campanie de apeluri">
+      <div class="dash" role="group" aria-label="Rezumat campanie de apeluri">
         <div class="stamp"><b>50 lei</b><span>buget / zi</span></div>
         <div class="dash-bar"><i></i><i></i><i></i>Manager Campanii · Apeluri</div>
         <div class="dash-body">
@@ -748,7 +753,7 @@ body.lock .mcta{visibility:hidden}
     <h3 class="mini-title rv">Și încă trei campanii, pe scurt</h3>
     <div class="cases-mini">
       <article class="cm rv">
-        <div class="meta"><span class="chip ink">Caz 04</span><span class="chip">Trafic · Meta</span></div>
+        <div class="meta"><span class="chip ink">Caz 04</span><span class="chip">Trafic · TikTok</span></div>
         <h3>0,35 lei pe click. Da, ai citit bine.</h3>
         <p>Cu <b>235 de lei</b> am scos 96.000 de afișări și 668 de oameni care chiar au intrat pe site, adică sub prețul unei cafele fiecare. Click-uri pe bune, nu „reach” de paradă.</p>
         <div class="kpis"><div class="kpi"><b>0,35</b><span>lei / click</span></div><div class="kpi"><b>96K+</b><span>Afișări</span></div><div class="kpi"><b>668</b><span>Click-uri</span></div></div>
@@ -756,16 +761,16 @@ body.lock .mcta{visibility:hidden}
       </article>
       <article class="cm rv d1">
         <div class="meta"><span class="chip ink">Caz 05</span><span class="chip">Impact · Meta</span></div>
-        <h3>150.400 de oameni atinși. Cu 700 de lei.</h3>
-        <p>Nu ne-am jucat de-a „brandingul” frumos și gol. Am ales fix oamenii care contează pentru afacere și i-am atins cu <b>3,15 lei</b> per rezultat. Niciun leu aruncat pe „mai testăm o lună”.</p>
-        <div class="kpis"><div class="kpi"><b>150K+</b><span>Impact</span></div><div class="kpi"><b>3,15</b><span>lei / rezultat</span></div><div class="kpi"><b>292K</b><span>Afișări</span></div></div>
+        <h3>150.400 de oameni atinși. Cu 474 de lei.</h3>
+        <p>Nu ne-am jucat de-a „brandingul” frumos și gol. Am ales fix oamenii care contează pentru afacere și i-am atins cu <b>3,15 lei la 1.000 de oameni</b>. Niciun leu aruncat pe „mai testăm o lună”.</p>
+        <div class="kpis"><div class="kpi"><b>150K+</b><span>Impact</span></div><div class="kpi"><b>3,15</b><span>lei / 1.000 oameni</span></div><div class="kpi"><b>292K</b><span>Afișări</span></div></div>
         <a class="link" href="assets/img08.jpg" target="_blank" rel="noopener">Vezi captura din Ads Manager <svg viewBox="0 0 24 24"><use href="#i-out"/></svg></a>
       </article>
       <article class="cm rv d2">
-        <div class="meta"><span class="chip ink">Caz 06</span><span class="chip">Lead gen · Meta</span></div>
-        <h3>32.000 de oameni interesați. La 6,55 lei bucata.</h3>
-        <p>Campania de lead-uri a mers non-stop: <b>94.825 de afișări</b> și 32.059 de oameni cu interes real, la un cost per contact pe care orice patron îl semnează pe loc.</p>
-        <div class="kpis"><div class="kpi"><b>94,8K</b><span>Afișări</span></div><div class="kpi"><b>32K+</b><span>Impact</span></div><div class="kpi"><b>6,55</b><span>lei / contact</span></div></div>
+        <div class="meta"><span class="chip ink">Caz 06</span><span class="chip">Apeluri · Meta</span></div>
+        <h3>32.059 de oameni atinși. Apeluri la 6,55 lei.</h3>
+        <p>Campania de lead-uri a mers non-stop: cu <b>1.133 de lei</b> a strâns 94.825 de afișări, a ajuns la 32.059 de oameni și a adus apeluri la <b>6,55 lei</b> bucata.</p>
+        <div class="kpis"><div class="kpi"><b>94,8K</b><span>Afișări</span></div><div class="kpi"><b>32K+</b><span>Impact</span></div><div class="kpi"><b>6,55</b><span>lei / apel</span></div></div>
         <a class="link" href="assets/img09.jpg" target="_blank" rel="noopener">Vezi captura din Ads Manager <svg viewBox="0 0 24 24"><use href="#i-out"/></svg></a>
       </article>
     </div>
@@ -799,7 +804,7 @@ body.lock .mcta{visibility:hidden}
 
     <p class="swipe-hint">← Glisează ca să vezi toate clipurile →</p>
     <div class="reels" id="reelsGrid">
-      <button class="reel rv" data-clip="0" aria-label="Pornește: reclamă TikTok, 2,1M vizualizări"><img src="assets/img06.jpg" alt="" loading="lazy"><span class="plat"><svg viewBox="0 0 24 24"><use href="#i-tt"/></svg>TikTok</span><span class="rp" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span><span class="rl"><b>2,1M</b>vizualizări · reclamă produsă de noi</span></button>
+      <button class="reel rv" data-clip="0" aria-label="Pornește: service auto, reclamă"><img src="assets/img06.jpg" alt="" loading="lazy"><span class="plat"><svg viewBox="0 0 24 24"><use href="#i-tt"/></svg>TikTok</span><span class="rp" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span><span class="rl">Service auto · reclamă</span></button>
       <button class="reel rv" data-clip="1" aria-label="Pornește: aplicație de transport, lansare"><img src="assets/videos/poster08.jpg" alt="" loading="lazy"><span class="plat"><svg viewBox="0 0 24 24"><use href="#i-tt"/></svg>TikTok</span><span class="rp" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span><span class="rl">Aplicație de transport · lansare</span></button>
       <button class="reel rv" data-clip="2" aria-label="Pornește: clinică de psihologie, ofertă"><img src="assets/videos/poster01.jpg" alt="" loading="lazy"><span class="plat"><svg viewBox="0 0 24 24"><use href="#i-tt"/></svg>TikTok</span><span class="rp" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span><span class="rl">Clinică de psihologie · ofertă</span></button>
       <button class="reel rv" data-clip="3" aria-label="Pornește: real estate, interviu"><img src="assets/videos/poster03.jpg" alt="" loading="lazy"><span class="plat"><svg viewBox="0 0 24 24"><use href="#i-tt"/></svg>TikTok</span><span class="rp" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span><span class="rl">Real estate · interviu</span></button>
@@ -845,7 +850,7 @@ body.lock .mcta{visibility:hidden}
           <div class="pf-img"><img src="assets/portofoliu/psyhelp.jpg" alt="Site-ul clinicii PsyHelp" width="960" height="600" loading="lazy"><div class="pf-flag"><b>+180%</b>programări online</div></div>
         </div>
         <div class="pf-body">
-          <div class="meta"><span class="chip blue">Clinică psihologie</span><span class="chip">Site · CRM · Ads</span></div>
+          <div class="meta"><span class="chip blue">Clinică de psihiatrie</span><span class="chip">Site · CRM · Ads</span></div>
           <h3>Calm digital. Agenda plină.</h3>
           <p>Le-am pus la punct programările online, am făcut ordine în CRM și le-am refăcut site-ul de la zero. Lună de lună le ducem mai departe campaniile, ca agenda să rămână plină fără să alergăm după pacienți.</p>
           <span class="go">Vezi site-ul live <svg viewBox="0 0 24 24"><use href="#i-out"/></svg></span>
@@ -927,8 +932,9 @@ body.lock .mcta{visibility:hidden}
       <div class="feat rv d2"><span class="feat-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><div><h3>Un brand pe care lumea îl ține minte</h3><p>Logo, identitate, ton: totul gândit ca oamenii să te aleagă pe tine fără să se mai uite la concurență.</p></div></div>
     </div>
   </div>
-  <div class="bts" aria-label="Din culise">
+  <div class="bts" id="bts" role="group" aria-label="Din culise">
     <div class="bts-label">Din culise · așa arată treaba</div>
+    <button class="bts-pause" id="btsPause" aria-pressed="false">Pauză</button>
     <div class="bts-track">
       <div class="bts-card"><img src="assets/photos/bts01.jpg" alt="" loading="lazy"><span>Pe set</span></div>
       <div class="bts-card"><img src="assets/photos/bts03.jpg" alt="" loading="lazy"><span>Interviu</span></div>
@@ -981,7 +987,7 @@ body.lock .mcta{visibility:hidden}
         <div class="pc-head"><span class="pc-ic"><svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span><div><h3>Conținut video</h3><p>Producție profesională pentru branduri care vor să iasă în evidență</p></div></div>
         <div class="pr"><div><div class="pr-n">1 videoclip</div><div class="pr-d">Producție completă, editare și livrare HD/4K</div></div><div class="pr-r"><div class="pr-o">350 lei</div><div class="pr-c">250 <small>lei</small></div><span class="pr-b">−29%</span></div></div>
         <div class="pr hot"><div><div class="pr-n">Pachet 10 videoclipuri</div><div class="pr-d">200 lei / videoclip · ideal pentru campanii lunare</div></div><div class="pr-r"><div class="pr-o">2.800 lei</div><div class="pr-c">2.000 <small>lei</small></div><span class="pr-b">−29%</span></div></div>
-        <div class="pr hot"><div><div class="pr-n">Pachet 30 videoclipuri</div><div class="pr-d">166 lei / videoclip · conținut complet pentru o lună</div></div><div class="pr-r"><div class="pr-o">7.000 lei</div><div class="pr-c">5.000 <small>lei</small></div><span class="pr-b">−29%</span></div></div>
+        <div class="pr hot"><div><div class="pr-n">Pachet 30 videoclipuri</div><div class="pr-d">~167 lei / videoclip · conținut complet pentru o lună</div></div><div class="pr-r"><div class="pr-o">7.000 lei</div><div class="pr-c">5.000 <small>lei</small></div><span class="pr-b">−29%</span></div></div>
         <div class="pc-foot"><a class="btn btn-blue" href="#contact">Vreau clipuri →</a></div>
       </div>
       <div class="pc rv d1">
@@ -1000,7 +1006,7 @@ body.lock .mcta{visibility:hidden}
         <div class="pc-foot"><a class="btn btn-blue" href="#contact">Vreau un site →</a></div>
       </div>
     </div>
-    <div class="price-note rv"><span>Nu suntem plătitori de TVA: prețul afișat e prețul final</span><span>Poți începe cu un singur serviciu</span><span>Discuția inițială e gratuită</span></div>
+    <div class="price-note rv"><span>Nu suntem plătitori de TVA: la prețurile afișate nu se adaugă TVA</span><span>Poți începe cu un singur serviciu</span><span>Discuția inițială e gratuită</span></div>
   </div>
 </section>
 
@@ -1013,17 +1019,17 @@ body.lock .mcta{visibility:hidden}
     </div>
     <div class="testi">
       <figure class="tc big rv">
-        <span class="stars" aria-label="5 din 5 stele"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg></span>
+        <span class="stars" role="img" aria-label="5 din 5 stele"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg></span>
         <q>De când lucrăm cu KREA, nu mai stăm noi cu ochii pe campanii. Se ocupă ei de tot, lună de lună, și se vede. Avem mereu programări, comunicarea e exact pe tonul potrivit pentru ce facem noi, iar noi ne putem vedea liniștiți de treabă. Sincer, e cea mai bună decizie pe care am luat-o.</q>
         <figcaption class="who"><span class="av">D</span><span><b>Diana Popescu</b><small>Clientă KREA</small></span></figcaption>
       </figure>
       <figure class="tc rv d1">
-        <span class="stars" aria-label="5 din 5 stele"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg></span>
+        <span class="stars" role="img" aria-label="5 din 5 stele"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg></span>
         <q>Creșteri de +347% în vizibilitate organică în 4 luni. Dar, mai presus de cifre, mă bucur că am în sfârșit o echipă care înțelege ce vreau și pe care nu trebuie s-o bat la cap.</q>
         <figcaption class="who"><span class="av">A</span><span><b>Alexandru M.</b><small>CEO · KX</small></span></figcaption>
       </figure>
       <figure class="tc rv d2">
-        <span class="stars" aria-label="5 din 5 stele"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg></span>
+        <span class="stars" role="img" aria-label="5 din 5 stele"><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg><svg viewBox="0 0 24 24"><use href="#i-star"/></svg></span>
         <q>Suntem extrem de mulțumiți: de când colaborăm cu ei, vânzările ni s-au triplat. Tot ce ține de partea online merge ca uns, iar noi ne putem concentra pe restul afacerii.</q>
         <figcaption class="who"><span class="av">R</span><span><b>Radu Constantin</b><small>Client KREA</small></span></figcaption>
       </figure>
@@ -1052,7 +1058,7 @@ body.lock .mcta{visibility:hidden}
 </section>
 
 <!-- ═════════ CONTACT ═════════ -->
-<section class="sec bg-blue" id="contact">
+<section class="sec bg-blue" id="contact-sectiune">
   <div class="wrap contact">
     <div>
       <span class="tag rv">Hai să vorbim</span>
@@ -1068,7 +1074,7 @@ body.lock .mcta{visibility:hidden}
         <a href="mailto:office@krea.ro"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>office@krea.ro</a>
       </div>
     </div>
-    <div class="card rv d1">
+    <div class="card rv d1" id="contact">
       <p class="card-h">Spune-ne despre afacerea ta</p>
       <p class="card-s">Răspundem în maximum 24h, pe telefon sau email.</p>
       <form class="lf" id="leadForm" action="https://formsubmit.co/office@krea.ro" method="POST" data-page="krea.ro" data-subject="Lead nou de pe krea.ro 🚀">
@@ -1106,15 +1112,15 @@ body.lock .mcta{visibility:hidden}
         <p>Agenție de marketing digital și soluții software din București. Reclame video, campanii care vând și site-uri scrise de la zero.</p>
       </div>
       <div>
-        <h4>Servicii</h4>
+        <h2>Servicii</h2>
         <ul><li><a href="#video">Reclame video</a></li><li><a href="#rezultate">Meta &amp; Google Ads</a></li><li><a href="#portofoliu">Site-uri &amp; software</a></li><li><a href="#preturi">Prețuri</a></li></ul>
       </div>
       <div>
-        <h4>Contact</h4>
+        <h2>Contact</h2>
         <ul><li><a href="tel:+40771530286">0771 530 286</a></li><li><a href="mailto:office@krea.ro">office@krea.ro</a></li><li><a class="js-wa" href="https://wa.me/40771530286" target="_blank" rel="noopener">WhatsApp</a></li><li><a href="/formular">Formular de contact</a></li></ul>
       </div>
       <div>
-        <h4>Firma</h4>
+        <h2>Firma</h2>
         <ul><li><a href="/confidentialitate">Politica de confidențialitate</a></li><li><a href="#intrebari">Întrebări frecvente</a></li><li><a href="#despre">Despre noi</a></li></ul>
       </div>
     </div>
@@ -1152,52 +1158,63 @@ body.lock .mcta{visibility:hidden}
   onScroll(); window.addEventListener('scroll', onScroll, {passive:true});
 
   var burger = $('#burger'), mnav = $('#mnav');
+  function setInert(sels, on){ sels.forEach(function(s){ var el = $(s); if (el) { el.inert = on; if (on) el.setAttribute('inert', ''); else el.removeAttribute('inert'); } }); }
   function setMenu(open){
     burger.setAttribute('aria-expanded', open ? 'true' : 'false');
     burger.setAttribute('aria-label', open ? 'Închide meniul' : 'Deschide meniul');
     mnav.classList.toggle('open', open);
     document.body.classList.toggle('lock', open);
+    setInert(['#main', '.foot', '#mcta'], open);
     if (open) nav.classList.add('solid'); else onScroll();
   }
   burger.addEventListener('click', function(){ setMenu(burger.getAttribute('aria-expanded') !== 'true'); });
-  $$('a', mnav).forEach(function(a){ a.addEventListener('click', function(){ setMenu(false); }); });
+  $$('a', mnav).concat($$('a', nav)).forEach(function(a){ a.addEventListener('click', function(){ if (mnav.classList.contains('open')) setMenu(false); }); });
+  var wide = window.matchMedia('(min-width:1021px)');
+  var onWide = function(m){ if (m.matches && mnav.classList.contains('open')) setMenu(false); };
+  if (wide.addEventListener) wide.addEventListener('change', onWide); else if (wide.addListener) wide.addListener(onWide);
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && mnav.classList.contains('open')) { setMenu(false); burger.focus(); } });
 
-  /* ── reveal on scroll ── */
+  /* ── reveal on scroll + count-up (pornește odată cu apariția cifrei) ── */
+  function fmt(n, dec){ return n.toFixed(dec).replace('.', ','); }
+  function countUp(el){
+    var to = parseFloat(el.dataset.count), dec = +el.dataset.dec || 0, suf = el.dataset.suf || '', final = el.textContent, t0 = null;
+    (function step(t){
+      if (!t0) t0 = t;
+      var p = Math.min((t - t0) / 1400, 1), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = p < 1 ? fmt(to * e, dec) + suf : final;
+      if (p < 1) requestAnimationFrame(step);
+    })(performance.now());
+  }
   if ('IntersectionObserver' in window && !reduce) {
     var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(en){ if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        en.target.classList.add('in');
+        var c = en.target.querySelector('[data-count]');
+        if (c) setTimeout(function(){ countUp(c); }, 120);
+        io.unobserve(en.target);
+      });
     }, {rootMargin:'0px 0px -8% 0px', threshold:0.08});
     $$('.rv').forEach(function(el){ io.observe(el); });
   } else {
     $$('.rv').forEach(function(el){ el.classList.add('in'); });
   }
 
-  /* ── count-up ── */
-  function fmt(n, dec){ return n.toFixed(dec).replace('.', ','); }
-  if ('IntersectionObserver' in window && !reduce) {
-    var co = new IntersectionObserver(function(entries){
-      entries.forEach(function(en){
-        if (!en.isIntersecting) return;
-        var el = en.target, to = parseFloat(el.dataset.count), dec = +el.dataset.dec || 0, suf = el.dataset.suf || '', t0 = null;
-        co.unobserve(el);
-        (function step(t){
-          if (!t0) t0 = t;
-          var p = Math.min((t - t0) / 1400, 1), e = 1 - Math.pow(1 - p, 3);
-          el.textContent = fmt(to * e, dec) + suf;
-          if (p < 1) requestAnimationFrame(step);
-        })(performance.now());
-      });
-    }, {threshold:0.6});
-    $$('[data-count]').forEach(function(el){ co.observe(el); });
-  }
+  /* ── pauză pentru banda „Din culise” ── */
+  var bts = $('#bts'), btsPause = $('#btsPause');
+  if (bts && btsPause) btsPause.addEventListener('click', function(){
+    var on = !bts.classList.contains('paused');
+    bts.classList.toggle('paused', on);
+    btsPause.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btsPause.textContent = on ? 'Pornește' : 'Pauză';
+  });
 
   /* ── WhatsApp → eveniment TikTok ── */
   $$('.js-wa').forEach(function(a){ a.addEventListener('click', function(){ try { if (window.ttq) ttq.track('Contact'); } catch(e){} }); });
 
   /* ── clipuri ── */
   var CLIPS = [
-    ['reels_hero.mp4','assets/img06.jpg','Reclamă TikTok · 2,1M vizualizări'],
+    ['reels_hero.mp4','assets/img06.jpg','Service auto · reclamă'],
     ['assets/videos/video08.mp4','assets/videos/poster08.jpg','Aplicație de transport · lansare'],
     ['assets/videos/video01.mp4','assets/videos/poster01.jpg','Clinică de psihologie · ofertă'],
     ['assets/videos/video03.mp4','assets/videos/poster03.jpg','Real estate · interviu'],
@@ -1232,9 +1249,11 @@ body.lock .mcta{visibility:hidden}
     var hp = $('#heroPhone');
     if (hp && window.innerWidth >= 1024) {
       var hv = document.createElement('video');
-      hv.muted = true; hv.loop = true; hv.playsInline = true; hv.setAttribute('playsinline', ''); hv.preload = 'none';
+      hv.muted = true; hv.loop = false; hv.playsInline = true; hv.setAttribute('playsinline', ''); hv.preload = 'none';
       hv.poster = CLIPS[0][1]; hv.src = CLIPS[0][0];
       hp.insertBefore(hv, hp.children[1]);
+      var plays = 0;
+      hv.addEventListener('ended', function(){ if (++plays < 3) { var p = hv.play(); if (p && p.catch) p.catch(function(){}); } });
       new IntersectionObserver(function(en){ en.forEach(function(e){ if (e.isIntersecting) { var p = hv.play(); if (p && p.catch) p.catch(function(){}); } else hv.pause(); }); }, {threshold:0.3}).observe(hp);
     }
   }
@@ -1254,13 +1273,15 @@ body.lock .mcta{visibility:hidden}
     lastFocus = document.activeElement;
     vm.classList.add('open'); vm.setAttribute('aria-hidden', 'false');
     document.body.classList.add('lock');
+    setInert(['#main', '#nav', '.foot', '#mcta'], true);
     show(i);
-    $('#vmX').focus();
+    setTimeout(function(){ $('#vmX').focus(); }, 50);
   }
   function closeVm(){
     vm.classList.remove('open'); vm.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('lock');
     vmV.pause(); vmV.removeAttribute('src'); vmV.load();
+    setInert(['#main', '#nav', '.foot', '#mcta'], false);
     if (lastFocus) lastFocus.focus();
   }
   $$('[data-clip]').forEach(function(el){ el.addEventListener('click', function(){ openVm(+el.dataset.clip); }); });
@@ -1274,7 +1295,7 @@ body.lock .mcta{visibility:hidden}
     else if (e.key === 'ArrowRight') show(cur + 1);
     else if (e.key === 'ArrowLeft') show(cur - 1);
     else if (e.key === 'Tab') {
-      var f = $$('button', vm).concat([vmV]).filter(function(x){ return x.offsetParent !== null; });
+      var f = $$('button, video', vm).filter(function(x){ return x.offsetParent !== null; });
       var first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
@@ -1320,6 +1341,12 @@ body.lock .mcta{visibility:hidden}
     inp.addEventListener('blur', function(){ if (inp.value.trim()) check(inp); });
     inp.addEventListener('input', function(){ if (inp.closest('.fld').classList.contains('bad')) check(inp); });
   });
+  // tasta „următorul” de pe telefon trece la câmpul următor, nu trimite formularul
+  var order = Object.keys(RULES).map(function(n){ return form.elements[n]; });
+  order.forEach(function(inp, i){
+    if (i === order.length - 1) return;
+    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); order[i + 1].focus(); } });
+  });
 
   // de unde vine lead-ul (UTM / click din reclamă), păstrat pe durata vizitei
   function source(){
@@ -1340,6 +1367,8 @@ body.lock .mcta{visibility:hidden}
   source();
 
   var btn = $('button[type=submit]', form), bl = $('.bl', btn), msgEl = $('.form-msg', form), label = bl.textContent;
+  // la „Înapoi” din pagina de mulțumire, butonul revine la normal
+  window.addEventListener('pageshow', function(e){ if (e.persisted) { btn.disabled = false; btn.classList.remove('busy'); bl.textContent = label; msgEl.textContent = ''; } });
   form.addEventListener('submit', function(e){
     e.preventDefault();
     msgEl.textContent = '';

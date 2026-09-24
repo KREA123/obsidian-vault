@@ -99,6 +99,7 @@ h1 span{background:linear-gradient(transparent 60%,var(--blue) 60%,var(--blue) 9
   .proof{grid-template-columns:1fr 1fr 1fr;padding:18px 16px;gap:10px}
   .proof span{font-size:11px}
 }
+@media (max-width:350px){.proof b{font-size:19px}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -111,7 +112,7 @@ h1 span{background:linear-gradient(transparent 60%,var(--blue) 60%,var(--blue) 9
     <h1>Lasă-ne datele.<br><span>Te sunăm noi.</span></h1>
     <p class="sub">Doar <b>4 câmpuri</b>, 30 de secunde. Te sunăm în maximum 24h cu idei concrete despre cum îți aducem clienți. Fără obligații.</p>
     <div class="chips">
-      <span class="chip"><svg class="f" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3L22 9l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.6 2 9l7.1-.7z"/></svg>5.0 rating</span>
+      <span class="chip"><svg class="f" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3L22 9l-5 4.6L18.2 21 12 17.3 5.8 21 7 13.6 2 9l7.1-.7z"/></svg>5,0 rating</span>
       <span class="chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Răspuns în 24h</span>
       <span class="chip"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>100% confidențial</span>
     </div>
@@ -186,6 +187,12 @@ h1 span{background:linear-gradient(transparent 60%,var(--blue) 60%,var(--blue) 9
     inp.addEventListener('blur', function(){ if (inp.value.trim()) check(inp); });
     inp.addEventListener('input', function(){ if (inp.closest('.fld').classList.contains('bad')) check(inp); });
   });
+  // tasta „următorul” de pe telefon trece la câmpul următor, nu trimite formularul
+  var order = Object.keys(RULES).map(function(n){ return form.elements[n]; });
+  order.forEach(function(inp, i){
+    if (i === order.length - 1) return;
+    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); order[i + 1].focus(); } });
+  });
 
   // de unde vine lead-ul (UTM / click din reclamă), păstrat pe durata vizitei
   function source(){
@@ -206,6 +213,8 @@ h1 span{background:linear-gradient(transparent 60%,var(--blue) 60%,var(--blue) 9
   source();
 
   var btn = form.querySelector('button[type=submit]'), bl = btn.querySelector('.bl'), msgEl = form.querySelector('.form-msg'), label = bl.textContent;
+  // la „Înapoi” din pagina de mulțumire, butonul revine la normal
+  window.addEventListener('pageshow', function(e){ if (e.persisted) { btn.disabled = false; btn.classList.remove('busy'); bl.textContent = label; msgEl.textContent = ''; } });
   form.addEventListener('submit', function(e){
     e.preventDefault();
     msgEl.textContent = '';
