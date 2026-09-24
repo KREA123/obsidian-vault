@@ -36,8 +36,8 @@ import gen_shapes as G  # noqa: E402  (pure math, import has no side effects)
 
 MM = 0.001
 # global look parameters (overridable with --set key=value)
-TUNE = dict(frost_rough=0.55, frost_dens=45.0, glow_scale=2.0, glow_ring=1, module=1, module_grey=0.5,
-            halo_emit=1.0, halo_inner=1.0, body_dens=40.0, halo_dens=12.0, exposure=0.0)
+TUNE = dict(frost_rough=0.55, frost_dens=45.0, glow_scale=2.0, glow_ring=1, module=1, module_grey=0.22,
+            halo_emit=1.0, halo_inner=1.0, backlight=3.0, body_dens=40.0, halo_dens=12.0, exposure=0.0)
 
 # ------------------------------------------------------------------------------------------
 # args
@@ -817,10 +817,10 @@ def v3_profiles():
     return body, halo, z_s
 
 
-def mat_halo(name, tint, glow_rgb, strength, dens=None):
+def mat_halo(name, tint, glow_rgb, strength, dens=None, white=0.55):
     """Frosted light-guide ring: like the body frosting but whiter, with an inner surface glow."""
     c = srgb(tint)
-    w = tuple(min(1.0, 0.45 + 0.55 * x) for x in c[:3])
+    w = tuple(min(1.0, white + (1 - white) * x) for x in c[:3])
     hx = '#%02X%02X%02X' % tuple(int(round((x ** (1 / 2.2)) * 255)) for x in w)
     m = mat_frosted(name, hx, rough=0.5, dens=dens or TUNE['halo_dens'])
     p = m.node_tree.nodes['Principled BSDF']
@@ -946,7 +946,7 @@ def build_crown(tag, mat):
 
 
 def build_soul(tag, tint='#F3F1EC', eyes='cream_look', eye_strength=2.8, glow='cream', glow_strength=0.6,
-               inner=1.0, metal='ti', ring=True, ring_tilt=-35.0, ring_R=5.2, dens=None, cord=False):
+               inner=1.0, metal='ti', ring=True, ring_tilt=-35.0, ring_R=5.2, dens=None, cord=False, halo_white=0.55):
     """SOUL v3. Local frame (mm*MM): x right, y up (crown), z towards the viewer. Returns the parent empty."""
     mats = metal_mats()
     mk = 'metal_' + metal
@@ -965,7 +965,7 @@ def build_soul(tag, tint='#F3F1EC', eyes='cream_look', eye_strength=2.8, glow='c
     assign(body, mat_frosted('frost_' + tag, tint, rough=TUNE['frost_rough'], dens=dens or TUNE['body_dens']))
     parts.append(body)
     halo = revolve_closed(tag + '_halo', halo_p, seg=192)
-    assign(halo, mat_halo('halo_' + tag, tint, glow_rgb, glow_strength))
+    assign(halo, mat_halo('halo_' + tag, tint, glow_rgb, glow_strength, white=halo_white))
     parts.append(halo)
     # hidden light source inside the halo ring (the "soul light")
     if inner > 0 and TUNE['halo_inner'] > 0:
@@ -1223,9 +1223,9 @@ def build_key(name):
     gr = rounded_box(name + '_groove', 24 * MM, 1.1 * MM, 0.5 * MM, 0.2 * MM, 2)
     gr.location = (15.5 * MM, -0.8 * MM, 2.05 * MM)
     gr.parent = key
-    m = mat_metal('nickel', (0.80, 0.78, 0.73), 0.3, 0.0)
+    m = mat_metal('brass', (0.72, 0.53, 0.29), 0.24, 0.0)
     assign(key, m)
-    assign(gr, mat_metal('nickel_dark', (0.45, 0.44, 0.41), 0.45, 0.0))
+    assign(gr, mat_metal('brass_dark', (0.50, 0.38, 0.22), 0.45, 0.0))
     return key
 
 
@@ -1345,26 +1345,30 @@ def studio3(tgt, k=1.0, warm=5600, bg=9.0):
 def shot_hero(social=False, tag='hero'):
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
-    sweep('#E4DBCF')
-    a = build_soul(tag, '#F3F1EC', 'cream_look', eye_strength=2.8, glow='cream', glow_strength=0.1, inner=11.0, ring_tilt=0)
+    sweep('#D9CDBE')
+    TUNE['frost_rough'] = min(TUNE['frost_rough'], 0.42)
+    a = build_soul(tag, '#F3F1EC', 'cream_look', eye_strength=2.8, glow='cream', glow_strength=0.06, inner=2.5, ring_tilt=0, dens=20.0)
     lift = 0.016
     place(a, (0, 0, V3['R'] * MM + lift), (90, 0, -14))
     hang_cord(a, spread=0.05, height=0.32, radius=0.7)
     tgt = world_point(a, (0, 5.0, 0))
     focus = world_point(a, (-4, 1, 8))
     if social:
-        cam = camera((0.16, -0.40, 0.080), tgt, lens=85, fstop=11.0, focus=focus, shift=(0, 0.075))
+        cam = camera((0.16, -0.40, 0.080), tgt, lens=85, fstop=11.0, focus=focus, shift=(0, 0.125))
     else:
-        cam = camera((0.20, -0.45, 0.085), tgt, lens=105, fstop=11.0, focus=focus)
+        cam = camera((0.165, -0.37, 0.078), tgt, lens=105, fstop=11.0, focus=focus)
     protect_screens(cam, tgt, 1.6, -0.012)
     screen_highlight(a, cam, up_deg=11.0, side_deg=8.5, size=(0.022, 0.3), tilt_deg=-30.0, strength=7.0,
                      z_mm=V3['Z_TOP'])
-    studio3(tgt)
-    POST['exposure'] = -0.3
+    studio3(tgt, bg=7.0)
+    # back light through the frosted rim (reads as glass, not plastic)
+    area_light('back', (tgt.x + 0.08, tgt.y + 0.30, tgt.z - 0.005), tgt + Vector((0, 0, 0.01)), 0.10, 2.5 * TUNE.get('backlight', 1.0),
+               blackbody_rgb(4500), spread=35)
+    POST['exposure'] = -0.6
     return sc
 
 
-def twisted_cord(name, pts, radius=0.55, cols=('#B3121B', '#F4F0E8'), twist_mm=4.0):
+def twisted_cord(name, pts, radius=0.55, cols=('#9E0A16', '#F4F0E8'), twist_mm=4.0):
     """Two silk strands twisted around a smooth path through pts (metres): the Mărțișor cord."""
     P = np.array([tuple(p) for p in pts])
     # Catmull-Rom resample
@@ -1462,17 +1466,13 @@ def shot_necklace():
     ring = [c for c in a.children if c.name.endswith('_splitring')][0]
     Rr = a['ring_R']
     P = ring.matrix_world @ Vector((0, (2 * Rr - 0.5 - 1.0) * MM, 0))
-    key_pts = [(0.285, 4), (0.305, 10), (0.33, 22), (0.355, 40), (0.375, 62), (0.388, 90), (0.396, 125),
-               (0.40, 160), (0.40, 180)]
     sides = []
+    z0 = P.z + 0.006
     for sx in (-1, 1):
         side = []
-        for u in np.linspace(0, 1, 40):
-            f = u * (len(key_pts) - 1)
-            i = min(int(f), len(key_pts) - 2)
-            t = f - i
-            zz = key_pts[i][0] * (1 - t) + key_pts[i + 1][0] * t
-            ang = key_pts[i][1] * (1 - t) + key_pts[i + 1][1] * t
+        for u in np.linspace(0, 1, 48):
+            zz = z0 + (0.402 - z0) * math.sin(u * math.pi / 2) ** 0.85
+            ang = 7 + 173 * u ** 1.35
             q = dress_form_point(zz, math.radians(-90 + sx * ang), off=0.0016)
             if u < 0.12:     # leave the chest towards the ring (the pendant stands off the body)
                 w_ = (1 - u / 0.12) ** 2
@@ -1578,7 +1578,7 @@ LINEUP = [  # label, body tint, eyes, glow, metal
     ('peach', '#F7D8CB', 'peach', 'peach', 'ti'),
     ('lilac', '#DCD2F2', 'lilac', 'lilac', 'ti'),
     ('gold', '#E9D6B4', 'gold', 'gold', 'gold'),
-    ('onyx', '#2B2B30', 'cream_front', 'cream', 'ti'),
+    ('onyx', '#1C1C21', 'cream_front', 'cream', 'ti'),
     ('martisor', '#F1ECE2', 'cream_look', 'cream', 'ti'),
 ]
 
@@ -1595,26 +1595,32 @@ def build_stand(name, x, y, mat):
 def shot_lineup():
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
-    sweep('#E4DBCF', wall_y=0.75)
-    stone = mat_diffuse('travertine', srgb('#D9CFC2'), 0.75, 0.3)
-    gap = 0.071
-    rows = [(LINEUP[:4], 0.045, -1.5 * gap), (LINEUP[4:], -0.035, -1.5 * gap + gap * 0.5)]
-    objs = []
+    sweep('#DDD2C4', wall_y=0.75)
+    stone = mat_diffuse('travertine', srgb('#CFC4B6'), 0.7, 0.3)
+    gap = 0.078
+    rows = [(LINEUP[:4], 0.075, -1.5 * gap - 0.02), (LINEUP[4:], -0.045, -1.5 * gap + 0.02)]
     for items, y, x0 in rows:
         for i, (lab, tint, eyes, glow, metal) in enumerate(items):
             x = x0 + i * gap
             build_stand('stand_' + lab, x, y, stone)
-            a = build_soul(lab, tint, eyes, eye_strength=2.6, glow=glow, glow_strength=0.1, inner=8.0,
-                           metal=metal, ring_tilt=-35, dens=(80 if lab == 'onyx' else None))
-            place(a, (x, y, V3['R'] * MM + 0.0045), (90, 0, (x * 90)))
-            objs.append(a)
+            a = build_soul(lab, tint, eyes, eye_strength=1.9, glow=glow, glow_strength=0.05, inner=1.5,
+                           metal=metal, ring_tilt=-30, dens=(90 if lab == 'onyx' else 45), halo_white=0.2)
+            place(a, (x, y, V3['R'] * MM + 0.0045), (90, 0, -22))
             if lab == 'martisor':
-                pass
-    tgt = Vector((0.0, 0.0, 0.034))
-    cam = camera((0.0, -0.78, 0.23), tgt, lens=85, fstop=11.0, focus=Vector((0, 0.0, 0.03)))
-    protect_screens(cam, tgt, 0.9, 0.06)
-    studio3(tgt, 1.6)
-    POST['exposure'] = -0.2
+                bpy.context.view_layer.update()
+                ring = [c for c in a.children if c.name.endswith('_splitring')][0]
+                M = ring.matrix_world
+                top = M @ Vector((0, (2 * a['ring_R'] - 0.5 - 0.6) * MM, 0))
+                loop = [top + Vector((0.0, 0.009 * (1 - math.cos(t)), 0.0)) * 1.0 +
+                        Vector((0.0045 * math.sin(t), 0, 0.011 * math.sin(t / 2) ** 2)) for t in
+                        np.linspace(0, 2 * math.pi, 24)]
+                twisted_cord('mcord', loop, 0.45)
+    tgt = Vector((0.0, 0.012, 0.03))
+    cam = camera((0.0, -0.80, 0.30), tgt, lens=84, fstop=11.0, focus=Vector((0, 0.0, 0.03)))
+    protect_screens(cam, tgt, 1.4, -0.03)
+    flag(cam, tgt, dist=0.2, size=(4.0, 3.0))
+    studio3(tgt, 1.5)
+    POST['exposure'] = -0.35
     return sc
 
 
@@ -1624,7 +1630,7 @@ def shot_scale():
     world_color((0.95, 0.92, 0.88), 0.03)
     sweep('#E6DDD1', wall_y=0.8)
     # v1 coin, from the v1 code (outline from cad/gen_shapes.py, Ø52 x 18.5 mm)
-    a1 = build_amulet('v1', 'coin', '#F3F5F7', 'cream_look', eye_strength=2.6, glow_w=0.0, ring_tilt=-90.0)
+    a1 = build_amulet('v1', 'coin', '#F3F5F7', 'cream_look', eye_strength=2.6, glow_w=0.02, ring_tilt=-90.0)
     a1.location = (-0.066, 0.004, (H_HALF + 0.35) * MM)
     a1.rotation_euler = (0, 0, math.radians(8))
     a3 = build_soul('v3', '#F3F1EC', 'cream_look', eye_strength=2.6, glow='cream', glow_strength=0.1, inner=6.0,
@@ -1635,11 +1641,11 @@ def shot_scale():
     key.location = (0.062, -0.006, 0.0)
     key.rotation_euler = (0, 0, math.radians(100))
     tgt = Vector((-0.003, -0.004, 0.006))
-    cam = camera((0.0, -0.17, 0.46), tgt, lens=70, fstop=11.0, focus=Vector((-0.004, 0, 0.012)), shift=(0, -0.03))
+    cam = camera((0.0, -0.17, 0.46), tgt, lens=90, fstop=11.0, focus=Vector((-0.004, 0, 0.012)), shift=(0, -0.012))
     flag(cam, tgt)
+    y0 = min(world_point(a1, (0, 0, 0)).y - 26.0 * MM, world_point(a3, (0, 0, 0)).y - V3['R'] * MM) - 0.011
     for par, r_mm in ((a1, 26.0), (a3, V3['R'])):
         c = world_point(par, (0, 0, 0))
-        y0 = c.y - (r_mm + 12.0) * MM
         ANNOT.append(dict(a=Vector((c.x - r_mm * MM, y0, 0)), b=Vector((c.x + r_mm * MM, y0, 0)), label=''))
     ANNOT[0]['label'] = 'SOUL v1 Ø52'
     ANNOT[1]['label'] = 'SOUL Ø56'
@@ -1674,7 +1680,7 @@ def shot_turntable():
     for ob in list(bpy.data.objects):
         if ob.name.startswith('cord'):
             bpy.data.objects.remove(ob)
-    fr = 135
+    fr = 120
     sc.frame_start, sc.frame_end = 1, fr
     for f in (1, fr + 1):
         a.rotation_euler = (math.radians(90), 0, math.radians(-14 + (f - 1) * 360.0 / fr))
@@ -1687,15 +1693,15 @@ def shot_turntable():
 
 SHOTS = {
     'hero': (shot_hero, 1600, 1200, 160),
-    'necklace': (shot_necklace, 1600, 1200, 160),
+    'necklace': (shot_necklace, 1600, 1200, 128),
     'caseback': (shot_caseback, 1600, 1200, 160),
-    'night': (shot_night, 1600, 1200, 192),
-    'listening': (shot_listening, 1600, 1200, 160),
+    'night': (shot_night, 1600, 1200, 160),
+    'listening': (shot_listening, 1600, 1200, 128),
     'lineup': (shot_lineup, 1600, 1200, 128),
-    'scale': (shot_scale, 1600, 1200, 128),
-    'martisor': (shot_martisor, 1600, 1200, 160),
-    'social': (lambda: shot_hero(True, 'social'), 1080, 1920, 160),
-    'turntable': (shot_turntable, 540, 540, 32),
+    'scale': (shot_scale, 1600, 1200, 96),
+    'martisor': (shot_martisor, 1600, 1200, 128),
+    'social': (lambda: shot_hero(True, 'social'), 1080, 1920, 128),
+    'turntable': (shot_turntable, 540, 540, 24),
 }
 
 
