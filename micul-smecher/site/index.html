@@ -436,6 +436,7 @@ select.input option{background:#101114;color:#F6F3EC}
     <nav class="nav-links" aria-label="Sections">
       <a href="#three" data-i18n="nav.what">What it is</a>
       <a href="#alive" data-i18n="nav.alive">Alive</a>
+      <a href="#yourai" data-i18n="nav.ai">Your AI</a>
       <a href="#claude" data-i18n="nav.claude">Claude</a>
       <a href="#born" data-i18n="nav.born">Born</a>
       <a href="#editions" data-i18n="nav.editions">Editions</a>
@@ -558,6 +559,39 @@ select.input option{background:#101114;color:#F6F3EC}
     </div>
   </div>
 </section>
+
+<!-- YOUR AI -->
+<section class="sec alt" id="yourai" aria-labelledby="yourai-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="ai.eyebrow">Your AI, your choice</p>
+      <h2 class="h-l" id="yourai-title" data-i18n="ai.h2">Your AI. Or no AI at all.</h2>
+    </div>
+    <div class="trio">
+      <article class="trio-card">
+        <div class="stone"><canvas data-soul="alive" role="img" data-i18n-attr="aria-label:ai.a1" aria-label="Eyes living on their own, with no internet."></canvas></div>
+        <span class="tag cream" data-i18n="ai.c1tag">No account · no internet</span>
+        <h3 class="h-m" data-i18n="ai.c1t">No AI. Still alive.</h3>
+        <p data-i18n="ai.c1p">Out of the box it needs nothing. It lives, reacts, keeps the time, runs your timers, focus sessions and alarms, and shows reminders you add from your phone over Bluetooth. No sign-up. Ever.</p>
+      </article>
+      <article class="trio-card">
+        <div class="stone"><canvas data-soul="claude" role="img" data-i18n-attr="aria-label:ai.a2" aria-label="Eyes connected to Claude."></canvas></div>
+        <span class="tag amber" data-i18n="ai.c2tag">Connect your Claude</span>
+        <h3 class="h-m" data-i18n="ai.c2t">Your Claude, in your hand.</h3>
+        <p data-i18n="ai.c2p">Add SOUL as a connector in your own Claude. Ask Claude to put today's plan, a reminder or a note on your SOUL. On your computer it already works with Claude Code and Cowork: approve their requests from the stone.</p>
+      </article>
+      <article class="trio-card">
+        <div class="stone"><canvas data-soul="talk" role="img" data-i18n-attr="aria-label:ai.a3" aria-label="Eyes listening, connected to ChatGPT."></canvas></div>
+        <span class="tag mint" data-i18n="ai.c3tag">Connect your ChatGPT</span>
+        <h3 class="h-m" data-i18n="ai.c3t">Or your ChatGPT.</h3>
+        <p data-i18n="ai.c3p">Prefer ChatGPT? Add SOUL as an app in your ChatGPT and send it your list, a reminder or a translation. Same stone, same soul. You can switch any time.</p>
+      </article>
+    </div>
+    <p class="lead" style="margin:36px auto 0;max-width:62ch;text-align:center" data-i18n="ai.voice">To talk to it by voice, use the SOUL voice service (6 months included with the Voice Edition) or bring your own Anthropic or OpenAI API key. Your account, your data, your choice.</p>
+    <p style="margin:14px auto 0;text-align:center;color:var(--muted);font-size:.85rem" data-i18n="ai.note">Claude and ChatGPT connections are in development. Claude is a trademark of Anthropic, ChatGPT of OpenAI. SOUL is independent and not endorsed by either.</p>
+  </div>
+</section>
+
 
 <!-- WORKS WITH CLAUDE -->
 <section class="sec alt" id="claude" aria-labelledby="claude-title">
@@ -817,7 +851,7 @@ select.input option{background:#101114;color:#F6F3EC}
     <div class="faq">
       <details><summary data-i18n="q1">When will it ship?</summary><div class="a" data-i18n="a1">Founders Desk Edition: estimated <span data-cfg="shipFounders">spring 2027</span>. Voice Edition: estimated <span data-cfg="shipVoice">autumn 2027</span>. If we're late, you can cancel for a full refund at any time before it ships. After delivery you have the EU 14-day right of withdrawal and a 2-year legal guarantee.</div></details>
       <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">No. SOUL is alive with no internet and no account, forever. The Voice Edition includes <span data-cfg="months">6</span> months of voice AI. After that, an optional plan keeps the voice features on. Without it, your SOUL stays a full offline companion.</div></details>
-      <details><summary data-i18n="q3">Which AI does it use?</summary><div class="a" data-i18n="a3">For voice conversations (Voice Edition, in development): Claude by default, or ChatGPT if you prefer. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so the stone can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
+      <details><summary data-i18n="q3">Which AI does it use?</summary><div class="a" data-i18n="a3">None, if you like: SOUL works with no AI and no account. Or connect your own Claude or ChatGPT (in development). For voice: the SOUL voice service (Claude by default) or your own Anthropic or OpenAI API key. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so the stone can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
       <details><summary data-i18n="q4">Does it need my phone or computer?</summary><div class="a" data-i18n="a4">Not to be alive. To work with Claude, it pairs over Bluetooth with the Claude desktop app on your Mac or Windows PC.</div></details>
       <details><summary data-i18n="q5">How long does the battery last?</summary><div class="a" data-i18n="a5">The Founders Desk Edition has no battery: it runs on USB-C. The Voice Edition has a small, user-replaceable battery that charges over USB-C. We'll publish measured battery life before we ask for full payment.</div></details>
       <details><summary data-i18n="q6">Is it a toy?</summary><div class="a" data-i18n="a6">No. SOUL is made for adults and teens 16 and over. It contains small parts and, in the Voice Edition, a lithium battery. Keep it away from young children.</div></details>
@@ -945,6 +979,18 @@ const RO = {
   "talk.h2": "Ține și vorbește.",
   "talk.lead": "Pune degetul pe piatră și vorbește. Îți răspunde cu Claude sau, dacă preferi, cu ChatGPT. Ține minte oamenii și planurile din viața ta.",
   "talk.b1": "Amintește-mi să o sun pe mama duminică.", "talk.b2": "Ce a zis Ana despre excursie?", "talk.b3": "Trezește-mă la șapte. Cu blândețe.", "talk.b4": "Cum a fost ziua mea?",
+  "ai.eyebrow": "AI-ul tău, alegerea ta",
+  "ai.h2": "AI-ul tău. Sau deloc AI.",
+  "ai.c1tag": "Fără cont · fără internet", "ai.c1t": "Fără AI. Tot viu.",
+  "ai.c1p": "Din cutie nu are nevoie de nimic. Trăiește, reacționează, ține ora, îți pornește cronometrul, sesiunile de focus și alarmele și îți arată mementourile adăugate din telefon prin Bluetooth. Fără înregistrare. Niciodată.",
+  "ai.c2tag": "Conectează-ți Claude", "ai.c2t": "Claude-ul tău, în palmă.",
+  "ai.c2p": "Adaugi SOUL ca conector în contul tău Claude. Îi ceri lui Claude să-ți pună pe SOUL planul zilei, un memento sau o notiță. Pe calculator merge deja cu Claude Code și Cowork: le aprobi cererile din piatră.",
+  "ai.c3tag": "Conectează-ți ChatGPT", "ai.c3t": "Sau ChatGPT-ul tău.",
+  "ai.c3p": "Preferi ChatGPT? Adaugi SOUL ca aplicație în ChatGPT-ul tău și îi trimiți lista, un memento sau o traducere. Aceeași piatră, același suflet. Schimbi oricând.",
+  "ai.voice": "Ca să vorbești cu el, folosești serviciul de voce SOUL (6 luni incluse în Voice Edition) sau îți pui propria cheie API Anthropic ori OpenAI. Contul tău, datele tale, alegerea ta.",
+  "ai.note": "Conectarea cu Claude și ChatGPT e în dezvoltare. Claude e marcă Anthropic, ChatGPT e marcă OpenAI. SOUL e independent și nu e susținut de niciunul.",
+  "ai.a1": "Ochi care trăiesc singuri, fără internet.", "ai.a2": "Ochi conectați la Claude.", "ai.a3": "Ochi care ascultă, conectați la ChatGPT.",
+  "nav.ai": "AI-ul tău",
   "talk.privacy": "Ascultă doar cât timp ții degetul pe piatră. Ridică-l, și microfonul se oprește.",
   "claude.eyebrow": "Merge cu Claude",
   "claude.h2": "Stă cu ochii pe Claude. Ca să nu fie nevoie să stai tu.",
@@ -1039,7 +1085,7 @@ const RO = {
   "q2": "Am nevoie de abonament?",
   "a2": "Nu. SOUL e viu fără internet și fără cont, pentru totdeauna. Voice Edition include <span data-cfg=\"months\">6</span> luni de AI vocal. După aceea, un plan opțional păstrează funcțiile de voce. Fără el, SOUL-ul tău rămâne un companion offline complet.",
   "q3": "Ce AI folosește?",
-  "a3": "Pentru conversațiile vocale (Voice Edition, în dezvoltare): Claude implicit, sau ChatGPT dacă preferi. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy din aplicațiile desktop Claude, așa că piatra îți arată ce fac Claude Code și Claude Cowork și te lasă să le aprobi cererile.",
+  "a3": "Niciunul, dacă vrei: SOUL merge fără AI și fără cont. Sau îți conectezi propriul Claude ori ChatGPT (în dezvoltare). Pentru voce: serviciul de voce SOUL (Claude implicit) sau propria cheie API Anthropic ori OpenAI. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy din aplicațiile desktop Claude, așa că piatra îți arată ce fac Claude Code și Claude Cowork și te lasă să le aprobi cererile.",
   "q4": "Are nevoie de telefon sau de calculator?",
   "a4": "Nu ca să fie viu. Ca să lucreze cu Claude, se conectează prin Bluetooth la aplicația desktop Claude de pe Mac sau Windows.",
   "q5": "Cât ține bateria?",
