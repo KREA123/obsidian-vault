@@ -28,6 +28,25 @@ Handoff: `docs/mundishop-funnel-handoff-claude-code-24sept.md` · Pachetul A (te
 | — | B3 Judge.me: transparență, cerere la 7 zile, cererea pentru comenzile trecute, culori | produs (parte din A) | de făcut |
 | — | B4 Clarity prin script | măsurare | de făcut (lipsește ID-ul proiectului) |
 
+## Verificarea copiei 206388068684 (24.09, previzualizare reală, cu pixelii blocați)
+
+- **Produs pe telefon** (`lego-75456`, 12/12 teste):
+  - la 390×660: header 57 px (live: 174 px), titlul la 126 px (live: 275), linia de livrare la 209 px, „Retur 14 zile” ca link;
+  - poza la 276–596 px, întreagă deasupra barei `#mbb`, care începe la 595 px (live: 405–725, jumătate acoperită);
+  - la 375×812: poza la 276–581 px, bara la 747 px;
+  - după derulare o singură bară lipită (`#buybar` nu mai există);
+  - lupa deschide căutarea cu tastatura, iar Escape o închide; meniul se deschide;
+  - fără derulare orizontală, fără erori;
+  - „Adaugă în coș” (bara și butonul) trimite cererea către `/cart/add`, blocată în test;
+  - 0 „Translation missing” (live: 13), fără minifigurine pe produs (live: 2), fără SOL, preîncărcarea prezentă;
+  - recenziile încep la ~3.700 px (live: ~4.600–9.800 px, în funcție de produs).
+- **Cazuri speciale** (14/14 teste):
+  - produsele epuizate (`lego-72051`, `lego-31212`) nu au linia de livrare și au butonul dezactivat;
+  - produsul cu reducere (`lego-42151`) arată corect prețul vechi și procentul;
+  - **stelele apar** pe produsele cu recenzie reală: `lego-72160` și `lego-31214`, „5,0 · 1 recenzie”, sus și în coloana de informații. Metafield-urile Judge.me sunt deja populate, deci nu trebuie pornită nicio sincronizare;
+  - nu există produse cu mai multe variante în catalog (0 din 1.037).
+- Mărunțișuri găsite, **existente și pe live**, nu introduse de pachet: la produsele epuizate, rândul de sus scrie „Momentan indisponibil” cu verde, iar mai jos „● Stoc epuizat”; procentul de reducere e rotunjit în jos.
+
 ## Cum se măsoară
 
 - **Baza începe pe 24.09.** Nu se compară cu perioadele de dinainte, pentru că Shopify a schimbat definiția sesiunii pe 21–23.09.
