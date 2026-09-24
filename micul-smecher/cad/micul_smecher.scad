@@ -1,14 +1,17 @@
 // =====================================================================================
-//  MICUL SMECHER -- prototype enclosure ("Editia 0", hand-finished)            v1
-//  Parametric OpenSCAD model (tested with OpenSCAD 2021.01).
+//  SUFLET / MICUL SMECHER -- prototype enclosure ("Editia 0", hand-finished)   v1.1
+//  Parametric OpenSCAD model (tested with OpenSCAD 2021.01). Build everything: python3 build_all.py
 //
 //  Parts:  front  = frosted clear shell (SLA), aperture + 0.8 mm lip over the cover glass,
 //                   M2 heat-set/press-in insert bosses, cap stub, side cut-outs
-//          back   = removable back cover (4 x no glue: 3 x M2x4 Phillips), battery bay,
+//          back   = removable back cover (no glue: 3 x M2x4 Phillips into M2x3 inserts), battery bay,
 //                   speaker pocket + grille (1.75), slide-switch cradle
 //          cap    = "metal" cap for the tip (print + paint, later CNC Al), 1.6 mm ring hole
 //          lens   = optional clear dome cabochon over the glass (0.3 mm air gap)
-//          assembly / exploded / board = views with a dummy board, battery, speaker
+//          stand  = desk stand (Founders Desk Edition, USB powered): weighted pebble cradle,
+//                   holds the amulet tilted back stand_tilt deg, USB-C plug pocket + cable channel
+//          assembly / exploded / desk / board = views with a dummy board, battery, speaker
+//                   (section = true cuts the views in half at x = 0 to check for collisions)
 //
 //  Frame: looking at the screen, +x right, +y up (towards the cap), +z towards the viewer.
 //         z = 0 is the FRONT SURFACE OF THE COVER GLASS. "depth" = -z.
@@ -21,13 +24,15 @@ include <shapes.scad>
 /* [Main] */
 board = "1.75";        // ["1.75":Waveshare ESP32-S3-Touch-AMOLED-1.75 (voice), "1.43":Waveshare ESP32-S3-Touch-AMOLED-1.43]
 shape = "coin";        // ["coin":Moneda, "drop":Lacrima, "gem":Cabochon, "cloud":Nor]
-part  = "assembly";    // ["front","back","cap","lens","assembly","exploded","board"]
+part  = "assembly";    // ["front","back","cap","lens","stand","assembly","exploded","desk","board"]
 printer = "SLA";       // ["SLA":clear resin 0.05 mm, "FDM":PETG test fit]
 tol_override = 0;      // >0 overrides the global fit clearance [mm]
 spk_mode = "stack";    // ["stack":kit speaker behind battery (1.75), "none":no speaker (thinnest)]
 use_lens_seat = true;  // 0.4 mm seat around the aperture for the optional dome lens
 rim_pockets = true;    // hollow the rim outside the board (less resin, lighter)
 board_screws = false;  // also screw the back cover posts into the board's own M2 standoffs
+section = false;       // views only: cut away the x > 0 half
+show_lens = false;     // views only: show the optional dome lens in "assembly"
 
 /* [Shell] */
 wall        = 1.8;   // side wall [mm] (1.6-2.0)
@@ -43,9 +48,10 @@ squash_top  = 1.00;  // 0.6..1.0: shortens the silhouette ABOVE the screen (e.g.
 nF = 8;              // round-over steps
 
 /* [Battery] */
-bat_w = 25;      // across (x) -- 502535 default
-bat_l = 35;      // along (y)
-bat_t = 5.0;     // nominal thickness (real 502535 cells: 4.8-5.3)
+battery = true;  // false = USB-only build (Founders Desk Edition): no battery bay, thinner shell
+bat_w = 25;      // across (x) -- 502535 default // UNVERIFIED -- measure your cell (25-26)
+bat_l = 35;      // along (y), incl. protection PCB // UNVERIFIED -- measure (35-38 with PCM)
+bat_t = 5.0;     // nominal thickness (real 502535 cells: 4.8-5.3) // UNVERIFIED -- measure
 bat_clr = 0.3;   // pocket clearance in x/y
 bat_foam = 0.8;  // foam / swelling gap (no glue!)
 
@@ -83,6 +89,21 @@ glue_gap = 0.1;
 /* [Dome lens] */
 lens_gap = 0.3;  lens_recess = 0.4;  lens_flange = 1.6;  lens_flange_t = 0.8;  lens_dome_h = 2.5;
 
+/* [Desk stand (Founders Desk Edition)] */
+stand_tilt     = 15;    // screen leans back this much from vertical [deg]
+stand_plug_len = 16;    // USB-C plug body left OUTSIDE the shell (overmold + strain relief) // UNVERIFIED -- measure your cable
+stand_cable_d  = 4.5;   // cable diameter // UNVERIFIED -- measure your cable
+stand_bend     = 7;     // height left under the plug for the cable to bend towards the back
+stand_clr      = 0.4;   // extra clearance shell <-> cradle (on top of tol)
+stand_wall     = 2.4;   // cradle wall
+stand_front_h  = 4.0;   // front lip height above the lowest point of the shell (must stay below the glass)
+stand_back_h   = 10.0;  // back support height (stays below the back-cover screw heads)
+stand_sink     = 9;     // how deep the shell sinks into the pebble (at the centre)
+stand_ry       = 28;    // half depth of the pebble (front-back)
+stand_rx_min   = 36;    // minimum half width of the pebble
+stand_weight_d = 20.6;  // ballast pockets from below (fill with steel shot / 4.5 mm steel BBs + epoxy)
+stand_weight_h = 12.5;  // pocket depth (pockets are clipped so they never break into the cradle or the plug pocket)
+
 /* [Render] */
 fn_big = 144;
 $fn = 48;
@@ -118,8 +139,8 @@ sw_pos       = is175 ? [-16.5, -12.5] : [16.5, -3.0];   // slide switch (near BA
 // side buttons: [label, origin xy, direction deg, depth, hole d]
 btns = is175 ? [["PWR",  [-11.31, 17.20], 123.3, 7.60, 2.6],   // PWR (AXP2101 PWRON) upper-left  verified STEP + photo
                 ["BOOT", [ 11.31, 17.10],  56.5, 7.60, 1.6]]   // BOOT upper-right
-             : [["BOOT/RST", [-17.25,  7.54], 180, 7.60, 1.6],  // which one is BOOT: // UNVERIFIED -- check silkscreen
-                ["BOOT/RST", [-17.25, -7.54], 180, 7.60, 1.6]];
+             : [["BOOT/RST", [-18.43,  8.01], 156.5, 7.85, 1.6],  // radial side keys, actuator d2.0 tip r=20.97,
+                ["BOOT/RST", [-18.43, -8.01], 203.5, 7.85, 1.6]]; // depth 7.85: verified STEP. Which one is BOOT: // UNVERIFIED -- check silkscreen
 // microphones (1.75 only): [origin xy, direction deg, depth]; port direction // UNVERIFIED -- top-port assumed
 mics = is175 ? [[[-10.96,-17.54], 238.0, 7.5], [[11.74,-17.35], 304.1, 7.5]] : [];
 mic_hole_d = 1.0;
@@ -147,9 +168,9 @@ z_front = front_skin;
 
 function inset_front(z) = z <= z_front - rf_v ? 0 : rf_h * (1 - cos(asin(min(1, (z - (z_front - rf_v)) / rf_v))));
 
-bat_top = bat_floor + bat_t + bat_foam;
+bat_top = battery ? bat_floor + bat_t + bat_foam : 0;
 D_open  = usb_depth + usb_cut_h / 2 + 0.6;         // cavity may widen behind this depth
-D_in    = max(spk_on ? bat_top + spk_t + spk_clr : bat_top, tall_edge + 0.3, D_open + skirt_h + 0.5);
+D_in    = max(spk_on ? max(bat_top, bat_floor) + spk_t + spk_clr : bat_top, tall_edge + 0.3, D_open + skirt_h + 0.5);
 z_split = -D_in;
 z_back  = -(D_in + back_t);
 z_mid   = (z_front + z_back) / 2;
@@ -328,7 +349,7 @@ module back_cover() difference() {
             offset(delta = -tol) rim_open2d(tol);
             offset(delta = -tol - skirt_t) rim_open2d(tol);
         }
-        bat_brackets((spk_on ? spk_t + spk_clr : 0) + bat_foam + bat_t * 0.5);
+        if (battery) bat_brackets((spk_on ? spk_t + spk_clr : 0) + bat_foam + bat_t * 0.5);
         if (spk_on) spk_pocket();
         switch_cradle();
         posts();
@@ -388,48 +409,153 @@ module lens() {
 }
 
 // =====================================================================================
+//  DESK STAND (Founders Desk Edition, USB powered)
+//  World frame of the stand: X right, Y away from the viewer, Z up, table at Z = 0.
+//  The amulet stands on its bottom edge (USB-C at 6 o'clock), leaning back stand_tilt deg;
+//  the cable plug goes straight down into a pocket and the cable leaves through a channel
+//  in the underside towards the back. Printed as is (bottom on the bed).
+// =====================================================================================
+st_yb  = k * S_bbox[2];                   // lowest point of the outline (on x = 0 for every shape)
+st_c   = tol + stand_clr;                 // clearance shell <-> cradle
+st_a   = 90 - stand_tilt;                 // model -> world rotation about X
+st_u   = -usb_depth - z_mid;              // plug axis, model z relative to the shell mid-plane
+st_hc  = stand_bend + stand_plug_len * sin(st_a) - st_u * cos(st_a);   // height of the bottom-centre line
+st_rx  = max(stand_rx_min, W / 2 + 6);
+st_yc  = -st_yb * cos(st_a) * 0.5;        // base centre (between the screen and the centre of mass)
+st_t   = (st_hc + st_u * cos(st_a)) / sin(st_a);          // plug axis length down to the table
+st_yex = -st_t * cos(st_a) - st_u * sin(st_a);            // where the plug axis meets the table (world Y)
+
+module st_place() translate([0, 0, st_hc]) rotate([st_a, 0, 0]) translate([0, -st_yb, -z_mid]) children();
+
+// shell envelope (+ clearance + extra), swept upwards so the cradle never traps it (model frame)
+module st_env(extra = 0) let(c = st_c + extra) {
+    zslab(z_back - c, z_front + c) hull() { offset(r = c) outline2d(); translate([0, 300]) offset(r = c) outline2d(); }
+    // back-cover screw heads stand ~0.4 mm proud
+    for (p = bossP) translate([p[0], p[1], z_back - c - 1.5]) cylinder(d = head_d + 1 + 2 * extra, h = 2);
+}
+module st_plug(extra = 0) translate([0, st_yb + 3, -usb_depth]) rotate([90, 0, 0])
+    linear_extrude(300) stadium2d(usb_cut_w + 2 * (st_c + extra), usb_cut_h + 2 * (st_c + extra));
+
+module st_cup() {   // model frame
+    zb = z_back - st_c - stand_wall; zf = z_front + st_c + stand_wall;
+    intersection() {
+        zslab(zb, zf) offset(r = st_c + stand_wall) outline2d();
+        union() {
+            translate([-500, st_yb - 50, zb - 1]) cube([1000, 50 + stand_back_h, z_mid - zb + 1]);
+            translate([-500, st_yb - 50, z_mid - 0.01]) cube([1000, 50 + stand_front_h, zf - z_mid + 1.01]);
+        }
+    }
+}
+
+// one monolithic "river stone": a squashed ellipsoid cut below its equator; the shell sinks into it
+st_hz = st_hc + stand_sink;               // pebble height at its centre
+st_z0 = 0.45 * st_hz;                     // ellipsoid centre below the table -> sloped flanks
+module st_dome(inset = 0) translate([0, st_yc, -st_z0])
+    scale([st_rx - inset, stand_ry - inset, st_hz + st_z0 - inset]) sphere(r = 1, $fn = 128);
+module st_body() intersection() {
+    st_dome();
+    translate([-500, -500, 0]) cube([1000, 1000, 500]);
+}
+
+module stand() difference() {
+    st_body();
+    st_place() {
+        st_env();
+        st_plug();
+        // keep the screen free: nothing in front of the shell above the front lip, nothing above the back support
+        translate([-500, st_yb + stand_front_h, z_mid]) cube([1000, 300, 300]);
+        translate([-500, st_yb + stand_back_h, -300]) cube([1000, 300, 600]);
+    }
+    // cable: bend chamber under the plug, then a channel to the back (both open to the table)
+    cw = stand_cable_d + 1.0;
+    translate([-cw / 2, st_yex - 4, -1]) cube([cw, 16, stand_bend + 1]);
+    translate([-cw / 2, st_yex, -1]) cube([cw, 200, stand_cable_d + 1.0]);
+    // weight pockets (from below), kept >= 1.6 mm away from the cradle and the plug pocket
+    for (sx = [-1, 1]) difference() {
+        intersection() {
+            translate([sx * st_rx * 0.45, st_yc, -1]) cylinder(d = stand_weight_d, h = stand_weight_h + 1, $fn = 72);
+            st_dome(2.0);
+        }
+        st_place() st_env(1.6);
+        st_place() st_plug(1.6);
+        translate([-cw / 2 - 1.6, -200, -2]) cube([cw + 3.2, 400, 100]);
+    }
+}
+
+// =====================================================================================
 //  DUMMY BOARD, BATTERY, SPEAKER (for views only)
 // =====================================================================================
+// the default face (Face.h: eyeW 0.12, eyeH 0.19, spacing 0.19, cy +0.02 down, lidTop 0.19,
+// lidTilt 0.16 rad = inner corners lower, highlight upper-right) -- decoration for the views only
+module eye2d(sd, part = "body") let(D = 2 * view_r, ex = sd * 0.19 * D, ey = -0.02 * D, rx = 0.12 * D, ry = 0.19 * D,
+                                    kk = tan(0.16 * 180 / PI) * (-sd), yl = ey + (1 - 2 * 0.19) * ry)
+    intersection() {
+        if (part == "body") translate([ex, ey]) scale([rx, ry]) circle(r = 1, $fn = 72);
+        else if (part == "glow") translate([ex, ey]) scale([rx + 0.035 * D, ry + 0.035 * D]) circle(r = 1, $fn = 72);
+        else translate([ex + 0.22 * rx, ey + 0.12 * ry]) scale([0.34 * rx, 0.46 * ry]) circle(r = 1, $fn = 48);
+        polygon([[ex - D, yl + kk * D + (part == "glow" ? 0.035 * D : 0)], [ex + D, yl - kk * D + (part == "glow" ? 0.035 * D : 0)],
+                 [ex + D, ey - 2 * D], [ex - D, ey - 2 * D]]);
+    }
+module dummy_eyes() for (sd = [-1, 1]) {
+    color("#fff0c8", 0.28) translate([0, 0, 0.005]) linear_extrude(0.01) eye2d(sd, "glow");
+    color("#fff0c8") translate([0, 0, 0.01]) linear_extrude(0.02) eye2d(sd, "body");
+    color("#ffffff") translate([0, 0, 0.03]) linear_extrude(0.02) eye2d(sd, "hl");
+}
+
 module dummy_board() {
-    color("#101216") rotate_extrude($fn = fn_big) polygon([[0, 0], [glass_flat_r, 0], [glass_r, -glass_cd], [glass_r, -glass_t], [0, -glass_t]]);
-    color("#1d1f24") translate([0, 0, -pcb_d[0]]) cylinder(r = body_r - 0.1, h = pcb_d[0] - glass_t, $fn = fn_big);
-    color("#1f5fa8") translate([0, 0, -pcb_d[1]]) cylinder(r = body_r, h = pcb_d[1] - pcb_d[0], $fn = fn_big);
-    color("#c9a54a") for (p = so_pos) translate([p[0], p[1], -so_depth]) cylinder(d = 3.5, h = so_depth - pcb_d[1]);
-    color("#b8bcc4") translate([-4.47, -usb_face_r, -usb_depth - 1.63]) cube([8.94, 7.5, 3.26]);
-    color("#222") if (is175) {
+    if (!section) dummy_eyes();
+    color("#101216") cutd() rotate_extrude($fn = fn_big) polygon([[0, 0], [glass_flat_r, 0], [glass_r, -glass_cd], [glass_r, -glass_t], [0, -glass_t]]);
+    color("#1d1f24") cutd() translate([0, 0, -pcb_d[0]]) cylinder(r = body_r - 0.1, h = pcb_d[0] - glass_t, $fn = fn_big);
+    color("#1f5fa8") cutd() translate([0, 0, -pcb_d[1]]) cylinder(r = body_r, h = pcb_d[1] - pcb_d[0], $fn = fn_big);
+    color("#c9a54a") cutd() for (p = so_pos) translate([p[0], p[1], -so_depth]) cylinder(d = 3.5, h = so_depth - pcb_d[1]);
+    color("#b8bcc4") cutd() translate([-4.47, -usb_face_r, -usb_depth - 1.63]) cube([8.94, 7.5, 3.26]);
+    color("#222") cutd() if (is175) {
         translate([17.48, -10.43, -12.7]) cube([2.4, 20.86, 12.7 - pcb_d[1]]);           // 8-pin header
         for (y = [2.67, -10.63]) translate([-20.12, y, -11.7]) cube([4.2, 7.65, 4.8]);  // SPK / BAT
     } else {
         for (s = [-1, 1]) translate([s > 0 ? 14 : -18.5, -4.6, -10.7]) cube([4.5, 9.2, 10.7 - pcb_d[1]]);
     }
-    color("#e8e8e8") for (b = btns) translate([b[1][0], b[1][1], -b[3]]) rotate([0, 0, b[2]]) cube([4, 4, 2], center = true);
+    color("#e8e8e8") cutd() for (b = btns) translate([b[1][0], b[1][1], -b[3]]) rotate([0, 0, b[2]]) cube([4, 4, 2], center = true);
 }
-module dummy_battery() color("#8fb4d9") translate([bat_c[0], bat_c[1], z_split + (spk_on ? spk_t + spk_clr : 0) + bat_foam + bat_t / 2])
+module dummy_battery() if (battery) color("#8fb4d9") cutd() translate([bat_c[0], bat_c[1], z_split + (spk_on ? spk_t + spk_clr : 0) + bat_foam + bat_t / 2])
     cube([bat_w, bat_l, bat_t], center = true);
-module dummy_speaker() if (spk_on) color("#2a2c31") translate([bat_c[0], bat_c[1], z_split]) linear_extrude(spk_t) rrect2d(spk_w, spk_l, spk_r);
-module dummy_switch() color("#d0d0d0") translate([sw_pos[0], sw_pos[1], z_split + sw_body[2] / 2]) cube([sw_body[1], sw_body[0], sw_body[2]], center = true);
+module dummy_speaker() if (spk_on) color("#2a2c31") cutd() translate([bat_c[0], bat_c[1], z_split]) linear_extrude(spk_t) rrect2d(spk_w, spk_l, spk_r);
+module dummy_switch() color("#d0d0d0") cutd() translate([sw_pos[0], sw_pos[1], z_split + sw_body[2] / 2]) cube([sw_body[1], sw_body[0], sw_body[2]], center = true);
 
 // =====================================================================================
 //  OUTPUT
 // =====================================================================================
-module view_front()  color("#dfe9f5", 0.55) front_shell();
-module view_back()   color("#cfd8e3") back_cover();
-module view_cap()    color("#b9bcc2") cap_in_shell();
-module view_lens()   color("#ffffff", 0.35) lens();
+// views: render() avoids OpenCSG artefacts of the big subtracted helper volumes; colour goes outside render()
+module cutx() if (section) render() intersection() { children(); translate([-200, -200, -200]) cube([200, 400, 400]); } else render() children();
+module cutd() if (section) render() intersection() { children(); translate([-200, -200, -200]) cube([200, 400, 400]); } else children();
+module view_front()  color("#dfe9f5", 0.55) cutx() front_shell();
+module view_back()   color("#cfd8e3") cutx() back_cover();
+module view_cap()    color("#b9bcc2") cutx() cap_in_shell();
+module view_lens()   color("#f4f8ff", 0.16) cutx() lens();
+module view_inner()  { dummy_board(); dummy_battery(); dummy_speaker(); dummy_switch(); }
+module view_stand()  color("#e9e4da") cutx() stand();
+
+echo(str("MS_STAND tilt=", stand_tilt, " base=", 2 * st_rx * sqrt(1 - pow(st_z0 / (st_hz + st_z0), 2)), "x",
+         2 * stand_ry * sqrt(1 - pow(st_z0 / (st_hz + st_z0), 2)), " pebble_h=", st_hz, " shell_bottom_z=", st_hc,
+         " total_height~", st_hc + H * sin(st_a) + (T_total / 2) * cos(st_a)));
 
 if (part == "front")      translate([0, 0, z_front]) rotate([180, 0, 0]) front_shell();       // print face-down
 else if (part == "back")  translate([0, 0, -z_back]) back_cover();                             // outer face on the bed
 else if (part == "cap")   translate([0, 0, cap_sink]) rotate([90, 0, 0]) translate([-tipm[0], -tipm[1], -z_mid]) cap_in_shell();
 else if (part == "lens")  translate([0, 0, -lens_gap]) lens();
+else if (part == "stand") stand();                                                               // bottom on the bed
+else if (part == "desk")  { view_stand(); st_place() { view_front(); view_cap(); view_inner(); view_back(); } }
 else if (part == "board") { dummy_board(); dummy_battery(); dummy_speaker(); }
 else if (part == "exploded") {
-    translate([0, 0, 16]) view_lens();
+    e1 = D_in + 8; e2 = e1 + 6 + (battery ? bat_t : 0); e3 = e2 + 10;
+    translate([0, 0, 14]) view_lens();
     view_front();
-    translate([0, 26, 0]) view_cap();
-    translate([0, 0, -32]) dummy_board();
-    translate([0, 0, -46]) { dummy_battery(); }
-    translate([0, 0, -62]) { dummy_speaker(); dummy_switch(); view_back(); }
+    translate([0, 22, 0]) view_cap();
+    translate([0, 0, -e1]) dummy_board();
+    translate([0, 0, -e2]) dummy_battery();
+    translate([0, 0, -e3]) { dummy_speaker(); dummy_switch(); view_back(); }
 }
 else { // assembly
-    view_lens(); view_front(); view_cap(); dummy_board(); dummy_battery(); dummy_speaker(); dummy_switch(); view_back();
+    view_front(); view_cap(); view_inner(); view_back();
+    if (show_lens) %cutx() lens();   // background modifier: drawn see-through (a coloured transparent lens hides the screen in preview)
 }

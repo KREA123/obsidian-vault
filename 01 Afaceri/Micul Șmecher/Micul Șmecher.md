@@ -4,6 +4,9 @@ afacere: Micul Șmecher
 status: activ
 actualizat: 2026-09-24
 ---
+
+![[suflet_hero.png]]
+
 # Micul Șmecher — brand de lucru SUFLET
 
 > **Pe scurt:** o amuletă din sticlă mată cu doi ochi vii pe un ecran AMOLED rotund. E **vie și fără internet**, devine **AI-ul tău personal** când ții degetul pe „piatră” (Claude sau ChatGPT în spate) și **se leagă deja de Claude Code / Cowork** pe calculator. „Laboratoarele fac creierul. Noi facem corpul și sufletul.”
@@ -17,8 +20,9 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 | „Works with Claude” (protocolul Bluetooth al Claude Desktop: lucrează / cere aprobare / sărbătorește) | ✅ în firmware, testat pe PC | `firmware/lib/Suflet/src/ClaudeLink.*` |
 | Simulator: clipuri din codul real (boop, tors, amețit, somn, „mi-a fost dor”, AI, Claude, noapte) | ✅ | `micul-smecher/media/` |
 | Creierul AI în cloud (Claude): naștere de personaj, conversație, memorie, mementouri, notițe, jurnalul zilei | ✅ 9/9 teste, fără cheie API încă | `micul-smecher/ai/` |
-| Carcasă 3D (OpenSCAD → STL) | în lucru | `micul-smecher/cad/` |
-| Pagina de lansare / pre-comandă (EN/RO) | în lucru | `micul-smecher/site/` |
+| **Randări fotorealiste** ale produsului (Blender): erou, 4 forme, noapte, pe geantă, pe birou, vertical social, turntable | ✅ (randări de concept, nu poze) | `micul-smecher/renders/` |
+| Carcasă 3D parametrică (OpenSCAD): 4 forme × 2 plăci, față/spate/capac/lentilă + suport de birou, 33 STL verificate | ✅ de printat după măsurători cu șublerul | `micul-smecher/cad/` |
+| Pagina de lansare / pre-comandă (EN/RO, ochi vii în browser, demo Claude, rezervări) | ✅ previzualizare: https://claude.ai/artifact/BUAPPdP1W5xnCvSVcsQXoX | `micul-smecher/site/` |
 | Cercetare (piață, hardware, conformitate, AI, brand, finanțare) — cu surse | ✅ | `micul-smecher/research/` |
 
 ## Notele proiectului

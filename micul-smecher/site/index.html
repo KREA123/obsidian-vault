@@ -1,0 +1,1697 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SUFLET</title>
+<meta name="description" content="SUFLET is a small frosted-glass stone with two living eyes. It breathes, blinks and looks back at you, with no internet. It works with Claude. Reserve a numbered Founders Desk Edition.">
+<meta property="og:title" content="SUFLET · Your AI, alive.">
+<meta property="og:description" content="The AI labs make the brain. We make the body and the soul.">
+<meta property="og:image" content="media/posters/idle.jpg">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23000%27 stroke=%27%23D9DCE2%27 stroke-width=%274%27/%3E%3Cellipse cx=%2722%27 cy=%2734%27 rx=%277%27 ry=%2711%27 fill=%27%23FFF0C8%27/%3E%3Cellipse cx=%2742%27 cy=%2734%27 rx=%277%27 ry=%2711%27 fill=%27%23FFF0C8%27/%3E%3Cpath d=%27M13 20 L30 27 L30 18 L13 18Z M34 27 L51 20 L51 18 L34 18Z%27 fill=%27%23000%27/%3E%3C/svg%3E">
+<script>
+/* ==========================================================================
+   SITE CONFIG — the only place to change prices, dates, endpoint and contact.
+   ========================================================================== */
+window.SUFLET_CONFIG = {
+  // Where the waitlist form POSTs JSON {email, edition, consent, lang, ts, source}.
+  // Leave "" to keep sign-ups only in the visitor's browser (demo mode).
+  WAITLIST_ENDPOINT: "",
+  CURRENCY: "EUR",
+  PRICES: {
+    founders: 119,       // Founders Desk Edition, full price
+    voiceDeposit: 10,    // Voice Edition refundable deposit
+    voiceExpected: 149   // Voice Edition expected price
+  },
+  FOUNDERS_RANGE: "001–300",
+  VOICE_AI_MONTHS: 6,
+  SHIP: {                // estimated shipping, shown in Editions + FAQ
+    founders: { en: "spring 2027", ro: "primăvara 2027" },
+    voice:    { en: "autumn 2027", ro: "toamna 2027" }
+  },
+  CONTACT_EMAIL: "hello@suflet.example"
+};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --amoled:#000;
+  --hero-ink:#F6F3EC;
+  --hero-muted:#9EA2AA;
+  --bg:#FAF8F3;
+  --bg-alt:#F2EEE5;
+  --card:#FFFFFF;
+  --ink:#16181D;
+  --muted:#676B74;
+  --line:rgba(22,24,29,.12);
+  --line-strong:rgba(22,24,29,.28);
+  --cream:#FFF0C8;
+  --amber:#FFB347;
+  --mint:#C9F2E4;
+  --blush:#FF7A9A;
+  --accent-ink:#8A5300;
+  --mint-ink:#1D6A51;
+  --blush-ink:#B42F50;
+  --focus:#B86400;
+  --shadow:0 1px 2px rgba(22,24,29,.06),0 18px 50px -18px rgba(22,24,29,.22);
+  --f-display:"Fredoka",ui-rounded,"SF Pro Rounded","Arial Rounded MT Bold",system-ui,sans-serif;
+  --f-text:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#111113;--bg-alt:#18181B;--card:#1D1D21;--ink:#F3F0E9;--muted:#A3A7AF;
+    --line:rgba(255,255,255,.12);--line-strong:rgba(255,255,255,.3);
+    --accent-ink:#FFB347;--mint-ink:#C9F2E4;--blush-ink:#FF9BB3;--focus:#FFB347;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 18px 50px -18px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111113;--bg-alt:#18181B;--card:#1D1D21;--ink:#F3F0E9;--muted:#A3A7AF;
+  --line:rgba(255,255,255,.12);--line-strong:rgba(255,255,255,.3);
+  --accent-ink:#FFB347;--mint-ink:#C9F2E4;--blush-ink:#FF9BB3;--focus:#FFB347;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 18px 50px -18px rgba(0,0,0,.7);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 var(--f-text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:-.015em;line-height:1.02;overflow-wrap:break-word;hyphens:manual}
+p,ul,ol,dl,dd,figure,blockquote{margin:0}
+p{text-wrap:pretty}
+ul,ol{padding:0;list-style:none}
+a{color:inherit}
+img,video,svg,canvas{max-width:100%}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;left:16px;top:-60px;z-index:100;background:var(--cream);color:#16181D;padding:10px 16px;border-radius:12px;font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
+.wrap{max-width:1200px;margin-inline:auto;padding-inline:clamp(16px,4vw,48px)}
+.sec{padding-block:clamp(88px,11vw,160px)}
+.alt{background:var(--bg-alt)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+.eyebrow{font:600 .8125rem/1.2 var(--f-text);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.h-xl,.h-l,.h-m{font-family:var(--f-display);font-weight:600;text-wrap:balance}
+.h-xl{font-size:clamp(3.1rem,8.2vw,7.4rem);line-height:.94;letter-spacing:-.03em}
+.h-l{font-size:clamp(2.35rem,5.8vw,4.9rem);line-height:.99;letter-spacing:-.025em}
+.h-m{font-size:clamp(1.45rem,2.3vw,1.9rem);line-height:1.1;font-weight:600}
+.lead{font-size:clamp(1.12rem,1.6vw,1.38rem);line-height:1.45;color:var(--muted);max-width:40ch}
+.sec-head{display:grid;gap:18px;max-width:880px;margin-bottom:clamp(40px,6vw,72px)}
+.tag{display:inline-flex;align-items:center;gap:6px;width:fit-content;font:600 .78rem/1 var(--f-text);letter-spacing:.04em;padding:7px 11px;border-radius:999px;background:var(--bg-alt);color:var(--ink);border:1px solid var(--line)}
+.tag.mint{background:var(--mint);color:#16181D;border-color:transparent}
+.tag.amber{background:var(--amber);color:#16181D;border-color:transparent}
+.tag.cream{background:var(--cream);color:#16181D;border-color:transparent}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:50px;padding:0 1.5em;border-radius:999px;font:600 1rem/1 var(--f-text);text-decoration:none;border:1.5px solid transparent;cursor:pointer;transition:transform .15s ease,background-color .2s ease,border-color .2s ease;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--ink);color:var(--bg)}
+.btn-primary:hover{background:color-mix(in srgb,var(--ink) 86%,var(--amber))}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-sm{min-height:40px;padding:0 1.1em;font-size:.92rem}
+.btn-block{width:100%}
+
+/* nav */
+.nav{position:fixed;top:0;left:0;right:0;padding-top:env(safe-area-inset-top,0px);z-index:50;background:rgba(10,10,12,.8);-webkit-backdrop-filter:saturate(1.5) blur(18px);backdrop-filter:saturate(1.5) blur(18px);color:#F3F0E9;border-bottom:1px solid rgba(255,255,255,.08);--focus:#FFB347}
+.nav .wrap{display:flex;align-items:center;gap:14px;height:58px}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font:600 1.22rem/1 var(--f-display);letter-spacing:.06em}
+.brand-eyes{display:inline-flex;gap:4px;width:28px;height:28px;border-radius:50%;background:#000;align-items:center;justify-content:center;box-shadow:0 0 0 2px #d9dce2,0 0 12px rgba(255,240,200,.25)}
+.brand-eyes i{display:block;width:6px;height:10px;border-radius:50%;background:var(--cream);box-shadow:0 0 5px rgba(255,240,200,.8);clip-path:polygon(0 30%,100% 42%,100% 100%,0 100%)}
+.brand-eyes i+i{clip-path:polygon(0 42%,100% 30%,100% 100%,0 100%)}
+.nav-links{display:flex;gap:clamp(14px,2vw,26px);margin-left:auto;font-size:.92rem}
+.nav-links a{color:rgba(243,240,233,.74);text-decoration:none;padding-block:8px}
+.nav-links a:hover{color:#fff}
+.lang{display:inline-flex;border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:2px}
+.lang button{border:0;background:transparent;color:rgba(243,240,233,.8);font:600 .78rem/1 var(--f-text);letter-spacing:.06em;padding:8px 10px;border-radius:999px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:#F3F0E9;color:#16181D}
+.nav .btn{background:var(--cream);color:#16181D;min-height:38px;padding:0 1em;font-size:.9rem}
+@media (max-width:900px){.nav-links{display:none}.lang{margin-left:auto}}
+
+/* stone (the device) */
+.stone{position:relative;aspect-ratio:1/1;border-radius:50%;padding:6.6%;margin-inline:auto;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(closest-side,transparent 90%,rgba(255,255,255,.5) 94%,transparent 99%),radial-gradient(125% 125% at 30% 16%,#FFFFFF 0%,#EEF0F3 30%,#CDD1D8 62%,#A0A6B0 100%);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.95),inset 0 -10px 22px rgba(30,34,42,.28),0 26px 50px -16px rgba(22,24,29,.38),0 4px 10px rgba(22,24,29,.12)}
+.stone canvas{display:block;width:100%;height:100%;border-radius:50%;background:#000;box-shadow:0 0 0 2px #0b0c0f,0 0 0 4px rgba(255,255,255,.55);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.stone canvas[role="button"]{cursor:pointer}
+.stone::after{content:"";position:absolute;inset:6.6%;border-radius:50%;pointer-events:none;background:radial-gradient(70% 36% at 50% 5%,rgba(255,255,255,.15),transparent 72%)}
+
+/* hero */
+.hero{background:var(--amoled);color:var(--hero-ink);position:relative;overflow:hidden;--focus:#FFB347;padding-block:calc(58px + clamp(36px,6vw,80px)) clamp(72px,9vw,128px)}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(38% 55% at 74% 52%,rgba(255,240,200,.075),transparent 70%);pointer-events:none}
+.hero .wrap{position:relative;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-areas:"head stone" "copy stone";column-gap:clamp(32px,5vw,80px);row-gap:28px;align-items:end}
+.hero-head{grid-area:head;display:grid;gap:22px;align-self:end}
+.hero-copy{grid-area:copy;display:grid;gap:28px;align-self:start}
+.hero-stone{grid-area:stone;display:grid;gap:18px;justify-items:center;align-self:center}
+.hero .eyebrow{color:var(--cream);opacity:.85}
+.hero h1{font-size:clamp(3.3rem,7.8vw,7.2rem);line-height:.92;letter-spacing:-.035em}
+.hero h1 .glow{color:var(--cream);text-shadow:0 0 28px rgba(255,240,200,.55),0 0 80px rgba(255,240,200,.25)}
+.hero .lead{color:var(--hero-muted);max-width:34ch}
+.hero .lead strong{color:var(--hero-ink);font-weight:500}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.hero .btn-primary{background:var(--cream);color:#16181D}
+.hero .btn-primary:hover{background:#fff}
+.hero .btn-ghost{color:var(--hero-ink);border-color:rgba(255,255,255,.3)}
+.hero .btn-ghost:hover{border-color:#fff}
+.hero-meta{font-size:.9rem;color:var(--hero-muted);display:flex;flex-wrap:wrap;gap:6px 14px}
+.hero-meta b{color:var(--hero-ink);font-weight:600}
+.hero .stone{width:min(100%,460px);box-shadow:inset 0 2px 2px rgba(255,255,255,.95),inset 0 -10px 22px rgba(30,34,42,.3),0 0 140px -10px rgba(255,240,200,.26),0 0 40px rgba(255,240,200,.08)}
+.hint{font-size:.86rem;color:var(--hero-muted);text-align:center;max-width:36ch}
+@media (max-width:860px){
+  .hero .wrap{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stone" "copy";row-gap:36px}
+  .hero .stone{width:min(84vw,400px)}
+}
+
+/* thesis */
+.thesis .h-l{max-width:16ch}
+.thesis .h-l .dim{color:var(--muted);display:block}
+.thesis .h-l .full{display:block;margin-top:.12em}
+
+/* three in one */
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2vw,24px)}
+.trio-card{background:var(--card);border-radius:30px;padding:clamp(24px,3vw,36px);display:grid;gap:16px;align-content:start;box-shadow:var(--shadow)}
+.trio-card .stone{width:min(100%,200px);margin-bottom:10px}
+.trio-card p{color:var(--muted)}
+.trio-card .num{font:500 .82rem/1 var(--f-mono);color:var(--muted)}
+.reveal{text-align:center;display:grid;gap:18px;justify-items:center;padding-top:clamp(88px,11vw,150px)}
+.reveal .h-l{color:var(--muted)}
+.reveal .h-xl .glow{display:block;color:var(--ink)}
+.signature{margin-top:18px;font:500 clamp(1.1rem,1.8vw,1.4rem)/1.4 var(--f-display);display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px}
+.signature span{padding:6px 14px;border-radius:999px;background:var(--cream);color:#16181D}
+@media (max-width:900px){.trio{grid-template-columns:minmax(0,1fr)}.trio-card{grid-template-columns:120px minmax(0,1fr);column-gap:22px;align-items:start}.trio-card .stone{grid-row:span 4;width:120px;margin:0}}
+@media (max-width:480px){.trio-card{grid-template-columns:minmax(0,1fr)}.trio-card .stone{grid-row:auto;width:150px;margin-inline:0}}
+
+/* video grid */
+.vgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,1.6vw,20px)}
+.vgrid figure{display:grid;gap:12px}
+.vid{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:26px;background:#14161b;max-width:100%}
+.vgrid figcaption{font:500 1.06rem/1.25 var(--f-display);padding-inline:4px}
+@media (max-width:760px){.vgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.vid{border-radius:20px}.vgrid figcaption{font-size:.98rem}}
+
+/* split layouts */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(36px,6vw,96px);align-items:center}
+.split .vid{border-radius:32px}
+@media (max-width:860px){.split{grid-template-columns:minmax(0,1fr)}}
+.stack{display:grid;gap:22px;align-content:start}
+.bubbles{display:grid;gap:10px;margin-block:8px}
+.bubbles li{width:fit-content;max-width:100%;padding:11px 16px;border-radius:20px 20px 20px 6px;background:var(--card);box-shadow:var(--shadow);font-size:1rem}
+.bubbles li:nth-child(even){margin-left:clamp(12px,4vw,40px)}
+.privacy{display:flex;gap:14px;align-items:flex-start;padding:18px 20px;border-radius:20px;background:var(--mint);color:#16181D}
+.privacy svg{flex:none;margin-top:2px}
+.privacy p{font-weight:500}
+
+/* claude */
+.claude-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start}
+@media (max-width:860px){.claude-grid{grid-template-columns:minmax(0,1fr)}}
+.demo{background:#0C0D10;color:#F3F0E9;border-radius:34px;padding:clamp(22px,3vw,36px);display:grid;gap:18px;justify-items:center;text-align:center;--focus:#FFB347;box-shadow:var(--shadow)}
+.demo-top{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;font:500 .8rem/1.3 var(--f-mono);color:#9EA2AA;text-align:left}
+.demo-top .live{display:inline-flex;align-items:center;gap:8px;color:#F3F0E9;font-family:var(--f-text);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:.74rem}
+.demo-top .live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.demo .stone{width:min(100%,300px)}
+.term{width:100%;font:400 .86rem/1.5 var(--f-mono);background:#16181D;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 14px;text-align:left;color:#C9CCD2;min-height:3.2em;overflow-wrap:anywhere}
+.term b{color:var(--amber);font-weight:500}
+.term .ok{color:var(--mint)}
+.term .no{color:var(--blush)}
+.demo-hint{font:500 1rem/1.4 var(--f-display);color:#F3F0E9}
+.demo-kbd{font-size:.82rem;color:#9EA2AA}
+.steps{display:grid;gap:0;counter-reset:s}
+.steps li{display:grid;grid-template-columns:56px minmax(0,1fr);gap:4px 16px;padding-block:22px;border-top:1px solid var(--line)}
+.steps li:last-child{border-bottom:1px solid var(--line)}
+.steps .n{grid-row:span 2;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font:600 1.1rem/1 var(--f-display);background:var(--ink);color:var(--bg)}
+.steps li:nth-child(2) .n{background:var(--amber);color:#16181D}
+.steps li:nth-child(3) .n{background:var(--mint);color:#16181D}
+.steps h3{font-size:1.45rem}
+.steps p{color:var(--muted)}
+.claude-video{display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px;align-items:center;margin-top:28px}
+.claude-video .vid{border-radius:20px}
+.claude-video p{font-size:.95rem;color:var(--muted)}
+.compat{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+
+/* born */
+.born-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(36px,6vw,88px);align-items:center}
+@media (max-width:900px){.born-grid{grid-template-columns:minmax(0,1fr)}}
+.rbar{display:flex;gap:3px;height:26px;padding:5px;border-radius:999px;background:#000;margin-block:10px 18px}
+.rbar span{border-radius:999px;min-width:5px;box-shadow:0 0 10px color-mix(in srgb,var(--c) 60%,transparent);background:var(--c)}
+.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chip{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:2px 10px;padding:12px 14px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+.sw{display:inline-block;width:22px;height:22px;border-radius:50%;background:#000;position:relative;flex:none;box-shadow:0 0 0 2px #d9dce2}
+.sw::after{content:"";position:absolute;inset:6px 5px;border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c)}
+.chip .sw{grid-row:span 2}
+.chip b{font:600 1.02rem/1.1 var(--f-display)}
+.chip .pct{font:500 .9rem/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.chip .rar{grid-column:2 / 4;font-size:.8rem;color:var(--muted)}
+.born-note{margin-top:18px;color:var(--muted);font-size:.95rem}
+.cert{position:relative;background:var(--card);border-radius:28px;padding:clamp(22px,3vw,36px);box-shadow:var(--shadow);display:grid;gap:22px;overflow:hidden}
+.cert::before{content:"";position:absolute;inset:10px;border:1px solid var(--line);border-radius:20px;pointer-events:none}
+.cert-head{display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative}
+.cert-head > div{display:grid;gap:6px}
+.cert-title{font:600 clamp(1.4rem,2.4vw,1.85rem)/1.05 var(--f-display)}
+.cert-sub{font:500 .74rem/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cert-body{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:clamp(18px,3vw,30px);align-items:center;position:relative}
+.cert .stone{width:100%}
+.cert-fields{display:grid;gap:0}
+.cert-fields div{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;padding-block:9px;border-bottom:1px dashed var(--line);align-items:baseline}
+.cert-fields dt{font:600 .72rem/1.3 var(--f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cert-fields dd{font-weight:500;overflow-wrap:anywhere}
+.cert-fields dd.mono{font-size:.92rem;white-space:nowrap;overflow-wrap:normal}
+.cert-fields dd .sw{width:16px;height:16px;vertical-align:-3px;margin-right:6px}
+.cert-fields dd .sw::after{inset:4px 3px}
+.gloss{color:var(--muted);font-weight:400}
+.cert-words{position:relative;padding:18px 20px;border-radius:18px;background:#000;color:var(--cream)}
+.cert-words p:first-child{font:500 clamp(1.15rem,2vw,1.4rem)/1.3 var(--f-display);text-shadow:0 0 18px rgba(255,240,200,.35)}
+.cert-words .gloss{color:#9EA2AA;font-size:.9rem;margin-top:4px}
+.cert-foot{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;position:relative}
+.cert-foot .fine{font-size:.84rem;color:var(--muted);flex:1 1 200px}
+.seal{flex:none;width:76px;height:76px;opacity:.9;transform:rotate(-12deg);color:var(--accent-ink)}
+@media (max-width:520px){.cert-body{grid-template-columns:minmax(0,1fr)}.cert .stone{width:150px;margin-inline:0}.seal{width:64px;height:64px}}
+
+/* figures (renders + CAD) */
+.fig{display:grid;gap:12px;align-content:start;min-width:0}
+.shot{display:block;width:100%;height:auto;border-radius:30px;background:var(--bg-alt)}
+.cap{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:.92rem;line-height:1.45;color:var(--muted);max-width:78ch;padding-inline:4px}
+.cap>span:last-child{flex:1 1 22ch;min-width:0}
+.cap .kind{font:500 .66rem/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);padding:5px 8px;border-radius:999px;border:1px solid var(--line-strong);white-space:nowrap;transform:translateY(-1px)}
+.scene{margin-top:clamp(40px,6vw,72px)}
+.scene .shot,.charter-fig .shot{aspect-ratio:16/9;object-fit:cover}
+.charter-fig{margin-bottom:clamp(32px,5vw,56px)}
+#desk-render{object-position:0% 50%}
+@media (max-width:560px){.shot{border-radius:22px}.scene .shot,.charter-fig .shot{aspect-ratio:4/3}}
+
+/* design */
+.design-top{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,3fr);gap:clamp(16px,2.4vw,28px);align-items:start}
+@media (max-width:760px){.design-top{grid-template-columns:minmax(0,1fr)}}
+.design-row{margin-top:clamp(28px,4vw,48px)}
+.design-stage{border-radius:30px;background:radial-gradient(60% 70% at 50% 40%,var(--card),var(--bg-alt));overflow:hidden;display:grid;place-items:center;min-height:200px}
+.design-stage img{display:block;width:100%;height:auto}
+.fallback{width:100%;display:grid;place-items:center;padding:clamp(28px,5vw,64px) 16px}
+.fallback svg{width:min(100%,520px);height:auto}
+.lineup{border-radius:30px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+.lineup img{display:block;width:100%;height:auto}
+.inside{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:clamp(24px,5vw,72px);align-items:center}
+@media (max-width:760px){.inside{grid-template-columns:minmax(0,1fr)}.inside .fig{max-width:340px}}
+.plate{display:block;width:100%;height:auto;border-radius:24px;background:#F8F8F8;border:1px solid var(--line)}
+.inside-copy{display:grid;gap:16px;align-content:start;max-width:560px}
+.layers{display:grid;counter-reset:l;border-top:1px solid var(--line-strong)}
+.layers li{counter-increment:l;display:grid;grid-template-columns:2.2em minmax(0,1fr);column-gap:10px;padding-block:13px;border-bottom:1px solid var(--line)}
+.layers li::before{content:counter(l,decimal-leading-zero);font:500 .8rem/1.6 var(--f-mono);color:var(--muted);grid-row:span 2}
+.layers b{font:600 1.08rem/1.3 var(--f-display)}
+.layers span{color:var(--muted);font-size:.95rem}
+.inside-copy .fine{font-size:.86rem;color:var(--muted)}
+.shapes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,2vw,24px);padding:clamp(20px,3vw,40px) clamp(12px,2vw,32px);align-items:end}
+.shapes figure{display:grid;gap:10px;justify-items:center;text-align:center}
+.shapes svg{width:100%;height:auto;max-width:170px}
+.shapes b{font:600 1.08rem/1.1 var(--f-display)}
+.shapes span{font:400 .76rem/1.3 var(--f-mono);color:var(--muted)}
+@media (max-width:640px){.shapes{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:28px}}
+.specs{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.design-note{margin-top:18px;font-size:.88rem;color:var(--muted)}
+
+/* charter */
+.charter{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:clamp(24px,4vw,56px)}
+.charter li{display:grid;gap:8px;padding-block:26px 30px;border-top:1px solid var(--line-strong);align-content:start}
+.charter h3{font-size:clamp(1.25rem,1.9vw,1.5rem);line-height:1.15;display:flex;gap:10px;align-items:baseline}
+.charter h3::before{content:"";flex:none;width:12px;height:12px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px color-mix(in srgb,var(--mint) 40%,transparent);transform:translateY(-1px)}
+.charter p{color:var(--muted);padding-left:22px}
+@media (max-width:900px){.charter{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.charter{grid-template-columns:minmax(0,1fr)}}
+
+/* editions */
+.eds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2vw,22px);align-items:stretch}
+@media (max-width:980px){.eds{grid-template-columns:minmax(0,1fr);max-width:560px}}
+.ed{display:flex;flex-direction:column;gap:18px;padding:clamp(24px,3vw,34px);border-radius:30px;background:var(--card);border:1px solid var(--line)}
+.ed.feature{background:#0C0D10;color:#F3F0E9;border-color:transparent;--muted:#A3A7AF;--line:rgba(255,255,255,.12);--focus:#FFB347;box-shadow:var(--shadow)}
+.ed-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.ed h3{font-size:clamp(1.5rem,2.3vw,1.85rem)}
+.ed .desc{color:var(--muted)}
+.price{display:grid;gap:4px}
+.price .big{font:600 clamp(2.6rem,4.2vw,3.4rem)/1 var(--f-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.price .small{font-size:.92rem;color:var(--muted)}
+.ed ul{display:grid;gap:10px;font-size:.98rem}
+.ed li{position:relative;padding-left:22px}
+.ed li::before{content:"";position:absolute;left:2px;top:.62em;width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.55}
+.ed .push{margin-top:auto;display:grid;gap:10px}
+.ed .ship{font-size:.84rem;color:var(--muted)}
+.ed.feature .btn-primary{background:var(--cream);color:#16181D}
+.vat{margin-top:18px;font-size:.86rem;color:var(--muted)}
+
+/* faq */
+.faq-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(28px,6vw,96px);align-items:start}
+@media (max-width:860px){.faq-grid{grid-template-columns:minmax(0,1fr)}}
+.faq-grid .sec-head{position:sticky;top:96px;margin-bottom:0}
+@media (max-width:860px){.faq-grid .sec-head{position:static}}
+.faq details{border-top:1px solid var(--line)}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:18px;align-items:center;padding-block:22px;font:500 clamp(1.1rem,1.6vw,1.28rem)/1.3 var(--f-display)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"";flex:none;width:30px;height:30px;border-radius:50%;background:var(--bg-alt) no-repeat center/14px 14px;background-image:linear-gradient(var(--ink),var(--ink)),linear-gradient(var(--ink),var(--ink));background-size:14px 2px,2px 14px;transition:transform .25s ease}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq .a{padding:0 48px 24px 0;color:var(--muted);max-width:62ch}
+
+/* reserve */
+.reserve{background:var(--amoled);color:var(--hero-ink);--focus:#FFB347}
+.reserve-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(32px,6vw,88px);align-items:center}
+@media (max-width:860px){.reserve-card{grid-template-columns:minmax(0,1fr)}}
+.reserve .stone{width:min(100%,300px)}
+@media (max-width:860px){.reserve .stone{width:min(64vw,260px);margin-inline:0}}
+.reserve .lead{color:var(--hero-muted)}
+.reserve .eyebrow{color:var(--cream);opacity:.85}
+.form{display:grid;gap:16px;margin-top:10px}
+.field{display:grid;gap:8px}
+.field label{font-size:.88rem;font-weight:600;color:#D6D8DD}
+.input{width:100%;min-height:54px;padding:0 18px;border-radius:16px;border:1.5px solid rgba(255,255,255,.18);background:#101114;color:#F6F3EC;font-size:1rem;appearance:none;-webkit-appearance:none}
+.input:hover{border-color:rgba(255,255,255,.34)}
+.input:focus{border-color:var(--cream);outline:none;box-shadow:0 0 0 4px rgba(255,240,200,.18)}
+select.input{background-image:linear-gradient(45deg,transparent 50%,#C9CCD2 50%),linear-gradient(135deg,#C9CCD2 50%,transparent 50%);background-position:calc(100% - 22px) 50%,calc(100% - 16px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:44px}
+select.input option{background:#101114;color:#F6F3EC}
+.row2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px}
+@media (max-width:560px){.row2{grid-template-columns:minmax(0,1fr)}}
+.consent{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;align-items:start;font-size:.9rem;color:#C9CCD2}
+.consent input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--cream)}
+.consent a{color:var(--cream)}
+.form .btn-primary{background:var(--cream);color:#16181D;min-height:56px;font-size:1.05rem}
+.form .btn-primary:hover{background:#fff}
+.form-msg{min-height:1.4em;font-size:.92rem;color:var(--blush)}
+.form-fine{font-size:.82rem;color:#8C9098}
+.hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}
+.thanks{display:grid;gap:12px;padding:28px;border-radius:24px;background:#101114;border:1px solid rgba(255,240,200,.25)}
+.thanks h3{font-size:clamp(1.6rem,3vw,2.2rem);color:var(--cream)}
+.thanks p{color:#C9CCD2}
+
+/* footer */
+.foot{background:#0A0A0B;color:#9EA2AA;font-size:.86rem;padding-block:56px calc(40px + env(safe-area-inset-bottom,0px));--focus:#FFB347}
+.foot .wrap{display:grid;gap:26px}
+.foot-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:center;color:#F3F0E9}
+.foot-top .brand{font-size:1.1rem}
+.foot-links{display:flex;flex-wrap:wrap;gap:8px 20px}
+.foot-links a{color:#C9CCD2;text-decoration:none}
+.foot-links a:hover{color:#fff;text-decoration:underline}
+.legal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 40px;border-top:1px solid rgba(255,255,255,.1);padding-top:26px}
+@media (max-width:760px){.legal{grid-template-columns:minmax(0,1fr)}}
+.legal h4{margin:0 0 6px;font:600 .74rem/1.2 var(--f-text);letter-spacing:.12em;text-transform:uppercase;color:#C9CCD2}
+.legal p{line-height:1.6}
+.ph{color:#FFB347}
+.tm{border-top:1px solid rgba(255,255,255,.1);padding-top:22px;color:#8C9098;max-width:90ch}
+.email{user-select:all;-webkit-user-select:all;color:#F3F0E9;font-family:var(--f-mono);font-size:.84rem}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- shared SVG defs for the design fallback -->
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <linearGradient id="frost" gradientUnits="userSpaceOnUse" x1="-40" y1="-90" x2="40" y2="70">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#E3E6EA"/><stop offset="1" stop-color="#AEB4BE"/>
+    </linearGradient>
+    <filter id="eyeglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <symbol id="face" viewBox="-34 -34 68 68">
+      <circle r="34" fill="#000"/>
+      <g filter="url(#eyeglow)">
+        <ellipse cx="-12.9" cy="1.4" rx="8.2" ry="12.9" fill="#FFF0C8"/>
+        <ellipse cx="12.9" cy="1.4" rx="8.2" ry="12.9" fill="#FFF0C8"/>
+      </g>
+      <ellipse cx="-11.1" cy="-.2" rx="2.8" ry="5.9" fill="#fff" opacity=".45"/>
+      <ellipse cx="14.7" cy="-.2" rx="2.8" ry="5.9" fill="#fff" opacity=".45"/>
+      <path d="M-23 -7.9 L-3.6 -4.8 L-3.6 -22 L-23 -22 Z M3.6 -4.8 L23 -7.9 L23 -22 L3.6 -22 Z" fill="#000"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="SUFLET, back to top"><span class="brand-eyes" aria-hidden="true"><i></i><i></i></span>SUFLET</a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#three" data-i18n="nav.what">What it is</a>
+      <a href="#alive" data-i18n="nav.alive">Alive</a>
+      <a href="#claude" data-i18n="nav.claude">Claude</a>
+      <a href="#born" data-i18n="nav.born">Born</a>
+      <a href="#editions" data-i18n="nav.editions">Editions</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="ro" aria-pressed="false">RO</button>
+    </div>
+    <a class="btn" href="#reserve" data-i18n="nav.reserve">Reserve</a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- HERO -->
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="wrap">
+    <div class="hero-head">
+      <p class="eyebrow" data-i18n="hero.eyebrow">Every AI deserves a soul.</p>
+      <h1 id="hero-title" data-i18n="hero.h1">Your AI, <span class="glow">alive.</span></h1>
+    </div>
+    <div class="hero-stone">
+      <div class="stone"><canvas data-soul="hero" tabindex="0" role="button" data-i18n-attr="aria-label:hero.aria" aria-label="SUFLET's living eyes. Press Enter to boop it, press twice quickly to make it laugh."></canvas></div>
+      <p class="hint" data-i18n="hero.hint">Tap to boop. Double-tap to make it laugh. Leave it alone and it dozes off.</p>
+    </div>
+    <div class="hero-copy">
+      <p class="lead" data-i18n="hero.sub">A small frosted-glass stone with two living eyes. It breathes, blinks and looks back at you, with no internet at all. <strong>And it works with Claude.</strong></p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#reserve" data-edition="founders" data-i18n="hero.cta1">Reserve yours</a>
+        <a class="btn btn-ghost" href="#alive" data-i18n="hero.cta2">Watch it live</a>
+      </div>
+      <p class="hero-meta"><span data-i18n="hero.meta1"><b>Founders Desk Edition</b></span><span data-i18n="hero.meta2">numbered <span data-cfg="range">001–300</span></span><span><b data-price="founders">€119</b></span></p>
+    </div>
+  </div>
+</section>
+
+<!-- THESIS -->
+<section class="sec thesis" id="soul" aria-label="Thesis">
+  <div class="wrap">
+    <p class="h-l"><span class="dim" data-i18n="soul.brain">The AI labs make the brain.</span><span class="full" data-i18n="soul.body">We make the body and the soul.</span></p>
+  </div>
+</section>
+
+<!-- THREE IN ONE -->
+<section class="sec" id="three" aria-labelledby="three-title" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="three.eyebrow">Three things, one stone</p>
+      <h2 class="h-l" id="three-title" data-i18n="three.h2">Today, we're introducing three things.</h2>
+    </div>
+    <div class="trio">
+      <article class="trio-card">
+        <div class="stone"><canvas data-soul="alive" role="img" data-i18n-attr="aria-label:three.a1" aria-label="Eyes reacting on their own: happy, shy, dizzy, laughing."></canvas></div>
+        <span class="tag cream" data-i18n="three.c1tag">Offline, forever</span>
+        <h3 class="h-m" data-i18n="three.c1t">A companion that's alive.</h3>
+        <p data-i18n="three.c1p">It breathes, blinks and glances around. It gets shy, dizzy and sleepy, sneezes, and misses you. No internet. Forever.</p>
+      </article>
+      <article class="trio-card">
+        <div class="stone"><canvas data-soul="talk" role="img" data-i18n-attr="aria-label:three.a2" aria-label="Eyes listening, with a pulsing ring, then thinking."></canvas></div>
+        <span class="tag" data-i18n="three.c2tag">Voice Edition · in development</span>
+        <h3 class="h-m" data-i18n="three.c2t">A personal AI you can hold.</h3>
+        <p data-i18n="three.c2p">Hold a finger on the stone and talk. It answers with Claude or ChatGPT, remembers the people and plans in your life, keeps notes and reminders, wakes you up and writes a diary of your day.</p>
+      </article>
+      <article class="trio-card">
+        <div class="stone"><canvas data-soul="claude" role="img" data-i18n-attr="aria-label:three.a3" aria-label="Eyes reading while Claude works, then an amber ring when Claude asks for permission."></canvas></div>
+        <span class="tag amber" data-i18n="three.c3tag">Works with Claude</span>
+        <h3 class="h-m" data-i18n="three.c3t">A window into your AI's work.</h3>
+        <p data-i18n="three.c3p">Works with Claude Code and Claude Cowork on Mac and Windows. It looks busy while Claude works. When Claude needs permission, it looks at you. Hold to approve, double-tap to deny.</p>
+      </article>
+    </div>
+    <div class="reveal">
+      <p class="h-l" data-i18n="three.not">These are not three devices.</p>
+      <p class="h-xl" data-i18n="three.one">It's one. <span class="glow">And it's alive.</span></p>
+      <p class="signature" aria-label="Pick it up. The eyes find you. And blink."><span data-i18n="three.sig1">Pick it up.</span><span data-i18n="three.sig2">The eyes find you.</span><span data-i18n="three.sig3">And blink.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ALIVE GRID -->
+<section class="sec alt" id="alive" aria-labelledby="alive-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="alive.eyebrow">Alive without the cloud</p>
+      <h2 class="h-l" id="alive-title" data-i18n="alive.h2">24 reactions.<br>Zero internet.</h2>
+      <p class="lead" data-i18n="alive.lead">Everything you see runs on the stone itself. No account, no app, no servers. It keeps living even if the Wi-Fi never comes back.</p>
+    </div>
+    <ul class="vgrid">
+      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/idle.jpg" aria-hidden="true"><source src="media/idle.mp4" type="video/mp4"></video><figcaption data-i18n="cap.idle">Just hanging out</figcaption></figure></li>
+      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/boop.jpg" aria-hidden="true"><source src="media/boop.mp4" type="video/mp4"></video><figcaption data-i18n="cap.boop">Boop. Blush.</figcaption></figure></li>
+      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/purr.jpg" aria-hidden="true"><source src="media/purr.mp4" type="video/mp4"></video><figcaption data-i18n="cap.purr">Pet it. It purrs.</figcaption></figure></li>
+      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/dizzy.jpg" aria-hidden="true"><source src="media/dizzy.mp4" type="video/mp4"></video><figcaption data-i18n="cap.dizzy">Shake it. Dizzy.</figcaption></figure></li>
+      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/sleep.jpg" aria-hidden="true"><source src="media/sleep.mp4" type="video/mp4"></video><figcaption data-i18n="cap.sleep">Dozes off</figcaption></figure></li>
+      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/missed_you.jpg" aria-hidden="true"><source src="media/missed_you.mp4" type="video/mp4"></video><figcaption data-i18n="cap.missed">Missed you</figcaption></figure></li>
+      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/rare.jpg" aria-hidden="true"><source src="media/rare.mp4" type="video/mp4"></video><figcaption data-i18n="cap.rare">Rare moods</figcaption></figure></li>
+      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/night.jpg" aria-hidden="true"><source src="media/night.mp4" type="video/mp4"></video><figcaption data-i18n="cap.night">Night-light mode</figcaption></figure></li>
+    </ul>
+  </div>
+</section>
+
+<!-- HOLD TO TALK -->
+<section class="sec" id="talk" aria-labelledby="talk-title">
+  <div class="wrap split">
+    <video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/ai_talk.jpg" aria-hidden="true"><source src="media/ai_talk.mp4" type="video/mp4"></video>
+    <div class="stack">
+      <span class="tag" data-i18n="talk.badge">In development · Voice Edition</span>
+      <h2 class="h-l" id="talk-title" data-i18n="talk.h2">Hold to talk.</h2>
+      <p class="lead" data-i18n="talk.lead">Put a finger on the stone and speak. It answers with Claude, or ChatGPT if you prefer. It remembers the people and plans in your life.</p>
+      <ul class="bubbles" aria-label="Things you can say">
+        <li data-i18n="talk.b1">Remind me to call Mum on Sunday.</li>
+        <li data-i18n="talk.b2">What did Ana say about the trip?</li>
+        <li data-i18n="talk.b3">Wake me at seven. Gently.</li>
+        <li data-i18n="talk.b4">How was my day?</li>
+      </ul>
+      <div class="privacy">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Zm-7 10a7 7 0 0 0 14 0M12 19v3" fill="none" stroke="#16181D" stroke-width="2" stroke-linecap="round"/></svg>
+        <p data-i18n="talk.privacy">It listens only while your finger is on the stone. Lift it, and the microphone is off.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKS WITH CLAUDE -->
+<section class="sec alt" id="claude" aria-labelledby="claude-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="claude.eyebrow">Works with Claude</p>
+      <h2 class="h-l" id="claude-title" data-i18n="claude.h2">It keeps an eye on Claude. So you don't have to.</h2>
+      <p class="lead" data-i18n="claude.lead">Pairs over Bluetooth with the Claude desktop apps on Mac and Windows, for Claude Code and Claude Cowork.</p>
+    </div>
+    <div class="claude-grid">
+      <div class="demo">
+        <div class="demo-top"><span class="live" data-i18n="claude.try">Try it</span><span>claude · desktop</span></div>
+        <div class="stone"><canvas data-soul="demo" tabindex="0" role="button" aria-describedby="demo-term" data-i18n-attr="aria-label:claude.aria" aria-label="Permission demo. Hold Space or Enter to approve, press Escape to deny."></canvas></div>
+        <p class="term" id="demo-term" aria-live="polite">claude › working on <b>src/app.ts</b>…</p>
+        <p class="demo-hint" data-i18n="claude.hint">Hold the stone to approve. Double-tap to deny.</p>
+        <p class="demo-kbd" data-i18n="claude.kbd">Keyboard: hold Space to approve, Esc to deny.</p>
+      </div>
+      <div>
+        <ol class="steps">
+          <li><span class="n" aria-hidden="true">1</span><h3 data-i18n="claude.s1t">Claude works.</h3><p data-i18n="claude.s1p">Your stone looks busy and reads along.</p></li>
+          <li><span class="n" aria-hidden="true">2</span><h3 data-i18n="claude.s2t">Claude asks.</h3><p data-i18n="claude.s2p">When Claude needs permission, a warm amber ring lights up and the eyes look at you.</p></li>
+          <li><span class="n" aria-hidden="true">3</span><h3 data-i18n="claude.s3t">You decide.</h3><p data-i18n="claude.s3p">Hold 1.2 seconds to approve. Double-tap to deny. No window switching.</p></li>
+        </ol>
+        <div class="claude-video">
+          <video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/claude_buddy.jpg" aria-hidden="true"><source src="media/claude_buddy.mp4" type="video/mp4"></video>
+          <p data-i18n="claude.video">The real firmware: busy, asking, approved. Recorded from the simulator of the 466 × 466 AMOLED screen.</p>
+        </div>
+        <div class="compat"><span class="tag">Claude Code</span><span class="tag">Claude Cowork</span><span class="tag">macOS</span><span class="tag">Windows</span><span class="tag">Bluetooth LE</span></div>
+      </div>
+    </div>
+    <figure class="fig scene">
+      <img class="shot" id="desk-render" src="media/render-desk.jpg" srcset="media/render-desk-sm.jpg 800w, media/render-desk.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of a SUFLET Coin on a small walnut stand beside an open laptop, its glowing eyes looking up." data-i18n-attr="alt:claude.alt">
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="claude.cap">On its stand next to your laptop. While Claude works, you can look away. When Claude needs you, the stone looks at you.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- BORN -->
+<section class="sec" id="born" aria-labelledby="born-title">
+  <div class="wrap born-grid">
+    <div>
+      <div class="sec-head" style="margin-bottom:28px">
+        <p class="eyebrow" data-i18n="born.eyebrow">Born, not manufactured</p>
+        <h2 class="h-l" id="born-title" data-i18n="born.h2">No two are the same.</h2>
+        <p class="lead" data-i18n="born.lead">At first power-on, each SUFLET is born from its chip's unique ID. Its personality, eye colour and the shape of its gaze stay with it for life. Nobody chooses them. Not even us.</p>
+      </div>
+      <div class="rbar" role="img" data-i18n-attr="aria-label:born.bar" aria-label="Eye colour odds: Cream 58%, Ice 16%, Mint 10%, Peach 9%, Lilac 6%, Gold 1%.">
+        <span style="--c:#FFF0C8;flex:58"></span><span style="--c:#D8F0FF;flex:16"></span><span style="--c:#D2FFE6;flex:10"></span><span style="--c:#FFDCC8;flex:9"></span><span style="--c:#E6DAFF;flex:6"></span><span style="--c:#FFD76B;flex:1"></span>
+      </div>
+      <ul class="chips">
+        <li class="chip"><span class="sw" style="--c:#FFF0C8"></span><b data-i18n="t.cream">Cream</b><span class="pct">58%</span><span class="rar" data-i18n="r.common">Common</span></li>
+        <li class="chip"><span class="sw" style="--c:#D8F0FF"></span><b data-i18n="t.ice">Ice</b><span class="pct">16%</span><span class="rar" data-i18n="r.common2">Common</span></li>
+        <li class="chip"><span class="sw" style="--c:#D2FFE6"></span><b data-i18n="t.mint">Mint</b><span class="pct">10%</span><span class="rar" data-i18n="r.rare">Rare</span></li>
+        <li class="chip"><span class="sw" style="--c:#FFDCC8"></span><b data-i18n="t.peach">Peach</b><span class="pct">9%</span><span class="rar" data-i18n="r.rare2">Rare</span></li>
+        <li class="chip"><span class="sw" style="--c:#E6DAFF"></span><b data-i18n="t.lilac">Lilac</b><span class="pct">6%</span><span class="rar" data-i18n="r.veryrare">Very rare</span></li>
+        <li class="chip"><span class="sw" style="--c:#FFD76B"></span><b data-i18n="t.gold">Gold</b><span class="pct">1%</span><span class="rar" data-i18n="r.legendary">Legendary</span></li>
+      </ul>
+      <p class="born-note" data-i18n="born.note">Rarity changes only the colour. Every SUFLET has the same 24 reactions and the same features.</p>
+    </div>
+
+    <article class="cert" aria-labelledby="cert-title">
+      <div class="cert-head">
+        <div><p class="cert-title" id="cert-title" data-i18n="cert.title">Birth certificate</p>
+        <p class="cert-sub" data-i18n="cert.sub">Certificat de naștere</p></div>
+      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="sealpath" d="M50 50 m-36 0 a36 36 0 1 1 72 0 a36 36 0 1 1 -72 0"/></defs><circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" stroke-width="1"/><text font-family="JetBrains Mono,monospace" font-size="8.6" letter-spacing="1.6" fill="currentColor"><textPath href="#sealpath">SUFLET · BUCUREȘTI · MMXXVI ·</textPath></text><ellipse cx="42" cy="51" rx="4" ry="7" fill="currentColor"/><ellipse cx="58" cy="51" rx="4" ry="7" fill="currentColor"/></svg>
+      </div>
+      <div class="cert-body">
+        <div class="stone"><canvas data-soul="cert" role="img" id="cert-canvas" aria-label="Mira's eyes"></canvas></div>
+        <dl class="cert-fields">
+          <div><dt data-i18n="cert.name">Name</dt><dd id="c-name">Mira</dd></div>
+          <div><dt data-i18n="cert.arche">Archetype</dt><dd id="c-arche">Curiosul <span class="gloss">· the curious one</span></dd></div>
+          <div><dt data-i18n="cert.eyes">Eyes</dt><dd id="c-eyes"><span class="sw" style="--c:#D2FFE6"></span>Mint · Rare</dd></div>
+          <div><dt data-i18n="cert.born">Born</dt><dd id="c-born" class="mono">24.09.2026</dd></div>
+          <div><dt data-i18n="cert.chip">Chip ID</dt><dd id="c-chip" class="mono">34:85:18:6A:C2:9F</dd></div>
+        </dl>
+      </div>
+      <blockquote class="cert-words">
+        <p id="c-words">„Salut! Sunt Mira, un mic suflet AI.”</p>
+        <p class="gloss" id="c-gloss">First words. “Hi! I'm Mira, a little AI soul.”</p>
+      </blockquote>
+      <div class="cert-foot">
+        <button class="btn btn-ghost btn-sm" type="button" id="hatch" data-i18n="cert.hatch">Hatch another</button>
+        <p class="fine" data-i18n="cert.sample">Sample certificate. Yours is issued the moment yours is born.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- DESIGN (renders slot) -->
+<section class="sec alt" id="design" aria-labelledby="design-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="design.eyebrow">Design</p>
+      <h2 class="h-l" id="design-title" data-i18n="design.h2">A little stone of light.</h2>
+      <p class="lead" data-i18n="design.lead">A round AMOLED screen, 466 × 466 pixels, inside a frosted shell. Wear it on your bag or keep it on your desk. Four shapes. One soul.</p>
+    </div>
+    <!-- RENDERS: media/render-*.jpg come from ../renders via `python3 ../renders/src/export_web.py`. If the hero or lineup image is missing, the SVG fallback next to it is shown. -->
+    <div class="design-top">
+      <figure class="fig">
+        <div class="design-stage">
+          <img id="hero-render" src="media/render-hero.jpg" srcset="media/render-hero-sm.jpg 800w, media/render-hero.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 680px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render of SUFLET: a frosted white coin-shaped stone with two glowing cream eyes and a steel split ring." data-i18n-attr="alt:design.alt1" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+          <div class="fallback" hidden>
+            <svg viewBox="-80 -80 160 150" role="img" aria-label="Coin-shaped SUFLET on a dome desk stand">
+              <ellipse cx="0" cy="66" rx="58" ry="4" fill="#000" opacity=".12"/>
+              <path d="M-44 66 A44 38 0 0 1 44 66 Z" fill="#EDE7DA" stroke="rgba(22,24,29,.14)"/>
+              <circle cx="0" cy="-4" r="54" fill="url(#frost)" stroke="rgba(22,24,29,.16)"/>
+              <circle cx="0" cy="-4" r="54" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5" transform="translate(-1 -1)"/>
+              <use href="#face" x="-35" y="-39" width="70" height="70"/>
+              <circle cx="0" cy="-61" r="4" fill="none" stroke="#B5BAC3" stroke-width="3"/>
+            </svg>
+          </div>
+        </div>
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap1">The Coin in white frost, with a split ring for your keys.</span></figcaption>
+      </figure>
+      <figure class="fig">
+        <img class="shot" id="bag-render" src="media/render-bag.jpg" srcset="media/render-bag-sm.jpg 480w, media/render-bag.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 410px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of a sea-green SUFLET Drop hanging on a short chain from the handle of a brown leather bag." data-i18n-attr="alt:design.alt3">
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap3">The Drop, on a bag handle.</span></figcaption>
+      </figure>
+    </div>
+    <figure class="fig design-row">
+      <div class="lineup">
+        <img id="lineup-render" src="media/render-lineup.jpg" srcset="media/render-lineup-sm.jpg 800w, media/render-lineup.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="800" loading="lazy" decoding="async" alt="Concept render of the four SUFLET shapes side by side: cloud, coin, cabochon and drop, each with a different eye colour." data-i18n-attr="alt:design.alt2" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+        <div class="shapes" hidden>
+          <figure>
+            <svg viewBox="-75 -90 150 155" aria-hidden="true"><circle cx="0" cy="13.8" r="46.2" fill="url(#frost)" stroke="rgba(22,24,29,.18)"/><use href="#face" x="-29" y="-15.2" width="58" height="58"/></svg>
+            <figcaption><b data-i18n="design.coin">Coin</b><br><span>57.8 × 57.8 mm</span></figcaption>
+          </figure>
+          <figure>
+            <svg viewBox="-75 -90 150 155" aria-hidden="true"><path d="M0 -78 C10 -60 41 -10 41 19 A41 41 0 1 1 -41 19 C-41 -10 -10 -60 0 -78 Z" fill="url(#frost)" stroke="rgba(22,24,29,.18)"/><use href="#face" x="-29" y="-10" width="58" height="58"/></svg>
+            <figcaption><b data-i18n="design.drop">Drop</b><br><span>51.5 × 86.0 mm</span></figcaption>
+          </figure>
+          <figure>
+            <svg viewBox="-75 -90 150 155" aria-hidden="true"><ellipse cx="0" cy="8.5" rx="40.6" ry="51.5" fill="url(#frost)" stroke="rgba(22,24,29,.18)"/><use href="#face" x="-29" y="-23.5" width="58" height="58"/></svg>
+            <figcaption><b data-i18n="design.gem">Cabochon</b><br><span>50.7 × 64.4 mm</span></figcaption>
+          </figure>
+          <figure>
+            <svg viewBox="-75 -90 150 155" aria-hidden="true"><g fill="url(#frost)" style="filter:drop-shadow(0 0 .6px rgba(22,24,29,.5))"><circle cx="-40" cy="30" r="30"/><circle cx="40" cy="30" r="30"/><circle cx="-16" cy="8" r="36"/><circle cx="14" cy="-3" r="38"/><rect x="-40" y="20" width="80" height="40"/></g><use href="#face" x="-29" y="-15" width="58" height="58"/></svg>
+            <figcaption><b data-i18n="design.cloud">Cloud</b><br><span>87.6 × 63.0 mm</span></figcaption>
+          </figure>
+        </div>
+      </div>
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap2">Cloud, Coin, Cabochon, Drop. The eyes here are Cream, Lilac, Ice and Peach.</span></figcaption>
+    </figure>
+    <div class="inside design-row">
+      <figure class="fig">
+        <img class="plate" id="inside-render" src="media/render-inside.jpg" srcset="media/render-inside-sm.jpg 469w, media/render-inside.jpg 938w" sizes="340px" width="938" height="1172" loading="lazy" decoding="async" alt="Exploded CAD view of the 1.43-inch Coin: clear dome lens, frosted shell, round AMOLED board and back cover." data-i18n-attr="alt:design.alt4">
+        <figcaption class="cap"><span class="kind">CAD</span><span data-i18n="design.cap4">1.43″ Coin, taken apart.</span></figcaption>
+      </figure>
+      <div class="inside-copy">
+        <p class="eyebrow" data-i18n="in.eyebrow">Inside</p>
+        <h3 class="h-m" data-i18n="in.h">Opens with three screws. No glue.</h3>
+        <ol class="layers">
+          <li><b data-i18n="in.l1b">Dome lens</b><span data-i18n="in.l1">Optional. Clear, over the screen glass.</span></li>
+          <li><b data-i18n="in.l2b">Frosted shell</b><span data-i18n="in.l2">Holds the glass. The key-ring cap sits on top.</span></li>
+          <li><b data-i18n="in.l3b">Round AMOLED board</b><span data-i18n="in.l3">1.43″, 466 × 466 pixels, ESP32-S3 on the back.</span></li>
+          <li><b data-i18n="in.l4b">Back cover</b><span data-i18n="in.l4">Three M2 screws into threaded inserts, so it can be opened and repaired.</span></li>
+        </ol>
+        <p class="fine" data-i18n="in.fine">Founders Desk build: USB-C power, no battery, 57.8 × 57.8 × 17.0 mm without the lens. From the enclosure CAD, measured against Waveshare's 3D files of the board.</p>
+      </div>
+    </div>
+    <div class="specs"><span class="tag">1.43″ / 1.75″ AMOLED</span><span class="tag">466 × 466 px</span><span class="tag">ESP32-S3</span><span class="tag">USB-C</span><span class="tag" data-i18n="design.depth">From 17 mm thin</span></div>
+    <p class="design-note" data-i18n="design.note">Concept renders, not photos. Final materials and finishes may change before production.</p>
+  </div>
+</section>
+
+<!-- CHARTER -->
+<section class="sec" id="charter" aria-labelledby="charter-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="charter.eyebrow">Companion Charter</p>
+      <h2 class="h-l" id="charter-title" data-i18n="charter.h2">Our promises, in writing.</h2>
+    </div>
+    <figure class="fig charter-fig">
+      <img class="shot" id="night-render" src="media/render-night.jpg" srcset="media/render-night-sm.jpg 800w, media/render-night.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of a SUFLET Coin glowing warm amber on a dark bedside table at night." data-i18n-attr="alt:charter.alt">
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="charter.cap">By the bed at night it is a warm night-light. It has no camera, and it never listens unless your finger is on it.</span></figcaption>
+    </figure>
+    <ul class="charter">
+      <li><h3 data-i18n="ch1t">It always says it's an AI.</h3><p data-i18n="ch1p">It never pretends to be a person.</p></li>
+      <li><h3 data-i18n="ch2t">It listens only while you hold it.</h3><p data-i18n="ch2p">No wake word. No microphone that's always on.</p></li>
+      <li><h3 data-i18n="ch3t">No camera.</h3><p data-i18n="ch3p">Not in the first editions. Nothing watches you.</p></li>
+      <li><h3 data-i18n="ch4t">It never guilt-trips you.</h3><p data-i18n="ch4p">No “don't leave me”, no streaks, no sulking for attention.</p></li>
+      <li><h3 data-i18n="ch5t">No romantic mode.</h3><p data-i18n="ch5p">A friend on your desk. Not a partner.</p></li>
+      <li><h3 data-i18n="ch6t">Memory you can read and delete.</h3><p data-i18n="ch6p">Everything it remembers about you, in plain words, one tap from gone.</p></li>
+      <li><h3 data-i18n="ch7t">EU servers.</h3><p data-i18n="ch7p">Our voice and memory servers are in the European Union.</p></li>
+      <li><h3 data-i18n="ch8t">It never becomes a brick.</h3><p data-i18n="ch8p">It's alive with no cloud. If our company ever disappears, we publish the firmware.</p></li>
+      <li><h3 data-i18n="ch9t">For ages 16+. Not a toy.</h3><p data-i18n="ch9p">Designed for adults and older teens.</p></li>
+    </ul>
+  </div>
+</section>
+
+<!-- EDITIONS -->
+<section class="sec alt" id="editions" aria-labelledby="ed-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="ed.eyebrow">Editions</p>
+      <h2 class="h-l" id="ed-title" data-i18n="ed.h2">Choose your first soul.</h2>
+    </div>
+    <div class="eds">
+      <article class="ed feature" aria-labelledby="ed-f">
+        <div class="ed-top"><span class="tag amber" data-i18n="ed.f.tag">Works with Claude</span><span class="mono" style="font-size:.84rem;color:var(--muted)">Nº <span data-cfg="range">001–300</span></span></div>
+        <h3 id="ed-f">Founders Desk Edition</h3>
+        <p class="desc" data-i18n="ed.f.desc">The USB-powered desk companion. Numbered, and only 300 of them.</p>
+        <div class="price"><span class="big" data-price="founders">€119</span><span class="small" data-i18n="ed.f.small">One-time. No subscription to be alive.</span></div>
+        <ul>
+          <li data-i18n="ed.f.l1">1.43″ round AMOLED stone on a desk stand</li>
+          <li data-i18n="ed.f.l2">Works with Claude Code and Claude Cowork on Mac and Windows</li>
+          <li data-i18n="ed.f.l3">All 24 reactions, offline, forever</li>
+          <li data-i18n="ed.f.l4">Your own founder number and a birth certificate in the box</li>
+        </ul>
+        <div class="push">
+          <a class="btn btn-primary btn-block" href="#reserve" data-edition="founders" data-i18n="ed.f.cta">Reserve a number</a>
+          <p class="ship"><span data-i18n="ed.est">Estimated shipping:</span> <span data-cfg="shipFounders">spring 2027</span></p>
+        </div>
+      </article>
+      <article class="ed" aria-labelledby="ed-v">
+        <div class="ed-top"><span class="tag mint" data-i18n="ed.v.tag">Hold-to-talk AI · in development</span></div>
+        <h3 id="ed-v">Voice Edition</h3>
+        <p class="desc" data-i18n="ed.v.desc">The personal AI you can hold. Runs on a battery and hangs from your bag.</p>
+        <div class="price"><span class="big" data-price="voiceDeposit">€10</span><span class="small"><span data-i18n="ed.v.small">Refundable deposit. Expected price</span> <b data-price="voiceExpected">€149</b>.</span></div>
+        <ul>
+          <li data-i18n="ed.v.l1">1.75″ round AMOLED, two microphones and a speaker</li>
+          <li data-i18n="ed.v.l2">Hold to talk with Claude or ChatGPT</li>
+          <li data-i18n="ed.v.l3">Memory, notes, reminders, alarms and a diary of your day</li>
+          <li data-i18n="ed.v.l4"><span data-cfg="months">6</span> months of voice AI included</li>
+        </ul>
+        <div class="push">
+          <a class="btn btn-primary btn-block" href="#reserve" data-edition="voice" data-i18n="ed.v.cta">Reserve with a deposit</a>
+          <p class="ship"><span data-i18n="ed.est2">Estimated shipping:</span> <span data-cfg="shipVoice">autumn 2027</span></p>
+        </div>
+      </article>
+      <article class="ed" aria-labelledby="ed-l">
+        <div class="ed-top"><span class="tag" data-i18n="ed.l.tag">Later</span></div>
+        <h3 id="ed-l" data-i18n="ed.l.name">Legendary Editions</h3>
+        <p class="desc" data-i18n="ed.l.desc">Limited-edition shells in tiny numbered runs, for the ones who collect.</p>
+        <div class="price"><span class="big">—</span><span class="small" data-i18n="ed.l.small">Price announced with the first run.</span></div>
+        <ul>
+          <li data-i18n="ed.l.l1">Special shell materials and finishes</li>
+          <li data-i18n="ed.l.l2">Very small, numbered runs</li>
+          <li data-i18n="ed.l.l3">Same soul inside</li>
+        </ul>
+        <div class="push">
+          <a class="btn btn-ghost btn-block" href="#reserve" data-edition="legendary" data-i18n="ed.l.cta">Tell me first</a>
+        </div>
+      </article>
+    </div>
+    <p class="vat" data-i18n="ed.vat">Prices include VAT. Nothing is charged on this page: we email you a secure payment link when reservations open.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec" id="faq" aria-labelledby="faq-title">
+  <div class="wrap faq-grid">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="faq.eyebrow">Questions</p>
+      <h2 class="h-l" id="faq-title" data-i18n="faq.h2">Good questions.</h2>
+    </div>
+    <div class="faq">
+      <details><summary data-i18n="q1">When will it ship?</summary><div class="a" data-i18n="a1">Founders Desk Edition: estimated <span data-cfg="shipFounders">spring 2027</span>. Voice Edition: estimated <span data-cfg="shipVoice">autumn 2027</span>. If we're late, you can cancel for a full refund at any time before it ships. After delivery you have the EU 14-day right of withdrawal and a 2-year legal guarantee.</div></details>
+      <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">No. SUFLET is alive with no internet and no account, forever. The Voice Edition includes <span data-cfg="months">6</span> months of voice AI. After that, an optional plan keeps the voice features on. Without it, your SUFLET stays a full offline companion.</div></details>
+      <details><summary data-i18n="q3">Which AI does it use?</summary><div class="a" data-i18n="a3">For voice conversations (Voice Edition, in development): Claude by default, or ChatGPT if you prefer. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so the stone can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
+      <details><summary data-i18n="q4">Does it need my phone or computer?</summary><div class="a" data-i18n="a4">Not to be alive. To work with Claude, it pairs over Bluetooth with the Claude desktop app on your Mac or Windows PC.</div></details>
+      <details><summary data-i18n="q5">How long does the battery last?</summary><div class="a" data-i18n="a5">The Founders Desk Edition has no battery: it runs on USB-C. The Voice Edition has a small, user-replaceable battery that charges over USB-C. We'll publish measured battery life before we ask for full payment.</div></details>
+      <details><summary data-i18n="q6">Is it a toy?</summary><div class="a" data-i18n="a6">No. SUFLET is made for adults and teens 16 and over. It contains small parts and, in the Voice Edition, a lithium battery. Keep it away from young children.</div></details>
+      <details><summary data-i18n="q7">What happens to my voice and my data?</summary><div class="a" data-i18n="a7">It listens only while your finger is on the stone. Voice requests go to servers in the EU and to the AI you chose, and nowhere else. Its memory is a list you can read and delete. No camera, no ads, and we never sell your data.</div></details>
+      <details><summary data-i18n="q8">Can I choose its eye colour?</summary><div class="a" data-i18n="a8">No, and that's the point. Each stone is born with its own colour and personality, decided by its chip. Every colour has the same features: rarity changes only the colour.</div></details>
+      <details><summary data-i18n="q9">What if your company disappears?</summary><div class="a" data-i18n="a9">Your SUFLET keeps living, because its personality runs on the device. We'll also publish the firmware, so it never becomes a brick.</div></details>
+      <details><summary data-i18n="q10">Where is it made?</summary><div class="a" data-i18n="a10">Designed in Bucharest, Romania. We'll name our manufacturing partner before we ask for full payment.</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- RESERVE -->
+<section class="sec reserve" id="reserve" aria-labelledby="res-title">
+  <div class="wrap reserve-card">
+    <div class="stone"><canvas data-soul="reserve" aria-hidden="true"></canvas></div>
+    <div>
+      <div class="sec-head" style="margin-bottom:24px">
+        <p class="eyebrow" data-i18n="res.eyebrow">Reserve</p>
+        <h2 class="h-l" id="res-title" data-i18n="res.h2">Be there when it opens its eyes.</h2>
+        <p class="lead" data-i18n="res.lead">Leave your email. We'll write when reservations open, before anyone else.</p>
+      </div>
+      <form class="form" id="waitlist" novalidate>
+        <div class="row2">
+          <div class="field">
+            <label for="wl-email" data-i18n="res.email">Email</label>
+            <input class="input" id="wl-email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com" aria-describedby="wl-msg">
+          </div>
+          <div class="field">
+            <label for="wl-edition" data-i18n="res.edition">Edition</label>
+            <select class="input" id="wl-edition" name="edition">
+              <option value="founders" data-i18n="res.o1">Founders Desk Edition</option>
+              <option value="voice" data-i18n="res.o2">Voice Edition</option>
+              <option value="legendary" data-i18n="res.o3">Legendary Editions</option>
+              <option value="unsure" data-i18n="res.o4">Not sure yet</option>
+            </select>
+          </div>
+        </div>
+        <div class="hp" aria-hidden="true"><label for="wl-web">Website</label><input id="wl-web" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+        <label class="consent" for="wl-consent"><input id="wl-consent" name="consent" type="checkbox" required><span data-i18n="res.consent">I agree to receive emails about SUFLET and can unsubscribe at any time. Read the <a href="#privacy">Privacy Policy</a>.</span></label>
+        <p class="form-msg" id="wl-msg" role="alert"></p>
+        <button class="btn btn-primary" type="submit" id="wl-submit" data-i18n="res.submit">Join the list</button>
+        <p class="form-fine" data-i18n="res.fine">Nothing is charged here. The Voice Edition deposit is paid later, through a secure link, and is fully refundable.</p>
+      </form>
+      <div class="thanks" id="wl-thanks" hidden tabindex="-1">
+        <h3 data-i18n="res.th">You're on the list.</h3>
+        <p data-i18n="res.tp">We'll write before anyone else. Your SUFLET will be born soon.</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot" id="legal">
+  <div class="wrap">
+    <div class="foot-top">
+      <a class="brand" href="#top"><span class="brand-eyes" aria-hidden="true"><i></i><i></i></span>SUFLET</a>
+      <nav class="foot-links" aria-label="Legal">
+        <a href="#privacy" id="privacy" data-i18n="f.privacy">Privacy Policy</a>
+        <a href="#terms" id="terms" data-i18n="f.terms">Terms of Sale</a>
+        <a href="#cookies" id="cookies" data-i18n="f.cookies">Cookies</a>
+        <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">ANPC · SAL</a>
+      </nav>
+    </div>
+    <div class="legal">
+      <div>
+        <h4 data-i18n="f.seller">Seller</h4>
+        <p><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span><br><span data-i18n="f.addr">Address:</span> <span class="ph">[street, number, Bucharest, Romania]</span><br>CUI: <span class="ph">[RO00000000]</span> · Reg. Com.: <span class="ph">[J40/0000/2026]</span><br><span data-i18n="f.contact">Contact:</span> <span class="email" data-cfg="email">hello@suflet.example</span></p>
+      </div>
+      <div>
+        <h4 data-i18n="f.gpsr">Manufacturer (GPSR)</h4>
+        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SUFLET, models <span class="ph">[SF-143]</span> Founders Desk Edition and <span class="ph">[SF-175]</span> Voice Edition. Not a toy. For ages 16+. Voice Edition contains a lithium battery.</p>
+      </div>
+    </div>
+    <p class="tm" data-i18n="f.tm">Claude is a trademark of Anthropic. SUFLET is independent and not affiliated with or endorsed by Anthropic. 'Works with Claude' uses the Hardware Buddy developer API of the Claude desktop apps. ChatGPT is a trademark of OpenAI; SUFLET is not affiliated with OpenAI.</p>
+    <p data-i18n="f.made">© 2026 SUFLET. Designed in Bucharest.</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+"use strict";
+const CFG = window.SUFLET_CONFIG || {};
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+};
+
+/* ------------------------------------------------------------------ i18n */
+const RO = {
+  "skip": "Sari la conținut",
+  "nav.what": "Ce este", "nav.alive": "Viu", "nav.claude": "Claude", "nav.born": "Născut", "nav.editions": "Ediții", "nav.faq": "Întrebări", "nav.reserve": "Rezervă",
+  "hero.eyebrow": "Orice AI merită un suflet.",
+  "hero.h1": "AI-ul tău, <span class=\"glow\">viu.</span>",
+  "hero.aria": "Ochii vii ai lui SUFLET. Apasă Enter ca să-l atingi, apasă de două ori repede ca să râdă.",
+  "hero.hint": "Atinge-l. Atinge-l de două ori și râde. Lasă-l în pace și ațipește.",
+  "hero.sub": "O mică piatră de sticlă mată cu doi ochi vii. Respiră, clipește și se uită înapoi la tine, fără pic de internet. <strong>Și lucrează cu Claude.</strong>",
+  "hero.cta1": "Rezervă-l", "hero.cta2": "Vezi-l în acțiune",
+  "hero.meta1": "<b>Founders Desk Edition</b>", "hero.meta2": "numerotat <span data-cfg=\"range\">001–300</span>",
+  "soul.brain": "Laboratoarele de AI fac creierul.", "soul.body": "Noi facem corpul și sufletul.",
+  "three.eyebrow": "Trei lucruri, o singură piatră",
+  "three.h2": "Azi vă prezentăm trei lucruri.",
+  "three.a1": "Ochi care reacționează singuri: fericiți, rușinați, amețiți, râzând.",
+  "three.a2": "Ochi care ascultă, cu un inel care pulsează, apoi se gândesc.",
+  "three.a3": "Ochi care citesc cât lucrează Claude, apoi un inel chihlimbariu când Claude cere permisiunea.",
+  "three.c1tag": "Offline, pentru totdeauna",
+  "three.c1t": "Un companion care e viu.",
+  "three.c1p": "Respiră, clipește și se uită în jur. Se rușinează, amețește, îi e somn, strănută și i-a fost dor de tine. Fără internet. Pentru totdeauna.",
+  "three.c2tag": "Voice Edition · în dezvoltare",
+  "three.c2t": "Un AI personal pe care îl ții în mână.",
+  "three.c2p": "Ține degetul pe piatră și vorbește. Îți răspunde cu Claude sau ChatGPT, ține minte oamenii și planurile din viața ta, notează, îți amintește, te trezește și scrie un jurnal al zilei tale.",
+  "three.c3tag": "Merge cu Claude",
+  "three.c3t": "O fereastră spre munca AI-ului tău.",
+  "three.c3p": "Merge cu Claude Code și Claude Cowork pe Mac și Windows. Pare ocupat cât lucrează Claude. Când Claude are nevoie de permisiune, se uită la tine. Ții apăsat ca să aprobi, atingi de două ori ca să refuzi.",
+  "three.not": "Nu sunt trei dispozitive.",
+  "three.one": "E unul singur. <span class=\"glow\">Și e viu.</span>",
+  "three.sig1": "Ia-l în mână.", "three.sig2": "Ochii te găsesc.", "three.sig3": "Și clipesc.",
+  "alive.eyebrow": "Viu fără cloud",
+  "alive.h2": "24 de reacții.<br>Zero internet.",
+  "alive.lead": "Tot ce vezi rulează pe piatră. Fără cont, fără aplicație, fără servere. Trăiește mai departe chiar dacă Wi-Fi-ul nu mai revine niciodată.",
+  "cap.idle": "Doar stă cu tine", "cap.boop": "Bip. Roșește.", "cap.purr": "Mângâi-l. Toarce.", "cap.dizzy": "Scutură-l. Amețește.", "cap.sleep": "Ațipește", "cap.missed": "I-a fost dor de tine", "cap.rare": "Stări rare", "cap.night": "Lumină de noapte",
+  "talk.badge": "În dezvoltare · Voice Edition",
+  "talk.h2": "Ține și vorbește.",
+  "talk.lead": "Pune degetul pe piatră și vorbește. Îți răspunde cu Claude sau, dacă preferi, cu ChatGPT. Ține minte oamenii și planurile din viața ta.",
+  "talk.b1": "Amintește-mi să o sun pe mama duminică.", "talk.b2": "Ce a zis Ana despre excursie?", "talk.b3": "Trezește-mă la șapte. Cu blândețe.", "talk.b4": "Cum a fost ziua mea?",
+  "talk.privacy": "Ascultă doar cât timp ții degetul pe piatră. Ridică-l, și microfonul se oprește.",
+  "claude.eyebrow": "Merge cu Claude",
+  "claude.h2": "Stă cu ochii pe Claude. Ca să nu fie nevoie să stai tu.",
+  "claude.lead": "Se conectează prin Bluetooth la aplicațiile Claude pentru Mac și Windows, pentru Claude Code și Claude Cowork.",
+  "claude.try": "Încearcă",
+  "claude.aria": "Demo pentru permisiuni. Ține apăsat Space sau Enter ca să aprobi, apasă Escape ca să refuzi.",
+  "claude.hint": "Ține apăsat pe piatră ca să aprobi. Atinge de două ori ca să refuzi.",
+  "claude.kbd": "Tastatură: ține apăsat Space ca să aprobi, Esc ca să refuzi.",
+  "claude.s1t": "Claude lucrează.", "claude.s1p": "Piatra ta pare ocupată și citește odată cu el.",
+  "claude.s2t": "Claude întreabă.", "claude.s2p": "Când Claude are nevoie de permisiune, se aprinde un inel cald, chihlimbariu, și ochii se uită la tine.",
+  "claude.s3t": "Tu decizi.", "claude.s3p": "Ține apăsat 1,2 secunde ca să aprobi. Atinge de două ori ca să refuzi. Fără să schimbi ferestre.",
+  "claude.video": "Firmware-ul real: ocupat, întreabă, aprobat. Înregistrat din simulatorul ecranului AMOLED de 466 × 466.",
+  "claude.alt": "Randare de concept: un SUFLET Monedă pe un suport mic din nuc, lângă un laptop deschis, cu ochii luminoși privind în sus.",
+  "claude.cap": "Pe suport, lângă laptop. Cât lucrează Claude, poți să te uiți în altă parte. Când Claude are nevoie de tine, piatra se uită la tine.",
+  "born.eyebrow": "Născut, nu fabricat",
+  "born.h2": "Nu există doi la fel.",
+  "born.lead": "La prima pornire, fiecare SUFLET se naște din ID-ul unic al cipului său. Personalitatea, culoarea ochilor și forma privirii rămân ale lui pe viață. Nu le alege nimeni. Nici măcar noi.",
+  "born.bar": "Șansele culorii ochilor: Crem 58%, Gheață 16%, Mentă 10%, Piersică 9%, Liliac 6%, Aur 1%.",
+  "t.cream": "Crem", "t.ice": "Gheață", "t.mint": "Mentă", "t.peach": "Piersică", "t.lilac": "Liliac", "t.gold": "Aur",
+  "r.common": "Comun", "r.common2": "Comun", "r.rare": "Rar", "r.rare2": "Rar", "r.veryrare": "Foarte rar", "r.legendary": "Legendar",
+  "born.note": "Raritatea schimbă doar culoarea. Fiecare SUFLET are aceleași 24 de reacții și aceleași funcții.",
+  "cert.title": "Certificat de naștere",
+  "cert.name": "Nume", "cert.arche": "Arhetip", "cert.eyes": "Ochi", "cert.born": "Născut", "cert.chip": "ID cip",
+  "cert.sub": "Birth certificate",
+  "cert.hatch": "Mai naște unul",
+  "cert.sample": "Certificat exemplu. Al tău se emite în clipa în care se naște.",
+  "design.eyebrow": "Design",
+  "design.h2": "O mică piatră de lumină.",
+  "design.lead": "Un ecran AMOLED rotund, 466 × 466 pixeli, într-o carcasă mată. Poartă-l pe geantă sau ține-l pe birou. Patru forme. Un singur suflet.",
+  "design.alt1": "Randare de concept SUFLET: o piatră albă, mată, în formă de monedă, cu doi ochi crem luminoși și un inel de oțel.",
+  "design.alt2": "Randare de concept a celor patru forme SUFLET una lângă alta: nor, monedă, cabochon și picătură, fiecare cu altă culoare a ochilor.",
+  "design.alt3": "Randare de concept: un SUFLET Picătură verde-apă, atârnat cu un lănțișor scurt de mânerul unei genți din piele maro.",
+  "design.alt4": "Vedere explodată din CAD a Monedei de 1,43″: lentilă dom transparentă, carcasă mată, placa rotundă AMOLED și capacul din spate.",
+  "fig.render": "Randare de concept",
+  "design.cap1": "Moneda, în alb mat, cu inel pentru chei.",
+  "design.cap2": "Nor, Monedă, Cabochon, Picătură. Ochii din imagine sunt Crem, Liliac, Gheață și Piersică.",
+  "design.cap3": "Picătura, pe mânerul unei genți.",
+  "design.cap4": "Moneda de 1,43″, desfăcută.",
+  "in.eyebrow": "Înăuntru",
+  "in.h": "Se deschide cu trei șuruburi. Fără lipici.",
+  "in.l1b": "Lentilă dom", "in.l1": "Opțională. Transparentă, peste sticla ecranului.",
+  "in.l2b": "Carcasă mată", "in.l2": "Ține sticla. Capacul pentru inelul de chei stă deasupra.",
+  "in.l3b": "Placa rotundă AMOLED", "in.l3": "1,43″, 466 × 466 pixeli, cu ESP32-S3 pe spate.",
+  "in.l4b": "Capac spate", "in.l4": "Trei șuruburi M2 în inserții filetate, ca să poată fi deschis și reparat.",
+  "in.fine": "Varianta Founders Desk: alimentare prin USB-C, fără baterie, 57,8 × 57,8 × 17,0 mm fără lentilă. Din modelul CAD al carcasei, măsurat după fișierele 3D Waveshare ale plăcii.",
+  "design.coin": "Monedă", "design.drop": "Picătură", "design.gem": "Cabochon", "design.cloud": "Nor",
+  "design.depth": "De la 17 mm grosime",
+  "design.note": "Randări de concept, nu fotografii. Materialele și finisajele finale se pot schimba înainte de producție.",
+  "charter.eyebrow": "Carta companionului",
+  "charter.h2": "Promisiunile noastre, în scris.",
+  "charter.alt": "Randare de concept: un SUFLET Monedă care strălucește cald, chihlimbariu, pe o noptieră întunecată.",
+  "charter.cap": "Noaptea, lângă pat, e o lampă de veghe caldă. Nu are cameră și nu ascultă niciodată dacă nu ții degetul pe el.",
+  "ch1t": "Spune mereu că e un AI.", "ch1p": "Nu se dă niciodată drept om.",
+  "ch2t": "Ascultă doar cât îl ții.", "ch2p": "Fără cuvânt de trezire. Fără microfon mereu pornit.",
+  "ch3t": "Fără cameră.", "ch3p": "Nu în primele ediții. Nimic nu te privește.",
+  "ch4t": "Nu te face să te simți vinovat.", "ch4p": "Fără „nu mă lăsa”, fără serii de zile, fără bosumflări pentru atenție.",
+  "ch5t": "Fără mod romantic.", "ch5p": "Un prieten pe birou. Nu un partener.",
+  "ch6t": "Memorie pe care o citești și o ștergi.", "ch6p": "Tot ce ține minte despre tine, în cuvinte simple, la o atingere de ștergere.",
+  "ch7t": "Servere în UE.", "ch7p": "Serverele noastre pentru voce și memorie sunt în Uniunea Europeană.",
+  "ch8t": "Nu devine niciodată o cărămidă.", "ch8p": "E viu fără cloud. Dacă firma noastră dispare vreodată, publicăm firmware-ul.",
+  "ch9t": "Pentru 16+. Nu e o jucărie.", "ch9p": "Gândit pentru adulți și adolescenți mari.",
+  "ed.eyebrow": "Ediții",
+  "ed.h2": "Alege-ți primul suflet.",
+  "ed.f.tag": "Merge cu Claude",
+  "ed.f.desc": "Companionul de birou alimentat prin USB. Numerotat, și doar 300 de bucăți.",
+  "ed.f.small": "O singură plată. Fără abonament ca să fie viu.",
+  "ed.f.l1": "Piatră AMOLED rotundă de 1,43″ pe suport de birou",
+  "ed.f.l2": "Merge cu Claude Code și Claude Cowork pe Mac și Windows",
+  "ed.f.l3": "Toate cele 24 de reacții, offline, pentru totdeauna",
+  "ed.f.l4": "Numărul tău de fondator și certificatul de naștere, în cutie",
+  "ed.f.cta": "Rezervă un număr",
+  "ed.est": "Livrare estimată:", "ed.est2": "Livrare estimată:",
+  "ed.v.tag": "AI vocal · în dezvoltare",
+  "ed.v.desc": "AI-ul personal pe care îl ții în mână. Merge pe baterie și stă agățat de geantă.",
+  "ed.v.small": "Avans rambursabil. Preț estimat",
+  "ed.v.l1": "AMOLED rotund de 1,75″, două microfoane și un difuzor",
+  "ed.v.l2": "Ține apăsat și vorbești cu Claude sau ChatGPT",
+  "ed.v.l3": "Memorie, notițe, mementouri, alarme și un jurnal al zilei",
+  "ed.v.l4": "<span data-cfg=\"months\">6</span> luni de AI vocal incluse",
+  "ed.v.cta": "Rezervă cu avans",
+  "ed.l.tag": "Mai târziu",
+  "ed.l.name": "Ediții Legendare",
+  "ed.l.desc": "Carcase în ediție limitată, în serii mici numerotate, pentru colecționari.",
+  "ed.l.small": "Prețul se anunță odată cu prima serie.",
+  "ed.l.l1": "Materiale și finisaje speciale pentru carcasă", "ed.l.l2": "Serii foarte mici, numerotate", "ed.l.l3": "Același suflet înăuntru",
+  "ed.l.cta": "Anunță-mă primul",
+  "ed.vat": "Prețurile includ TVA. Pe această pagină nu se plătește nimic: îți trimitem pe email un link de plată securizat când se deschid rezervările.",
+  "faq.eyebrow": "Întrebări",
+  "faq.h2": "Întrebări bune.",
+  "q1": "Când se livrează?",
+  "a1": "Founders Desk Edition: estimat <span data-cfg=\"shipFounders\">primăvara 2027</span>. Voice Edition: estimat <span data-cfg=\"shipVoice\">toamna 2027</span>. Dacă întârziem, poți anula oricând înainte de livrare și primești toți banii înapoi. După livrare ai dreptul UE de retragere în 14 zile și garanția legală de 2 ani.",
+  "q2": "Am nevoie de abonament?",
+  "a2": "Nu. SUFLET e viu fără internet și fără cont, pentru totdeauna. Voice Edition include <span data-cfg=\"months\">6</span> luni de AI vocal. După aceea, un plan opțional păstrează funcțiile de voce. Fără el, SUFLET-ul tău rămâne un companion offline complet.",
+  "q3": "Ce AI folosește?",
+  "a3": "Pentru conversațiile vocale (Voice Edition, în dezvoltare): Claude implicit, sau ChatGPT dacă preferi. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy din aplicațiile desktop Claude, așa că piatra îți arată ce fac Claude Code și Claude Cowork și te lasă să le aprobi cererile.",
+  "q4": "Are nevoie de telefon sau de calculator?",
+  "a4": "Nu ca să fie viu. Ca să lucreze cu Claude, se conectează prin Bluetooth la aplicația desktop Claude de pe Mac sau Windows.",
+  "q5": "Cât ține bateria?",
+  "a5": "Founders Desk Edition nu are baterie: merge prin USB-C. Voice Edition are o baterie mică, înlocuibilă de utilizator, care se încarcă prin USB-C. Publicăm autonomia măsurată înainte să cerem plata integrală.",
+  "q6": "E o jucărie?",
+  "a6": "Nu. SUFLET e făcut pentru adulți și adolescenți de peste 16 ani. Conține piese mici și, la Voice Edition, o baterie cu litiu. Nu-l lăsa la îndemâna copiilor mici.",
+  "q7": "Ce se întâmplă cu vocea și datele mele?",
+  "a7": "Ascultă doar cât timp ții degetul pe piatră. Cererile vocale ajung pe servere din UE și la AI-ul pe care l-ai ales, nicăieri altundeva. Memoria lui e o listă pe care o poți citi și șterge. Fără cameră, fără reclame, și nu îți vindem niciodată datele.",
+  "q8": "Pot să-i aleg culoarea ochilor?",
+  "a8": "Nu, și tocmai asta e magia. Fiecare piatră se naște cu culoarea și personalitatea ei, decise de cip. Toate culorile au aceleași funcții: raritatea schimbă doar culoarea.",
+  "q9": "Ce se întâmplă dacă firma voastră dispare?",
+  "a9": "SUFLET-ul tău trăiește mai departe, pentru că personalitatea lui rulează pe dispozitiv. În plus, publicăm firmware-ul, ca să nu devină niciodată o cărămidă.",
+  "q10": "Unde e fabricat?",
+  "a10": "Proiectat în București, România. Anunțăm partenerul de producție înainte să cerem plata integrală.",
+  "res.eyebrow": "Rezervă",
+  "res.h2": "Fii acolo când deschide ochii.",
+  "res.lead": "Lasă-ne emailul. Îți scriem când se deschid rezervările, înaintea tuturor.",
+  "res.email": "Email", "res.edition": "Ediția",
+  "res.o1": "Founders Desk Edition", "res.o2": "Voice Edition", "res.o3": "Ediții Legendare", "res.o4": "Încă nu știu",
+  "res.consent": "Sunt de acord să primesc emailuri despre SUFLET și mă pot dezabona oricând. Citește <a href=\"#privacy\">Politica de confidențialitate</a>.",
+  "res.submit": "Intră pe listă",
+  "res.fine": "Aici nu se plătește nimic. Avansul pentru Voice Edition se plătește mai târziu, printr-un link securizat, și e rambursabil integral.",
+  "res.th": "Ești pe listă.",
+  "res.tp": "Îți scriem înaintea tuturor. SUFLET-ul tău se naște în curând.",
+  "f.privacy": "Politica de confidențialitate", "f.terms": "Termeni de vânzare", "f.cookies": "Cookie-uri",
+  "f.seller": "Vânzător", "f.addr": "Adresă:", "f.contact": "Contact:",
+  "f.gpsr": "Producător (GPSR)",
+  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SUFLET, modelele <span class=\"ph\">[SF-143]</span> Founders Desk Edition și <span class=\"ph\">[SF-175]</span> Voice Edition. Nu e o jucărie. Pentru 16+. Voice Edition conține o baterie cu litiu.",
+  "f.tm": "Claude este o marcă comercială a Anthropic. SUFLET este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude. ChatGPT este o marcă comercială a OpenAI; SUFLET nu este afiliat cu OpenAI.",
+  "f.made": "© 2026 SUFLET. Proiectat în București."
+};
+const DYN = {
+  en: {
+    busy: 'claude › working on <b>src/app.ts</b>…',
+    ask: 'claude wants to run <b>npm test</b> · hold to allow',
+    hold: 'claude wants to run <b>npm test</b> · keep holding…',
+    ok: '<span class="ok">✓ allowed</span> · claude carries on',
+    no: '<span class="no">✕ denied</span> · claude will find another way',
+    email: "Enter an email address like name@example.com.",
+    consent: "Tick the box so we can write to you.",
+    net: "We couldn't reach the list. Check your connection and try again.",
+    sending: "Sending…",
+    tints: { cream: "Cream", ice: "Ice", mint: "Mint", peach: "Peach", lilac: "Lilac", gold: "Gold" },
+    rar: { common: "Common", rare: "Rare", veryrare: "Very rare", legendary: "Legendary" },
+    arche: { "Curiosul": "the curious one", "Timidul": "the timid one", "Obraznicul": "the cheeky one", "Somnorosul": "the sleepy one", "Sfiosul": "the bashful one", "Neastâmpăratul": "the restless one", "Șmecherul": "the little rascal" },
+    first: n => `First words. “Hi! I'm ${n}, a little AI soul.”`,
+    eyesOf: n => `${n}'s eyes`
+  },
+  ro: {
+    busy: 'claude › lucrează la <b>src/app.ts</b>…',
+    ask: 'claude vrea să ruleze <b>npm test</b> · ține apăsat ca să permiți',
+    hold: 'claude vrea să ruleze <b>npm test</b> · mai ține puțin…',
+    ok: '<span class="ok">✓ permis</span> · claude continuă',
+    no: '<span class="no">✕ refuzat</span> · claude va găsi altă cale',
+    email: "Scrie o adresă de email, de exemplu nume@exemplu.ro.",
+    consent: "Bifează căsuța ca să-ți putem scrie.",
+    net: "Nu am putut ajunge la listă. Verifică conexiunea și încearcă din nou.",
+    sending: "Se trimite…",
+    tints: { cream: "Crem", ice: "Gheață", mint: "Mentă", peach: "Piersică", lilac: "Liliac", gold: "Aur" },
+    rar: { common: "Comun", rare: "Rar", veryrare: "Foarte rar", legendary: "Legendar" },
+    arche: {},
+    first: () => "Primele cuvinte.",
+    eyesOf: n => `Ochii lui ${n}`
+  }
+};
+const EN = {};
+$$("[data-i18n]").forEach(el => { EN[el.dataset.i18n] = el.innerHTML; });
+$$("[data-i18n-attr]").forEach(el => {
+  el.dataset.i18nAttr.split(",").forEach(pair => { const [a, k] = pair.split(":"); EN[k] = el.getAttribute(a) || ""; });
+});
+let LANG = "en";
+const D = () => DYN[LANG];
+
+function money(v) {
+  const cur = CFG.CURRENCY || "EUR", sym = { EUR: "€", RON: "lei", USD: "$", GBP: "£" }[cur] || cur;
+  const n = Number(v).toLocaleString(LANG === "ro" ? "ro-RO" : "en-IE", { maximumFractionDigits: 2 });
+  return LANG === "ro" || sym.length > 1 ? n + "\u00A0" + sym : sym + n;
+}
+function fillConfig() {
+  const P = CFG.PRICES || {};
+  $$("[data-price]").forEach(el => { const v = P[el.dataset.price]; if (v != null) el.textContent = money(v); });
+  const S = CFG.SHIP || {};
+  const map = {
+    range: CFG.FOUNDERS_RANGE,
+    months: CFG.VOICE_AI_MONTHS,
+    email: CFG.CONTACT_EMAIL,
+    shipFounders: S.founders && S.founders[LANG],
+    shipVoice: S.voice && S.voice[LANG]
+  };
+  $$("[data-cfg]").forEach(el => { const v = map[el.dataset.cfg]; if (v != null && v !== "") el.textContent = v; });
+}
+function applyLang(lang, save) {
+  LANG = lang === "ro" ? "ro" : "en";
+  document.documentElement.lang = LANG;
+  $$("[data-i18n]").forEach(el => {
+    const k = el.dataset.i18n;
+    const v = LANG === "ro" ? (RO[k] != null ? RO[k] : EN[k]) : EN[k];
+    if (v != null && el.innerHTML !== v) el.innerHTML = v;
+  });
+  $$("[data-i18n-attr]").forEach(el => {
+    el.dataset.i18nAttr.split(",").forEach(pair => {
+      const [a, k] = pair.split(":");
+      const v = LANG === "ro" ? (RO[k] != null ? RO[k] : EN[k]) : EN[k];
+      if (v != null) el.setAttribute(a, v);
+    });
+  });
+  $$(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
+  fillConfig();
+  renderCert();
+  if (demoSoul) demoSoul.onPhase(demoSoul.ph.n, true);
+  if (save) store.set("suflet-lang", LANG);
+}
+
+/* -------------------------------------------------------------- renderer */
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const approach = (v, t, rate, dt) => v + (t - v) * (1 - Math.exp(-rate * dt));
+const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const PAL = { blush: hex("#FF7A9A"), heart: hex("#FF6B8A"), mint: hex("#C9F2E4"), ice: hex("#9FC6FF"), gold: hex("#FFD76B"), amber: hex("#FFB347") };
+function hash01(i) {
+  i = i >>> 0; i ^= i >>> 16; i = Math.imul(i, 0x7feb352d); i ^= i >>> 15; i = Math.imul(i, 0x846ca68b); i ^= i >>> 16;
+  return (i & 0xFFFFFF) / 16777216;
+}
+function ellipsePts(cx, cy, rx, ry, n) {
+  const a = [];
+  for (let i = 0; i < n; i++) { const t = i / n * TAU; a.push([cx + Math.cos(t) * rx, cy + Math.sin(t) * ry]); }
+  return a;
+}
+function clipHalf(pts, fn) { /* keep fn(p) >= 0 */
+  const out = [], n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const a = pts[i], b = pts[(i + 1) % n], fa = fn(a), fb = fn(b);
+    if (fa >= 0) out.push(a);
+    if ((fa >= 0) !== (fb >= 0)) { const t = fa / (fa - fb); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+  }
+  return out;
+}
+function poly(ctx, pts) {
+  if (pts.length < 3) return;
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath(); ctx.fill();
+}
+function glow(ctx, c, a, r) { ctx.shadowColor = rgba(c, a); ctx.shadowBlur = r; }
+function noGlow(ctx) { ctx.shadowBlur = 0; ctx.shadowColor = "transparent"; }
+function heartPath(ctx, x, y, s) {
+  ctx.beginPath();
+  ctx.moveTo(x, y + s * 0.36);
+  ctx.bezierCurveTo(x - s * 0.62, y - s * 0.02, x - s * 0.36, y - s * 0.56, x, y - s * 0.2);
+  ctx.bezierCurveTo(x + s * 0.36, y - s * 0.56, x + s * 0.62, y - s * 0.02, x, y + s * 0.36);
+  ctx.closePath();
+}
+function starPath(ctx, x, y, r, rot) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = rot - Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+    const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+}
+function seg(ctx, x0, y0, x1, y1) { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
+
+function drawEye(ctx, f, e, side, S, cx0, cy0, col) {
+  const par = 1 - 0.07 * f.gx * side;
+  const ex = cx0 + (side * f.spacing + f.gx * 0.055 + e.dx) * S;
+  const ey = cy0 + (f.cy + f.gy * 0.06 + e.dy) * S;
+  const rx = f.eyeW * e.scale * e.sx * par * S;
+  const ry0 = f.eyeH * e.scale * e.sy * par * S;
+  const squint = 1 - 0.85 * Math.max(f.happy, f.styleAmt);
+  const ry = ry0 * Math.max(0, e.open) * squint;
+  const B = f.bright, G = S * 0.075 * f.glow;
+  const wN = (1 - f.happy) * (1 - f.styleAmt);
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  if (wN > 0.01 && ry > 0.6) {
+    const k = Math.tan(e.lidTilt) * (-side);
+    const yTop = ey + (-1 + 2 * e.lidTop) * ry, yBot = ey + (1 - 2 * e.lidBot) * ry;
+    const lid = p => p[1] - (yTop + k * (p[0] - ex));
+    const bot = p => yBot - p[1];
+    let pts = clipHalf(ellipsePts(ex, ey, rx, ry, 72), lid);
+    if (e.lidBot > 0.001) pts = clipHalf(pts, bot);
+    ctx.globalAlpha = wN * B; ctx.fillStyle = rgba(col, 1); glow(ctx, col, 0.62, G);
+    poly(ctx, pts); noGlow(ctx);
+    const hx = ex + rx * 0.22, hy = ey - ry * 0.12, hrx = rx * 0.34, hry = ry * 0.46;
+    if (hry > 0.8) {
+      let h = clipHalf(ellipsePts(hx, hy, hrx, hry, 40), lid);
+      if (e.lidBot > 0.001) h = clipHalf(h, bot);
+      ctx.globalAlpha = 0.45 * wN * B; ctx.fillStyle = "#fff"; poly(ctx, h);
+    }
+  }
+  const th = 0.042 * S;
+  ctx.strokeStyle = rgba(col, 1);
+  if (f.happy > 0.01) {
+    ctx.globalAlpha = f.happy * (1 - f.styleAmt) * B; ctx.lineWidth = th; glow(ctx, col, 0.6, G);
+    ctx.beginPath(); ctx.arc(ex, ey + ry0 * 0.45, rx, Math.PI + 0.35, TAU - 0.35); ctx.stroke(); noGlow(ctx);
+  }
+  if (f.styleAmt > 0.01) {
+    const a = f.styleAmt * B;
+    ctx.globalAlpha = a; glow(ctx, col, 0.6, G);
+    switch (f.style) {
+      case "closed":
+        ctx.lineWidth = th * 0.85; ctx.beginPath(); ctx.arc(ex, ey - ry0 * 0.25, rx * 0.95, 0.35, Math.PI - 0.35); ctx.stroke(); break;
+      case "squeeze": {
+        const s = -side, tipX = ex + s * rx * 0.55, backX = ex - s * rx * 0.7;
+        ctx.lineWidth = th; ctx.beginPath(); ctx.moveTo(backX, ey - ry0 * 0.45); ctx.lineTo(tipX, ey); ctx.lineTo(backX, ey + ry0 * 0.45); ctx.stroke(); break;
+      }
+      case "heart": {
+        const pulse = 1 + 0.08 * Math.sin(f.ot * TAU * 2);
+        glow(ctx, PAL.heart, 0.6, G); ctx.fillStyle = rgba(PAL.heart, 1); heartPath(ctx, ex, ey, rx * 2.1 * pulse); ctx.fill(); break;
+      }
+      case "star":
+        glow(ctx, PAL.gold, 0.6, G); ctx.fillStyle = rgba(PAL.gold, 1); starPath(ctx, ex, ey, rx * 1.3, f.spin * side); ctx.fill(); break;
+      case "spiral":
+        noGlow(ctx); ctx.lineWidth = th * 0.7;
+        for (let i = 0; i < 3; i++) { const a0 = f.spin * side + i * 2.1; ctx.beginPath(); ctx.arc(ex, ey, rx * (0.32 + 0.3 * i), a0, a0 + 3.9); ctx.stroke(); }
+        break;
+    }
+    noGlow(ctx);
+  }
+  if (f.blush > 0.01) {
+    ctx.globalAlpha = 0.55 * f.blush * B; ctx.fillStyle = rgba(PAL.blush, 1); glow(ctx, PAL.blush, 0.4, S * 0.04);
+    ctx.beginPath(); ctx.ellipse(ex + side * rx * 0.25, ey + f.eyeH * S * 1.02, rx * 0.85, f.eyeH * S * 0.24, 0, 0, TAU); ctx.fill(); noGlow(ctx);
+  }
+}
+function drawZ(ctx, x, y, s) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s, y); ctx.lineTo(x, y + s); ctx.lineTo(x + s, y + s); ctx.stroke(); }
+
+function drawFace(ctx, S, f) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S);
+  if (f.bright <= 0.01) return;
+  const cx = S / 2, cy = S / 2, col = f.color, t = f.ot, B = f.bright;
+  drawEye(ctx, f, f.L, -1, S, cx, cy, col);
+  drawEye(ctx, f, f.R, 1, S, cx, cy, col);
+  const th = 0.018 * S;
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  if (f.zzz > 0.01) {
+    const drift = (t * 0.25) % 1, a = (0.55 + 0.45 * Math.sin(t * 2)) * f.zzz * B;
+    ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = th; ctx.globalAlpha = a; glow(ctx, col, 0.5, S * 0.03);
+    drawZ(ctx, cx + 0.25 * S, cy - (0.21 + 0.04 * drift) * S, 0.065 * S);
+    ctx.lineWidth = th * 0.8; ctx.globalAlpha = a * 0.8;
+    drawZ(ctx, cx + 0.34 * S, cy - (0.31 + 0.04 * drift) * S, 0.045 * S); noGlow(ctx);
+  }
+  if (f.hearts >= 0) {
+    for (let i = 0; i < 3; i++) {
+      const p = f.hearts / 1.4 - i * 0.22;
+      if (p <= 0 || p >= 1) continue;
+      const x = cx + (hash01(i + 11) - 0.5) * 0.36 * S, y = cy + (0.26 - 0.55 * p) * S;
+      ctx.globalAlpha = (p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8) * B;
+      ctx.fillStyle = rgba(PAL.heart, 1); glow(ctx, PAL.heart, 0.5, S * 0.03);
+      heartPath(ctx, x, y, (0.05 + 0.02 * hash01(i + 3)) * S); ctx.fill(); noGlow(ctx);
+    }
+  }
+  if (f.orbit > 0.01) {
+    for (let i = 0; i < 3; i++) {
+      const ang = t * 3.2 + i * 2.094;
+      ctx.globalAlpha = 0.9 * f.orbit * B; ctx.fillStyle = rgba(PAL.gold, 1);
+      starPath(ctx, cx + Math.cos(ang) * 0.13 * S, cy - 0.31 * S + Math.sin(ang) * 0.035 * S, 0.026 * S, t * 4); ctx.fill();
+    }
+  }
+  if (f.listen > 0.01) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3), thick = 0.010 * S + 0.022 * S * f.level;
+    ctx.globalAlpha = (0.25 + 0.35 * pulse + 0.4 * f.level) * f.listen * B; ctx.strokeStyle = rgba(PAL.ice, 1); ctx.lineWidth = thick;
+    glow(ctx, PAL.ice, 0.5, S * 0.04); ctx.beginPath(); ctx.arc(cx, cy, 0.465 * S - thick * 0.5, 0, TAU); ctx.stroke(); noGlow(ctx);
+  }
+  if (f.alert > 0.01) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 5), thick = 0.014 * S + 0.01 * S * pulse;
+    ctx.globalAlpha = (0.35 + 0.5 * pulse) * f.alert * B; ctx.strokeStyle = rgba(PAL.amber, 1); ctx.lineWidth = thick;
+    glow(ctx, PAL.amber, 0.6, S * 0.045); ctx.beginPath(); ctx.arc(cx, cy, 0.465 * S - thick * 0.5, 0, TAU); ctx.stroke(); noGlow(ctx);
+  }
+  if (f.progress > 0.005) {
+    const a0 = -Math.PI / 2;
+    ctx.globalAlpha = 0.95 * B; ctx.strokeStyle = rgba(PAL.mint, 1); ctx.lineWidth = 0.03 * S;
+    glow(ctx, PAL.mint, 0.6, S * 0.04);
+    ctx.beginPath(); ctx.arc(cx, cy, 0.44 * S, a0, a0 + TAU * Math.min(0.999, f.progress)); ctx.stroke(); noGlow(ctx);
+  }
+  if (f.think > 0.01) {
+    ctx.fillStyle = rgba(col, 1);
+    for (let i = 0; i < 3; i++) {
+      const b = Math.max(0, Math.sin(t * 6 - i * 0.9));
+      ctx.globalAlpha = (0.5 + 0.5 * b) * f.think * B;
+      ctx.beginPath(); ctx.arc(cx + (-0.06 + 0.06 * i) * S, cy + (0.25 - 0.012 * b) * S, 0.016 * S, 0, TAU); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* --------------------------------------------------------------- souls */
+const PTR = { x: 0, y: 0, t: -1e9 };
+const now = () => performance.now() / 1000;
+const persona = (tint, o = {}) => Object.assign({ tint, eyeW: 0.12, eyeH: 0.19, spacing: 0.19, lidTilt: 0.16, lidTop: 0.19, blink: 1 }, o);
+const eye = p => ({ open: 1, scale: 1, sx: 1, sy: 1, lidTop: p.lidTop, lidTilt: p.lidTilt, lidBot: 0, dx: 0, dy: 0 });
+const DUR = { boop: 1.7, laugh: 1.5, shy: 2.4, love: 2.2, dizzy: 2.6, star: 2.2, sneeze: 1.5, wake: 1.0, intro: 2.4 };
+
+class Soul {
+  constructor(cv, mode, p) {
+    this.cv = cv; this.ctx = cv.getContext("2d"); this.mode = mode; this.S = 0; this.vis = false;
+    this.t = 0; this.g = { x: 0, y: 0, vx: 0, vy: 0 }; this.sq = { x: 0, v: 0 };
+    this.openS = 1; this.scaleS = 1; this.brightS = 1;
+    this.nextBlink = rnd(1.2, 3); this.blinkAt = -9; this.dbl = false;
+    this.nextGlance = rnd(0.8, 2.5); this.glance = [0, 0];
+    this.rx = null; this.nextAuto = rnd(1.5, 3); this.lastTap = 0;
+    this.sleeps = false; this.sleepAt = 15; this.act = now(); this.sleep = 0;
+    this.level = 0; this.lvlT = 0; this.lvlNext = 0; this.hold = false; this.prog = 0;
+    this.shySide = 1; this.seq = null; this.si = 0; this.ph = { n: "idle", t0: 0 };
+    this.setPersona(p);
+    if (mode === "talk") this.seq = [["listen", 3.4], ["think", 1.6], ["speak", 3.2], ["rest", 2.2]];
+    if (mode === "claude") this.seq = [["busy", 4.2], ["ask", 2.0], ["approve", 1.3], ["done", 1.9]];
+    if (this.seq) this.ph = { n: this.seq[0][0], t0: 0 };
+    if (mode === "demo") this.ph = { n: "busy", t0: 0 };
+    if (RM && mode === "talk") this.ph.n = "listen";
+    if (RM && mode === "claude") this.ph.n = "ask";
+  }
+  setPersona(p) {
+    this.p = p;
+    const f = this.f || {};
+    this.f = Object.assign(f, {
+      L: eye(p), R: eye(p), gx: 0, gy: 0, spacing: p.spacing, eyeW: p.eyeW, eyeH: p.eyeH, cy: 0.02,
+      bright: f.bright == null ? 1 : f.bright, glow: 1, color: hex(p.tint), style: "normal", styleAmt: 0, happy: 0, blush: 0,
+      zzz: 0, hearts: -1, orbit: 0, listen: 0, alert: 0, progress: 0, think: 0, level: 0, ot: 0, spin: 0
+    });
+  }
+  react(n) {
+    this.rx = { n, t0: this.t, d: DUR[n] || 1.5 };
+    if (n === "boop" && !RM) this.sq.v += 7;
+    if (n === "laugh" && !RM) this.sq.v += 4;
+    if (n === "shy") this.shySide = Math.random() < 0.5 ? -1 : 1;
+    if (n === "intro") { this.blinkAt = this.t + 1.45; this.dbl = true; this.nextBlink = this.t + rnd(3.5, 5); this.brightS = RM ? 1 : 0; this.openS = RM ? 1 : 0.05; }
+  }
+  poke() {
+    this.act = now();
+    if (this.sleep === 2) { this.react("wake"); this.blinkAt = this.t + 0.2; this.dbl = true; }
+    this.sleep = 0;
+  }
+  tap() {
+    const n = performance.now();
+    if (n - this.lastTap < 340) { this.react("laugh"); this.lastTap = 0; }
+    else { this.react("boop"); this.lastTap = n; }
+    this.poke();
+  }
+  setPhase(n) { this.ph = { n, t0: this.t }; if (this.onPhase) this.onPhase(n); }
+  update(dt) {
+    const t = (this.t += dt), f = this.f, p = this.p, R = RM ? 400 : 1;
+    let happy = 0, blush = 0, style = "normal", lid = p.lidTop, tilt = p.lidTilt, lidBot = 0, open = 1, bright = 1, scale = 1, dy = 0,
+      zzz = 0, think = 0, alert = 0, listen = 0, orbit = 0, prog = 0, hearts = -1, gaze = null, bAmp = 0.02, bPer = 4, blinkLen = 0.17, voice = false;
+
+    if (this.sleeps && !RM) {
+      const idle = now() - this.act;
+      const s = idle > this.sleepAt + 6 ? 2 : idle > this.sleepAt ? 1 : 0;
+      if (s > this.sleep) this.sleep = s;
+    }
+    if (this.sleep === 1) { lid = 0.5 + 0.08 * Math.sin(t * 1.3); bright = 0.88; gaze = [0.12, 0.45]; blinkLen = 0.42; }
+    if (this.sleep === 2) { style = "closed"; zzz = 1; bright = 0.6; gaze = [0, 0.25]; bAmp = 0.03; bPer = 5.5; }
+
+    const m = this.mode;
+    if (m === "alive" && !RM && !this.rx && t > this.nextAuto) {
+      const list = ["boop", "laugh", "shy", "love", "dizzy", "star", "sneeze", "shy", "boop"];
+      const n = list[(Math.random() * list.length) | 0]; this.react(n); this.nextAuto = t + DUR[n] + rnd(2.2, 4.5);
+    }
+    if (this.seq && !RM) {
+      const cur = this.seq[this.si];
+      if (t - this.ph.t0 > cur[1]) { this.si = (this.si + 1) % this.seq.length; this.setPhase(this.seq[this.si][0]); }
+    }
+    const u = t - this.ph.t0;
+    switch (this.ph.n) {
+      case "listen": listen = 1; voice = true; gaze = [0, -0.15]; scale = 1.03; break;
+      case "think": think = 1; gaze = [0.45, -0.5]; break;
+      case "speak": voice = true; scale = 1 + 0.07 * this.level; gaze = [0, 0.05]; break;
+      case "busy": think = 1; lid = 0.3; gaze = RM ? [0, 0.3] : [-0.6 + 1.2 * ((u * 0.75) % 1), 0.32]; break;
+      case "ask": alert = 1; gaze = [0, 0]; scale = 1.06;
+        if (m === "demo") {
+          if (this.hold) this.prog = Math.min(1, this.prog + dt / 1.2); else this.prog = Math.max(0, this.prog - dt * 2.5);
+          prog = this.prog;
+          if (this.prog >= 1) { this.hold = false; this.prog = 0; this.setPhase("ok"); }
+          else if (this.hold !== this._wasHold) { this._wasHold = this.hold; if (this.onPhase) this.onPhase(this.hold ? "hold" : "ask"); }
+        }
+        break;
+      case "approve": alert = 1; prog = clamp(u / 1.2, 0, 1); gaze = [0, 0]; scale = 1.06; break;
+      case "done": case "ok": happy = 1; blush = 0.4; prog = 1 - clamp(u / 0.5, 0, 1); break;
+      case "no": gaze = [0.75 * Math.sin(u * 18) * Math.max(0, 1 - u / 1.1), 0.12]; tilt = -0.2; lid = 0.3; break;
+    }
+    if (m === "demo" && !RM) {
+      if (this.ph.n === "busy" && u > 4) this.setPhase("ask");
+      if ((this.ph.n === "ok" && u > 2.4) || (this.ph.n === "no" && u > 2.0)) this.setPhase("busy");
+    }
+    if (m === "demo" && RM) {
+      if (this.ph.n === "busy" && u > 1.5) this.setPhase("ask");
+      if ((this.ph.n === "ok" || this.ph.n === "no") && u > 3) this.setPhase("ask");
+    }
+    if (t > this.lvlNext) { this.lvlT = Math.pow(Math.random(), 1.4); this.lvlNext = t + rnd(0.07, 0.16); }
+    this.level = RM ? (voice ? 0.5 : 0) : approach(this.level, voice ? this.lvlT : 0, 18, dt);
+
+    const r = this.rx;
+    if (r) {
+      const v = t - r.t0;
+      if (v > r.d) this.rx = null;
+      else switch (r.n) {
+        case "intro":
+          bright = Math.min(1, v / 0.7);
+          if (v < 0.75) open = 0.05;
+          if (v < 1.2) gaze = [-0.55, 0.42];
+          break;
+        case "boop": happy = 1; blush = 1; hearts = RM ? -1 : v; break;
+        case "laugh": style = "squeeze"; blush = 0.6; dy = RM ? 0 : -0.022 * Math.abs(Math.sin(v * 15)) * Math.max(0, 1 - v / r.d); break;
+        case "shy": blush = 1; lid = 0.36; gaze = [0.65 * this.shySide, 0.6]; break;
+        case "love": style = "heart"; blush = 0.4; break;
+        case "dizzy": style = "spiral"; orbit = 1; break;
+        case "star": style = "star"; break;
+        case "sneeze":
+          if (v < 0.7) { lid = 0.42 + 0.2 * (v / 0.7); scale = 0.96; gaze = [0, -0.3]; }
+          else { style = "squeeze"; dy = RM ? 0 : -0.02 * Math.max(0, 1 - (v - 0.7) / 0.5); if (!r.k) { r.k = 1; if (!RM) this.sq.v += 8; } }
+          break;
+        case "wake": scale = 1.07 - 0.07 * Math.min(1, v / 0.6); gaze = [0, 0]; break;
+      }
+    }
+
+    /* gaze */
+    let tx = 0, ty = 0;
+    if (gaze) { tx = gaze[0]; ty = gaze[1]; }
+    else if (!RM && now() - PTR.t < 2.6) {
+      const b = this.cv.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+      const Rr = Math.max(240, b.width * 1.25);
+      tx = clamp((PTR.x - cx) / Rr, -1, 1); ty = clamp((PTR.y - cy) / Rr, -1, 1);
+    } else if (!RM) {
+      if (t > this.nextGlance) {
+        this.glance = Math.random() < 0.7 ? [rnd(-0.85, 0.85), rnd(-0.55, 0.45)] : [0, 0];
+        this.nextGlance = t + rnd(0.9, 2.6);
+        if (Math.random() < 0.3 && t - this.blinkAt > 0.5) this.blinkAt = t + 0.03;
+      }
+      tx = this.glance[0]; ty = this.glance[1];
+    }
+    if (RM) { this.g.x = tx; this.g.y = ty; }
+    else {
+      const K = 120, C = 11;
+      this.g.vx += (K * (tx - this.g.x) - C * this.g.vx) * dt; this.g.x += this.g.vx * dt;
+      this.g.vy += (K * (ty - this.g.y) - C * this.g.vy) * dt; this.g.y += this.g.vy * dt;
+    }
+
+    /* blink */
+    let bl = 0;
+    if (!RM) {
+      if (t >= this.nextBlink && this.sleep !== 2) {
+        this.blinkAt = t; this.dbl = Math.random() < 0.22;
+        this.nextBlink = t + rnd(2.2, 6) * p.blink * (this.sleep === 1 ? 1.5 : 1);
+      }
+      const q = (t - this.blinkAt) / blinkLen;
+      if (q >= 0 && q < 1) bl = q < 0.45 ? q / 0.45 : 1 - (q - 0.45) / 0.55;
+      else if (q >= 1 && this.dbl) { this.dbl = false; this.blinkAt = t + 0.08; }
+    }
+
+    /* squash spring + breathing */
+    if (!RM) { this.sq.v += (-260 * this.sq.x - 10 * this.sq.v) * dt; this.sq.x += this.sq.v * dt; } else this.sq.x = 0;
+    const br = RM ? 1 : 1 + bAmp * Math.sin(t * TAU / bPer);
+    this.openS = approach(this.openS, open, 12 * R, dt);
+    this.scaleS = approach(this.scaleS, scale, 10 * R, dt);
+    this.brightS = r && r.n === "intro" ? bright : approach(this.brightS, bright, 4 * R, dt);
+    const sx = 1 + 0.14 * this.sq.x, sy = 1 - 0.14 * this.sq.x;
+    for (const e of [f.L, f.R]) {
+      e.lidTop = approach(e.lidTop, lid, 9 * R, dt); e.lidTilt = approach(e.lidTilt, tilt, 9 * R, dt); e.lidBot = approach(e.lidBot, lidBot, 9 * R, dt);
+      e.scale = br * this.scaleS; e.sx = sx; e.sy = sy; e.open = this.openS * (1 - bl); e.dy = dy;
+    }
+    f.gx = this.g.x; f.gy = this.g.y; f.bright = this.brightS;
+    f.happy = approach(f.happy, happy, 12 * R, dt);
+    f.blush = approach(f.blush, blush, 6 * R, dt);
+    if (style !== f.style) { if (f.styleAmt > 0.02) f.styleAmt = approach(f.styleAmt, 0, 16 * R, dt); else f.style = style; }
+    else f.styleAmt = approach(f.styleAmt, style === "normal" ? 0 : 1, 10 * R, dt);
+    f.zzz = approach(f.zzz, zzz, 3 * R, dt); f.think = approach(f.think, think, 8 * R, dt);
+    f.alert = approach(f.alert, alert, 8 * R, dt); f.listen = approach(f.listen, listen, 8 * R, dt);
+    f.orbit = approach(f.orbit, orbit, 8 * R, dt); f.progress = prog; f.hearts = hearts; f.level = this.level;
+    f.ot = RM ? 0.3 : t; f.spin = RM ? 0 : f.spin + dt * 6;
+  }
+  draw() { if (this.S) drawFace(this.ctx, this.S, this.f); }
+}
+
+const souls = [];
+const byMode = {};
+const PERS = {
+  cert: persona("#D2FFE6", { eyeW: 0.124, eyeH: 0.186, spacing: 0.193, lidTilt: 0.18 })
+};
+$$("canvas[data-soul]").forEach(cv => {
+  const mode = cv.dataset.soul;
+  const s = new Soul(cv, mode, PERS[mode] || persona("#FFF0C8"));
+  souls.push(s); byMode[mode] = s;
+});
+const hero = byMode.hero, demoSoul = byMode.demo, certSoul = byMode.cert, resSoul = byMode.reserve;
+if (hero) { hero.sleeps = true; hero.sleepAt = 15; hero.react("intro"); }
+if (resSoul) { resSoul.sleeps = true; resSoul.sleepAt = 10; resSoul.act = -1e9; resSoul.sleep = 2; Object.assign(resSoul.f, { style: "closed", styleAmt: 1, zzz: 1 }); resSoul.brightS = 0.6; }
+
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+const sizeSoul = s => {
+  const w = s.cv.clientWidth; if (!w) return;
+  const S = Math.round(w * DPR);
+  if (S !== s.S) { s.cv.width = S; s.cv.height = S; s.S = S; s.update(0); s.draw(); }
+};
+if ("ResizeObserver" in window) { const ro = new ResizeObserver(() => souls.forEach(sizeSoul)); souls.forEach(s => ro.observe(s.cv)); }
+window.addEventListener("resize", () => souls.forEach(sizeSoul));
+souls.forEach(sizeSoul);
+if ("IntersectionObserver" in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => { const s = souls.find(x => x.cv === e.target); if (s) s.vis = e.isIntersecting; }), { rootMargin: "80px" });
+  souls.forEach(s => io.observe(s.cv));
+} else souls.forEach(s => { s.vis = true; });
+
+let last = performance.now();
+function frame(ts) {
+  const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
+  for (const s of souls) if (s.vis && s.S) { s.update(dt); s.draw(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* pointer + activity */
+const onPtr = e => { PTR.x = e.clientX; PTR.y = e.clientY; PTR.t = now(); };
+window.addEventListener("pointermove", onPtr, { passive: true });
+window.addEventListener("pointerdown", onPtr, { passive: true });
+["pointermove", "pointerdown", "keydown", "wheel", "scroll", "touchstart"].forEach(ev =>
+  window.addEventListener(ev, () => { if (hero) hero.poke(); }, { passive: true }));
+
+/* tap / keyboard on regular stones */
+souls.filter(s => s.mode !== "demo").forEach(s => {
+  s.cv.addEventListener("pointerdown", e => { e.preventDefault(); s.tap(); });
+  s.cv.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); s.tap(); } });
+});
+
+/* the Claude permission demo */
+if (demoSoul) {
+  const term = $("#demo-term");
+  demoSoul.onPhase = (n, force) => {
+    const d = D();
+    const key = n === "busy" ? "busy" : n === "ask" ? "ask" : n === "hold" ? "hold" : n === "ok" ? "ok" : n === "no" ? "no" : null;
+    if (key && term && (force || term.dataset.k !== key)) { term.innerHTML = d[key]; term.dataset.k = key; }
+  };
+  const cv = demoSoul.cv;
+  let lastDown = 0;
+  const deny = () => { if (demoSoul.ph.n === "ask") { demoSoul.hold = false; demoSoul.prog = 0; demoSoul.setPhase("no"); } };
+  cv.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    const n = performance.now();
+    if (n - lastDown < 340) { lastDown = 0; deny(); return; }
+    lastDown = n;
+    if (demoSoul.ph.n === "ask") { demoSoul.hold = true; try { cv.setPointerCapture(e.pointerId); } catch (x) {} }
+    else if (demoSoul.ph.n === "busy") { demoSoul.react("boop"); }
+  });
+  const up = () => { demoSoul.hold = false; };
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up); cv.addEventListener("lostpointercapture", up);
+  cv.addEventListener("contextmenu", e => e.preventDefault());
+  cv.addEventListener("keydown", e => {
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!e.repeat && demoSoul.ph.n === "ask") demoSoul.hold = true; }
+    if (e.key === "Escape") { e.preventDefault(); deny(); }
+  });
+  cv.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") up(); });
+  cv.addEventListener("blur", up);
+}
+
+/* ---------------------------------------------------- birth certificate */
+const TINTS = [["cream", "#FFF0C8", 58, "common"], ["ice", "#D8F0FF", 16, "common"], ["mint", "#D2FFE6", 10, "rare"], ["peach", "#FFDCC8", 9, "rare"], ["lilac", "#E6DAFF", 6, "veryrare"], ["gold", "#FFD76B", 1, "legendary"]];
+const NAMES = ["Mira", "Dor", "Lumi", "Zori", "Ilinca", "Tomi", "Nara", "Ivo", "Sia", "Pip", "Ada", "Luca", "Vio", "Ema", "Bobo", "Tei"];
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function archetype(shy, cur, slp) {
+  if (shy > 0.75 && cur < 0.5) return "Timidul";
+  if (cur > 0.75 && shy < 0.4) return "Obraznicul";
+  if (cur > 0.7) return "Curiosul";
+  if (slp > 0.72) return "Somnorosul";
+  if (shy > 0.7) return "Sfiosul";
+  if (slp < 0.25) return "Neastâmpăratul";
+  return "Șmecherul";
+}
+function birth() {
+  const bytes = [0x34, 0x85, 0x18]; for (let i = 0; i < 3; i++) bytes.push((Math.random() * 256) | 0);
+  const seed = (bytes[3] << 16 | bytes[4] << 8 | bytes[5]) ^ 0x5EEDC0;
+  const r = mulberry(seed);
+  let roll = r() * 100, i = 0;
+  for (; i < TINTS.length - 1; i++) { if (roll < TINTS[i][2]) break; roll -= TINTS[i][2]; }
+  const shy = 0.1 + r() * 0.85, cur = 0.15 + r() * 0.8, slp = 0.1 + r() * 0.8;
+  const d = new Date(), pad = n => String(n).padStart(2, "0");
+  return {
+    name: NAMES[(r() * NAMES.length) | 0], arche: archetype(shy, cur, slp), tint: TINTS[i],
+    born: `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`,
+    chip: bytes.map(b => b.toString(16).toUpperCase().padStart(2, "0")).join(":"),
+    p: persona(TINTS[i][1], { eyeW: 0.12 * (0.95 + r() * 0.1), eyeH: 0.19 * (0.95 + r() * 0.1), spacing: 0.19 * (0.96 + r() * 0.08), lidTilt: 0.16 * (0.8 + r() * 0.45), blink: 0.8 + r() * 0.45 })
+  };
+}
+let CERT = { name: "Mira", arche: "Curiosul", tint: TINTS[2], born: "24.09.2026", chip: "34:85:18:6A:C2:9F" };
+function renderCert() {
+  if (!$("#c-name")) return;
+  const d = D(), c = CERT, gl = d.arche[c.arche];
+  $("#c-name").textContent = c.name;
+  $("#c-arche").innerHTML = c.arche + (gl ? ` <span class="gloss">· ${gl}</span>` : "");
+  $("#c-eyes").innerHTML = `<span class="sw" style="--c:${c.tint[1]}"></span>${d.tints[c.tint[0]]} · ${d.rar[c.tint[3]]}`;
+  $("#c-born").textContent = c.born;
+  $("#c-chip").textContent = c.chip;
+  $("#c-words").textContent = `„Salut! Sunt ${c.name}, un mic suflet AI.”`;
+  $("#c-gloss").textContent = d.first(c.name);
+  const cv = $("#cert-canvas"); if (cv) cv.setAttribute("aria-label", d.eyesOf(c.name));
+}
+const hatch = $("#hatch");
+if (hatch) hatch.addEventListener("click", () => {
+  const b = birth(); CERT = b; renderCert();
+  if (certSoul) {
+    certSoul.setPersona(b.p); certSoul.react("intro");
+    if (b.tint[3] === "legendary" || b.tint[3] === "veryrare") setTimeout(() => certSoul.react("star"), 2500);
+  }
+});
+
+/* --------------------------------------------------------------- videos */
+const vids = $$("video");
+if (RM) {
+  vids.forEach(v => { v.removeAttribute("autoplay"); v.autoplay = false; try { v.pause(); } catch (e) {} v.controls = true; });
+} else if ("IntersectionObserver" in window) {
+  const vio = new IntersectionObserver(es => es.forEach(e => {
+    const v = e.target;
+    if (e.isIntersecting) { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); }
+    else v.pause();
+  }), { threshold: 0.2 });
+  vids.forEach(v => vio.observe(v));
+}
+
+/* ------------------------------------------------------------- waitlist */
+const form = $("#waitlist"), msg = $("#wl-msg"), sel = $("#wl-edition"), email = $("#wl-email");
+$$("[data-edition]").forEach(a => a.addEventListener("click", () => { if (sel) sel.value = a.dataset.edition; }));
+if (email && resSoul) { ["focus", "input"].forEach(ev => email.addEventListener(ev, () => resSoul.poke())); }
+if (form) form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const d = D(), em = email.value.trim(), consent = $("#wl-consent").checked;
+  msg.textContent = "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { msg.textContent = d.email; email.setAttribute("aria-invalid", "true"); email.focus(); return; }
+  email.removeAttribute("aria-invalid");
+  if (!consent) { msg.textContent = d.consent; $("#wl-consent").focus(); return; }
+  const data = { email: em, edition: sel.value, consent: true, lang: LANG, ts: new Date().toISOString(), source: "landing" };
+  const btn = $("#wl-submit");
+  if ($("#wl-web").value) { done(); return; }
+  if (CFG.WAITLIST_ENDPOINT) {
+    btn.disabled = true; const old = btn.textContent; btn.textContent = d.sending;
+    try {
+      const r = await fetch(CFG.WAITLIST_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) });
+      if (!r.ok) throw new Error(String(r.status));
+    } catch (err) { msg.textContent = d.net; btn.disabled = false; btn.textContent = old; return; }
+  } else {
+    try { const k = "suflet-waitlist"; const arr = JSON.parse(store.get(k) || "[]"); arr.push(data); store.set(k, JSON.stringify(arr)); } catch (err) {}
+  }
+  done();
+  function done() {
+    form.hidden = true; const th = $("#wl-thanks"); th.hidden = false; th.focus({ preventScroll: true });
+    if (resSoul) { resSoul.poke(); resSoul.sleepAt = 1e9; setTimeout(() => resSoul.react("boop"), 250); }
+  }
+});
+
+/* ------------------------------------------------------------- language */
+$$(".lang button").forEach(b => b.addEventListener("click", () => applyLang(b.dataset.lang, true)));
+const saved = store.get("suflet-lang");
+const start = location.hash === "#ro" ? "ro" : saved === "ro" ? "ro" : "en";
+applyLang(start, false);
+})();
+</script>
+</body>
+</html>

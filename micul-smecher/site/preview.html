@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prezentare SUFLET</title>
+<meta name="description" content="Ce s-a construit pentru SUFLET: randări, formele, ochii pe firmware-ul real și pagina de precomandă.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23000%27 stroke=%27%23D9DCE2%27 stroke-width=%274%27/%3E%3Cellipse cx=%2722%27 cy=%2734%27 rx=%277%27 ry=%2711%27 fill=%27%23FFF0C8%27/%3E%3Cellipse cx=%2742%27 cy=%2734%27 rx=%277%27 ry=%2711%27 fill=%27%23FFF0C8%27/%3E%3Cpath d=%27M13 20 L30 27 L30 18 L13 18Z M34 27 L51 20 L51 18 L34 18Z%27 fill=%27%23000%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#FAF8F3;--bg-alt:#F2EEE5;--card:#FFFFFF;--ink:#16181D;--muted:#676B74;
+  --line:rgba(22,24,29,.12);--line-strong:rgba(22,24,29,.28);
+  --cream:#FFF0C8;--amber:#FFB347;--accent-ink:#8A5300;--focus:#B86400;
+  --f-display:"Fredoka",ui-rounded,"SF Pro Rounded","Arial Rounded MT Bold",system-ui,sans-serif;
+  --f-text:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#111113;--bg-alt:#18181B;--card:#1D1D21;--ink:#F3F0E9;--muted:#A3A7AF;
+    --line:rgba(255,255,255,.12);--line-strong:rgba(255,255,255,.3);--accent-ink:#FFB347;--focus:#FFB347;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111113;--bg-alt:#18181B;--card:#1D1D21;--ink:#F3F0E9;--muted:#A3A7AF;
+  --line:rgba(255,255,255,.12);--line-strong:rgba(255,255,255,.3);--accent-ink:#FFB347;--focus:#FFB347;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-text);-webkit-font-smoothing:antialiased}
+h1,h2{font-family:var(--f-display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:-.02em;line-height:1.02}
+p,ul,figure{margin:0}
+ul{padding:0;list-style:none}
+img,video{display:block;max-width:100%}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.wrap{max-width:720px;margin-inline:auto;padding-inline:clamp(16px,5vw,32px);padding-block:20px 48px;display:grid;gap:clamp(40px,8vw,64px)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:inline-flex;align-items:center;gap:10px;font:600 1.1rem/1 var(--f-display);letter-spacing:.06em;text-decoration:none}
+.mark{width:30px;height:30px;border-radius:50%;background:#000;display:inline-flex;align-items:center;justify-content:center;gap:4px;box-shadow:0 0 0 2px var(--line-strong)}
+.mark i{width:6px;height:10px;border-radius:50%;background:var(--cream);box-shadow:0 0 6px rgba(255,240,200,.8)}
+.date{font:500 .78rem/1 var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.intro{display:grid;gap:18px}
+.eyebrow{font:600 .75rem/1.2 var(--f-text);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(2.3rem,9vw,3.6rem)}
+.lead{font-size:1.1rem;line-height:1.5;color:var(--muted);max-width:44ch}
+.fig{display:grid;gap:10px}
+.shot{width:100%;height:auto;border-radius:24px;background:var(--bg-alt)}
+.cap{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:.88rem;line-height:1.45;color:var(--muted);padding-inline:2px}
+.cap>span:last-child{flex:1 1 28ch;min-width:0}
+.kind{font:500 .64rem/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);padding:5px 8px;border-radius:999px;border:1px solid var(--line-strong);white-space:nowrap;transform:translateY(-1px)}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 1.3em;border-radius:999px;font:600 .98rem/1 var(--f-text);text-decoration:none;border:1.5px solid transparent}
+.btn-primary{background:var(--ink);color:var(--bg)}
+.btn-ghost{border-color:var(--line-strong)}
+.sec{display:grid;gap:18px}
+h2{font-size:clamp(1.6rem,6vw,2.2rem)}
+.facts{display:grid;border-top:1px solid var(--line-strong)}
+.facts li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:0 10px;padding-block:14px;border-bottom:1px solid var(--line)}
+.facts li::before{content:"";width:9px;height:14px;border-radius:50%;background:var(--cream);box-shadow:0 0 0 1.5px var(--line-strong),0 0 10px rgba(255,190,90,.45);margin-top:5px;justify-self:center}
+.facts b{font-weight:600}
+.facts span{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.code{font-family:var(--f-mono);font-size:.86em;overflow-wrap:anywhere}
+.vids{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.vids .fig:first-child{grid-column:1 / -1}
+.vid{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:22px;background:#000}
+.vids .fig:first-child .vid{aspect-ratio:4/3}
+.vids b{font:600 1rem/1.25 var(--f-display);color:var(--ink)}
+.note{font-size:.86rem;color:var(--muted)}
+.todo{background:var(--bg-alt);border-radius:20px;padding:18px 20px;display:grid;gap:10px}
+.todo p{font-size:.92rem;color:var(--muted)}
+.todo b{color:var(--ink)}
+.links{display:grid;gap:0;border-top:1px solid var(--line-strong)}
+.links a{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:14px;border-bottom:1px solid var(--line);text-decoration:none;font-weight:500}
+.links a span{color:var(--muted);flex:none}
+.links a:hover{color:var(--accent-ink)}
+@media (prefers-reduced-motion:reduce){.vid{animation:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header class="top">
+    <a class="brand" href="index.html#ro"><span class="mark" aria-hidden="true"><i></i><i></i></span>SUFLET</a>
+    <span class="date">24.09.2026</span>
+  </header>
+
+  <section class="intro" aria-labelledby="t">
+    <p class="eyebrow">Micul Șmecher · stadiu</p>
+    <h1 id="t">Ce am construit până acum.</h1>
+    <p class="lead">Firmware-ul cu ochii vii, carcasa în CAD, randările și pagina de precomandă RO/EN. Totul e local, nimic nu e publicat încă.</p>
+    <figure class="fig">
+      <img class="shot" src="media/render-hero-sm.jpg" srcset="media/render-hero-sm.jpg 800w, media/render-hero.jpg 1600w" sizes="(max-width:720px) calc(100vw - 32px), 656px" width="1600" height="1200" alt="Randare de concept: SUFLET Moneda, piatră albă mată cu doi ochi crem luminoși și inel de chei.">
+      <figcaption class="cap"><span class="kind">Randare de concept</span><span>Moneda, în alb mat. Nu e fotografie, prototipul nu există încă.</span></figcaption>
+    </figure>
+    <div class="cta">
+      <a class="btn btn-primary" href="index.html#ro">Deschide pagina de lansare</a>
+      <a class="btn btn-ghost" href="index.html">Varianta în engleză</a>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="f">
+    <h2 id="f">Pe scurt</h2>
+    <ul class="facts">
+      <li><p><b>Viu, fără internet.</b> <span>Firmware pe ESP32-S3 cu ecran AMOLED rotund de <span class="num">466 × 466</span>: 24 de reacții, clipește, respiră, se uită la tine.</span></p></li>
+      <li><p><b>Născut din cip.</b> <span>Personalitatea și culoarea ochilor vin din ID-ul cipului: Crem <span class="num">58%</span>, Gheață <span class="num">16%</span>, Mentă <span class="num">10%</span>, Piersică <span class="num">9%</span>, Liliac <span class="num">6%</span>, Aur <span class="num">1%</span>.</span></p></li>
+      <li><p><b>Works with Claude.</b> <span>Se leagă prin Bluetooth de aplicațiile desktop Claude. Ții apăsat <span class="num">1,2 s</span> ca să aprobi, atingi de două ori ca să refuzi.</span></p></li>
+      <li><p><b>Prețuri propuse.</b> <span>Founders Desk Edition <span class="num">119 €</span>, numerotată 001–300, pe USB. Voice Edition: avans rambursabil de <span class="num">10 €</span>, preț estimat <span class="num">149 €</span>. De confirmat înainte de lansare.</span></p></li>
+      <li><p><b>Voice Edition, în lucru.</b> <span>Placa de <span class="num">1,75″</span> cu 2 microfoane și difuzor: ții apăsat și vorbești cu AI-ul.</span></p></li>
+      <li><p><b>Carcasa, modelată în CAD.</b> <span>4 forme pe 2 plăci, 33 de fișiere STL verificate. Moneda de <span class="num">1,43″</span> are <span class="num">57,8 × 57,8 mm</span> și <span class="num">17–18,8 mm</span> grosime. Câteva cote trebuie încă măsurate cu șublerul și nimic nu e printat încă.</span></p></li>
+    </ul>
+  </section>
+
+  <section class="sec" aria-labelledby="s">
+    <h2 id="s">Patru forme</h2>
+    <figure class="fig">
+      <img class="shot" src="media/render-lineup-sm.jpg" srcset="media/render-lineup-sm.jpg 800w, media/render-lineup.jpg 1600w" sizes="(max-width:720px) calc(100vw - 32px), 656px" width="1600" height="800" loading="lazy" alt="Randare de concept cu cele patru forme SUFLET: nor, monedă, cabochon și picătură, fiecare cu altă culoare a ochilor.">
+      <figcaption class="cap"><span class="kind">Randare de concept</span><span>Nor, Monedă, Cabochon, Picătură. Ochii din imagine sunt Crem, Liliac, Gheață și Piersică.</span></figcaption>
+    </figure>
+  </section>
+
+  <section class="sec" aria-labelledby="v">
+    <h2 id="v">Ochii, pe firmware-ul real</h2>
+    <div class="vids">
+      <figure class="fig">
+        <video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/claude_buddy.jpg" aria-label="Clip: SUFLET ocupat cât lucrează Claude, apoi cere permisiunea și primește aprobare."><source src="media/claude_buddy.mp4" type="video/mp4"></video>
+        <figcaption class="cap"><span><b>Claude lucrează, cere voie, tu aprobi.</b> Inelul chihlimbariu apare când Claude are nevoie de tine.</span></figcaption>
+      </figure>
+      <figure class="fig">
+        <video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/boop.jpg" aria-label="Clip: boop, SUFLET roșește."><source src="media/boop.mp4" type="video/mp4"></video>
+        <figcaption class="cap"><span><b>Boop.</b> Îl atingi și roșește.</span></figcaption>
+      </figure>
+      <figure class="fig">
+        <video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/ai_talk.jpg" aria-label="Clip: SUFLET ascultă și răspunde, modul de vorbit cu AI."><source src="media/ai_talk.mp4" type="video/mp4"></video>
+        <figcaption class="cap"><span><b>Vorbește cu el.</b> Voice Edition, în lucru.</span></figcaption>
+      </figure>
+    </div>
+    <p class="note">Clipuri înregistrate din simulatorul ecranului de <span class="num">466 × 466</span>, cu același cod ca pe placă.</p>
+  </section>
+
+  <section class="sec" aria-labelledby="l">
+    <h2 id="l">Pagina de lansare</h2>
+    <nav class="links" aria-labelledby="l">
+      <a href="index.html#ro">Toată pagina, în română <span aria-hidden="true">→</span></a>
+      <a href="index.html#design">Design: randări și ce e înăuntru <span aria-hidden="true">→</span></a>
+      <a href="index.html#claude">Works with Claude, cu demo interactiv <span aria-hidden="true">→</span></a>
+      <a href="index.html#born">Certificatul de naștere <span aria-hidden="true">→</span></a>
+      <a href="index.html#reserve">Formularul de rezervare <span aria-hidden="true">→</span></a>
+    </nav>
+    <div class="todo">
+      <p><b>De completat înainte de publicare.</b> Prețurile și datele de livrare (acum sunt estimări), adresa la care ajung înscrierile (<span class="code">WAITLIST_ENDPOINT</span>), emailul de contact, datele firmei din subsol și paginile Confidențialitate, Termeni și Cookie-uri.</p>
+      <p>Toate valorile sunt în obiectul <span class="code">SUFLET_CONFIG</span> de la începutul lui <span class="code">index.html</span>; detaliile sunt în <span class="code">site/README.md</span>.</p>
+    </div>
+  </section>
+
+  <p class="note">Claude este o marcă comercială a Anthropic. SUFLET este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude.</p>
+
+</main>
+</body>
+</html>
