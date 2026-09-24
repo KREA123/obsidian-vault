@@ -69,9 +69,10 @@ world_color, area_light, aim, camera, flag, glossy_card, plane, sweep = (
 MM = V1['MM']
 
 # look parameters (override with --set key=value)
-TUNE = dict(frost_rough=0.30, frost_dens=60.0, frost_bump=0.06, glow=1.0, eye=3.0, module_grey=0.3, absk=0.35, aniso=0.8,
+TUNE = dict(frost_rough=0.25, frost_dens=90.0, frost_bump=0.2, glow=1.0, eye=3.0, module_grey=0.3, absk=0.35, aniso=0.8,
             darkfield=0,
-            caustics=1, chassis_grey=0.0, aqua=1.0, core=0.0, core_inset=2.2, core_mfp=6.0)
+            caustics=1, chassis_grey=0.0, aqua=1.0, core=0.0, core_inset=2.2, core_mfp=6.0,
+            tint_abs=0.9, rim_clear=0.9, rim_r0=22.0, rim_r1=31.0, grain_scale=3000.0, lens=62.0, sx=-0.05)
 TUNE['aqua'] = 1.3
 for kv in ARGS.set:
     k, v = kv.split('=')
@@ -195,7 +196,7 @@ def mat_frost(name, tint, rough=None, dens=None, dark=False):
     # grain: very fine noise -> bump + small roughness variation (the matte etched feel)
     tc = nt.nodes.new('ShaderNodeTexCoord')
     nz = nt.nodes.new('ShaderNodeTexNoise')
-    nz.inputs['Scale'].default_value = 5200.0
+    nz.inputs['Scale'].default_value = TUNE['grain_scale']
     nz.inputs['Detail'].default_value = 3.0
     nz.inputs['Roughness'].default_value = 0.7
     nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
@@ -213,11 +214,28 @@ def mat_frost(name, tint, rough=None, dens=None, dark=False):
     sc = tuple(min(1, x * 0.7 + 0.3) for x in c[:3]) if not dark else tuple(x * 0.6 + 0.05 for x in c[:3])
     vs.inputs['Color'].default_value = (*sc, 1)
     vs.inputs['Density'].default_value = dens
+    if TUNE['rim_clear'] > 0:
+        # clearer glass towards the rim, milky core: the thin outer band reads as glass and glows
+        vl = nt.nodes.new('ShaderNodeVectorMath')
+        vl.operation = 'LENGTH'
+        sep = nt.nodes.new('ShaderNodeVectorMath')
+        sep.operation = 'MULTIPLY'
+        sep.inputs[1].default_value = (1.0, 1.08, 0.0)       # radial distance in the pebble plane
+        nt.links.new(tc.outputs['Object'], sep.inputs[0])
+        nt.links.new(sep.outputs[0], vl.inputs[0])
+        rm = nt.nodes.new('ShaderNodeMapRange')
+        rm.interpolation_type = 'SMOOTHSTEP'
+        rm.inputs['From Min'].default_value = TUNE['rim_r0'] * MM
+        rm.inputs['From Max'].default_value = TUNE['rim_r1'] * MM
+        rm.inputs['To Min'].default_value = dens
+        rm.inputs['To Max'].default_value = dens * (1 - TUNE['rim_clear'])
+        nt.links.new(vl.outputs['Value'], rm.inputs['Value'])
+        nt.links.new(rm.outputs[0], vs.inputs['Density'])
     vs.inputs['Anisotropy'].default_value = TUNE['aniso']
     va = nt.nodes.new('ShaderNodeVolumeAbsorption')
     aq = (1 - 0.10 * TUNE['aqua'], 1 - 0.025 * TUNE['aqua'], 1 - 0.04 * TUNE['aqua'])   # soda-lime edge tint
     va.inputs['Color'].default_value = (c[0] ** 1.5 * aq[0], c[1] ** 1.5 * aq[1], c[2] ** 1.5 * aq[2], 1)
-    va.inputs['Density'].default_value = dens * TUNE['absk'] * (1.0 if min(c[:3]) > 0.8 else 2.0) * (3.0 if dark else 1.0)
+    va.inputs['Density'].default_value = dens * TUNE['absk'] * (1.0 if min(c[:3]) > 0.8 else TUNE['tint_abs']) * (3.0 if dark else 1.0)
     add = nt.nodes.new('ShaderNodeAddShader')
     nt.links.new(vs.outputs[0], add.inputs[0])
     nt.links.new(va.outputs[0], add.inputs[1])
@@ -297,7 +315,7 @@ def mat_fabric(name, col, sheen=0.6):
     return m
 
 
-def mat_skin(name, col='#E7C2A6'):
+def mat_skin(name, col='#C68B6C'):
     m, nt, p, out = new_mat(name)
     c = srgb(col)
     set_in(p, 'Base Color', c)
@@ -606,6 +624,40 @@ def on_stand(par, stand_top, a, yaw_deg):
     par.location = stand_top + nrm * (P2['HB'] + 0.05) * MM
 
 
+def dock(par, tag, x, y, yaw_deg, tilt_from_vertical=18.0, floor=0.0, metal='alu', pad='#2B2C30'):
+    """Magnetic dock: the stone stands on a low aluminium plinth, leaning back on a slim backrest
+    (the magnet + pogo pins sit in the backrest).  Mostly hidden behind the stone, like a watch dock."""
+    a = math.radians(90.0 - tilt_from_vertical)
+    par.location = (x, y, 0.1)
+    par.rotation_euler = (a, 0, math.radians(yaw_deg))
+    bpy.context.view_layer.update()
+    body = [c for c in par.children if c.name.endswith('_body')][0]
+    Mw = body.matrix_world
+    zs = [(Mw @ v.co).z for v in body.data.vertices]
+    H_pl = 6.5 * MM
+    par.location = (x, y, 0.1 - (min(zs) - (floor + H_pl)))
+    bpy.context.view_layer.update()
+    nrm = world_dir(par, (0, 0, 1))
+    upv = world_dir(par, (0, 1, 0))
+    fwd = Vector((nrm.x, nrm.y, 0)).normalized()
+    low = world_point(par, (0, -P2['b_bot'], -2.0))
+    pl = rounded_box(tag + '_plinth', 66 * MM, 34 * MM, H_pl, 2.6 * MM, 6)
+    pl.location = Vector((low.x, low.y, floor + H_pl / 2)) - fwd * 7 * MM
+    pl.rotation_euler = (0, 0, math.radians(yaw_deg))
+    assign(pl, mats()[metal])
+    # dark soft-touch inlay in the plinth top, where the stone's edge sits
+    inl = rounded_box(tag + '_inlay', 58 * MM, 12 * MM, 0.6 * MM, 0.3 * MM, 3)
+    inl.location = Vector((low.x, low.y, floor + H_pl + 0.1 * MM)) - fwd * 1.5 * MM
+    inl.rotation_euler = (0, 0, math.radians(yaw_deg))
+    assign(inl, mat_diffuse('inlay_' + tag, srgb(pad), 0.6, 0.3))
+    br = rounded_box(tag + '_backrest', 34 * MM, 7 * MM, 46 * MM, 3.0 * MM, 6)
+    c = world_point(par, (0, -8.0, -P2['HB'] - 3.6))
+    br.location = c
+    br.rotation_euler = (a - math.pi / 2, 0, math.radians(yaw_deg))
+    assign(br, mats()[metal])
+    return pl
+
+
 # ------------------------------------------------------------------------------------------
 # reflections on the black domed lens
 def lens_card(par, cam, dist=0.28, size=0.22, up_deg=15.0, side_deg=-15.0, strip=(0.012, 0.12), tilt_deg=-30.0,
@@ -705,8 +757,8 @@ def shot_hero(social=False):
     tgt = world_point(p, (0, -2, 2))
     focus = world_point(p, (0, -6, 10))
     if social:
-        cam = camera((0.075, -0.235, 0.215), tgt + Vector((-0.006, 0.012, 0)), lens=70, fstop=8.0, focus=focus,
-                     shift=(0, -0.02))
+        cam = camera(tgt + Vector((0.07, -0.24, 0.24)), tgt, lens=58, fstop=8.0, focus=focus,
+                     shift=(-0.03, 0.10))
     else:
         cam = camera(tgt + Vector((0.085, -0.25, 0.185)), tgt, lens=TUNE.get('lens', 55), fstop=8.0, focus=focus, shift=(TUNE.get('sx', -0.0), TUNE.get('sy', 0.0)))
     flag(cam, tgt)
@@ -728,16 +780,16 @@ def shot_os():
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
     sweep('#E2D8CB', wall_y=0.45)
-    st, top, nrm, a = build_stand('os', (0, 0, 0), -14, tilt_deg=62)
     p = build_pebble('os', '#F4F6F8', 'ui_reminder', eye_strength=2.6)
-    on_stand(p, top, a, -14)
+    dock(p, 'os', 0, 0, -14, 20.0)
     tgt = world_point(p, (1.0, 0.5, 9))
     focus = world_point(p, (0, 4, 10))
-    cam = camera(tgt + Vector((0.055, -0.155, 0.045)), tgt, lens=105, fstop=5.0, focus=focus)
+    cam = camera(tgt + Vector((0.10, -0.29, 0.07)), tgt + Vector((0.006, 0, -0.008)), lens=105, fstop=5.6,
+                 focus=focus)
     flag(cam, tgt)
     V1['protect_screens'](cam, tgt, 0.35, 0.03)
-    lens_card(p, cam, up_deg=10, side_deg=9, tilt_deg=-28, strength=5.0)
-    studio_lights(tgt, 0.9)
+    lens_card(p, cam, up_deg=14, side_deg=14, tilt_deg=-28, strength=4.0)
+    glass_lights(tgt, 0.9, 1.0, bg_power=7.0)
     return sc
 
 
@@ -753,20 +805,22 @@ COLORWAYS = [  # name, body tint, screen, strap, dark
 def shot_colors():
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
-    sweep('#E6DDD1', wall_y=0.6)
-    xs = np.linspace(-0.176, 0.176, 5)
+    sweep('#DDD3C6', wall_y=0.7)
+    # two staggered rows (reads left to right: cloud, sky, peach, graphite, lilac)
+    xs = [-0.078, -0.039, 0.0, 0.039, 0.078]
+    ys = [0.034, -0.036, 0.036, -0.034, 0.032]
+    yaws = [6, -4, 3, -7, 5]
+    peb = []
     for i, (name, tint, scr, strap, dark) in enumerate(COLORWAYS):
-        y = 0.018 * (abs(i - 2) ** 1.3)
-        st, top, nrm, a = build_stand(name, (xs[i], y, 0), -(xs[i] * 60), tilt_deg=60,
-                                      metal='alu_dark' if dark else 'alu')
-        p = build_pebble(name, tint, scr, dark=dark, dens=(18.0 if dark else None),
-                         metal='alu_dark' if dark else 'alu')
-        on_stand(p, top, a, -(xs[i] * 60))
-    tgt = Vector((0, 0.01, 0.034))
-    cam = camera((0.0, -0.78, 0.17), tgt, lens=70, fstop=11.0, focus=Vector((0, 0.0, 0.034)))
-    V1['protect_screens'](cam, tgt, 0.9, 0.03)
+        p = build_pebble(name, tint, scr, dark=dark, metal='alu_dark' if dark else 'alu')
+        lay_flat(p, xs[i], ys[i], yaws[i])
+        peb.append(p)
+    tgt = Vector((0, 0.0, 0.012))
+    cam = camera((0.0, -0.40, 0.52), tgt, lens=72, fstop=11.0, focus=Vector((0, 0.0, 0.016)), shift=(0, 0.0))
     flag(cam, tgt, size=(4, 3))
-    studio_lights(tgt, 1.5, rim=1.6)
+    for p in peb:
+        lens_card(p, cam, up_deg=16, side_deg=-17, strip=(0.008, 0.08), strength=2.5)
+    glass_lights(tgt, 1.3, 1.4, bg_power=7.0)
     return sc
 
 
@@ -784,16 +838,16 @@ def shot_scale():
     a1.rotation_euler = (0, 0, math.radians(12))
     p = build_pebble('v2', '#F4F6F8', 'eyes_cream_look')
     lay_flat(p, 0.036, 0.0, -8)
-    strap_flat('v2', p, L_loop=120, W_loop=40, bend=-0.25, col='#D8CEC0')
-    tgt = Vector((-0.006, -0.004, 0.008))
-    cam = camera((0.02, -0.25, 0.33), tgt, lens=70, fstop=11.0, focus=Vector((-0.004, 0, 0.012)))
+    tgt = Vector((-0.008, -0.006, 0.008))
+    cam = camera((0.0, -0.20, 0.46), tgt, lens=78, fstop=11.0, focus=Vector((-0.008, 0, 0.012)), shift=(0, -0.03))
     flag(cam, tgt)
-    lens_card(p, cam, side_deg=8)
-    lens_card(a1, cam, side_deg=8) if False else None
-    studio_lights(tgt, 1.0)
+    lens_card(p, cam, up_deg=15, side_deg=-15, strip=(0.01, 0.1), strength=4.0)
+    glass_lights(tgt, 1.0, 1.0, bg_power=7.0)
     # annotation anchors: diameter ends of each device (world), projected in main()
-    for key, par, half_w, y_off in (('v1', a1, 29.0, -34.0), ('v2', p, 35.0, -38.0)):
-        ANNOT.append(dict(key=key, a=world_point(par, (-half_w, y_off, 0)), b=world_point(par, (half_w, y_off, 0))))
+    for key, par, half_w, y_off in (('v1', a1, 29.0, -38.0), ('v2', p, 35.0, -41.0)):
+        c = world_point(par, (0, 0, 0))
+        c = Vector((c.x, c.y + y_off * MM, 0.0))
+        ANNOT.append(dict(key=key, a=c - Vector((half_w * MM, 0, 0)), b=c + Vector((half_w * MM, 0, 0))))
     ANNOT[0]['label'] = 'SOUL v1 · Ø58 mm'
     ANNOT[1]['label'] = 'SOUL v2 · 70 × 64 mm'
     return sc
@@ -806,13 +860,12 @@ def shot_night():
     table.location = (0, 0.08, -0.015)
     assign(table, mat_wood('walnut', srgb('#3B2416'), srgb('#1C0F08'), 0.35, 5.0))
     plane('wall', (3, 2), (0, 0.42, 0.5), (math.radians(90), 0, 0), mat_diffuse('wall', srgb('#2A2E38'), 0.9, 0.1))
-    st, top, nrm, a = build_stand('night', (0, 0, 0), -16, tilt_deg=58, metal='alu')
     p = build_pebble('night', '#F4F6F8', 'eyes_amber_sleepy', eye_strength=3.6, glow_w=0.035, glow_col=2200,
-                     dens=40.0, inner_light=0.06)
-    on_stand(p, top, a, -16)
+                     inner_light=0.06)
+    dock(p, 'night', 0, 0, -16, 20.0)
     tgt = world_point(p, (0, 0, 0))
     focus = world_point(p, (-4, 2, 10))
-    cam = camera(tgt + Vector((0.13, -0.33, 0.06)), tgt + Vector((0.01, 0, 0.004)), lens=100, fstop=2.8, focus=focus)
+    cam = camera(tgt + Vector((0.17, -0.42, 0.075)), tgt + Vector((0.012, 0, 0.006)), lens=85, fstop=2.8, focus=focus)
     # the warm spill the glowing body throws on the table and the wall
     area_light('spill', world_point(p, (0, -10, 20)), world_point(p, (0, -40, 60)), 0.03, 0.5,
                blackbody_rgb(2200), 'DISK', spread=150)
@@ -836,60 +889,39 @@ def shot_night():
 
 
 # ---- hand ---------------------------------------------------------------------------------
-def build_hand(name, loc, yaw_deg=0.0, scale=1.0):
-    """Stylised right hand, palm up, fingers pointing +y, built from metaballs (mm)."""
-    mb = bpy.data.metaballs.new(name)
-    mb.resolution = 1.2 * MM
-    mb.render_resolution = 0.9 * MM
-    mb.threshold = 0.6
-    ob = bpy.data.objects.new(name, mb)
+def build_hand(name, loc, yaw_deg=0.0):
+    """Stylised right hand, palm up (mesh from hand_sdf.py: tex/hand.npz, mm)."""
+    path = os.path.join(TEX, 'hand.npz')
+    if not os.path.exists(path):
+        import subprocess
+        subprocess.run(['python3', os.path.join(HERE, 'hand_sdf.py'), path], check=True)
+    D = np.load(path)
+    v = D['verts'].astype(float) * MM
+    f = D['faces']
+    me = bpy.data.meshes.new(name)
+    me.vertices.add(len(v))
+    me.vertices.foreach_set('co', v.ravel())
+    me.loops.add(f.size)
+    me.loops.foreach_set('vertex_index', f.ravel())
+    me.polygons.add(len(f))
+    me.polygons.foreach_set('loop_start', np.arange(0, f.size, 3))
+    me.polygons.foreach_set('loop_total', np.full(len(f), 3))
+    me.update()
+    me.validate()
+    import bmesh as _bm
+    bm = _bm.new()
+    bm.from_mesh(me)
+    _bm.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(me)
+    bm.free()
+    me.polygons.foreach_set('use_smooth', [True] * len(me.polygons))
+    ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
-
-    def ball(p, r, stiff=2.0, kind='BALL', size=None, rot=None):
-        e = mb.elements.new()
-        e.type = kind
-        e.co = Vector(p) * MM
-        e.radius = r * MM
-        e.stiffness = stiff
-        if size is not None:
-            e.size_x, e.size_y, e.size_z = [s * r * MM for s in size]
-        if rot is not None:
-            e.rotation = rot
-
-    # palm: flattened ellipsoids (thicker at the heel), slightly cupped (edges higher)
-    ball((0, 0, 0), 30, 2.0, 'ELLIPSOID', (1.25, 1.35, 0.52))
-    ball((-17, -22, 2), 20, 1.6, 'ELLIPSOID', (1.0, 1.0, 0.75))     # thenar (thumb mound)
-    ball((19, -18, 3), 18, 1.6, 'ELLIPSOID', (1.0, 1.25, 0.72))      # hypothenar (outer edge)
-    ball((0, 28, 4), 22, 1.8, 'ELLIPSOID', (1.5, 0.6, 0.6))           # finger pads ridge
-    # wrist + forearm towards -y
-    for i, (y, r) in enumerate([(-45, 19), (-65, 19), (-90, 20), (-120, 22), (-160, 24), (-200, 25)]):
-        ball((2, y, -3 - i * 0.8), r, 2.0, 'ELLIPSOID', (1.25, 1.0, 0.75))
-
-    def finger(base, direction, lengths, radii, curl, spread=0.0):
-        d = Vector(direction).normalized()
-        p = Vector(base)
-        pitch = 0.0
-        for L, r, c in zip(lengths, radii, curl):
-            pitch += math.radians(c)
-            dirv = Vector((d.x * math.cos(pitch), d.y * math.cos(pitch), math.sin(pitch))).normalized()
-            n = max(3, int(L / (r * 0.55)))
-            for k in range(n):
-                q = p + dirv * (L * (k + 0.5) / n)
-                ball(tuple(q), r * (1 - 0.06 * k / n), 3.0)
-            p = p + dirv * L
-        ball(tuple(p - Vector((0, 0, 0.5))), radii[-1] * 0.92, 3.0)   # rounded tip
-
-    # fingers (index .. little), right hand palm up => thumb on the -x side when looking from +z?  For a
-    # RIGHT hand seen palm-up with fingers away from the viewer the thumb is on the right (+x).
-    finger((12, 34, 5), (0.10, 1, 0), (44, 26, 21), (9.2, 8.6, 8.0), (18, 22, 18))        # index
-    finger((-6, 38, 5), (-0.02, 1, 0), (47, 29, 22), (9.4, 8.8, 8.1), (16, 20, 18))      # middle
-    finger((-23, 34, 4), (-0.14, 1, 0), (44, 27, 21), (9.0, 8.4, 7.8), (18, 22, 18))     # ring
-    finger((-38, 26, 3), (-0.30, 1, 0), (35, 21, 18), (8.0, 7.5, 7.0), (22, 24, 20))     # little
-    # thumb: from the thenar mound outwards and up
-    finger((24, -18, 4), (0.85, 0.52, 0), (32, 28, 24), (12.0, 10.5, 9.4), (8, 16, 14))
+    sm = ob.modifiers.new('smooth', 'CORRECTIVE_SMOOTH') if False else ob.modifiers.new('smooth', 'SMOOTH')
+    sm.factor = 0.5
+    sm.iterations = 4
     ob.location = loc
     ob.rotation_euler = (0, 0, math.radians(yaw_deg))
-    ob.scale = (scale, scale, scale)
     assign(ob, mat_skin('skin'))
     return ob
 
@@ -897,20 +929,19 @@ def build_hand(name, loc, yaw_deg=0.0, scale=1.0):
 def shot_hand():
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
-    sweep('#E0D5C6', wall_y=0.55)
-    # the palm is mirrored in x so the thumb sits on the camera side
+    sweep('#D3C7B8', wall_y=0.55)
     hand = build_hand('hand', (0.0, 0.0, 0.030), 18.0)
-    hand.scale = (-1, 1, 1)
     p = build_pebble('hand', '#F4F6F8', 'eyes_cream_look')
     p.location = (0.004, 0.012, 0.030 + 0.0125 + (P2['HB'] - 1.5) * MM)
-    p.rotation_euler = (math.radians(9), math.radians(-5), math.radians(12))
+    p.rotation_euler = (math.radians(16), math.radians(-6), math.radians(12))
     tgt = world_point(p, (0, 0, 0))
     focus = world_point(p, (0, -6, 10))
-    cam = camera(tgt + Vector((0.13, -0.30, 0.22)), tgt + Vector((-0.004, 0.02, -0.01)), lens=70, fstop=6.3,
+    cam = camera(tgt + Vector((0.17, -0.40, 0.17)), tgt + Vector((-0.006, 0.035, 0.004)), lens=62, fstop=7.1,
                  focus=focus)
     flag(cam, tgt)
     lens_card(p, cam)
-    studio_lights(tgt, 1.0)
+    glass_lights(tgt, 0.9, 1.0, bg_power=6.0)
+    POST['exposure'] = -0.45
     return sc
 
 
