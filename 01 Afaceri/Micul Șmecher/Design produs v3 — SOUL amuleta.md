@@ -5,7 +5,9 @@ status: direcție în lucru (concept E)
 actualizat: 2026-09-24
 ---
 
-# Design produs v3 — SOUL (concept E: „piatra-lentilă”, fără toartă)
+# Design produs v3 — SOUL (familia de forme, fără toartă)
+
+> **Actualizare 2026-09-24 seara:** cercul simplu Ø64 (concept E) a fost respins — „cerc mic și urat”. Mergem înapoi la **formele cu caracter**: piatra ovală în picioare (ca în prototipul SoulOS), norul, lacrima, amuleta — **mai mari**, **fără toartă**, corp lucios perlat (ieftin, injectat). Randări: `micul-smecher/renders/v4/`. Restul notei (strategia AirTag, husa, costurile) rămâne valabil.
 
 > **Ce a spus Andu (2026-09-24), în ordine:**
 > 1. Prima variantă (rotundă, fereastra neagră, ochii vii) are suflet; piatra culcată v2 părea plastic ieftin.
