@@ -7,7 +7,7 @@ actualizat: 2026-09-24
 
 ![[suflet_hero.png]]
 
-# Micul Șmecher — brand de lucru SUFLET
+# Micul Șmecher — produsul SOUL
 
 > **Pe scurt:** o amuletă din sticlă mată cu doi ochi vii pe un ecran AMOLED rotund. E **vie și fără internet**, devine **AI-ul tău personal** când ții degetul pe „piatră” (Claude sau ChatGPT în spate) și **se leagă deja de Claude Code / Cowork** pe calculator. „Laboratoarele fac creierul. Noi facem corpul și sufletul.”
 
@@ -29,13 +29,14 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 - [[Viziunea — momentul iPhone]] — ce lansăm, de ce e altceva, scenariul filmului de lansare
 - [[Planul de bani Micul Șmecher]] — fazele, cifrele pe bucată, scenarii, finanțare, filtrul celor 5 întrebări
 - [[Produs și dezvoltare Micul Șmecher]] — plăci, piese, ce cumperi azi, prototipul în 14 zile, drumul spre producție
-- [[Design produs v2 — SUFLET Pebble]] — v2 mai mare, de buzunar: forma, materiale, input, funcții „face lucruri pentru tine”, baterie
+- [[Design produs v3 — SOUL amuleta]] — **direcția aleasă**: amuleta Ø56, „apasă ochiul”, aura, spatele gravat
+- [[Design produs v2 — SUFLET Pebble]] — (abandonat) piatra de buzunar; funcțiile și bateria rămân utile
 - [[Brand și lansare Micul Șmecher]] — nume, carta companionului, mecanica de lansare, conținut
 - [[Conformitate și riscuri Micul Șmecher]] — CE, baterie, AI Act, Anthropic, pre-mortem
 - [[Piață și concurență Micul Șmecher]] — cine a vândut ce, la ce preț
 
 ## Deciziile care îți aparțin (Andu)
-- [ ] **Numele**: SUFLET (recomandat) sau altul — apoi verificare EUIPO + domeniu înainte de orice cheltuială pe brand.
+- [x] **Numele**: **SOUL** (ales de Andu, 2026-09-24) — urmează verificare EUIPO + domeniu înainte de orice cheltuială pe brand.
 - [ ] **Prețul Founders Desk Edition**: €119 (recomandat; la €99 rămân doar ~€33/bucată).
 - [ ] **Modelul AI** pentru voce: Claude Opus 5 (implicit) vs Sonnet 5 / Haiku 4.5 (mai ieftine, mai rapide) — după un test real de latență și cost.
 - [ ] **Firmă nouă** pentru proiect (SRL separat) — necesară pentru Startup Nation 2026 (250.000 lei) și pentru investitori.

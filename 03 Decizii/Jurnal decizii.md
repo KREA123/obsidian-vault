@@ -17,6 +17,8 @@ Format: `YYYY-MM-DD — decizie — de ce — sursa`. Cele mai noi sus. Se adaug
 - „Nu punem la dispoziție ce nu avem în stoc.”
 
 ## Septembrie 2026
+- 2026-09-24 — Numele produsului: **SOUL** (un singur cuvânt, fără sub-nume); „suflet” rămâne povestea numelui — Andu. De verificat EUIPO/domeniu înainte de orice cheltuială (există SOUL Electronics, căști) — [[Brand și lansare Micul Șmecher]]
+- 2026-09-24 — Designul: înapoi la **amuletă** (v3, Ø56, fereastra neagră cu ochi, aură luminoasă, „apasă ochiul”); piatra culcată v2 abandonată — Andu: „era mai tare prima variantă… să pară amuletă, cu suflet” — [[Design produs v3 — SOUL amuleta]]
 - 2026-09-24 — [[Gadget WISP]] devine [[Micul Șmecher]] (brand de lucru SUFLET): companion viu + AI personal (Claude/ChatGPT) + „works with Claude” (Hardware Buddy) — Andu: „dezvoltă la maxim, să fim revoluționari, să se lege cu Claude/ChatGPT” — [[Viziunea — momentul iPhone]]
 - 2026-09-24 — Rulează ca experiment cu porți, în paralel cu [[Expandly]] (trimiterea în review rămâne în S2); fără bani din MundiShop; nicio matriță/stoc fără comenzi plătite — filtrul celor 5 întrebări — [[Planul de bani Micul Șmecher]]
 - 2026-09-24 — Propunere Claude (de confirmat de Andu): Founders Desk Edition pe USB, fără baterie, €119 numerotat 001–300; Voice Edition cu rezervare €10 returnabilă — la €99 rămân doar ~€33/buc., la €119 ~€49 — [[Planul de bani Micul Șmecher]]
