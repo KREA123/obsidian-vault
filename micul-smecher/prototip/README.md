@@ -368,7 +368,43 @@ Imaginile sunt în `img/`. Planșele tehnice (cote, secțiune, explodat cu list�
 
 Cifrele sunt trecute și pe planșa 2 (secțiunea A-A).
 
-<!-- CHECKS -->
+**Rezultate (rev A, 2026-09-25):**
+
+| | Plastic | Aluminiu |
+|---|---|---|
+| Dimensiuni (L × Î cu picior × A) | 112,2 × 127,6 × 33,7 mm | la fel |
+| Mase (față / spate / bază / șasiu) | 17 / 35 / 9 / 13 g (PLA) | 29 / 62 g Al + 9 / 13 g plastic |
+| Perechi verificate | 114 | 114 |
+| Suprapuneri | **niciuna** între componente și carcase. Singura: inelul plăcii de bază intră **0,36 mm** în carcasa din față la colțul de jos al cusăturii. Se rezolvă cu o trecere de hârtie abrazivă pe inel | **niciuna**, în afară de același inel (0,2 mm) |
+
+Jocul minim de la fiecare componentă la carcase (plastic, mm):
+
+| Componentă | față | spate | șasiu |
+|---|---|---|---|
+| Sticla Ø95,86 | 0,00 (stă pe buză, intenționat) | 7,3 | 5,5 |
+| Placa (PCB Ø73) | 10,6 | 8,4 | 0,5 (stâlpii cu spumă EVA) |
+| Piesele de pe spatele plăcii (9,7) | 11,9 | 4,7 | stâlpii trec prin ele, pe plăcuțele M2 |
+| Bateria 604050 | 0,9 | 3,2 | 0 (stă pe șine) |
+| Difuzorul 2030 | 17,9 | 2,3 | 0 (în fereastra lui) |
+| Amplificatorul MAX98357A | 9,8 | 2,9 | 0,05 |
+| Microfonul INMP441 | 11,3 | 1,5 | 0 |
+| Mufa BAT + fire (U) | 16,4 | 3,6 | 1,5 |
+| Mufa USB-C în 90° (U) | 2,0 | 2,3 | 0 |
+| Mufa USB-C din spate (U) | 1,7 | 0 (în gaura ei) | 0 (în clemă) |
+
+(U) înseamnă dimensiune neverificată: o măsori pe piesa ta.
+
+**Ce NU e în model:**
+- firele;
+- slotul TF, care rămâne gol;
+- conectorul FPC de 12 pini cu cablul lui (e sub amplificator, sub stratul de spumă).
+
+**Șuruburi** (lungimile maxime calculate):
+- 2 × **M2×16** jos (maxim 16,4);
+- 2 × **M2×8** sus (maxim 8,8);
+- 2 × **M2×8 cu cap înecat** la placa de bază.
+
+**Fișiere STEP:** cifrele sunt rotunjite la 7 cifre semnificative (≤ 0,01 µm) de `cad/step_shrink.py`, ca fiecare `.step.gz` să aibă sub 45 MB. Carcasa din față are ~36–40 MB arhivată. Nu există STEP de ansamblu, pentru că ar trece de 45 MB. Ansamblul e în `stl/assembly/` (piesele în poziția montată).
 
 ---
 
@@ -385,7 +421,7 @@ prototip/
   stl/plastic/            de printat (pozițiile de print)
   stl/alu/                aceleași piese pentru varianta din aluminiu
   stl/assembly/           piesele în poziția montată (pentru randări și verificări)
-  step/plastic, step/alu  STEP arhivate .gz (se dezarhivează înainte de upload), plus ansamblul
+  step/plastic, step/alu  STEP arhivate .gz (se dezarhivează înainte de upload)
   img/                    randările
   legacy-S/               varianta S (1,75″), oprită
 ```
@@ -395,7 +431,9 @@ Regenerarea:
 pip install cadquery trimesh manifold3d shapely rtree
 cd prototip/cad
 python3 soul_p0.py                    # plastic + alu (~1 h pe 4 nuclee)
-python3 soul_p0.py finish plastic     # doar verificarea + exportul, din cache/
+python3 soul_p0.py repair plastic     # refă tăieturile de pe cusătură (fanta, găurile știfturilor) pe care OCCT le-a sărit
+python3 soul_p0.py finish plastic     # verificarea + exportul, din cache/
+python3 step_shrink.py ../step/*/*.step   # rotunjește și arhivează STEP-urile sub 45 MB
 blender -b -P render_p0.py -- alu     # randările
 python3 blueprints_p0.py              # planșele
 ```

@@ -408,8 +408,7 @@ def sheet_exploded(theme='blue'):
     v = 'plastic' if 'plastic' in REP else 'alu'
     sh = Sheet(theme)
     sh.frame()
-    az, el = math.radians(-35), math.radians(20)
-    dview = -np.array([math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el)])
+    dview = np.array([0.55, 0.78, -0.30])          # viewer in front, to the left, a little above
     dview /= np.linalg.norm(dview)
     U = np.cross(dview, [0, 0, 1.0])
     U /= np.linalg.norm(U)
@@ -417,11 +416,11 @@ def sheet_exploded(theme='blue'):
     view = (dview, U, Vv)
     NS = np.array([0, 1.0, -g.SEAM_B])
     NS /= np.linalg.norm(NS)
-    groups = [('front_shell', ['front_shell'], -60), ('lens', ['in_lens'], -38),
-              ('board', BOARD_IN, -22), ('chassis', ['chassis'], 4),
-              ('inside', ['in_battery', 'in_speaker', 'in_amp', 'in_mic'], 18), ('back_shell', ['back_shell'], 62)]
-    k = 0.95
-    VV = View(118, 150, k)
+    groups = [('front_shell', ['front_shell'], -95), ('lens', ['in_lens'], -62),
+              ('board', BOARD_IN, -38), ('chassis', ['chassis'], 0),
+              ('inside', ['in_battery', 'in_speaker', 'in_amp', 'in_mic'], 22), ('back_shell', ['back_shell'], 70)]
+    k = 0.72
+    VV = View(112, 140, k)
     items = []
     for gname, names, off_ in groups:
         off = NS * off_
@@ -432,7 +431,7 @@ def sheet_exploded(theme='blue'):
         items.append((float(((m.vertices + off) @ dview).mean()), gname, m, off))
     bpm = mesh(v, 'base_plate')
     if bpm is not None:
-        items.append((float(((bpm.vertices + [0, 0, -40]) @ dview).mean()), 'base_plate', bpm, np.array([0, 0, -40.0])))
+        items.append((float(((bpm.vertices + [0, 0, -75]) @ dview).mean()), 'base_plate', bpm, np.array([0, 0, -75.0])))
     items.sort(key=lambda t: -t[0])
     anchors = {}
     for depth, gname, m, off in items:
@@ -442,11 +441,18 @@ def sheet_exploded(theme='blue'):
             draw_lines(sh, VV, feature_lines(m, view, 35, off), 'o3')
         c = sil.representative_point()
         anchors[gname] = VV.p(c.x, c.y)
-    bal = {'front_shell': (1, (26, 36)), 'lens': (2, (48, 26)), 'board': (2, (70, 22)), 'chassis': (3, (120, 20)),
-           'inside': (4, (160, 26)), 'back_shell': (7, (205, 46)), 'base_plate': (8, (205, 205))}
-    for gname, (n, pos) in bal.items():
-        if gname in anchors:
-            sh.balloon(pos[0], pos[1], n, tip=anchors[gname])
+    bal = {'front_shell': (1, None), 'lens': (2, None), 'board': (2, None), 'chassis': (3, None),
+           'inside': (4, None), 'back_shell': (7, None), 'base_plate': (8, None)}
+    order = sorted([g_ for g_ in bal if g_ in anchors and g_ != 'base_plate'], key=lambda g_: anchors[g_][0])
+    xs, last = [], -1e9
+    for g_ in order:
+        x_ = max(anchors[g_][0], last + 12)
+        xs.append(x_)
+        last = x_
+    for g_, x_ in zip(order, xs):
+        sh.balloon(x_, 24, bal[g_][0], tip=anchors[g_])
+    if 'base_plate' in anchors:
+        sh.balloon(anchors['base_plate'][0] + 45, anchors['base_plate'][1] + 12, bal['base_plate'][0], tip=anchors['base_plate'])
     sh.text(118, 244, 'EXPLODED VIEW along the seam normal (base plate down)', 3.0, 'middle', 'tx', weight='bold')
     sh.text(118, 248.5, 'axonometric projection of the CAD meshes', 2.1, 'middle', 'td')
     ty = table(sh, 232, 16, [('#', 6), ('part', 44), ('material', 40), ('qty', 8), ('source', 36), ('price', 36)],

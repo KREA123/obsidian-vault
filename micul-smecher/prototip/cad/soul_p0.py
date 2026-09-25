@@ -533,6 +533,8 @@ def build(vname):
     for (bx_, by_) in BASE_SCREWS:
         col = cq.Workplane('XY', origin=(bx_, by_, BASE_T + 2.8)).circle(3.0).extrude(8.0).val().intersect(OUTER)
         add['front'].append(col.intersect(FRONT_HALF))
+        add['front'].append(cq.Workplane('XY', origin=(bx_, by_ - 6.0, BASE_T + 2.8)).rect(3.0, 12.0).extrude(8.0).val()
+                            .intersect(OUTER).intersect(FRONT_HALF))    # web: the boss must reach the front wall
         sub['front'].append(cq.Workplane('XY', origin=(bx_, by_, BASE_T + 2.7)).circle(V['insert_d'] / 2).extrude(4.7).val())
         sub['base'].append(cq.Workplane('XY', origin=(bx_, by_, -5)).circle(V['clear_d'] / 2).extrude(20).val())
         sub['base'].append(cq.Workplane('XY', origin=(bx_, by_, -g.FOOT_H - 0.01)).circle(2.2).extrude(2.0).val())
@@ -906,8 +908,33 @@ def patch_front(vname):
     ld('pcb_tab').intersect(bf.cyl(45.3, 0, 20)).exportBrep(os.path.join(cdir, 'pcb_tab.brep'))
 
 
+def patch_front2(vname):
+    """keep only real material in the front shell: the main solid + the two base-screw bosses, which get a web to
+    the front wall (they floated free of it); zero-thickness slivers and loose fragments are dropped"""
+    V = VARIANTS[vname]
+    cdir = os.path.join(HERE, 'cache', 'm_' + vname)
+    F = cq.Shape.importBrep(os.path.join(cdir, 'front_shell.brep'))
+    sols = sorted(F.Solids(), key=lambda x: -abs(x.Volume()))
+    main = sols[0]
+    OUTER = outer_solid()
+    adds = []
+    for (bx_, by_) in BASE_SCREWS:
+        col = cq.Workplane('XY', origin=(bx_, by_, BASE_T + 2.8)).circle(3.0).extrude(8.0).val().intersect(OUTER)
+        web = cq.Workplane('XY', origin=(bx_, by_ - 6.0, BASE_T + 2.8)).rect(3.0, 12.0).extrude(8.0).val().intersect(OUTER)
+        adds += [col, web]
+    r = main.fuse(*adds).clean()
+    for (bx_, by_) in BASE_SCREWS:
+        r = r.cut(cq.Workplane('XY', origin=(bx_, by_, BASE_T + 2.7)).circle(V['insert_d'] / 2).extrude(4.7).val()).clean()
+    print(f'  {vname}: front solids {len(sols)} -> {len(r.Solids())}, volume {vol(r):.0f}, valid {r.isValid()}', flush=True)
+    r.exportBrep(os.path.join(cdir, 'front_shell.brep'))
+
+
 def main():
     a = sys.argv[1:]
+    if a and a[0] == 'patch2':
+        for vn in a[1:]:
+            patch_front2(vn)
+        return
     if a and a[0] == 'patch':
         for vn in a[1:]:
             patch_front(vn)
