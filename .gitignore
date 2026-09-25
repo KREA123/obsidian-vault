@@ -9,3 +9,4 @@
 micul-smecher/prototip/cad/cache/
 micul-smecher/prototip/step/**/*.step
 micul-smecher/prototip/step/*.step
+.pytest_cache/

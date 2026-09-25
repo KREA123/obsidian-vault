@@ -15,7 +15,7 @@ Regula de bază: **deciziile se iau pe date, nu pe păreri** — vezi [[JARVIS]]
 - [[KREA]] — agenția
 - [[Aplicații]] — Google Play, iOS, Shopify App Store
 - Clienți KREA: [[MI-DA PRO TRADE]] · [[SIGMALUX]] · [[Alți clienți KREA]]
-- [[Micul Șmecher]] — companionul AI cu ochi vii (SUFLET): firmware + AI + plan de bani, 24.09
+- [[Micul Șmecher]] — **SOUL**, AI-ul tău personal cu ochi vii (aluminiu, mărimea M, SoulOS) → toată memoria proiectului: [[SOUL — Harta memoriei]] · finanțare: [[Finanțare — PR BI PoC 1.1 pentru SOUL]]
 - Proiecte noi: [[PRIVATE PROPERTY]] · [[Gadget WISP]] (→ Micul Șmecher) · [[Solterra]]
 
 ## Parteneri
@@ -46,3 +46,6 @@ Regula de bază: **deciziile se iau pe date, nu pe păreri** — vezi [[JARVIS]]
 - [[Despre Andu]] — cum lucrăm împreună
 - [[Cum folosești Inbox|00 Inbox]] — aruncă aici orice idee; o sortează Claude
 - `05 Rapoarte` — rapoartele zilnice (notă zilnică = raport)
+
+## Sistem
+- [[README|Despre acest vault]] · [[Claude - test conexiune]] — testul de conectare Claude ↔ Obsidian
