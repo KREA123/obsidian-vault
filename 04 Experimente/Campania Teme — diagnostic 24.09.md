@@ -66,3 +66,11 @@ Andu a cerut obiectiv de cost 15–20 lei și a lăsat alegerea ad seturilor la 
   - 27.09 seara: un ad set care a cheltuit sub 10 lei → Meta nu găsește comenzi la ~20 lei acolo. Pasul următor pe el e schimbarea produselor, nu limita.
   - 01.10: un ad set cu comenzi ≤ ~25 lei în medie → păstrat, apoi discutăm creșterea bugetului.
 - **Stabilit cu Andu (24.09):** nu se modifică nimic în campanie o săptămână, până pe 01.10, când se dă verdictul. Singura excepție e siguranța de pe 27.09: dacă un ad set a cheltuit peste 60 lei fără nicio comandă, se discută cu Andu înainte de orice modificare. Până atunci doar citim cifrele.
+
+## 25.09 — limita de cost scoasă de Andu
+- Andu a scos manual limita de 20 lei pe 25.09, pentru că „nu cheltuia niciun ban”. Toate cele 7 ad seturi sunt din nou pe LOWEST_COST_WITHOUT_CAP (verificat).
+- **Ce a făcut limita cât a stat pusă** (date pe ore, Windsor): pe 24.09, de la ~12:00, cele 6 ad seturi cu limită au cheltuit 3,60 lei la ora 12, 2,27 lei la ora 13, apoi ~0,2 lei în total până la 24:00. Pe 25.09 au cheltuit ~0 până la ora 9. Livrarea a repornit la ora 9 (1,91 lei) și la ora 10 (8,23 lei), după ce Andu a scos limita. Limita de 20 lei a oprit practic complet livrarea, cum s-a întâmplat și cu costul-țintă de 45 lei din septembrie.
+- **Rezultate (Shopify + UTM):** #1070 pe 24.09, Creator, 481 lei. #1071 pe 25.09 la 10:10, **City Classic Friends**, 184,99 lei, client care revine. Comanda a venit în ora 10, cel mai probabil după scoaterea limitei: livrarea repornise la ora 9, iar în ora comenzii s-au cheltuit ~8 lei.
+- **Cheltuială:** 23.09 = 131,28 lei · 24.09 = 307,93 lei · 25.09 până la prânz = 159,94 lei. Total ~599 lei, 3 comenzi reale, ~200 lei/comandă.
+- **Lecție:** în contul acesta, limita de cost sub costul real nu scade costul pe comandă. Doar oprește livrarea. Pârghiile rămase sunt produsele (seturi sub 200 lei, accesorii) și creativele.
+- Cele 6 ad seturi au intrat de două ori în învățare în ~24 de ore. De acum nu se mai modifică nimic până pe 01.10.
