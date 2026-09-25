@@ -4,3 +4,8 @@
 .obsidian/cache
 .trash/
 .DS_Store
+
+# SOUL prototype: large CAD files (raw STEP kept locally; gzipped copies are committed)
+micul-smecher/prototip/cad/cache/
+micul-smecher/prototip/step/**/*.step
+micul-smecher/prototip/step/*.step

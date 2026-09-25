@@ -427,6 +427,7 @@ def build(vname):
             s = s.cut(*subs).clean()
         return s
     sub['back'].append(tongue_room)
+    sub['back'] += [grow(board['plug_spk'], 0.3), grow(board['plug_bat'], 0.3)]
     t1 = time.time()
     front = finish(SHELL.intersect(FRONT_HALF), add['front'], sub['front'])
     back = finish(SHELL.intersect(BACK_HALF), add['back'], sub['back'])
@@ -599,8 +600,8 @@ def print_pose(name, s, ctx, vname):
     """Rotate a part into its print/fixture pose (lowest face on the bed at Z = 0)."""
     NS = SeamFrame.NS
     if name in ('front_shell',):
-        # face down on the bed: rotate so the outward normal of the table points to -Z
-        s = align(s, g.N_OUT, (0, 0, -1))
+        # seam (open side) down, face up: no support on the visible front; tree supports only inside + under the rim
+        s = align(s, NS, (0, 0, -1))
     elif name in ('back_shell', 'seam_band'):
         # open side down: the seam plane on the bed (back dome up)
         s = align(s, -NS, (0, 0, -1))
@@ -694,5 +695,105 @@ def main():
     print('done')
 
 
+
+
+# ============================================================================ finish from the cached B-reps
+def light_ctx(vname, say):
+    """board frame, pins, screw info without the heavy Booleans (same maths as build())"""
+    V = VARIANTS[vname]
+    bf = BoardFrame(V['lip_t'] - 0.15)
+    band = V['band']
+    screws = []
+    for (x, Z), kind in [(p, 'low') for p in SCREWS_LOW] + [(p, 'up') for p in SCREWS_UP]:
+        p = SeamFrame.pt(x, Z)
+        s_front = -ray_exit(p, -SeamFrame.NS)
+        s_back = ray_exit(p, SeamFrame.NS)
+        depth = min(V['insert_depth'], (-band / 2 - s_front) - 1.6)
+        L_need = (s_back - V['cb_depth']) - (-band / 2 - depth + 0.5)
+        screws.append(dict(kind=kind, x=x, Z=Z, s_front=round(s_front, 2), s_back=round(s_back, 2),
+                           hole_depth=round(depth, 2), skin_under_hole=round((-band / 2 - depth) - s_front, 2),
+                           screw_len_max=round(L_need, 2)))
+    pins = {}
+    for k, ((ox, oy), ang, dd) in BTNS.items():
+        a_ = math.radians(ang)
+        d2 = np.array([math.cos(a_), math.sin(a_)])
+        w_act = bf.w(*(np.array([ox, oy]) + 1.6 * d2), dd)
+        dwrld = d2[0] * np.array([1.0, 0, 0]) + d2[1] * g.UP
+        t_exit = ray_exit(w_act, dwrld)
+        s_exit = SeamFrame.s(w_act + t_exit * dwrld)
+        pl = cq.Plane(origin=vec(w_act), xDir=vec(np.cross(dwrld, g.INW)), normal=vec(dwrld))
+        L_pin = t_exit - 0.5
+        pin = (cq.Workplane('XY').circle(V['pin_d'] / 2).extrude(L_pin)
+               .faces('<Z').workplane().circle(1.6).extrude(0.8).val())
+        pins[k] = dict(solid=pin, L=round(L_pin, 2), s_exit=round(s_exit, 2), frame=pl, t_exit=t_exit,
+                       shell='back' if s_exit > band / 2 + 0.3 else 'front',
+                       exit=[round(float(v), 2) for v in (w_act + t_exit * dwrld)])
+    return bf, screws, pins
+
+
+def from_cache(vname, src=None):
+    """reload the shells + internal parts from cache/<src>, apply late fixes, check, export, report"""
+    log = []
+
+    def say(*a):
+        s = ' '.join(str(x) for x in a)
+        print(s, flush=True)
+        log.append(s)
+    V = VARIANTS[vname]
+    src = src or vname
+    cdir = os.path.join(HERE, 'cache', src)
+    ld = lambda n: cq.Shape.importBrep(os.path.join(cdir, n + '.brep'))  # noqa: E731
+    say(f'== {vname} (from cache/{src})')
+    bf, screws, pins = light_ctx(vname, say)
+    front, back, chassis = ld('front_shell'), ld('back_shell'), ld('chassis')
+    names = ['glass', 'module', 'components', 'usb_receptacle', 'header_8pin', 'standoff_1', 'standoff_2',
+             'standoff_3', 'conn_spk', 'plug_spk', 'conn_bat', 'plug_bat', 'btn_pwr', 'btn_boot']
+    board = {n: ld(n) for n in names}
+    battery, speaker, usb_plug = ld('battery'), ld('speaker'), ld('usb_plug')
+    # late fix 1: the (unverified) SPK/BAT plug keep-outs get 0.3 mm room in the back shell
+    back = back.cut(grow(board['plug_spk'], 0.3), grow(board['plug_bat'], 0.3)).clean()
+    seam_band = None
+    if V['band'] > 0:
+        # band variant = the aluminium halves shortened 1.5 mm each side of the seam + a printed 3 mm band
+        h = V['band'] / 2
+        fa, ba = front, back
+        front = fa.cut(SeamFrame.slab(-h, 50)).clean()
+        back = ba.cut(SeamFrame.slab(-50, h)).clean()
+        seam_band = fa.intersect(SeamFrame.slab(-h, 50)).fuse(ba.intersect(SeamFrame.slab(-50, h))).clean()
+    say(f'  valid: front {front.isValid()} back {back.isValid()} chassis {chassis.isValid()}'
+        + ('' if seam_band is None else f' band {seam_band.isValid()}'))
+    shells = {'front_shell': front, 'back_shell': back, 'chassis': chassis}
+    if seam_band is not None:
+        shells['seam_band'] = seam_band
+    parts_in = dict(board, battery=battery, speaker=speaker, usb_plug=usb_plug)
+    inter, clear = mesh_checks(shells, parts_in, say)
+    bb = front.fuse(back).BoundingBox()
+    dims = dict(W=round(bb.xlen, 2), H=round(bb.zlen, 2), D=round(bb.ylen, 2), base=g.dims_report(), mass_g={})
+    dens = 1.24 if vname == 'plastic' else 2.70
+    for n_, s_ in shells.items():
+        dims['mass_g'][n_] = round(vol(s_) * (1.24 if n_ in ('chassis', 'seam_band') else dens) / 1000.0, 1)
+    say(f'  size {dims["W"]} x {dims["H"]} x {dims["D"]}; masses {dims["mass_g"]}')
+    for s in screws:
+        say(f'  screw {s["kind"]} ({s["x"]:+.1f},{s["Z"]}): hole {s["hole_depth"]} deep, max length {s["screw_len_max"]}')
+    for k, p in pins.items():
+        say(f'  pin {k}: {p["L"]} mm, exit {p["exit"]} ({p["shell"]} shell)')
+    parts = dict(shells)
+    for k, pd in pins.items():
+        parts[f'pin_{k}'] = pd['solid']
+    ctx = dict(bf=bf, board=board, battery=battery, speaker=speaker, usb_plug=usb_plug, pins=pins, screws=screws,
+               inter=inter, clear=clear, dims=dims, log=log, V=V)
+    files = export_all(vname, parts, ctx)
+    rep = dict(screws=screws, interference=inter, clearance=clear, dims=dims,
+               pins={k: dict(L=v['L'], exit=v['exit'], shell=v['shell']) for k, v in pins.items()},
+               log=log, files=[os.path.relpath(f, OUT) for f in files])
+    with open(os.path.join(OUT, 'cad', f'report_{vname}.json'), 'w') as f:
+        json.dump(rep, f, indent=1, default=float)
+    say('done')
+
+
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == 'finish':
+        for vn in sys.argv[2:]:
+            from_cache(vn, 'alu' if vn == 'alu_band' else vn)
+    else:
+        main()
