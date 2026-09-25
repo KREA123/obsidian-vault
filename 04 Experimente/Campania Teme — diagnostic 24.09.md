@@ -66,3 +66,11 @@ Andu a cerut obiectiv de cost 15–20 lei și a lăsat alegerea ad seturilor la 
   - 27.09 seara: un ad set care a cheltuit sub 10 lei → Meta nu găsește comenzi la ~20 lei acolo. Pasul următor pe el e schimbarea produselor, nu limita.
   - 01.10: un ad set cu comenzi ≤ ~25 lei în medie → păstrat, apoi discutăm creșterea bugetului.
 - **Stabilit cu Andu (24.09):** nu se modifică nimic în campanie o săptămână, până pe 01.10, când se dă verdictul. Singura excepție e siguranța de pe 27.09: dacă un ad set a cheltuit peste 60 lei fără nicio comandă, se discută cu Andu înainte de orice modificare. Până atunci doar citim cifrele.
+
+## 25.09 — limita de cost scoasă de Andu
+- Andu a scos manual limita de 20 lei pe 25.09, pentru că „nu cheltuia niciun ban”. Toate cele 7 ad seturi sunt din nou pe LOWEST_COST_WITHOUT_CAP (verificat).
+- **Ce a făcut limita cât a stat pusă** (24.09, de la ~12:00 la 24:00): cele 6 ad seturi cu limită au cheltuit ~40 lei în total. Dimineața, fără limită, cheltuiseră ~149 lei. Meta n-a găsit acolo comenzi estimate la ~20 lei, așa că a cheltuit puțin. E același comportament ca la costul-țintă de 45 lei din septembrie.
+- **Rezultate (Shopify + UTM):** #1070 pe 24.09, Creator, 481 lei. #1071 pe 25.09 la 10:10, **City Classic Friends**, 184,99 lei, client care revine. Nu știm dacă la acea oră limita mai era pusă, pentru că lipsesc datele pe ore.
+- **Cheltuială:** 23.09 = 131,28 lei · 24.09 = 307,93 lei · 25.09 până la prânz = 159,94 lei. Total ~599 lei, 3 comenzi reale, ~200 lei/comandă.
+- **Lecție:** în contul acesta, limita de cost sub costul real nu scade costul pe comandă. Doar oprește livrarea. Pârghiile rămase sunt produsele (seturi sub 200 lei, accesorii) și creativele.
+- Cele 6 ad seturi au intrat de două ori în învățare în ~24 de ore. De acum nu se mai modifică nimic până pe 01.10.
