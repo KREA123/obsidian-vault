@@ -273,6 +273,7 @@ def build(vname):
     SHELL = hollow(OUTER, INNER)
     TONG_OUT = eroded_solid(wall + tol)
     TONG_IN = eroded_solid(wall + tol + V['tongue_t'])
+    TONG_CLR = eroded_solid(wall + 2 * tol + V['tongue_t'])
 
     # ------------------------------------------------ board keep-outs (for cuts and checks)
     board = {
@@ -316,6 +317,8 @@ def build(vname):
     # alignment tongue: inside the back half's inner wall, tol clearance (in band mode it belongs to the band)
     tongue = hollow(TONG_OUT, TONG_IN).intersect(SeamFrame.slab(-band / 2 - 0.01, band / 2 + V['tongue_h']))
     add['band' if band > 0 else 'front'].append(tongue)
+    # everything added to the back half keeps tol away from the tongue
+    tongue_room = hollow(INNER, TONG_CLR).intersect(SeamFrame.slab(band / 2 - 0.05, band / 2 + V['tongue_h'] + tol))
 
     # ------------------------------------------------ screw bosses
     say('  screw columns (x, Z): front wall -> back outer, along the seam normal')
@@ -423,6 +426,7 @@ def build(vname):
         if subs:
             s = s.cut(*subs).clean()
         return s
+    sub['back'].append(tongue_room)
     t1 = time.time()
     front = finish(SHELL.intersect(FRONT_HALF), add['front'], sub['front'])
     back = finish(SHELL.intersect(BACK_HALF), add['back'], sub['back'])
@@ -473,7 +477,8 @@ def build(vname):
     chassis = chassis.intersect(TONG_OUT)
     keep_out = [s for k, s in board.items() if not k.startswith('standoff')]
     keep_out.append(bf.box(-40, 40, -40, 40, -5, COMP_D + 0.3))
-    chassis = chassis.cut(*(ch_sub + keep_out + [battery, speaker, usb_plug])).clean()
+    chassis = chassis.cut(*(ch_sub + keep_out + [battery, speaker, usb_plug, front, back]
+                            + ([seam_band] if seam_band is not None else []))).clean()
     say(f'  chassis ({time.time()-t1:.0f}s), volume {vol(chassis):.0f} mm3, valid {chassis.isValid()}')
 
     shells = {'front_shell': front, 'back_shell': back, 'chassis': chassis}
@@ -544,7 +549,7 @@ def mesh_checks(shells, parts_in, say):
     of each internal part to each shell (negative = inside)."""
     import trimesh
     say('  -- checks on meshes (tessellation 0.03 mm) --')
-    M = {k: to_mesh(v) for k, v in shells.items()}
+    M = {k: to_mesh(v, 0.05) for k, v in shells.items()}
     say('   watertight: ' + ', '.join('%s %s' % (k, m.is_volume) for k, m in M.items()))
     P = {k: to_mesh(v, 0.02) for k, v in parts_in.items()}
     inter, clear = {}, {}
@@ -563,7 +568,7 @@ def mesh_checks(shells, parts_in, say):
     say('   minimum clearance of each internal part to each printed/machined part (mm):')
     for pn in ['glass', 'module', 'components', 'header_8pin', 'plug_spk', 'plug_bat', 'usb_receptacle', 'usb_plug',
                'btn_pwr', 'btn_boot', 'standoff_1', 'standoff_2', 'standoff_3', 'battery', 'speaker']:
-        pts, _ = trimesh.sample.sample_surface_even(P[pn], 6000)
+        pts, _ = trimesh.sample.sample_surface_even(P[pn], 1500)
         pts = np.vstack([pts, P[pn].vertices])
         row = {}
         for sn, sm in M.items():

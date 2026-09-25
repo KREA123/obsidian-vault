@@ -19,9 +19,76 @@ from skimage.measure import marching_cubes
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'v5', 'src')))
 from hand_sdf import smin, smax, ellipsoid, rcapsule, rbox, finger_chain  # noqa: E402
 
-P_ = dict(flex_k=0.45, cup=0.0,
+P_ = dict(flex_k=0.45, hold_k=0.95, cup=0.0, tx=0.0, ty=0.0, tz=0.0,
           # thumb (typing pose): base, yaw, pitch-per-joint, side-per-joint
           t_yaw=-35.0, t_f1=38.0, t_f2=12.0, t_f3=-18.0, t_side=-22.0, t_len1=34.0, t_len2=30.0, t_len3=25.0)
+
+
+THUMB0 = np.array([30.0, -22.0, 2.0])
+LENS = (34.0, 31.0, 26.0)
+
+
+def thumb_pts(q):
+    yaw, f1, f2, f3, sd = q
+    pts, _ = finger_chain(THUMB0, yaw, LENS, None, (f1, f2, f3), side_deg=sd)
+    return pts
+
+
+_IK = {}
+
+
+def thumb_ik():
+    """Joint angles that put the thumb-tip centre on (tx, ty, tz), staying close to a relaxed thumb."""
+    if 'pts' in _IK:
+        return _IK['pts']
+    from scipy.optimize import minimize
+    tgt = np.array([P_['tx'], P_['ty'], P_['tz']])
+    q0 = np.array([35.0, 45.0, 10.0, -10.0, -30.0])
+    w = np.array([0.02, 0.01, 0.02, 0.02, 0.02])
+
+    box = None
+    if P_.get('bx_hw', 0) > 0:
+        c = np.array([P_['bx_cx'], P_['bx_cy'], P_['bx_cz']])
+        A = np.array([[P_['bx_%s%d' % (ax, i)] for ax in 'xyz'] for i in range(3)])      # rows = box axes
+        hw = np.array([P_['bx_hw'], P_['bx_hd'], P_['bx_hh']])
+        box = (c, A, hw)
+    radii = (12.5, 11.0, 10.0, 8.8)
+
+    def pen(pts):
+        if box is None:
+            return 0.0
+        c, A, hw = box
+        tot = 0.0
+        for i in range(3):
+            for t in np.linspace(0, 1, 9):
+                p = pts[i] + (pts[i + 1] - pts[i]) * t
+                r = radii[i] + (radii[i + 1] - radii[i]) * t
+                q = np.abs(A @ (p - c)) - hw
+                sd = np.linalg.norm(np.maximum(q, 0)) + min(q.max(), 0)      # box SDF (rounded corners ignored)
+                if i == 2 and t > 0.99:
+                    continue       # the tip hovers over the face on purpose
+                tot += max(0.0, r + 1.0 - sd) ** 2
+        return tot
+
+    def cost(q):
+        pts = thumb_pts(q)
+        tip = pts[-1]
+        return np.sum((tip - tgt) ** 2) + np.sum((w * (q - q0)) ** 2) * 40 + 30.0 * pen(pts)
+
+    best = None
+    for y0 in (20.0, 35.0, 50.0, 65.0):
+        for f0 in (30.0, 50.0, 70.0):
+            st = q0.copy()
+            st[0], st[1] = y0, f0
+            r = minimize(cost, st, method='Nelder-Mead', options=dict(maxiter=8000, xatol=1e-3, fatol=1e-4))
+            if best is None or r.fun < best.fun:
+                best = r
+    r = best
+    print('thumb IK: penetration %.2f' % pen(thumb_pts(r.x)))
+    pts = thumb_pts(r.x)
+    print('thumb IK: angles', np.round(r.x, 1).tolist(), 'tip error %.1f mm' % np.linalg.norm(pts[-1] - tgt))
+    _IK['pts'] = pts
+    return pts
 
 
 def hand_sdf(P, pose):
@@ -34,7 +101,7 @@ def hand_sdf(P, pose):
     d = smin(d, rcapsule(Q, (0, -38, -3), (0, -175, -16), 17.0, 21.0), 14.0)
     if P_['cup'] > 0:
         d = smax(d, -(np.linalg.norm(P - np.array([2.0, 4.0, 66.0]), axis=-1) - 58.5 - (1 - P_['cup']) * 4), 7.0)
-    k = P_['flex_k']
+    k = P_['hold_k'] if pose in ('hold', 'type') else P_['flex_k']
     fingers = [
         ((27.0, 42.0, 1.5), 5.0, (44, 26, 20), (9.4, 8.7, 8.1, 7.3), (22, 34, 24)),
         ((7.5, 46.0, 2.0), 0.5, (48, 29, 21), (9.6, 8.9, 8.2, 7.4), (20, 34, 24)),
@@ -51,8 +118,7 @@ def hand_sdf(P, pose):
         fd = dd if fd is None else np.minimum(fd, dd)
     d = smin(d, fd, 5.0)
     if pose == 'type':
-        pts, _ = finger_chain((30.0, -22.0, 2.0), P_['t_yaw'], (P_['t_len1'], P_['t_len2'], P_['t_len3']), None,
-                              (P_['t_f1'], P_['t_f2'], P_['t_f3']), side_deg=P_['t_side'])
+        pts = thumb_ik()
     else:
         pts, _ = finger_chain((30.0, -22.0, 2.0), 50.0, (30, 28, 24), None, (6, 10, 8), side_deg=-12.0)
     R = (12.5, 11.0, 10.0, 8.8)

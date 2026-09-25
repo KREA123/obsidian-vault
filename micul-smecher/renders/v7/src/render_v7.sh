@@ -22,7 +22,7 @@ done
 for s in "${SHOTS[@]}"; do
   echo "== $s  $(date +%T)"
   blender -b --factory-startup --python "$SRC/soul_v7.py" -- --tmp "$TMP" --threads 4 --shot "$s" "${EXTRA[@]}" 2>&1 \
-    | grep -E "RENDERED|Error|Traceback|File \"|size |rest gap" | cut -c1-240 || true
+    | grep -E "RENDERED|Error|Traceback|File \"|rest gap|thumb" | cut -c1-240 || true
   stem="$s"; [ "${PREVIEW:-0}" = 1 ] && stem="${s}_preview"
   python3 "$V5/post.py" "$TMP/$stem" --out "$TMP/$stem.png" | tail -1
 done

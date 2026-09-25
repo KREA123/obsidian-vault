@@ -235,19 +235,18 @@ def shot_hands(size):
     world_color((0.95, 0.92, 0.88), 0.03)
     sweep('#CDBFAE', wall_y=0.55)
     hand = build_hand7('open')
-    s = build_soul('hand', 'silver', eyes=TUNE.get('hand_eyes', 'cream_down'))
+    s = build_soul('hand', 'silver', eyes=TUNE.get('hand_eyes', 'soul_front'))
     ctr = Vector((0, -1.0 * MM, 37.0 * MM))
-    Rm = Euler((R(TUNE.get('h_rx', 10.0)), R(TUNE.get('h_ry', -4.0)), R(TUNE.get('h_rz', 12.0)))).to_matrix().to_4x4() \
+    Rm = Euler((R(TUNE.get('h_rx', 14.0)), R(TUNE.get('h_ry', -4.0)), R(TUNE.get('h_rz', 12.0)))).to_matrix().to_4x4() \
         @ Matrix.Rotation(R(-90), 4, 'X')
     loc = Vector((TUNE.get('h_x', 3.0) * MM, TUNE.get('h_y', 8.0) * MM, 0.08))
     s.matrix_world = Matrix.Translation(loc) @ Rm @ scale_mat(size) @ Matrix.Translation(-ctr)
     gap = rest_on(s, hand, gap=0.3)
-    print('  rest gap', gap)
-    level_eyes(s)
+    print('  rest gap', gap)       # face-up: the screen keeps its own 'up' (toward the crown), no level_eyes
     screen_setup(s, size)
     T = HAND_T
-    cam = camera(T + Vector((TUNE.get('hc_x', 0.10), TUNE.get('hc_y', -0.34), TUNE.get('hc_z', 0.24))), T,
-                 lens=TUNE.get('h_lens', 50.0), fstop=TUNE.get('h_f', 8.0), focus=eye_point(s))
+    cam = camera(T + Vector((TUNE.get('hc_x', 0.05), TUNE.get('hc_y', -0.22), TUNE.get('hc_z', 0.38))), T,
+                 lens=TUNE.get('h_lens', 60.0), fstop=TUNE.get('h_f', 8.0), focus=eye_point(s))
     flag(cam, T)
     mirror_card(s, cam)
     metal_front_card(cam, T, col=TUNE.get('fc_col', 0.5))
@@ -262,7 +261,6 @@ def shot_lineup():
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
     sweep('#D9CDBE')
-    desk_top()
     gapx = TUNE.get('lu_gap', 22.0)
     xs, x = [], TUNE.get('lu_x0', -150.0)
     pars = []
@@ -275,12 +273,12 @@ def shot_lineup():
         xs.append(cx)
         x += w + gapx
     phone_slab((TUNE.get('ph_x', -205.0), TUNE.get('ph_y', -55.0)), TUNE.get('ph_yaw', 74.0))
-    mug((x + TUNE.get('mug_dx', 45.0), TUNE.get('mug_y', 30.0)), TUNE.get('mug_yaw', 35.0))
+    mug((x + TUNE.get('mug_dx', 45.0), TUNE.get('mug_y', 30.0)), TUNE.get('mug_yaw', -50.0))
     T = Vector((TUNE.get('lu_tx', 0.0) * MM, 0.0, TUNE.get('lu_tz', 45.0) * MM))
     cam = cam_aed(T, TUNE.get('lu_az', -8.0), TUNE.get('lu_el', 16.0), TUNE.get('lu_d', 900.0),
                   TUNE.get('lu_lens', 60.0), 11.0, focus=Vector((0, 0, 0.05)))
-    protect_screens(cam, T, 1.8, -0.06)
-    metal_front_card(cam, T, col=TUNE.get('fc_col', 0.5))
+    black_glass(cam, T, pars, glint=False)
+    metalise(cam, T, pars)
     studio(T, 1.6)
     POST['bloom'] = 0.03
     POST['exposure'] = -0.35
@@ -293,24 +291,57 @@ def shot_lineup():
 
 
 def shot_typing():
-    """M in the open right palm, the SoulOS keyboard on screen, the thumb lifted over the keys."""
+    """M held like a phone in the right hand: its base in the heel of the palm, its back leaning on the curled
+    fingers, face tilted toward the viewer; the SoulOS keyboard on screen and the thumb (IK in hand_sdf_v7.py)
+    hovering over the lower-right keys."""
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
     sweep('#CDBFAE', wall_y=0.55)
-    hand = build_hand7('type')
     size = 'M'
+    sz = SIZES[size]
+    HM = Matrix.Translation((0.0, 0.0, 0.030)) @ Matrix.Rotation(R(18.0), 4, 'Z')      # build_hand_v4's placement
+    rest = build_hand7('hold')
     s = build_soul('ty', 'silver', eyes='soul_front')
     ctr = Vector((0, -1.0 * MM, 37.0 * MM))
-    Rm = Euler((R(TUNE.get('t_rx', 10.0)), R(TUNE.get('t_ry', -4.0)), R(TUNE.get('t_rz', 12.0)))).to_matrix().to_4x4() \
-        @ Matrix.Rotation(R(-90), 4, 'X')
-    loc = Vector((TUNE.get('t_x', -4.0) * MM, TUNE.get('t_y', 10.0) * MM, 0.08))
-    s.matrix_world = Matrix.Translation(loc) @ Rm @ scale_mat(size) @ Matrix.Translation(-ctr)
-    rest_on(s, hand, gap=0.3)
-    level_eyes(s)
+    a = TUNE.get('t_tilt', 50.0)
+    Rh = Matrix.Rotation(R(TUNE.get('t_rz', -6.0)), 4, 'Z') @ Matrix.Rotation(R(a - 90.0), 4, 'X')
+    loc_h = Vector((TUNE.get('t_x', -8.0) * MM, TUNE.get('t_y', 14.0) * MM, 0.09))
+    s.matrix_world = HM @ Matrix.Translation(loc_h) @ Rh @ scale_mat(size) @ Matrix.Translation(-ctr)
+    rest_on(s, rest, gap=0.3)
     screen_setup(s, size, os.path.join(TEX7, 'kbd_hello.png'), strength=TUNE.get('kbd_str', 2.2))
-    T = Vector((TUNE.get('ty_tx', 0.0) * MM, TUNE.get('ty_ty', 5.0) * MM, TUNE.get('ty_tz', 45.0) * MM))
-    cam = camera(T + Vector((TUNE.get('tc_x', 0.06), TUNE.get('tc_y', -0.26), TUNE.get('tc_z', 0.26))), T,
-                 lens=TUNE.get('t_lens', 55.0), fstop=TUNE.get('t_f', 8.0), focus=glass_world(s)[0])
+    # thumb target: a point hovering above key 'n' (screen px (321, 314) on the 466 layout), in hand coordinates
+    info = SOULS[s.name]
+    Mg = s.matrix_world @ info['M_gl']
+    px, py = TUNE.get('key_px', 321.0), TUNE.get('key_py', 314.0)
+    u = (px - 233.0) / 233.0 * sz['act']
+    v = -(py - 233.0) / 233.0 * sz['act']
+    hover = TUNE.get('hover', 5.0) + 8.8           # gap above the glass + the thumb-tip radius
+    tgt_w = Mg @ Vector((u * MM, v * MM, 0.0))
+    nrm_w = (Mg.to_3x3() @ Vector((0, 0, 1))).normalized()
+    # the glass object carries the body scale; move off the face in world mm
+    tgt_w = tgt_w + nrm_w * hover * MM
+    tgt_h = HM.inverted() @ tgt_w
+    print('  thumb target (hand mm)', tuple(round(c / MM, 1) for c in tgt_h))
+    bpy.data.objects.remove(rest)
+    # the device as an oriented box in hand coordinates (the thumb must go around it)
+    Mh = HM.inverted() @ s.matrix_world
+    bc = Mh @ Vector((0, -1.0 * MM, 37.0 * MM))          # body centre (local)
+    ax = [(Mh.to_3x3() @ Vector(e)).normalized() for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]
+    hw = (BODY[0] / 2 * sz['k'], BODY[2] / 2 * sz['kd'], BODY[1] / 2 * sz['k'])
+    args = ['tx=%.2f' % (tgt_h.x / MM), 'ty=%.2f' % (tgt_h.y / MM), 'tz=%.2f' % (tgt_h.z / MM),
+            'bx_cx=%.2f' % (bc.x / MM), 'bx_cy=%.2f' % (bc.y / MM), 'bx_cz=%.2f' % (bc.z / MM),
+            'bx_hw=%.2f' % hw[0], 'bx_hd=%.2f' % hw[1], 'bx_hh=%.2f' % hw[2]]
+    for i, a_ in enumerate(ax):
+        args += ['bx_x%d=%.4f' % (i, a_.x), 'bx_y%d=%.4f' % (i, a_.y), 'bx_z%d=%.4f' % (i, a_.z)]
+    os.environ['HAND_ARGS'] = ','.join(args)
+    print('  hand args', os.environ['HAND_ARGS'])
+    p = os.path.join(TEX7, 'type', 'hand.npz')
+    if os.path.exists(p):
+        os.remove(p)
+    build_hand7('type')
+    T = Vector((TUNE.get('ty_tx', 0.0) * MM, TUNE.get('ty_ty', 0.0) * MM, TUNE.get('ty_tz', 60.0) * MM))
+    cam = camera(T + Vector((TUNE.get('tc_x', 0.08), TUNE.get('tc_y', -0.36), TUNE.get('tc_z', 0.20))), T,
+                 lens=TUNE.get('t_lens', 60.0), fstop=TUNE.get('t_f', 8.0), focus=glass_world(s)[0])
     flag(cam, T)
     mirror_card(s, cam)
     metal_front_card(cam, T, col=TUNE.get('fc_col', 0.5))
