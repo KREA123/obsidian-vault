@@ -1759,7 +1759,7 @@ def main():
         pa = world_to_camera_view(sc, sc.camera, an['a'])
         pb = world_to_camera_view(sc, sc.camera, an['b'])
         annot.append(dict(label=an['label'], a=(pa.x, 1 - pa.y), b=(pb.x, 1 - pb.y)))
-    if ARGS.shot == 'turntable':
+    if ARGS.shot == 'turntable' or POST.get('anim'):
         if ARGS.frames:
             sc.frame_start, sc.frame_end = [int(v) for v in ARGS.frames.split(':')]
         frames = list(range(sc.frame_start, sc.frame_end + 1))

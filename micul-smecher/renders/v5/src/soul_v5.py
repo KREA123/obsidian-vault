@@ -2211,6 +2211,78 @@ def shot_ou_inspect():
     return sc
 
 
+def shot_hopa():
+    """HOPA (animation, CGI concept): an off-screen nudge from the right tips SOUL ~20 deg; it rocks back on its rocker
+    sole (1.7 Hz, each swing 0.68 of the previous; the land-edge pivot then true rolling without slip, settled on every
+    frame) while the eyes stay LEVEL inside the rocking body (baked per-frame counter-rotation, 70 ms lag), then a
+    brief dizzy flutter and a half-lidded side-glance. Timeline: hopa_motion.py; eye frames: hopa_eyes.py."""
+    import subprocess
+    import hopa_motion as HM
+    sc = reset()
+    T = Vector((-4 * MM, -2 * MM, 36 * MM))
+    day_studio(T)
+    s = build_soul('hopa', 'perla', eyes='soul_front')
+    pose_soul(s, (0, 0, 0))
+    # the eyes: an image sequence (one PNG per frame, counter-rotation baked in)
+    edir = os.path.join(CACHE, 'hopa_eyes')
+    if len(glob.glob(os.path.join(edir, 'eyes_hopa_*.png'))) < HM.NF or TUNE.get('hopa_regen_eyes', 0):
+        subprocess.run(['python3', os.path.join(_HERE, 'hopa_eyes.py'), edir], check=True)
+    g = SOULS[s.name]['glass']
+    node = next(n for n in g.active_material.node_tree.nodes if n.type == 'TEX_IMAGE')
+    im = bpy.data.images.load(os.path.join(edir, 'eyes_hopa_0001.png'))
+    im.source = 'SEQUENCE'
+    node.image = im
+    node.image_user.frame_duration = HM.NF
+    node.image_user.frame_start = 1
+    node.image_user.frame_offset = 0
+    node.image_user.use_auto_refresh = True
+    cam = cam_aed(T, TUNE.get('hopa_az', -18.0), TUNE.get('hopa_el', 7.0), TUNE.get('hopa_d', 395.0), 100, 8.0,
+                  focus=eye_point(s))
+    TUNE['mcard'] = TUNE.get('hopa_mcard', 1.1)     # a big glossy-only black card: the glass stays black as it rocks
+    black_glass(cam, T, [s])
+    # every mesh vertex in the parent's frame (for the per-frame settle)
+    bpy.context.view_layer.update()
+    Minv = s.matrix_world.inverted()
+    P = []
+    for o in s.children:
+        if o.type != 'MESH' or o.hide_render:
+            continue
+        me = o.data
+        co = np.empty(len(me.vertices) * 3, np.float32)
+        me.vertices.foreach_get('co', co)
+        M = np.array(Minv @ o.matrix_world)
+        co = co.reshape(-1, 3)
+        P.append(co @ M[:3, :3].T + M[:3, 3])
+    P = np.vstack(P)
+    s.rotation_mode = 'QUATERNION'
+    CZ = 39.4 * MM
+    for f in range(1, HM.NF + 1):
+        t = HM.frame_time(f)
+        phi, th = (float(v) for v in HM.angles(t))
+        Rrp = Matrix.Rotation(R(phi), 4, 'Y') @ Matrix.Rotation(R(-th), 4, 'X')
+        dx = HM.roll_offset(phi, 6.9, 40.0, 39.4)
+        dy = HM.roll_offset(th, 6.37, 34.0, 33.4)
+        M = (Matrix.Translation((dx * MM, dy * MM, CZ)) @ Rrp @ Matrix.Translation((0, 0, -CZ)))
+        Mn = np.array(M)
+        zmin = float((P @ Mn[:3, :3].T + Mn[:3, 3])[:, 2].min())
+        M = Matrix.Translation((0, 0, 0.00002 - zmin)) @ M
+        loc, q, _ = M.decompose()
+        s.location = loc
+        s.rotation_quaternion = q
+        s.keyframe_insert('location', frame=f)
+        s.keyframe_insert('rotation_quaternion', frame=f)
+    for fc in s.animation_data.action.fcurves:
+        for kp in fc.keyframe_points:
+            kp.interpolation = 'LINEAR'
+    sc.render.fps = HM.FPS
+    sc.frame_start, sc.frame_end = 1, HM.NF
+    sc.frame_set(int(TUNE.get('hopa_frame', 1)))
+    sc.render.use_motion_blur = bool(TUNE.get('hopa_mblur', 1))
+    sc.render.motion_blur_shutter = 0.5
+    POST['anim'] = True
+    return sc
+
+
 def shot_test():
     """Quick geometry check: SOUL front on the sweep."""
     return shot_front(0.0)
@@ -2237,6 +2309,7 @@ SHOTS = {
     'ou_day': (shot_ou_day, 1600, 1200, 128),
     'ou_inspect': (shot_ou_inspect, 1600, 1200, 64),
     'test': (shot_test, 1600, 1600, 64),
+    'hopa': (shot_hopa, 720, 720, 40),
 }
 
 main()

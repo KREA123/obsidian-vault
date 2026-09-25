@@ -7,7 +7,8 @@
 
 Sursa: `../../research/09-product-design-max-2026-09-24.md` (§3–§6) și brieful de randare
 `../../research/design-max/render-brief.md` (v5, rev. 2026-09-25). Aici sunt doar cadrele designului final (1–10b)
-plus cadrul opțional F. Alternativele PIATRA și MĂRGĂRITAR nu sunt în acest set.
+plus cadrul opțional F, iar mai jos (secțiunea „Alternativele”) cele două alternative, PIATRA și MĂRGĂRITAR, și tabla
+de decizie `soul_v5_choices.png`.
 
 ## Forma (din tabelele briefului, verificată numeric)
 
@@ -60,7 +61,76 @@ Toate cadrele cerute în §9 al briefului (1, 2 + testul la 20 px, 2b, 3, 4, 5, 
 în acest dosar, la rezoluția cerută. Fiecare PNG a fost deschis și verificat vizual: niciunul nu e stricat, așa că
 nu s-a re-randat nimic. Fața are doar corp + sticlă, difuzorul e în cusătura laterală, contactele de încărcare sunt
 dedesubt, iar SOUL stă în picioare. Cadrele opționale G (`sole_swap`), C (`choice`), D (`hopa_strobe`), E
-(`hopa_nudge.mp4`) și cadrele alternativelor A/B nu fac parte din setul obligatoriu și nu sunt aici.
+(`hopa_nudge.mp4`) nu fac parte din setul obligatoriu. E a fost înlocuit ulterior de animația HOPA
+(`soul_v5_hopa.mp4`, vezi secțiunea „HOPA”); G, C (ca tablă `choices`) și D nu sunt aici. Cadrele alternativelor A/B și tabla de decizie
+au fost adăugate ulterior (vezi secțiunea următoare).
+
+## Alternativele (brieful §4–§5) și tabla de decizie
+
+Tot randări CGI, **nu prototipuri**. Aceeași regulă ca la final: fața are doar corp + sticlă neagră (fără inel, grilă,
+logo, lumină sau buclă), difuzorul e o fantă de 12 × 0,9 în cusătura din dreapta (+x), microfoanele sunt în cusătura
+din stânga, încărcarea e dedesubt, iar obiectul stă în picioare. Toate sunt în Perlă, în studioul v1 al finalului.
+
+| Fișier | Ce arată |
+|---|---|
+| `soul_v5_altA_piatra.png` (1600 × 2000) | **ALT A · PIATRA, hero** (62 × 70 × 26): aceeași cameră ca hero-ul final (−24° / +9°, 100 mm), rotit −8°, ochi `cream_look`. Sticla Ø50 e la nivel, fără inel, iar sub corp se vede linia de umbră „plutitoare” a piciorului de zinc Ø25 × 1,2. În fundal, estompate: cuibul OU și cupola mătuită. |
+| `soul_v5_altA_nest.png` (1600 × 1200) | **ALT A · în cuibul OU** (cadrul A din brief: +20° / +8° / 520, 100 mm): PIATRA stă vertical în cuibul perlat (superou Piet Hein, z 0–23, perete de 4 mm, fundul soclului la z 12). Marginea de jos a sticlei e la 2,3 mm deasupra buzei. Cupola mătuită (z 23–93, perete de 2,5 mm) stă pe buză, la 90 mm în spate-stânga. Din +20° fanta difuzorului se vede pe cusătura din dreapta. |
+| `soul_v5_altB_margaritar.png` (1600 × 2000) | **ALT B · MĂRGĂRITAR, hero** (63 × 72 × 24): pe o placă de calcar de 200 × 120 × 12, aceeași cameră ca hero-ul final, ochi `soul_smug`. Sticla 2.5D e plată, Ø52 (fără cabochon, cum cere 09 §7–§8), iar talpa aurie de zamak are 28 × 17 și un rost de 0,5. SCRIN-ul închis e estompat în spate-dreapta. |
+| `soul_v5_altB_scrin.png` (1600 × 1200) | **ALT B · în SCRIN** (+22° / +9° / 640, 100 mm): MĂRGĂRITAR în soclul de 5 mm al soclului oval de 86 × 60 × 24 (lac perlat, muchii R6, spătar de 14 mm, 8 puncte de 2200 K în spate). Capacul de Surlyn (ovoid, 75 mm, lucios afară și mătuit înăuntru) stă răsturnat alături ca un bol, în poziția de cadru din brief. |
+| `soul_v5_choices.png` (2400 × 1200) | **Tabla de decizie:** FINAL (HOPA), ALT A și ALT B din față, într-o singură randare (deci aceeași lumină și aceeași scară), toate verticale, 0° / +4°, 200 mm de la 1,9 m (aproape ortografic). Etichete discrete în post: „SOUL HOPA”, „PIATRA”, „MĂRGĂRITAR”, plus „randare / concept (CGI)” în colț. |
+
+**Abateri și simplificări la alternative:**
+- Toate cele patru cadre folosesc studioul v1 al finalului, cu aceeași sclipire unică pusă geometric pe sticla plată
+  (sus-stânga, departe de ochi) și cu protecția de sticlă neagră. Cadrele hero folosesc exact camera hero-ului final,
+  ca să poată fi comparate direct. Cadrul A din brief e aici cadrul „în cuib”. Cadrul B din brief (pe calcar, cu
+  SCRIN-ul gol în spate) e împărțit în două: hero-ul pe calcar și cadrul în SCRIN, cu capacul-bol alături.
+- **MĂRGĂRITAR:** masa plată se estompează spre rulouri pe 4 mm (nu pe 1,5), pentru că altfel apărea o cută pe frunte.
+  Din tabelul de lățimi, creștetul are „umeri” ușori sus-stânga/dreapta: e forma din brief, nu o eroare de randare.
+  Canelura-brâu de 0,3 e modelată ca un canal întunecat pe siluetă, la fel ca cusătura finalului.
+- **`lacquer_pearl`** e un singur strat (perlă cu metallic 0,15, sheen 0,3 și coat 1,0 / 0,01), nu două suprafețe la
+  2,2 mm distanță. **`dome_frost`** are transmission 0,45 și un volum lăptos: cu 1,0, Blender 4.0 îl făcea sticlă
+  fumurie (la fel ca la capacul OU). Inelul-ghid de lumină de 2200 K e pe buza interioară a cuibului, doar în spate,
+  slab ziua. Nu cade pe față.
+- **Soclul SCRIN** are forma soclului luată din conturul real al lui MĂRGĂRITAR în primii 5 mm (+0,6 joc). Spătarul e un
+  bloc rotunjit de 44 × 6,5 mm, înclinat la 8°, iar cele 8 puncte de 2200 K sunt pe arcul din spate al capacului
+  soclului. Capacul răsturnat stă pe creștet (turtit cu 0,6 mm ca să stea).
+- Piciorul PIATRA are sub el cele 4 inele aurii și punctul Ø2,5 (nu se văd în aceste cadre, pentru că nu există un
+  cadru de dedesubt pentru alternative).
+- Timpi (4 nuclee, 128 spp): hero-urile ~12–15 min, iar cadrele în cuib/SCRIN și tabla ~7–9 min.
+
+## HOPA: animația semnăturii (randare / concept CGI)
+
+**Atenție: animație pe calculator (CGI), NU filmarea unui prototip.** Mișcarea e un model matematic (oscilator amortizat),
+nu o simulare fizică și nici o măsurătoare pe o piesă reală.
+
+| Fișier | Ce arată |
+|---|---|
+| `soul_v5_hopa.mp4` (720 × 720, 24 fps, 7 s, H.264) | **HOPA.** SOUL Perlă (talpă perlă) în studioul cald v1, cameră −18° / +7° / 395 mm, 100 mm. La 0,55 s un bobârnac din afara cadrului (din dreapta) îl înclină ~20° spre stânga. Se leagănă înapoi pe talpa-balansoar: 1,7 Hz, fiecare legănare ≈ 0,68 din cea dinainte (ζ ≈ 0,12; −20° → +13,6° → −9,3° → +6,3° …), plus puțin tangaj (3,5°, 1,5 Hz). **Ochii rămân la nivel** în corpul care se leagănă (contra-rotație cu întârziere de 70 ms), apoi o scurtă amețeală (ochii „în balansoar”), o clipire și o privire în lateral cu pleoapele pe jumătate lăsate, spre cel care l-a împins. |
+| `soul_v5_hopa.gif` (480 × 480, 15 fps, buclă) | Aceeași animație, pentru chat și web. |
+| `soul_v5_hopa_tip.png` (1600 × 1600) | Cadrul 18 (0,71 s): vârful primei legănări (~20°), ochii deja la nivel, cu motion blur. |
+| `soul_v5_hopa_dizzy.png` (1600 × 1600) | Cadrul 72 (2,96 s): amețeala, ochii decalați pe verticală (`soul_dizzy` cu `split`). |
+| `soul_v5_hopa_glance.png` (1600 × 1600) | Cadrul 112 (4,63 s): din nou în picioare, privirea în lateral pe jumătate închisă (`soul_smug` cu pleoapa la 0,34). |
+
+**Cum e făcută:**
+- `src/hopa_motion.py` (numpy pur) e cronologia: unghiurile φ(t), θ(t) (răspuns la impuls al unui oscilator amortizat,
+  normat ca prima legănare să fie −20°; bobârnacul durează ~70 ms), expresiile ochilor pe cadre și unghiul de nivelare.
+  `python3 src/hopa_motion.py` tipărește extremele și raportul 0,68 între ele.
+- **Rostogolirea:** până la ~9,9° SOUL pivotează pe marginea suprafeței plate de sprijin (x ±6,9), apoi se rostogolește
+  fără alunecare pe elipsoidul tălpii (R40 lateral, ~R34 față-spate, brief §2.3), deci punctul de contact se mută pe talpă
+  și corpul se deplasează lateral (−13,9 mm la −20°). La fiecare cadru corpul e „așezat” pe masă după cel mai de jos vârf.
+  Legănările sub ~1° se sting între 3,05 și 3,55 s (frecarea pe suprafața plată).
+- **Ochii la nivel:** `src/hopa_eyes.py` desenează ochii pe fiecare cadru (cu `eyes.py`) și îi rotește în panoul rotund cu
+  unghiul de nivelare de acum 70 ms. Sticla rămâne fixă în corp; vizual e identic cu rotirea sticlei din brief, dar
+  permite întârzierea. Cadrele de textură se refac automat în cache (`/tmp/soul_v5_cache/hopa_eyes`).
+- Randare: `soul_v5.py --shot hopa` (Cycles CPU, 32 spp + OIDN pe fiecare cadru în `post.py`, ~27 s/cadru pe 4 nuclee;
+  containerul nu are GPU, deci Eevee nu era o opțiune). Cadrele fixe: 128 spp. Totul: `src/render_hopa.sh`
+  (`PREVIEW=1 ./render_hopa.sh anim` = primele 2 s la 360 px).
+
+**Abateri de la cadrul E din brief:** 7 s la 24 fps (nu 4 s la 30 fps), 1,7 Hz cu raport 0,68 (nu 2,0 Hz), fără
+supracompensarea de 10 % a ochilor. Bobârnacul vine din afara cadrului: nu se vede nicio mână. Sclipirea de pe sticlă e
+fixă în studio, așa că alunecă pe sticlă și iese de pe ea când SOUL se înclină (cum ar face una reală). Un carton negru
+mare, vizibil doar în reflexii, ține sticla neagră în toate pozițiile. Fața rămâne doar corp + sticlă, iar fanta
+difuzorului (pe +x) nu se vede din −18°.
 
 ## Abateri de la brief (și de ce)
 
@@ -132,6 +202,10 @@ python3 soul_geo.py                  # verificările numerice ale geometriei (ma
 ./render_all.sh hero check1_ember_0  # doar unele
 ./prev.sh family test --samples 16   # previzualizare rapidă la jumătate de rezoluție, în $SP (implicit /tmp/soul_v5_preview)
 python3 compose_v5.py shadow20 - ..  # testul siluetei la 20 px
+./render_alt.sh                      # ALT A / ALT B + tabla de decizie -> ../soul_v5_alt*.png, soul_v5_choices.png
+PREVIEW=1 ./render_alt.sh altA_nest  # previzualizare (în $TMP_DIR)
+./render_hopa.sh                     # animația HOPA (mp4 + gif + 3 cadre fixe), ~90 min
+python3 alt_geo.py /tmp/alt_sil.png  # verificările numerice + siluetele FINAL / PIATRA / MĂRGĂRITAR
 ```
 
 - `src/soul_geo.py` e geometria pură (numpy) a corpului: loft-ul din tabele, intersectat analitic cu elipsoidul tălpii,
@@ -141,6 +215,9 @@ python3 compose_v5.py shadow20 - ..  # testul siluetei la 20 px
   COCON, manșonul, cofrajul, cartonașele și cadrele. Încarcă `concepts.py`, care încarcă `soul_scene.py`, ca la v4.
 - `src/eyes.py` are variantele de ochi v5 (`soul_front`, `soul_smug`, `soul_wide`, `soul_left`, `soul_closed`,
   `soul_dizzy` cu `split`). `src/textures_v5.py` face gravura tălpii, fețele manșonului, sigiliul și cartonașele.
+- `src/alt_geo.py` e geometria pură a alternativelor (aceeași metodă de secțiuni), iar `src/alt_v5.py` e scena lor:
+  corpurile cu locașul sticlei, fanta și găurile (Boolean exact, în același cache, refăcute automat în ~40 s), piciorul
+  de zinc, talpa de zamak, cuibul OU cu cupola, SCRIN-ul cu capacul și cele cinci cadre. Încarcă `soul_v5.py`.
 - `src/compose_v5.py` decupează hero-ul, compune tabla 2b (cu banda ember măsurată pe pasa albedo), face testul la
   20 px și măsoară proporțiile pe `front_00`.
 
