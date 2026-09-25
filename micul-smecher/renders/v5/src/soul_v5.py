@@ -475,12 +475,13 @@ def mat_ghost(name='ghost'):
     return m
 
 
-def mat_solid_sole(name, col, rough=0.30, coat_r=0.10, engrave=True, metal=0.0):
+def mat_solid_sole(name, col, rough=0.30, coat_r=0.10, engrave=True, metal=0.0, coat_w=1.0, spec=0.5):
     m, nt, p, out = new_mat(name)
     set_in(p, 'Base Color', srgb(col))
     set_in(p, 'Roughness', rough)
     set_in(p, 'Metallic', metal)
-    set_in(p, 'Coat Weight', 1.0)
+    set_in(p, 'Specular IOR Level', spec)
+    set_in(p, 'Coat Weight', coat_w)
     set_in(p, 'Coat Roughness', coat_r)
     set_in(p, 'Coat IOR', 1.5)
     bp = _flake_bump(nt, p, strength=0.01)
@@ -1281,7 +1282,8 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
     body = mat_pearl5('ou_pearl', rough=0.22) if cw in ('perla', 'lapis') else mat_onyx('ou_onyx')
     # liner = the colourway accent (Perla: ember) as a satin finish: a full 0.10 coat washes it to salmon under
     # the studio key (reads as a pastel)
-    liner_m = {'perla': mat_solid_sole('liner_ember', '#D8572A', rough=0.45, coat_r=0.35, engrave=False),
+    liner_m = {'perla': mat_solid_sole('liner_ember', '#D8572A', rough=0.55, coat_r=0.35, engrave=False, coat_w=0.12,
+                                       spec=0.3),
                'onix': mat_solid_sole('liner_cream', '#FFF0C8', engrave=False),
                'lapis': mat_lapis('liner_lapis'),
                'chihlimbar': mat_amber('liner_amber'),
@@ -1327,7 +1329,7 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
     # lights: rear-rim strip (under the lip, aimed at the lid interior), base slit, halo band
     # emission strengths: the brief's values (strip 1.6 x 20 % by day / 4 at night, slit 1.5, halo 6) are relative;
     # at 1 mm scale they need LED_K to light the walnut and the lid as the brief asks (tuned by eye)
-    K = TUNE.get('led_k', 40.0)
+    K = TUNE.get('led_k', 40.0) if night else TUNE.get('led_k_day', 6.0)
     s_str = strip if strip is not None else ((4.0 if night else 1.6 * 0.2) * K)
     rear = lip_i[lip_i[:, 1] > 1.0 + 3.0]
     rear = rear[np.argsort(np.arctan2(rear[:, 1] - 1.0, rear[:, 0]))]
@@ -1523,11 +1525,12 @@ def walnut_top(size=(0.9, 0.6), loc=(0, 0.1)):
 
 
 def night_room(window_power=None):
-    window_power = TUNE.get('win', 40.0) if window_power is None else window_power
+    window_power = TUNE.get('win', 6.0) if window_power is None else window_power
     world_color((0.02, 0.025, 0.035), 0.004)
     walnut_top((1.2, 0.8), (0, 0.15))
     wall = plane('wall', (4, 2), (0, 0.42, 0.8), (R(90), 0, 0), mat_diffuse('wall_n', srgb('#3A342E'), 0.9, 0.1))
-    area_light('window', (1.6, 1.9, 0.9), (0, 0, 0.05), 1.0, window_power, blackbody_rgb(6500), 'RECTANGLE',
+    # the window (1.0 x 1.5 m, 6500 K) sits behind-right; placed in front of the room wall so it can reach the OU
+    area_light('window', (1.05, 0.36, 0.75), (0, 0, 0.05), 1.0, window_power, blackbody_rgb(6500), 'RECTANGLE',
                size_y=1.5)
     POST['exposure'] = 0.4
     return wall
@@ -1916,6 +1919,9 @@ def shot_check1(sole, elev):
         pm = bpy.data.objects['sweep'].data.materials[0].node_tree.nodes['Principled BSDF']
         set_in(pm, 'Specular IOR Level', 0.0)
         set_in(pm, 'Roughness', 1.0)
+        # the near floor seen from 5 mm is outside every studio cone: a diffuse-only fill for the floor alone
+        fl = area_light('floorfill', (0, -0.42, 0.45), (0, -0.42, 0.0), 0.9, TUNE.get('floorfill', 6.0),
+                        blackbody_rgb(5200), 'RECTANGLE', size_y=0.6, spread=30, glossy=False)
         POST['bloom'] = 0.03
         glint_strip(s, cam)
     else:
@@ -1949,9 +1955,12 @@ def shot_back():
     d.z = 0
     d.normalize()
     side = Vector((d.y, -d.x, 0))
-    st = area_light('line', T + d * 0.28 - side * 0.20 + Vector((0, 0, 0.12)), T, 0.035, TUNE.get('line_w', 1.4),
-                    blackbody_rgb(5600), 'RECTANGLE', size_y=0.9)
+    ang = R(TUNE.get('line_ang', 72.0))
+    pos = T + (d * math.cos(ang) + side * math.sin(ang)) * 0.32 + Vector((0, 0, 0.06))
+    st = area_light('line', pos, T, 0.018, TUNE.get('line_w', 3.0), blackbody_rgb(5600), 'RECTANGLE', size_y=1.2)
     st.visible_diffuse = False
+    for nm in ('top',):
+        bpy.data.objects[nm].data.energy *= 0.5
     POST['exposure'] = -0.45
     return sc
 
@@ -1974,7 +1983,7 @@ def shot_bottom():
     cam = cam_aed(T, 0.0, 18.0, 260.0, 100, 8.0, focus=T)
     # a soft reflector behind the camera: the gold pads and the glossy sole mirror it, the engraving stays matte
     d = (Vector(cam.location) - T).normalized()
-    area_light('reflector', Vector(cam.location) + d * 0.15 + Vector((0, 0, 0.05)), T, 0.5, TUNE.get('refl', 0.6),
+    area_light('reflector', Vector(cam.location) + d * 0.15 + Vector((0, 0, 0.05)), T, 0.5, TUNE.get('refl', 0.28),
                blackbody_rgb(5600), 'RECTANGLE', size_y=0.35)
     POST['exposure'] = -0.35
     POST['bloom'] = 0.03

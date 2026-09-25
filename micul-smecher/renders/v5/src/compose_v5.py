@@ -53,26 +53,28 @@ def hero(png, outdir):
 
 
 # ------------------------------------------------------------------------------------------
-def ember_mask(a):
-    r, g, b = [a[..., i].astype(float) for i in range(3)]
-    return (r > 120) & (r - g > 55) & (g - b > 8) & (r - b > 90)
-
-
 def measure_band(png, mm_per_px):
-    """Vertical extent of the ember (contrast) sole at the centre column and at x = +-20 mm."""
-    a = np.asarray(Image.open(png).convert('RGB'))
-    m = ember_mask(a)
+    """Visible height of the ember sole, measured on the render's albedo pass (the ember albedo is unique in the
+    frame; shading, contact shadow and the floor reflection do not change it), at the centre column and x = +-20 mm."""
+    sys.path.insert(0, HERE)
+    from post import read_exr
+    alb = read_exr(png[:-4] + '_albedo_0001.exr')
+    # ember albedo = (0.69, 0.10, 0.02) mixed with the coat's Fresnel toward grey: classify by hue, not distance
+    m = ((alb[..., 0] - alb[..., 1]) > 0.25) & (alb[..., 0] > 0.4)
     H, W = m.shape
     ys, xs = np.nonzero(m)
     if len(xs) == 0:
         return None
-    cx = W // 2
+    cx = W / 2.0
     out = {}
     for lab, dx_mm in (('centre', 0.0), ('x-20', -20.0), ('x+20', 20.0)):
         x = int(round(cx + dx_mm / mm_per_px))
-        col = m[:, max(x - 1, 0):x + 2].any(1)
+        col = m[:, x - 1:x + 2].any(1)
         yy = np.nonzero(col)[0]
         out[lab] = (yy.max() - yy.min() + 1) * mm_per_px if len(yy) else 0.0
+    mc = m.copy()
+    mc[:int(H * 0.6)] = False                        # the chin region only
+    out['max'] = max((np.ptp(np.nonzero(mc[:, x])[0]) + 1) * mm_per_px for x in range(W) if mc[:, x].any())
     out['width'] = (xs.max() - xs.min() + 1) * mm_per_px
     return out
 
@@ -110,17 +112,20 @@ def check1(png, outdir):
             m = measure_band(p, mm_per_px)
             res[key] = m
             if m:
-                t = 'bandă ember măsurată: %.1f mm (centru) · %.1f / %.1f mm (x ±20) · lățime %.0f mm' % (
-                    m['centre'], m['x-20'], m['x+20'], m['width'])
+                t = 'bandă ember măsurată: %.1f mm la centru · %.1f / %.1f mm la x ±20 · max %.1f mm · lățime %.0f mm' % (
+                    m['centre'], m['x-20'], m['x+20'], m['max'], m['width'])
             else:
                 t = 'bandă ember: nu se vede'
-            dr.text((x0 + pw / 2, int(ph * 0.93)), t.split(' · ')[0], font=f3, fill=INK, anchor='mt')
-            dr.text((x0 + pw / 2, int(ph * 0.955)), ' · '.join(t.split(' · ')[1:]), font=f3, fill=INK, anchor='mt')
+            parts = t.split(' · ')
+            dr.text((x0 + pw / 2, int(ph * 0.885)), parts[0], font=f3, fill=INK, anchor='mt')
+            dr.text((x0 + pw / 2, int(ph * 0.908)), ' · '.join(parts[1:3]), font=f3, fill=INK, anchor='mt')
+            dr.text((x0 + pw / 2, int(ph * 0.931)), ' · '.join(parts[3:]), font=f3, fill=INK, anchor='mt')
         else:
-            dr.text((x0 + pw / 2, int(ph * 0.93)), 'ton pe ton: doar linia de 0,1 mm la 1,7 mm', font=f3, fill=INK,
+            dr.text((x0 + pw / 2, int(ph * 0.885)), 'ton pe ton: se vede doar linia de 0,1 mm', font=f3, fill=INK,
                     anchor='mt')
+            dr.text((x0 + pw / 2, int(ph * 0.908)), 'de la marginea tălpii', font=f3, fill=INK, anchor='mt')
         if i:
-            dr.line([(x0, int(ph * 0.07)), (x0, int(ph * 0.98))], fill=(200, 192, 182), width=1)
+            dr.line([(x0, int(ph * 0.07)), (x0, int(ph * 0.95))], fill=(200, 192, 182), width=1)
     dr.text((pw * 2, int(ph * 0.985)), 'randare / concept (CGI) · 09 §3.2 estimează 1,7–2,4 mm la nivelul mesei, '
             '0,8–0,9 mm la 9°', font=ImageFont.truetype(FONT, int(ph * 0.014)), fill=INK, anchor='mb')
     out = os.path.join(outdir, 'soul_v5_check1%s.png' % pre)
@@ -132,47 +137,52 @@ def check1(png, outdir):
 
 # ------------------------------------------------------------------------------------------
 def front_props(png, outdir):
-    """Proportions on the front render: glass centre / eye line as % of height, glass share of the front, broad end."""
+    """Proportions on the front render (brief §10.2). Scale = the glass's horizontal diameter (52.0 mm); the body's
+    top edge is found against a per-row background (the sweep has a vertical gradient); z 0 = top + 74 mm."""
     a = np.asarray(Image.open(png).convert('RGB'))
     L = lstar(a)
     H, W = L.shape
-    bg = np.median(np.concatenate([L[:30].ravel(), L[:, :30].ravel(), L[:, -30:].ravel()]))
-    # object = everything that differs from the sweep, above the contact shadow line
-    diff = np.abs(L - bg) > 7
-    # glass = very dark pixels (plus the eyes inside it)
+    # silhouette from the albedo pass (white pearl on a warm-white sweep defeats luminance; albedo ignores shadows)
+    exr = png[:-4] + '_albedo_0001.exr'
+    sys.path.insert(0, HERE)
+    from post import read_exr
+    alb = read_exr(exr)[::-1] if False else read_exr(exr)
+    bga = np.median(np.concatenate([alb[:, :120].reshape(-1, 3), alb[:, -120:].reshape(-1, 3)]), 0)
+    diff = np.abs(alb - bga).max(-1) > 0.06
     dark = L < 12
     ys, xs = np.nonzero(dark)
-    gy0, gy1, gx0, gx1 = ys.min(), ys.max(), xs.min(), xs.max()
+    gx0, gx1 = np.percentile(xs, 0.2), np.percentile(xs, 99.8)
+    gy0, gy1 = np.percentile(ys, 0.2), np.percentile(ys, 99.8)
     gcx, gcy = (gx0 + gx1) / 2, (gy0 + gy1) / 2
-    rg = ((gx1 - gx0) + (gy1 - gy0)) / 4
-    # object silhouette: rows/cols spanned by the body (restrict to the band around the glass columns)
-    rows = np.nonzero(diff[:, int(gcx)])[0]
-    top = rows.min()
-    # bottom: the lowest body row in the centre column above the table contact
-    col = diff[:, int(gcx) - 2:int(gcx) + 3].any(1)
-    bot = np.nonzero(col)[0].max()
-    Hobj = bot - top
+    rg = (gx1 - gx0) / 2
+    s = (gx1 - gx0) / 52.0                            # px per mm at the glass
+    colc = diff[:, int(gcx) - 3:int(gcx) + 4].all(1)
+    top = int(np.nonzero(colc[:int(gy0)])[0].min())
+    bot = top + 74.0 * s
     yy, xx = np.mgrid[0:H, 0:W]
-    glass_disc = (xx - gcx) ** 2 + (yy - gcy) ** 2 <= rg ** 2
-    eyes = (L > 80) & glass_disc
+    disc = (xx - gcx) ** 2 + (yy - gcy) ** 2 <= (rg * 0.98) ** 2
+    # eyes: bright pixels in the disc, excluding the glint band (upper-left chord, > 0.6 r from the centre)
+    u = ((-(xx - gcx)) + (-(yy - gcy))) / math.sqrt(2) / rg
+    eyes = (L > 80) & disc & (u < 0.55)
     ey = np.nonzero(eyes)[0].mean()
-    obj = np.zeros_like(diff)
-    for r in range(top, bot + 1):
-        c = np.nonzero(diff[r])[0]
-        if len(c):
-            obj[r, c.min():c.max() + 1] = True
-    glass_share = glass_disc.sum() / obj.sum()
 
-    def width_at(frac):
-        r = int(round(bot - frac * Hobj))
-        c = np.nonzero(obj[r])[0]
-        return c.max() - c.min() + 1
-    w25, w75 = width_at(18.5 / 74), width_at(55.5 / 74)
-    txt = ('front_00 proportions (px; object %d px tall): glass centre %.1f %% of height (target 54-56), '
-           'eye line %.1f %% (target 50-52), glass %.1f %% of the front (target ~52), broad end up %+.1f %% (target ~+5)'
-           % (Hobj, 100 * (bot - gcy) / Hobj, 100 * (bot - ey) / Hobj, 100 * glass_share, 100 * (w75 / w25 - 1)))
-    g = L[glass_disc & ~(L > 20)]
-    txt += '\nfront_00 glass L*: median %.1f, p95 %.1f (outside eyes and glint)' % (np.median(g), np.percentile(g, 95))
+    def width_at(z):
+        r = int(round(bot - z * s))
+        c = np.nonzero(diff[r])[0]
+        return (c.max() - c.min() + 1) / s
+    rows = [r for r in range(top, int(bot) - int(3 * s))]
+    area = sum((lambda c: (c.max() - c.min() + 1) if len(c) else 0)(np.nonzero(diff[r])[0]) for r in rows) / s ** 2
+    area += 3.0 * width_at(1.5)                        # the last 3 mm (rocker) by its mid width
+    glass_area = math.pi * 26.0 ** 2
+    w25, w75 = width_at(18.5), width_at(55.5)
+    txt = ('front_00 proportions (scale %.2f px/mm from the Ø52 glass): glass centre %.1f %% of height (target 54-56), '
+           'eye line %.1f %% (target 50-52), glass %.1f %% of the front silhouette (target ~52), quarter widths '
+           '%.1f / %.1f mm -> broad end up %+.1f %% (target ~+5), max width %.1f mm'
+           % (s, 100 * (bot - gcy) / (bot - top), 100 * (bot - ey) / (bot - top), 100 * glass_area / area, w25, w75,
+              100 * (w75 / w25 - 1), max(width_at(z) for z in np.arange(10, 70, 0.5))))
+    g = L[disc & ~(L > 20) & (u < 0.55)]
+    txt += '\nfront_00 glass L* (outside the eyes and the glint band): median %.1f, p95 %.1f, p99 %.1f' % (
+        np.median(g), np.percentile(g, 95), np.percentile(g, 99))
     log_check(outdir, txt)
 
 
