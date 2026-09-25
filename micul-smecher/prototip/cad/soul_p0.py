@@ -771,8 +771,58 @@ def from_cache(vname):
     return finish_parts(vname, shells, parts_in, pins, info['screws'], bf, log, say, t0)
 
 
+def seam_tools(vname):
+    """the small cuts through the seam (speaker slot, mic hole, key pin holes, switch window), as in build()"""
+    V = VARIANTS[vname]
+    bf = BoardFrame(V['lip_t'])
+    tools = {}
+    L = SLOT['z1'] - SLOT['z0']
+    zc = (SLOT['z0'] + SLOT['z1']) / 2
+    w_c = float(g.sections(np.array([zc]))[0][0])
+    pl = cq.Plane(origin=vec(SeamFrame.pt(w_c - 9.0, zc)), xDir=vec(SeamFrame.US), normal=(1, 0, 0))
+    tools['slot'] = cq.Workplane(pl).slot2D(L, SLOT['w'], 0).extrude(14.0).val()
+    w_m = float(g.sections(np.array([MIC_Z]))[0][0])
+    plm = cq.Plane(origin=vec(SeamFrame.pt(-w_m + 6.0, MIC_Z)), xDir=(0, 1, 0), normal=(-1, 0, 0))
+    tools['mic'] = cq.Workplane(plm).circle(0.5).extrude(10.0).val()
+    for k, (kx, ky_) in KEYS.items():
+        w_act = bf.w(kx + 2.0, ky_, KEY_DD)
+        t_exit = ray_exit(w_act, np.array([1.0, 0, 0]))
+        pl = cq.Plane(origin=vec(w_act), xDir=(0, 1, 0), normal=(1, 0, 0))
+        tools['pin_' + k] = cq.Workplane(pl).workplane(offset=0.2).circle(V['pin_hole'] / 2).extrude(t_exit + 2).val()
+    sw_c = bf.w(SWITCH[0] + 3.0, SWITCH[1], KEY_DD)
+    pls = cq.Plane(origin=vec(sw_c), xDir=vec(g.UP), normal=(1, 0, 0))
+    tools['switch'] = cq.Workplane(pls).rect(8.0, 3.2).extrude(40.0).val()
+    return tools
+
+
+def repair(vname):
+    """re-apply the seam cuts that OCCT refused during build() (they touch the tangent seam line): each cut is
+    tried as is and with the tool nudged by 0.01-0.05 mm; a cut already present removes ~nothing and is kept."""
+    cdir = os.path.join(HERE, 'cache', 'm_' + vname)
+    tools = seam_tools(vname)
+    for part in ('front_shell', 'back_shell'):
+        S = cq.Shape.importBrep(os.path.join(cdir, part + '.brep'))
+        for name, t in tools.items():
+            done = False
+            for d in (0.0, 0.01, 0.03, 0.05):
+                try:
+                    tt = t.translate(cq.Vector(0, d, d * 0.5)) if d else t
+                    r = S.cut(tt).clean()
+                    if r.isValid() and len(r.Solids()) >= 1 and abs(r.Volume()) > 0.5 * abs(S.Volume()):
+                        S, done = r, True
+                        break
+                except Exception:
+                    pass
+            print(f'  repair {vname} {part} {name}: {"ok" if done else "FAILED"}', flush=True)
+        S.exportBrep(os.path.join(cdir, part + '.brep'))
+
+
 def main():
     a = sys.argv[1:]
+    if a and a[0] == 'repair':
+        for vn in a[1:]:
+            repair(vn)
+        return
     if a and a[0] == 'finish':
         for vn in a[1:]:
             from_cache(vn)
