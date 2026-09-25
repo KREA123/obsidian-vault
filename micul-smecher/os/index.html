@@ -1069,7 +1069,8 @@ function nextPhrase(kind) {
 function startVoice(kind, preset) {
   if (S.sleeping) return;
   cancel("voice"); cancel("answer");
-  const p = preset || nextPhrase(kind);
+  let p = preset || nextPhrase(kind);
+  if (S.ai === "none") { const L = T(); p = Object.assign({}, p, { a: L.offVoice, chips: [["warn", L.offChip]], tool: "offline", fx: null }); }
   S.voice = { kind, p, phase: "listen", shown: "", i: 0, speaking: false, idx: preset ? preset._i : null };
   go("voice", "fade");
   const total = p.q.length, step = Math.max(28, 1300 / total);
@@ -1095,7 +1096,11 @@ function answer() {
   if (V.kind === "ask") S.lastQA = V.p.q;
   if (V.kind === "tr") S.tr.last = { q: V.p.q, a: V.p.a };
   const fx = V.p.fx;
-  if (fx === "rem") { if (!S.rems.find(r => r.key === "new")) S.rems.push({ time: "17:00", key: "new", done: false }); addDiary("rem"); }
+  if (fx === "rem") { if (!S.rems.find(r => r.key === "new")) { S.rems.forEach(x => x.fresh = false); S.rems.push({ time: "17:00", key: "new", done: false, fresh: true }); } addDiary("rem"); }
+  const A = V.p.args;
+  if (fx === "remT") { addRem(A.h, A.m, A.text, A.day); addDiary("remT"); }
+  if (fx === "noteT") { addNote(A.text); addDiary("noteT"); }
+  if (fx === "alarmT") { addAlarm(A.h, A.m, A.label); addDiary("alarmT"); }
   if (fx === "note" || fx === "note2") {
     const key = fx === "note" ? "new" : "new2";
     if (!S.notes.find(n => n.key === key)) { const n = { key, sync: false, fresh: true }; S.notes.push(n); after(2600, () => { n.sync = true; if (S.view === "notes") refresh(); }, "sync"); }
@@ -1133,6 +1138,566 @@ function claudeDecide(ok) {
   refresh();
 }
 
+/* ================================================================ small helpers for the new apps */
+const pad2 = n => String(n).padStart(2, "0");
+const hm = (h, m) => pad2(h) + ":" + pad2(m);
+const uid = p => p + (++S.uid);
+const SVGI = {
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>',
+  check: '<svg viewBox="0 0 32 32"><path d="M6 17l7 7L26 9"/></svg>',
+  shift: '<svg viewBox="0 0 28 28"><path class="fl" d="M14 4 L24 14 H19 V23 H9 V14 H4 Z"/></svg>',
+  bksp: '<svg viewBox="0 0 28 28"><path d="M2 14 L9 5 H26 V23 H9 Z"/><path d="M13 10 l8 8 M21 10 l-8 8"/></svg>',
+  mic: '<svg viewBox="0 0 28 28"><rect x="9" y="2" width="10" height="16" rx="5"/><path d="M4 13 a10 10 0 0 0 20 0 M14 23 v4"/></svg>',
+  micOff: '<svg viewBox="0 0 28 28"><rect x="9" y="2" width="10" height="16" rx="5"/><path d="M4 13 a10 10 0 0 0 20 0 M14 23 v4 M3 3 L25 25"/></svg>',
+  send: '<svg viewBox="0 0 28 28"><path d="M14 24 V5 M6 12 L14 4 L22 12"/></svg>',
+  ok: '<svg viewBox="0 0 28 28"><path d="M4 15 L11 22 L24 7"/></svg>'
+};
+const addBtn = a => `<span class="addb" data-act="${a}" role="button" aria-label="+">${SVGI.plus}</span>`;
+function daysStr(days) {
+  const L = T(), n = days.filter(Boolean).length;
+  if (!n) return L.once; if (n === 7) return L.daily;
+  if (n === 5 && days.slice(0, 5).every(Boolean)) return L.wkdays;
+  if (n === 2 && days[5] && days[6]) return L.weekend;
+  return L.days.filter((d, i) => days[i]).join(" ");
+}
+function nextFire(a, from = new Date()) {
+  for (let d = 0; d < 8; d++) {
+    const t = new Date(from); t.setDate(t.getDate() + d); t.setHours(a.h, a.m, 0, 0);
+    if (t <= from) continue;
+    if (!a.days.some(Boolean) || a.days[(t.getDay() + 6) % 7]) return t;
+  }
+  return null;
+}
+function relParts(t) { const mins = Math.max(1, Math.round((t - Date.now()) / 60000)); return [Math.floor(mins / 60), mins % 60]; }
+function dayWord(t) {
+  const L = T(), now = new Date(), d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), dd = Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) - d0) / 864e5);
+  if (dd === 0) return L.todayW; if (dd === 1) return L.tomorrowW;
+  return t.toLocaleDateString(LANG === "ro" ? "ro-RO" : "en-GB", { weekday: "long" });
+}
+
+/* ================================================================ text input: Round QWERTY (research/04)
+   One system keyboard: apps call kbOpen({ctx, action, onDone}) ≈ text.request(), and get back committed text only. */
+const W_RO = ("și de în a la să nu că e cu pe o un se am ce mi ai este sunt din mai pentru care ca te dar sau fi al lui eu tu el ea noi voi ei ele asta acum azi mâine ieri bine " +
+  "foarte tot toate cum unde când cine după până fără despre prin între într-o într-un s-a n-am mi-a l-am dă-mi spune-mi amintește-mi amintește notează scrie trimite sună sun " +
+  "suni bancă banca casă acasă mama tata ana ceai cafea lapte pâine ouă apă flori udă sală pastile pastilele trezirea alarmă alarma memento notiță notițe listă idee idei cumpără " +
+  "cumpăr ia ora oră ore minute minut dimineață dimineața seară seara diseară noapte zi ziua zilei săptămâna weekend luni marți miercuri joi vineri sâmbătă duminică vreme ploaie " +
+  "soare frig cald salut bună mulțumesc mersi rog da ok poți poate vreau vrei vrea nevoie trebuie pot putem faci face fac facem merg mergem vin vii vine ajung întârzii rezumat " +
+  "rezumă urmează proiect site școală copii doctor medic programare cadou naștere petrecere drum gara gară tren bilet mașină țară țara fată față fața mâna câine încă înainte " +
+  "înapoi întâlnire întrebare gând gândesc știu știi știe ține tine telefon telecomandă baterii mesaj răspuns lucru lucrez lucrează birou prânz cină masă magazin farmacie poștă " +
+  "colet coletul factură bani lună an ani frumos mare mic mică nou nouă vechi alt altă fiecare orice nimic ceva cineva aici acolo sus jos repede mereu deja doar chiar prea apoi " +
+  "atunci dacă deci însă iar cât două doi trei patru cinci șase șapte opt zece jumătate îmi îți își mă așa lume mulți").split(" ");
+const W_EN = ("the to and a of i you it in is that for on my me be have this with we are do not at your can what so if but was all will just get from up out about how no one " +
+  "like time know when there go today tomorrow good yes hello hi thanks thank please okay ok call remind reminder alarm note notes set wake meet meeting lunch dinner coffee home " +
+  "work office bank mom dad doctor buy milk bread eggs water plants gym pills sleep morning evening tonight night summary summarize next weather rain tell send message help love " +
+  "sorry late minutes minute hour hours pm am where why who don't i'm it's can't won't i'll let's world doing great nice see soon later need find write read list idea project " +
+  "site build check email plan week weekend friday monday saturday sunday tuesday wednesday thursday happy birthday party train station ticket car pick kids school walk run " +
+  "make take give think want day new first last back after before then now also well way because any these them some could would should into over only come look use two " +
+  "three four five ten half here right left start stop again done ready thing things something anything money pay bill remember forget what's that's there's doesn't didn't").split(" ");
+const fold = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-'’]/g, "");
+const LEX = [], RO_SET = new Set(), EN_SET = new Set();
+[[W_RO, "ro", RO_SET], [W_EN, "en", EN_SET]].forEach(([list, lang, set]) => list.forEach((w, r) => { if (w) { LEX.push({ w, f: fold(w), lang, r }); set.add(fold(w)); } }));
+/* confident diacritic restorations, applied at space/punctuation (P ≥ .8 and ≥ 2× the runner-up in a real model) */
+const AUTO = Object.fromEntries(("sa:să si:și maine:mâine tara:țară pana:până fara:fără dupa:după cand:când asa:așa stiu:știu stii:știi stie:știe paine:pâine caine:câine " +
+  "inca:încă iti:îți imi:îmi isi:își in:în ma:mă multumesc:mulțumesc dimineata:dimineață diseara:diseară notita:notiță notite:notițe cumpara:cumpără aminteste:amintește " +
+  "amintestemi:amintește-mi noteaza:notează suna:sună sambata:sâmbătă marti:marți duminica:duminică sase:șase sapte:șapte jumatate:jumătate intrebare:întrebare " +
+  "intalnire:întâlnire intarzii:întârzii acasa:acasă gandesc:gândesc urmeaza:urmează poti:poți nam:n-am spunemi:spune-mi dami:dă-mi dont:don't im:I'm").split(" ").map(p => p.split(":")));
+const NEXTW = {
+  ro: { să: ["sun", "iau", "cumpăr"], la: ["5", "bancă", "ora"], mâine: ["la", "dimineață", "seară"], "amintește-mi": ["să", "mâine", "la"], și: ["apoi", "eu", "la"], ce: ["faci", "urmează", "mai"], sun: ["la", "pe", "mama"], "": ["și", "la", "să"] },
+  en: { remind: ["me", "you", "us"], me: ["to", "at", "tomorrow"], at: ["5", "7", "9"], to: ["call", "buy", "the"], call: ["mom", "the", "dad"], hello: ["there", "world", "how"], how: ["are", "is", "to"], are: ["you", "we", "they"], "": ["the", "to", "and"] }
+};
+const VAR = { a: "ăâàáä", i: "î8íï", s: "șšß", t: "ț5", e: "3éèêë", o: "9öóô", u: "7üú", c: "çčć", n: "ñ", q: "1", w: "2", r: "4", y: "6", p: "0", ".": "…", "-": "–", '"': "„”«»", "'": "’" };
+const PUNCT_TRAY = [".", ",", "?", "!", "'", "-"];
+const DIAC = /[ăâîșțĂÂÎȘȚ]/;
+const SEP = /[\s.,?!;:]/;
+const kbEl = $("#kb");
+function matchCase(w, like) { return like && like[0] !== like[0].toLowerCase() ? w[0].toUpperCase() + w.slice(1) : w; }
+function langScore(words) {
+  let ro = 0, en = 0;
+  words.slice(-6).forEach(w => { const f = fold(w), r = RO_SET.has(f), e = EN_SET.has(f); if (r && !e) ro++; if (e && !r) en++; });
+  return { ro, en, pref: ro > en ? "ro" : en > ro ? "en" : LANG };
+}
+function candidates(word, prev) {
+  const f = fold(word); if (!f) return [];
+  const { pref } = langScore(prev), out = new Map();
+  for (const e of LEX) {
+    if (!e.f.startsWith(f)) continue;
+    let sc = 1 / (e.r + 8) * (e.lang === pref ? 1 : 0.5);
+    if (e.f === f) sc *= 3;
+    if (AUTO[f] === e.w) sc *= 5;
+    const w = matchCase(e.w, word);
+    if (!out.has(w) || out.get(w) < sc) out.set(w, sc);
+  }
+  return [...out.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]);
+}
+function autoForm(word, prev) {
+  const K = S.kb;
+  if (!word || DIAC.test(word) || /[^a-zA-Z]/.test(word)) return null;
+  const f = fold(word), a = AUTO[f];
+  if (!a || (K && K.locked.has(f))) return null;
+  const { ro, en } = langScore(prev);
+  if (a.includes("'")) return ro > en ? null : a === "I'm" ? a : matchCase(a, word);   // English contractions
+  if (en > ro) return null;                       // English sentence: leave plain letters alone
+  if (EN_SET.has(f) && ro === 0) return null;     // "in", "im", "dont": only with Romanian evidence
+  return matchCase(a, word);
+}
+/* local EN/RO time grammar: "la 5", "mâine la 9:30", "at 7pm", "în 10 min", "diseară" (works with no AI) */
+function parseTime(text) {
+  const f = " " + text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "") + " ";
+  let h = null, m = 0, day = /\b(maine|tomorrow)\b/.test(f) ? 1 : 0, hint = false, r;
+  if ((r = f.match(/\b(\d{1,2})[:.](\d{2})\b/))) { h = +r[1]; m = +r[2]; }
+  else if ((r = f.match(/\b(\d{1,2})\s*(am|pm)\b/))) { h = +r[1] % 12 + (r[2] === "pm" ? 12 : 0); }
+  else if ((r = f.match(/\b(?:la|at|ora)\s+(\d{1,2})(\s+(?:si\s+)?jumatate|\s+thirty)?\b/))) { h = +r[1]; if (r[2]) m = 30; hint = true; }
+  else if ((r = f.match(/\b(?:in|peste)\s+(\d{1,3})\s*(?:min|minute|minutes)\b/))) { const d = new Date(Date.now() + r[1] * 60000); return { h: d.getHours(), m: d.getMinutes(), day: d.getDate() !== new Date().getDate() ? 1 : 0, alarm: false }; }
+  else if (/\b(diseara|tonight)\b/.test(f)) h = 20;
+  if (h === null || h > 23 || m > 59) return null;
+  const alarm = /\b(alarm|alarma|alarme|trezeste|trezesc|wake)/.test(f);
+  if (hint && !alarm && h >= 1 && h <= 7 && !/\b(dimineata|morning)\b/.test(f)) h += 12;
+  return { h, m, day, alarm };
+}
+function cleanLabel(text) {
+  let t = text.replace(/^\s*(amintește-mi|aminteste-mi|amintește|remind me|pune-mi o alarmă|pune o alarmă|trezește-mă|set an alarm|wake me( up)?)\s*/i, "")
+    .replace(/\b(la|at|ora)\s+\d{1,2}([:.]\d{2})?(\s*(am|pm))?(\s+(și\s+)?jumătate)?/gi, "").replace(/\b\d{1,2}[:.]\d{2}\b/g, "").replace(/\b\d{1,2}\s*(am|pm)\b/gi, "")
+    .replace(/\b(mâine|maine|tomorrow|azi|today|diseară|tonight)\b/gi, "").replace(/\s+/g, " ").trim().replace(/^(să|sa|to)\s+/i, "").replace(/^[,.:;\s]+|[,.:;\s]+$/g, "");
+  return t ? t[0].toUpperCase() + t.slice(1) : "";
+}
+const normText = t => t.replace(/ş/g, "ș").replace(/Ş/g, "Ș").replace(/ţ/g, "ț").replace(/Ţ/g, "Ț").normalize("NFC");
+
+function kbOpen(o) {
+  const L = T();
+  if (hold) { hold = null; soul.prog = 0; }
+  const draft = S.drafts[o.ctx];
+  S.kb = Object.assign({ shift: "off", layer: "abc", lastAuto: null, locked: new Set(), undo: [], lastSpace: 0, lastShift: 0, dict: null, undoChip: 0, undoSnap: null,
+    maxLen: { claude: 1000, talk: 1000, note: 2000, reminder: 120, alarm_label: 48 }[o.ctx] || 500, chips: L.kbChips[o.ctx === "talk" ? "claude" : o.ctx] || [] }, o);
+  S.kb.text = o.initial != null ? o.initial : draft || "";
+  autoShift();
+  cards.style.visibility = "hidden"; kbEl.classList.add("on");
+  kbRender(); applyFaceState(); renderDots();
+  soul.lookAt(0, 0.8, 0.6);
+}
+function kbClose() {
+  cancel("kbhold"); cancel("kbrep"); cancel("dict"); kp = null;
+  S.kb = null; kbEl.classList.remove("on"); kbEl.innerHTML = ""; cards.style.visibility = "";
+  applyFaceState(); renderDots();
+}
+function kbBack(silent) {
+  const K = S.kb; if (!K) return;
+  if (K.text.trim()) S.drafts[K.ctx] = K.text; else delete S.drafts[K.ctx];
+  const had = !!K.text.trim(), cb = K.onCancel; kbClose();
+  if (!silent) { if (had) showPill({ text: T().kbDraft, dur: 1800 }); soul.lookAt(0, 0.4, 0.4); }
+  if (cb) cb();
+}
+function kbDone() {
+  const K = S.kb; if (!K || K.dict) return;
+  if (/\S$/.test(K.text)) { const w = curWord(); const a = autoForm(w, prevWords()); if (a) K.text = K.text.slice(0, -w.length) + a; }
+  const txt = normText(K.text.trim());
+  if (!txt) { soul.react("nope"); buzz(); return; }
+  delete S.drafts[K.ctx];
+  const fn = K.onDone; kbClose(); if (fn) fn(txt);
+}
+function curWord() { const K = S.kb, m = K.text.match(/[^\s.,?!;:()"„”]*$/); return m ? m[0] : ""; }
+function prevWords() { const K = S.kb, w = curWord(); return K.text.slice(0, K.text.length - w.length).split(/[\s.,?!;:()"„”]+/).filter(Boolean); }
+function autoShift() { const K = S.kb; if (K.shift === "lock") return; if (K.text === "" || /[.?!]\s$/.test(K.text)) K.shift = "once"; }
+function snap() { const K = S.kb; K.undo.push(K.text); if (K.undo.length > 32) K.undo.shift(); }
+function applyAuto() {
+  const K = S.kb, w = curWord(); if (!w) return;
+  const a = autoForm(w, prevWords()); if (!a || a === w) return;
+  const before = K.text; K.text = K.text.slice(0, -w.length) + a;
+  K.lastAuto = { before, orig: w, repl: a, pos: K.text.length - a.length, after: null, t: performance.now() };
+  soul.lookAt(0, -0.6, 0.25);
+}
+function kbCommitChar(ch, physical) {
+  const K = S.kb; if (!K) return;
+  if (K.dict) kbDictStop();
+  if (K.text.length >= K.maxLen) { buzz(); return; }
+  snap(); K.undoChip = 0;
+  const sep = SEP.test(ch);
+  if (ch === " ") {
+    const now = performance.now();
+    if (now - K.lastSpace < 450 && / $/.test(K.text) && /[^\s.,?!;:]/.test(K.text.slice(-2, -1))) {
+      K.text = K.text.slice(0, -1) + ". "; K.lastSpace = 0; K.lastAuto = null; autoShift(); kbRender(); return;
+    }
+    K.lastSpace = now;
+  } else K.lastSpace = 0;
+  K.lastAuto = null;
+  if (sep) applyAuto();
+  K.text += ch;
+  if (K.lastAuto) K.lastAuto.after = K.text;
+  if (!sep && K.shift === "once") K.shift = "off";
+  autoShift(); kbRender();
+}
+function kbBksp() {
+  const K = S.kb; if (!K) return;
+  if (K.dict) kbDictStop();
+  const la = K.lastAuto;
+  if (la && la.after === K.text) {                 // ⌫ right after an automatic change: restore exactly what was typed, and lock it
+    snap(); K.text = la.before + K.text.slice(la.pos + la.repl.length);
+    K.locked.add(fold(la.orig)); K.lastAuto = null; soul.lookAt(0, -0.6, 0.25); kbRender(); return;
+  }
+  if (!K.text) return;
+  snap(); const a = Array.from(K.text); a.pop(); K.text = a.join(""); K.lastAuto = null;
+  if (K.shift === "once" && K.text !== "") K.shift = "off";
+  autoShift(); kbRender();
+}
+function kbDelWord() {
+  const K = S.kb; if (!K || !K.text) return;
+  K.text = K.text.replace(/\s+$/, "").replace(/[^\s]*$/, ""); K.lastAuto = null; autoShift(); kbRender();
+}
+function kbUndo() {
+  const K = S.kb; if (!K) return;
+  if (K.undoSnap != null) { K.text = K.undoSnap; K.undoSnap = null; K.undoChip = 0; }
+  else if (K.undo.length) K.text = K.undo.pop();
+  K.lastAuto = null; soul.react("happy", 0.8); kbRender();
+}
+function kbSuggestions() {
+  const K = S.kb, L = T();
+  if (K.undoChip && performance.now() < K.undoChip) return [{ t: "undo", label: L.undoChip }, null, null];
+  if (!K.text.trim()) return K.chips.map(c => ({ t: "ctx", label: c[0], v: c[1] }));
+  const w = curWord(), prev = prevWords(), tm = K.ctx !== "alarm_label" && /\s$/.test(K.text) ? parseTime(K.text) : null;
+  if (w) {
+    const c = candidates(w, prev), a = autoForm(w, prev), rest = c.filter(x => x !== w && x !== a);
+    const best = a || rest[0] || w;
+    return [{ t: "w", v: w, label: `“${w}”` }, { t: "w", v: best, label: best, b: 1 }, rest.find(x => x !== best) ? { t: "w", v: rest.find(x => x !== best), label: rest.find(x => x !== best) } : null];
+  }
+  const { pref } = langScore(prev), last = prev.length ? prev[prev.length - 1].toLowerCase() : "";
+  const nx = (NEXTW[pref][last] || NEXTW[pref][""]).map(x => ({ t: "w", v: x, label: x }));
+  if (tm) return [{ t: "time", label: L.timeChip(hm(tm.h, tm.m)), v: tm }, nx[0], nx[1]];
+  return [nx[1], Object.assign({ b: 1 }, nx[0]), nx[2]];
+}
+function kbPickSug(i) {
+  const K = S.kb; if (!K) return; const sg = K.sug && K.sug[i]; if (!sg) return;
+  if (sg.t === "undo") { kbUndo(); return; }
+  if (sg.t === "time") { const fn = K.onTime; if (fn) { const txt = normText(K.text.trim()); delete S.drafts[K.ctx]; kbClose(); fn(txt, sg.v); } return; }
+  snap(); K.lastAuto = null;
+  if (sg.t === "ctx") { K.text += sg.v; if (K.shift === "once") K.shift = "off"; kbRender(); return; }
+  const w = curWord();
+  if (sg.v === w) K.locked.add(fold(w));
+  K.text = K.text.slice(0, K.text.length - w.length) + sg.v + " ";
+  if (K.shift === "once") K.shift = "off"; autoShift();
+  soul.react("happy", 0.5); kbRender();
+}
+function kbKeys() {
+  const K = S.kb, up = K.shift !== "off", keys = [];
+  const put = (id, label, cx, y, w, cls = "", ch) => keys.push({ id, label, cx, x0: cx - w / 2, x1: cx + w / 2, y0: y, cls, ch });
+  const chars = (str, y, x0, pitch, w) => Array.from(str).forEach((c, i) => { const ch = up ? c.toUpperCase() : c; put("c", esc(ch), x0 + pitch * i, y, w, "", ch); });
+  if (K.layer === "abc") {
+    chars("qwertyuiop", 184, 35, 44, 44); chars("asdfghjkl", 236, 45, 47, 47);
+    put("shift", SVGI.shift, 56, 288, 46, "fn" + (K.shift !== "off" ? " lit" : "") + (K.shift === "lock" ? " lock" : ""));
+    chars("zxcvbnm", 288, 101, 44, 44); put("bksp", SVGI.bksp, 410, 288, 46, "fn");
+  } else if (K.layer === "123") {
+    ["1234567890", '-/:;()€&@"'].forEach((r, j) => Array.from(r).forEach((c, i) => put("c", esc(c), 35 + 44 * i, 184 + 52 * j, 44, "", c)));
+    put("sym", "#+=", 64, 288, 58, "fn"); Array.from(".,?!'").forEach((c, i) => put("c", c, 121 + 56 * i, 288, 56, "", c)); put("bksp", SVGI.bksp, 402, 288, 58, "fn");
+  } else {
+    [Array.from("[]{}#%^*+="), ["_", "\\", "|", "~", "<", ">", "$", "£", "„", "”"]].forEach((r, j) => r.forEach((c, i) => put("c", esc(c), 35 + 44 * i, 184 + 52 * j, 44, "", c)));
+    put("l123", "123", 64, 288, 58, "fn"); ["…", "·", "°", "–", "«"].forEach((c, i) => put("c", c, 121 + 56 * i, 288, 56, "", c)); put("bksp", SVGI.bksp, 402, 288, 58, "fn");
+  }
+  const can = K.text.trim().length > 0;
+  put("layer", K.layer === "abc" ? "?123" : "ABC", 108, 346, 62, "fn");
+  put("mic", S.ai === "none" ? SVGI.micOff : SVGI.mic, 166, 346, 54, "fn" + (S.ai === "none" ? " off" : ""));
+  put("space", LANG === "ro" ? "RO · EN" : "EN · RO", 257, 346, 128, "fn sp");
+  put("done", K.action === "send" ? SVGI.send : SVGI.ok, 355, 346, 68, (K.action === "send" ? "send" : "save") + (can ? "" : " dis"));
+  return keys;
+}
+function fieldHTML() {
+  const K = S.kb, L = T();
+  if (!K.text) { const ph = L.kbPh[K.ctx]; return `<span class="kcar"></span><span class="ph">${esc(typeof ph === "function" ? ph(aiName()) : ph)}</span>`; }
+  let t = K.text, html;
+  const la = K.lastAuto && K.lastAuto.after === K.text && performance.now() - K.lastAuto.t < 1600 ? K.lastAuto : null;
+  if (la) html = esc(t.slice(0, la.pos)) + `<u>${esc(la.repl)}</u>` + esc(t.slice(la.pos + la.repl.length));
+  else if (K.dict) html = esc(K.dict.base) + `<span class="dz">${esc(t.slice(K.dict.base.length))}</span>`;
+  else html = esc(t);
+  return html + '<span class="kcar"></span>';
+}
+const SLOTS = [[26, 124], [156, 154], [316, 124]];
+function kbRender() {
+  const K = S.kb; if (!K) return;
+  K.keys = kbKeys(); K.sug = kbSuggestions();
+  const L = T(), mark = s => esc(s).replace(/[ăâîșțĂÂÎȘȚ]/g, c => `<i>${c}</i>`);
+  let h = `<div class="kf" id="kf">${fieldHTML()}</div>`;
+  if (K.text.length > K.maxLen * 0.9) h += `<div class="kcnt">${K.text.length}/${K.maxLen}</div>`;
+  if (K.dict) {
+    h += `<div class="kdl">${L.kbListen}</div><div class="kstop"><i></i>${L.kbStop}</div>`;
+  } else {
+    K.sug.forEach((sg, i) => {
+      if (!sg) return; const [x, w] = SLOTS[i];
+      const cls = sg.t === "ctx" ? "ctx" : sg.t === "time" ? "tm" : sg.t === "undo" ? "un" : sg.b ? "b" : "";
+      h += `<div class="ks ${cls}" style="left:${x}px;width:${w}px"><span>${sg.t === "w" ? mark(sg.label) : esc(sg.label)}</span></div>`;
+    });
+    if (K.text.trim() && !(K.undoChip && performance.now() < K.undoChip)) h += `<i class="ksep" style="left:153px"></i><i class="ksep" style="left:312px"></i>`;
+    h += `<div class="kbk">` + K.keys.map((k, i) => `<div class="kk ${k.cls}" data-i="${i}" style="left:${k.x0 + 2}px;top:${k.y0 + 3}px;width:${k.x1 - k.x0 - 4}px">${k.label}</div>`).join("") + `</div>`;
+  }
+  h += `<div id="kov"></div>`;
+  kbEl.innerHTML = h;
+  if (kp && kp.zone === "key" && !kp.tray) kbShowPress(kp.k);
+}
+function kbHit(x, y) {
+  const rowY = y >= 342 ? 346 : y >= 288 ? 288 : y >= 236 ? 236 : 184;
+  let best = null, bd = 1e9;
+  for (const k of S.kb.keys) { if (k.y0 !== rowY) continue; const d = x < k.x0 ? k.x0 - x : x > k.x1 ? x - k.x1 : 0; if (d < bd) { bd = d; best = k; } }
+  return best;
+}
+function kbShowPress(k) {
+  kbEl.querySelectorAll(".kk.on").forEach(e => e.classList.remove("on"));
+  const i = S.kb.keys.indexOf(k), el = kbEl.querySelector(`.kk[data-i="${i}"]`); if (el) el.classList.add("on");
+  const ov = $("#kov"); if (!ov) return;
+  if (k.id === "c" && !RM) { const x = clamp(k.cx - 29, 30, 378); ov.innerHTML = `<div class="kcall" style="left:${x}px;top:${k.y0 - 64}px">${esc(k.ch)}</div>`; }
+  else ov.innerHTML = "";
+}
+function kbHidePress() { if (!kbEl) return; kbEl.querySelectorAll(".kk.on").forEach(e => e.classList.remove("on")); const ov = $("#kov"); if (ov) ov.innerHTML = ""; }
+function kbTray(k) {
+  const K = S.kb; let items;
+  if (k.id === "layer") items = PUNCT_TRAY;
+  else { const v = VAR[k.ch.toLowerCase()]; if (!v) return false; items = Array.from(v).map(c => K.shift !== "off" ? c.toUpperCase() : c); }
+  const dir = k.cx > 233 ? -1 : 1, n = items.length, top = k.y0 - 64;
+  const left = dir > 0 ? k.cx - 27 : k.cx - 27 - 44 * (n - 1);
+  kp.tray = { items: dir > 0 ? items : items.slice().reverse(), dir, n, top, left, sel: dir > 0 ? 0 : n - 1, orig: items };
+  kbDrawTray(); soul.lookAt((k.cx - 233) / 233 * 0.6, 0.5, 1.2);
+  return true;
+}
+function kbDrawTray() {
+  const t = kp.tray, ov = $("#kov"); if (!ov) return;
+  kbEl.querySelectorAll(".kk.on").forEach(e => e.classList.remove("on"));
+  ov.innerHTML = `<div class="ktray" style="left:${t.left}px;top:${t.top}px">${t.items.map((c, i) => `<b class="${i === t.sel ? "sel" : ""}">${esc(c)}</b>`).join("")}</div>`;
+}
+let kp = null;
+function kbDown(p) {
+  const K = S.kb;
+  if (K.dict) { kbDictStop(); kp = null; return; }
+  if (p.y < 130) { kp = { zone: "field" }; return; }
+  if (p.y < 182) { kp = { zone: "sug", slot: p.x < 153 ? 0 : p.x < 313 ? 1 : 2 }; return; }
+  const k = kbHit(p.x, p.y);
+  kp = { zone: "key", k, x: p.x, y: p.y, t: performance.now(), snapText: K.text };
+  soul.lookAt((p.x - 233) / 233 * 0.6, 0.85, 0.7);
+  kbShowPress(k);
+  if (k.id === "bksp") { kbBksp(); after(450, bkspRepeat, "kbrep"); }
+  cancel("kbhold");
+  after(380, () => { if (kp && kp.k === k && !kp.moved && (k.id === "c" || k.id === "layer")) kbTray(k); }, "kbhold");
+}
+function bkspRepeat() {
+  if (!kp || !kp.k || kp.k.id !== "bksp" || !S.kb) return;
+  if (performance.now() - kp.t > 1200) { kbDelWord(); kp.words = true; after(166, bkspRepeat, "kbrep"); }
+  else { kbBksp(); after(83, bkspRepeat, "kbrep"); }
+}
+function kbMove(p) {
+  if (!kp || kp.zone !== "key") return;
+  if (Math.hypot(p.x - kp.x, p.y - kp.y) > 12) kp.moved = true;
+  if (kp.tray) {
+    const t = kp.tray, i = Math.round((p.x - (t.left + 27)) / 44);
+    const sel = p.y < t.top - 50 || p.y > kp.k.y0 + 90 || i < -1 || i > t.n ? -1 : clamp(i, 0, t.n - 1);
+    if (sel !== t.sel) { t.sel = sel; kbDrawTray(); }
+    return;
+  }
+  if (kp.moved && (kp.k.id === "c")) { const k = kbHit(p.x, p.y); if (k && k !== kp.k && k.id === "c") { kp.k = k; kbShowPress(k); soul.lookAt((p.x - 233) / 233 * 0.6, 0.85, 0.7); } }
+}
+function kbUp() {
+  cancel("kbhold"); cancel("kbrep");
+  const q = kp; kp = null; kbHidePress(); if (!q || !S.kb) return;
+  const K = S.kb;
+  if (q.zone === "sug") { kbPickSug(q.slot); return; }
+  if (q.zone !== "key") return;
+  if (q.tray) { const t = q.tray; if (t.sel >= 0) kbCommitChar(t.items[t.sel]); else kbRender(); return; }
+  const k = q.k;
+  switch (k.id) {
+    case "c": kbCommitChar(k.ch); break;
+    case "space": kbCommitChar(" "); break;
+    case "bksp": if (q.words) { K.undoSnap = q.snapText; K.undoChip = performance.now() + 5000; kbRender(); after(5100, () => { if (S.kb === K) kbRender(); }, "kbundo"); } break;
+    case "shift": {
+      const now = performance.now();
+      K.shift = K.shift === "off" ? "once" : K.shift === "once" && now - K.lastShift < 300 ? "lock" : "off";
+      K.lastShift = now; kbRender(); break;
+    }
+    case "layer": K.layer = K.layer === "abc" ? "123" : "abc"; kbRender(); break;
+    case "sym": K.layer = "sym"; kbRender(); break;
+    case "l123": K.layer = "123"; kbRender(); break;
+    case "mic": kbMic(); break;
+    case "done": kbDone(); break;
+  }
+}
+function kbMic() {
+  if (S.ai === "none") { showPill({ kind: "amber", text: T().kbNoMic, dur: 2400 }); soul.react("nope"); return; }
+  kbDictStart();
+}
+function kbDictStart() {
+  const K = S.kb; if (!K || K.dict) return;
+  if (S.ai === "none") { kbMic(); return; }
+  const ph = T().dict[K.ctx === "talk" ? "claude" : K.ctx] || "";
+  const D = K.dict = { words: ph.split(" "), i: 0, base: K.text && !/\s$/.test(K.text) ? K.text + " " : K.text };
+  snap(); kbRender(); applyFaceState();
+  const step = () => {
+    if (!S.kb || S.kb.dict !== D) return;
+    D.i++; K.text = D.base + D.words.slice(0, D.i).join(" "); kbRender();
+    if (D.i < D.words.length) after(RM ? 60 : 280, step, "dict"); else after(900, kbDictStop, "dict");
+  };
+  after(500, step, "dict");
+}
+function kbDictStop() {
+  const K = S.kb; if (!K || !K.dict) return;
+  cancel("dict"); K.dict = null; applyFaceState(); kbRender();
+}
+
+/* ---------------------------------------------------------------- typing flows: AI, notes, reminders, alarms */
+function openTypeAI(origin) {
+  kbOpen({ ctx: origin === "talk" ? "talk" : "claude", action: "send", onDone: t => aiSend(t, origin),
+    onTime: (t, tm) => { const r = aiReply(t, true); r.args = Object.assign({}, tm, { text: cleanLabel(t) || T().remDef }); if (tm.alarm) { r.fx = "alarmT"; r.args.label = cleanLabel(t) || T().labelDef; } aiSend(t, origin, r); } });
+}
+function aiSend(text, origin, pre) {
+  const r = pre || aiReply(text);
+  cancel("voice"); cancel("answer");
+  S.lastQA = text; addDiary("aiT");
+  S.voice = { kind: "typed", p: Object.assign({ q: text }, r), phase: "think", shown: text, speaking: false };
+  go("voice", "fade"); S.ret = origin;
+  after(RM ? 500 : 1700, answer, "voice");
+}
+function aiReply(text, forceLocal) {
+  const L = T(), f = text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""), n = aiName(), tm = parseTime(text), off = S.ai === "none" || forceLocal;
+  const isRem = /amint|remind|memento|nu uita|don'?t forget/.test(f);
+  if (tm && tm.alarm) { const t = hm(tm.h, tm.m); return { a: off ? L.offLocal : L.aiAlarm(t), chips: [["ok", L.chipAlarm(t)]], tool: "alarm.set", fx: "alarmT", args: { h: tm.h, m: tm.m, label: cleanLabel(text) || L.labelDef } }; }
+  if (tm) { const t = hm(tm.h, tm.m); return { a: off ? L.offLocal : L.aiRem(t, tm.day), chips: [["ok", L.chipRem(t)]], tool: "reminder.create", fx: "remT", args: { h: tm.h, m: tm.m, day: tm.day, text: cleanLabel(text) || L.remDef } }; }
+  if (off) return { a: L.offAsk, chips: [["ok", L.chipNoteSaved]], tool: "note.create · outbox", fx: "noteT", args: { text } };
+  if (isRem) return { a: L.aiRem("18:00", 0), chips: [["ok", L.chipRem("18:00")]], tool: "reminder.create", fx: "remT", args: { h: 18, m: 0, day: 0, text: cleanLabel(text) || L.remDef } };
+  if (/rezum|sum up|summar|ziua mea|my day/.test(f)) return { a: L.aiDay, chips: [["ok", L.chipDay]], tool: "note.create", fx: "noteT", args: { text: L.dayNote } };
+  if (/urmeaz|what'?s next|\bnext\b/.test(f)) return { a: L.aiNext, chips: [["ok", L.chipRem("14:45")]], tool: "reminder.create", fx: "remT", args: { h: 14, m: 45, day: 0, text: L.nextRemText } };
+  if (/\bnot(e|eaza|ita)\b|cumpar|\bbuy\b|\bidee|\bidea/.test(f)) return { a: L.aiNote, chips: [["ok", L.chipNote]], tool: "note.create", fx: "noteT", args: { text } };
+  return { a: L.aiGeneric(n), chips: [["ok", L.chipNoteSaved]], tool: "note.create", fx: "noteT", args: { text } };
+}
+function addNote(text) { const n = { key: uid("t"), text, sync: false, fresh: true }; S.notes.forEach(x => x.fresh = false); S.notes.push(n); S.notePage = 0; after(2600, () => { n.sync = true; if (S.view === "notes") refresh(); }, "sync"); return n; }
+function addRem(h, m, text, day) { S.rems.forEach(x => x.fresh = false); const r = { time: hm(h, m), key: uid("u"), text, done: false, day: day || 0, fresh: true }; S.rems.push(r); return r; }
+function addAlarm(h, m, label, days) { const a = { id: uid("a"), h, m, days: days || [0, 0, 0, 0, 0, 0, 0].map(Boolean), label, on: true }; S.alarms.push(a); return a; }
+function newNote() {
+  kbOpen({ ctx: "note", action: "save", onDone: t => { addNote(t); addDiary("noteT"); soul.react("happy", 2); showPill({ kind: "mint", text: T().noteSaved, dur: 2000 }); refresh(); },
+    onTime: (t, tm) => { addNote(t); addRem(tm.h, tm.m, cleanLabel(t) || T().remDef, tm.day); showPill({ kind: "mint", text: T().remSet(hm(tm.h, tm.m)), dur: 2200 }); soul.react("happy"); refresh(); } });
+}
+function editNote(key) {
+  const n = S.notes.find(x => x.key === key); if (!n) return;
+  kbOpen({ ctx: "note", action: "save", initial: noteText(n), onDone: t => {
+    n.text = t; n.sync = false; S.notes = S.notes.filter(x => x !== n); S.notes.forEach(x => x.fresh = false); n.fresh = true; S.notes.push(n); S.notePage = 0;
+    after(2600, () => { n.sync = true; if (S.view === "notes") refresh(); }, "sync");
+    showPill({ kind: "mint", text: T().noteEdited, dur: 1800 }); soul.react("happy"); refresh();
+  } });
+}
+function newReminder() {
+  kbOpen({ ctx: "reminder", action: "save", onDone: t => {
+    const tm = parseTime(t);
+    if (tm) { const r = addRem(tm.h, tm.m, cleanLabel(t) || t, tm.day); addDiary("remT"); showPill({ kind: "mint", text: T().remSet(r.time), dur: 2200 }); soul.react("happy"); refresh(); return; }
+    const d = new Date(); S.edit = { kind: "rem", h: (d.getHours() + 1) % 24, m: 0, day: d.getHours() === 23 ? 1 : 0, text: t, mode: "h" }; go("dial", "left");
+  }, onTime: (t, tm) => { const r = addRem(tm.h, tm.m, cleanLabel(t) || t, tm.day); addDiary("remT"); showPill({ kind: "mint", text: T().remSet(r.time), dur: 2200 }); soul.react("happy"); refresh(); } });
+}
+function newAlarm() {
+  const d = new Date(), first = !S.alarms.length;
+  S.edit = { kind: "alarm", id: null, h: first ? 7 : (d.getHours() + 1) % 24, m: 0, days: [0, 0, 0, 0, 0, 0, 0].map(Boolean), label: T().labelDef, mode: "h" };
+  go("dial", "left");
+}
+function editAlarm(id) {
+  const a = S.alarms.find(x => x.id === id); if (!a) return;
+  S.edit = { kind: "alarm", id, h: a.h, m: a.m, days: a.days.slice(), label: alarmLabel(a), mode: "h" }; go("alarmsum", "left");
+}
+
+/* ---------------------------------------------------------------- Rim-Dial time picker (research/04 §13) */
+const DC = 233, DR = 205;
+const dpos = (deg, r) => [DC + r * Math.cos(deg * Math.PI / 180), DC + r * Math.sin(deg * Math.PI / 180)];
+function dialHTML() {
+  const L = T(), E = S.edit; if (!E) return "";
+  const H = E.mode === "h", f1 = n => n.toFixed(1);
+  let g = `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="${DR}" fill="none" stroke="#1A1813" stroke-width="30"/>`;
+  if (H) {
+    g += `<path d="M28 233 A${DR} ${DR} 0 0 1 438 233" fill="none" stroke="rgba(255,240,200,.16)" stroke-width="30"/><path d="M438 233 A${DR} ${DR} 0 0 1 28 233" fill="none" stroke="rgba(159,198,255,.16)" stroke-width="30"/>`;
+  } else if (E.m > 0) {
+    const [x, y] = dpos(-90 + 6 * E.m, DR);
+    g += `<path d="M233 28 A${DR} ${DR} 0 ${E.m > 30 ? 1 : 0} 1 ${f1(x)} ${f1(y)}" fill="none" stroke="rgba(255,240,200,.24)" stroke-width="30"/>`;
+  }
+  const N = H ? 24 : 60;
+  for (let i = 0; i < N; i++) {
+    const deg = H ? 90 + 15 * i : -90 + 6 * i, major = H ? i % 6 === 0 : i % 5 === 0;
+    const [a, b] = dpos(deg, major ? 223 : 225), [c, d] = dpos(deg, 231);
+    g += `<line x1="${f1(a)}" y1="${f1(b)}" x2="${f1(c)}" y2="${f1(d)}" stroke="rgba(255,240,200,${major ? .6 : .25})" stroke-width="${major ? 3 : 2}"/>`;
+  }
+  (H ? [0, 6, 12, 18] : [0, 15, 30, 45]).forEach(v => { const [x, y] = dpos(H ? 90 + 15 * v : -90 + 6 * v, DR); g += `<text x="${f1(x)}" y="${f1(y + 8)}" text-anchor="middle" font-family="Fredoka,Nunito,sans-serif" font-size="23" font-weight="500" fill="rgba(255,240,200,.6)">${H ? v : pad2(v)}</text>`; });
+  const [kx, ky] = dpos(H ? 90 + 15 * E.h : -90 + 6 * E.m, DR);
+  g += `<circle cx="${f1(kx)}" cy="${f1(ky)}" r="28" fill="#FFF0C8" style="filter:drop-shadow(0 0 8px rgba(255,240,200,.7))"/><text x="${f1(kx)}" y="${f1(ky + 9)}" text-anchor="middle" font-family="Fredoka,Nunito,sans-serif" font-size="25" font-weight="600" fill="#16130c">${pad2(H ? E.h : E.m)}</text></svg>`;
+  const nf = E.kind === "rem" ? (() => { const t = new Date(); t.setDate(t.getDate() + (E.day || 0)); t.setHours(E.h, E.m, 0, 0); return t; })() : nextFire(E);
+  const [rh, rm] = nf && nf > Date.now() ? relParts(nf) : [0, 0];
+  const rel = E.kind === "rem" ? `<span class="chip btn" data-act="dial-day" style="position:absolute;left:50%;transform:translateX(-50%);top:276px;white-space:nowrap">${E.day ? L.tomorrowW : L.todayW} · ${nf > Date.now() ? L.relShort(rh, rm) : "—"}</span>`
+    : `<div class="drel" style="top:282px">${nf ? L.inRel(rh, rm) : ""}</div>`;
+  return `${g}<div class="lbl" style="top:56px">${E.kind === "rem" ? L.dlRem : L.dlAlarm}</div>
+    <div class="ddig" style="top:160px"><span data-act="dial-h" class="${H ? "a" : ""}">${pad2(E.h)}</span>:<span data-act="dial-m" class="${H ? "" : "a"}">${pad2(E.m)}</span></div>
+    ${rel}<span class="dok" data-act="dial-ok" role="button" aria-label="OK" style="top:${E.kind === "rem" ? 338 : 324}px">${SVGI.check}</span>`;
+}
+function alarmSumHTML() {
+  const L = T(), E = S.edit; if (!E) return "";
+  const nf = nextFire(E), [rh, rm] = nf ? relParts(nf) : [0, 0];
+  const dots = L.days.map((d, i) => { const [x, y] = dpos(144 - 18 * i, 180); return `<span class="wd ${E.days[i] ? "on" : ""}" data-act="as-day" data-i="${i}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px">${d}</span>`; }).join("");
+  return `<div class="lbl" style="top:46px">${L.dlAlarm}</div>
+    <div class="c" style="top:116px;gap:6px"><div class="fdig" data-act="as-time" style="font-size:66px;cursor:pointer">${hm(E.h, E.m)}</div><div class="t3" style="font-size:24px">${nf ? `${esc(dayWord(nf))} · ${L.relShort(rh, rm)}` : ""}</div></div>
+    <div class="c" style="top:222px;gap:12px"><span class="chip btn" data-act="as-label" style="max-width:300px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">✎ ${esc(E.label || L.labelDef)}</span></span><span class="chip ok btn" data-act="as-set">${L.setBtn}</span></div>${dots}`;
+}
+let dg = null;
+function dialAt(p) {
+  const E = S.edit, dx = p.x - DC, dy = p.y - DC, deg = Math.atan2(dy, dx) * 180 / Math.PI, now = performance.now();
+  let fast = false;
+  if (dg && dg.t) { let dd = Math.abs(deg - dg.deg); if (dd > 180) dd = 360 - dd; fast = dd / Math.max(1, now - dg.t) * 1000 > 90; }
+  if (dg) { dg.deg = deg; dg.t = now; }
+  if (E.mode === "h") E.h = Math.round((((deg - 90) % 360) + 360) % 360 / 15) % 24;
+  else { const raw = (((deg + 90) % 360) + 360) % 360 / 6; E.m = (fast ? Math.round(raw / 5) * 5 : Math.round(raw)) % 60; }
+  soul.lookAt(clamp(dx / 200, -1, 1), clamp(dy / 200, -1, 1), 0.6);
+  refresh();
+}
+function dialDown(p) { cancel("dialm"); dg = { deg: 0, t: 0 }; dialAt(p); }
+function dialMove(p) { if (dg) dialAt(p); }
+function dialUp() { dg = null; const E = S.edit; if (E && E.mode === "h") after(400, () => { if (S.view === "dial" && S.edit === E) { E.mode = "m"; refresh(); } }, "dialm"); }
+function dialOk() {
+  const E = S.edit, L = T(); if (!E) return;
+  cancel("dialm");
+  if (E.kind === "rem") {
+    const r = addRem(E.h, E.m, E.text || L.remDef, E.day); addDiary("remT"); S.edit = null;
+    soul.react("happy"); showPill({ kind: "mint", text: L.remSet(r.time), dur: 2200 }); go("reminders", "right"); return;
+  }
+  E.fromSum = true; E.mode = "h"; go("alarmsum", "fade");
+}
+function alarmSet() {
+  const E = S.edit, L = T(); if (!E) return;
+  let a = E.id && S.alarms.find(x => x.id === E.id);
+  if (a) { a.h = E.h; a.m = E.m; a.days = E.days.slice(); if (E.label !== alarmLabel(a)) { a.label = E.label; a.lkey = null; } a.on = true; }
+  else a = addAlarm(E.h, E.m, E.label || L.labelDef, E.days.slice());
+  addDiary("alarmT"); S.edit = null;
+  const nf = nextFire(a), [rh, rm] = relParts(nf);
+  soul.react("happy", 2.2); showPill({ kind: "mint", text: L.alarmSet(hm(a.h, a.m), L.relShort(rh, rm)), dur: 2600 }); go("alarms", "right");
+}
+function checkAlarms() {
+  const d = new Date(), key = d.toDateString() + hhmm(d), wd = (d.getDay() + 6) % 7;
+  if (S.ringing) return;
+  for (const a of S.alarms) {
+    if (!a.on || a.h !== d.getHours() || a.m !== d.getMinutes()) continue;
+    if (a.days.some(Boolean) && !a.days[wd]) continue;
+    if (S.rung.has(a.id + key)) continue;
+    S.rung.add(a.id + key); ringAlarm(a); return;
+  }
+  if (S.snooze && Date.now() >= S.snooze.t) { const a = S.snooze.a; S.snooze = null; ringAlarm(a); }
+}
+function ringAlarm(a) {
+  if (S.kb) kbBack(true);
+  if (hold) holdEnd();
+  if (S.sleeping) { S.sleeping = false; soul.dim = 1; screen.style.opacity = ""; }
+  if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); }
+  hidePill(); S.ringing = a; S.ringWake = false; addDiary("ring");
+  go("ring", "fade");
+  after(RM ? 50 : 900, () => { if (S.ringing !== a) return; S.ringWake = true; soul.react("wake"); applyFaceState(); }, "ring");
+  const bz = () => { if (S.ringing !== a) return; buzz(); after(1600, bz, "ringbuzz"); }; bz();
+}
+function ringEnd(snooze) {
+  const a = S.ringing, L = T(); if (!a) return;
+  S.ringing = null; cancel("ring"); cancel("ringbuzz");
+  if (snooze) { const t = new Date(Date.now() + 5 * 60000); S.snooze = { a, t: t.getTime() }; showPill({ text: L.snoozed(hhmm(t)), dur: 2200 }); soul.react("shy", 1.2); }
+  else { showPill({ kind: "mint", text: L.goodMorning, dur: 2200 }); soul.react("happy", 2.2); }
+  go("home", "down");
+}
+function setAi(m) {
+  if (!["none", "claude", "chatgpt", "api"].includes(m)) return;
+  S.ai = m; try { localStorage.setItem("soulos-ai", m); } catch (e) {}
+  const L = T();
+  soul.react(m === "none" ? "shy" : "wake");
+  showPill({ kind: m === "none" ? "" : "mint", text: L.aimPill(L.aiModes[m]), dur: 1800 });
+  refresh(); renderAiSeg(); if (S.kb) kbRender();
+}
+
 /* ---------------------------------------------------------------- input: gestures */
 let hold = null; // {kind, p}
 function holdStart() {
@@ -1140,6 +1705,7 @@ function holdStart() {
   const v = S.view;
   if (v === "claude" && S.claude.pending) { hold = { kind: "approve", p: 0 }; soul.progCol = PAL.mint; return; }
   if (v === "memory" && !S.memWiped) { hold = { kind: "wipe", p: 0 }; soul.progCol = PAL.amber; return; }
+  if (["dial", "alarmsum", "ring", "aimode"].includes(v)) return;
   if (v === "voice" && S.voice && S.voice.phase !== "listen") { S.voice = null; }
   const kind = v === "notes" ? "note" : v === "translate" ? "tr" : "ask";
   hold = { kind: "voice" };
@@ -1153,12 +1719,13 @@ function holdEnd() {
 }
 let lastTap = 0;
 function tap(target) {
+  if (S.sleeping) { lastTap = 0; wake(); return; }
+  // buttons act on every tap: a fast second tap on a control is never swallowed as a double-tap
+  const actEl = target && target.closest && target.closest("[data-act]");
+  if (actEl) { lastTap = 0; act(actEl.dataset.act, actEl); return; }
   const now = performance.now(), dbl = now - lastTap < 330;
   lastTap = dbl ? 0 : now;
-  if (S.sleeping) { wake(); return; }
   if (dbl) { doubleTap(); return; }
-  const actEl = target && target.closest && target.closest("[data-act]");
-  if (actEl) { act(actEl.dataset.act, actEl); return; }
   switch (S.view) {
     case "home": soul.react("boop"); break;
     case "focus": {
@@ -1188,7 +1755,25 @@ function act(a, el) {
     case "play": S.music.play = !S.music.play; refresh(); break;
     case "prev": case "next": S.music.pos = a === "next" ? 0.02 : 0; soul.lookAt(a === "next" ? 0.9 : -0.9, 0.4, 0.5); refresh(); break;
     case "bright": S.bright = S.bright >= 1 ? 0.4 : S.bright >= 0.7 ? 1 : 0.7; screen.style.filter = S.bright < 1 ? `brightness(${0.35 + 0.65 * S.bright})` : ""; refresh(); break;
-    case "ai": S.provider = S.provider === "Claude" ? "ChatGPT" : "Claude"; soul.react("wake"); refresh(); break;
+    case "ai": go("aimode", "left"); break;
+    case "aim": setAi(el.dataset.m); break;
+    case "type-ai": openTypeAI(el.dataset.o || S.view); break;
+    case "note-add": newNote(); break;
+    case "note-edit": editNote(el.dataset.k); break;
+    case "rem-add": newReminder(); break;
+    case "al-add": newAlarm(); break;
+    case "al-edit": editAlarm(el.dataset.id); break;
+    case "al-tog": { const a = S.alarms.find(x => x.id === el.dataset.id); if (a) { a.on = !a.on; if (a.on) soul.react("happy", 1.2); else soul.lookAt(0.6, 0.6, 0.5); refresh(); } break; }
+    case "dial-h": cancel("dialm"); S.edit.mode = "h"; refresh(); break;
+    case "dial-m": cancel("dialm"); S.edit.mode = "m"; refresh(); break;
+    case "dial-day": S.edit.day = S.edit.day ? 0 : 1; refresh(); break;
+    case "dial-ok": dialOk(); break;
+    case "as-time": S.edit.mode = "h"; S.edit.fromSum = true; go("dial", "fade"); break;
+    case "as-day": { const i = +el.dataset.i; S.edit.days[i] = !S.edit.days[i]; soul.lookAt(i < 3 ? -0.5 : i > 3 ? 0.5 : 0, 0.9, 0.5); refresh(); break; }
+    case "as-label": { const E = S.edit; kbOpen({ ctx: "alarm_label", action: "save", initial: E.label === L.labelDef ? "" : E.label, onDone: t => { E.label = t; refresh(); } }); break; }
+    case "as-set": alarmSet(); break;
+    case "ring-snooze": ringEnd(true); break;
+    case "ring-stop": ringEnd(false); break;
     case "mem": go("memory", "left"); break;
     case "about": go("about", "left"); break;
     case "reply": hidePill(); showPill({ kind: "mint", text: L.sent, dur: 1800 }); soul.react("happy"); addDiary("msg"); go("home", "down"); break;
@@ -1199,7 +1784,14 @@ function swipe(dir) {
   const v = S.view;
   if (v === "voice") { if (S.voice && S.voice.phase === "answer") { S.voice = null; cancel("answer"); go("home", "down"); } return; }
   if (v === "today") { if (dir === "down") go("home", "down"); return; }
-  if (OVERLAY.includes(v)) { if (dir === "down" || dir === "right") { const r = v === "memory" || v === "about" ? "settings" : S.ret; go(RING.includes(r) ? r : "home", dir === "right" ? "right" : "down"); } return; }
+  if (v === "ring") return;
+  if (OVERLAY.includes(v)) { if (dir === "down" || dir === "right") { const r = parentOf(v); go(RING.includes(r) || OVERLAY.includes(r) ? r : "home", dir === "right" ? "right" : "down"); } return; }
+  if (v === "notes" && (dir === "up" || (dir === "down" && S.notePage > 0))) {
+    const pages = Math.ceil(S.notes.length / 2);
+    if (dir === "up" && S.notePage < pages - 1) { S.notePage++; soul.lookAt(0, 0.9, 0.4); refresh(); }
+    else if (dir === "down") { S.notePage--; soul.lookAt(0, -0.4, 0.4); refresh(); }
+    return;
+  }
   if (dir === "up") { if (v === "home") go("today", "up"); return; }
   if (dir === "down") { if (v !== "home") go("home", "down"); return; }
   const i = RING.indexOf(v), n = RING.length;
@@ -1207,6 +1799,9 @@ function swipe(dir) {
 }
 function sideButton() {
   if (S.sleeping) { wake(); return; }
+  if (S.kb) { if (S.kb.dict) kbDictStop(); else kbBack(); return; }     // keyboard open: side press = back, the draft is kept
+  if (S.view === "ring") { ringEnd(false); return; }
+  if (S.view === "dial" || S.view === "alarmsum" || S.view === "aimode") { go(parentOf(S.view), "down"); return; }
   if (hold) holdEnd();
   if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); }
   if (S.view === "home") { soul.react("wake"); soul.lookAt(0.9, 0, 0.6); return; }
@@ -1220,8 +1815,14 @@ function wake() {
 function imu(k) {
   const L = T();
   if (k === "pick") { if (S.sleeping) wake(); else { soul.react("wake"); showPill({ text: L.pickup + " " + hhmm(), dur: 1600 }); } }
-  if (k === "shake") { if (S.sleeping) wake(); soul.react("dizzy"); if (S.pill && S.pill.kind !== "amber") hidePill(); }
+  if (k === "shake") {
+    if (S.sleeping) wake(); soul.react("dizzy");
+    if (S.kb && S.kb.undo.length) { showPill({ text: L.undoChip + "?", act: "kbundo", dur: 3500 }); return; }
+    if (S.pill && S.pill.kind !== "amber") hidePill();
+  }
   if (k === "down") {
+    if (S.kb) kbBack(true);
+    if (S.ringing) ringEnd(true);
     if (hold) holdEnd();
     S.voice = null; cancel("voice"); cancel("answer");
     go("home", "fade"); S.sleeping = true; hidePill(); applyFaceState();
