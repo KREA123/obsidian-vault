@@ -74,3 +74,16 @@ Andu a cerut obiectiv de cost 15–20 lei și a lăsat alegerea ad seturilor la 
 - **Cheltuială:** 23.09 = 131,28 lei · 24.09 = 307,93 lei · 25.09 până la prânz = 159,94 lei. Total ~599 lei, 3 comenzi reale, ~200 lei/comandă.
 - **Lecție:** în contul acesta, limita de cost sub costul real nu scade costul pe comandă. Doar oprește livrarea. Pârghiile rămase sunt produsele (seturi sub 200 lei, accesorii) și creativele.
 - Cele 6 ad seturi au intrat de două ori în învățare în ~24 de ore. De acum nu se mai modifică nimic până pe 01.10.
+
+## 25.09 după-amiază — modificări după cercetare (Andu: „ai voie să faci orice”)
+- **Advantage+ audience pornit pe toate cele 7 ad seturi.** Genul, vârsta și interesele devin sugestii. Vârsta e 25–65.
+- **Reclame video noi, active, câte una pe ad set.** Video-urile sunt din vault/Video, urcate prin Shopify Files → Meta.
+  - Creator: Video 1 (părinți) → /collections/lego-creator
+  - City: Video 2 (anunț părinți) → /collections/lego-city
+  - Copii 2–5: Video 4 (toamnă, cei mici) → /collections/lego-duplo
+  - Colecționari: Video 3 (ediții limitate) → /collections/lego-icons-creator-expert
+  - Halloween: Video 3 → /collections/halloween
+  - Mașini & F1: Video 3 → /collections/lego-speed-champions
+  - Botanicals: Video 3 → /collections/lego-colecția-botanica
+- **Nefolosite încă:** MUNDISHOP 3, 4 și 5. Conțin afirmația „prețuri mai bune decât cel mai mare marketplace din România”, iar vault-ul arată 92% din produse peste prețul pieței. Riscul e publicitate înșelătoare. Se folosesc doar dacă Andu confirmă că afirmația e adevărată sau o taie din video.
+- **Verdict:** 7 zile de la 25.09, pe comenzi Shopify, fără alte modificări între timp.
