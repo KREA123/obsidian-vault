@@ -26,31 +26,37 @@ bool intersects(const Rect& a, const Rect& b) {
   return !a.empty() && !b.empty() && a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 }
 
-float wrapDeg(float d) {
+inline float wrapDeg(float d) {
   d = fmodf(d, 360.0f);
   return d < 0 ? d + 360.0f : d;
 }
 
 // Anti-aliased ring sector [r0, r1] x [a0, a0 + span] (degrees, clockwise),
 // visiting only the pixels of the ring instead of its whole bounding box.
+// The sector edges use two half-planes (no atan2 per pixel). With `bottom`
+// set, the lower half (y > cy) is drawn in that colour instead.
 void annulus(Canvas& cv, float cx, float cy, float r0, float r1, float a0, float span, Rgb c,
-             float alpha, bool clear = false) {
+             float alpha, bool clear = false, const Rgb* bottom = nullptr) {
   const bool full = span >= 359.99f;
+  const float s0 = a0 * kPi / 180.0f, s1 = (a0 + span) * kPi / 180.0f;
+  const float ux0 = cosf(s0), uy0 = sinf(s0), ux1 = cosf(s1), uy1 = sinf(s1);
+  const bool wide = span > 180.0f;
   const int ya = (int)floorf(cy - r1 - 1), yb = (int)ceilf(cy + r1 + 1);
   Rect touched;
   for (int y = ya < 0 ? 0 : ya; y < yb && y < cv.height(); ++y) {
     const float dy = y + 0.5f - cy;
     const float ro = r1 + 1.0f, ri = r0 - 1.0f;
     if (dy * dy >= ro * ro) continue;
+    const Rgb col = (bottom && dy > 0) ? *bottom : c;
     const float ox = sqrtf(ro * ro - dy * dy);
     const float ix = (ri > 0 && dy * dy < ri * ri) ? sqrtf(ri * ri - dy * dy) : -1.0f;
-    for (int span2 = 0; span2 < 2; ++span2) {
+    for (int part = 0; part < 2; ++part) {
       float xa, xb;
       if (ix < 0) {
-        if (span2) break;
+        if (part) break;
         xa = cx - ox;
         xb = cx + ox;
-      } else if (span2 == 0) {
+      } else if (part == 0) {
         xa = cx - ox;
         xb = cx - ix;
       } else {
@@ -71,14 +77,13 @@ void annulus(Canvas& cv, float cx, float cy, float r0, float r1, float a0, float
         const float d = sqrtf(dx * dx + dy * dy);
         float cov = clampf(r1 - d + 0.5f, 0, 1) * clampf(d - r0 + 0.5f, 0, 1);
         if (cov <= 0) continue;
-        if (!full) {
-          const float rel = wrapDeg(atan2f(dy, dx) * (180.0f / kPi) - a0);
-          const float k = kPi / 180.0f * d;
-          if (rel <= span) cov *= clampf(0.5f + fminf(rel, span - rel) * k, 0, 1);
-          else cov *= clampf(0.5f - fminf(rel - span, 360.0f - rel) * k, 0, 1);
+        if (!full) {  // perpendicular distances to the two edge rays
+          const float d0 = ux0 * dy - uy0 * dx, d1 = dx * uy1 - dy * ux1;
+          const float e = wide ? fmaxf(d0, d1) : fminf(d0, d1);
+          cov *= clampf(0.5f + e, 0, 1);
           if (cov <= 0) continue;
         }
-        cv.blend(x, y, c, cov * alpha);
+        cv.blend(x, y, col, cov * alpha);
       }
     }
   }
@@ -232,11 +237,13 @@ void TimePicker::render(Canvas& cv) {
 
   const bool H = mode_ == DialMode::Hours;
   const float r0 = kR - kTrack * 0.5f, r1 = kR + kTrack * 0.5f;
-  annulus(cv, kCx, kCy, r0, r1, 0, 360, kTrackCol, 1);
-  if (H) {  // sundial: day (06-18, top) in cream, night in ice
-    annulus(cv, kCx, kCy, r0, r1, 180, 180, kCream, 0.16f);
-    annulus(cv, kCx, kCy, r0, r1, 0, 180, pal::kIce, 0.16f);
-  } else if (m_ > 0) {  // sweep from 00 to the knob
+  if (H) {  // sundial: day (06-18, top) tinted cream, night ice, in one pass
+    const Rgb day = Rgb::lerp(kTrackCol, kCream, 0.16f), night = Rgb::lerp(kTrackCol, pal::kIce, 0.16f);
+    annulus(cv, kCx, kCy, r0, r1, 0, 360, day, 1, false, &night);
+  } else {
+    annulus(cv, kCx, kCy, r0, r1, 0, 360, kTrackCol, 1);
+  }
+  if (!H && m_ > 0) {  // sweep from 00 to the knob
     annulus(cv, kCx, kCy, r0, r1, 270, 6.0f * m_, kCream, 0.22f);
   }
   const int N = H ? 24 : 60;

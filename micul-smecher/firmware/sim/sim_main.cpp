@@ -298,7 +298,7 @@ std::vector<Scenario> scenarios() {
          s.feed("{\"total\":1,\"running\":0,\"waiting\":0,\"msg\":\"done\",\"tokens\":52400,\"tokens_today\":52400}");
          s.run(2.0f);
        }},
-      {"soulos_keyboard", "SoulOS: long-press the face, type Hello on the round keyboard, save the note",
+      {"keyboard", "SoulOS: long-press the face, type Hello on the round keyboard, save the note",
        [](Sim& s) {
          s.useShell = true;
          s.run(0.6f);
@@ -327,7 +327,7 @@ std::vector<Scenario> scenarios() {
          s.press(x, y, 0.1f, 1.4f);  // done: the note is saved, eyes celebrate
          s.mark();
        }},
-      {"soulos_timepicker", "SoulOS: Rim-Dial time picker, drag the hour ring then the minutes to 07:30",
+      {"timepicker", "SoulOS: Rim-Dial time picker, drag the hour ring then the minutes to 07:30",
        [](Sim& s) {
          s.useShell = true;
          s.shell.openTimePicker(23, 0);  // next whole hour

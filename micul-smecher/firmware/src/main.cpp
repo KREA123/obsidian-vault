@@ -5,6 +5,11 @@
 // frame, which we draw into a PSRAM framebuffer and push to the panel
 // (only the part that changed).
 //
+// SoulOS v1 hook: a small Shell sees every touch first. A long press on the
+// face opens a note field (the round keyboard); serial 'A' opens the Rim-Dial
+// time picker to set an alarm; BOOT (GPIO0) goes back. Alarms are kept in
+// NVS and ring through the Brain (no speaker/haptic on the dev boards yet).
+//
 // Serial (115200) commands, for filming and debugging — type '?' for help.
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
@@ -14,11 +19,13 @@
 #include <Wire.h>
 #include <esp_mac.h>
 
+#include "Alarms.h"
 #include "Brain.h"
 #include "ClaudeLink.h"
 #include "Face.h"
 #include "Gestures.h"
 #include "Personality.h"
+#include "Shell.h"
 #include "ble_link.h"
 #include "board.h"
 
@@ -54,6 +61,11 @@ static TouchGestures touch;
 static MotionDetector motion;
 static ClaudeLink claude;
 static Inputs in;
+static Alarms alarms;
+static Shell shell(&alarms);
+static int shownAlarm = -1;
+static bool bootWasDown = true;  // wait for the first release after power-on
+static uint32_t bootDownMs = 0;
 
 static uint32_t lastMs = 0, lastSaveMs = 0, lastStatusMs = 0;
 static float imuAcc = 0;
@@ -237,13 +249,23 @@ static void renderFrame() {
     brightness = want;
     panel->setBrightness(brightness);
   }
+  // prevDirty is what the face and text drew last frame: clear it. The
+  // Shell's screen is a persistent layer: it redraws only when it changed or
+  // when that clear wiped part of it, and before the face (eyes on top).
   cv->fillRect(prevDirty, pal::kBlack);
   cv->resetDirty();
-  renderFace(*cv, brain->face());
+  shell.render(*cv, prevDirty);
+  const Rect uiDirty = cv->dirty();
+  cv->resetDirty();
+  Face face = brain->face();
+  shell.adjustFace(face);
+  renderFace(*cv, face, shell.faceLayout());
 
   // text overlays: BLE passkey while pairing, the Claude request while pending
   const uint32_t pk = blePasskey();
-  if (pk) {
+  if (shell.screen() != Screen::Face) {
+    // the keyboard / time picker own the screen: no text overlays
+  } else if (pk) {
     char buf[8];
     snprintf(buf, sizeof buf, "%06lu", (unsigned long)pk);
     drawCentered(buf, 60, 5, RGB565(255, 240, 200));
@@ -257,9 +279,11 @@ static void renderFrame() {
   }
 
   Rect r = cv->dirty();
+  const Rect dyn = r;
   r.add(prevDirty);
+  r.add(uiDirty);
   pushRect(r);
-  prevDirty = cv->dirty();
+  prevDirty = dyn;
 }
 
 // ----------------------------------------------------------------- clock ---
@@ -288,6 +312,19 @@ static void setClockLocal(uint32_t localSecs) {
   struct tm t;
   gmtime_r(&tt, &t);
   rtc.setDateTime(t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+}
+
+// localEpoch() reads the RTC over I2C; the UI wants it every frame, so keep
+// a copy and refresh it once a second.
+static uint32_t localNowCached() {
+  static uint32_t base = 0, baseMs = 0;
+  const uint32_t ms = millis();
+  if (!base || ms - baseMs >= 1000) {
+    base = localEpoch();
+    baseMs = ms;
+    return base;
+  }
+  return base + (ms - baseMs) / 1000;
 }
 
 static float hourNow() {
@@ -321,6 +358,30 @@ static void saveMemory() {
   prefs.putUInt("naps", naps);
 }
 
+static void saveAlarms() {
+  uint8_t buf[Alarms::kMaxBlob];
+  const size_t n = alarms.serialize(buf, sizeof buf);
+  if (n) prefs.putBytes("alarms", buf, n);
+}
+
+static void loadAlarms() {
+  uint8_t buf[Alarms::kMaxBlob];
+  const size_t n = prefs.getBytes("alarms", buf, sizeof buf);
+  if (n && !alarms.deserialize(buf, n)) Serial.println("[alarms] stored data unreadable, ignored");
+  Serial.printf("[alarms] %d loaded\n", alarms.count());
+}
+
+static void listAlarms() {
+  const uint32_t now = localNowCached();
+  for (int i = 0; i < alarms.count(); ++i) {
+    const Alarm& a = alarms.at(i);
+    const uint32_t nf = now ? Alarms::nextFire(a, now) : 0;
+    Serial.printf("  %d  %02u:%02u  days %02X  %s  '%s'  next in %lu min\n", i, a.hour, a.minute, a.days,
+                  a.enabled ? "on " : "off", a.label, nf ? (unsigned long)((nf - now + 59) / 60) : 0UL);
+  }
+  if (!alarms.count()) Serial.println("  no alarms");
+}
+
 static void loadMemory() {
   Memory m;
   if (prefs.getBytes("mem", &m, sizeof m) == sizeof m) brain->memory() = m;
@@ -338,7 +399,8 @@ static void help() {
       "  b boop   l laugh  s shy     p purr on/off d dizzy   f scared  c confused\n"
       "  y yawn   n sneeze h hiccup  v love     r birthday m missed-you o lonely\n"
       "  k startle g good-night w wake  z sleep  D demo loop on/off\n"
-      "  i imu raw  t time  T<epoch_local> set clock  P personality  U unpair  ? help");
+      "  i imu raw  t time  T<epoch_local> set clock  P personality  U unpair  ? help\n"
+      "  SoulOS: N note field  A alarm time picker  L list alarms  X delete alarms  (BOOT = back)");
 }
 
 static void serialCommands() {
@@ -391,6 +453,14 @@ static void serialCommands() {
         break;
       }
       case 'U': bleClearBonds(); break;
+      case 'N': shell.openNote(); break;
+      case 'A': shell.openTimePicker(((int)hourNow() + 1) % 24, 0); break;  // the next whole hour
+      case 'L': listAlarms(); break;
+      case 'X':
+        alarms.clear();
+        saveAlarms();
+        Serial.println("alarms deleted");
+        break;
       case '?': help(); break;
       default: break;
     }
@@ -438,6 +508,7 @@ void setup() {
   brain = new Brain(Personality::fromSeed(seed));
   prefs.begin("suflet", false);
   loadMemory();
+  loadAlarms();
   updateCalendar();
   brain->boot();
 
@@ -492,8 +563,40 @@ void loop() {
     updateCalendar();
   }
 
+  // BOOT button (GPIO0): back / cancel on SoulOS screens
+  const bool bootDown = digitalRead(BOOT_BUTTON) == LOW;
+  if (bootDown && !bootWasDown) bootDownMs = now;
+  if (!bootDown && bootWasDown && now - bootDownMs < 1500 && shell.screen() != Screen::Face) shell.back();
+  bootWasDown = bootDown;
+
+  // touches go to the Shell first; what it doesn't use reaches the Brain
+  shell.holdOpensNote = !brain->claudePrompt();
   Ev e;
-  while (touch.poll(e)) brain->event(e);
+  TouchEv te;
+  while (touch.poll(te))
+    if (!shell.event(te)) brain->event(te.e);
+  touch.setMode(shell.wantsTextTouch() ? TouchMode::Text : TouchMode::Face);
+  const uint32_t localNow = localNowCached();
+  shell.update(dt, localNow);
+  while (shell.poll(e)) {
+    if (e == Ev::TextCommit && !shell.notes().empty())
+      Serial.printf("[note] %s\n", shell.notes().back().c_str());
+    brain->event(e);
+  }
+  if (shell.lastAlarm() != shownAlarm) {
+    shownAlarm = shell.lastAlarm();
+    saveAlarms();
+    listAlarms();
+  }
+  if (localNow) {
+    const int due = alarms.poll(localNow);
+    if (due >= 0) {
+      Serial.printf("[alarm] %02u:%02u '%s' rings\n", alarms.at(due).hour, alarms.at(due).minute,
+                    alarms.at(due).label);
+      brain->event(Ev::AlarmDue);
+      saveAlarms();  // lastFired / one-shot off survive a reboot
+    }
+  }
   while (motion.poll(e)) brain->event(e);
   while (claude.poll(e)) brain->event(e);
 
@@ -542,7 +645,8 @@ void loop() {
   }
 
   // frame pacing: 30 fps awake, fewer when asleep (saves battery)
-  const uint32_t frameMs = (uint32_t)(1000.0f / brain->frameRateHint());
+  const float fps = shell.screen() != Screen::Face ? 30.0f : brain->frameRateHint();  // typing stays snappy
+  const uint32_t frameMs = (uint32_t)(1000.0f / fps);
   const uint32_t spent = millis() - now;
   if (spent < frameMs) delay(frameMs - spent);
 }

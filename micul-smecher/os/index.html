@@ -105,6 +105,10 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .rim [data-act]{pointer-events:auto;cursor:pointer}
 .rim .hit{fill:none;stroke:transparent;stroke-width:46;pointer-events:stroke;cursor:pointer}
 .rimlbl{transition:opacity .3s}
+/* while the orbit shows where you are, the app gives the rim back: its content fades out beyond r = 172 */
+@property --mr{syntax:"<length>";inherits:false;initial-value:300px}
+.card:not([data-v="apps"]){--mr:300px;-webkit-mask-image:radial-gradient(circle at 233px 233px,#000 var(--mr),transparent calc(var(--mr) + 18px));mask-image:radial-gradient(circle at 233px 233px,#000 var(--mr),transparent calc(var(--mr) + 18px));transition:--mr .45s cubic-bezier(.2,.8,.2,1)}
+.screen.navhint .card:not(.leaving){--mr:170px}
 .screen.has-pill .rimlbl,.screen.has-pill .clock{opacity:0}
 .t1{font:560 34px/1.12 var(--v);text-wrap:balance;letter-spacing:-.01em}
 .t2{font:420 27px/1.2 var(--v);text-wrap:balance}
@@ -288,7 +292,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 
 /* launcher: the Orbit. App names ride the lower rim like a smile; the eyes look at the word in the middle */
 .orb{position:absolute;inset:0}
-.orb svg{position:absolute;inset:0;width:466px;height:466px;overflow:visible}
+.orb>svg{position:absolute;inset:0;width:466px;height:466px;overflow:visible}
 .orb .ow{cursor:pointer}
 .orb .ow .m{font:400 15px/1 var(--r);letter-spacing:.16em;text-transform:uppercase;fill:var(--cream)}
 .orb .ow .d{font:560 31px/1 var(--v);fill:var(--cream)}
@@ -556,14 +560,14 @@ html{overscroll-behavior-x:none}
 /* ================================================================ strings */
 const STR = {
 ro: {
-  lede: "Sistemul de operare al lui SOUL. Acasă e fața vie; tot restul e un cartonaș care alunecă peste ea, iar ochii reacționează la tot ce se întâmplă.",
+  lede: "Sistemul de operare al lui SOUL. Nu e un telefon: e o ființă. Acasă e fața vie; tot restul sunt cuvinte pe care ți le spune sub ochi, iar marginea rotundă e cadranul: aplicațiile stau pe ea ca un zâmbet și le învârți cu degetul.",
   sayH: "Spune-i (demo cu răspunsuri scriptate)", scrH: "Ecrane", ctlH: "Gesturi", senH: "Senzori (IMU)",
   claudeNow: "Trimite acum o cerere Claude",
   foot: "Prototip. Niciun răspuns nu vine de la un AI real: totul e scriptat (și marcat „demo”) ca să arate ritmul, reacțiile și acțiunile. Tastatura, predicția RO/EN, diacriticele, alarmele și mementourile rulează local, ca pe device. Cererea Claude apare singură după ~20 s.",
   keys: [["←", "→", "aplicații"], ["↑", "Azi"], ["↓", "înapoi"], ["Space", "ține = vorbește"], ["Enter", "atinge"], ["D", "atinge de 2×"], ["Esc", "buton"], ["A–Z", "cu tastatura deschisă: scrii în câmp"]],
   ctrl: [["Atinge", "Acțiunea principală a ecranului. Pe față: bup."], ["Atinge de 2×", "Refuză o cerere Claude. Pe față: râde."], ["Ține apăsat", "Vorbești cu el (inel albastru = ascultă). Pe o cerere Claude: aprobă."], ["Glisează ← →", "Aplicațiile, pe rând, în cerc."], ["Glisează ↑ / ↓", "Azi / înapoi la față."], ["Butonul lateral", "Apasă: acasă. Ține: vorbești (microfonul pornește doar cu butonul sau degetul pe ecran). Apăsat de 2×: anulează."], ["Tastatura", "Atingi literele (litera intră la ridicarea degetului). Ține pe a/i/s/t: ă â î ș ț. „sa” devine „să” la spațiu; ⌫ imediat după anulează schimbarea. ⌫ ținut șterge cuvinte. Butonul lateral = înapoi, ciorna rămâne."]],
   sens: { pick: "Ridică-l", shake: "Scutură-l", down: "Cu fața în jos" },
-  legend: [["#FFF0C8", "cream = informație"], ["#FFB347", "chihlimbar = are nevoie de tine"], ["#C9F2E4", "mentă = gata"], ["#9FC6FF", "gheață = ascultă"]],
+  legend: [["#FFF0C8", "cream = informație"], ["#FFB347", "chihlimbar = Claude / are nevoie de tine"], ["#C9F2E4", "mentă = gata"], ["#9FC6FF", "gheață = ascultă"]],
   lblToday: "Azi", listen: "Ascult…", thinking: p => `${p} se gândește…`, speaking: "",
   home: "Acasă", today: "Azi", talk: "Vorbește", reminders: "Mementouri", alarms: "Alarme", notes: "Notițe", focus: "Focus", claude: "Claude", diary: "Jurnal", translate: "Traduce", music: "Muzică", settings: "Setări",
   d: {
@@ -652,14 +656,14 @@ ro: {
   dx2: { aiT: "Ai scris AI-ului tău.", remT: "Am pus un memento.", noteT: "Ai scris o notiță.", alarmT: "Am pus o alarmă.", ring: "Te-am trezit." }
 },
 en: {
-  lede: "The operating system of SOUL. Home is the living face; everything else is a card that slides over it, and the eyes react to whatever happens.",
+  lede: "The operating system of SOUL. Not a phone: a being. Home is the living face; everything else is words it says under its eyes, and the round rim is the dial: the apps sit on it like a smile and you spin them with a finger.",
   sayH: "Say to it (scripted demo answers)", scrH: "Screens", ctlH: "Gestures", senH: "Sensors (IMU)",
   claudeNow: "Send a Claude request now",
   foot: "Prototype. No answer comes from a real AI: everything is scripted (and marked “demo”) to show the rhythm, the reactions and the actions. The keyboard, RO/EN prediction, diacritics, alarms and reminders run locally, as on the device. The Claude request arrives on its own after ~20 s.",
   keys: [["←", "→", "apps"], ["↑", "Today"], ["↓", "back"], ["Space", "hold = talk"], ["Enter", "tap"], ["D", "double-tap"], ["Esc", "button"], ["A–Z", "keyboard open: types into the field"]],
   ctrl: [["Tap", "The screen's main action. On the face: boop."], ["Double-tap", "Deny a Claude request. On the face: it laughs."], ["Hold", "Talk to it (blue ring = listening). On a Claude request: approve."], ["Swipe ← →", "The apps, one by one, in a loop."], ["Swipe ↑ / ↓", "Today / back to the face."], ["Side button", "Press: home. Hold: talk (the mic only opens with the button or a finger on the screen). Double-press: cancel."], ["Keyboard", "Tap letters (a letter commits on lift). Hold a/i/s/t: ă â î ș ț. “sa” becomes “să” on space; ⌫ right after undoes it. Holding ⌫ deletes words. Side button = back, the draft is kept."]],
   sens: { pick: "Pick it up", shake: "Shake it", down: "Face down" },
-  legend: [["#FFF0C8", "cream = information"], ["#FFB347", "amber = needs you"], ["#C9F2E4", "mint = done"], ["#9FC6FF", "ice = listening"]],
+  legend: [["#FFF0C8", "cream = information"], ["#FFB347", "amber = Claude / needs you"], ["#C9F2E4", "mint = done"], ["#9FC6FF", "ice = listening"]],
   lblToday: "Today", listen: "Listening…", thinking: p => `${p} is thinking…`, speaking: "",
   home: "Home", today: "Today", talk: "Talk", reminders: "Reminders", alarms: "Alarms", notes: "Notes", focus: "Focus", claude: "Claude", diary: "Diary", translate: "Translate", music: "Music", settings: "Settings",
   d: {
@@ -751,14 +755,15 @@ const T = () => STR[LANG];
 const STR2 = {
 ro: {
   weather: "Vremea", timer: "Cronometru", soul: "Soul", games: "Jocuri", apps: "Aplicații", memory: "Memorie", about: "Sunt un AI", cc: "Control",
+  addNew: "nou", stQuiet: "liniște", stMic: "mic oprit", edit: "schimbă", ccQ: { q: "liniște", m: "mic", s: "sunet", z: "somn", b: "lumină", v: "volum" },
   d2: { today: "Glisează ↑ de pe față: widgeturi care se așază singure (vreme, memento, focus, Claude, baterie, notificări).",
-    apps: "Fagurele rotund cu toate aplicațiile. Glisează → de pe față, apasă butonul lateral sau dă din rotița mouse-ului.",
+    apps: "Orbita: numele aplicațiilor stau pe marginea de jos, ca un zâmbet. Le învârți cu degetul (sau rotița); ochii se uită la cea din mijloc. Glisează → de pe față sau apasă butonul lateral.",
     weather: "Trei zile, scriptat. Atinge pentru ziua următoare.", timer: "Cronometru cu ture și minutar cu inel pe margine.",
     soul: "Cum îl cheamă, când s-a născut, cum se simte azi.", games: "Prinde steaua: ochii urmăresc fiecare stea." },
-  keys: [["←", "→", "aplicații / fagure"], ["↑", "Azi"], ["↓", "control / înapoi"], ["Space", "ține = vorbește"], ["Enter", "atinge"], ["D", "atinge de 2×"], ["Esc", "buton"], ["A–Z", "cu tastatura deschisă: scrii în câmp"]],
+  keys: [["←", "→", "aplicații / orbită"], ["↑", "Azi"], ["↓", "control / înapoi"], ["Space", "ține = vorbește"], ["Enter", "atinge"], ["D", "atinge de 2×"], ["Esc", "buton"], ["A–Z", "cu tastatura deschisă: scrii în câmp"]],
   ctrl: [["Atinge", "Acțiunea principală a ecranului. Pe față: bup."], ["Atinge de 2×", "Refuză o cerere Claude. Pe față: râde."], ["Ține apăsat", "Vorbești cu el (inel albastru = ascultă). Pe o cerere Claude: aprobă."],
-    ["Glisează → pe față", "Fagurele de aplicații. Tragi de el cu inerție; atingi o iconiță și aplicația crește din ea."], ["Glisează ← → în aplicații", "Aplicația următoare. Cartonașul vine după deget și revine elastic dacă nu tragi destul."],
-    ["Glisează ↑ / ↓", "Azi (widgeturi) / înapoi acasă. Pe față, ↓ trage Centrul de control."], ["Butonul lateral", "Apasă: acasă, apoi fagurele. Ține: vorbești. Apăsat de 2×: anulează."],
+    ["Glisează → pe față", "Orbita aplicațiilor. O învârți cu degetul, merge din inerție și se oprește pe un cuvânt; atingi cuvântul și aplicația iese din ochi."], ["Glisează ← → în aplicații", "Aplicația următoare. Cartonașul vine după deget și revine elastic dacă nu tragi destul."],
+    ["Glisează ↑ / ↓", "Azi (ce vrea să-ți spună) / înapoi acasă. Pe față, ↓ trage Controlul: lumina și volumul sunt pe margine."], ["Butonul lateral", "Apasă: acasă, apoi orbita. Ține: vorbești. Apăsat de 2×: anulează."],
     ["Tastatura", "Atingi literele (litera intră la ridicarea degetului). Ține pe a/i/s/t: ă â î ș ț. „sa” devine „să” la spațiu; ⌫ imediat după anulează schimbarea. ⌫ ținut șterge cuvinte. Butonul lateral = înapoi, ciorna rămâne."]],
   coach: "→ aplicații · ↑ Azi · ↓ control",
   wx: { city: "București", days: [
@@ -776,24 +781,25 @@ ro: {
   nfake: [["Ana", "Ajungi la 6?", "msg"], ["Mama", "Ai mâncat ceva?"], ["Curier", "Coletul vine la 15:00"]],
   kbPh2: { name: "Cum îl cheamă?" }, kbChips2: { name: [["Soul", "Soul"], ["Pufi", "Pufi"], ["Luma", "Luma"]] }, dict2: { name: "Pufi" },
   dx3: { game: "Ne-am jucat „prinde steaua”.", chg: "Am stat la încărcat." },
-  tourBtn: "▶ Tur ghidat", tourStopB: "■ Oprește turul", tourH: "Tur ghidat · 1 minut", tourHint: "SoulOS se arată singur: fagurele, widgeturile, Centrul de control, notificările, Claude, jocul, încărcarea și somnul. Atinge ecranul ca să preiei controlul.",
+  tourBtn: "▶ Tur ghidat", tourStopB: "■ Oprește turul", tourH: "Tur ghidat · 1 minut", tourHint: "SoulOS se arată singur: orbita, Azi, Controlul de pe margine, notificările, Claude, jocul, încărcarea și somnul. Atinge ecranul ca să preiei controlul.",
   snd: on => on ? "♪ Sunet: pornit" : "♪ Sunet: oprit",
-  sysH: "Sistem", sys: { apps: "Fagure", today: "Azi", cc: "Centrul de control", notif: "+ Notificare", charge: on => on ? "Scoate din priză" : "⚡ Pune la încărcat", sleep: s => s ? "Trezește-l" : "Adoarme-l" },
-  tour: ["Acasă e fața. O atingi și se bucură; de două ori și râde.", "Glisezi → și apar aplicațiile, într-un fagure rotund.", "Tragi de fagure: iconițele cresc spre centru, ca sub o lupă.",
-    "Atingi o iconiță și aplicația crește din ea.", "Butonul lateral te duce oricând acasă.", "Glisezi ↑: Azi, un teanc de widgeturi care se așază singure.",
-    "Tragi de sus în jos: Centrul de control.", "Notificările alunecă de sus și se așază una peste alta.", "Claude cere voie. Ții apăsat 1,2 s și aprobi.",
+  sysH: "Sistem", sys: { apps: "Orbită", today: "Azi", cc: "Control", notif: "+ Notificare", charge: on => on ? "Scoate din priză" : "⚡ Pune la încărcat", sleep: s => s ? "Trezește-l" : "Adoarme-l" },
+  tour: ["Acasă e fața. O atingi și se bucură; de două ori și râde.", "Glisezi → și aplicațiile ies pe margine, ca un zâmbet de cuvinte.", "Învârți orbita cu degetul; ochii se uită la cuvântul din mijloc.",
+    "Atingi cuvântul și aplicația iese din ochi.", "Butonul lateral te duce oricând acasă.", "Glisezi ↑: Azi. Îți spune câte un lucru, pe rând.",
+    "Tragi de sus în jos: Controlul. Lumina și volumul sunt pe margine.", "Notificările vin pe marginea de sus, pe orbită.", "Claude cere voie. Ții apăsat 1,2 s și aprobi.",
     "Jocuri: prinde steaua. Ochii o urmăresc.", "Îl pui la încărcat și inelul se umple.", "Dacă nu-l atingi, adoarme: doar ochii respiră.", "Îl atingi sau îl ridici și se trezește.", "Gata. Acum e rândul tău!"]
 },
 en: {
   weather: "Weather", timer: "Timer", soul: "Soul", games: "Games", apps: "Apps", memory: "Memory", about: "I'm an AI", cc: "Control",
+  addNew: "new", stQuiet: "quiet", stMic: "mic off", edit: "edit", ccQ: { q: "quiet", m: "mic", s: "sound", z: "sleep", b: "light", v: "volume" },
   d2: { today: "Swipe ↑ from the face: widgets that snap into place (weather, reminder, focus, Claude, battery, notifications).",
-    apps: "The round honeycomb of every app. Swipe → from the face, press the side button or turn the mouse wheel.",
+    apps: "The Orbit: app names ride the lower rim like a smile. Spin them with a finger (or the wheel); the eyes look at the one in the middle. Swipe → from the face or press the side button.",
     weather: "Three days, scripted. Tap for the next day.", timer: "Stopwatch with laps and a countdown with a rim ring.",
     soul: "Its name, its birthday, how it feels today.", games: "Catch the star: the eyes follow every star." },
-  keys: [["←", "→", "apps / honeycomb"], ["↑", "Today"], ["↓", "control / back"], ["Space", "hold = talk"], ["Enter", "tap"], ["D", "double-tap"], ["Esc", "button"], ["A–Z", "keyboard open: types into the field"]],
+  keys: [["←", "→", "apps / orbit"], ["↑", "Today"], ["↓", "control / back"], ["Space", "hold = talk"], ["Enter", "tap"], ["D", "double-tap"], ["Esc", "button"], ["A–Z", "keyboard open: types into the field"]],
   ctrl: [["Tap", "The screen's main action. On the face: boop."], ["Double-tap", "Deny a Claude request. On the face: it laughs."], ["Hold", "Talk to it (blue ring = listening). On a Claude request: approve."],
-    ["Swipe → on the face", "The app honeycomb. Drag it with inertia; tap an icon and the app grows out of it."], ["Swipe ← → in apps", "Next app. The card follows your finger and springs back if you don't pull far enough."],
-    ["Swipe ↑ / ↓", "Today (widgets) / back home. On the face, ↓ pulls down Control Center."], ["Side button", "Press: home, then the honeycomb. Hold: talk. Double-press: cancel."],
+    ["Swipe → on the face", "The app orbit. Spin it with a finger; it coasts and settles on a word. Tap the word and the app comes out of the eyes."], ["Swipe ← → in apps", "Next app. The card follows your finger and springs back if you don't pull far enough."],
+    ["Swipe ↑ / ↓", "Today (what it wants to tell you) / back home. On the face, ↓ pulls down Control: light and volume live on the rim."], ["Side button", "Press: home, then the orbit. Hold: talk. Double-press: cancel."],
     ["Keyboard", "Tap letters (a letter commits on lift). Hold a/i/s/t: ă â î ș ț. “sa” becomes “să” on space; ⌫ right after undoes it. Holding ⌫ deletes words. Side button = back, the draft is kept."]],
   coach: "→ apps · ↑ Today · ↓ control",
   wx: { city: "Bucharest", days: [
@@ -811,12 +817,12 @@ en: {
   nfake: [["Ana", "Will you be there at 6?", "msg"], ["Mom", "Have you eaten?"], ["Courier", "Parcel arrives at 15:00"]],
   kbPh2: { name: "What's its name?" }, kbChips2: { name: [["Soul", "Soul"], ["Pip", "Pip"], ["Luma", "Luma"]] }, dict2: { name: "Pip" },
   dx3: { game: "We played catch-the-star.", chg: "Had a nap on the charger." },
-  tourBtn: "▶ Guided tour", tourStopB: "■ Stop the tour", tourH: "Guided tour · 1 minute", tourHint: "SoulOS shows itself: the honeycomb, widgets, Control Center, notifications, Claude, the game, charging and sleep. Touch the screen to take over.",
+  tourBtn: "▶ Guided tour", tourStopB: "■ Stop the tour", tourH: "Guided tour · 1 minute", tourHint: "SoulOS shows itself: the orbit, Today, Control on the rim, notifications, Claude, the game, charging and sleep. Touch the screen to take over.",
   snd: on => on ? "♪ Sound: on" : "♪ Sound: off",
-  sysH: "System", sys: { apps: "Honeycomb", today: "Today", cc: "Control Center", notif: "+ Notification", charge: on => on ? "Unplug" : "⚡ Plug in", sleep: s => s ? "Wake it" : "Put to sleep" },
-  tour: ["Home is the face. Tap it and it's happy; tap twice and it laughs.", "Swipe → and the apps appear, in a round honeycomb.", "Drag the honeycomb: icons grow toward the centre, like under a lens.",
-    "Tap an icon and the app grows out of it.", "The side button always takes you home.", "Swipe ↑: Today, a stack of widgets that snap into place.",
-    "Pull down from the top: Control Center.", "Notifications slide in from the top and stack.", "Claude asks for permission. Hold 1.2 s to approve.",
+  sysH: "System", sys: { apps: "Orbit", today: "Today", cc: "Control", notif: "+ Notification", charge: on => on ? "Unplug" : "⚡ Plug in", sleep: s => s ? "Wake it" : "Put to sleep" },
+  tour: ["Home is the face. Tap it and it's happy; tap twice and it laughs.", "Swipe → and the apps come out on the rim, a smile of words.", "Spin the orbit with a finger; the eyes look at the word in the middle.",
+    "Tap the word and the app comes out of the eyes.", "The side button always takes you home.", "Swipe ↑: Today. It tells you one thing at a time.",
+    "Pull down from the top: Control. Light and volume live on the rim.", "Notifications arrive on the top rim, along the orbit.", "Claude asks for permission. Hold 1.2 s to approve.",
     "Games: catch the star. The eyes follow it.", "Put it on the charger and the ring fills up.", "Leave it alone and it falls asleep: only the eyes breathe.", "Tap it or pick it up and it wakes.", "That's it. Your turn!"]
 }};
 for (const l of ["ro", "en"]) {
@@ -833,7 +839,7 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 const approach = (v, t, rate, dt) => v + (t - v) * (1 - Math.exp(-rate * dt));
 const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-const PAL = { blush: hex("#FF7A9A"), heart: hex("#FF6B8A"), mint: hex("#C9F2E4"), ice: hex("#9FC6FF"), gold: hex("#FFD76B"), amber: hex("#FFB347") };
+const PAL = { blush: hex("#FF7A9A"), heart: hex("#FF6B8A"), mint: hex("#C9F2E4"), ice: hex("#9FC6FF"), gold: hex("#FFD76B"), amber: hex("#FFB347"), cream: hex("#FFF0C8") };
 function hash01(i) { i = i >>> 0; i ^= i >>> 16; i = Math.imul(i, 0x7feb352d); i ^= i >>> 15; i = Math.imul(i, 0x846ca68b); i ^= i >>> 16; return (i & 0xFFFFFF) / 16777216; }
 function ellipsePts(cx, cy, rx, ry, n) { const a = []; for (let i = 0; i < n; i++) { const t = i / n * TAU; a.push([cx + Math.cos(t) * rx, cy + Math.sin(t) * ry]); } return a; }
 function clipHalf(pts, fn) {
@@ -975,6 +981,7 @@ class Soul {
     this.nextBlink = 1.6; this.blinkAt = -9; this.dbl = false; this.nextGlance = 1; this.glance = [0, 0];
     this.rx = null; this.st = "idle"; this.alert = false; this.prog = 0; this.progCol = PAL.mint; this.look = null;
     this.level = 0; this.lvlT = 0; this.lvlNext = 0; this.dim = 1;
+    this.tint = PAL.cream; this.flashCol = PAL.mint; this.flashUntil = -1;
     this.lay = { k: 1, cy: 0, cx: 0 }; this.layS = { k: 1, cy: 0, cx: 0 }; this.layV = { k: 0, cy: 0, cx: 0 }; this.layDirect = false; this.follow = null;
     const p = this.p = { eyeW: 0.12, eyeH: 0.19, spacing: 0.19, lidTilt: 0.16, lidTop: 0.19 };
     const eye = () => ({ open: 1, scale: 1, sx: 1, sy: 1, lidTop: p.lidTop, lidTilt: p.lidTilt, lidBot: 0, dx: 0, dy: 0 });
@@ -992,6 +999,7 @@ class Soul {
     if (n === "wakeup") { this.openS = 0.06; this.blinkAt = this.t + 0.8; this.dbl = true; this.sq.v += 3; }
   }
   lookAt(x, y, d) { this.look = { x, y, until: this.t + d }; }
+  flash(col, d = 1.4) { this.flashCol = col; this.flashUntil = this.t + d; }
   update(dt) {
     const t = (this.t += dt), f = this.f, p = this.p, R = RM ? 400 : 1;
     let happy = 0, blush = 0, style = "normal", lid = p.lidTop, tilt = p.lidTilt, open = 1, bright = 1, scale = 1, dy = 0,
@@ -1071,6 +1079,7 @@ class Soul {
       e.scale = br * this.scaleS; e.sx = sx; e.sy = sy; e.open = this.openS * (1 - bl); e.dy = dy;
     }
     f.gx = this.g.x; f.gy = this.g.y; f.bright = this.brightS * this.dim;
+    const tc = t < this.flashUntil ? this.flashCol : this.tint; f.color = f.color.map((c, i) => RM ? tc[i] : approach(c, tc[i], 6, dt));
     f.happy = approach(f.happy, happy, 12 * R, dt);
     f.blush = approach(f.blush, blush, 6 * R, dt);
     if (style !== f.style) { if (f.styleAmt > 0.02) f.styleAmt = approach(f.styleAmt, 0, 16 * R, dt); else f.style = style; }
@@ -1095,7 +1104,7 @@ const LAYOUT = {
   focus: { k: 0.28, cy: -0.34 }, card: { k: 0.3, cy: -0.33 },
   listen: { k: 0.7, cy: -0.1 }, answer: { k: 0.42, cy: -0.26 }, about: { k: 0.34, cy: -0.3 },
   kb: { k: 0.2, cy: -0.414 }, kbdict: { k: 0.46, cy: 0.04 }, dial: { k: 0.19, cy: -0.268 }, alarmsum: { k: 0.17, cy: -0.3 }, ring: { k: 0.44, cy: -0.2 },
-  sleep: { k: 0.74, cy: -0.07 }, chg: { k: 0.5, cy: -0.15 }, game: { k: 0.4, cy: 0 }, apps: { k: 0.165, cy: 0 }
+  sleep: { k: 0.74, cy: -0.07 }, chg: { k: 0.5, cy: -0.15 }, game: { k: 0.4, cy: 0 }, apps: { k: 0.46, cy: -0.21 }, cc: { k: 0.2, cy: -0.33 }
 };
 const S = {
   view: "home", ret: "home", ai: "claude", bright: 1, sleeping: false,
@@ -1333,10 +1342,14 @@ function applyFaceState() {
     soul.st = S.kb.dict ? "listen" : "idle"; soul.alert = false; return;
   }
   let lay = Object.assign({ cx: 0 }, layoutFor(v));
-  if (S.pill && lay.k < 0.9 && v !== "apps" && !(v === "games" && S.game.run)) { lay.k = Math.min(lay.k, 0.22); lay.cy = S.view === "today" ? -0.31 : -0.28; }
+  if (S.pill && lay.k < 0.9 && lay.cy < -0.3) { lay.cy += 0.025; }        // the notification rides the top rim: the eyes duck a little under it
   if (S.sleeping) lay = Object.assign({ cx: 0 }, LAYOUT.sleep);
   else if (S.chgShow && v === "home") lay = Object.assign({ cx: 0 }, LAYOUT.chg);
-  if (v !== "apps" || S.sleeping) soul.lay = lay;      // in the launcher the face is the centre cell (launcherFrame moves it)
+  if (screen.classList.contains("cc-on") && !S.sleeping) lay = Object.assign({ cx: 0 }, LAYOUT.cc);
+  soul.lay = lay;
+  /* one light at a time: the eyes take the colour of the state (ice = listening, amber = Claude / AI at work, cream = everything else) */
+  soul.tint = S.sleeping ? PAL.cream : v === "voice" && S.voice && S.voice.phase === "listen" ? PAL.ice
+    : (v === "voice" && S.voice && S.voice.phase === "think" && S.ai !== "none") || (v === "claude" && S.claude.pending) || (v === "ring" && S.ringWake) ? PAL.amber : PAL.cream;
   if (S.sleeping) { soul.st = "sleep"; return; }
   if (v === "voice") soul.st = S.voice.phase === "listen" ? "listen" : S.voice.phase === "think" ? "think" : S.voice.speaking ? "speak" : "idle";
   else if (v === "focus" && S.focus.run) soul.st = "focus";
@@ -1345,16 +1358,18 @@ function applyFaceState() {
   else soul.st = "idle";
   soul.alert = (!!S.claude.pending && v !== "voice") || (v === "ring" && S.ringWake);
 }
-/* page dots sit on an arc along the bottom rim, like the rest of the round UI */
-function renderDots() {
-  const i = RING.indexOf(S.view), n = RING.length, step = 4.4;
-  dotsEl.classList.toggle("hide", i <= 0 || !!S.kb);
-  dotsEl.innerHTML = RING.map((r, j) => {
-    const a = (90 + ((n - 1) / 2 - j) * step) * Math.PI / 180, x = 233 + 216 * Math.cos(a) - 4, y = 233 + 216 * Math.sin(a) - 4;
-    return `<i class="${j === 0 ? "home" : ""} ${j === i ? "on" : ""}" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px"></i>`;
-  }).join("");
+/* where am I: after every move the orbit shows on the lower rim for a moment (previous · CURRENT · next), then gives the rim back to the app */
+function renderDots(nav) {
+  const i = RING.indexOf(S.view), n = RING.length, hide = i <= 0 || !!S.kb;
+  if (!nav && !hide) return;
+  dotsEl.classList.toggle("hide", hide); cancel("navhint");
+  if (hide) { screen.classList.remove("navhint"); return; }
+  const nm = k => esc(appName(RING[(i + k + n) % n]));
+  dotsEl.innerHTML = `<svg class="rim" viewBox="0 0 466 466">${rimTxt("rO", nm(-1), "", 50)}${rimTxt("rO", nm(0), "say cream", 0)}${rimTxt("rO", nm(1), "", -50)}</svg><i class="otick"></i>`;
+  screen.classList.add("navhint");
+  after(1500, () => { dotsEl.classList.add("hide"); screen.classList.remove("navhint"); }, "navhint");
 }
-const ENTER = { left: { x: 300, o: 0 }, right: { x: -300, o: 0 }, up: { y: 210, o: 0 }, down: { y: -170, o: 0 }, fade: { s: 0.93, o: 0 }, zoom: { s: 0.17, o: 0.1 }, none: {} };
+const ENTER = { left: { x: 300, o: 0 }, right: { x: -300, o: 0 }, up: { y: 210, o: 0 }, down: { y: -170, o: 0 }, fade: { s: 0.84, o: 0 }, zoom: { s: 0.12, o: 0 }, none: {} };
 const EXIT = { left: { x: -300, o: 0 }, right: { x: 300, o: 0 }, up: { y: -170, o: 0 }, down: { y: 230, o: 0 }, fade: { s: 1.05, o: 0 }, zoom: { s: 1.8, o: 0 }, shrink: { s: 0.62, o: 0 }, none: { o: 0 } };
 function go(v, dir = "fade", opt = {}) {
   if (NAV) opt = Object.assign({}, NAV, opt);
@@ -1367,7 +1382,7 @@ function go(v, dir = "fade", opt = {}) {
   if (!OVERLAY.includes(v) || v === "today") S.ret = v;
   if (OVERLAY.includes(v) && v !== "today" && !OVERLAY.includes(prev)) S.ret = prev;
   S.view = v;
-  if (v === "apps") Object.assign(LN, { open: RM ? 1 : 0, ov: 0, px: 0, py: 0, vx: 0, vy: 0, drag: null, tgt: null, near: null, lblT: -9e9, lblOn: null });
+  if (v === "apps") { Object.assign(LN, { open: RM ? 1 : 0, ov: 0, vr: 0, drag: null, tgt: null, after: null }); LN.rot = ((Math.round(LN.rot) % ORB.length) + ORB.length) % ORB.length; LN.near = ORB[LN.rot]; }
   if (v === "today") Object.assign(TD, { s: RM ? 0 : -0.55, v: 0, tgt: 0, drag: null });
   if (S.pill && S.pill.act && S.pill.act === v) hidePill();
   if (v !== "voice") cancel("answer");
@@ -1393,7 +1408,7 @@ function go(v, dir = "fade", opt = {}) {
   else if (dir === "zoom" && opt.origin) soul.lookAt(clamp((opt.origin[0] - 233) / 150, -1, 1), clamp((opt.origin[1] - 233) / 150, -1, 1), 0.5);
   if (v === "home" && prev !== "home") soul.lookAt(0, 0, 0.4);
   sfx(dir === "zoom" || v === "apps" ? "open" : v === "home" && prev !== "home" ? "close" : "swish");
-  applyFaceState(); renderDots(); syncPanel();
+  applyFaceState(); renderDots(true); syncPanel();
 }
 function refresh() { if (curCard) { curCard.innerHTML = cardHTML(S.view); curCard._lics = curCard._lnl = curCard._lkey = null; } applyFaceState(); renderDots(); }
 function back() { const r = S.ret && S.ret !== S.view ? S.ret : "home"; go(RING.includes(r) || r === "today" ? r : "home", "down"); }
@@ -1410,17 +1425,24 @@ function showPill(o) {
   if (wasShown && !RM && o.incoming) {
     const g = pillEl.cloneNode(true); g.removeAttribute("id"); g.removeAttribute("aria-live"); g.classList.add("ghost");
     screen.insertBefore(g, pillEl); ghosts.unshift(g);
-    ghosts.forEach((x, i) => requestAnimationFrame(() => { x.style.transform = `translate(-50%,${14 + i * 10}px) scale(${(0.9 - i * 0.06).toFixed(2)})`; x.style.opacity = i > 1 ? "0" : String(0.5 - i * 0.2); }));
+    ghosts.forEach((x, i) => requestAnimationFrame(() => { x.style.transform = `rotate(${-34 - i * 26}deg)`; x.style.opacity = i > 1 ? "0" : String(0.42 - i * 0.18); }));
     setTimeout(() => { g.style.opacity = "0"; }, 2600); setTimeout(() => { g.remove(); ghosts = ghosts.filter(x => x !== g); }, 3400);
   }
   S.pill = o; cancel("pill");
   pillEl.className = "pill " + (o.kind || "");
-  pillEl.innerHTML = (o.who ? `<span class="who">${esc(o.who)}</span>` : "") + `<span>${esc(o.text)}</span>`;
+  pillEl.innerHTML = pillSVG(o);
   void pillEl.offsetWidth; pillEl.classList.add("show"); screen.classList.add("has-pill");
-  if (!S.sleeping) soul.lookAt(0, -1, 1.4);
+  if (!S.sleeping) { soul.lookAt(0, -1, 1.4); if (o.kind === "mint") soul.flash(PAL.mint); else if (o.kind === "amber") soul.flash(PAL.amber, 1.8); }
   applyFaceState();
   sfx(o.kind === "amber" ? "alert" : o.incoming ? "notify" : o.kind === "mint" ? "chime" : "soft");
   if (o.dur) after(o.dur, hidePill, "pill");
+}
+/* a notification is a line of words on the top rim, with a short lit arc above it */
+function pillSVG(o) {
+  const t = String(o.text), txt = t.length > 30 ? t.slice(0, 29) + "…" : t, who = o.who ? String(o.who).toUpperCase() : "";
+  const w = txt.length * 11.6 + (who ? who.length * 12.5 + 14 : 0), half = clamp(w / 2 / 211 * 180 / Math.PI + 4, 12, 70);
+  return `<svg viewBox="0 0 466 466" aria-hidden="false"><path class="ln" d="${arcD(-90 - half, -90 + half, 224)}"/><path class="hit" d="${arcD(-90 - half - 4, -90 + half + 4, 198)}"/>
+    <text><textPath href="#rP" startOffset="50%" text-anchor="middle">${who ? `<tspan class="who">${esc(who)}</tspan><tspan dx="12">${esc(txt)}</tspan>` : esc(txt)}</textPath></text></svg>`;
 }
 function hidePill() { S.pill = null; pillEl.classList.remove("show"); screen.classList.remove("has-pill"); applyFaceState(); }
 function buzz() { hap("heavy", true); if (RM) return; pebble.classList.remove("buzz"); void pebble.offsetWidth; pebble.classList.add("buzz"); }
@@ -2203,7 +2225,7 @@ function sideButton() {
   if (S.view === "dial" || S.view === "alarmsum" || S.view === "aimode") { go(parentOf(S.view), "down"); return; }
   if (hold) holdEnd();
   if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); }
-  if (S.view === "home") { go("apps", "none"); return; }                 // like a crown press: face ⇄ honeycomb
+  if (S.view === "home") { go("apps", "none"); return; }                 // like a crown press: face ⇄ orbit
   if (S.view === "apps") { go("home", "fade", { exit: "shrink" }); return; }
   go("home", "down");
 }
@@ -2238,7 +2260,7 @@ function imu(k) {
 }
 
 /* pointer on the round screen: taps, holds and live drags. A drag moves the thing under the finger
-   (card, face, honeycomb, widget stack, Control Center); on release a spring finishes the motion or rubber-bands back. */
+   (card, face, orbit, Today, Control); on release a spring finishes the motion or rubber-bands back. */
 let ptr = null;
 const to466 = e => { const b = screen.getBoundingClientRect(); return { x: (e.clientX - b.left) / b.width * 466, y: (e.clientY - b.top) / b.height * 466 }; };
 function velOf(p) {
@@ -2250,7 +2272,7 @@ function velOf(p) {
 function pressOn(t) { const a = t && t.closest && t.closest("[data-act]"); if (a) a.classList.add("prs"); return a; }
 function pressOff(p) { if (p && p.prsEl) { p.prsEl.classList.remove("prs"); p.prsEl = null; } }
 const fxEl = $("#fx");
-function ripple(p) { if (RM) return; const i = document.createElement("i"); i.className = "rip"; i.style.left = p.x.toFixed(0) + "px"; i.style.top = p.y.toFixed(0) + "px"; fxEl.appendChild(i); setTimeout(() => i.remove(), 600); }
+function ripple(p) { if (S.view !== "home") soul.lookAt(clamp((p.x - 233) / 190, -1, 1), clamp((p.y - 233) / 190, -1, 1), 0.45); if (RM) return; const i = document.createElement("i"); i.className = "rip"; i.style.left = p.x.toFixed(0) + "px"; i.style.top = p.y.toFixed(0) + "px"; fxEl.appendChild(i); setTimeout(() => i.remove(), 600); }
 function dragKind(p, dx, dy) {
   const v = S.view, ax = p.axis;
   if (S.cc) return ax === "y" ? "ccclose" : null;
@@ -2269,7 +2291,7 @@ function cardTargets(v) {
 }
 function dragMove(p, dx, dy) {
   switch (p.drag) {
-    case "pan": lnDrag(dx, dy); break;
+    case "pan": if (p.axis === "x") lnDrag(dx); break;
     case "stack": stackDrag(dy); break;
     case "cc": ccDrag(-466 + dy * 1.45); break;
     case "ccclose": ccDrag(dy < 0 ? dy * 1.25 : rubber(dy, 40)); break;
@@ -2292,7 +2314,7 @@ function dragEnd(p, dx, dy, vx, vy, cancelled) {
   const ax = p.axis, d = ax === "x" ? dx : dy, vel = ax === "x" ? vx : vy;
   const flick = (dist, vmin) => !cancelled && (Math.abs(d) > dist || (Math.abs(vel) > vmin && Math.sign(vel) === Math.sign(d)));
   switch (p.drag) {
-    case "pan": lnRelease(cancelled ? 0 : vx, cancelled ? 0 : vy); break;
+    case "pan": if (ax === "y") { LN.drag = null; if (!cancelled && (dy > 90 || vy > 600)) go("home", "down"); else if (!cancelled && (dy < -90 || vy < -600)) lnNudge("up"); } else lnRelease(cancelled ? 0 : vx); break;
     case "stack": stackRelease(cancelled ? 0 : dy, cancelled ? 0 : vy); break;
     case "cc": if (!cancelled && (ccY() > -300 || vy > 500)) ccOpen(vy); else ccClose(false, vy); break;
     case "ccclose": if (!cancelled && (dy < -80 || vy < -500)) ccClose(false, vy); else ccOpen(vy); break;
@@ -2372,14 +2394,14 @@ const ptrUp = e => {
 screen.addEventListener("pointerup", ptrUp);
 screen.addEventListener("pointercancel", ptrUp);
 screen.addEventListener("contextmenu", e => e.preventDefault());
-/* the wheel is the "crown": turns the honeycomb, walks the widget stack, opens the honeycomb from the face */
+/* the wheel is the "crown": spins the orbit, walks Today, opens the orbit from the face */
 let wheelT = 0;
 screen.addEventListener("wheel", e => {
   e.preventDefault(); bumpIdle();
   const now = performance.now(), dy = e.deltaY;
   if (S.sleeping) { wake(); return; }
   if (S.kb || S.cc) return;
-  if (S.view === "apps") { LN.tgt = null; LN.vx = 0; LN.vy = 0; const ny = LN.py - dy * 0.5, r = Math.hypot(LN.px, ny); if (r < 190) LN.py = ny; return; }
+  if (S.view === "apps") { if (Math.abs(dy) < 4 || now - wheelT < 70) return; wheelT = now; LN.after = null; LN.tgt = (LN.tgt != null ? LN.tgt : Math.round(LN.rot)) + Math.sign(dy); return; }
   if (now - wheelT < 380 || Math.abs(dy) < 4) return;
   wheelT = now;
   if (S.view === "home") { if (dy > 0) go("apps", "none"); else go("today", "up"); return; }
@@ -2590,11 +2612,32 @@ function setSound(on) {
   if (on && auInit() && AU.ctx.state === "suspended") AU.ctx.resume().then(() => sfx("toggleOn")).catch(() => {}); else sfx("toggleOn");
   updSndBtn(); if (S.cc) ccRender(); if (S.view === "settings" && !S.kb) refresh();
 }
+/* SoulOS sounds: not beeps. Two voices of one small creature:
+   - "hum": a buzzy source through a vowel filter with a little vibrato, so it sounds like a tiny "mm?" / "oh!" / "hm-hm"
+   - "tock": a short burst of filtered noise, like a wooden detent, for the orbit, keys and dials */
 function tone(f0, f1, dur, type, g, delay = 0) {
   const c = AU.ctx, t = c.currentTime + 0.01 + delay, o = c.createOscillator(), a = c.createGain();
   o.type = type; o.frequency.setValueAtTime(f0, t); if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
   a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(g, t + Math.min(0.012, dur / 4)); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(a); a.connect(AU.out); o.start(t); o.stop(t + dur + 0.03);
+}
+function hum(f0, f1, dur, g, delay = 0, vowel = 900) {
+  const c = AU.ctx, t = c.currentTime + 0.01 + delay, o = c.createOscillator(), lfo = c.createOscillator(), lgn = c.createGain(), bp = c.createBiquadFilter(), bp2 = c.createBiquadFilter(), a = c.createGain();
+  o.type = "sawtooth"; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1 || f0, t + dur * 0.9);
+  lfo.frequency.value = 7; lgn.gain.value = f0 * 0.018; lfo.connect(lgn); lgn.connect(o.frequency);
+  bp.type = "bandpass"; bp.frequency.value = vowel; bp.Q.value = 5; bp2.type = "bandpass"; bp2.frequency.value = vowel * 2.6; bp2.Q.value = 7;
+  a.gain.setValueAtTime(0.0001, t); a.gain.exponentialRampToValueAtTime(g, t + Math.min(0.03, dur / 3)); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(bp); o.connect(bp2); bp.connect(a); bp2.connect(a); a.connect(AU.out);
+  o.start(t); lfo.start(t); o.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+}
+let noiseBuf = null;
+function tock(freq, g, dur = 0.03, delay = 0) {
+  const c = AU.ctx, t = c.currentTime + 0.005 + delay;
+  if (!noiseBuf) { noiseBuf = c.createBuffer(1, Math.round(c.sampleRate * 0.08), c.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3); }
+  const s = c.createBufferSource(), f = c.createBiquadFilter(), a = c.createGain();
+  s.buffer = noiseBuf; f.type = "bandpass"; f.frequency.value = freq; f.Q.value = 9;
+  a.gain.setValueAtTime(g, t); a.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(a); a.connect(AU.out); s.start(t); s.stop(t + dur + 0.02);
 }
 const sfxLast = {};
 function sfx(n) {
@@ -2602,29 +2645,29 @@ function sfx(n) {
   const now = performance.now(); if (sfxLast[n] && now - sfxLast[n] < 45) return; sfxLast[n] = now;
   try {
     switch (n) {
-      case "tap": tone(2100, 1500, 0.035, "triangle", 0.06); break;
-      case "key": tone(1500, 1150, 0.022, "sine", 0.045); break;
-      case "tick": tone(3200, 2600, 0.014, "square", 0.01); break;
-      case "click": tone(900, 600, 0.03, "square", 0.025); break;
-      case "swish": tone(520, 760, 0.09, "sine", 0.03); break;
-      case "open": tone(420, 840, 0.14, "sine", 0.055); tone(630, 1260, 0.12, "sine", 0.03, 0.04); break;
-      case "close": tone(760, 380, 0.14, "sine", 0.045); break;
-      case "toggleOn": tone(900, 1350, 0.06, "triangle", 0.06); break;
-      case "toggleOff": tone(1350, 900, 0.06, "triangle", 0.05); break;
-      case "chime": tone(1318.5, 0, 0.4, "sine", 0.06); tone(1975.5, 0, 0.55, "sine", 0.045, 0.1); break;
-      case "soft": tone(1046.5, 0, 0.22, "sine", 0.04); break;
-      case "notify": tone(987.8, 0, 0.3, "sine", 0.06); tone(1480, 0, 0.42, "sine", 0.05, 0.13); break;
-      case "alert": [0, 0.15, 0.3].forEach(d => tone(1174.7, 0, 0.16, "triangle", 0.055, d)); break;
-      case "boop": tone(620, 980, 0.1, "sine", 0.07); break;
-      case "laugh": [0, 0.09, 0.18].forEach((d, i) => tone(700 + i * 120, 900 + i * 120, 0.07, "sine", 0.05, d)); break;
-      case "listen": tone(660, 990, 0.09, "sine", 0.045); break;
-      case "star": [1318.5, 1568, 2093].forEach((f, i) => tone(f, 0, 0.16, "sine", 0.055, i * 0.05)); break;
-      case "miss": tone(240, 150, 0.16, "triangle", 0.06); break;
-      case "fanfare": [1046.5, 1318.5, 1568, 2093].forEach((f, i) => tone(f, 0, i === 3 ? 0.6 : 0.2, "triangle", 0.05, i * 0.12)); break;
-      case "wake": tone(392, 784, 0.35, "sine", 0.05); tone(588, 1176, 0.3, "sine", 0.03, 0.12); break;
-      case "sleep": tone(784, 392, 0.45, "sine", 0.045); break;
-      case "charge": tone(523, 1046, 0.35, "sine", 0.05); tone(1568, 0, 0.5, "sine", 0.045, 0.3); break;
-      case "alarm": [880, 1174.7, 880, 1174.7].forEach((f, i) => tone(f, 0, 0.18, "triangle", 0.06, i * 0.2)); break;
+      case "tap": tock(2400, 0.22, 0.025); break;
+      case "key": tock(3200, 0.16, 0.018); break;
+      case "tick": tock(1700, 0.3, 0.03); break;
+      case "click": tock(900, 0.3, 0.04); break;
+      case "swish": tock(1200, 0.08, 0.05); hum(330, 360, 0.08, 0.02, 0, 700); break;
+      case "open": hum(300, 460, 0.16, 0.05, 0, 800); break;                          // "mm↑"
+      case "close": hum(440, 290, 0.16, 0.045, 0, 650); break;                        // "mm↓"
+      case "toggleOn": hum(420, 560, 0.09, 0.045, 0, 1000); break;
+      case "toggleOff": hum(520, 380, 0.09, 0.04, 0, 700); break;
+      case "chime": hum(520, 620, 0.12, 0.05, 0, 1100); hum(700, 780, 0.2, 0.05, 0.11, 1300); break;   // "mm-hm!" (done)
+      case "soft": hum(440, 470, 0.14, 0.035, 0, 900); break;
+      case "notify": hum(480, 520, 0.1, 0.045, 0, 1000); hum(560, 600, 0.14, 0.045, 0.13, 1100); break;   // "hm-hm"
+      case "alert": [0, 0.17, 0.34].forEach(d => hum(520, 700, 0.13, 0.05, d, 1200)); break;              // "oh? oh? oh?"
+      case "boop": hum(560, 820, 0.11, 0.06, 0, 1400); break;
+      case "laugh": [0, 0.1, 0.2].forEach((d, i) => hum(640 + i * 60, 760 + i * 60, 0.08, 0.05, d, 1500)); break;
+      case "listen": hum(360, 520, 0.12, 0.045, 0, 1100); break;
+      case "star": [880, 1047, 1319].forEach((f, i) => tone(f, 0, 0.14, "sine", 0.05, i * 0.05)); break;
+      case "miss": hum(300, 220, 0.16, 0.05, 0, 600); break;
+      case "fanfare": [0, 0.12, 0.24].forEach((d, i) => hum(520 + i * 130, 560 + i * 140, 0.14, 0.05, d, 1200)); hum(900, 980, 0.4, 0.05, 0.38, 1400); break;
+      case "wake": hum(260, 480, 0.4, 0.05, 0, 700); break;                             // a stretch: "mmmh↑"
+      case "sleep": hum(420, 240, 0.5, 0.04, 0, 600); break;
+      case "charge": hum(300, 600, 0.35, 0.045, 0, 900); tone(1568, 0, 0.4, "sine", 0.03, 0.3); break;
+      case "alarm": [0, 0.2, 0.4, 0.6].forEach((d, i) => hum(i % 2 ? 660 : 520, i % 2 ? 700 : 560, 0.16, 0.06, d, 1300)); break;
     }
   } catch (e) {}
 }
@@ -2644,7 +2687,12 @@ const ORB = ["talk", "claude", "weather", "reminders", "alarms", "notes", "focus
 const LN = { rot: 2, vr: 0, open: 1, ov: 0, drag: null, tgt: null, near: "weather", wasFast: false, after: null };
 const appName = v => { const L = T(); return v === "home" ? L.home : L[v] || v; };
 const orbWrap = u => { const n = ORB.length; u = ((u % n) + n) % n; return u >= n / 2 ? u - n : u; };
-const orbAngle = u => { const a = Math.abs(u); return Math.sign(u) * (a <= 1 ? a * 40 : 40 + (a - 1) * 23); };
+/* word widths along the rim (degrees at r = 203), measured once the fonts are in: the words sit shoulder to shoulder */
+function orbMeasure(els) {
+  const k = 180 / Math.PI / 203;
+  return els.map(el => { let m = 0, d = 0; try { m = el.children[1].getComputedTextLength(); el.children[2].style.fontSize = "31px"; d = el.children[2].getComputedTextLength(); } catch (e) {}
+    return { m: (m || 90) * k, d: (d || 120) * k }; });
+}
 function launcherHTML() {
   const L = T();
   return `<div class="orb"><svg viewBox="0 0 466 466">${ORB.map(v => `<g class="ow" data-act="open" data-app="${v}" role="button" aria-label="${esc(appName(v))}" style="opacity:0">
@@ -2706,15 +2754,22 @@ function launcherFrame(dt, force) {
         const n = ORB.length; LN.rot = ((LN.tgt % n) + n) % n; LN.vr = 0; LN.tgt = null;
         if (LN.after) { const a = LN.after; LN.after = null; openApp(a, lnIcon(a)); return; }
       }
-    } else if (Math.abs(LN.vr) > 0.01) { LN.tgt = Math.round(LN.rot + LN.vr / 3.2); }
+    } else if (Math.abs(LN.vr) > 0.01 || Math.abs(LN.rot - Math.round(LN.rot)) > 0.001) { LN.tgt = Math.round(LN.rot + LN.vr / 3.2); }
   }
   const key = `${LN.rot.toFixed(4)},${LN.open.toFixed(4)}`;
   if (curCard._lkey === key && !force) return;                    // nothing moved: no DOM writes this frame
   curCard._lkey = key;
   const els = curCard._lics || (curCard._lics = Array.from(curCard.querySelectorAll(".ow"))), op = clamp(LN.open, 0, 1);
+  const W = curCard._w || (curCard._w = orbMeasure(els)), n = ORB.length, GAP = 6;
+  const wbOf = i => clamp(1 - Math.abs(orbWrap(i - LN.rot)) * 1.7, 0, 1);
+  const half = i => { const j = ((i % n) + n) % n, wb = wbOf(j); return (W[j].m * (1 - wb) + W[j].d * (22 + 9 * wb) / 31 * wb) / 2 + GAP / 2; };
+  const base = Math.floor(LN.rot), frac = LN.rot - base, ang = new Array(n);
+  ang[((base % n) + n) % n] = -frac * (half(base) + half(base + 1));
+  for (let k = 1; k <= n / 2; k++) { const i = base + k; ang[((i % n) + n) % n] = ang[(((i - 1) % n) + n) % n] + half(i - 1) + half(i); }
+  for (let k = 1; k < n / 2; k++) { const i = base - k; ang[((i % n) + n) % n] = ang[(((i + 1) % n) + n) % n] - half(i + 1) - half(i); }
   els.forEach((el, i) => {
-    const u = orbWrap(i - LN.rot), a = orbAngle(u) * (1 + (1 - op) * 0.9), aa = Math.abs(a), wb = clamp(1 - Math.abs(u) * 1.7, 0, 1);
-    const fade = clamp((96 - aa) / 26, 0, 1) * op;
+    const u = orbWrap(i - LN.rot), a = ang[i] * (1 + (1 - op) * 0.9), aa = Math.abs(a), wb = wbOf(i);
+    const fade = clamp((100 - aa) / 24, 0, 1) * op;
     el.setAttribute("transform", `rotate(${(-a).toFixed(2)} 233 233)`);
     el.style.opacity = fade.toFixed(3); el.style.pointerEvents = fade < 0.3 ? "none" : "";
     const m = el.children[1], d = el.children[2];
@@ -2918,38 +2973,54 @@ function gameFrame(dt) {
   if (r) { r.setAttribute("stroke-dashoffset", (2 * Math.PI * 222 * (1 - G.left / GAME_T)).toFixed(1)); if (G.left < 5) r.setAttribute("stroke", "#FFB347"); }
 }
 
-/* ================================================================ Control Center (pull down) */
+/* ================================================================ Control (pull down): the rim becomes two dials */
 const ccEl = $("#cc");
 function ccHTML() {
-  const L = T(), B = S.batt, tg = (a, on, svg, lbl, cls = "") => `<span class="ccb ${cls} ${on ? "on" : ""}" data-act="${a}" role="switch" aria-checked="${on}" aria-label="${esc(lbl)}">${svg}</span>`;
-  const bv = (S.bright - 0.15) / 0.85;
-  return `<div class="cch"><b style="font-weight:500">${hhmm()}</b><span>${B.chg ? GL.bolt : ""}${Math.round(B.lvl)}%</span></div>
-    <div class="cct">${tg("cc-dnd", S.dnd, GL.moon, L.ccDnd)}${S.micMute ? tg("cc-mic", false, GL.micOff, L.ccMic, "warn") : tg("cc-mic", true, GL.mic, L.ccMic, "ice")}${tg("cc-snd", AU.on, AU.on ? GL.snd : GL.sndOff, L.ccSnd, "mint")}${tg("cc-lock", false, GL.sleep, L.ccLock)}</div>
-    <div class="ccst" data-live="ccst">${esc(S.ccMsg || L.ccHint)}</div>
-    <div class="ccs" data-slider="bright" style="top:216px" role="slider" aria-label="${esc(L.ccBright)}" aria-valuenow="${Math.round(S.bright * 100)}"><i class="fill" style="width:${(bv * 100).toFixed(1)}%"></i>${GL.sun}<b>${esc(L.ccBright)}</b></div>
-    <div class="ccs" data-slider="vol" style="top:292px" role="slider" aria-label="${esc(L.ccVol)}" aria-valuenow="${Math.round(S.vol * 100)}"><i class="fill" style="width:${(S.vol * 100).toFixed(1)}%"></i>${GL.vol}<b>${esc(L.ccVol)}</b></div>
-    <div class="ccai ${S.ai === "none" ? "off" : ""}" data-act="cc-ai" role="button" style="top:370px">${GL.spark}AI · ${esc(L.aiShort[S.ai])}</div>
-    <div class="ccgrab"></div>`;
+  const L = T(), B = S.batt, tg = (a, on, g, label, aria, cls = "") => `<span class="ccb ${cls} ${on ? "on" : ""}" data-act="${a}" role="switch" aria-checked="${on}" aria-label="${esc(aria)}">${lg(g, 36)}<span>${esc(label)}</span></span>`;
+  const bv = (S.bright - 0.15) / 0.85, vv = S.vol, [b0, b1] = CCA.b, [v0, v1] = CCA.v;
+  const kn = (a, col) => { const r = a * Math.PI / 180; return `<circle class="knob" cx="${(233 + 214 * Math.cos(r)).toFixed(1)}" cy="${(233 + 214 * Math.sin(r)).toFixed(1)}" r="9" fill="${col}"/>`; };
+  return `<svg class="rim" viewBox="0 0 466 466">
+      <path class="arcw" d="${arcD(b0, b1, 214)}" stroke="rgba(255,240,200,.14)" style="stroke-width:3"/><path class="arcw" data-live="ccbf" d="${arcD(b0, b0 + (b1 - b0) * Math.max(0.01, bv), 214)}" stroke="#FFF0C8" style="stroke-width:6;filter:drop-shadow(0 0 5px rgba(255,240,200,.6))"/><g data-live="ccbk">${kn(b0 + (b1 - b0) * bv, "#FFF0C8")}</g>
+      <path class="arcw" d="${arcD(v1, v0, 214)}" stroke="rgba(159,198,255,.16)" style="stroke-width:3"/><path class="arcw" data-live="ccvf" d="${arcD(v0 - (v0 - v1) * Math.max(0.01, vv), v0, 214)}" stroke="#9FC6FF" style="stroke-width:6;filter:drop-shadow(0 0 5px rgba(159,198,255,.6))"/><g data-live="ccvk">${kn(v0 - (v0 - v1) * vv, "#9FC6FF")}</g>
+      <path class="hit" data-slider="bright" role="slider" aria-label="${esc(L.ccBright)}" aria-valuenow="${Math.round(S.bright * 100)}" d="${arcD(b0 - 6, b1 + 6, 205)}" style="stroke-width:64"/>
+      <path class="hit" data-slider="vol" role="slider" aria-label="${esc(L.ccVol)}" aria-valuenow="${Math.round(S.vol * 100)}" d="${arcD(v1 - 6, v0 + 6, 205)}" style="stroke-width:64"/>
+      ${rimTxt("rT", `${hhmm()} · ${Math.round(B.lvl)}%${B.chg ? " · " + esc(L.chg) : ""}`, "")}
+      <g data-act="cc-ai" role="button"><path class="hit" d="${arcD(118, 62, 200)}"/><text class="say ${S.ai === "none" ? "" : "amber"}" style="${S.ai === "none" ? "fill:var(--dim)" : ""}"><textPath href="#rB" startOffset="50%" text-anchor="middle">${esc("AI · " + L.aiShort[S.ai])}</textPath></text></g></svg>
+    <div class="ccv" style="left:86px">${esc(L.ccQ.b)}<b data-live="ccbv">${Math.round(S.bright * 100)}</b></div><div class="ccv vol" style="right:86px;text-align:right">${esc(L.ccQ.v)}<b data-live="ccvv">${Math.round(S.vol * 100)}</b></div>
+    <div class="cct">${tg("cc-dnd", S.dnd, "moon", L.ccQ.q, L.ccDnd)}${S.micMute ? tg("cc-mic", false, "micOff", L.ccQ.m, L.ccMic, "warn") : tg("cc-mic", true, "mic", L.ccQ.m, L.ccMic, "ice")}${tg("cc-snd", AU.on, AU.on ? "snd" : "sndOff", L.ccQ.s, L.ccSnd)}${tg("cc-lock", false, "sleep", L.ccQ.z, L.ccLock)}</div>
+    <div class="ccst" data-live="ccst">${esc(S.ccMsg || L.ccHint)}</div>`;
 }
+/* the two rim dials: light fills up the left rim, volume up the right rim (degrees, 0 = 3 o'clock) */
+const CCA = { b: [128, 232], v: [52, -52] };
 function ccRender() { ccEl.innerHTML = ccHTML(); }
 function ccPrep() { S.ccMsg = ""; ccRender(); }
 const ccY = () => stOf(ccEl).y;
-function ccDrag(y) { y = Math.min(y, 40); setSt(ccEl, { y, s: 1, o: clamp((y + 466) / 230, 0, 1) }); }
+function ccDrag(y) { y = Math.min(y, 40); setSt(ccEl, { y, s: 1, o: clamp((y + 466) / 230, 0, 1) }); screen.classList.toggle("cc-on", y > -330); applyFaceState(); }
 function ccOpen(v) {
-  if (!S.cc) { S.cc = true; if (!ccEl.innerHTML) ccPrep(); else ccRender(); sfx("open"); hap("light"); soul.lookAt(0, -1, 0.9); S.coach = false; }
+  if (!S.cc) { S.cc = true; if (!ccEl.innerHTML) ccPrep(); else ccRender(); sfx("open"); hap("light"); soul.lookAt(0, 1, 0.9); S.coach = false; }
+  screen.classList.add("cc-on"); applyFaceState();
   ccEl.style.pointerEvents = "auto"; spring(ccEl, { y: 0, o: 1, s: 1 }, { k: 300, c: 28, v: v ? { y: v } : undefined }); syncPanel();
 }
 function ccClose(instant, v) {
-  const was = S.cc; S.cc = false; ccEl.style.pointerEvents = "none"; S.ccMsg = "";
+  const was = S.cc; S.cc = false; ccEl.style.pointerEvents = "none"; S.ccMsg = ""; screen.classList.remove("cc-on");
   if (instant || RM) setSt(ccEl, { y: -466, o: 0, s: 1 }); else spring(ccEl, { y: -466, o: 0, s: 1 }, { k: 300, c: 30, v: v ? { y: v } : undefined });
   if (was && !instant) sfx("close");
-  syncPanel();
+  applyFaceState(); syncPanel();
+}
+function ccSetArc(k, v) {
+  const [a0, a1] = k === "bright" ? CCA.b : CCA.v, a = a0 + (a1 - a0) * v, r = a * Math.PI / 180, q = s => ccEl.querySelector(`[data-live="${s}"]`);
+  const f = q(k === "bright" ? "ccbf" : "ccvf"), kn = q(k === "bright" ? "ccbk" : "ccvk"), num = q(k === "bright" ? "ccbv" : "ccvv");
+  if (f) f.setAttribute("d", k === "bright" ? arcD(a0, a0 + (a1 - a0) * Math.max(0.01, v), 214) : arcD(a0 - (a0 - a1) * Math.max(0.01, v), a0, 214));
+  if (kn && kn.firstChild) { kn.firstChild.setAttribute("cx", (233 + 214 * Math.cos(r)).toFixed(1)); kn.firstChild.setAttribute("cy", (233 + 214 * Math.sin(r)).toFixed(1)); }
+  if (num) num.textContent = Math.round(k === "bright" ? (0.15 + 0.85 * v) * 100 : v * 100);
 }
 function ccSlide(p) {
   const k = ptr && ptr.slider; if (!k) return;
-  const v = clamp((p.x - 73) / 320, 0, 1);
+  const deg = Math.atan2(p.y - 233, p.x - 233) * 180 / Math.PI;
+  const v = k === "bright" ? clamp((((deg + 360) % 360) - CCA.b[0]) / (CCA.b[1] - CCA.b[0]), 0, 1) : clamp((CCA.v[0] - deg) / (CCA.v[0] - CCA.v[1]), 0, 1);
   if (k === "bright") setBright(0.15 + 0.85 * v); else { S.vol = v; auVol(); }
-  const f = ccEl.querySelector(`[data-slider="${k}"] .fill`); if (f) f.style.width = (v * 100).toFixed(1) + "%";
+  ccSetArc(k, v);
+  soul.lookAt(k === "bright" ? -0.9 : 0.9, clamp((p.y - 233) / 200, -1, 1), 0.4);
   const st = Math.round(v * 12); if (st !== ptr.sStep) { ptr.sStep = st; sfx("tick"); }
 }
 
@@ -2957,7 +3028,7 @@ function ccSlide(p) {
 const SR = { el: $("#sring"), bat: $("#sr-bat"), batg: $("#sr-batg"), cl: $("#sr-cl"), lvl: -1, chg: null, op: -1, a1: 146 };
 function statusFrame(t) {
   const v = S.view, hide = !!S.kb || S.chgShow || S.cc || ["focus", "dial", "ring", "voice", "alarmsum"].includes(v) || (v === "timer" && S.tm.mode === "cd") || (v === "games" && S.game.run);
-  const op = hide ? 0 : S.sleeping ? 0.5 : ["home", "apps", "today"].includes(v) ? 1 : 0.45;
+  const op = hide || v === "apps" ? 0 : S.sleeping ? 0.5 : ["home", "today"].includes(v) ? 1 : 0.45;
   if (SR.op !== op) { SR.op = op; SR.el.style.opacity = op; }
   if (!op) return;
   const B = S.batt, lv = Math.round(B.lvl);
@@ -2980,7 +3051,7 @@ function plug(on) {
 }
 function chgShow() {
   const B = S.batt, C = 2 * Math.PI * 222, L = T();
-  chgEl.innerHTML = `<svg class="ring" viewBox="0 0 466 466"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(201,242,228,.12)" stroke-width="12"/><circle class="chg-arc" cx="233" cy="233" r="222" fill="none" stroke="#C9F2E4" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" transform="rotate(-90 233 233)"/></svg><div class="chg-c"><b>${GL.bolt}<span data-live="chgp">${Math.round(B.lvl)}%</span></b><small>${esc(L.chg)}</small></div>`;
+  chgEl.innerHTML = `<svg class="ring" viewBox="0 0 466 466"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(201,242,228,.12)" stroke-width="6"/><circle class="chg-arc" cx="233" cy="233" r="222" fill="none" stroke="#C9F2E4" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" transform="rotate(-90 233 233)"/></svg><div class="chg-c"><b>${lg("bolt", 34)}<span data-live="chgp">${Math.round(B.lvl)}%</span></b><small>${esc(L.chg)}</small></div>`;
   chgEl.classList.add("on"); S.chgShow = true; applyFaceState(); aodEl.classList.remove("on");
   const arc = chgEl.querySelector(".chg-arc"); void arc.getBoundingClientRect();
   requestAnimationFrame(() => requestAnimationFrame(() => { arc.style.strokeDashoffset = (C * (1 - B.lvl / 100)).toFixed(1); }));
@@ -2999,7 +3070,7 @@ function musicFrame(dt) {
   const M = S.music; if (!M.play) return;
   M.pos += dt / 214; if (M.pos >= 1) M.pos = 0;
   if (S.view !== "music" || !curCard || (musT += dt) < 0.25) return; musT = 0;
-  const b = curCard.querySelector('[data-live="mbar"]'); if (b) b.style.width = (M.pos * 100).toFixed(1) + "%";
+  const b = curCard.querySelector('[data-live="mbar"]'); if (b) b.setAttribute("d", arcD(140, 140 - 100 * Math.max(0.005, M.pos), 214));
   const t = curCard.querySelector('[data-live="mt"]'); if (t) t.textContent = mmss(M.pos * 214);
 }
 
@@ -3007,7 +3078,7 @@ function musicFrame(dt) {
 function act2(a, el) {
   const L = T();
   switch (a) {
-    case "open": openApp(el.dataset.app, el); break;
+    case "open": if (S.view === "apps" && el.classList.contains("ow") && el.dataset.app !== LN.near) lnSpinTo(el.dataset.app, true); else openApp(el.dataset.app, el); break;
     case "wx-next": {
       S.wx.day = (S.wx.day + 1) % 3; S.wx.swap = true; refresh(); S.wx.swap = false;
       const ic = L.wx.days[S.wx.day].ic; if (ic === "sun") soul.react("happy", 1.6); else if (ic === "rain") soul.react("shy", 1.4); soul.lookAt(0, -0.9, 0.8); break;
@@ -3064,9 +3135,12 @@ async function tourRun() {
     cap(1); fingerAt(120, 240); await W(300); down(true);
     await tw(520, e => { const dx = 180 * e; fingerAt(120 + dx, 240); soul.layDirect = true; soul.lay = { k: 1 - Math.min(0.2, rubber(dx, 110) / 466 * 0.45), cy: 0, cx: rubber(dx, 110) / 466 }; });
     down(false); soul.layDirect = false; go("apps", "none"); fingerHide(); await W(1400);
-    cap(2); fingerAt(233, 233); await W(300); down(true); lnGrab();
-    await tw(2800, (e, t) => { const a = t * TAU, dx = 100 * Math.sin(a), dy = 72 * Math.sin(2 * a); lnDrag(dx, dy); fingerAt(233 + dx, 233 + dy); });
-    lnRelease(0, 0); down(false); fingerHide(); await W(900);
+    cap(2); fingerAt(330, 392); await W(300); down(true); lnGrab();
+    await tw(900, e => { const dx = -190 * e; lnDrag(dx); fingerAt(330 + dx, 392 + 20 * Math.sin(e * Math.PI)); });
+    lnRelease(-420); down(false); fingerHide(); await W(1600);
+    fingerAt(130, 392); await W(250); down(true); lnGrab();
+    await tw(700, e => { const dx = 160 * e; lnDrag(dx); fingerAt(130 + dx, 392 + 20 * Math.sin(e * Math.PI)); });
+    lnRelease(0); down(false); fingerHide(); await W(900); lnSpinTo("weather"); await W(1100);
     cap(3); { const el = lnIcon("weather"); const [x, y] = el._pos; await tapAt(x, y); openApp("weather", el); } fingerHide(); await W(1800);
     await tapAt(233, 350); act("wx-next"); await W(1500); await tapAt(233, 350); act("wx-next"); fingerHide(); await W(1600);
     cap(4); sideEl.classList.add("down"); await W(180); sideEl.classList.remove("down"); sideButton(); await W(1300);
@@ -3082,12 +3156,13 @@ async function tourRun() {
     cap(6); fingerAt(233, 36); await W(300); down(true); ccPrep();
     await tw(620, e => { fingerAt(233, 36 + 300 * e); ccDrag(-466 + 300 * e * 1.45); });
     down(false); ccOpen(); fingerHide(); await W(900);
-    { const x0 = 73 + 320 * (S.bright - 0.15) / 0.85; fingerAt(x0, 247); await W(300); down(true);
-      const f = () => ccEl.querySelector('[data-slider="bright"] .fill');
-      await tw(800, e => { const v = (S.bright - 0.15) / 0.85, x = x0 + (73 + 320 * 0.35 - x0) * e; fingerAt(x, 247); setBright(0.15 + 0.85 * clamp((x - 73) / 320, 0, 1)); const fe = f(); if (fe) fe.style.width = (clamp((x - 73) / 320, 0, 1) * 100) + "%"; });
-      await tw(700, e => { const x = 73 + 320 * 0.35 + (393 - 73 - 320 * 0.35) * e; fingerAt(x, 247); setBright(0.15 + 0.85 * clamp((x - 73) / 320, 0, 1)); const fe = f(); if (fe) fe.style.width = (clamp((x - 73) / 320, 0, 1) * 100) + "%"; });
+    { const at = a => [233 + 214 * Math.cos(a * Math.PI / 180), 233 + 214 * Math.sin(a * Math.PI / 180)], [b0, b1] = CCA.b;
+      const a0 = b0 + (b1 - b0) * (S.bright - 0.15) / 0.85, setA = a => { const v = clamp((a - b0) / (b1 - b0), 0, 1); setBright(0.15 + 0.85 * v); ccSetArc("bright", v); fingerAt(...at(a)); soul.lookAt(-0.9, clamp((at(a)[1] - 233) / 200, -1, 1), 0.3); };
+      fingerAt(...at(a0)); await W(300); down(true);
+      await tw(800, e => setA(a0 + (150 - a0) * e));
+      await tw(700, e => setA(150 + (b1 - 150) * e));
       down(false); }
-    await tapAt(107, 131); act("cc-dnd"); await W(1300); await tapAt(107, 131); act("cc-dnd"); await W(800);
+    await tapAt(173, 217); act("cc-dnd"); await W(1300); await tapAt(173, 217); act("cc-dnd"); await W(800);
     fingerAt(233, 420); await W(250); down(true);
     await tw(450, e => { fingerAt(233, 420 - 250 * e); ccDrag(-250 * e * 1.25); });
     down(false); ccClose(); fingerHide(); await W(900);
@@ -3170,17 +3245,18 @@ function frame(ts) {
 
 /* ---------------------------------------------------------------- boot */
 initData();
-icDefs(); setSt(ccEl, { y: -466, o: 0, s: 1 }); setBright(S.bright);
+$("#icdefs").innerHTML = rimDefs(); setSt(ccEl, { y: -466, o: 0, s: 1 }); setBright(S.bright);
 if (matchMedia("(max-width: 920px)").matches) document.querySelectorAll("details.fold").forEach(d => { d.open = false; });
 renderPanel();
 size();
 go("home", "fade");
 soul.react("intro");
 requestAnimationFrame(frame);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (curCard && S.view === "apps") { curCard._w = null; curCard._lkey = null; } });
 setInterval(() => { const c = curCard && curCard.querySelector('[data-live="clock"]'); if (c) c.textContent = hhmm(); if (S.sleeping) updateAod(); }, 10000);
 setInterval(checkAlarms, 1000);
 window.__soul = { S, go, kbOpen, kbRender, setAi, ringAlarm, parseTime, candidates, cancel,
-  LN, TD, HEX, setBright, openApp, lnIcon, ccOpen, ccClose, plug, goSleep, wake, gameStart, gameCatch, tourRun, tourStop, showPill, stackGo, act, setSound, AU, ANIMS, get TOUR() { return TOUR; } };   /* test hook (Playwright) */
+  LN, TD, ORB, setBright, openApp, lnIcon, lnSpinTo, CCA, ccOpen, ccClose, plug, goSleep, wake, gameStart, gameCatch, tourRun, tourStop, showPill, stackGo, act, setSound, AU, ANIMS, get TOUR() { return TOUR; } };   /* test hook (Playwright) */
 after(9000, () => { if (!S.pill && !S.sleeping && S.view !== "voice" && !TOUR) { if (!S.dnd) buzz(); showPill({ kind: "", who: T().msgFrom, text: T().msgBody, act: "msg", dur: 6000, incoming: true }); } }, "msg");
 after(20000, claudeArrive, "claude");
 </script>
