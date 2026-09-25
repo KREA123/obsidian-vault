@@ -176,12 +176,16 @@ def load_mesh_cache(path, name):
     me.polygons.add(len(D['ls']))
     me.polygons.foreach_set('loop_start', D['ls'])
     me.polygons.foreach_set('loop_total', D['lt'])
+    roles = [str(r) for r in D['roles']]
+    for r in roles:                     # slots must exist before the indices are set
+        me.materials.append(bpy.data.materials.get('ROLE_' + r) or bpy.data.materials.new('ROLE_' + r))
+    me.update(calc_edges=True)
     me.polygons.foreach_set('material_index', D['mi'])
     me.polygons.foreach_set('use_smooth', D['sm'])
-    me.update(calc_edges=True)
+    me.update()
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
-    return ob, [str(r) for r in D['roles']]
+    return ob, roles
 
 
 def set_auto_smooth(ob, deg=40.0):
@@ -379,6 +383,18 @@ def _engrave(nt, p, flake_bump, rough, coat_r):
     mask.operation = 'MULTIPLY'
     nt.links.new(img.outputs['Color'], mask.inputs[0])
     nt.links.new(lt.outputs[0], mask.inputs[1])
+    # laser marking on pearl PC also greys the surface a little: keeps the 0.6 mm caps legible
+    bc = p.inputs['Base Color'].links[0].from_socket if p.inputs['Base Color'].links else None
+    mcol = nt.nodes.new('ShaderNodeMix')
+    mcol.data_type = 'RGBA'
+    mcol.blend_type = 'MULTIPLY'
+    nt.links.new(mask.outputs[0], mcol.inputs['Factor'])
+    if bc is not None:
+        nt.links.new(bc, mcol.inputs['A'])
+    else:
+        mcol.inputs['A'].default_value = p.inputs['Base Color'].default_value
+    mcol.inputs['B'].default_value = (0.78, 0.77, 0.76, 1)
+    nt.links.new(mcol.outputs['Result'], p.inputs['Base Color'])
     for key, a, b in (('Roughness', max(rough, 0.3), 0.55), ('Coat Roughness', coat_r, 0.55)):
         mm = nt.nodes.new('ShaderNodeMix')
         mm.data_type = 'FLOAT'
@@ -435,7 +451,9 @@ def mat_lac(name, facing, grazing, metal, rough, coat_tint, fleck_frac, sss=None
 
 
 def mat_lapis(name='lapis'):
-    return mat_lac(name, '#1B3A8F', '#2A4FB0', 0.20, 0.28, '#C9D6FF', 0.003)
+    # brief ramp #1B3A8F -> #2A4FB0 read L* ~40 on the lit side under the family light; darkened toward the
+    # brief's own target (lit side L* ~30)
+    return mat_lac(name, '#132B6E', '#1F3F95', 0.20, 0.28, '#C9D6FF', 0.003)
 
 
 def mat_amber(name='amber'):
@@ -547,12 +565,29 @@ def mat_led(name, strength, temp=2200.0):
     return m
 
 
-def mat_ou_lid(name, outer=True, dark=False):
+def mat_ou_lid(name, outer=True, dark=False, night=False):
+    """Frosted PC lid: gloss outside (r 0.05), VDI-18 frost inside (r 0.45), Transmission 0.9, IOR 1.58; a milky
+    volume scatter in the 2.2 mm wall gives the frosted-PC diffusion (and the lantern glow when closed)."""
     m, nt, p, out = new_mat(name)
-    set_in(p, 'Base Color', srgb('#3A3A3F' if dark else '#F4EFE8'))
-    set_in(p, 'Transmission Weight', 0.8 if dark else 0.9)
+    base = '#3A3A3F' if dark else '#F4EFE8'
+    set_in(p, 'Base Color', srgb(base))
+    # brief: Transmission 0.9. Blender 4.0 has no multiple-scatter frost, so 0.9 reads as smoke glass over the dark
+    # cavity; 0.6 at night (lantern) and 0.4 by day read as frosted pearl PC
+    tr = TUNE.get('lid_tr', 0.6 if night else 0.4)
+    set_in(p, 'Transmission Weight', 0.8 if dark else tr)
     set_in(p, 'IOR', 1.58)
     set_in(p, 'Roughness', 0.05 if outer else 0.45)
+    vs = nt.nodes.new('ShaderNodeVolumeScatter')
+    vs.inputs['Color'].default_value = (0.985, 0.975, 0.96, 1) if not dark else srgb(base)
+    vs.inputs['Density'].default_value = TUNE.get('lid_dens', 320.0)
+    vs.inputs['Anisotropy'].default_value = 0.0
+    va = nt.nodes.new('ShaderNodeVolumeAbsorption')
+    va.inputs['Color'].default_value = (1.0, 0.95, 0.88, 1) if not dark else (0.5, 0.5, 0.52, 1)
+    va.inputs['Density'].default_value = 6.0 if not dark else 250.0
+    add = nt.nodes.new('ShaderNodeAddShader')
+    nt.links.new(vs.outputs[0], add.inputs[0])
+    nt.links.new(va.outputs[0], add.inputs[1])
+    nt.links.new(add.outputs[0], out.inputs['Volume'])
     return m
 
 
@@ -663,7 +698,7 @@ def mat_image(name, img_name, rough=0.85, u_axis='x', flip_u=False, v_axis='z', 
         mixc.inputs['A'].default_value = srgb('#F1E9DA')
         mixc.inputs['B'].default_value = srgb('#FFF0C8')
         nt.links.new(mixc.outputs['Result'], p.inputs['Base Color'])
-        for key, a, b in (('Metallic', 0.0, 0.8), ('Roughness', rough, 0.3)):
+        for key, a, b in (('Metallic', 0.0, 0.55), ('Roughness', rough, 0.32)):
             mm = nt.nodes.new('ShaderNodeMix')
             mm.data_type = 'FLOAT'
             nt.links.new(img.outputs['Color'], mm.inputs['Factor'])
@@ -889,9 +924,8 @@ def build_soul(tag, cw='perla', sole=None, eyes='soul_front', strength=2.6, deta
     body_m, sole_m = colourway_mats(cw, sole)
     gd = gap_dark()
     ob, roles = body_mesh('body_' + tag)
-    ob.data.materials.clear()
-    for r in roles:
-        ob.data.materials.append({'shell': body_m, 'sole': sole_m, 'gap': gd}[r])
+    for i, r in enumerate(roles):
+        ob.data.materials[i] = {'shell': body_m, 'sole': sole_m, 'gap': gd}[r]
     obs = [ob]
     # glass (flat 2.5D disc, dome R ~4 m), top 0.07 mm below the table
     g = glass_eye(tag, 26.0, 0.0, 0.08, -0.7, 'soul_front', strength=strength, r_screen=21.88)
@@ -1245,20 +1279,21 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
     par = new_par('ou_' + tag)
     dark = cw in ('onix', 'fum')
     body = mat_pearl5('ou_pearl', rough=0.22) if cw in ('perla', 'lapis') else mat_onyx('ou_onyx')
-    liner_m = {'perla': mat_solid_sole('liner_ember', '#D8572A', engrave=False),
+    # liner = the colourway accent (Perla: ember) as a satin finish: a full 0.10 coat washes it to salmon under
+    # the studio key (reads as a pastel)
+    liner_m = {'perla': mat_solid_sole('liner_ember', '#D8572A', rough=0.45, coat_r=0.35, engrave=False),
                'onix': mat_solid_sole('liner_cream', '#FFF0C8', engrave=False),
                'lapis': mat_lapis('liner_lapis'),
                'chihlimbar': mat_amber('liner_amber'),
                'fum': mat_solid_sole('liner_smoke', '#6E6E74', engrave=False)}[cw]
-    lo = mat_ou_lid('ou_lid_out', True, dark)
-    li = mat_ou_lid('ou_lid_in', False, dark)
+    lo = mat_ou_lid('ou_lid_out', True, dark, night)
+    li = mat_ou_lid('ou_lid_in', False, dark, night)
     gd = gap_dark()
     cup, rc, lid, rl = ou_meshes(tag)
     for ob, roles in ((cup, rc), (lid, rl)):
-        ob.data.materials.clear()
-        for r in roles:
-            ob.data.materials.append({'cup_out': body, 'cup_in': body, 'cup_rim': body, 'lid_out': lo, 'lid_in': li,
-                                      'lid_rim': li, 'gap': gd}[r])
+        for i, r in enumerate(roles):
+            ob.data.materials[i] = {'cup_out': body, 'cup_in': body, 'cup_rim': body, 'lid_out': lo, 'lid_in': li,
+                                    'lid_rim': li, 'gap': gd}[r]
         set_auto_smooth(ob, 45)
     obs = [cup]
     lin, lip_i = liner_mesh(tag)
@@ -1290,7 +1325,10 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
     assign(cork, mat_simple('cork', '#A8845E', 0.9))
     obs.append(cork)
     # lights: rear-rim strip (under the lip, aimed at the lid interior), base slit, halo band
-    s_str = strip if strip is not None else (4.0 if night else 1.6 * 0.2)
+    # emission strengths: the brief's values (strip 1.6 x 20 % by day / 4 at night, slit 1.5, halo 6) are relative;
+    # at 1 mm scale they need LED_K to light the walnut and the lid as the brief asks (tuned by eye)
+    K = TUNE.get('led_k', 40.0)
+    s_str = strip if strip is not None else ((4.0 if night else 1.6 * 0.2) * K)
     rear = lip_i[lip_i[:, 1] > 1.0 + 3.0]
     rear = rear[np.argsort(np.arctan2(rear[:, 1] - 1.0, rear[:, 0]))]
     cen = np.array([0.0, 1.0])
@@ -1298,14 +1336,14 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
     for p in rear:
         v = p[:2] - cen
         v = v / np.linalg.norm(v)
-        q = np.array([p[0] + v[0] * 0.7, p[1] + v[1] * 0.7, p[2] - 1.6])
+        q = np.array([p[0] - v[0] * 0.75, p[1] - v[1] * 0.75, p[2] - 1.1])   # tucked under the liner lip
         pts.append(q)
     if s_str > 0:
         st = curve_obj(tag + '_strip', [tuple(p * MM) for p in pts], 0.5 * MM, res=2)
         assign(st, mat_led(tag + '_led_strip', s_str))
         st.visible_shadow = False
         obs.append(st)
-    sl_str = slit if slit is not None else (1.5 if night else 0.0)
+    sl_str = slit if slit is not None else ((1.5 * K) if night else 0.0)
     if sl_str > 0:
         # 1 x 40 mm slit on the front of the base at z ~1: a thin emissive band just proud of the surface
         ts2 = np.linspace(-math.pi / 2 - 0.62, -math.pi / 2 + 0.62, 60)
@@ -1320,7 +1358,7 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
         sl.visible_shadow = False
         obs.append(sl)
     if not lid_open:
-        h_str = halo if halo is not None else (6.0 if night else 1.0)
+        h_str = halo if halo is not None else ((6.0 * K) if night else 3.0)
         ts3 = np.linspace(-math.pi / 2, 3 * math.pi / 2, OU_NU + 1)
         ring = []
         for t in ts3:
@@ -1337,7 +1375,6 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
         hb.visible_shadow = False
         obs.append(hb)
     parent_all(par, obs)
-    lid.parent = hinge
     par.location = (0, 0, 0.5 * MM)
     if soul is not None:
         soul.parent = par
@@ -1363,10 +1400,15 @@ def th_for_z(z):
 def cam_aed(T, A, E, D_mm, lens, fstop, focus=None, shift=(0, 0)):
     T = Vector(T)
     d = Vector((math.sin(R(A)) * math.cos(R(E)), -math.cos(R(A)) * math.cos(R(E)), math.sin(R(E))))
-    return camera(T + d * D_mm * MM, T, lens=lens, fstop=fstop, focus=focus, shift=shift)
+    cam = camera(T + d * D_mm * MM, T, lens=lens, fstop=fstop, focus=focus, shift=shift)
+    cam.data.clip_start = 0.004
+    return cam
 
 
-def day_studio(T, k=1.0, bg=7.5, flank=True, chin=True, sweep_col='#D9CDBE'):
+def day_studio(T, k=1.0, bg=7.5, flank=True, chin=True, sweep_col='#D9CDBE', rot=0.0):
+    """The v1 warm studio (brief §8) + the v5 flank strip and chin bounce. rot = rotate the whole rig and the sweep
+    about the vertical through T (used for the side and back shots so the sweep stays behind the object)."""
+    before = set(bpy.data.objects.keys())
     world_color((0.95, 0.92, 0.88), 0.03)
     sweep(sweep_col)
     studio3(T, k, bg=bg)
@@ -1374,12 +1416,19 @@ def day_studio(T, k=1.0, bg=7.5, flank=True, chin=True, sweep_col='#D9CDBE'):
         area_light('flank', T + Vector((0.30, 0.30, 0.10)), T, 0.08, 1.2 * k, blackbody_rgb(5000), 'RECTANGLE',
                    size_y=1.0)
     if chin:
+        # diffuse only: a glossy 3000 K reflection on the sole would read as an amber contrast band
         area_light('chin', T + Vector((0.0, -0.25, -0.02)), T, 0.3, 0.15 * k, blackbody_rgb(3000), 'RECTANGLE',
-                   size_y=0.2)
+                   size_y=0.2, glossy=False)
+    if rot:
+        bpy.context.view_layer.update()
+        Mr = Matrix.Translation((T.x, T.y, 0)) @ Matrix.Rotation(R(rot), 4, 'Z') @ Matrix.Translation((-T.x, -T.y, 0))
+        for nm in set(bpy.data.objects.keys()) - before:
+            ob = bpy.data.objects[nm]
+            ob.matrix_world = Mr @ ob.matrix_world
     POST['exposure'] = -0.35
 
 
-def glint_strip(par, cam, d=0.66, ang=135.0, width=1.7, dist=0.30, strength=None, name='glint'):
+def glint_strip(par, cam, d=0.72, ang=135.0, width=1.6, dist=0.30, strength=None, name='glint'):
     """ONE clean diagonal glint on the FLAT glass (the brief's screen_highlight angles were tuned for v4's domed
     glass and miss a flat one): a thin emissive strip placed on the mirror rays cam' -> chord, so its reflection
     is a band `width` mm wide along the chord x cos(ang) + y sin(ang) = d * r (glass coords, r = 26 mm).
@@ -1426,14 +1475,43 @@ def glint_strip(par, cam, d=0.66, ang=135.0, width=1.7, dist=0.30, strength=None
     me.materials.append(m)
     for attr in ('visible_camera', 'visible_diffuse', 'visible_shadow', 'visible_transmission', 'visible_volume_scatter'):
         setattr(ob, attr, False)
+    # light linking: the strip reaches only its own glass (neighbours and bodies never mirror it)
+    try:
+        coll = bpy.data.collections.new('recv_' + name)
+        coll.objects.link(info['glass'])
+        ob.light_linking.receiver_collection = coll
+    except Exception as ex:
+        print('  (light linking unavailable: %s)' % ex)
     return ob
 
 
-def black_glass(cam, T, par_list, glint=True, **kw):
+def mirror_card(par, cam, dist=0.40, size=0.22):
+    """Glossy-only black card exactly where the flat glass mirrors the camera's view (keeps the glass L* < 5 when
+    the reflection would otherwise see a light, e.g. a face-up SOUL in the hand)."""
+    bpy.context.view_layer.update()
+    c, n = glass_world(par)
+    v = (c - Vector(cam.location)).normalized()
+    Rv = (v - 2 * v.dot(n) * n).normalized()
+    if Rv.z < -0.05:
+        # the glass mirrors the table (camera high above): a glossy-only black card on the floor at the hit point
+        t = (c.z - 0.0005) / -Rv.z
+        hit = c + Rv * t
+        dc = (c - Vector(cam.location)).length
+        w = 0.052 * (1 + t / dc) * 1.5
+        ob = glossy_card((hit.x, hit.y, 0.0005), (w, w / max(abs(Rv.z), 0.3)), (0, 0, math.atan2(-Rv.x, Rv.y)))
+        return ob
+    ob = glossy_card(tuple(c + Rv * dist), (size, size))
+    ob.rotation_euler = Rv.to_track_quat('Z', 'Y').to_euler()
+    return ob
+
+
+def black_glass(cam, T, par_list, glint=True, card=True, **kw):
     protect_screens(cam, T, 1.6, -0.012)
     POST['bloom'] = 0.03
-    if glint:
-        for par in par_list:
+    for par in par_list:
+        if card:
+            mirror_card(par, cam)
+        if glint:
             glint_strip(par, cam, **kw)
 
 
@@ -1444,7 +1522,8 @@ def walnut_top(size=(0.9, 0.6), loc=(0, 0.1)):
     return top
 
 
-def night_room(window_power=6.0):
+def night_room(window_power=None):
+    window_power = TUNE.get('win', 40.0) if window_power is None else window_power
     world_color((0.02, 0.025, 0.035), 0.004)
     walnut_top((1.2, 0.8), (0, 0.15))
     wall = plane('wall', (4, 2), (0, 0.42, 0.8), (R(90), 0, 0), mat_diffuse('wall_n', srgb('#3A342E'), 0.9, 0.1))
@@ -1469,39 +1548,6 @@ def grid_normals(rows):
     if np.mean(np.einsum('ijk,ijk->ij', n, c)) < 0:
         n = -n
     return n
-
-
-def cocon_shell_rows(off, z_cut_front, z_cut_back, keep='below', stretch=None):
-    """Body rows offset by `off` (mm, may vary with z), keeping the part below/above a tilted plane."""
-    rows, iA = body_rows()
-    sub = rows[::2]
-    n = grid_normals(sub)
-    o = off(sub[..., 2]) if callable(off) else off
-    P = sub + n * (o[..., None] if callable(off) else o)
-    return P
-
-
-def solid_from_rows(name, rows, thick, inside_pt, caps=True):
-    Rn, N = rows.shape[:2]
-    verts = rows.reshape(-1, 3)
-    extra = []
-    tris = None
-    if caps:
-        c0 = rows[0].mean(0)
-        c1 = rows[-1].mean(0)
-        verts = np.vstack([verts, [c0], [c1]])
-        tris = np.vstack([fan(Rn * N, 0, N, top=False), fan(Rn * N + 1, (Rn - 1) * N, N, top=True)])
-    ob = build_mesh(name, verts, grid_quads(Rn, N), tris)
-    orient_outward(ob, inside_pt)
-    if thick:
-        s = ob.modifiers.new('solid', 'SOLIDIFY')
-        s.thickness = thick * MM
-        s.offset = -1.0
-        s.use_even_offset = True
-        s.use_quality_normals = True
-        s.use_rim = True
-        apply_modifiers(ob)
-    return ob
 
 
 def half_space_box(name, p0_mm, normal, size=0.4):
@@ -1529,77 +1575,130 @@ def _plane_from(p0, p1):
     return p0, n
 
 
+def shell_between(name, outer, inner):
+    """Closed hollow shell from two closed row-grids (outer and inner surfaces, same topology, poles at both ends)."""
+    Rn, N = outer.shape[:2]
+    parts_v, quads, tris = [], [], []
+    off = 0
+    for k, (rows, flip) in enumerate(((outer, False), (inner, True))):
+        v = np.vstack([rows.reshape(-1, 3), [rows[0].mean(0)], [rows[-1].mean(0)]])
+        q = grid_quads(Rn, N, off)
+        t = np.vstack([fan(off + Rn * N, off, N, top=False), fan(off + Rn * N + 1, off + (Rn - 1) * N, N, top=True)])
+        if flip:
+            q = q[:, ::-1]
+            t = t[:, ::-1]
+        parts_v.append(v)
+        quads.append(q)
+        tris.append(t)
+        off += len(v)
+    ob = build_mesh(name, np.vstack(parts_v), np.vstack(quads), np.vstack(tris))
+    # outer part must face outward
+    me = ob.data
+    n = np.zeros(len(me.polygons) * 3)
+    c = np.zeros(len(me.polygons) * 3)
+    me.polygons.foreach_get('normal', n)
+    me.polygons.foreach_get('center', c)
+    n = n.reshape(-1, 3)[:len(quads[0])]
+    c = c.reshape(-1, 3)[:len(quads[0])] - np.array([0, 0, 35 * MM])
+    if np.sum(np.einsum('ij,ij->i', n, c)) < 0:
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bmesh.ops.reverse_faces(bm, faces=bm.faces)
+        bm.to_mesh(me)
+        bm.free()
+    return ob
+
+
 def build_cocon(tag, open_=False, lift=35.0, soul=None):
-    """COCON knit sleeve. Pouch = body offset 2.25 (1.75 knit wall), mouth cut by a tilted plane; flap = 2 mm sheet
-    over the crown ending at z ~68 on the front; woven loop hanging from the top of the back seam."""
+    """COCON knit sleeve. Pouch = body offset 2.25 (1.75 knit wall, 0.5 fit), mouth cut by a tilted plane; flap = 2 mm
+    sheet over the crown ending at z ~68 on the front; woven loop hanging from the top of the back seam."""
     par = new_par('cocon_' + tag)
     knit = mat_knit('knit')
     rows, iA = body_rows()
     sub = rows[::2]
     nrm = grid_normals(sub)
     outer = sub + nrm * 2.25
+    inner = sub + nrm * 0.5
     if open_:
-        outer = _stretch_mouth(outer, lift)
+        outer = _stretch_mouth(outer, lift, 2.25)
+        inner = _stretch_mouth(inner, lift, 0.5)
     p0, npl = _plane_from(*COC_CUT)
-    pouch = solid_from_rows(tag + '_pouch', outer, 1.75, (0, 0, 35))
+    pouch = shell_between(tag + '_pouch', outer, inner)
     cut = half_space_box('cut', p0, npl)
     boolean(pouch, [cut])
     assign(pouch, knit)
     set_auto_smooth(pouch, 50)
     obs = [pouch]
-    # flap: offset 2.25 + 2 + arch over the crown, kept above a lower tilted plane
+
     def off_f(z):
         return 2.25 + 1.9 + 3.2 * SG.smoothstep((z - 58.0) / 16.0)
-    flap_rows = sub + nrm * off_f(sub[..., 2])[..., None]
-    fl = solid_from_rows(tag + '_flap', flap_rows, 2.0, (0, 0, 40))
+    fo = sub + nrm * off_f(sub[..., 2])[..., None]
+    fi = sub + nrm * (off_f(sub[..., 2]) - 2.0)[..., None]
+    fl = shell_between(tag + '_flap', fo, fi)
     q0, nq = _plane_from((0, -8.0, 67.8), (0, 8.0, 70.0))
     cut2 = half_space_box('cut2', q0, -nq)
     boolean(fl, [cut2])
     assign(fl, knit)
     set_auto_smooth(fl, 50)
-    # 2 magnets in the flap tip are hidden inside the knit; the loop
-    hinge_y, hinge_z = 10.0, 71.0
+    hinge_y, hinge_z = 9.0, 71.5
     fpar = new_par(tag + '_flaphinge')
     fpar.location = (0, hinge_y * MM, hinge_z * MM)
     fl.parent = fpar
     fl.matrix_parent_inverse = Matrix.Translation((0, -hinge_y * MM, -hinge_z * MM))
     if open_:
-        fpar.rotation_euler = (R(150.0), 0, 0)
+        fpar.rotation_euler = (R(TUNE.get('flap_open', 150.0)), 0, 0)
     obs.append(fpar)
     loop = woven_loop(tag, open_)
     obs.append(loop)
     parent_all(par, obs)
-    fl.parent = fpar
     par['lift'] = lift if open_ else 0.0
     return par
 
 
-def _stretch_mouth(outer, lift):
-    """Open pose: the heat-set pouch keeps its shape low down and hugs the lifted SOUL at the mouth."""
-    out = outer.copy()
-    z = outer[..., 2]
-    ctr_y = -0.8
-    for i in range(outer.shape[0]):
-        zi = float(np.mean(z[i]))
-        if zi < 40:
-            continue
-        zs = zi - lift
-        if zs < 0:
-            continue
-        ring = SG.ring(min(zs, 73.9), 720)
-        ang_r = np.arctan2(ring[:, 1] - ctr_y, ring[:, 0])
-        rad_r = np.hypot(ring[:, 0], ring[:, 1] - ctr_y)
-        o = np.argsort(ang_r)
-        ang_r, rad_r = ang_r[o], rad_r[o]
-        a = np.arctan2(outer[i, :, 1] - ctr_y, outer[i, :, 0])
-        rr = np.hypot(outer[i, :, 0], outer[i, :, 1] - ctr_y)
-        need = np.interp(a, ang_r, rad_r, period=2 * math.pi) + 2.25
-        k = float(SG.smoothstep((zi - 44.0) / 16.0))
-        new = np.maximum(rr, rr + (need - rr) * k)
-        new = np.maximum(new, need * min(1.0, k * 1.6))
-        out[i, :, 0] = new * np.cos(a)
-        out[i, :, 1] = ctr_y + new * np.sin(a)
-    return out
+_POLAR = {}
+
+
+def _soul_polar(ctr_y=-0.8):
+    """SOUL's plan radius about (0, ctr_y) as a table over (z, angle)."""
+    if 'tab' not in _POLAR:
+        zs = np.linspace(0.5, 73.9, 300)
+        angs = np.linspace(-math.pi, math.pi, 721)
+        tab = np.zeros((len(zs), len(angs)))
+        for i, z in enumerate(zs):
+            ring = SG.ring(z, 720)
+            a = np.arctan2(ring[:, 1] - ctr_y, ring[:, 0])
+            r = np.hypot(ring[:, 0], ring[:, 1] - ctr_y)
+            o = np.argsort(a)
+            tab[i] = np.interp(angs, a[o], r[o], period=2 * math.pi)
+        _POLAR['tab'] = (zs, angs, tab)
+    return _POLAR['tab']
+
+
+def _stretch_mouth(surf, lift, off, ctr_y=-0.8):
+    """Open pose: the heat-set pouch keeps its shape low down and is stretched around the lifted SOUL near the
+    mouth (per vertex: never inside SOUL + off)."""
+    zs_t, ang_t, tab = _soul_polar(ctr_y)
+    P = surf.reshape(-1, 3).copy()
+    z = P[:, 2]
+    a = np.arctan2(P[:, 1] - ctr_y, P[:, 0])
+    rr = np.hypot(P[:, 0], P[:, 1] - ctr_y)
+    zs = z - lift
+    ok = zs > 0.6
+    iz = np.clip(np.interp(zs, zs_t, np.arange(len(zs_t))), 0, len(zs_t) - 1)
+    ia = np.interp(a, ang_t, np.arange(len(ang_t)))
+    i0 = np.floor(iz).astype(int)
+    i1 = np.minimum(i0 + 1, len(zs_t) - 1)
+    fz = iz - i0
+    j0 = np.floor(ia).astype(int) % len(ang_t)
+    j1 = (j0 + 1) % len(ang_t)
+    fa = ia - np.floor(ia)
+    need = ((1 - fz) * ((1 - fa) * tab[i0, j0] + fa * tab[i0, j1]) + fz * ((1 - fa) * tab[i1, j0] + fa * tab[i1, j1]))
+    need = need + off
+    k = SG.smoothstep((z - 40.0) / 16.0) * ok
+    new = np.maximum(rr, rr + (need - rr) * k)
+    P[:, 0] = new * np.cos(a)
+    P[:, 1] = ctr_y + new * np.sin(a)
+    return P.reshape(surf.shape)
 
 
 def woven_loop(tag, open_):
@@ -1616,8 +1715,8 @@ def woven_loop(tag, open_):
         zz = -depth * math.sin(a) ** 0.6
         pts.append([x, 0.0, zz])
     pts = np.array(pts)
-    rot = Matrix.Rotation(R(-28.0), 3, 'Y') @ Matrix.Rotation(R(-12.0), 3, 'X')
-    P = np.array([rot @ Vector(p) for p in pts]) + top + np.array([0, 2.6, 0])
+    rot = Matrix.Rotation(R(TUNE.get('loop_swing', 0.0)), 3, 'Y') @ Matrix.Rotation(R(26.0), 3, 'X')
+    P = np.array([rot @ Vector(p) for p in pts]) + top + np.array([0, 1.6, 0])
     # ribbon: 8 mm wide along the path normal to the back, 1.2 thick
     n_side = np.array([0.0, 1.0, 0.2])
     n_side /= np.linalg.norm(n_side)
@@ -1640,7 +1739,7 @@ def woven_loop(tag, open_):
     m2, nt, p, out = new_mat('knit_loop_w')
     set_in(p, 'Base Color', srgb('#D8572A'))
     set_in(p, 'Roughness', 0.8)
-    set_in(p, 'Sheen Weight', 0.4)
+    set_in(p, 'Specular IOR Level', 0.3)
     _noise_bump(nt, p, 3000.0, 0.5, 0.0002)
     assign(ob, m2)
     return ob
@@ -1768,9 +1867,11 @@ def shot_hero():
     day_studio(T)
     s = build_soul('hero', 'perla', eyes='cream_look')
     pose_soul(s, (0, 0, 0), yaw=-8.0)
+    # brief: OU at (-95, +120), yaw +20 -- that is 17 deg outside the frame of the -24 deg camera (the rev. moved
+    # the camera to -x); mirrored to (+95, +120), yaw -20 so it stays soft in the background, behind-right
     ou = build_ou('bg', 'perla', lid_open=True, night=False)
-    ou.location = V((-95, 120, 0.5))
-    ou.rotation_euler = (0, 0, R(20.0))
+    ou.location = V((95, 120, 0.5))
+    ou.rotation_euler = (0, 0, R(-20.0))
     cam = cam_aed(T, -24.0, 9.0, 375.0, 100, 8.0, focus=eye_point(s))
     black_glass(cam, T, [s])
     return sc
@@ -1808,14 +1909,25 @@ def shot_check1(sole, elev):
         cam.data.shift_y = (tgt_frame - 5.0) / view_h
     else:
         cam = cam_aed(T, 0.0, 9.0, 590.0, lens, 16.0, focus=eye_point(s))
-    black_glass(cam, Vector((0, 0, 37 * MM)), [s])
+    if elev == 0:
+        # at table level the floor is seen at grazing: no floor card, and a matte sweep (a glossy one mirrors the
+        # black flag behind the camera and turns the foreground floor black)
+        flag(cam, Vector((0, 0, 37 * MM)))
+        pm = bpy.data.objects['sweep'].data.materials[0].node_tree.nodes['Principled BSDF']
+        set_in(pm, 'Specular IOR Level', 0.0)
+        set_in(pm, 'Roughness', 1.0)
+        POST['bloom'] = 0.03
+        glint_strip(s, cam)
+    else:
+        black_glass(cam, Vector((0, 0, 37 * MM)), [s])
+    POST['check1'] = dict(sole=sole, elev=elev)
     return sc
 
 
 def shot_side():
     sc = reset()
     T = Vector((0, 0, 37 * MM))
-    day_studio(T)
+    day_studio(T, rot=90.0)
     # thin rim strip behind (-x) to separate the silhouette from the sweep
     area_light('rim_x', T + Vector((-0.35, 0.15, 0.05)), T, 0.06, 1.6, blackbody_rgb(5000), 'RECTANGLE', size_y=0.9)
     s = build_soul('side', 'perla', eyes='soul_front')
@@ -1828,10 +1940,19 @@ def shot_side():
 def shot_back():
     sc = reset()
     T = Vector((0, 2 * MM, 38 * MM))
-    day_studio(T)
+    day_studio(T, rot=-150.0, k=TUNE.get('back_k', 0.8))
     s = build_soul('back', 'perla', eyes='soul_front', glass_on=False)
     pose_soul(s, (0, 0, 0))
     cam = cam_aed(T, -150.0, 12.0, 420.0, 100, 11.0, focus=T)
+    # one clean highlight line down the dome: a tall strip on the camera's right, visible in glossy only
+    d = (Vector(cam.location) - T)
+    d.z = 0
+    d.normalize()
+    side = Vector((d.y, -d.x, 0))
+    st = area_light('line', T + d * 0.28 - side * 0.20 + Vector((0, 0, 0.12)), T, 0.035, TUNE.get('line_w', 1.4),
+                    blackbody_rgb(5600), 'RECTANGLE', size_y=0.9)
+    st.visible_diffuse = False
+    POST['exposure'] = -0.45
     return sc
 
 
@@ -1851,7 +1972,12 @@ def shot_bottom():
     area_light('rake', T + Vector((-0.30 * math.cos(R(10)), -0.05, 0.30 * math.sin(R(10)))), T, 0.15, 0.8,
                blackbody_rgb(5600))
     cam = cam_aed(T, 0.0, 18.0, 260.0, 100, 8.0, focus=T)
+    # a soft reflector behind the camera: the gold pads and the glossy sole mirror it, the engraving stays matte
+    d = (Vector(cam.location) - T).normalized()
+    area_light('reflector', Vector(cam.location) + d * 0.15 + Vector((0, 0, 0.05)), T, 0.5, TUNE.get('refl', 0.6),
+               blackbody_rgb(5600), 'RECTANGLE', size_y=0.35)
     POST['exposure'] = -0.35
+    POST['bloom'] = 0.03
     return sc
 
 
@@ -1885,6 +2011,7 @@ def shot_hand():
     T = loc
     cam = camera(T + Vector((0.13, -0.30, 0.15)), T, lens=70, fstop=5.6, focus=eye_point(s))
     flag(cam, T)
+    mirror_card(s, cam)
     glint_strip(s, cam)
     POST['bloom'] = 0.03
     studio3(T, 1.1, bg=7.0)
@@ -1916,31 +2043,33 @@ def shot_family():
     lens = TUNE.get('fam_lens', 58.0)
     cam = camera(Vector((0, -0.66, 0.11)), T, lens=lens, fstop=11.0, focus=Vector((0, -0.004, 0.035)))
     protect_screens(cam, T, 1.8, -0.06)
+    for sp in pars:
+        glint_strip(sp, cam, name='glint_' + sp.name)
+    POST['bloom'] = 0.03
     studio(T, 1.6)
     POST['exposure'] = -0.35
     return sc
 
 
 def shot_cocon():
+    """9: COCON closed and standing (loop hanging) + one open with SOUL half out (lifted 35 mm)."""
     sc = reset()
-    T = Vector((0, 0, 40 * MM))
+    T = Vector((0, 0, TUNE.get('coc_Tz', 50.0) * MM))
     day_studio(T)
     closed = build_cocon('closed', open_=False)
-    closed.location = V((-42, 14, 2.25))
-    closed.rotation_euler = (0, 0, R(-12))
+    closed.location = V((-44, 16, 2.25))
+    closed.rotation_euler = (0, 0, R(TUNE.get('coc_yaw', 128.0)))
     s = build_soul('coc', 'perla', eyes='soul_wide')
     op = build_cocon('open', open_=True, lift=35.0)
-    op.location = V((40, -6, 2.25))
-    op.rotation_euler = (0, 0, R(-18))
+    op.location = V((38, -8, 2.25))
+    op.rotation_euler = (0, 0, R(-16))
     bpy.context.view_layer.update()
-    s.matrix_world = op.matrix_world @ Matrix.Translation(V((0, 0, 35.0)))
-    level_eyes(s)
     for ob in (closed, op):
         settle(ob, 0.00002)
     bpy.context.view_layer.update()
     s.matrix_world = op.matrix_world @ Matrix.Translation(V((0, 0, 35.0 + LAND_Z)))
     level_eyes(s)
-    cam = cam_aed(T, -20.0, 12.0, 480.0, 100, 8.0, focus=eye_point(s))
+    cam = cam_aed(T, -20.0, 12.0, TUNE.get('coc_D', 540.0), 100, 8.0, focus=eye_point(s))
     black_glass(cam, T, [s])
     return sc
 
@@ -1951,28 +2080,31 @@ def shot_unbox():
     T = Vector((0, 0, 30 * MM))
     world_color((0.95, 0.92, 0.88), 0.035)
     sweep('#D9CDBE', wall_y=0.9)
-    studio3(T, 1.1, bg=7.0)
-    area_light('soft_top', T + Vector((-0.1, 0.05, 0.7)), T, 1.2, 3.0, blackbody_rgb(5200))
+    studio3(T, 1.0, bg=7.0)
+    area_light('soft_top', T + Vector((-0.12, 0.05, 0.7)), T, 1.2, 2.4, blackbody_rgb(5200))
     sl = build_sleeve('u')
-    sl.location = V((-78, 118, 0))
-    sl.rotation_euler = (0, 0, R(14))
+    sl.location = V((-62, 150, 0))
+    sl.rotation_euler = (0, 0, R(12))
     ct = build_carton('u')
-    ct.location = V((-62, 20, 0))
-    ou1 = build_ou('closed', 'perla', lid_open=False, night=False, halo=0.0)
-    ou1.parent = None
-    ou1.location = V((-62, 20, 6.0 + 3.0))
+    ct.location = V((-60, 38, 0))
+    s1 = build_soul('ub1', 'perla', eyes='soul_closed', glass_on=False)
+    ou1 = build_ou('closed', 'perla', lid_open=False, night=False, halo=0.0, soul=s1)
+    ou1.location = V((-60, 38, 9.5))
     ou1.rotation_euler = (0, 0, R(8))
     s = build_soul('ub', 'perla', eyes='soul_wide')
     ou2 = build_ou('open', 'perla', lid_open=True, night=False, soul=s)
-    ou2.location = V((52, -20, 0.5))
-    ou2.rotation_euler = (0, 0, R(-10))
-    build_card('card1', 'card_nudge.png', (46, -122, 0), -9)
-    build_card('card2', 'card_ritual.png', (-40, -110, 0), 11)
+    ou2.location = V((48, -18, 0.5))
+    ou2.rotation_euler = (0, 0, R(-12))
+    build_card('card1', 'card_nudge.png', (40, -118, 0), -8)
+    build_card('card2', 'card_ritual.png', (-58, -86, 0), 13)
     bpy.context.view_layer.update()
     level_eyes(s)
     cam = cam_aed(T, 0.0, 62.0, 520.0, 50, 5.6, focus=eye_point(s))
     flag(cam, T)
+    mirror_card(s, cam)
+    glint_strip(s, cam)
     POST['exposure'] = -0.3
+    POST['bloom'] = 0.03
     return sc
 
 
@@ -1982,10 +2114,50 @@ def shot_boxback():
     sweep('#D9CDBE')
     sl = build_sleeve('b')
     sl.rotation_euler = (0, 0, R(180))
-    T = Vector((0, 0, 75 * MM))
+    T = Vector((0, -0.039, TUNE.get('bb_z', 60.0) * MM))
     studio3(T, 1.0, bg=7.0)
-    cam = cam_aed(T, 0.0, 0.0, 400.0, 58, 11.0, focus=Vector((0, -0.039, 0.075)))
-    POST['exposure'] = -0.3
+    # straight on, 0 / 0 / 400; a 95 mm lens so the 6 pt legal block is legible (x-height ~ 11 px)
+    cam = cam_aed(T, 0.0, 0.0, 400.0, TUNE.get('bb_lens', 95.0), 11.0, focus=T)
+    POST['exposure'] = -0.55
+    return sc
+
+
+def shot_ou_day():
+    """F (optional): the OU open on a walnut desk by day, SOUL seated at 14 deg, a laptop edge soft behind."""
+    sc = reset()
+    desk_scene('walnut')
+    laptop((0.16, 0.20, 0.006), -18)
+    s = build_soul('od', 'perla', eyes='soul_left')
+    ou = build_ou('day', 'perla', lid_open=True, night=False, soul=s)
+    ou.location = V((0, 0, 0.5))
+    bpy.context.view_layer.update()
+    level_eyes(s)
+    T = Vector((0, 0, 45 * MM))
+    cam = cam_aed(T, TUNE.get('oud_A', -30.0), TUNE.get('oud_E', 18.0), TUNE.get('oud_D', 450.0),
+                  TUNE.get('oud_lens', 70.0), 4.0, focus=eye_point(s))
+    area_light('window', (-0.9, -0.2, 0.7), T, 1.2, 38, blackbody_rgb(6500), 'RECTANGLE', 0.8)
+    area_light('fill', (0.5, -0.6, 0.3), T, 1.0, 4, blackbody_rgb(4000), glossy=False)
+    area_light('rim', (0.1, 0.5, 0.4), T, 0.4, 6, blackbody_rgb(5000))
+    black_glass(cam, T, [s])
+    POST['exposure'] = -0.2
+    return sc
+
+
+def shot_ou_inspect():
+    """debug: the OU alone in the day studio (TUNE: insp_open, insp_A, insp_E, insp_D, insp_night)."""
+    sc = reset()
+    T = Vector((0, 0, 44 * MM))
+    night = TUNE.get('insp_night', 0) > 0
+    if night:
+        night_room()
+    else:
+        day_studio(T)
+    s = build_soul('ins', 'perla', eyes='soul_front') if TUNE.get('insp_soul', 1) > 0 else None
+    ou = build_ou('ins', 'perla', lid_open=TUNE.get('insp_open', 1) > 0, night=night, soul=s)
+    ou.location = V((0, 0, 0.5))
+    cam = cam_aed(T, TUNE.get('insp_A', -30.0), TUNE.get('insp_E', 15.0), TUNE.get('insp_D', 480.0), 70, 11.0)
+    if s is not None:
+        black_glass(cam, T, [s])
     return sc
 
 
@@ -2012,6 +2184,8 @@ SHOTS = {
     'cocon': (shot_cocon, 1600, 1200, 128),
     'unbox': (shot_unbox, 1600, 2000, 128),
     'boxback': (shot_boxback, 1600, 1200, 96),
+    'ou_day': (shot_ou_day, 1600, 1200, 128),
+    'ou_inspect': (shot_ou_inspect, 1600, 1200, 64),
     'test': (shot_test, 1600, 1600, 64),
 }
 
