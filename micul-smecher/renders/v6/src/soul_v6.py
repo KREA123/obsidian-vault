@@ -40,6 +40,8 @@ ALU = {
 }
 CW_ALIAS = {'perla': 'silver', 'onix': 'graphite', 'lapis': 'midnight', 'chihlimbar': 'ember', 'fum': 'champagne'}
 _CHAMF = {}
+_SOLE_MAT = {}
+TEX6 = os.path.join(_V6, 'tex')
 
 
 def _bead_blast(nt, p, scale=None, strength=None):
@@ -144,8 +146,13 @@ def mat_chamfer(name, cw):
 
 def mat_sole_poly(name, cw):
     """Matte tone-matched polymer (PC/ABS, VDI-27 texture): the antenna window. Laser marking as in v5."""
-    m = mat_solid_sole(name, ALU[cw]['sole'], rough=TUNE.get('sole_rough', 0.58), coat_r=0.5, engrave=True,
-                       coat_w=0.0, spec=0.42)
+    global TEX
+    t5, TEX = TEX, TEX6                                 # the v6 marking layout (tex_v6.py)
+    try:
+        m = mat_solid_sole(name, ALU[cw]['sole'], rough=TUNE.get('sole_rough', 0.58), coat_r=0.5, engrave=True,
+                           coat_w=0.0, spec=0.42)
+    finally:
+        TEX = t5
     return m
 
 
@@ -154,6 +161,7 @@ def colourway_mats(cw, sole=None):
     cw = CW_ALIAS.get(cw.lower(), cw.lower())
     body = mat_alu('alu_' + cw, cw)
     sm = mat_sole_poly('sole_poly_' + cw, cw)
+    _SOLE_MAT['cur'] = sm
     _CHAMF['cur'] = mat_chamfer('chamfer_' + cw, cw)
     return body, sm
 
@@ -173,11 +181,58 @@ def seat_cutter6(name):
     return ob
 
 
+# flat stable base (lead's decision, 2026-09-25): no rocking. The HOPA shell is cut flat at Z_CUT; a matte polymer
+# base plate closes it (the antenna window) and a slightly inset 30 x 14 oval foot, FOOT_H tall, is the only contact.
+Z_CUT = 3.0          # mm, in the v5 body frame (the section there is ~33 x 25 mm)
+FOOT_H = 1.2         # foot height (the body therefore stands 1.8 mm lower than v5: 63 x 72.2 x 27 mm)
+FOOT_A, FOOT_B, FOOT_P = 15.0, 7.0, 2.4      # foot semi-axes (30 x 14) and superellipse exponent
+Z_FOOT = Z_CUT - FOOT_H
+
+
+def _truncate(ob, roles):
+    """Cut the body flat at Z_CUT (bisect + fill). Faces of the old rocker sole above the cut become aluminium;
+    the new cap is the polymer base plate (role 'sole')."""
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+    res = bmesh.ops.bisect_plane(bm, geom=geom, plane_co=(0, 0, Z_CUT * MM), plane_no=(0, 0, 1), clear_inner=True)
+    cut_edges = [e for e in res['geom_cut'] if isinstance(e, bmesh.types.BMEdge)]
+    i_shell, i_sole = roles.index('shell'), roles.index('sole')
+    for f in bm.faces:
+        if f.material_index == i_sole:
+            f.material_index = i_shell
+    new = bmesh.ops.contextual_create(bm, geom=cut_edges)
+    for f in new['faces']:
+        f.material_index = i_sole
+        f.smooth = False
+        if f.normal.z > 0:
+            f.normal_flip()
+    bm.to_mesh(ob.data)
+    bm.free()
+    ob.data.update()
+
+
+def _sharp_cap(ob):
+    """Split the normals at the cap outline (the cache does not keep sharp flags)."""
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    for e in bm.edges:
+        if len(e.link_faces) == 2:
+            a, b = e.link_faces
+            if (abs(a.normal.z) > 0.999) != (abs(b.normal.z) > 0.999) and \
+                    abs(e.verts[0].co.z - Z_CUT * MM) < 1e-6 and abs(e.verts[1].co.z - Z_CUT * MM) < 1e-6:
+                e.smooth = False
+    bm.to_mesh(ob.data)
+    bm.free()
+
+
 def body_mesh(name):
-    """Closed SOUL body with the chamfered glass seat, the fine speaker slot and the mic pinholes cut (cached).
-    Material roles: shell, sole, gap, chamfer. The v5 build_soul() only knows shell/sole/gap, so the chamfer is
-    reported to it as 'gap' and re-assigned afterwards (build_soul below)."""
-    path = os.path.join(CACHE6, 'soul_body_v6_%d_%d.npz' % (NU_BODY, N_SHELL))
+    """Closed SOUL body: chamfered glass seat, fine speaker slot, mic pinholes, cut flat at Z_CUT (cached).
+    Material roles: shell, sole (= the flat base plate), gap, chamfer. The v5 build_soul() only knows
+    shell/sole/gap, so the chamfer is reported to it as 'gap' and re-assigned afterwards (build_soul below)."""
+    path = os.path.join(CACHE6, 'soul_body_v6f_%d_%d_%g.npz' % (NU_BODY, N_SHELL, Z_CUT))
     if os.path.exists(path):
         ob, roles = load_mesh_cache(path, name)
     else:
@@ -195,12 +250,101 @@ def body_mesh(name):
             assign(c, gap_m)
         boolean(ob, cutters)
         roles = [m.name.replace('ROLE_', '').split('.')[0] for m in ob.data.materials]
+        _truncate(ob, roles)
         save_mesh_cache(path, ob, roles)
         print('  v6 body mesh built + booleans %.1fs, %d faces, roles %s' % (time.time() - t0, len(ob.data.polygons),
                                                                            roles))
+    _sharp_cap(ob)
     set_auto_smooth(ob, 35.0)
     _GEO['roles6'] = list(roles)
     return ob, [('gap' if r == 'chamfer' else r) for r in roles]
+
+
+def _sel(a, b, p, n):
+    t = np.linspace(0, 2 * math.pi, n, endpoint=False)
+    c, s = np.cos(t), np.sin(t)
+    return np.stack([a * np.sign(c) * np.abs(c) ** (2 / p), b * np.sign(s) * np.abs(s) ** (2 / p)], 1)
+
+
+def foot_mesh(tag, n=192):
+    """The 30 x 14 oval foot, FOOT_H tall, R0.3 lower edge, with the elliptical opening for the contact coin."""
+    rows = []
+    for a in np.linspace(0, math.pi / 2, 6):           # R0.3 round from the bottom face up the wall
+        k = 0.3 * (1 - math.sin(a))
+        z = Z_FOOT + 0.3 * (1 - math.cos(a))
+        o = _sel(FOOT_A - k, FOOT_B - k, FOOT_P, n)
+        rows.append(np.column_stack([o, np.full(n, z)]))
+    o = _sel(FOOT_A, FOOT_B, FOOT_P, n)
+    rows.append(np.column_stack([o, np.full(n, Z_CUT + 0.05)]))
+    rows = rows[::-1]                                  # top -> bottom (outer wall)
+    t = np.linspace(0, 2 * math.pi, n, endpoint=False)
+    hole = np.stack([6.8 * np.cos(t), 6.25 * np.sin(t)], 1)
+    rows.append(np.column_stack([hole, np.full(n, Z_FOOT)]))
+    rows.append(np.column_stack([hole, np.full(n, Z_CUT + 0.05)]))
+    rows.append(rows[0].copy())                        # close the top annulus back onto the outer rim
+    Rn = len(rows)
+    verts = np.vstack(rows)
+    quads = grid_quads(Rn, n)
+    ob = build_mesh(tag + '_foot', verts[: (Rn - 1) * n], None)
+    # rebuild with the last row welded to the first
+    quads = quads % ((Rn - 1) * n)
+    bpy.data.objects.remove(ob)
+    ob = build_mesh(tag + '_foot', verts[: (Rn - 1) * n], quads)
+    orient_outward(ob, (FOOT_A * 0.7, 0, (Z_FOOT + Z_CUT) / 2))
+    set_auto_smooth(ob, 50.0)
+    return ob
+
+
+def bottom_details(tag):
+    """v6 underside: the polymer foot, the FR4 coin with the 5 gold contacts (centre pad + 4 arc pads) flush in the
+    foot inside the TPU ring, two Torx T5 heads on the foot, and a dark parting line around the base plate."""
+    obs = []
+    foot = foot_mesh(tag)
+    assign(foot, _SOLE_MAT['cur'])
+    obs.append(foot)
+    dz = Z_FOOT + 0.16
+    ea, eb = 6.0, 5.45
+    pads = [circle(0.9, 48)] + [arc_pad(4.0, 1.2, R(a), R(60)) for a in (0, 90, 180, 270)]
+    coin = extrude_loops(tag + '_coin', [ellipse(ea, eb, 160)] + pads, -0.16 + dz, 1.0 + dz)
+    assign(coin, mat_simple('fr4', '#121212', 0.55, spec=0.4))
+    obs.append(coin)
+    for i, pl in enumerate(pads):
+        pd = extrude_loops(tag + '_pad%d' % i, [pl], -0.012 + dz, 0.6 + dz)
+        assign(pd, mat_simple('gold', '#E3C07A', 0.18, metal=1.0))
+        obs.append(pd)
+    ring = extrude_loops(tag + '_tpu', [ellipse(6.8, 6.25, 160), ellipse(6.0, 5.45, 160)], Z_FOOT + 0.02, Z_FOOT + 0.5)
+    assign(ring, mat_simple('tpu_clear', '#F2F2F2', 0.3, trans=0.9, ior=1.5))
+    obs.append(ring)
+    for sx in (-1, 1):
+        p = np.array([sx * 11.2, 0.0, Z_FOOT])
+        head = revolve(tag + '_torx%d' % sx, [(0, 0.0), (1.22, 0.0), (1.3, 0.07), (1.3, 0.6), (0, 0.6)], seg=48)
+        head.matrix_basis = Matrix.Translation(V(p + np.array([0, 0, -0.005])))
+        assign(head, mat_simple('screw', '#BDB8B0', 0.30, metal=1.0))
+        obs.append(head)
+        st = extrude_loops(tag + '_torxs%d' % sx, [torx(0.72, 0.5)], -0.03, 0.0)
+        st.matrix_basis = Matrix.Translation(V(p + np.array([0, 0, 0.02])))
+        assign(st, gap_dark())
+        obs.append(st)
+    # parting line between the aluminium shell and the polymer base plate: the cap outline, 0.35 mm inside
+    import bmesh  # noqa: F401
+    body = bpy.data.objects.get('body_' + tag)
+    if body is not None:
+        me = body.data
+        co = np.array([(v.co.x / MM, v.co.y / MM, v.co.z / MM) for v in me.vertices])
+        on = co[np.abs(co[:, 2] - Z_CUT) < 1e-3]
+        if len(on) > 16:
+            ang = np.arctan2(on[:, 1], on[:, 0])
+            on = on[np.argsort(ang)]
+            cen = on[:, :2].mean(0)
+            ctr = on.copy()
+            d = on[:, :2] - cen
+            ln = np.linalg.norm(d, axis=1, keepdims=True)
+            ctr[:, :2] = cen + d * (1 - 0.35 / ln)
+            ctr[:, 2] = Z_CUT - 0.02
+            gl = curve_obj(tag + '_baseline', [tuple(p * MM) for p in ctr[::2]], 0.07 * MM, closed=True, res=2)
+            assign(gl, gap_dark())
+            obs.append(gl)
+    return obs
 
 
 _build_soul5 = build_soul
@@ -210,6 +354,9 @@ def build_soul(tag, cw='silver', sole=None, eyes='soul_front', strength=2.6, det
     cw6 = CW_ALIAS.get(cw.lower(), cw.lower())
     par = _build_soul5(tag, cw6, sole, eyes, strength, details, glass_on)
     ob = SOULS[par.name]['body']
+    sp = bpy.data.objects.get(tag + '_split')          # v5's sole split groove: there is no rocker sole any more
+    if sp is not None:
+        bpy.data.objects.remove(sp)
     for i, r in enumerate(_GEO['roles6']):
         if r == 'chamfer':
             ob.data.materials[i] = _CHAMF['cur']
