@@ -14,6 +14,7 @@ Fondatorul a ales **mărimea M** (ecran rotund IPS de 2,8″, 480×480, Ø activ
 | `soul_v8_desk.png` | Pe un birou de stejar, lângă un telefon generic (71,5 × 147 × 7,8 mm, fără marcă) și o cană (Ø82 × 95 mm) |
 | `soul_v8_typing.png` | Pe birou, cu tastatura SoulOS pe ecran (captura în engleză `os/screenshots/soulos3-EN-keyboard-hello-1440.png`, decupată la cercul ecranului) |
 | `soul_v8_ou_night.png` | Noaptea, în capsula OU scalată proporțional, cu ochi chihlimbar |
+| `soul_v8_alive.gif` + `.mp4` (720×720, 5 s) | SOUL stă nemișcat și doar ochii clipesc și privesc stânga-dreapta, în buclă. Cadrul e cel din hero, ca în v6 |
 
 ## Ce s-a păstrat din v6 (identic)
 - **Silueta din față și proporțiile.** Corpul v6 e scalat **uniform** în lățime și înălțime, cu k = 90 / 63 = 1,4286:
@@ -42,6 +43,7 @@ v7 turtise toată adâncimea cu 0,80, iar asta aplatiza fața bombată. În v8, 
 ## Observații oneste
 - În `hero`, `family`, `side` și `ou_night`, tot cadrul v6 e mărit uniform: camera, luminile, fundalul și OU. De aceea imaginile arată ca în v6. Singurul indiciu de mărime e profunzimea de câmp, puțin mai mare, pentru că diafragma nu se scalează. Scara se vede în `hand`, `desk` și `typing`.
 - Cercul imaginii are Ø62,5 mm, ca să păstreze raportul v6. Panoul real de 2,8″ poate afișa până la ~71 mm. UI-ul poate folosi și marginea, iar când e negru nu se vede nicio diferență.
+- Toarta cănii din `desk` (recuzita din v7) nu atinge vizibil corpul cănii. E un detaliu de recuzită, nu de SOUL.
 - În `hand`, SOUL M acoperă toată palma, iar degetele rămân în spatele lui. Nu mai e un obiect „de buzunar”, ci o piatră mare, de mărimea unui telefon.
 - În `typing`, tastele au ~5,8 mm la scara randării, sau ~6,6 mm dacă UI-ul folosește tot Ø71. Se tastează confortabil cu SOUL pe masă.
 
