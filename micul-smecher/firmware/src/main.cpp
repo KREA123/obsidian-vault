@@ -1,4 +1,5 @@
-// Micul Șmecher — firmware v0 for the Waveshare round AMOLED dev boards.
+// Micul Șmecher — firmware v0 for the Waveshare round dev boards: the
+// AMOLED-1.43 / 1.75 (size S) and the 2.8" IPS LCD-2.8C (size M).
 //
 // Hardware in, Events out: touch + IMU + clock + the Claude desktop link
 // feed the portable "soul" (lib/Suflet); the Brain returns one Face per
@@ -8,7 +9,8 @@
 // SoulOS v1 hook: a small Shell sees every touch first. A long press on the
 // face opens a note field (the round keyboard); serial 'A' opens the Rim-Dial
 // time picker to set an alarm; BOOT (GPIO0) goes back. Alarms are kept in
-// NVS and ring through the Brain (no speaker/haptic on the dev boards yet).
+// NVS and ring through the Brain, plus a beep pattern on the 2.8C's buzzer
+// (or an optional I2S amp); a touch or BOOT silences it.
 //
 // Serial (115200) commands, for filming and debugging — type '?' for help.
 #include <Arduino.h>
@@ -19,15 +21,21 @@
 #include <Wire.h>
 #include <esp_mac.h>
 
+#include "AlarmTone.h"
 #include "Alarms.h"
 #include "Brain.h"
 #include "ClaudeLink.h"
 #include "Face.h"
+#include "Geometry.h"
 #include "Gestures.h"
 #include "Personality.h"
 #include "Shell.h"
+#include "audio.h"
 #include "ble_link.h"
 #include "board.h"
+#if defined(SUFLET_BOARD_LCD28)
+#include "board_lcd28.h"
+#endif
 
 #if TOUCH_CST9217
 #include <touch/TouchDrvCST92xx.h>
@@ -37,8 +45,17 @@ using namespace suflet;
 
 // ------------------------------------------------------------------ state --
 
+// The one description of this panel every screen is laid out against.
+static const DisplayGeometry kGeom = DISPLAY_GEOMETRY;
+static_assert(LCD_W == DISPLAY_GEOMETRY.w && LCD_H == DISPLAY_GEOMETRY.h, "board.h size vs geometry");
+
+#if LCD_IS_RGB
+static Arduino_GFX* panel = nullptr;  // RGB panel: the framebuffer is scanned out continuously
+static float backlightNow = 0;        // 0..1, eased toward the target every frame
+#else
 static Arduino_DataBus* bus = nullptr;
 static Arduino_OLED* panel = nullptr;
+#endif
 static Arduino_Canvas* gcanvas = nullptr;  // owns the framebuffer, draws text
 static Canvas* cv = nullptr;               // our SDF renderer on the same buffer
 static uint16_t* pushBuf = nullptr;
@@ -63,6 +80,7 @@ static ClaudeLink claude;
 static Inputs in;
 static Alarms alarms;
 static Shell shell(&alarms);
+static AlarmTone alarmTone;
 static int shownAlarm = -1;
 static bool bootWasDown = true;  // wait for the first release after power-on
 static uint32_t bootDownMs = 0;
@@ -124,7 +142,11 @@ static void readBattery(int& pct, int& mv, bool& usb) {
   if (i2cRead(PMU_ADDR, 0x00, &st, 1)) usb = st & 0x20;     // VBUS good
 #elif BAT_ADC_PIN >= 0
   mv = analogReadMilliVolts(BAT_ADC_PIN) * 3;  // 200k/100k divider
-  usb = mv > 4500;                             // measures VCC: ~4.7 V on USB
+#if BAT_USB_SENSE
+  usb = mv > 4500;  // measures VCC: ~4.7 V on USB
+#endif
+  // TODO(lcd28): on the 2.8C the divider sits on the cell behind the
+  // ETA6098 charger, so while charging this reads the charge voltage.
   if (!usb) pct = constrain(map(mv, 3300, 4150, 0, 100), 0, 100);
 #endif
 }
@@ -144,6 +166,8 @@ static bool readTouch(float& x, float& y) {
   if (tp.getPointCount() == 0) return false;
   x = tp.getPoint(0).x;
   y = tp.getPoint(0).y;
+#elif TOUCH_GT911
+  if (!lcd28::touchRead(x, y)) return false;
 #endif
   if (TOUCH_MIRROR_X) x = LCD_W - 1 - x;
   if (TOUCH_MIRROR_Y) y = LCD_H - 1 - y;
@@ -156,13 +180,48 @@ static void touchInit() {
 #elif TOUCH_CST9217
   touchDrv.setPins(TOUCH_RST, TOUCH_INT);
   touchOk = touchDrv.begin(Wire, TOUCH_ADDR, I2C_SDA, I2C_SCL);
+#elif TOUCH_GT911
+  touchOk = lcd28::touchInit();
 #endif
   Serial.printf("[touch] %s\n", touchOk ? "ok" : "NOT FOUND");
 }
 
 // --------------------------------------------------------------- display ---
 
+// Panel brightness 0..255 and power. AMOLED: the controller's brightness
+// register (black pixels are off anyway). IPS: the backlight is the only
+// way to get black, so "off" is backlight 0.
+[[maybe_unused]] static void panelBrightness(uint8_t b) {
+#if LCD_IS_RGB
+  lcd28::backlight(b / 255.0f);
+#else
+  panel->setBrightness(b);
+#endif
+}
+
+static void panelPower(bool on) {
+#if LCD_IS_RGB
+  if (!on) {
+    backlightNow = 0;
+    lcd28::backlight(0);
+  }  // on: the backlight fades in from renderFrame
+#else
+  if (on) panel->displayOn();
+  else panel->displayOff();
+#endif
+}
+
 static void displayInit() {
+#if LCD_IS_RGB
+  lcd28::backlightInit();  // dark until the first frame is in the framebuffer
+  panel = lcd28::displayCreate();
+  // Our Canvas renders into its own PSRAM buffer; pushRect copies the
+  // changed part into the panel's scanned-out framebuffer (no tearing from
+  // the clear-then-draw of a frame, the panel never shows half a frame of it).
+  gcanvas = new Arduino_Canvas(LCD_W, LCD_H, panel);
+  if (!lcd28::displayBegin(panel)) Serial.println("[lcd] RGB panel begin FAILED");
+  if (!gcanvas->begin(GFX_SKIP_OUTPUT_BEGIN)) Serial.println("[lcd] canvas FAILED");
+#else
   bus = new Arduino_ESP32QSPI(LCD_CS, LCD_SCLK, LCD_D0, LCD_D1, LCD_D2, LCD_D3);
 #if defined(SUFLET_PANEL_SH8601)
   panel = new Arduino_SH8601(bus, LCD_RST, 0, LCD_W, LCD_H);
@@ -171,12 +230,15 @@ static void displayInit() {
 #endif
   gcanvas = new Arduino_Canvas(LCD_W, LCD_H, panel);
   if (!gcanvas->begin(40000000)) Serial.println("[lcd] begin FAILED");
+#endif
   cv = new Canvas(LCD_W, LCD_H, gcanvas->getFramebuffer());
   pushBuf = (uint16_t*)ps_malloc(LCD_W * LCD_H * sizeof(uint16_t));
   cv->fill(pal::kBlack);
   panel->fillScreen(0);
   brightness = 255;
-  panel->setBrightness(brightness);
+#if !LCD_IS_RGB
+  panelBrightness(brightness);
+#endif
   prevDirty = Rect{};
 }
 
@@ -222,7 +284,9 @@ static void pushRect(Rect r) {
   panel->draw16bitRGBBitmap(px0, py0, pushBuf, pw, ph);
 }
 
+// `y` is in design pixels (466 px disc), scaled to this panel.
 static void drawCentered(const char* s, int y, int size, uint16_t color) {
+  y = kGeom.si(y);
   const int w = (int)strlen(s) * 6 * size;
   gcanvas->setTextSize(size);
   gcanvas->setTextColor(color);
@@ -231,24 +295,44 @@ static void drawCentered(const char* s, int y, int size, uint16_t color) {
   cv->markDirty(Rect{(LCD_W - w) / 2 - 2, y - 2, (LCD_W + w) / 2 + 2, y + 8 * size + 2});
 }
 
+#if LCD_IS_RGB
+// IPS has no true black: the backlight shines through "black" pixels. So
+// the backlight follows the face: full while awake, dimmer at night, and
+// fully off while the eyes are closed (asleep) — the face's closed lids are
+// not worth a glowing grey disc on the nightstand.
+static void updateBacklight(float dt, float hour) {
+  float target = 1.0f;
+  if (brain->mode() == Mode::Asleep || brain->displayOff()) target = 0.0f;
+  else if (hour >= 22.0f || hour < 7.0f) target = 0.35f;
+  if (shell.screen() != Screen::Face) target = fmaxf(target, 0.6f);  // typing needs light
+  if (alarmTone.ringing()) target = 1.0f;
+  const float rate = target > backlightNow ? 3.0f : 1.2f;  // ~0.3 s up, ~0.8 s down
+  const float d = target - backlightNow;
+  backlightNow += fabsf(d) < rate * dt ? d : (d > 0 ? rate * dt : -rate * dt);
+  lcd28::backlight(backlightNow);
+}
+#endif
+
 static void renderFrame() {
   if (brain->displayOff()) {
     if (!displayIsOff) {
-      panel->displayOff();
+      panelPower(false);
       displayIsOff = true;
     }
     return;
   }
   if (displayIsOff) {
-    panel->displayOn();
+    panelPower(true);
     displayIsOff = false;
     prevDirty = Rect{0, 0, LCD_W, LCD_H};
   }
+#if !LCD_IS_RGB
   const uint8_t want = brain->mode() == Mode::Asleep ? 110 : 255;
   if (want != brightness) {
     brightness = want;
-    panel->setBrightness(brightness);
+    panelBrightness(brightness);
   }
+#endif
   // prevDirty is what the face and text drew last frame: clear it. The
   // Shell's screen is a persistent layer: it redraws only when it changed or
   // when that clear wiped part of it, and before the face (eyes on top).
@@ -488,8 +572,16 @@ void setup() {
 #if HAS_PMU
   pmuInit();
 #endif
+#if defined(SUFLET_BOARD_LCD28)
+  // The expander holds the LCD and touch resets, the LCD chip select and the buzzer.
+  if (!lcd28::exioInit()) Serial.println("[exio] TCA9554 NOT FOUND (display/touch will fail)");
+#endif
   displayInit();
   touchInit();
+  audioInit();
+  shell.setGeometry(kGeom);
+  Serial.printf("[board] %s %dx%d, disc %.1f mm, key pitch %.1f mm\n", BOARD_NAME, kGeom.w, kGeom.h,
+                kGeom.activeMm, kGeom.mm(kGeom.s(44)));
 
   imuOk = imu.begin(Wire, IMU_ADDR, I2C_SDA, I2C_SCL);
   if (imuOk) {
@@ -563,6 +655,12 @@ void loop() {
     updateCalendar();
   }
 
+  // a ringing alarm: the first touch or the BOOT button only silences it
+  if (alarmTone.ringing() && (down || digitalRead(BOOT_BUTTON) == LOW)) {
+    alarmTone.stop();
+    Serial.println("[alarm] silenced");
+  }
+
   // BOOT button (GPIO0): back / cancel on SoulOS screens
   const bool bootDown = digitalRead(BOOT_BUTTON) == LOW;
   if (bootDown && !bootWasDown) bootDownMs = now;
@@ -594,6 +692,7 @@ void loop() {
       Serial.printf("[alarm] %02u:%02u '%s' rings\n", alarms.at(due).hour, alarms.at(due).minute,
                     alarms.at(due).label);
       brain->event(Ev::AlarmDue);
+      alarmTone.start();
       saveAlarms();  // lastFired / one-shot off survive a reboot
     }
   }
@@ -607,6 +706,7 @@ void loop() {
   in.knockX = motion.knockX();
   in.knockY = motion.knockY();
   in.hour = hourNow();
+  if (audioHasMic()) in.audioLevel = audioLevel();
   if (demo) demoTick(dt);
   const Mode before = brain->mode();
   brain->update(dt, in);
@@ -635,6 +735,10 @@ void loop() {
     claude.status.naps = naps;
   }
 
+  audioTick(alarmTone.update(dt));
+#if LCD_IS_RGB
+  updateBacklight(dt, in.hour);
+#endif
   renderFrame();
   serialCommands();
 

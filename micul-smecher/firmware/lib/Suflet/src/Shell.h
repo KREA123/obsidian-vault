@@ -13,6 +13,7 @@
 #include "Canvas.h"
 #include "Events.h"
 #include "Face.h"
+#include "Geometry.h"
 #include "Keyboard.h"
 #include "TimePicker.h"
 
@@ -23,6 +24,10 @@ enum class Screen : uint8_t { Face, Note, TimePicker };
 class Shell {
  public:
   explicit Shell(Alarms* alarms = nullptr) : alarms_(alarms) {}
+
+  // The display every screen is laid out on (466 px AMOLED by default).
+  void setGeometry(const DisplayGeometry& g);
+  const DisplayGeometry& geometry() const { return g_; }
 
   Lang lang = Lang::En;              // EN is the default UI language
   bool holdOpensNote = true;         // main.cpp turns it off while Claude asks for approval
@@ -53,6 +58,7 @@ class Shell {
  private:
   void go(Screen s);
   Alarms* alarms_;
+  DisplayGeometry g_;
   Screen screen_ = Screen::Face, drawn_ = Screen::Face;
   Rect drawnRect_;
   Keyboard kb_;
@@ -63,7 +69,7 @@ class Shell {
   uint32_t now_ = 0;
   int lastAlarm_ = -1;
   bool down_ = false;
-  float fx_ = 233, fy_ = 233;
+  float fx_ = DisplayGeometry::kDesignPx * 0.5f, fy_ = DisplayGeometry::kDesignPx * 0.5f;
 };
 
 }  // namespace suflet

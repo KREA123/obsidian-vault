@@ -1,4 +1,9 @@
-"""soul_geom.py -- outline math of SOUL-P0 (the DIY pilot of SOUL), pure numpy + shapely.
+"""soul_geom.py -- outline math of SOUL-P0 size M (the DIY pilot of SOUL, v6 look), pure numpy + shapely.
+
+SIZE M: the v6 body (v5 loft cut flat at v5 z = 3, render-brief v5 §2 tables) scaled UNIFORMLY by K in the
+front view (x and z) so the stock Waveshare 2.8C lens (Ø95.86) sits in the flat face table exactly like the
+Ø52 glass of v6, and by KY in depth (depth may differ from the uniform scale).  (The S pilot, 1.75", is in
+../legacy-S/.)  Everything below was first written for S; the M changes are the parameters K, KY, Z_CUT.
 
 The outline is the v5 SOUL loft (render-brief v5 §2 / renders/v5/src/soul_geo.py, tables copied verbatim)
 with four pilot changes:
@@ -31,12 +36,16 @@ LEAN5 = math.radians(8.0)
 R_TABLE = 26.2
 FADE = 1.5
 
-# ---------------------------------------------------------------- pilot parameters
-Z_CUT = 2.5                       # v5 height where the flat base is cut
-H_TOTAL = 75.0                    # pilot height
-SZ = H_TOTAL / (74.0 - Z_CUT)     # vertical stretch (1.049)
-K_BACK = 1.13                     # back-half depth scale about the seam
-SEAM_A, SEAM_B = -5.16, 0.0396    # parting plane y = A + B*Z (least-squares fit of v5 y_s)
+# ---------------------------------------------------------------- pilot parameters (size M)
+Z_CUT = 3.0                       # v5 height where the flat base is cut (as v6)
+K = float(__import__("os").environ.get("SOUL_K", 1.78))                           # uniform front-view scale (x, z): v6 63 x 71 -> 112.1 x 126.4 (+1.2 foot); smallest k that holds the Ø95.86 lens with the v6 glass/body ratio
+KY = float(__import__("os").environ.get("SOUL_KY", 1.15))                          # depth scale: 27.1 -> ~31 mm
+SZ = K
+H_TOTAL = (74.0 - Z_CUT) * K      # shell height above the flat base plane (the foot adds FOOT_H below)
+K_BACK = 1.0                      # extra back-half depth scale about the seam (1.0 = none)
+SEAM_A, SEAM_B = None, None       # parting plane y = A + B*Z, fitted below to the scaled silhouette line
+FOOT_H = 1.2                      # v6 oval foot below the base plane
+FOOT_A, FOOT_B, FOOT_P = 15.0 * K, 7.0 * K, 2.4
 
 
 def pchip(xk, yk):
@@ -109,19 +118,36 @@ Z_BAND = (40.5 - R_TABLE * math.cos(LEAN5), 40.5 + R_TABLE * math.cos(LEAN5))
 
 def z5(Z):
     """pilot Z -> v5 z"""
-    return np.asarray(Z, float) / SZ + Z_CUT
+    return np.asarray(Z, float) / K + Z_CUT
+
+
+def _v5_ys(Z):
+    z = np.minimum(z5(Z), 74.0)
+    yf = np.where(z < SZ_[0], YF[0] + _sf * (z - SZ_[0]), _yf(z))
+    yb = np.where(z < SZ_[0], YB[0] + _sb * (z - SZ_[0]), _yb(z))
+    fd = smoothstep(np.minimum(z - Z_BAND[0], Z_BAND[1] - z) / FADE)
+    yf = yf + fd * (-10.6 + math.tan(LEAN5) * (z - 40.5) - yf)
+    return KY * (yf + 0.36 * (yb - yf))
+
+
+def _fit_seam():
+    Zs = np.linspace(0.04 * H_TOTAL, 0.96 * H_TOTAL, 80)
+    A = np.vstack([np.ones_like(Zs), Zs]).T
+    a, b = np.linalg.lstsq(A, _v5_ys(Zs), rcond=None)[0]
+    return float(a), float(b)
 
 
 def sections(Z):
     """Pilot sections at heights Z: half-width w, front y_f, back y_b, seam y_s, table half-width c, front exponent."""
     z = np.minimum(z5(Z), 74.0)
-    w = np.maximum(_w(z), 0.0)
+    w = K * np.maximum(_w(z), 0.0)
     yf = np.where(z < SZ_[0], YF[0] + _sf * (z - SZ_[0]), _yf(z))
     yb = np.where(z < SZ_[0], YB[0] + _sb * (z - SZ_[0]), _yb(z))
     fd = smoothstep(np.minimum(z - Z_BAND[0], Z_BAND[1] - z) / FADE)
     plane = -10.6 + math.tan(LEAN5) * (z - 40.5)
     yf = yf + fd * (plane - yf)
-    c = np.sqrt(np.maximum(R_TABLE ** 2 - ((z - 40.5) / math.cos(LEAN5)) ** 2, 0.0)) * fd
+    c = K * np.sqrt(np.maximum(R_TABLE ** 2 - ((z - 40.5) / math.cos(LEAN5)) ** 2, 0.0)) * fd
+    yf, yb = KY * yf, KY * yb
     ys5 = yf + 0.36 * (yb - yf)
     yb = ys5 + (yb - ys5) * K_BACK
     ys = SEAM_A + SEAM_B * np.asarray(Z, float)
@@ -184,15 +210,17 @@ def start_at_back(P):
 
 
 # ---------------------------------------------------------------- face / glass frame
-LEAN = math.atan(math.tan(LEAN5) / SZ)                       # 7.63 deg after the z stretch
+SEAM_A, SEAM_B = _fit_seam()
+LEAN = math.atan(math.tan(LEAN5) * KY / K)                   # face lean after the anisotropic scale
 N_OUT = np.array([0.0, -math.cos(LEAN), math.sin(LEAN)])     # outward face normal
 UP = np.array([0.0, math.sin(LEAN), math.cos(LEAN)])         # in-plane up
 INW = -N_OUT
-G = np.array([0.0, -10.6, (40.5 - Z_CUT) * SZ])              # centre of the flat table (glass centre)
+G = np.array([0.0, -10.6 * KY, (40.5 - Z_CUT) * K])          # centre of the flat table (glass centre)
+R_TAB = R_TABLE * K                                          # table radius (in x)
 
 
 def table_y(Z):
-    return -10.6 + math.tan(LEAN) * (np.asarray(Z, float) - G[2])
+    return G[1] + math.tan(LEAN) * (np.asarray(Z, float) - G[2])
 
 
 # ---------------------------------------------------------------- slices of solids (for offsets / checks)

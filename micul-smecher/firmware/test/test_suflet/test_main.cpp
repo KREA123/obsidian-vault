@@ -6,11 +6,13 @@
 #include <string>
 #include <vector>
 
+#include "AlarmTone.h"
 #include "Alarms.h"
 #include "Brain.h"
 #include "ClaudeLink.h"
 #include "Face.h"
 #include "Font.h"
+#include "Geometry.h"
 #include "Gestures.h"
 #include "Keyboard.h"
 #include "Personality.h"
@@ -896,7 +898,7 @@ void test_keyboard_renders_inside_its_bounds() {
   TEST_ASSERT_TRUE(kb.changed());
   kb.render(cv);
   TEST_ASSERT_FALSE(kb.changed());
-  const Rect b = Keyboard::bounds();
+  const Rect b = kb.bounds();
   int lit = 0, outside = 0;
   for (int y = 0; y < 466; ++y)
     for (int x = 0; x < 466; ++x)
@@ -1185,8 +1187,218 @@ void test_face_layout_shrinks_eyes_into_the_header() {
   renderFace(cv, f, l);
   const Rect d = cv.dirty();
   TEST_ASSERT_FALSE(d.empty());
-  TEST_ASSERT_TRUE(d.y1 <= Keyboard::bounds().y0 + 2);  // clear of the text field
+  TEST_ASSERT_TRUE(d.y1 <= Keyboard().bounds().y0 + 2);  // clear of the text field
   TEST_ASSERT_TRUE(d.x0 > 150 && d.x1 < 316);
+}
+
+
+// ------------------------------------------------------ display geometry ---
+// SOUL M: the same UI on the 480 px, 70 mm IPS disc of the LCD-2.8C.
+
+void test_geometry_scales_design_pixels_and_measures_mm() {
+  const DisplayGeometry& m = displays::kLcd28;
+  TEST_ASSERT_FLOAT_WITHIN(1e-4f, 480.0f / 466.0f, m.k());
+  TEST_ASSERT_EQUAL(240, m.si(233));      // the centre stays the centre
+  TEST_ASSERT_EQUAL(480, m.si(466));      // and the rim the rim
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 240.0f, m.cx());
+  const Rect r = m.rect(0, 60, 466, 402);  // keyboard bounds
+  TEST_ASSERT_EQUAL(0, r.x0);
+  TEST_ASSERT_EQUAL(62, r.y0);
+  TEST_ASSERT_EQUAL(480, r.x1);
+  TEST_ASSERT_EQUAL(414, r.y1);
+  // key pitch (44 design px): 4.1 mm on the 1.75" AMOLED, ~6.6 mm on the 2.8"
+  TEST_ASSERT_FLOAT_WITHIN(0.05f, 4.13f, displays::kAmoled175.mm(displays::kAmoled175.s(44)));
+  const float pitchMm = m.mm(m.s(44));
+  TEST_ASSERT_TRUE(pitchMm > 6.5f && pitchMm < 6.8f);
+  const DisplayGeometry def;  // the default is the 466 px design disc: scale 1
+  TEST_ASSERT_EQUAL(466, def.w);
+  TEST_ASSERT_EQUAL(197, def.si(197));
+}
+
+static Keyboard openKb480(Lang l = Lang::En) {
+  Keyboard kb;
+  kb.setGeometry(displays::kLcd28);
+  KbConfig c;
+  c.uiLang = l;
+  c.placeholder = "New note…";
+  kb.open(c);
+  return kb;
+}
+
+void test_keyboard_hit_test_at_480px() {
+  Keyboard kb = openKb480();
+  const DisplayGeometry& g = kb.geometry();
+  TEST_ASSERT_EQUAL(54, kb.rowH());  // 52 * 480/466
+  // every spec key centre (design px), scaled, hits that key
+  const char* r1 = "qwertyuiop";
+  for (int i = 0; i < 10; ++i)
+    TEST_ASSERT_EQUAL_UINT32((uint32_t)r1[i], keyAt(kb, g.s(35 + 44 * i), g.s(210)));
+  const char* r2 = "asdfghjkl";
+  for (int i = 0; i < 9; ++i) TEST_ASSERT_EQUAL_UINT32((uint32_t)r2[i], keyAt(kb, g.s(45 + 47 * i), g.s(262)));
+  TEST_ASSERT_EQUAL_UINT32(0x100 + (uint32_t)KeyId::Shift, keyAt(kb, g.s(56), g.s(314)));
+  const char* r3 = "zxcvbnm";
+  for (int i = 0; i < 7; ++i) TEST_ASSERT_EQUAL_UINT32((uint32_t)r3[i], keyAt(kb, g.s(101 + 44 * i), g.s(314)));
+  TEST_ASSERT_EQUAL_UINT32(0x100 + (uint32_t)KeyId::Bksp, keyAt(kb, g.s(410), g.s(314)));
+  TEST_ASSERT_EQUAL_UINT32(0x100 + (uint32_t)KeyId::Layer, keyAt(kb, g.s(108), g.s(372)));
+  TEST_ASSERT_EQUAL_UINT32(0x100 + (uint32_t)KeyId::Space, keyAt(kb, g.s(257), g.s(372)));
+  TEST_ASSERT_EQUAL_UINT32(0x100 + (uint32_t)KeyId::Done, keyAt(kb, g.s(355), g.s(372)));
+  // the rim still belongs to the end keys, out to the new edge
+  TEST_ASSERT_EQUAL_UINT32('q', keyAt(kb, 3, 206));
+  TEST_ASSERT_EQUAL_UINT32('l', keyAt(kb, 477, 258));
+  TEST_ASSERT_EQUAL_UINT32(0x100 + (uint32_t)KeyId::Done, keyAt(kb, 455, 455));
+  // row borders move with the scale: design 236 -> 243
+  TEST_ASSERT_EQUAL_UINT32('q', keyAt(kb, 37, 242));
+  TEST_ASSERT_EQUAL_UINT32('a', keyAt(kb, 47, 244));
+  // suggestion bar and text field
+  TEST_ASSERT_EQUAL(-1, kb.hitKey(200, 186));      // design 180.6: still the bar
+  TEST_ASSERT_EQUAL(1, kb.hitSuggestion(240, 176));
+  TEST_ASSERT_EQUAL(0, kb.hitSuggestion(20, 150));
+  TEST_ASSERT_EQUAL(2, kb.hitSuggestion(460, 150));
+  TEST_ASSERT_EQUAL(-1, kb.hitSuggestion(240, 132));  // design 128: the text field
+  // a whole row scanned pixel by pixel: no holes, left-to-right order
+  int last = -1, changes = 0;
+  for (int x = 0; x < 480; ++x) {
+    const int k = kb.hitKey((float)x, g.s(210));
+    TEST_ASSERT_TRUE(k >= 0);
+    TEST_ASSERT_TRUE(k >= last);
+    if (k != last) ++changes;
+    last = k;
+  }
+  TEST_ASSERT_EQUAL(10, changes);
+  // the physical size: letter keys are ~6.6 mm wide, ~7.7 mm tall on the 70 mm disc
+  const Key& q = kb.key(0);
+  TEST_ASSERT_TRUE(g.mm(q.x1 - q.x0) > 6.4f);
+  TEST_ASSERT_TRUE(g.mm((float)kb.rowH()) > 7.5f);
+  // every key centre sits inside the round glass
+  for (int i = 0; i < kb.keyCount(); ++i) {
+    const Key& k = kb.key(i);
+    const float dx = k.cx - g.cx(), dy = k.y0 + kb.rowH() * 0.5f - g.cy();
+    TEST_ASSERT_TRUE(dx * dx + dy * dy < 240.0f * 240.0f);
+  }
+}
+
+void test_keyboard_types_and_renders_at_480px() {
+  Keyboard kb = openKb480(Lang::Ro);
+  const DisplayGeometry& g = kb.geometry();
+  tapKey(kb, KeyId::Shift);  // lower case
+  // hold 'a' at 480 px: the tray opens above the key with ă under the finger
+  float x, y;
+  TEST_ASSERT_TRUE(kb.keyCenter('a', x, y));
+  kb.touch(TouchEv{Ev::TouchDown, (int16_t)x, (int16_t)y, 0});
+  kb.touch(TouchEv{Ev::HoldStart, (int16_t)x, (int16_t)y, 0});
+  TEST_ASSERT_TRUE(kb.trayOpen());
+  kb.touch(TouchEv{Ev::TouchUp, (int16_t)x, (int16_t)y, 0});
+  TEST_ASSERT_EQUAL_STRING("ă", kb.text().c_str());
+  // the tray cells are scaled too: one cell (44 design px) over is the next item
+  kb.keyCenter('t', x, y);
+  kb.touch(TouchEv{Ev::TouchDown, (int16_t)x, (int16_t)y, 0});
+  kb.touch(TouchEv{Ev::HoldStart, (int16_t)x, (int16_t)y, 0});
+  kb.touch(TouchEv{Ev::TouchMove, (int16_t)(x + g.s(44)), (int16_t)y, 0});
+  kb.touch(TouchEv{Ev::TouchUp, (int16_t)(x + g.s(44)), (int16_t)y, 0});
+  TEST_ASSERT_EQUAL_STRING("ă5", kb.text().c_str());
+  for (const char* p = " salut"; *p; ++p) tapKey(kb, (uint32_t)*p);
+  TEST_ASSERT_EQUAL_STRING("ă5 salut", kb.text().c_str());
+  std::vector<uint16_t> fb(480 * 480, 0);
+  Canvas cv(480, 480, fb.data());
+  kb.render(cv);
+  const Rect b = kb.bounds();
+  int lit = 0, outside = 0;
+  for (int yy = 0; yy < 480; ++yy)
+    for (int xx = 0; xx < 480; ++xx)
+      if (fb[yy * 480 + xx]) {
+        ++lit;
+        if (xx < b.x0 || xx >= b.x1 || yy < b.y0 || yy >= b.y1) ++outside;
+      }
+  TEST_ASSERT_TRUE(lit > 20000);
+  TEST_ASSERT_EQUAL(0, outside);
+  // the q cap, scaled from design (18, 190)
+  TEST_ASSERT_EQUAL_UINT16(Rgb::hex(0x1A1813).to565(), fb[196 * 480 + 19]);
+}
+
+void test_timepicker_rim_dial_at_480px() {
+  TimePicker tp;
+  tp.setGeometry(displays::kLcd28);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 240.0f, tp.cx());
+  TEST_ASSERT_FLOAT_WITHIN(0.1f, 211.2f, tp.ringR());
+  tp.open(8, 0);
+  const float a = TimePicker::hourAngle(19) * 3.14159265f / 180.0f;
+  const float r = tp.ringR();
+  const int16_t x = (int16_t)lroundf(240 + r * cosf(a)), y = (int16_t)lroundf(240 + r * sinf(a));
+  tp.touch(TouchEv{Ev::TouchDown, x, y, 0});
+  tp.touch(TouchEv{Ev::TouchUp, x, y, 0.1f});
+  TEST_ASSERT_EQUAL(19, tp.hour());
+  // design r 152 is the rim on 466 but scaled it is 156.6 on 480: r 153 is inside
+  tp.touch(TouchEv{Ev::TouchDown, 240, (int16_t)(240 + 153), 1});
+  tp.touch(TouchEv{Ev::TouchUp, 240, (int16_t)(240 + 153), 1});
+  TEST_ASSERT_EQUAL(19, tp.hour());
+  // ✓ at the scaled spot commits
+  const int16_t okY = (int16_t)lroundf(displays::kLcd28.s(350));
+  tp.touch(TouchEv{Ev::TouchDown, 240, okY, 2});
+  tp.touch(TouchEv{Ev::TouchUp, 240, okY, 2});
+  KbResult res;
+  TEST_ASSERT_TRUE(tp.poll(res));
+  TEST_ASSERT_EQUAL(KbResult::Commit, res);
+}
+
+void test_shell_at_480px_routes_and_draws_inside_the_disc() {
+  Alarms alarms;
+  Shell sh(&alarms);
+  sh.setGeometry(displays::kLcd28);
+  TouchGestures t;
+  auto frame = [&](bool down, float x, float y) {
+    t.update(down, x, y, kDt);
+    TouchEv e;
+    while (t.poll(e)) sh.event(e);
+    t.setMode(sh.wantsTextTouch() ? TouchMode::Text : TouchMode::Face);
+    sh.update(kDt, 1790374680u);
+  };
+  for (int i = 0; i < 20; ++i) frame(true, 240, 240);  // long press on the face
+  TEST_ASSERT_EQUAL(Screen::Note, sh.screen());
+  frame(false, 240, 240);
+  float x, y;
+  for (const char* p = "ok"; *p; ++p) {
+    TEST_ASSERT_TRUE(sh.keyboard().keyCenter((uint32_t)*p, x, y));
+    frame(true, x, y);
+    frame(false, x, y);
+  }
+  TEST_ASSERT_EQUAL_STRING("Ok", sh.keyboard().text().c_str());
+  std::vector<uint16_t> fb(480 * 480, 0);
+  Canvas cv(480, 480, fb.data());
+  TEST_ASSERT_TRUE(sh.render(cv, Rect{}));
+  // nothing lit outside the round glass (radius 240 around the centre)
+  int outside = 0;
+  for (int yy = 0; yy < 480; ++yy)
+    for (int xx = 0; xx < 480; ++xx)
+      if (fb[yy * 480 + xx]) {
+        const float dx = xx + 0.5f - 240, dy = yy + 0.5f - 240;
+        if (dx * dx + dy * dy > 240.0f * 240.0f) ++outside;
+      }
+  TEST_ASSERT_EQUAL(0, outside);
+  // the eyes watch the finger relative to the new centre
+  Face f;
+  sh.event(TouchEv{Ev::TouchDown, 240, 300, 0});
+  sh.adjustFace(f);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, f.gx);
+}
+
+void test_alarm_tone_pattern_and_timeout() {
+  AlarmTone tone;
+  TEST_ASSERT_FALSE(tone.update(0.1f));  // silent until started
+  tone.start();
+  TEST_ASSERT_TRUE(tone.update(0.05f));   // beep 1
+  TEST_ASSERT_FALSE(tone.update(0.10f));  // 0.15: gap
+  TEST_ASSERT_TRUE(tone.update(0.10f));   // 0.25: beep 2
+  TEST_ASSERT_FALSE(tone.update(0.70f));  // 0.95: the pause after four
+  TEST_ASSERT_TRUE(tone.update(0.50f));   // 1.45: the next burst
+  float on = 0;
+  for (int i = 0; i < 140; ++i) on += tone.update(0.01f) ? 0.01f : 0;  // one 1.4 s period
+  TEST_ASSERT_FLOAT_WITHIN(0.03f, 0.4f, on);
+  tone.maxS = 5;
+  tone.update(4.0f);
+  TEST_ASSERT_FALSE(tone.ringing());  // gives up by itself
+  tone.start();
+  tone.stop();
+  TEST_ASSERT_FALSE(tone.update(0.05f));
 }
 
 int main(int, char**) {
@@ -1247,5 +1459,12 @@ int main(int, char**) {
   RUN_TEST(test_shell_long_press_opens_note_and_commit_goes_home);
   RUN_TEST(test_shell_time_picker_adds_an_alarm_and_draws);
   RUN_TEST(test_face_layout_shrinks_eyes_into_the_header);
+  // SOUL M (480 px)
+  RUN_TEST(test_geometry_scales_design_pixels_and_measures_mm);
+  RUN_TEST(test_keyboard_hit_test_at_480px);
+  RUN_TEST(test_keyboard_types_and_renders_at_480px);
+  RUN_TEST(test_timepicker_rim_dial_at_480px);
+  RUN_TEST(test_shell_at_480px_routes_and_draws_inside_the_disc);
+  RUN_TEST(test_alarm_tone_pattern_and_timeout);
   return UNITY_END();
 }

@@ -1,7 +1,9 @@
 // SoulOS Keys v1: the "Round QWERTY" system keyboard (research/04 §1-12),
 // drawn on the Canvas. Pure logic + rendering, no hardware: it takes touch
 // events with coordinates (TouchGestures in Text mode) and gives back the
-// committed text. Geometry is for the 466x466 panel.
+// committed text. The layout is specified in design pixels on the 466 px
+// disc (below) and scaled to the real panel by its DisplayGeometry
+// (setGeometry; 480 px on the 2.8" IPS board, where a key is ~6.6 mm wide).
 //
 //   y  64-128  text field (2 lines, caret line at the bottom)
 //   y 134-180  suggestion bar [ left | bold middle | right ]
@@ -19,6 +21,7 @@
 
 #include "Canvas.h"
 #include "Events.h"
+#include "Geometry.h"
 #include "Predictor.h"
 #include "TextField.h"
 
@@ -34,7 +37,7 @@ enum class KeyId : uint8_t { Char, Shift, Bksp, Layer, SymLayer, Space, Done };
 struct Key {
   KeyId id = KeyId::Char;
   uint32_t cp = 0;         // Char: the character (lower case on the abc layer)
-  int16_t cx = 0, x0 = 0, x1 = 0, y0 = 0;  // hit area [x0, x1) x [y0, y0 + kRowH)
+  int16_t cx = 0, x0 = 0, x1 = 0, y0 = 0;  // panel px; hit area [x0, x1) x [y0, y0 + rowH())
 };
 
 struct KbConfig {
@@ -48,8 +51,13 @@ struct KbConfig {
 
 class Keyboard {
  public:
+  // Design-pixel constants (466 px disc); use the accessors for panel px.
   static constexpr int kRowH = 52;
   static constexpr int kFieldBottom = 130, kSugBottom = 182;
+
+  void setGeometry(const DisplayGeometry& g);
+  const DisplayGeometry& geometry() const { return g_; }
+  int rowH() const { return rowH_; }
 
   void open(const KbConfig& cfg, const std::string& initial = "");
   void close() { open_ = false; }
@@ -98,7 +106,7 @@ class Keyboard {
   Predictor& predictor() { return pred_; }
 
   // ---- rendering -----------------------------------------------------------
-  static Rect bounds() { return Rect{0, 60, 466, 402}; }
+  Rect bounds() const { return g_.rect(0, 60, (int)DisplayGeometry::kDesignPx, 402); }
   bool changed() const { return changed_; }
   void render(Canvas& cv);  // clears bounds() and draws everything
 
@@ -129,6 +137,11 @@ class Keyboard {
   void drawCallout(Canvas& cv, const Key& k);
   void drawTray(Canvas& cv);
 
+  float S(float designPx) const { return g_.s(designPx); }
+  int SI(float designPx) const { return g_.si(designPx); }
+
+  DisplayGeometry g_;
+  int rowH_ = kRowH, fieldBottom_ = kFieldBottom, sugBottom_ = kSugBottom;
   KbConfig cfg_;
   TextField field_;
   Predictor pred_;

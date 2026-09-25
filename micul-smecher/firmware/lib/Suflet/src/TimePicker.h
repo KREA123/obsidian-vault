@@ -9,6 +9,7 @@
 
 #include "Canvas.h"
 #include "Events.h"
+#include "Geometry.h"
 #include "Keyboard.h"  // KbResult
 #include "Predictor.h"  // Lang
 
@@ -18,6 +19,12 @@ enum class DialMode : uint8_t { Hours, Minutes };
 
 class TimePicker {
  public:
+  // Everything below is laid out in design pixels on the 466 px disc and
+  // scaled to the panel here (the ring, the digits, the ✓, the hit areas).
+  TimePicker() { setGeometry(DisplayGeometry{}); }
+  void setGeometry(const DisplayGeometry& g);
+  const DisplayGeometry& geometry() const { return g_; }
+
   void open(int hour, int minute);
   void close() { open_ = false; }
   bool isOpen() const { return open_; }
@@ -56,10 +63,21 @@ class TimePicker {
   bool overlaps(const Rect& r) const;
   void render(Canvas& cv);  // clears its own areas (not the eyes) and draws
 
+  // Design pixels (466 px disc): centre, ring radius and ring width.
   static constexpr float kCx = 233, kCy = 233, kR = 205, kTrack = 30;
+  // The same, in panel pixels.
+  float cx() const { return cx_; }
+  float cy() const { return cy_; }
+  float ringR() const { return r_; }
 
  private:
   void setFromPoint(float x, float y, float t);
+  void polar(float deg, float r, float& x, float& y) const;
+  float S(float designPx) const { return g_.s(designPx); }
+  DisplayGeometry g_;
+  float cx_ = kCx, cy_ = kCy, r_ = kR, track_ = kTrack;
+  Rect title_, digits_, rel_, ok_;
+  float clear0_ = 0, clear1_ = 0;
   bool open_ = false, changed_ = true, dragging_ = false, okDown_ = false;
   int h_ = 7, m_ = 0;
   DialMode mode_ = DialMode::Hours;

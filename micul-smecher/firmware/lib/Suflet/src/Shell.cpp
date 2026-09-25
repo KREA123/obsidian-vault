@@ -6,6 +6,14 @@ namespace suflet {
 
 void Shell::go(Screen s) { screen_ = s; }
 
+void Shell::setGeometry(const DisplayGeometry& g) {
+  g_ = g;
+  fx_ = g.cx();
+  fy_ = g.cy();
+  kb_.setGeometry(g);
+  tp_.setGeometry(g);
+}
+
 void Shell::openNote(const std::string& initial) {
   KbConfig c;
   c.action = KbAction::Save;
@@ -119,7 +127,7 @@ FaceLayout Shell::faceLayout() const {
 
 void Shell::adjustFace(Face& f) const {
   if (screen_ == Screen::Note) {
-    f.gx = down_ ? clampf((fx_ - 233.0f) / 233.0f * 0.6f, -1, 1) : 0;
+    f.gx = down_ ? clampf((fx_ - g_.cx()) / g_.cx() * 0.6f, -1, 1) : 0;
     f.gy = 0.6f;  // looking down at the keys
   } else if (screen_ == Screen::TimePicker) {
     const float a = tp_.knobAngle() * 3.14159265f / 180.0f;
@@ -143,7 +151,7 @@ bool Shell::render(Canvas& cv, const Rect& cleared) {
     case Screen::Face:
       return force;
     case Screen::Note: {
-      const Rect b = Keyboard::bounds();
+      const Rect b = kb_.bounds();
       const bool hit = !cleared.empty() && cleared.x0 < b.x1 && b.x0 < cleared.x1 && cleared.y0 < b.y1 &&
                        b.y0 < cleared.y1;
       if (!(force || kb_.changed() || hit)) return false;

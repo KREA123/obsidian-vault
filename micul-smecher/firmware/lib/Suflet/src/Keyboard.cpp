@@ -19,6 +19,7 @@ constexpr Rgb kSugBest = Rgb::hex(0x1D1B16);
 constexpr Rgb kAmber = Rgb::hex(0xFFB347);
 constexpr Rgb kInk = Rgb::hex(0x16130C);  // glyphs on amber / mint caps
 
+// Design pixels (466 px disc); scaled through the DisplayGeometry.
 constexpr int kSlotX[3] = {26, 156, 316};
 constexpr int kSlotW[3] = {124, 154, 124};
 constexpr int kFieldW = 300;        // line width that fits the upper text line chord
@@ -178,6 +179,15 @@ std::string fitText(const Font& f, const std::string& s, int maxW) {
 
 // ------------------------------------------------------------------ setup ---
 
+void Keyboard::setGeometry(const DisplayGeometry& g) {
+  g_ = g;
+  rowH_ = SI(kRowH);
+  fieldBottom_ = SI(kFieldBottom);
+  sugBottom_ = SI(kSugBottom);
+  layout();
+  changed_ = true;
+}
+
 void Keyboard::open(const KbConfig& cfg, const std::string& initial) {
   cfg_ = cfg;
   field_ = TextField(cfg.maxChars);
@@ -202,14 +212,15 @@ void Keyboard::open(const KbConfig& cfg, const std::string& initial) {
 
 void Keyboard::layout() {
   nKeys_ = 0;
+  // cx, y0 and w are design pixels; keys are stored in panel pixels
   auto put = [&](KeyId id, uint32_t cp, int cx, int y0, int w) {
     Key& k = keys_[nKeys_++];
     k.id = id;
     k.cp = cp;
-    k.cx = (int16_t)cx;
-    k.x0 = (int16_t)(cx - w / 2);
-    k.x1 = (int16_t)(cx + w / 2);
-    k.y0 = (int16_t)y0;
+    k.cx = (int16_t)SI(cx);
+    k.x0 = (int16_t)SI(cx - w / 2);
+    k.x1 = (int16_t)SI(cx + w / 2);
+    k.y0 = (int16_t)SI(y0);
   };
   auto chars = [&](const char* s, int y0, int x0, int pitch) {
     int i = 0;
@@ -413,8 +424,9 @@ void Keyboard::cancel() {
 // ------------------------------------------------------------------ touch ---
 
 int Keyboard::hitKey(float x, float y) const {
-  if (y < kSugBottom) return -1;
-  const int rowY = y >= 342 ? 346 : (y >= 288 ? 288 : (y >= 236 ? 236 : 184));
+  if (y < sugBottom_) return -1;
+  const float yd = y / g_.k();  // rows are chosen in design pixels
+  const int rowY = SI(yd >= 342 ? 346 : (yd >= 288 ? 288 : (yd >= 236 ? 236 : 184)));
   int best = -1;
   float bd = 1e9f;
   for (int i = 0; i < nKeys_; ++i) {
@@ -431,8 +443,8 @@ int Keyboard::hitKey(float x, float y) const {
 }
 
 int Keyboard::hitSuggestion(float x, float y) const {
-  if (y < kFieldBottom || y >= kSugBottom) return -1;
-  return x < 153 ? 0 : (x < 312 ? 1 : 2);
+  if (y < fieldBottom_ || y >= sugBottom_) return -1;
+  return x < S(153) ? 0 : (x < S(312) ? 1 : 2);
 }
 
 bool Keyboard::keyCenter(uint32_t cp, float& x, float& y) const {
@@ -441,7 +453,7 @@ bool Keyboard::keyCenter(uint32_t cp, float& x, float& y) const {
     const Key& k = keys_[i];
     if ((k.id == KeyId::Char || k.id == KeyId::Space) && utf8::lower(k.cp) == l) {
       x = k.cx;
-      y = k.y0 + kRowH * 0.5f;
+      y = k.y0 + rowH_ * 0.5f;
       return true;
     }
   }
@@ -452,7 +464,7 @@ bool Keyboard::keyCenter(KeyId id, float& x, float& y) const {
   for (int i = 0; i < nKeys_; ++i) {
     if (keys_[i].id == id) {
       x = keys_[i].cx;
-      y = keys_[i].y0 + kRowH * 0.5f;
+      y = keys_[i].y0 + rowH_ * 0.5f;
       return true;
     }
   }
@@ -508,12 +520,13 @@ bool Keyboard::openTray(const Key& k) {
     for (int i = 0; i < nother; ++i) ordered[n++] = other[i];
   }
   // The tray grows toward the centre; its first item sits under the finger.
-  const bool right = k.cx <= 233;
+  const bool right = k.cx <= g_.cx();
+  const float pitch = S(44);
   t.n = n;
-  t.top = k.y0 - 64;
-  int left = right ? k.cx - 22 : k.cx - 22 - 44 * (n - 1);
-  if (left < 16) left = 16;
-  if (left + 44 * n > 450) left = 450 - 44 * n;
+  t.top = k.y0 - SI(64);
+  int left = (int)lroundf(right ? k.cx - S(22) : k.cx - S(22) - pitch * (n - 1));
+  if (left < SI(16)) left = SI(16);
+  if (left + pitch * n > S(450)) left = (int)lroundf(S(450) - pitch * n);
   t.left = left;
   for (int i = 0; i < n; ++i) t.items[right ? i : n - 1 - i] = ordered[i];
   t.sel = right ? 0 : n - 1;
@@ -524,12 +537,13 @@ bool Keyboard::openTray(const Key& k) {
 }
 
 void Keyboard::trackTray(float x, float y) {
-  int sel = (int)floorf((x - tray_.left) / 44.0f);
+  const float pitch = S(44);
+  int sel = (int)floorf((x - tray_.left) / pitch);
   if (sel < 0) sel = 0;
   if (sel >= tray_.n) sel = tray_.n - 1;
   // lifting far away from the tray cancels
-  const float cy = tray_.top + 31.0f;
-  if (fabsf(y - cy) > 95.0f || x < tray_.left - 40 || x > tray_.left + 44 * tray_.n + 40) sel = -1;
+  const float cy = tray_.top + S(31);
+  if (fabsf(y - cy) > S(95) || x < tray_.left - S(40) || x > tray_.left + pitch * tray_.n + S(40)) sel = -1;
   if (sel != tray_.sel) {
     tray_.sel = sel;
     touched();
@@ -544,9 +558,9 @@ bool Keyboard::touch(const TouchEv& e) {
       tray_.open = false;
       pressed_ = sugDown_ = -1;
       bkspHeld_ = bkspRepeated_ = false;
-      if (y < kFieldBottom) {
+      if (y < fieldBottom_) {
         zone_ = Zone::Field;
-      } else if (y < kSugBottom) {
+      } else if (y < sugBottom_) {
         zone_ = Zone::Sug;
         sugDown_ = hitSuggestion(x, y);
       } else {
@@ -564,7 +578,7 @@ bool Keyboard::touch(const TouchEv& e) {
       if (tray_.open) {
         trackTray(x, y);
       } else if (zone_ == Zone::Key) {
-        const int k = y >= kSugBottom ? hitKey(x, y) : -1;  // slide to fix the key
+        const int k = y >= sugBottom_ ? hitKey(x, y) : -1;  // slide to fix the key
         if (k != pressed_) {
           pressed_ = k;
           if (k < 0 || keys_[k].id != KeyId::Bksp) bkspHeld_ = false;
@@ -634,21 +648,22 @@ void Keyboard::update(float dt) {
 void Keyboard::drawField(Canvas& cv) {
   const Font& f = fonts::text();
   const std::string& s = field_.text();
-  int caretX = 233, caretBase = kBase2;
+  const int mid = (int)lroundf(g_.cx()), base1 = SI(kBase1), base2 = SI(kBase2);
+  int caretX = mid, caretBase = base2;
   if (s.empty()) {
     const int w = Canvas::measureText(f, cfg_.placeholder);
-    cv.drawText(f, 233.0f + 3, kBase2, cfg_.placeholder, kCream, 0.38f, Align::Center);
-    caretX = 233 - w / 2 - 3;
+    cv.drawText(f, mid + 3.0f, base2, cfg_.placeholder, kCream, 0.38f, Align::Center);
+    caretX = mid - w / 2 - 3;
   } else {
     std::vector<std::pair<size_t, size_t>> lines;
-    wrap(f, s, kFieldW, lines);
+    wrap(f, s, SI(kFieldW), lines);
     const int n = (int)lines.size();
     int lx[2] = {0, 0};
     for (int k = 0; k < 2 && k < n; ++k) {
       const auto& L = lines[n - 1 - k];
-      const int base = k == 0 ? kBase2 : kBase1;
+      const int base = k == 0 ? base2 : base1;
       const int w = Canvas::measureText(f, s.c_str() + L.first, (int)(L.second - L.first));
-      lx[k] = 233 - w / 2;
+      lx[k] = mid - w / 2;
       cv.drawText(f, (float)lx[k], base, s.c_str() + L.first, kCream, 0.95f, Align::Left, nullptr,
                   (int)(L.second - L.first));
       if (k == 0) caretX = lx[0] + w + 1;
@@ -673,22 +688,23 @@ void Keyboard::drawSuggestions(Canvas& cv) {
   for (int i = 0; i < 3; ++i) {
     const Suggestion& sg = sug_[i];
     if (sg.empty()) continue;
-    const float x0 = (float)kSlotX[i], x1 = x0 + kSlotW[i];
-    if (sg.bold || chips) cv.roundRect(x0 + 2, 137, x1 - 2, 179, 20, kSugBest);
-    const std::string label = fitText(f, sg.label, kSlotW[i] - 14);
+    const float x0 = S(kSlotX[i]), x1 = x0 + S(kSlotW[i]);
+    if (sg.bold || chips) cv.roundRect(x0 + S(2), S(137), x1 - S(2), S(179), S(20), kSugBest);
+    const std::string label = fitText(f, sg.label, SI(kSlotW[i]) - 14);
     const Rgb mint = pal::kMint;
-    cv.drawText(f, (x0 + x1) * 0.5f, kSugBase, label.c_str(), kCream, sg.bold || chips ? 1.0f : 0.72f,
+    cv.drawText(f, (x0 + x1) * 0.5f, SI(kSugBase), label.c_str(), kCream, sg.bold || chips ? 1.0f : 0.72f,
                 Align::Center, sg.undo ? nullptr : &mint);
   }
   if (!chips && !(undoChipUntil_ > t_)) {
-    cv.segment(153, 147, 153, 169, 1.5f, kCream, 0.18f);
-    cv.segment(312, 147, 312, 169, 1.5f, kCream, 0.18f);
+    cv.segment(S(153), S(147), S(153), S(169), 1.5f, kCream, 0.18f);
+    cv.segment(S(312), S(147), S(312), S(169), 1.5f, kCream, 0.18f);
   }
 }
 
 void Keyboard::drawKey(Canvas& cv, int i) {
   const Key& k = keys_[i];
-  const float x0 = k.x0 + 2.0f, x1 = k.x1 - 2.0f, y0 = k.y0 + 3.0f, y1 = k.y0 + kRowH - 3.0f;
+  const float q = g_.k();  // icons are drawn geometry: they scale with the keys
+  const float x0 = k.x0 + 2 * q, x1 = k.x1 - 2 * q, y0 = k.y0 + 3 * q, y1 = k.y0 + rowH_ - 3 * q;
   const float cx = k.cx, cy = (y0 + y1) * 0.5f;
   const bool pressed = i == pressed_ && !tray_.open;
   const bool fn = k.id != KeyId::Char;
@@ -696,7 +712,7 @@ void Keyboard::drawKey(Canvas& cv, int i) {
   Rgb cap = pressed ? kCapPressed : (fn ? kCapFn : kCapLetter);
   if (k.id == KeyId::Done && !empty) cap = cfg_.action == KbAction::Send ? kAmber : pal::kMint;
   if (k.id == KeyId::Shift && shift_ != KbShift::Off && !pressed) cap = kCapPressed;
-  cv.roundRect(x0, y0, x1, y1, 9, cap);
+  cv.roundRect(x0, y0, x1, y1, 9 * q, cap);
   const Font& tf = fonts::text();
   const Font& sf = fonts::small();
   switch (k.id) {
@@ -720,39 +736,39 @@ void Keyboard::drawKey(Canvas& cv, int i) {
     }
     case KeyId::Shift: {
       Poly p;  // ⇧
-      p.add(cx, cy - 11);
-      p.add(cx + 10, cy);
-      p.add(cx + 5, cy);
-      p.add(cx + 5, cy + 8);
-      p.add(cx - 5, cy + 8);
-      p.add(cx - 5, cy);
-      p.add(cx - 10, cy);
-      p.draw(cv, shift_ != KbShift::Off, 2.2f, kCream, shift_ != KbShift::Off ? 1.0f : 0.8f);
-      if (shift_ == KbShift::Lock) cv.roundRect(cx - 6, cy + 11, cx + 6, cy + 13.5f, 1, kCream);
+      p.add(cx, cy - 11 * q);
+      p.add(cx + 10 * q, cy);
+      p.add(cx + 5 * q, cy);
+      p.add(cx + 5 * q, cy + 8 * q);
+      p.add(cx - 5 * q, cy + 8 * q);
+      p.add(cx - 5 * q, cy);
+      p.add(cx - 10 * q, cy);
+      p.draw(cv, shift_ != KbShift::Off, 2.2f * q, kCream, shift_ != KbShift::Off ? 1.0f : 0.8f);
+      if (shift_ == KbShift::Lock) cv.roundRect(cx - 6 * q, cy + 11 * q, cx + 6 * q, cy + 13.5f * q, 1, kCream);
       break;
     }
     case KeyId::Bksp: {
       Poly p;  // ⌫
-      p.add(cx - 14, cy);
-      p.add(cx - 6, cy - 9);
-      p.add(cx + 13, cy - 9);
-      p.add(cx + 13, cy + 9);
-      p.add(cx - 6, cy + 9);
-      p.draw(cv, false, 2.2f, kCream, 0.8f);
-      cv.segment(cx - 1, cy - 4, cx + 7, cy + 4, 2.2f, kCream, 0.8f);
-      cv.segment(cx - 1, cy + 4, cx + 7, cy - 4, 2.2f, kCream, 0.8f);
+      p.add(cx - 14 * q, cy);
+      p.add(cx - 6 * q, cy - 9 * q);
+      p.add(cx + 13 * q, cy - 9 * q);
+      p.add(cx + 13 * q, cy + 9 * q);
+      p.add(cx - 6 * q, cy + 9 * q);
+      p.draw(cv, false, 2.2f * q, kCream, 0.8f);
+      cv.segment(cx - 1 * q, cy - 4 * q, cx + 7 * q, cy + 4 * q, 2.2f * q, kCream, 0.8f);
+      cv.segment(cx - 1 * q, cy + 4 * q, cx + 7 * q, cy - 4 * q, 2.2f * q, kCream, 0.8f);
       break;
     }
     case KeyId::Done: {
       const Rgb ink = empty ? kCream : kInk;
       const float a = empty ? 0.3f : 1.0f;
       if (cfg_.action == KbAction::Send) {  // ↑
-        cv.segment(cx, cy + 10, cx, cy - 9, 3.2f, ink, a);
-        cv.segment(cx - 8, cy - 1, cx, cy - 10, 3.2f, ink, a);
-        cv.segment(cx + 8, cy - 1, cx, cy - 10, 3.2f, ink, a);
+        cv.segment(cx, cy + 10 * q, cx, cy - 9 * q, 3.2f * q, ink, a);
+        cv.segment(cx - 8 * q, cy - 1 * q, cx, cy - 10 * q, 3.2f * q, ink, a);
+        cv.segment(cx + 8 * q, cy - 1 * q, cx, cy - 10 * q, 3.2f * q, ink, a);
       } else {  // ✓
-        cv.segment(cx - 10, cy + 1, cx - 3, cy + 8, 3.2f, ink, a);
-        cv.segment(cx - 3, cy + 8, cx + 10, cy - 7, 3.2f, ink, a);
+        cv.segment(cx - 10 * q, cy + 1 * q, cx - 3 * q, cy + 8 * q, 3.2f * q, ink, a);
+        cv.segment(cx - 3 * q, cy + 8 * q, cx + 10 * q, cy - 7 * q, 3.2f * q, ink, a);
       }
       break;
     }
@@ -760,23 +776,25 @@ void Keyboard::drawKey(Canvas& cv, int i) {
 }
 
 void Keyboard::drawCallout(Canvas& cv, const Key& k) {
-  const float x = clampf(k.cx - 29.0f, 30.0f, 378.0f), y = k.y0 - 64.0f;
-  cv.roundRect(x - 1.5f, y - 1.5f, x + 59.5f, y + 67.5f, 13, kCream.scaled(0.35f));
-  cv.roundRect(x, y, x + 58, y + 66, 12, kCallout);
+  const float x = clampf(k.cx - S(29), S(30), S(378)), y = k.y0 - S(64);
+  const float w = S(58), h = S(66);
+  cv.roundRect(x - 1.5f, y - 1.5f, x + w + 1.5f, y + h + 1.5f, S(13), kCream.scaled(0.35f));
+  cv.roundRect(x, y, x + w, y + h, S(12), kCallout);
   const uint32_t cp = layer_ == KbLayer::Abc && shift_ != KbShift::Off ? utf8::upper(k.cp) : k.cp;
   const Font& lf = fonts::large();
-  cv.drawText(lf, x + 29, baselineFor(lf, cp, y + 33), cpStr(cp).c_str(), kCream, 1.0f, Align::Center);
+  cv.drawText(lf, x + w * 0.5f, baselineFor(lf, cp, y + h * 0.5f), cpStr(cp).c_str(), kCream, 1.0f, Align::Center);
 }
 
 void Keyboard::drawTray(Canvas& cv) {
-  const float x0 = tray_.left - 6.0f, x1 = tray_.left + 44.0f * tray_.n + 6, y0 = (float)tray_.top,
-              y1 = tray_.top + 62.0f;
-  cv.roundRect(x0 - 1.5f, y0 - 1.5f, x1 + 1.5f, y1 + 1.5f, 15, kCream.scaled(0.35f));
-  cv.roundRect(x0, y0, x1, y1, 14, kCallout);
+  const float pitch = S(44);
+  const float x0 = tray_.left - S(6), x1 = tray_.left + pitch * tray_.n + S(6), y0 = (float)tray_.top,
+              y1 = tray_.top + S(62);
+  cv.roundRect(x0 - 1.5f, y0 - 1.5f, x1 + 1.5f, y1 + 1.5f, S(15), kCream.scaled(0.35f));
+  cv.roundRect(x0, y0, x1, y1, S(14), kCallout);
   const Font& lf = fonts::large();
   for (int i = 0; i < tray_.n; ++i) {
-    const float cx = tray_.left + 44.0f * i + 22;
-    if (i == tray_.sel) cv.roundRect(cx - 21, y0 + 5, cx + 21, y1 - 5, 10, kCapPressed);
+    const float cx = tray_.left + pitch * i + pitch * 0.5f;
+    if (i == tray_.sel) cv.roundRect(cx - S(21), y0 + S(5), cx + S(21), y1 - S(5), S(10), kCapPressed);
     const char* p = tray_.items[i].c_str();
     const uint32_t cp = utf8::next(p);
     cv.drawText(lf, cx, baselineFor(lf, cp, (y0 + y1) * 0.5f), tray_.items[i].c_str(), kCream, 1.0f,

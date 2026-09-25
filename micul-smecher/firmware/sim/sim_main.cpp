@@ -1,9 +1,11 @@
 // Native simulator: runs the exact firmware "soul" (lib/Suflet) on the PC,
 // drives it with scripted sensor events and writes the frames it draws.
 //
-//   ./suflet_sim <out_dir> [scenario] [seed]
+//   ./suflet_sim <out_dir> [scenario] [seed] [466|480]
 //
-// Each scenario writes <out_dir>/<name>.rgb (raw RGB888 frames, 466x466)
+// The last argument picks the display: 466 (AMOLED, default) or 480 (the
+// 2.8" IPS "SOUL M"); scene coordinates are design pixels scaled to it.
+// Each scenario writes <out_dir>/<name>.rgb (raw RGB888 frames, W x H)
 // plus <name>.json (frame count, fps, body-light per frame, marked stills).
 // The Python script tools/frames_to_media.py turns them into GIF/MP4/contact
 // sheets, or PNG stills (--png). The soulos_* scenes drive the SoulOS Shell
@@ -19,6 +21,7 @@
 #include "Brain.h"
 #include "ClaudeLink.h"
 #include "Face.h"
+#include "Geometry.h"
 #include "Gestures.h"
 #include "Personality.h"
 #include "Shell.h"
@@ -27,7 +30,10 @@ using namespace suflet;
 
 namespace {
 
-constexpr int W = 466, H = 466;
+DisplayGeometry gGeom;  // set from argv before any scene runs
+int W = 466, H = 466;
+// design pixels (466 px disc) -> this display
+inline float P(float designPx) { return gGeom.s(designPx); }
 constexpr float kFps = 30.0f;
 
 struct Recorder {
@@ -96,11 +102,12 @@ struct Sim {
   Shell shell{&alarms};
   TouchGestures touch;
   bool useShell = false, finger = false;
-  float fx = 233, fy = 233;
+  float fx = P(233), fy = P(233);
   uint32_t clock = 1790374680u;  // 2026-09-25 22:18 local
   float clockFrac = 0;
   explicit Sim(uint64_t seed) : brain(Personality::fromSeed(seed), seed * 7 + 1) {
     in.hour = 14.5f;
+    shell.setGeometry(gGeom);
   }
   void step(bool render) {
     const float dt = 1.0f / kFps;
@@ -302,7 +309,7 @@ std::vector<Scenario> scenarios() {
        [](Sim& s) {
          s.useShell = true;
          s.run(0.6f);
-         s.press(233, 250, 0.75f, 0.6f);  // long press: the note field opens
+         s.press(P(233), P(250), 0.75f, 0.6f);  // long press: the note field opens
          s.mark();                          // empty field + context chips
          s.type("Hell");
          s.type("o", 'o');                  // the key callout while pressed
@@ -314,7 +321,7 @@ std::vector<Scenario> scenarios() {
          s.shell.keyboard().keyCenter((uint32_t)'a', x, y);
          s.press(x, y, 0.7f, 0.0f, true);  // long-press a: the variant tray
          s.finger = true;
-         s.fx = x + 44;  // slide to the next variant
+         s.fx = x + P(44);  // slide to the next variant
          s.run(0.2f);
          s.mark();
          s.lift(0.4f);
@@ -336,8 +343,8 @@ std::vector<Scenario> scenarios() {
          // drag on the rim from 23 h round to 7 h (bottom-left)
          for (int i = 0; i <= 24; ++i) {
            const float a = TimePicker::hourAngle(23) - (360.0f - 8 * 15.0f) * i / 24.0f;
-           s.fx = 233 + 205 * cosf(a * 3.14159265f / 180);
-           s.fy = 233 + 205 * sinf(a * 3.14159265f / 180);
+           s.fx = P(233) + P(205) * cosf(a * 3.14159265f / 180);
+           s.fy = P(233) + P(205) * sinf(a * 3.14159265f / 180);
            s.finger = true;
            s.step(true);
          }
@@ -347,15 +354,15 @@ std::vector<Scenario> scenarios() {
          s.mark();  // switched to minutes
          for (int i = 0; i <= 90; ++i) {  // slow drag (60°/s): 1-minute steps
            const float a = TimePicker::minuteAngle(0) + 180.0f * i / 90.0f;
-           s.fx = 233 + 200 * cosf(a * 3.14159265f / 180);
-           s.fy = 233 + 200 * sinf(a * 3.14159265f / 180);
+           s.fx = P(233) + P(200) * cosf(a * 3.14159265f / 180);
+           s.fy = P(233) + P(200) * sinf(a * 3.14159265f / 180);
            s.finger = true;
            s.step(true);
          }
          s.run(0.2f);
          s.mark();  // 07:30, "rings in 9 h 12 min"
          s.lift(0.5f);
-         s.press(233, 350, 0.1f, 1.2f);  // ✓
+         s.press(P(233), P(350), 0.1f, 1.2f);  // ✓
          s.mark();
        }},
       {"night", "At night: warm amber eyes, sleepy, a night light",
@@ -378,12 +385,20 @@ std::vector<Scenario> scenarios() {
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    fprintf(stderr, "usage: %s <out_dir> [scenario|all] [seed]\n", argv[0]);
+    fprintf(stderr, "usage: %s <out_dir> [scenario|all] [seed] [466|480]\n", argv[0]);
     return 2;
   }
   const std::string dir = argv[1];
   const std::string which = argc > 2 ? argv[2] : "all";
   const uint64_t seed = argc > 3 ? strtoull(argv[3], nullptr, 0) : 0xC0FFEEull;
+  const int px = argc > 4 ? atoi(argv[4]) : 466;
+  if (px == 480) gGeom = displays::kLcd28;
+  else if (px != 466) {
+    fprintf(stderr, "display must be 466 or 480\n");
+    return 2;
+  }
+  W = gGeom.w;
+  H = gGeom.h;
 
   const Personality p = Personality::fromSeed(seed);
   printf("seed %llx: %s, eyes %s (%s), shy %.2f, curious %.2f, sleepy %.2f\n",
