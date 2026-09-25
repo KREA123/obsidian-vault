@@ -18,7 +18,7 @@ actualizat: 2026-09-24
 
 ## Pași
 - [x] 1. Randări **v4** (familia de forme, mai mari, nimic pe față, capsula) → `micul-smecher/renders/v4/` → trimise lui Andu.
-- [ ] 2. Research **design la maxim** → `micul-smecher/research/09-product-design-max-2026-09-24.md` + `research/design-max/render-brief.md`.
+- [x] 2. Research **design la maxim** → `micul-smecher/research/09-product-design-max-2026-09-24.md` + `research/design-max/render-brief.md`.
 - [ ] 3. Randări ale **designului final** + dock/capsulă (din render-brief) → `micul-smecher/renders/final/`.
 - [ ] 4. **Tastatura + Alarme** în prototipul SoulOS (`micul-smecher/os/index.html`), copiat în `site/os.html`; module în firmware (TextInput, TimePicker, Alarms + teste); `os/ARCHITECTURE.md`.
 - [ ] 5. **Pagina de lansare**: secțiunea Design cu randările finale + capsula, secțiunea SoulOS (tastatură), republicată la https://claude.ai/artifact/BUAPPdP1W5xnCvSVcsQXoX.
