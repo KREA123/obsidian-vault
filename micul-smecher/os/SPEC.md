@@ -279,3 +279,38 @@ Implemented in `os/index.html` (copy in `site/os.html`). **English is the defaul
 - **Polish.** Frosted layers, a type scale (104/64/34/27/22/19), a press-dip and ripple on every control, and WebAudio sounds (off until the first touch, with a toggle in Settings and Control Center). Haptics are simulated: the device nudges, and on phones the vibration motor ticks too.
 - **New apps.** Weather (scripted, 3 days), Timer (stopwatch with laps, and a countdown with a rim ring), Soul (name editable with the keyboard, birthday, mood and meters), and Games → "Catch the star" (the eyes follow each star). The panel's **Guided tour** plays the best moments by itself; touching the screen takes over.
 - **Keyboard.** In the English UI, Romanian auto-diacritics apply only when the sentence contains real Romanian words. On a long-press, ă î ș ț move to the end of the tray.
+
+## 11. SoulOS 3: design language "Orbit" (prototype v0.4, 25 Sept 2026)
+
+The founder's brief: SoulOS must have its own look, like neither Android nor iOS. SoulOS 2 read as an Apple Watch clone (honeycomb of rounded icons, frosted Control Center, widget cards). SoulOS 3 replaces the whole visual and interaction layer with one rooted in what only SOUL has: a round black OLED face with two living cream eyes. **It is a being, not a phone.** Implemented in `os/index.html` (byte-identical copy in `site/os.html`); every feature of v0.3 is kept.
+
+**What we deliberately avoid.** watchOS: honeycomb of round icons, crown, frosted materials, SF Rounded, green toggles. Wear OS / Material: tiles, chips, cards, FABs, ripples, curved time label. iOS / Android: sheets, blur, rounded-square icons, switches and sliders. Samsung / Tizen: icons around a rotating bezel. Pebble / Playdate / Tamagotchi: pixel and 1-bit art, icon strips. Nothing OS: dot-matrix type, red accent. Teenage Engineering: tiny technical labels on colourful knobs. Rabbit / Humane: orange pixel cards, laser-green projection.
+
+**Three directions, one chosen.** Throwaway mockups live in `os/lang-mockups/` (screens: `screenshots/lang-{A,B,C}-{home,claude,control}.png`).
+- **A · Orbit.** App names ride the lower rim and form the face's smile. You spin them with a finger. The rim also carries titles and status on top, and becomes the light and volume dials in Control. *Chosen:* it is the most original, it uses the round glass, the eyes plus the smile make a face, and it stays legible (the word in the middle is 31 px).
+- **B · Subtitles.** SOUL speaks in serif sentences, and the words you can tap are underlined. Warm, but slow to scan, and it looks like web links. *Kept:* answers, Today and notifications are phrased as things it says, and actions are underlined words.
+- **C · Signs.** SOUL holds up one big line glyph at a time, with a string of glyph beads on the rim. Clean, but close to Wear OS tiles. *Kept:* one thin glyph is held up for big moments (a Claude request, weather, the game).
+
+**Principles.**
+1. **The eyes are the interface.** Everything on the glass is something SOUL says (big words under the eyes) or holds up (one thin glyph). The eyes look at what they present: the word in the middle of the orbit, a notification on the top rim, the dial you are turning, the key under your finger. Every touch makes the eyes glance at the finger. There is no ripple.
+2. **The rim is the dial.** The top rim carries the screen's title, the clock and status, and the notifications. The bottom rim carries the orbit of apps, the one-line hint ("Hold = yes · 2× = no") and, for 1.5 s after each move, where you are (previous · **current** · next). While that hint shows, the app's content fades out beyond r = 170 so the two never collide.
+3. **Said, not boxed.** Nothing has a background, a border, a card, a pill or a shadow. An action is a word with a 2 px line under it. A switch is a lit word (mint dot + ON) or a glyph that lights up. A slider is an arc on the rim with a glowing knob.
+4. **One light at a time.** True black (#000) and one accent per state, and **the eyes take that colour too**: cream `#FFF0C8` = idle/info, ice `#9FC6FF` = listening, amber `#FFB347` = Claude (asking or thinking), mint `#C9F2E4` = done (a 1.4 s flash).
+
+**Type.** *Bricolage Grotesque* (opsz 96, 420–620) is the voice: big words, numbers and answers (104 / 84 / 58 / 46 / 34 / 27 / 24 / 22 px). *Martian Mono* (400, uppercase, tracked .16em, 12–15 px) is the rim: titles, labels, times and tool calls. Both cover ă â î ș ț (Google Fonts latin-ext subsets, checked in the RO keyboard screenshots). The keyboard uses the same pair.
+
+**Glyphs.** One original line set (`GP` in the code) on a 24-unit grid: 2 px stroke at any drawn size, round caps and joins, no fills and no containers. Home and Soul are the eyes themselves; Talk is sound waves around a dot; Claude is a prompt `>_`; Control is a circle with a moon on its orbit. There are ~50 glyphs, including weather (animated rays, drift and rain), media and keyboard.
+
+**Motion signature.**
+- **Out of the eyes:** an app opens by growing from the eyes' position (scale .12 → 1), and fades into them when it closes. Answers drop out of the eyes: a short fall from above as they scale up.
+- **Orbit:** the words coast with the finger's speed and settle on a detent with a soft tock. The word in the middle grows from mono 15 px to Bricolage 31 px, and the preview above it (glyph + one live fact) swaps when it changes.
+- **Notifications orbit in:** they arrive along the top rim (rotate 38° → 0°). An older one keeps orbiting away counter-clockwise and fades.
+- Springs everywhere, as in v0.3. `prefers-reduced-motion` makes them instant.
+
+**Sound.** There are no beeps. There are two voices of one small creature, synthesised in WebAudio. **Hum** is a sawtooth through two vowel band-pass filters with a 7 Hz vibrato, so it sounds like a tiny "mm↑" (open), "mm↓" (close), "hm-hm" (notification), "oh? oh? oh?" (Claude), "mm-hm!" (done), a waking stretch or a sleepy sigh. **Tock** is a short burst of band-passed noise, like a wooden detent: it plays for the orbit, the keys, the dials and taps.
+
+**Component map (v0.3 → v0.4).** Honeycomb → Orbit. Frosted Control Center → Control: light and volume are dials on the left and right rim, and quiet / mic / sound / sleep are glyph-words. Banners → rim notifications. Widget stack → Today said one thing at a time. Page dots → orbit hint on the lower rim. Chips → underlined words. Toggles → lit words. The music progress bar → an arc on the lower rim. Round buttons with fills → thin rings. The "+" button → a "+ NEW" glyph-word.
+
+**On the device.** Rim text is a run of glyphs, each rotated to its angle along the arc (advance ÷ radius). There is no general text-on-path engine: the Canvas widget set gets `RimText(r, angle, align)`. The two fonts become 4bpp atlases, latin-ext included (~120 KB). Glyphs are SDF strokes (lines, arcs, béziers flattened at build time). Tinting the eyes is one colour uniform in `Face`.
+
+**Screenshots:** `screenshots/soulos3-*` (390 and 1440 px), e.g. `soulos3-home`, `-launcher`, `-launcher-spin`, `-launcher-zoom`, `-weather`, `-today`, `-control`, `-notif-stack`, `-claude-type-*`, `-keyboard-*`, `-alarm-*`, `-timer-*`, `-soul`, `-games`, `-charging`, `-sleep`, `-tour`, `-page`.

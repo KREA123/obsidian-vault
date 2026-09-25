@@ -34,7 +34,7 @@ Clipul HOPA cu balans a fost **renunțat** odată cu balansul.
 
 ## Material (CMF)
 - **Aluminiu 6061-T6**, sablat fin și uniform cu microbile de sticlă (≈ 50 µm). Anodizare tip II colorată și sigilată.
-- **În randare:** metallic 1, roughness ≈ 0,39–0,41, anizotropie 0,15 și un coat subțire (IOR 1,6) care imită oxidul sigilat. Granulația e un bump Voronoi fin (≈ 50 µm), iar tonul anodizării variază cu ±3 % pe suprafață.
+- **În randare:** metallic 1, roughness ≈ 0,39 (argint) – 0,46 (grafit), anizotropie 0,15 și un coat subțire (IOR 1,6) care imită oxidul sigilat. Granulația e un bump Voronoi fin (≈ 50 µm), iar tonul anodizării variază cu ±3 % pe suprafață.
 - **Teșitura** se taie după sablare și se anodizează odată cu piesa. Iese la fel de colorată, dar satinat-lucioasă, cu urme circulare de sculă.
 - **Culori:**
 

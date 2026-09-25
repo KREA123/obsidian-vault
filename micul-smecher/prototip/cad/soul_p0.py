@@ -65,7 +65,7 @@ BTNS = {'pwr': ((-11.31, 17.20), 123.3, 7.60), 'boot': ((11.31, 17.10), 56.5, 7.
 
 # ============================================================================ stock parts inside
 # LiPo 503035 (5.0 x 30 x 35, ~500 mAh, PCM + MX1.25 lead): envelope incl. PCM tape and 0.3 swell
-BAT = dict(name='LiPo 503035', W=30.5, L=36.5, T=5.3, bx=0.0, top=(6.0, 9.1), tilt_to=(-30.1, 14.4))
+BAT = dict(name='LiPo 503035', W=30.5, L=36.5, T=5.3, bx=0.3, top=(6.0, 9.1), tilt_to=(-30.1, 14.4))
 # micro speaker 1511 (15 x 11 x 3.5 mm, 8 ohm 1 W, wires) lying on the PCB back, membrane facing the back shell
 SPK = dict(name='speaker 1511', a=15.0, b=11.0, t=3.6, bx=3.0, by=13.0, dd=9.3)
 # screws: M2 from the back.  lower pair clamps the chassis legs, upper pair goes straight into the front
@@ -108,9 +108,9 @@ def eroded_solid(t):
                               np.arange(68.8, 76, 0.7)]))
     for Z in Zs:
         p = g.eroded_poly(Z, t)
-        if p.is_empty or p.area < 4.0:
+        if p.is_empty or p.area < 30.0:
             break
-        rings.append((Z, g.poly_ring(p, N_RING)))
+        rings.append((Z, g.poly_ring(p, 72)))
     return loft(rings)
 
 
@@ -193,6 +193,16 @@ def ray_exit(p0, d, step=0.02, tmax=60.0):
     return (lo + hi) / 2
 
 
+def hollow(outer, inner):
+    """solid between two nested closed lofts (a Boolean cut of nested lofts gives an invalid solid in OCCT)"""
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
+    from OCP.TopoDS import TopoDS
+    mk = BRepBuilderAPI_MakeSolid()
+    mk.Add(outer.Shells()[0].wrapped)
+    mk.Add(TopoDS.Shell_s(inner.Shells()[0].wrapped.Reversed()))
+    return cq.Solid(mk.Solid())
+
+
 def fuse(*shapes):
     shapes = [s for s in shapes if s is not None]
     r = shapes[0]
@@ -260,13 +270,15 @@ def build(vname):
     OUTER = outer_solid()
     INNER = eroded_solid(wall)
     say(f'  outer vol {vol(OUTER):.0f} mm3, inner {vol(INNER):.0f} mm3  ({time.time()-t0:.1f}s)')
-    SHELL = OUTER.cut(INNER)
+    SHELL = hollow(OUTER, INNER)
     TONG_OUT = eroded_solid(wall + tol)
     TONG_IN = eroded_solid(wall + tol + V['tongue_t'])
 
     # ------------------------------------------------ board keep-outs (for cuts and checks)
     board = {
-        'glass': bf.cyl(GLASS_R, 0.0, GLASS_T),
+        'glass': (cq.Workplane(bf.plane).workplane(offset=-GLASS_T).circle(GLASS_R).extrude(GLASS_T - GLASS_CD)
+                  .faces('>Z').workplane().circle(GLASS_R).workplane(offset=GLASS_CD).circle(GLASS_FLAT_R)
+                  .loft().val()).fuse(bf.cyl(GLASS_R, GLASS_CD, GLASS_T)).clean(),
         'module': bf.cyl(MOD_R, GLASS_T, PCB_D[1]),
         'components': bf.cyl(22.0, PCB_D[1], COMP_D),
         'usb_receptacle': bf.box(-4.47, 4.47, -USB_FACE_R, -16.3, USB_DD - 1.63, USB_DD + 1.63),
@@ -302,7 +314,7 @@ def build(vname):
             sub[k].append(solid)
 
     # alignment tongue: inside the back half's inner wall, tol clearance (in band mode it belongs to the band)
-    tongue = TONG_OUT.cut(TONG_IN).intersect(SeamFrame.slab(-band / 2 - 0.01, band / 2 + V['tongue_h']))
+    tongue = hollow(TONG_OUT, TONG_IN).intersect(SeamFrame.slab(-band / 2 - 0.01, band / 2 + V['tongue_h']))
     add['band' if band > 0 else 'front'].append(tongue)
 
     # ------------------------------------------------ screw bosses
@@ -415,7 +427,8 @@ def build(vname):
     front = finish(SHELL.intersect(FRONT_HALF), add['front'], sub['front'])
     back = finish(SHELL.intersect(BACK_HALF), add['back'], sub['back'])
     seam_band = finish(SHELL.intersect(BAND_SLAB), add['band'], sub['band']) if band > 0 else None
-    say(f'  shells assembled ({time.time()-t1:.0f}s)')
+    say(f'  shells assembled ({time.time()-t1:.0f}s); valid: front {front.isValid()} back {back.isValid()}'
+        + ('' if seam_band is None else f' band {seam_band.isValid()}') + f'; volumes {vol(front):.0f} / {vol(back):.0f}')
 
     # ------------------------------------------------ CHASSIS (printed, both variants)
     a, nrm, top_f, bot_f = bat_geometry(bf)
@@ -461,7 +474,7 @@ def build(vname):
     keep_out = [s for k, s in board.items() if not k.startswith('standoff')]
     keep_out.append(bf.box(-40, 40, -40, 40, -5, COMP_D + 0.3))
     chassis = chassis.cut(*(ch_sub + keep_out + [battery, speaker, usb_plug])).clean()
-    say(f'  chassis ({time.time()-t1:.0f}s), volume {vol(chassis):.0f} mm3')
+    say(f'  chassis ({time.time()-t1:.0f}s), volume {vol(chassis):.0f} mm3, valid {chassis.isValid()}')
 
     shells = {'front_shell': front, 'back_shell': back, 'chassis': chassis}
     if seam_band is not None:

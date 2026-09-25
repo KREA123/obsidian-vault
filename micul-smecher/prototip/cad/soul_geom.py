@@ -235,7 +235,7 @@ def poly_ring(poly, n):
         P = P[::-1]
     P = resample(P, 4 * n, curv_w=0.0)
     P = start_at_back(P)
-    return resample(P, n, curv_w=2.0)
+    return resample(P, n, curv_w=0.0)
 
 
 def ring_pts(Z, n):

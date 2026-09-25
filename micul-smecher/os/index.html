@@ -142,7 +142,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .pill.mint text:not(.who){fill:var(--mint)}.pill.mint .ln{stroke:var(--mint);opacity:.8}
 .pill .hit{fill:none;stroke:transparent;stroke-width:64;pointer-events:stroke;cursor:pointer}
 .pill.ghost{z-index:6;pointer-events:none;transition:transform .7s cubic-bezier(.2,1,.3,1),opacity .7s ease}
-.pill.ghost .hit{pointer-events:none}
+.pill.ghost .hit,.pill:not(.show) .hit{pointer-events:none}
 /* lists: a time on the rim font, the words in the voice font; no rows, no boxes */
 .list{position:absolute;top:150px;left:74px;right:74px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .list li{display:flex;align-items:center;gap:14px;min-height:62px;padding:0 4px;text-align:left;position:relative}
@@ -301,7 +301,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .opv b{font:500 44px/1 var(--v);letter-spacing:-.02em;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .opv small{font:400 14px/1 var(--r);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
 .opv .row1{display:flex;align-items:center;gap:14px;max-width:100%}
-.opv.swap{animation:fin .35s cubic-bezier(.2,.9,.3,1) both}
+.opv.flip{animation:fin .35s cubic-bezier(.2,.9,.3,1) both}
 .otick{position:absolute;left:231px;top:446px;width:4px;height:12px;border-radius:2px;background:var(--cream);box-shadow:0 0 8px rgba(255,240,200,.7)}
 
 /* Today: things it wants to tell you, one at a time, like a teleprompter under the eyes */
@@ -443,7 +443,7 @@ details.fold[open]>summary::after{content:"–"}
 @media (hover:none) and (pointer:coarse),(max-width:600px){.keys{display:none}}
 html{overscroll-behavior-x:none}
 
-@media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in,.coach,.wxbody.wxin,.opv.swap{animation:none}
+@media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in,.coach,.wxbody.wxin,.opv.flip{animation:none}
   .rip,.wx-rays,.wx-cloud,.wx-rain line,.gtile svg{animation:none!important}[data-act],.ccb,.tdots i{transition:none!important}}
 </style>
 
@@ -1421,11 +1421,12 @@ function showPill(o) {
     S.nh.unshift({ who: o.who || "", text: o.text, kind: o.kind || "", t: hhmm() }); if (S.nh.length > 6) S.nh.length = 6;
     if (S.dnd && o.kind !== "amber") { if (S.view === "today") refresh(); return; }       // Do not disturb: kept in Today, no banner
   }
+  if (S.cc && o.kind !== "amber") return;                                              // Control owns the rim: the note waits in Today
   const wasShown = S.pill && pillEl.classList.contains("show");
   if (wasShown && !RM && o.incoming) {
     const g = pillEl.cloneNode(true); g.removeAttribute("id"); g.removeAttribute("aria-live"); g.classList.add("ghost");
     screen.insertBefore(g, pillEl); ghosts.unshift(g);
-    ghosts.forEach((x, i) => requestAnimationFrame(() => { x.style.transform = `rotate(${-34 - i * 26}deg)`; x.style.opacity = i > 1 ? "0" : String(0.42 - i * 0.18); }));
+    ghosts.forEach((x, i) => requestAnimationFrame(() => { x.style.transform = `rotate(${-78 - i * 30}deg)`; x.style.opacity = i > 1 ? "0" : String(0.3 - i * 0.15); }));
     setTimeout(() => { g.style.opacity = "0"; }, 2600); setTimeout(() => { g.remove(); ghosts = ghosts.filter(x => x !== g); }, 3400);
   }
   S.pill = o; cancel("pill");
@@ -2781,7 +2782,7 @@ function launcherFrame(dt, force) {
   if (near !== LN.near) {
     LN.near = near; sfx("tick"); hap("light");
     const pv = curCard.querySelector('[data-live="opv"]');
-    if (pv) { pv.dataset.app = near; pv.innerHTML = orbPreview(near); pv.classList.remove("swap"); void pv.offsetWidth; pv.classList.add("swap"); }
+    if (pv) { pv.dataset.app = near; pv.innerHTML = orbPreview(near); pv.classList.remove("flip"); void pv.offsetWidth; pv.classList.add("flip"); }
   }
   const moving = LN.drag || Math.abs(LN.vr) > 0.3;
   if (moving) soul.lookAt(clamp(LN.drag ? 0 : -LN.vr * 0.12, -0.9, 0.9), 0.75, 0.25); else soul.lookAt(0, 0.95, 0.4);
@@ -2834,7 +2835,7 @@ function stackFrame(dt) {
   if (!TD.drag) { if (RM) TD.s = TD.tgt; else { TD.v += (200 * (TD.tgt - TD.s) - 25 * TD.v) * dt; TD.s += TD.v * dt; } }
   curCard.querySelectorAll(".wg").forEach((el, i) => {
     const d = i - TD.s, ad = Math.abs(d);
-    const s = 1 - 0.12 * Math.min(1.6, ad), o = d < 0 ? clamp(1 + d * 1.8, 0, 1) : clamp(1 - d * 0.62, 0, 1);
+    const s = 1 - 0.16 * Math.min(1.6, ad), o = d < 0 ? clamp(1 + d * 1.8, 0, 1) : clamp(1 - d * 0.8, 0, 1);
     el.style.transform = `translate3d(0,${(174 + d * 176).toFixed(1)}px,0) scale(${s.toFixed(3)})`;
     el.style.opacity = o.toFixed(3); el.style.zIndex = String(20 - Math.round(ad * 2)); el.style.pointerEvents = ad < 0.5 ? "" : "none";
   });
@@ -2864,7 +2865,7 @@ function weatherHTML() {
     <div class="wxmain">${wxIcon(W.ic, 84)}<span class="wxt">${W.t}°</span></div>
     <div class="wxc">${esc(W.c)} · ↑${W.hi}° ↓${W.lo}°</div>
     <div class="wxh">${W.h.map(h => `<div><small>${h[0]}</small>${wxIcon(h[2], 30)}<b>${h[1]}°</b></div>`).join("")}</div>
-    ${rimBot(L.wx.days.map((d, i) => `<tspan class="${i === S.wx.day ? "cream" : ""}" style="${i === S.wx.day ? "" : "opacity:.5"}">${esc(d.d)}</tspan>`).join(" · "), "")}</div>`;
+    <svg class="rim" viewBox="0 0 466 466" aria-hidden="true">${L.wx.days.map((d, i) => `<path d="${arcD(90 + (1 - i) * 6 - 1.6, 90 + (1 - i) * 6 + 1.6, 216)}" fill="none" stroke="${i === S.wx.day ? "#FFF0C8" : "rgba(255,240,200,.25)"}" stroke-width="4" stroke-linecap="round"/>`).join("")}</svg></div>`;
 }
 
 /* ================================================================ Timer: stopwatch + countdown */
@@ -2993,10 +2994,11 @@ function ccHTML() {
 /* the two rim dials: light fills up the left rim, volume up the right rim (degrees, 0 = 3 o'clock) */
 const CCA = { b: [128, 232], v: [52, -52] };
 function ccRender() { ccEl.innerHTML = ccHTML(); }
-function ccPrep() { S.ccMsg = ""; ccRender(); }
+function ccPrep() { S.ccMsg = ""; ccRender(); if (S.pill) hidePill(); }              // Control owns the rim while it is open
 const ccY = () => stOf(ccEl).y;
 function ccDrag(y) { y = Math.min(y, 40); setSt(ccEl, { y, s: 1, o: clamp((y + 466) / 230, 0, 1) }); screen.classList.toggle("cc-on", y > -330); applyFaceState(); }
 function ccOpen(v) {
+  if (S.pill) hidePill();
   if (!S.cc) { S.cc = true; if (!ccEl.innerHTML) ccPrep(); else ccRender(); sfx("open"); hap("light"); soul.lookAt(0, 1, 0.9); S.coach = false; }
   screen.classList.add("cc-on"); applyFaceState();
   ccEl.style.pointerEvents = "auto"; spring(ccEl, { y: 0, o: 1, s: 1 }, { k: 300, c: 28, v: v ? { y: v } : undefined }); syncPanel();
@@ -3028,7 +3030,7 @@ function ccSlide(p) {
 const SR = { el: $("#sring"), bat: $("#sr-bat"), batg: $("#sr-batg"), cl: $("#sr-cl"), lvl: -1, chg: null, op: -1, a1: 146 };
 function statusFrame(t) {
   const v = S.view, hide = !!S.kb || S.chgShow || S.cc || ["focus", "dial", "ring", "voice", "alarmsum"].includes(v) || (v === "timer" && S.tm.mode === "cd") || (v === "games" && S.game.run);
-  const op = hide || v === "apps" ? 0 : S.sleeping ? 0.5 : ["home", "today"].includes(v) ? 1 : 0.45;
+  const op = hide || v === "apps" || v === "today" ? 0 : S.sleeping ? 0.5 : v === "home" ? 1 : 0.4;
   if (SR.op !== op) { SR.op = op; SR.el.style.opacity = op; }
   if (!op) return;
   const B = S.batt, lv = Math.round(B.lvl);
@@ -3119,7 +3121,7 @@ async function tourRun() {
   if (TOUR) { tourStop(); return; }
   const tok = TOUR = { stop: false }; updTourBtn();
   const stopErr = () => Object.assign(new Error("tour stopped"), { tourStop: true });
-  const W = ms => new Promise((res, rej) => setTimeout(() => (tok.stop ? rej(stopErr()) : res()), ms));
+  const W = ms => new Promise((res, rej) => { const t0 = performance.now(), f = () => { if (tok.stop) rej(stopErr()); else if (performance.now() - t0 >= ms) res(); else setTimeout(f, Math.min(40, ms)); }; setTimeout(f, Math.min(40, ms)); });
   const tw = (ms, fn) => new Promise((res, rej) => { const t0 = performance.now(); const st = now => { if (tok.stop) { rej(stopErr()); return; } const t = RM ? 1 : Math.min(1, (now - t0) / ms); fn(ease(t), t); if (t < 1) requestAnimationFrame(st); else res(); }; requestAnimationFrame(st); });
   const down = d => fingerEl.classList.toggle("down", d);
   const tapAt = async (x, y) => { fingerAt(x, y); await W(300); down(true); ripple({ x, y }); await W(130); down(false); };
