@@ -54,6 +54,14 @@ plus cadrul opțional F. Alternativele PIATRA și MĂRGĂRITAR nu sunt în acest
 | `soul_v5_boxback.png` | **10b · Spatele manșonului:** blocul legal la 6 pt (CE, pubelă, baterie, producător, „Companion AI · vorbești cu o inteligență artificială…”, „Nu este o jucărie · 14+”). |
 | `soul_v5_ou_day.png` | **F (opțional) · Ziua, pe un birou de nuc:** oul deschis, SOUL la 14°, privind în stânga, cu un laptop estompat în spate. |
 
+### Acoperirea §9 (verificat 2026-09-25)
+
+Toate cadrele cerute în §9 al briefului (1, 2 + testul la 20 px, 2b, 3, 4, 5, 6a, 6b, 7, 8, 9, 10a, 10b) există
+în acest dosar, la rezoluția cerută. Fiecare PNG a fost deschis și verificat vizual: niciunul nu e stricat, așa că
+nu s-a re-randat nimic. Fața are doar corp + sticlă, difuzorul e în cusătura laterală, contactele de încărcare sunt
+dedesubt, iar SOUL stă în picioare. Cadrele opționale G (`sole_swap`), C (`choice`), D (`hopa_strobe`), E
+(`hopa_nudge.mp4`) și cadrele alternativelor A/B nu fac parte din setul obligatoriu și nu sunt aici.
+
 ## Abateri de la brief (și de ce)
 
 - **Hero:** cu camera la −24° (din −x, cum cere revizia), oul pus la (−95, +120) iese cu ~17° în afara cadrului.

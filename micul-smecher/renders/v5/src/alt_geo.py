@@ -252,6 +252,7 @@ class Margaritar(AltBody):
     z_bot = 1.5               # pearl hull; the 28 x 17 zamak plate below it (z 0 - 1.0) + a 0.5 reveal
     r_fil = 0.6
     plate_t = 1.0
+    FADE = 4.0                # the flat table fades into the rolls over 4 mm (1.5 left a crease at the forehead)
     zc = 38.9
     r_table = 28.0            # flat Ø56 zone; beyond it the face bends at R150 into the chin
     r_glass = 26.0            # flat Ø52 2.5D glass

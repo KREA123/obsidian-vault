@@ -6,6 +6,7 @@
         check1_*      -> kept next to the input; when all four panels exist -> soul_v5_check1.png (2400 x 1200),
                          with the ember band measured on the render and labelled
         front_00      -> soul_v5_front_00.png + proportions check (printed, written to <outdir>/checks_v5.txt)
+        choices       -> soul_v5_choices.png (+ the small CGI note; the labels come from annotate.py)
         other         -> soul_v5_<shot>.png
     python3 compose_v5.py shadow20 - <outdir>   -> soul_v5_shadow20.png (20 px silhouettes: SOUL, v1 coin, v4 pebble)
 """
@@ -256,6 +257,18 @@ def shadow20(outdir):
     print('wrote', out)
 
 
+def choices(png, outdir):
+    """Decision board (labels already drawn by annotate.py): add the small CGI note in the lower-right corner."""
+    im = Image.open(png).convert('RGB')
+    W, H = im.size
+    d = ImageDraw.Draw(im)
+    f = ImageFont.truetype(FONT, int(H * 0.016))
+    d.text((W - int(H * 0.03), H - int(H * 0.03)), 'randare / concept (CGI)', font=f, fill=INK, anchor='rs')
+    dst = os.path.join(outdir, 'soul_v5_choices.png')
+    im.save(dst, optimize=True)
+    print('wrote', dst)
+
+
 def main():
     shot, png, outdir = sys.argv[1], sys.argv[2], sys.argv[3]
     if shot == 'shadow20':
@@ -267,6 +280,8 @@ def main():
         return hero(png, outdir)
     if shot.startswith('check1'):
         return check1(png, outdir)
+    if shot == 'choices' and not pre:
+        return choices(png, outdir)
     if not pre:
         dst = os.path.join(outdir, 'soul_v5_%s.png' % shot)
         shutil.copyfile(png, dst)
