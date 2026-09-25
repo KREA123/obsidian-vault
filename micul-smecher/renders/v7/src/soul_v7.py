@@ -175,8 +175,8 @@ def phone_slab(loc_mm, yaw, lying=True):
     gl.location = (0, 0, 3.65 * MM)
     m, nt, p, out = new_mat('phone_glass')
     set_in(p, 'Base Color', srgb('#050506'))
-    set_in(p, 'Roughness', 0.03)
-    set_in(p, 'Specular IOR Level', 0.5)
+    set_in(p, 'Roughness', TUNE.get('ph_rough', 0.16))
+    set_in(p, 'Specular IOR Level', 0.35)
     assign(gl, m)
     par = new_par('phone_par')
     parent_all(par, [ob, gl])
@@ -272,11 +272,11 @@ def shot_lineup():
         pars.append(s)
         xs.append(cx)
         x += w + gapx
-    phone_slab((TUNE.get('ph_x', -205.0), TUNE.get('ph_y', -55.0)), TUNE.get('ph_yaw', 74.0))
+    phone_slab((TUNE.get('ph_x', -215.0), TUNE.get('ph_y', -55.0)), TUNE.get('ph_yaw', 82.0))
     mug((x + TUNE.get('mug_dx', 45.0), TUNE.get('mug_y', 30.0)), TUNE.get('mug_yaw', -50.0))
-    T = Vector((TUNE.get('lu_tx', 0.0) * MM, 0.0, TUNE.get('lu_tz', 45.0) * MM))
-    cam = cam_aed(T, TUNE.get('lu_az', -8.0), TUNE.get('lu_el', 16.0), TUNE.get('lu_d', 900.0),
-                  TUNE.get('lu_lens', 60.0), 11.0, focus=Vector((0, 0, 0.05)))
+    T = Vector((TUNE.get('lu_tx', 12.0) * MM, 0.0, TUNE.get('lu_tz', 45.0) * MM))
+    cam = cam_aed(T, TUNE.get('lu_az', -3.0), TUNE.get('lu_el', 20.0), TUNE.get('lu_d', 950.0),
+                  TUNE.get('lu_lens', 55.0), 11.0, focus=Vector((0, 0, 0.05)))
     black_glass(cam, T, pars, glint=False)
     metalise(cam, T, pars)
     studio(T, 1.6)
@@ -285,7 +285,7 @@ def shot_lineup():
     for size, s in zip(('S', 'M', 'L'), pars):
         sz = SIZES[size]
         base = s.matrix_world @ Vector((0, -BODY[2] * 0.5 * MM, 0))
-        ANNOT.append(dict(label='%s|%s|%.0f × %.0f mm' % (size, sz['panel'], sz['W'], sz['H']),
+        ANNOT.append(dict(label='%s|%s|%.0f × %.0f × %.0f mm' % (size, sz['panel'], sz['W'], sz['H'], sz['depth']),
                           a=Vector((base.x, base.y - 0.04, 0.0)), b=base))
     return sc
 
@@ -303,9 +303,9 @@ def shot_typing():
     rest = build_hand7('hold')
     s = build_soul('ty', 'silver', eyes='soul_front')
     ctr = Vector((0, -1.0 * MM, 37.0 * MM))
-    a = TUNE.get('t_tilt', 50.0)
+    a = TUNE.get('t_tilt', 40.0)
     Rh = Matrix.Rotation(R(TUNE.get('t_rz', -6.0)), 4, 'Z') @ Matrix.Rotation(R(a - 90.0), 4, 'X')
-    loc_h = Vector((TUNE.get('t_x', -8.0) * MM, TUNE.get('t_y', 14.0) * MM, 0.09))
+    loc_h = Vector((TUNE.get('t_x', -14.0) * MM, TUNE.get('t_y', 34.0) * MM, 0.09))
     s.matrix_world = HM @ Matrix.Translation(loc_h) @ Rh @ scale_mat(size) @ Matrix.Translation(-ctr)
     rest_on(s, rest, gap=0.3)
     screen_setup(s, size, os.path.join(TEX7, 'kbd_hello.png'), strength=TUNE.get('kbd_str', 2.2))
@@ -315,7 +315,7 @@ def shot_typing():
     px, py = TUNE.get('key_px', 321.0), TUNE.get('key_py', 314.0)
     u = (px - 233.0) / 233.0 * sz['act']
     v = -(py - 233.0) / 233.0 * sz['act']
-    hover = TUNE.get('hover', 5.0) + 8.8           # gap above the glass + the thumb-tip radius
+    hover = TUNE.get('hover', 3.0) + 8.8           # gap above the glass + the thumb-tip radius
     tgt_w = Mg @ Vector((u * MM, v * MM, 0.0))
     nrm_w = (Mg.to_3x3() @ Vector((0, 0, 1))).normalized()
     # the glass object carries the body scale; move off the face in world mm
@@ -339,9 +339,9 @@ def shot_typing():
     if os.path.exists(p):
         os.remove(p)
     build_hand7('type')
-    T = Vector((TUNE.get('ty_tx', 0.0) * MM, TUNE.get('ty_ty', 0.0) * MM, TUNE.get('ty_tz', 60.0) * MM))
-    cam = camera(T + Vector((TUNE.get('tc_x', 0.08), TUNE.get('tc_y', -0.36), TUNE.get('tc_z', 0.20))), T,
-                 lens=TUNE.get('t_lens', 60.0), fstop=TUNE.get('t_f', 8.0), focus=glass_world(s)[0])
+    T = Vector((TUNE.get('ty_tx', 0.0) * MM, TUNE.get('ty_ty', 0.0) * MM, TUNE.get('ty_tz', 45.0) * MM))
+    cam = camera(T + Vector((TUNE.get('tc_x', 0.22), TUNE.get('tc_y', -0.28), TUNE.get('tc_z', 0.24))), T,
+                 lens=TUNE.get('t_lens', 55.0), fstop=TUNE.get('t_f', 8.0), focus=glass_world(s)[0])
     flag(cam, T)
     mirror_card(s, cam)
     metal_front_card(cam, T, col=TUNE.get('fc_col', 0.5))

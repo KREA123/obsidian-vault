@@ -569,7 +569,7 @@ def mesh_checks(shells, parts_in, say):
     for pn in ['glass', 'module', 'components', 'header_8pin', 'plug_spk', 'plug_bat', 'usb_receptacle', 'usb_plug',
                'btn_pwr', 'btn_boot', 'standoff_1', 'standoff_2', 'standoff_3', 'battery', 'speaker']:
         pts, _ = trimesh.sample.sample_surface_even(P[pn], 1500)
-        pts = np.vstack([pts, P[pn].vertices])
+        pts = pts[:1500]
         row = {}
         for sn, sm in M.items():
             d = trimesh.proximity.signed_distance(sm, pts)       # >0 inside the shell mesh
