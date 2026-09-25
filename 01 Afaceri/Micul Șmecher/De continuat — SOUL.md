@@ -16,6 +16,8 @@ actualizat: 2026-09-24
 - **Premium, „șmecher”**, inovativ — dar **ieftin de făcut** (carcasă ≤ ~$10/buc. la 10k).
 - SOUL merge **fără AI**, cu **Claude-ul tău** sau cu **ChatGPT-ul tău**; tastatură în SoulOS (scrii lui Claude, notițe, alarme).
 
+> **Prima serie = 10–25 bucăți** (test de vânzare): fără matrițe; aluminiu CNC + anodizat; costuri și kit de prototip pentru această cantitate.
+
 ## Pași
 - [x] 1. Randări **v4** (familia de forme, mai mari, nimic pe față, capsula) → `micul-smecher/renders/v4/` → trimise lui Andu.
 - [x] 2. Research **design la maxim** → `micul-smecher/research/09-product-design-max-2026-09-24.md` + `research/design-max/render-brief.md`.
