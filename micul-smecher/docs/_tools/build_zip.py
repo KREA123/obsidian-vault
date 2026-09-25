@@ -37,7 +37,7 @@ SPEC = [
     ('research', ['*.md'], True),                  # so the links in docs/ work
     ('investors', ['*'], True),                    # incl. poc-1.1 official annexes
 ]
-EXCLUDE = ['site/screenshots/*', 'docs/_tools/*.pyc']
+EXCLUDE = ['prototip/stl/assembly/*', 'prototip/step/plastic/*', 'site/screenshots/*', 'docs/_tools/*.pyc']
 
 README = """# SOUL: complete package
 
@@ -121,7 +121,7 @@ def main():
         lines = ['Files NOT in this zip (too large; > %d MB even compressed). Find them in the vault folder micul-smecher/:' % (MAX_DEFLATED >> 20), '']
         lines += ['%8.1f MB  %s' % (s / 1e6, r) for r, s in skipped] or ['(none)']
         lines += ['', 'Also excluded by rule: a raw .step when a .step.gz twin exists (gunzip it), firmware/.pio (build output), ai caches and data/, prototip/cad/cache,',
-                  'site/screenshots, os/screenshots, os/research, os/lang-mockups, cad/, media/, older renders (v4/v5), blueprints/src.']
+                  'prototip/stl/assembly (fit-check meshes), prototip/step/plastic (print from the STLs), site/screenshots, os/screenshots, os/research, os/lang-mockups, cad/, media/, older renders (v4/v5), blueprints/src.']
         if missing:
             lines += ['', 'Folders expected but missing when the zip was built: ' + ', '.join(missing)]
         z.writestr(PREFIX + 'SKIPPED.txt', '\n'.join(lines) + '\n')

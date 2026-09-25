@@ -100,11 +100,11 @@
 <line class="fr2" x1="210" y1="287" x2="210" y2="297" />
 <line class="fr2" x1="0" y1="148.5" x2="10" y2="148.5" />
 <line class="fr2" x1="410" y1="148.5" x2="420" y2="148.5" />
-<path class="o" d="M48.053 256.75 L47.41 233.023 L47.241 226.795 L47.858 226.324 L48.133 226.08 L48.395 226.106 L49.178 226.183 L48.963 228.381 L48.889 229.141 L50.018 229.317 L50.597 229.359 L50.666 231.042 L51.712 256.75 L49.713 256.75 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
+<path class="o" d="M48.053 256.75 L47.77 252.336 L47.234 228.724 L47.241 226.795 L47.858 226.324 L48.133 226.08 L48.395 226.106 L49.178 226.183 L48.963 228.381 L48.889 229.141 L50.018 229.317 L50.597 229.359 L50.6 230.008 L51.326 252.563 L51.712 256.75 L49.713 256.75 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
 <path class="o" d="M65.287 61.644 L65.068 63.881 L64.998 64.602 L64.736 64.576 L63.953 64.499 L63.643 64.082 L63.154 63.496 L64.322 59.794 L65.579 55.906 L67.817 48.745 L71.737 43.962 L73.12 42.108 L73.253 41.972 L73.165 44.985 L73.13 46.176 L73.1 47.202 L73.092 47.202 L73.099 47.208 L73.099 47.21 L73.079 47.91 L72.487 48.26 L72.024 48.544 L71.753 48.829 L71.603 48.982 L71.378 49.364 L71.101 49.889 L69.675 52.738 L67.412 60.447 L67.028 61.763 L66.509 61.696 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
 <path class="o" d="M69.573 256.4 L69.568 256.57 L69.562 256.75 L68.242 256.75 L66.919 256.75 L66.924 256.57 L66.929 256.4 L68.252 256.4 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
-<path class="o" d="M104.227 252.033 L104.227 251.15 L105.765 251.15 L105.596 256.75 L102.093 256.75 L102.233 253.95 L104.227 253.95 Z" style="fill:url(#hB)" fill-rule="evenodd"/>
-<path class="o" d="M75.444 41.137 L74.115 41.425 L75.514 41.121 L75.582 41.105 L75.655 41.133 L76.039 41.244 L76.331 41.335 L76.529 41.415 L76.643 41.475 L76.735 41.536 L76.809 41.596 L76.881 41.667 L76.953 41.752 L77.016 41.844 L77.098 41.988 L77.226 42.27 L77.428 42.718 L81.894 50.72 L85.455 58.685 L87.281 63.632 L89.041 69.255 L91.901 81.047 L95.878 110.875 L98.205 140.515 L99.228 178.104 L105.409 244.15 L104.227 244.15 L104.227 243.267 L104.227 241.35 L101.678 241.35 L96.507 192.527 L93.777 126.832 L89.894 90.038 L87.376 76.705 L84.714 67.015 L81.443 58.04 L77.88 50.556 L77.087 48.994 L76.934 48.745 L76.856 48.632 L76.774 48.528 L76.272 48.003 L76.179 47.895 L76.138 47.84 L76.1 47.783 L76.066 47.722 L76.037 47.659 L76.014 47.592 L76.005 47.558 L75.998 47.523 L75.992 47.486 L75.988 47.449 L75.985 47.371 L75.991 47.289 L76.004 47.202 L73.293 47.529 L73.293 47.523 L73.276 47.466 L73.264 47.424 L73.226 47.362 L73.198 47.317 L73.194 47.313 L73.1 47.202 Z" style="fill:url(#hB)" fill-rule="evenodd"/>
+<path class="o" d="M99.228 178.104 L105.409 244.15 L104.227 244.15 L104.227 243.267 L104.227 241.35 L101.678 241.35 L96.507 192.527 L93.777 126.832 L89.894 90.038 L87.376 76.705 L84.714 67.015 L81.443 58.04 L77.88 50.556 L77.087 48.994 L76.934 48.745 L76.856 48.632 L76.774 48.528 L76.272 48.003 L76.179 47.895 L76.138 47.84 L76.1 47.783 L76.066 47.722 L76.037 47.659 L76.014 47.592 L76.005 47.558 L75.998 47.523 L75.992 47.486 L75.988 47.449 L75.985 47.371 L75.991 47.289 L73.272 41.9 L73.635 41.633 L74.132 41.462 L74.137 41.46 L75.207 41.521 L76.529 41.415 L76.643 41.475 L76.735 41.536 L76.809 41.596 L76.881 41.667 L76.953 41.752 L77.016 41.844 L77.098 41.988 L77.226 42.27 L77.428 42.718 L81.894 50.72 L85.455 58.685 L87.281 63.632 L89.041 69.255 L91.901 81.047 L95.878 110.875 L98.205 140.515 Z" style="fill:url(#hB)" fill-rule="evenodd"/>
+<path class="o" d="M102.233 253.95 L104.227 253.95 L104.227 252.033 L104.227 251.15 L105.765 251.15 L105.596 256.75 L102.093 256.75 Z" style="fill:url(#hB)" fill-rule="evenodd"/>
 <path class="o" d="M55.958 264.097 L55.89 264.087 L55.89 264.087 L55.824 264.07 L55.759 264.047 L55.759 264.047 L55.759 264.047 L55.697 264.017 L55.697 264.017 L55.638 263.982 L55.638 263.982 L55.583 263.941 L55.532 263.895 L55.532 263.895 L55.532 263.895 L55.486 263.844 L55.486 263.844 L55.445 263.789 L55.445 263.789 L55.41 263.73 L55.41 263.73 L55.38 263.668 L55.357 263.603 L55.34 263.537 L55.33 263.469 L55.327 263.4 L55.327 262 L49.733 262 L48.943 260.529 L48.794 260.25 L48.419 258.739 L48.013 257.1 L48.052 257.045 L48.301 256.75 L50.505 256.75 L52.164 256.75 L51.705 255.749 L51.646 255.56 L51.587 255.35 L51.356 253.995 L51.323 253.8 L51.313 253.734 L51.309 253.7 L51.299 253.571 L51.472 252.375 L52.587 252.375 L53.163 252.375 L53.02 253.085 L53.02 253.19 L53.028 253.336 L53.047 253.548 L53.052 253.6 L53.251 254.736 L53.297 255 L53.353 255.215 L53.406 255.404 L53.758 256.4 L61.994 256.4 L72.727 256.4 L72.727 255.175 L72.727 253.95 L101.884 253.95 L101.744 256.75 L105.596 256.75 L105.333 259.465 L104.908 262 L98.937 262 L98.937 263.4 L98.934 263.469 L98.924 263.537 L98.907 263.603 L98.884 263.668 L98.854 263.73 L98.854 263.73 L98.819 263.789 L98.819 263.789 L98.778 263.844 L98.778 263.844 L98.732 263.895 L98.732 263.895 L98.681 263.941 L98.681 263.941 L98.626 263.982 L98.626 263.982 L98.626 263.982 L98.567 264.017 L98.505 264.047 L98.505 264.047 L98.44 264.07 L98.44 264.07 L98.44 264.07 L98.374 264.087 L98.374 264.087 L98.306 264.097 L98.237 264.1 L98.237 264.1 L98.195 264.1 L77.132 264.1 L56.069 264.1 L56.027 264.1 L56.027 264.1 L55.958 264.097 Z" style="fill:url(#hD)" fill-rule="evenodd"/>
 <path class="o2" d="M70.817 209.907 L67.982 238.861 L71.901 239.245 L75.82 239.628 L75.691 240.946 L75.651 241.35 L73.314 241.35 L70.977 241.35 L70.977 241.483 L70.977 241.616 L70.256 241.545 L67.744 241.299 L67.718 241.559 L67.692 241.822 L67.505 241.803 L67.462 241.799 L67.41 241.794 L67.304 241.784 L67.208 241.774 L67.148 241.768 L67.067 241.761 L66.965 241.751 L66.859 241.74 L66.738 241.728 L66.613 241.716 L66.474 241.702 L66.332 241.689 L66.176 241.673 L66.017 241.658 L65.846 241.641 L65.672 241.624 L65.56 241.613 L65.371 241.594 L65.254 241.583 L65.301 241.105 L65.348 240.627 L65.394 240.157 L65.44 239.685 L65.485 239.223 L65.531 238.76 L65.575 238.305 L65.62 237.85 L67.581 217.815 L68.18 211.699 L68.364 209.818 L67.151 209.774 L67.151 209.679 L67.168 209.68 L67.173 209.681 L67.19 209.681 L67.346 209.682 L67.405 209.675 L67.518 209.66 L67.717 209.699 L67.846 209.724 L67.947 208.692 L68.503 208.394 L68.77 205.668 L69.22 201.077 L73.38 158.582 L73.392 158.467 L73.403 158.35 L73.414 158.234 L73.426 158.119 L73.437 158.007 L73.447 157.899 L73.457 157.797 L74.198 150.232 L74.716 150.283 L77.159 150.522 L77.123 150.888 L76.954 152.612 L76.543 152.572 L76.432 152.561 L71.406 203.889 L71.232 205.668 L71.101 207.006 L71.658 206.709 L71.343 209.926 Z" style="fill:url(#hC)" fill-rule="evenodd"/>
 <path class="o2" d="M78.592 114.44 L77.71 114.354 L79.171 99.432 L79.229 98.846 L79.39 97.201 L78.845 97.381 L79.114 94.628 L79.641 94.634 L82.008 70.464 L84.437 70.793 L82.1 94.662 L83.292 94.675 L83.292 95.913 L81.934 96.361 L81.69 98.846 L81.631 99.451 L80.899 106.927 L80.353 112.503 L80.992 112.565 L84.185 112.878 L84.008 114.685 L83.98 114.968 Z" style="fill:url(#hC)" fill-rule="evenodd"/>
@@ -117,20 +117,20 @@
 <path class="o3" d="M70.997 105.7 L72.3 92.389 L72.384 91.531 L72.759 87.696 L72.898 86.281 L73.125 83.959 L73.133 83.879 L73.141 83.8 L73.148 83.722 L78.372 84.234 L80.115 84.404 L80.108 84.483 L80.1 84.561 L80.092 84.641 L79.865 86.964 L79.726 88.378 L79.351 92.213 L79.267 93.071 L77.963 106.382 L77.732 108.75 L68.456 203.487 L68.238 205.714 L68.1 207.129 L67.987 208.283 L67.91 209.065 L67.857 209.61 L67.849 209.688 L62.625 209.176 L60.883 209.006 L60.89 208.928 L60.944 208.383 L61.02 207.601 L61.133 206.447 L61.272 205.032 L61.49 202.805 L70.765 108.068 Z"  fill-rule="evenodd"/>
 <path class="f2" d="M104.227 253.95 L87.602 253.95 L70.977 253.95 L70.977 247.65 L70.977 241.35 L87.602 241.35 L104.227 241.35 L104.227 247.65 Z"  fill-rule="evenodd"/>
 <text class="tx" x="78" y="278" font-size="3" text-anchor="middle" font-weight="bold" >SECTION A-A  (x = 0, seen from +X)</text>
-<line class="t" x1="46.241" y1="264.1" x2="37.641" y2="264.1" />
-<line class="t" x1="46.241" y1="41.105" x2="37.641" y2="41.105" />
-<line class="t" x1="39.241" y1="41.105" x2="39.241" y2="264.1" />
-<path class="ah" d="M39.241 41.105 L39.791 43.405 L38.691 43.405 Z" />
-<path class="ah" d="M39.241 264.1 L38.691 261.8 L39.791 261.8 Z" />
-<text class="td" x="38.341" y="152.603" font-size="2.6" text-anchor="middle" transform="rotate(-90 38.341 152.603)" >127.4</text>
-<line class="t" x1="47.241" y1="228" x2="47.241" y2="273.7" />
+<line class="t" x1="46.234" y1="264.1" x2="37.634" y2="264.1" />
+<line class="t" x1="46.234" y1="41.415" x2="37.634" y2="41.415" />
+<line class="t" x1="39.234" y1="41.415" x2="39.234" y2="264.1" />
+<path class="ah" d="M39.234 41.415 L39.784 43.715 L38.684 43.715 Z" />
+<path class="ah" d="M39.234 264.1 L38.684 261.8 L39.784 261.8 Z" />
+<text class="td" x="38.334" y="152.757" font-size="2.6" text-anchor="middle" transform="rotate(-90 38.334 152.757)" >127.2</text>
+<line class="t" x1="47.234" y1="228" x2="47.234" y2="273.7" />
 <line class="t" x1="105.765" y1="228" x2="105.765" y2="273.7" />
-<line class="t" x1="47.241" y1="272.1" x2="105.765" y2="272.1" />
-<path class="ah" d="M47.241 272.1 L49.541 271.55 L49.541 272.65 Z" />
+<line class="t" x1="47.234" y1="272.1" x2="105.765" y2="272.1" />
+<path class="ah" d="M47.234 272.1 L49.534 271.55 L49.534 272.65 Z" />
 <path class="ah" d="M105.765 272.1 L103.465 272.65 L103.465 271.55 Z" />
-<text class="td" x="76.503" y="271.2" font-size="2.6" text-anchor="middle" >33.4</text>
-<line class="t" x1="127.589" y1="33.19" x2="49.48" y2="244.887" />
-<circle class="ah" cx="49.48" cy="244.887" r="0.55" />
+<text class="td" x="76.5" y="271.2" font-size="2.6" text-anchor="middle" >33.4</text>
+<line class="t" x1="127.567" y1="33.182" x2="49.238" y2="241.172" />
+<circle class="ah" cx="49.238" cy="241.172" r="0.55" />
 <circle class="bal" cx="128.765" cy="30" r="3.4" />
 <text class="tx" x="128.765" y="31.15" font-size="3.1" text-anchor="middle" font-weight="bold" >1</text>
 <line class="t" x1="117.959" y1="49.88" x2="57.638" y2="146.065" />
@@ -182,91 +182,92 @@
 <line class="o3" x1="190" y1="21.6" x2="300" y2="21.6" />
 <text class="tx" x="190.8" y="24.2" font-size="1.9" text-anchor="start" >lens Ø95.86 (drawing)</text>
 <text class="tx" x="242.8" y="24.2" font-size="1.9" text-anchor="start" >-0.00</text>
-<text class="tx" x="256.8" y="24.2" font-size="1.9" text-anchor="start" >7.27</text>
-<text class="tx" x="270.8" y="24.2" font-size="1.9" text-anchor="start" >13.60</text>
+<text class="tx" x="256.8" y="24.2" font-size="1.9" text-anchor="start" >7.25</text>
+<text class="tx" x="270.8" y="24.2" font-size="1.9" text-anchor="start" >13.53</text>
 <text class="tx" x="284.8" y="24.2" font-size="1.9" text-anchor="start" >5.50</text>
 <line class="o3" x1="190" y1="25.2" x2="300" y2="25.2" />
 <text class="tx" x="190.8" y="27.8" font-size="1.9" text-anchor="start" >LCD cell env. Ø77.6</text>
 <text class="tx" x="242.8" y="27.8" font-size="1.9" text-anchor="start" >7.65</text>
-<text class="tx" x="256.8" y="27.8" font-size="1.9" text-anchor="start" >9.65</text>
-<text class="tx" x="270.8" y="27.8" font-size="1.9" text-anchor="start" >22.45</text>
+<text class="tx" x="256.8" y="27.8" font-size="1.9" text-anchor="start" >9.51</text>
+<text class="tx" x="270.8" y="27.8" font-size="1.9" text-anchor="start" >22.31</text>
 <text class="tx" x="284.8" y="27.8" font-size="1.9" text-anchor="start" >2.54</text>
 <line class="o3" x1="190" y1="28.8" x2="300" y2="28.8" />
 <text class="tx" x="190.8" y="31.4" font-size="1.9" text-anchor="start" >PCB Ø73</text>
 <text class="tx" x="242.8" y="31.4" font-size="1.9" text-anchor="start" >10.57</text>
-<text class="tx" x="256.8" y="31.4" font-size="1.9" text-anchor="start" >8.35</text>
-<text class="tx" x="270.8" y="31.4" font-size="1.9" text-anchor="start" >24.59</text>
+<text class="tx" x="256.8" y="31.4" font-size="1.9" text-anchor="start" >8.38</text>
+<text class="tx" x="270.8" y="31.4" font-size="1.9" text-anchor="start" >24.57</text>
 <text class="tx" x="284.8" y="31.4" font-size="1.9" text-anchor="start" >0.50</text>
 <line class="o3" x1="190" y1="32.4" x2="300" y2="32.4" />
 <text class="tx" x="190.8" y="35" font-size="1.9" text-anchor="start" >parts to 9.7 (drawing)</text>
-<text class="tx" x="242.8" y="35" font-size="1.9" text-anchor="start" >11.89</text>
+<text class="tx" x="242.8" y="35" font-size="1.9" text-anchor="start" >11.88</text>
 <text class="tx" x="256.8" y="35" font-size="1.9" text-anchor="start" >4.65</text>
-<text class="tx" x="270.8" y="35" font-size="1.9" text-anchor="start" >25.27</text>
-<text class="tx" x="284.8" y="35" font-size="1.9" text-anchor="start" >-1.70</text>
+<text class="tx" x="270.8" y="35" font-size="1.9" text-anchor="start" >25.36</text>
+<text class="tx" x="284.8" y="35" font-size="1.9" text-anchor="start" >-1.09</text>
 <line class="o3" x1="190" y1="36" x2="300" y2="36" />
 <text class="tx" x="190.8" y="38.6" font-size="1.9" text-anchor="start" >BAT plug + wires (U)</text>
-<text class="tx" x="242.8" y="38.6" font-size="1.9" text-anchor="start" >16.39</text>
-<text class="tx" x="256.8" y="38.6" font-size="1.9" text-anchor="start" >3.61</text>
-<text class="tx" x="270.8" y="38.6" font-size="1.9" text-anchor="start" >74.88</text>
+<text class="tx" x="242.8" y="38.6" font-size="1.9" text-anchor="start" >16.27</text>
+<text class="tx" x="256.8" y="38.6" font-size="1.9" text-anchor="start" >3.62</text>
+<text class="tx" x="270.8" y="38.6" font-size="1.9" text-anchor="start" >74.87</text>
 <text class="tx" x="284.8" y="38.6" font-size="1.9" text-anchor="start" >1.50</text>
 <line class="o3" x1="190" y1="39.6" x2="300" y2="39.6" />
 <text class="tx" x="190.8" y="42.2" font-size="1.9" text-anchor="start" >USB-C 90° plug (U)</text>
-<text class="tx" x="242.8" y="42.2" font-size="1.9" text-anchor="start" >1.96</text>
-<text class="tx" x="256.8" y="42.2" font-size="1.9" text-anchor="start" >2.29</text>
-<text class="tx" x="270.8" y="42.2" font-size="1.9" text-anchor="start" >19.73</text>
+<text class="tx" x="242.8" y="42.2" font-size="1.9" text-anchor="start" >1.95</text>
+<text class="tx" x="256.8" y="42.2" font-size="1.9" text-anchor="start" >2.38</text>
+<text class="tx" x="270.8" y="42.2" font-size="1.9" text-anchor="start" >19.97</text>
 <text class="tx" x="284.8" y="42.2" font-size="1.9" text-anchor="start" >-0.00</text>
 <line class="o3" x1="190" y1="43.2" x2="300" y2="43.2" />
 <text class="tx" x="190.8" y="45.8" font-size="1.9" text-anchor="start" >rear USB-C socket (U)</text>
-<text class="tx" x="242.8" y="45.8" font-size="1.9" text-anchor="start" >1.68</text>
+<text class="tx" x="242.8" y="45.8" font-size="1.9" text-anchor="start" >1.62</text>
 <text class="tx" x="256.8" y="45.8" font-size="1.9" text-anchor="start" >-0.00</text>
 <text class="tx" x="270.8" y="45.8" font-size="1.9" text-anchor="start" >-0.00</text>
 <text class="tx" x="284.8" y="45.8" font-size="1.9" text-anchor="start" >-0.00</text>
 <line class="o3" x1="190" y1="46.8" x2="300" y2="46.8" />
 <text class="tx" x="190.8" y="49.4" font-size="1.9" text-anchor="start" >ON/OFF switch (U)</text>
-<text class="tx" x="242.8" y="49.4" font-size="1.9" text-anchor="start" >9.33</text>
-<text class="tx" x="256.8" y="49.4" font-size="1.9" text-anchor="start" >8.97</text>
+<text class="tx" x="242.8" y="49.4" font-size="1.9" text-anchor="start" >9.24</text>
+<text class="tx" x="256.8" y="49.4" font-size="1.9" text-anchor="start" >8.98</text>
 <text class="tx" x="270.8" y="49.4" font-size="1.9" text-anchor="start" >48.89</text>
 <text class="tx" x="284.8" y="49.4" font-size="1.9" text-anchor="start" >0.80</text>
 <line class="o3" x1="190" y1="50.4" x2="300" y2="50.4" />
 <text class="tx" x="190.8" y="53" font-size="1.9" text-anchor="start" >BOOT key (U)</text>
 <text class="tx" x="242.8" y="53" font-size="1.9" text-anchor="start" >10.37</text>
-<text class="tx" x="256.8" y="53" font-size="1.9" text-anchor="start" >7.68</text>
+<text class="tx" x="256.8" y="53" font-size="1.9" text-anchor="start" >7.69</text>
 <text class="tx" x="270.8" y="53" font-size="1.9" text-anchor="start" >67.02</text>
 <text class="tx" x="284.8" y="53" font-size="1.9" text-anchor="start" >2.15</text>
 <line class="o3" x1="190" y1="54" x2="300" y2="54" />
 <text class="tx" x="190.8" y="56.6" font-size="1.9" text-anchor="start" >LiPo 604050</text>
-<text class="tx" x="242.8" y="56.6" font-size="1.9" text-anchor="start" >0.90</text>
-<text class="tx" x="256.8" y="56.6" font-size="1.9" text-anchor="start" >3.24</text>
-<text class="tx" x="270.8" y="56.6" font-size="1.9" text-anchor="start" >8.28</text>
+<text class="tx" x="242.8" y="56.6" font-size="1.9" text-anchor="start" >0.66</text>
+<text class="tx" x="256.8" y="56.6" font-size="1.9" text-anchor="start" >3.19</text>
+<text class="tx" x="270.8" y="56.6" font-size="1.9" text-anchor="start" >8.29</text>
 <text class="tx" x="284.8" y="56.6" font-size="1.9" text-anchor="start" >-0.00</text>
 <line class="o3" x1="190" y1="57.6" x2="300" y2="57.6" />
 <text class="tx" x="190.8" y="60.2" font-size="1.9" text-anchor="start" >speaker 2030</text>
-<text class="tx" x="242.8" y="60.2" font-size="1.9" text-anchor="start" >17.90</text>
-<text class="tx" x="256.8" y="60.2" font-size="1.9" text-anchor="start" >2.33</text>
-<text class="tx" x="270.8" y="60.2" font-size="1.9" text-anchor="start" >58.33</text>
+<text class="tx" x="242.8" y="60.2" font-size="1.9" text-anchor="start" >17.75</text>
+<text class="tx" x="256.8" y="60.2" font-size="1.9" text-anchor="start" >2.29</text>
+<text class="tx" x="270.8" y="60.2" font-size="1.9" text-anchor="start" >58.26</text>
 <text class="tx" x="284.8" y="60.2" font-size="1.9" text-anchor="start" >-0.00</text>
 <line class="o3" x1="190" y1="61.2" x2="300" y2="61.2" />
 <text class="tx" x="190.8" y="63.8" font-size="1.9" text-anchor="start" >MAX98357A</text>
-<text class="tx" x="242.8" y="63.8" font-size="1.9" text-anchor="start" >9.84</text>
-<text class="tx" x="256.8" y="63.8" font-size="1.9" text-anchor="start" >2.87</text>
-<text class="tx" x="270.8" y="63.8" font-size="1.9" text-anchor="start" >51.93</text>
+<text class="tx" x="242.8" y="63.8" font-size="1.9" text-anchor="start" >9.83</text>
+<text class="tx" x="256.8" y="63.8" font-size="1.9" text-anchor="start" >3.00</text>
+<text class="tx" x="270.8" y="63.8" font-size="1.9" text-anchor="start" >51.95</text>
 <text class="tx" x="284.8" y="63.8" font-size="1.9" text-anchor="start" >0.05</text>
 <line class="o3" x1="190" y1="64.8" x2="300" y2="64.8" />
 <text class="tx" x="190.8" y="67.4" font-size="1.9" text-anchor="start" >INMP441</text>
-<text class="tx" x="242.8" y="67.4" font-size="1.9" text-anchor="start" >11.31</text>
-<text class="tx" x="256.8" y="67.4" font-size="1.9" text-anchor="start" >1.48</text>
-<text class="tx" x="270.8" y="67.4" font-size="1.9" text-anchor="start" >51.71</text>
+<text class="tx" x="242.8" y="67.4" font-size="1.9" text-anchor="start" >11.36</text>
+<text class="tx" x="256.8" y="67.4" font-size="1.9" text-anchor="start" >1.44</text>
+<text class="tx" x="270.8" y="67.4" font-size="1.9" text-anchor="start" >51.70</text>
 <text class="tx" x="284.8" y="67.4" font-size="1.9" text-anchor="start" >-0.00</text>
 <text class="tx" x="190" y="72.4" font-size="1.8" text-anchor="start" >Minimum distance (mm) from each internal part to each printed / machined</text>
 <text class="tx" x="190" y="75.01" font-size="1.8" text-anchor="start" >part, measured on the meshes. &lt;= 0.05 at the lens = intended lip contact;</text>
 <text class="tx" x="190" y="77.62" font-size="1.8" text-anchor="start" >chassis 0.0 = the part rests on its cradle. (U) = unverified size.</text>
 <text class="tx" x="190" y="83.23" font-size="2.6" text-anchor="start" font-weight="bold" >INTERFERENCE CHECK</text>
-<text class="tx" x="190" y="87.43" font-size="1.9" text-anchor="start" >114 pairs checked, 1 overlapping &gt; 0.05 mm3</text>
-<text class="td" x="190" y="90.185" font-size="1.9" text-anchor="start" >  front_shell x base_plate (max penetration mm) = 0.36</text>
-<text class="tx" x="190" y="95.94" font-size="2.6" text-anchor="start" font-weight="bold" >PARTS</text>
-<text class="tx" x="190" y="100.14" font-size="1.9" text-anchor="start" >1 front shell  2 stock lens  3 LCD  4 PCB  5 chassis (printed)</text>
-<text class="tx" x="190" y="102.895" font-size="1.9" text-anchor="start" >6 LiPo 604050  7 back shell  8 base plate + foot (polymer)</text>
-<text class="tx" x="190" y="105.65" font-size="1.9" text-anchor="start" >9 USB-C socket (charge)  10 speaker 2030  11 amp</text>
+<text class="tx" x="190" y="87.43" font-size="1.9" text-anchor="start" >114 pairs checked, 2 overlapping &gt; 0.05 mm3</text>
+<text class="td" x="190" y="90.185" font-size="1.9" text-anchor="start" >  front_shell x base_plate (max penetration mm) = 0.35</text>
+<text class="td" x="190" y="92.94" font-size="1.9" text-anchor="start" >  front_shell x chassis (max penetration mm) = 0.07</text>
+<text class="tx" x="190" y="98.695" font-size="2.6" text-anchor="start" font-weight="bold" >PARTS</text>
+<text class="tx" x="190" y="102.895" font-size="1.9" text-anchor="start" >1 front shell  2 stock lens  3 LCD  4 PCB  5 chassis (printed)</text>
+<text class="tx" x="190" y="105.65" font-size="1.9" text-anchor="start" >6 LiPo 604050  7 back shell  8 base plate + foot (polymer)</text>
+<text class="tx" x="190" y="108.405" font-size="1.9" text-anchor="start" >9 USB-C socket (charge)  10 speaker 2030  11 amp</text>
 <rect class="tbf" x="240" y="241" width="170" height="46" rx="0" />
 <line class="fr2t" x1="332" y1="241" x2="332" y2="287" />
 <line class="fr2t" x1="371" y1="241" x2="371" y2="287" />

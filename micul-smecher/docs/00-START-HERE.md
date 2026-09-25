@@ -44,7 +44,7 @@ SOUL is a personal AI object you keep on your desk and hold in your hand. The pi
 | Body | 63 × 72 × 27 mm | **90 × 103 × 31.5 mm** |
 | Screen | 1.75" AMOLED 466² | **2.8" IPS 480²** (grey blacks; hidden by black glass + dark UI) |
 | Board | ESP32-S3-Touch-AMOLED-1.75 (~€33) | **ESP32-S3-Touch-LCD-2.8C (~€35–40)** + optional mic/amp (~€6) |
-| P0 DIY body | 63 × 75 × 29.5 | see `prototip/README.md` (bigger, because the board's glass is glued) |
+| P0 DIY body | 63 × 75 × 29.5 | **112 × 128 × 34 mm** (the 2.8C glass Ø95.9 is glued; the 90 × 103 body needs the bare panel + own PCB, EVT) |
 | CNC shell cost | [E] | ≈ +30–40 % material/time vs S [E] |
 | Renders / drawings | `renders/v6`, `blueprints/` rev A | **`renders/v8`, `blueprints/final/`** |
 
