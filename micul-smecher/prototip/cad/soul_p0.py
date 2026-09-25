@@ -288,117 +288,92 @@ def build(vname):
     speaker = bf.box(SPK['bx'] - SPK['a'] / 2, SPK['bx'] + SPK['a'] / 2, SPK['by'] - SPK['b'] / 2,
                      SPK['by'] + SPK['b'] / 2, SPK['dd'], SPK['dd'] + SPK['t'])
 
-    # ------------------------------------------------ halves
+    # ------------------------------------------------ halves (additions and cuts are collected, then applied once)
     BIG = 200.0
     band = V['band']
     FRONT_HALF = SeamFrame.slab(-BIG, -band / 2)
     BACK_HALF = SeamFrame.slab(band / 2, BIG)
-    front = SHELL.intersect(FRONT_HALF)
-    back = SHELL.intersect(BACK_HALF)
-    seam_band = SHELL.intersect(SeamFrame.slab(-band / 2, band / 2)) if band > 0 else None
+    BAND_SLAB = SeamFrame.slab(-band / 2, band / 2) if band > 0 else None
+    add = {'front': [], 'back': [], 'band': []}
+    sub = {'front': [], 'back': [], 'band': []}
 
-    # alignment tongue on the front half (inside the back half's inner wall, tol clearance)
+    def to_all(solid):
+        for k in sub:
+            sub[k].append(solid)
+
+    # alignment tongue: inside the back half's inner wall, tol clearance (in band mode it belongs to the band)
     tongue = TONG_OUT.cut(TONG_IN).intersect(SeamFrame.slab(-band / 2 - 0.01, band / 2 + V['tongue_h']))
-    if band > 0:
-        # with the band the tongue belongs to the band (printed), the Al halves stay plain
-        seam_band = fuse(seam_band, tongue)
-    else:
-        front = fuse(front, tongue)
+    add['band' if band > 0 else 'front'].append(tongue)
 
     # ------------------------------------------------ screw bosses
     say('  screw columns (x, Z): front wall -> back outer, along the seam normal')
     screw_info = []
-    s_bat_back = None
-    # battery back plane (for the chassis legs / back bosses of the lower screws)
-    bb_w = bf.w(0, bot_f[0] + nrm[0] * BAT['T'], bot_f[1] + nrm[1] * BAT['T'])
     for (x, Z), kind in [(p, 'low') for p in SCREWS_LOW] + [(p, 'up') for p in SCREWS_UP]:
         p = SeamFrame.pt(x, Z)
         s_front = -ray_exit(p, -SeamFrame.NS)       # outer front surface (negative s)
         s_back = ray_exit(p, SeamFrame.NS)          # outer back surface
         r = V['boss_d'] / 2
+        s_fb_top = -band / 2
         if kind == 'low':
-            s_leg1 = min(s_back - wall - 2.2, 6.5)   # chassis leg from the seam to here
-            s_fb_top = -band / 2 - 0.0               # front boss ends at the seam (or band)
+            s_leg1 = round(min(s_back - wall - 2.5, 6.5), 2)   # chassis leg: seam .. s_leg1
             s_bb0 = s_leg1 + 0.15
         else:
             s_leg1 = None
-            s_fb_top = -band / 2 - 0.0
-            s_bb0 = band / 2 + 0.0
-        fb = SeamFrame.cyl(x, Z, r, s_front - 1.0, s_fb_top).intersect(OUTER)
-        bb = SeamFrame.cyl(x, Z, r, s_bb0, s_back + 1.0).intersect(OUTER)
-        if band > 0:
-            # the band carries the part of the column that crosses it
-            bandcol = SeamFrame.cyl(x, Z, r, -band / 2, band / 2).intersect(OUTER)
-            seam_band = fuse(seam_band, bandcol) if kind == 'up' else seam_band
-            if kind == 'low':
-                pass
-        front = fuse(front, fb)
-        back = fuse(back, bb)
-        # holes
-        if V['hole'] == 'insert':
-            hole = SeamFrame.cyl(x, Z, V['insert_d'] / 2, s_fb_top - V['insert_depth'], s_fb_top + 0.1)
-        else:
-            hole = SeamFrame.cyl(x, Z, V['insert_d'] / 2, s_fb_top - V['insert_depth'], s_fb_top + 0.1)
-        front = cut(front, hole)
+            s_bb0 = band / 2
+        add['front'].append(SeamFrame.cyl(x, Z, r, s_front - 1.0, s_fb_top).intersect(OUTER))
+        add['back'].append(SeamFrame.cyl(x, Z, r, s_bb0, s_back + 1.0).intersect(OUTER).intersect(BACK_HALF))
+        if band > 0 and kind == 'up':
+            add['band'].append(SeamFrame.cyl(x, Z, r, -band / 2, band / 2).intersect(OUTER))
+        depth = min(V['insert_depth'], (s_fb_top - s_front) - 1.6)
+        sub['front'].append(SeamFrame.cyl(x, Z, V['insert_d'] / 2, s_fb_top - depth, s_fb_top + 0.1))
         through = SeamFrame.cyl(x, Z, V['clear_d'] / 2, -band / 2 - 0.2, s_back + 2)
-        back = cut(back, through)
-        if seam_band is not None:
-            seam_band = cut(seam_band, through)
-        cb = SeamFrame.cyl(x, Z, V['cb_d'] / 2, s_back - V['cb_depth'], s_back + 5)
-        back = cut(back, cb)
-        wall_left = (s_fb_top - V['insert_depth']) - s_front
-        # screw length: head seat at s_back - cb_depth, thread end inside the insert
-        grip_to = s_fb_top - (V['insert_depth'] - 0.6)
-        L_need = (s_back - V['cb_depth']) - grip_to
+        sub['back'].append(through)
+        sub['band'].append(through)
+        sub['back'].append(SeamFrame.cyl(x, Z, V['cb_d'] / 2, s_back - V['cb_depth'], s_back + 5))
+        skin = (s_fb_top - depth) - s_front
+        L_need = (s_back - V['cb_depth']) - (s_fb_top - depth + 0.5)     # longest screw that still clears the hole bottom
         screw_info.append(dict(kind=kind, x=x, Z=Z, s_front=round(s_front, 2), s_back=round(s_back, 2),
-                               front_skin_below_hole=round(wall_left, 2), s_leg1=None if s_leg1 is None else round(s_leg1, 2),
+                               hole_depth=round(depth, 2), skin_under_hole=round(skin, 2), s_leg1=s_leg1,
                                screw_len_max=round(L_need, 2)))
-        say(f'   {kind:3s} ({x:+.1f},{Z:.1f}): front {s_front:.2f} back {s_back:.2f} skin under hole {wall_left:.2f} '
-            f'-> screw <= {L_need:.1f} mm')
+        say(f'   {kind:3s} ({x:+.1f},{Z:.1f}): front {s_front:.2f} back {s_back:.2f} hole {depth:.1f} deep, '
+            f'skin under hole {skin:.2f} -> screw <= {L_need:.1f} mm')
 
     # ------------------------------------------------ glass pocket, aperture, frame chamfer
     r_ap = GLASS_R - V['lip_over']
-    # lip underside plane is at table depth lip_t -> board dd = lip_t - dg = 0.15
-    pocket = bf.cyl(GLASS_R + tol, V['lip_t'] - dg, GLASS_T + 0.6)
-    pocket = fuse(pocket, bf.cyl(MOD_R + tol + 0.15, GLASS_T + 0.3, PCB_D[1] + 0.8))
-    aperture = bf.cyl(r_ap, -dg - 3.0, 1.0)
+    # lip underside = table depth lip_t = board dd (lip_t - dg) = 0.15
+    pocket = bf.cyl(GLASS_R + tol, V['lip_t'] - dg, GLASS_T + 0.6).fuse(
+        bf.cyl(MOD_R + tol + 0.15, GLASS_T + 0.3, PCB_D[1] + 0.8))
+    to_all(pocket)
+    sub['front'].append(bf.cyl(r_ap, -dg - 3.0, 1.0))
     ch = V['chamfer']
-    cone = (cq.Workplane(bf.plane).workplane(offset=dg - ch)  # plane at table depth ch
+    cone = (cq.Workplane(bf.plane).workplane(offset=dg - ch)
             .circle(r_ap).workplane(offset=ch + 0.01).circle(r_ap + ch + 0.01).loft().val())
-    front = cut(front, pocket, aperture, cone)
-    back = cut(back, pocket)
-    if seam_band is not None:
-        seam_band = cut(seam_band, pocket)
+    sub['front'].append(cone)
 
     # ------------------------------------------------ USB-C: plug tunnel + guide sleeve + base cable groove
-    sleeve_top = -USB_FACE_R - 0.6
-    sleeve = bf.slot(USB_PLUG_W + 2 * tol + 2.4, USB_PLUG_H + 2 * tol + 2.4, -USB_FACE_R - 40, sleeve_top, USB_DD)
-    sleeve = sleeve.intersect(INNER.fuse(SHELL))
+    sleeve = bf.slot(USB_PLUG_W + 2 * tol + 2.4, USB_PLUG_H + 2 * tol + 2.4, -USB_FACE_R - 40, -USB_FACE_R - 0.6, USB_DD)
+    sleeve = sleeve.intersect(OUTER)
+    add['front'].append(sleeve.intersect(FRONT_HALF))
+    add['back'].append(sleeve.intersect(BACK_HALF))
+    if band > 0:
+        add['band'].append(sleeve.intersect(BAND_SLAB))
     tunnel = bf.slot(USB_PLUG_W + 2 * tol + 0.2, USB_PLUG_H + 2 * tol + 0.2, -USB_FACE_R - 40, -USB_FACE_R + 3.0, USB_DD)
-    # cable groove on the base, from the tunnel to the back edge (for a 90-degree plug; SOUL stands while charging)
     pa = bf.w(0, -USB_FACE_R, USB_DD)
     y_t = float(pa[1] - g.UP[1] * pa[2] / g.UP[2])          # tunnel axis at Z = 0
     groove = (cq.Workplane('XY').center(0, (y_t + 20.0) / 2).rect(5.0, 20.0 - y_t)
               .extrude(4.5).translate((0, 0, -0.01)).val())
-    front = cut(fuse(front, sleeve.intersect(FRONT_HALF)), tunnel, groove)
-    back = cut(fuse(back, sleeve.intersect(BACK_HALF)), tunnel, groove)
-    if seam_band is not None:
-        seam_band = cut(fuse(seam_band, sleeve.intersect(SeamFrame.slab(-band / 2, band / 2))), tunnel, groove)
+    to_all(tunnel)
+    to_all(groove)
 
     # ------------------------------------------------ speaker slot in the +x seam
     zs = np.linspace(SLOT['z0'], SLOT['z1'], 7)
     w_, *_ = g.sections(zs)
     L = SLOT['z1'] - SLOT['z0']
-    xin = float(w_.min()) - 7.0
-    pc = SeamFrame.pt(xin, (SLOT['z0'] + SLOT['z1']) / 2)
+    pc = SeamFrame.pt(float(w_.min()) - 7.0, (SLOT['z0'] + SLOT['z1']) / 2)
     pl = cq.Plane(origin=vec(pc), xDir=vec(SeamFrame.US), normal=(1, 0, 0))
-    slot_cut = cq.Workplane(pl).slot2D(L, SLOT['w'], 0).extrude(12.0).val()
-    front = cut(front, slot_cut)
-    back = cut(back, slot_cut)
-    if seam_band is not None:
-        seam_band = cut(seam_band, slot_cut)
+    to_all(cq.Workplane(pl).slot2D(L, SLOT['w'], 0).extrude(12.0).val())
 
-    # ------------------------------------------------ button pins: radial holes + guide sleeves in the back shell
+    # ------------------------------------------------ button pins: radial holes + guide sleeves
     pins = {}
     for k, ((ox, oy), ang, dd) in BTNS.items():
         a_ = math.radians(ang)
@@ -408,89 +383,86 @@ def build(vname):
         dwrld = d2[0] * np.array([1.0, 0, 0]) + d2[1] * g.UP
         t_exit = ray_exit(w_act, dwrld)
         s_exit = SeamFrame.s(w_act + t_exit * dwrld)
+        side = 'back' if s_exit > band / 2 + 0.3 else 'front'
         pl = cq.Plane(origin=vec(w_act), xDir=vec(np.cross(dwrld, g.INW)), normal=vec(dwrld))
-        hole = cq.Workplane(pl).workplane(offset=0.2).circle(V['pin_hole'] / 2).extrude(t_exit + 2).val()
-        guide = (cq.Workplane(pl).workplane(offset=max(t_exit - wall - 4.5, 2.5)).circle(V['pin_hole'] / 2 + 1.2)
-                 .extrude(6.0).val()).intersect(OUTER)
-        collar_room = cq.Workplane(pl).workplane(offset=0.2).circle(1.9).extrude(max(t_exit - wall - 4.5, 2.5) - 0.2).val()
-        tgt = back if s_exit > band / 2 + 0.3 else front
-        tgt = cut(fuse(tgt, guide), hole)
-        if s_exit > band / 2 + 0.3:
-            back = tgt
-        else:
-            front = tgt
-        # printed pin: shaft from the actuator (0.2 gap) to 0.3 below the outer surface, collar 3.2 x 0.8 inside
+        g0 = max(t_exit - wall - 4.5, 2.5)
+        guide = cq.Workplane(pl).workplane(offset=g0).circle(V['pin_hole'] / 2 + 1.2).extrude(6.0).val().intersect(OUTER)
+        add[side].append(guide.intersect(BACK_HALF if side == 'back' else FRONT_HALF))
+        sub[side].append(cq.Workplane(pl).workplane(offset=0.2).circle(V['pin_hole'] / 2).extrude(t_exit + 2).val())
         L_pin = t_exit - 0.2 - 0.3
         pin = (cq.Workplane('XY').circle(V['pin_d'] / 2).extrude(L_pin)
-               .faces('<Z').workplane().circle(1.6).extrude(0.8)
-               .edges('>Z').chamfer(0.2).val())
-        pins[k] = dict(solid=pin, L=round(L_pin, 2), s_exit=round(s_exit, 2), shell='back' if s_exit > band / 2 + 0.3 else 'front',
-                       exit=[round(float(v), 2) for v in (w_act + t_exit * dwrld)], frame=pl, t_exit=t_exit)
-        say(f'  pin {k}: length {L_pin:.1f} mm, exits at {pins[k]["exit"]} (s = {s_exit:+.2f} -> {pins[k]["shell"]} shell)')
+               .faces('<Z').workplane().circle(1.6).extrude(0.8).val())
+        pins[k] = dict(solid=pin, L=round(L_pin, 2), s_exit=round(s_exit, 2), shell=side,
+                       exit=[round(float(v), 2) for v in (w_act + t_exit * dwrld)], frame=pl, t_exit=t_exit, g0=g0)
+        say(f'  pin {k}: length {L_pin:.1f} mm, exits at {pins[k]["exit"]} (s = {s_exit:+.2f} -> {side} shell)')
 
     # ------------------------------------------------ magnets in the base (optional, Ø6x2, glue in)
     for (mx, my) in MAGNETS:
-        mag = cq.Workplane('XY').center(mx, my).circle(MAG_D / 2).extrude(MAG_H).translate((0, 0, -0.01)).val()
-        pad = cq.Workplane('XY').center(mx, my).circle(MAG_D / 2 + 1.6).extrude(MAG_H + 1.2).val().intersect(OUTER)
-        if SeamFrame.s((mx, my, 1.0)) > band / 2:
-            back = cut(fuse(back, pad), mag)
-        else:
-            front = cut(fuse(front, pad), mag)
+        side = 'back' if SeamFrame.s((mx, my, 1.0)) > band / 2 else 'front'
+        add[side].append(cq.Workplane('XY').center(mx, my).circle(MAG_D / 2 + 1.6).extrude(MAG_H + 1.2).val()
+                         .intersect(OUTER))
+        sub[side].append(cq.Workplane('XY').center(mx, my).circle(MAG_D / 2).extrude(MAG_H).translate((0, 0, -0.01)).val())
+
+    # ------------------------------------------------ assemble the shells (one fuse + one cut per part)
+    def finish(base, adds, subs):
+        s = base
+        if adds:
+            s = s.fuse(*adds).clean()
+        if subs:
+            s = s.cut(*subs).clean()
+        return s
+    t1 = time.time()
+    front = finish(SHELL.intersect(FRONT_HALF), add['front'], sub['front'])
+    back = finish(SHELL.intersect(BACK_HALF), add['back'], sub['back'])
+    seam_band = finish(SHELL.intersect(BAND_SLAB), add['band'], sub['band']) if band > 0 else None
+    say(f'  shells assembled ({time.time()-t1:.0f}s)')
 
     # ------------------------------------------------ CHASSIS (printed, both variants)
-    x_r = BAT['W'] / 2 + 0.35                     # rail inner face
+    a, nrm, top_f, bot_f = bat_geometry(bf)
     rail_t = 1.3
-    lipw = 1.2                                    # front lips under the battery edges
-    # rails: from battery front - 0.8 (lip) to battery back - 0.3, along the battery length +1.2 at the bottom
+    lipw = 1.2
     Lr = BAT['L'] + 1.5
-    pb = bot_f - a * 1.5                          # extends below the battery bottom (bottom stop)
+    pb = bot_f - a * 1.5                          # starts 1.5 below the battery bottom (bottom stop)
     bat_x0, bat_x1 = BAT['bx'] - BAT['W'] / 2, BAT['bx'] + BAT['W'] / 2
-    rail_p = tilted_box(bf, bat_x1 + 0.35, bat_x1 + 0.35 + rail_t, pb - nrm * 0.9, a, nrm, Lr, BAT['T'] + 0.9 - 0.3)
-    # -x rail only on the lower part (clear of the SPK/BAT connectors and their plugs)
-    L_low = (bot_f[0] - (-11.8)) / (-a[0]) if a[0] != 0 else 10
-    L_low = abs((-11.8 - pb[0]) / a[0])
-    rail_n = tilted_box(bf, bat_x0 - 0.35 - rail_t, bat_x0 - 0.35, pb - nrm * 0.9, a, nrm, L_low, BAT['T'] + 0.9 - 0.3)
-    lip_p = tilted_box(bf, bat_x1 - lipw, bat_x1 + 0.35, pb - nrm * 0.9, a, nrm, Lr, 0.8)
-    lip_n = tilted_box(bf, bat_x0 - 0.35, bat_x0 + lipw, pb - nrm * 0.9, a, nrm, L_low, 0.8)
-    stop = tilted_box(bf, bat_x0 - 0.35 - rail_t, bat_x1 + 0.35 + rail_t, pb - nrm * 0.9, a, nrm, 1.5 - 0.35,
-                      BAT['T'] + 0.9 - 0.3)
-    chassis = fuse(rail_p, rail_n, lip_p, lip_n, stop)
-    # the lip must not hit the board components near the battery top -> trim everything in front of dd 9.0
-    chassis = chassis.cut(bf.box(-40, 40, -40, 40, -5, COMP_D + 0.3))
-    # speaker frame (walls 1.0, open front and back), bridged to the +x rail, with the post onto standoff 1
+    Tr = BAT['T'] + 0.9 - 0.3
+    L_low = abs((-11.8 - pb[0]) / a[0])           # -x rail stops below the SPK/BAT connectors
+    ch_add = [
+        tilted_box(bf, bat_x1 + 0.35, bat_x1 + 0.35 + rail_t, pb - nrm * 0.9, a, nrm, Lr, Tr),
+        tilted_box(bf, bat_x0 - 0.35 - rail_t, bat_x0 - 0.35, pb - nrm * 0.9, a, nrm, L_low, Tr),
+        tilted_box(bf, bat_x1 - lipw, bat_x1 + 0.35, pb - nrm * 0.9, a, nrm, Lr, 0.8),
+        tilted_box(bf, bat_x0 - 0.35, bat_x0 + lipw, pb - nrm * 0.9, a, nrm, L_low, 0.8),
+        tilted_box(bf, bat_x0 - 0.35 - rail_t, bat_x1 + 0.35 + rail_t, pb - nrm * 0.9, a, nrm, 1.5 - 0.35, Tr),
+    ]
     sx0, sx1 = SPK['bx'] - SPK['a'] / 2 - 0.25, SPK['bx'] + SPK['a'] / 2 + 0.25
     sy0, sy1 = SPK['by'] - SPK['b'] / 2 - 0.25, SPK['by'] + SPK['b'] / 2 + 0.25
     d0, d1 = SPK['dd'] + 0.4, SPK['dd'] + SPK['t'] - 0.3
-    frame = cut(bf.box(sx0 - 1.0, sx1 + 1.0, sy0 - 1.0, sy1 + 1.0, d0, d1), bf.box(sx0, sx1, sy0, sy1, d0 - 1, d1 + 1))
-    bridge = bf.box(sx1, bat_x1 + 0.35 + rail_t, sy0 - 1.0, sy0 + 1.2, d0, d1)
     so1 = SO_POS[0]
-    arm = bf.box(sx1, so1[0] + 1.8, so1[1] - 1.8, so1[1] + 1.8, SO_DEPTH + 1.8, d1)
-    post = bf.cyl(1.6, SO_DEPTH + 0.5, d1, so1[0], so1[1])       # 0.5 mm EVA dot on the standoff tip
-    chassis = fuse(chassis, frame, bridge, arm, post)
-    # legs to the two lower screws
-    for (x, Z) in SCREWS_LOW:
-        info = [si for si in screw_info if si['x'] == x and si['Z'] == Z][0]
-        leg = SeamFrame.cyl(x, Z, V['boss_d'] / 2, band / 2 + 0.1, info['s_leg1'])
-        # tie the leg to the rail/stop with a web
-        pleg = SeamFrame.pt(x, Z) + (info['s_leg1'] - 1.2) * SeamFrame.NS
-        web_to = bf.w(math.copysign(x_r + rail_t / 2, x), pb[0] + 1.0, pb[1] + BAT['T'] * 0.5)
+    ch_add += [
+        bf.box(sx0 - 1.0, sx1 + 1.0, sy0 - 1.0, sy1 + 1.0, d0, d1).cut(bf.box(sx0, sx1, sy0, sy1, d0 - 1, d1 + 1)),
+        bf.box(sx1, bat_x1 + 0.35 + rail_t, sy0 - 1.0, sy0 + 1.2, d0, d1),        # bridge speaker frame -> +x rail
+        bf.box(sx1, so1[0] + 1.8, so1[1] - 1.8, so1[1] + 1.8, SO_DEPTH + 1.8, d1),  # arm to standoff 1
+        bf.cyl(1.6, SO_DEPTH + 0.5, d1, so1[0], so1[1]),                            # post (0.5 mm EVA dot)
+    ]
+    ch_sub = []
+    for si in [s for s in screw_info if s['kind'] == 'low']:
+        x, Z = si['x'], si['Z']
+        ch_add.append(SeamFrame.cyl(x, Z, V['boss_d'] / 2, band / 2 + 0.1, si['s_leg1']))
+        pleg = SeamFrame.pt(x, Z) + (si['s_leg1'] - 1.2) * SeamFrame.NS
+        web_to = bf.w(math.copysign(BAT['W'] / 2 + 0.35 + rail_t / 2, x), pb[0] + 0.8, pb[1] + BAT['T'] * 0.5)
         webv = np.asarray(web_to) - pleg
         Lw = float(np.linalg.norm(webv))
-        plw = cq.Plane(origin=vec(pleg), xDir=vec(np.cross(webv, [0, 1, 0]) if abs(webv[1]) < 0.9 * Lw else (1, 0, 0)),
-                       normal=vec(webv / Lw))
-        web = cq.Workplane(plw).rect(2.4, 2.4).extrude(Lw).val()
-        chassis = fuse(chassis, leg, web)
-        chassis = cut(chassis, SeamFrame.cyl(x, Z, V['clear_d'] / 2, band / 2 - 1, info['s_leg1'] + 1))
-    # keep the chassis inside the inner wall (tol) and out of the board / battery / speaker / plug
+        xd = np.cross(webv / Lw, [0, 0, 1])
+        plw = cq.Plane(origin=vec(pleg), xDir=vec(xd / np.linalg.norm(xd)), normal=vec(webv / Lw))
+        ch_add.append(cq.Workplane(plw).rect(2.6, 2.6).extrude(Lw).val())
+        ch_sub.append(SeamFrame.cyl(x, Z, V['clear_d'] / 2, band / 2 - 1, si['s_leg1'] + 1))
+    t1 = time.time()
+    chassis = ch_add[0].fuse(*ch_add[1:]).clean()
     chassis = chassis.intersect(TONG_OUT)
-    for k, s in board.items():
-        if k.startswith('standoff'):
-            continue
-        chassis = chassis.cut(s)
-    chassis = cut(chassis, battery, speaker, usb_plug)
+    keep_out = [s for k, s in board.items() if not k.startswith('standoff')]
+    keep_out.append(bf.box(-40, 40, -40, 40, -5, COMP_D + 0.3))
+    chassis = chassis.cut(*(ch_sub + keep_out + [battery, speaker, usb_plug])).clean()
+    say(f'  chassis ({time.time()-t1:.0f}s), volume {vol(chassis):.0f} mm3')
 
-    # ------------------------------------------------ interference / clearance checks
-    say('  -- interference (mm3, must be 0) --')
     shells = {'front_shell': front, 'back_shell': back, 'chassis': chassis}
     if seam_band is not None:
         shells['seam_band'] = seam_band
@@ -498,61 +470,16 @@ def build(vname):
     parts_in['battery'] = battery
     parts_in['speaker'] = speaker
     parts_in['usb_plug'] = usb_plug
-    inter = {}
-    for sn, S in shells.items():
-        for pn, P in parts_in.items():
-            v = vol(S.intersect(P))
-            inter[f'{sn} x {pn}'] = round(v, 3)
-            if v > 0.01:
-                say(f'   !! {sn} x {pn}: {v:.3f}')
-    for p1, p2 in [('front_shell', 'back_shell'), ('front_shell', 'chassis'), ('back_shell', 'chassis')]:
-        v = vol(shells[p1].intersect(shells[p2]))
-        inter[f'{p1} x {p2}'] = round(v, 3)
-        if v > 0.01:
-            say(f'   !! {p1} x {p2}: {v:.3f}')
-    for pn in ['battery', 'speaker']:
-        v = vol(parts_in[pn].intersect(board['components'].fuse(board['module'])))
-        inter[f'{pn} x board'] = round(v, 3)
-        if v > 0.01:
-            say(f'   !! {pn} x board: {v:.3f}')
-    v = vol(battery.intersect(speaker))
-    inter['battery x speaker'] = round(v, 3)
-    nbad = sum(1 for v in inter.values() if v > 0.01)
-    say(f'   {len(inter)} pairs checked, {nbad} with overlap > 0.01 mm3')
+    inter, clear = mesh_checks(shells, parts_in, say)
 
-    # clearances: grow each internal part until it touches a shell
-    say('  -- clearances to the shells (grow test, mm) --')
-    clear = {}
-    ALL_SHELL = fuse(front, back) if seam_band is None else fuse(front, back, seam_band)
-    cavity = INNER
-    for pn in ['battery', 'speaker', 'glass', 'module', 'header_8pin', 'plug_spk', 'plug_bat', 'usb_receptacle',
-               'btn_pwr', 'btn_boot']:
-        P = parts_in[pn]
-        lo, hi = -0.1, 3.0
-        for _ in range(9):
-            m = (lo + hi) / 2
-            try:
-                Pg = cq.Shape.cast(P.wrapped)
-                Pg = P.scale(1.0) if m == 0 else grow(P, m)
-                hit = vol(Pg.intersect(ALL_SHELL)) > 0.02
-            except Exception:
-                hit = True
-            if hit:
-                hi = m
-            else:
-                lo = m
-        clear[pn] = round(lo, 2)
-        say(f'   {pn:15s} {lo:5.2f}')
-
-    # ------------------------------------------------ dimensions
+    # ------------------------------------------------ dimensions / masses
     bb = OUTER.BoundingBox()
-    dims = dict(W=round(bb.xlen, 2), H=round(bb.zlen, 2), D=round(bb.ylen, 2),
-                base=g.dims_report(), mass_g={})
+    dims = dict(W=round(bb.xlen, 2), H=round(bb.zlen, 2), D=round(bb.ylen, 2), base=g.dims_report(), mass_g={})
     dens = {'plastic': 1.24, 'alu': 2.70, 'alu_band': 2.70}[vname]
     for n_, s_ in shells.items():
         d_ = 1.24 if n_ in ('chassis', 'seam_band') else dens
         dims['mass_g'][n_] = round(vol(s_) * d_ / 1000.0, 1)
-    say(f'  size {dims["W"]} x {dims["H"]} x {dims["D"]} mm; masses {dims["mass_g"]}')
+    say(f'  size {dims["W"]} x {dims["H"]} x {dims["D"]} mm; masses (PLA 1.24 / Al 2.70 g/cm3) {dims["mass_g"]}')
 
     parts = dict(front_shell=front, back_shell=back, chassis=chassis)
     if seam_band is not None:
@@ -563,6 +490,55 @@ def build(vname):
                screws=screw_info, inter=inter, clear=clear, dims=dims, log=log, V=V)
     say(f'  built in {time.time()-t0:.0f}s')
     return parts, ctx
+
+
+def to_mesh(shape, tol=0.03):
+    import trimesh
+    vs, ts = shape.tessellate(tol, 0.2)
+    m = trimesh.Trimesh(np.array([(v.x, v.y, v.z) for v in vs]), np.array(ts), process=True)
+    m.merge_vertices()
+    return m
+
+
+def mesh_checks(shells, parts_in, say):
+    """Interference = volume of the mesh intersection (manifold3d); clearance = min distance from surface samples
+    of each internal part to each shell (negative = inside)."""
+    import trimesh
+    say('  -- checks on meshes (tessellation 0.03 mm) --')
+    M = {k: to_mesh(v) for k, v in shells.items()}
+    P = {k: to_mesh(v, 0.02) for k, v in parts_in.items()}
+    inter, clear = {}, {}
+    for sn, sm in M.items():
+        for pn, pm in P.items():
+            try:
+                iv = trimesh.boolean.intersection([sm, pm], engine='manifold')
+                v = float(iv.volume) if iv is not None and len(iv.faces) else 0.0
+            except Exception as e:
+                v = -1.0
+            inter[f'{sn} x {pn}'] = round(v, 3)
+    for a_, b_ in [('front_shell', 'back_shell'), ('front_shell', 'chassis'), ('back_shell', 'chassis')] + \
+            ([('seam_band', 'front_shell'), ('seam_band', 'back_shell'), ('seam_band', 'chassis')] if 'seam_band' in M else []):
+        iv = trimesh.boolean.intersection([M[a_], M[b_]], engine='manifold')
+        inter[f'{a_} x {b_}'] = round(float(iv.volume) if len(iv.faces) else 0.0, 3)
+    for a_, b_ in [('battery', 'speaker'), ('battery', 'components'), ('speaker', 'components'),
+                   ('battery', 'usb_receptacle'), ('battery', 'plug_bat'), ('speaker', 'btn_boot')]:
+        iv = trimesh.boolean.intersection([P[a_], P[b_]], engine='manifold')
+        inter[f'{a_} x {b_}'] = round(float(iv.volume) if len(iv.faces) else 0.0, 3)
+    bad = {k: v for k, v in inter.items() if abs(v) > 0.01}
+    say(f'   interference: {len(inter)} pairs checked, {len(bad)} with overlap > 0.01 mm3 {bad if bad else ""}')
+    # clearances
+    say('   minimum clearance of each internal part to each printed/machined part (mm):')
+    for pn in ['glass', 'module', 'components', 'header_8pin', 'plug_spk', 'plug_bat', 'usb_receptacle', 'usb_plug',
+               'btn_pwr', 'btn_boot', 'standoff_1', 'standoff_2', 'standoff_3', 'battery', 'speaker']:
+        pts, _ = trimesh.sample.sample_surface_even(P[pn], 6000)
+        pts = np.vstack([pts, P[pn].vertices])
+        row = {}
+        for sn, sm in M.items():
+            d = trimesh.proximity.signed_distance(sm, pts)       # >0 inside the shell mesh
+            row[sn] = round(float(-d.max()), 2)
+        clear[pn] = row
+        say('    %-15s ' % pn + '  '.join('%s %5.2f' % (k[:5], v) for k, v in row.items()))
+    return inter, clear
 
 
 def grow(solid, d):
