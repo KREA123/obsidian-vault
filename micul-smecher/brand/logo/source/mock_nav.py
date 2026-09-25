@@ -42,7 +42,7 @@ full = im.resize((W, round(im.height * W / im.width)), Image.LANCZOS)
 full = full.crop((0, 0, W, 870))
 # zoom strip: left part of the nav at 2x (native)
 nav_h = 58 * 2
-strip = im.crop((330, 0, 1780, nav_h))
+strip = im.crop((330, 0, 1640, nav_h))
 canvas = Image.new("RGB", (W, full.height + 80 + nav_h + 60), "#E9E4DA")
 canvas.paste(full, (0, 0))
 sx = (W - strip.width) // 2

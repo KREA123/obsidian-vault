@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""blueprints_p0.py -- engineering sheets of SOUL-P0 drawn FROM THE CAD MODEL (not from estimates).
+"""blueprints_p0.py -- engineering sheets of SOUL-P0 size M (Waveshare 2.8C) drawn FROM THE CAD MODEL.
 
 Every outline, section and hole position is obtained by projecting / sectioning the meshes that soul_p0.py
-exported (../stl/assembly/<variant>_*.stl, product frame, mm) and every number comes from those meshes or from
-cad/report_<variant>.json (the interference / clearance check). Drawing kit: micul-smecher/blueprints/src/bp.py.
+exported (../stl/assembly/m_<variant>_*.stl, product frame, mm) and every number comes from those meshes or from
+cad/report_m_<variant>.json (the interference / clearance check). Drawing kit: micul-smecher/blueprints/src/bp.py.
 
     python3 blueprints_p0.py            -> micul-smecher/blueprints/final/*.svg + *.png (2400 px)
 """
@@ -28,8 +28,8 @@ import soul_geom as g  # noqa: E402
 OUTD = os.path.join(MS, 'blueprints', 'final')
 os.makedirs(OUTD, exist_ok=True)
 ASM = os.path.join(ROOT, 'stl', 'assembly')
-REP = {v: json.load(open(os.path.join(HERE, f'report_{v}.json'))) for v in ('plastic', 'alu', 'alu_band')
-       if os.path.exists(os.path.join(HERE, f'report_{v}.json'))}
+REP = {v: json.load(open(os.path.join(HERE, f'report_m_{v}.json'))) for v in ('plastic', 'alu')
+       if os.path.exists(os.path.join(HERE, f'report_m_{v}.json'))}
 DATE = '2026-09-25'
 
 _MC = {}
@@ -38,7 +38,7 @@ _MC = {}
 def mesh(v, name):
     key = (v, name)
     if key not in _MC:
-        fn = os.path.join(ASM, f'{v}_{name}.stl')
+        fn = os.path.join(ASM, f'm_{v}_{name}.stl')
         _MC[key] = trimesh.load(fn) if os.path.exists(fn) else None
     return _MC[key]
 
@@ -133,8 +133,8 @@ def title_block(sh, title, sub, scale, sheet, dwg, x0=240, y0=241, w=170, h=46):
         sh.text(x + 1.4, y + 3.0, label, 1.8, 'start', 'td')
         sh.text(x + 1.4, y + 3.2 + vs + 1.8, value, vs, 'start', 'tx', weight='bold' if bold else None)
     sh.text(x0 + 3, y0 + 12.8, 'SOUL', 10.5, 'start', 'tx', weight='bold', extra='letter-spacing="1.2"')
-    sh.text(x0 + 36, y0 + 7.2, 'P0 - DIY pilot enclosure', 2.3, 'start', 'td')
-    sh.text(x0 + 36, y0 + 11.0, 'Waveshare ESP32-S3-AMOLED-1.75', 2.3, 'start', 'td')
+    sh.text(x0 + 36, y0 + 7.2, 'P0 size M - DIY pilot, v6 look', 2.3, 'start', 'td')
+    sh.text(x0 + 36, y0 + 11.0, 'Waveshare ESP32-S3-Touch-LCD-2.8C', 2.3, 'start', 'td')
     sh.text(x0 + 36, y0 + 14.8, 'DWG ' + dwg, 2.3, 'start', 'td')
     cell(x0, r1, 'TITLE', title, 3.1)
     sh.text(x0 + 1.4, r1 + 13.0, sub, 2.2, 'start', 'tx')
@@ -187,7 +187,7 @@ def write(sh, name):
 
 # ------------------------------------------------------------------ helpers on the model
 def outer_all(v):
-    parts = [mesh(v, n) for n in ('front_shell', 'back_shell', 'seam_band')]
+    parts = [mesh(v, n) for n in ('front_shell', 'back_shell', 'base_plate')]
     return trimesh.util.concatenate([p for p in parts if p is not None])
 
 
@@ -196,122 +196,124 @@ def bbox(v):
     return m.bounds
 
 
+
+# ================================================================== model facts
+def shells_mesh(v):
+    return trimesh.util.concatenate([mesh(v, n) for n in ('front_shell', 'back_shell', 'base_plate') if mesh(v, n) is not None])
+
+
+def screw_std(Lmax):
+    for L in (25, 20, 16, 14, 12, 10, 8, 6, 5, 4):
+        if L <= Lmax - 0.3:
+            return L
+    return 4
+
+
+BOARD_IN = ['in_lcd', 'in_pcb', 'in_pcb_tab', 'in_components', 'in_bat_conn', 'in_switch', 'in_key_boot', 'in_key_rst',
+            'in_usb_l', 'in_usb_r']
+
+
 # ================================================================== SHEET 1: GA
 def sheet_ga(theme='blue'):
-    v = 'plastic'
+    v = 'plastic' if 'plastic' in REP else 'alu'
+    rs = REP.get(v, {})
     sh = Sheet(theme)
     sh.frame()
-    k = 1.6
-    F = mesh(v, 'front_shell')
-    B = mesh(v, 'back_shell')
-    GL = mesh(v, 'board_glass')
-    both = trimesh.util.concatenate([F, B])
-    (x0, y0, z0), (x1, y1, z1) = both.bounds
+    k = 1.0
+    F, B, BP = mesh(v, 'front_shell'), mesh(v, 'back_shell'), mesh(v, 'base_plate')
+    LENS = mesh(v, 'in_lens')
+    allm = shells_mesh(v)
+    (x0, y0, z0), (x1, y1, z1) = allm.bounds
     W, D, H = x1 - x0, y1 - y0, z1 - z0
-    VF = View(92, 196, k)             # front: u=X, v=Z
-    VT = View(92, 64, k)              # top:   u=X, v=Y (back up)
-    VR = View(190, 196, k)            # right: u=Y, v=Z
-    VB = View(282, 196, k)            # back:  u=-X, v=Z
-    VBo = View(360, 64, k)            # bottom: u=X, v=-Y
-    TY = 212 + 3
+    VF = View(80, 208, k)             # front
+    VT = View(80, 50, k)              # top (u = X, v = Y)
+    VR = View(172, 208, k)            # right side (u = Y, v = Z)
+    VB = View(282, 208, k)            # back (u = -X)
+    VBo = View(282, 50, k)            # bottom (u = X, v = -Y)
+    TY = 225
 
-    # ---------- FRONT
-    sil = silhouette(both, 'front')
-    draw_poly(sh, VF, sil, 'o')
-    draw_poly(sh, VF, silhouette(GL, 'front'), 'gl')
+    draw_poly(sh, VF, silhouette(allm, 'front'), 'o')
+    draw_poly(sh, VF, silhouette(LENS, 'front'), 'gl')
     draw_lines(sh, VF, feature_lines(F, 'front', 30), 'o2')
-    # active area
-    act = mesh(v, 'board_glass')
-    gc = act.bounds.mean(0)
-    # glass centre in the front view
     cx, cz = g.G[0], g.G[2]
-    sh.centermark(*VF.p(cx, cz), 23.0 * k, 3)
-    sh.dim_h(*VF.p(x0, 40), *VF.p(x1, 40), VF.p(0, z0)[1] + 9, '%.1f' % W)
-    sh.dim_v(*VF.p(0, z0), *VF.p(0, z1), VF.p(x0, 0)[0] - 8, '%.1f' % H)
-    sh.dim_v(*VF.p(0, 0), *VF.p(cx, cz), VF.p(x0, 0)[0] - 3.5, '%.1f' % cz, tshift=0)
-    ap = 2 * (24.48 - 1.5)
-    sh.leader(VF.p(-ap / 2 * 0.7, cz + ap / 2 * 0.71), (VF.p(-40, 70)[0], VF.p(0, 76)[1] - 3),
-              '', lines=['APERTURE Ø%.2f' % ap, 'lip 1.5 over stock glass Ø48.96', 'active Ø43.76'], side=-1)
+    sh.centermark(*VF.p(cx, cz), 35.32 * k, 3)
+    sh.circle(*VF.p(cx, cz), 35.32 * k, 'ph')
+    sh.dim_h(*VF.p(x0, g.G[2]), *VF.p(x1, g.G[2]), VF.p(0, z0)[1] + 8, '%.1f' % W)
+    sh.dim_v(*VF.p(x0, z0), *VF.p(x0, z1), VF.p(x0, 0)[0] - 9, '%.1f (incl. foot %.1f)' % (H, g.FOOT_H))
+    sh.dim_v(*VF.p(x1, 0), *VF.p(x1, cz), VF.p(x1, 0)[0] + 5, '%.2f' % cz)
+    ap = 2 * (47.93 - 1.5)
+    sh.leader(VF.p(-ap / 2 * 0.71, cz + ap / 2 * 0.71), (VF.p(x0, 0)[0] + 4, VF.p(0, z1)[1] - 4), '',
+              lines=['APERTURE Ø%.2f (lip 1.5 over lens Ø95.86)' % ap, 'screen Ø70.64 (dash-dot)'], side=1)
     sh.text(VF.p(0, 0)[0], TY, 'FRONT', 3.2, 'middle', 'tx', weight='bold')
-    sh.text(VF.p(0, 0)[0], TY + 3.8, 'face table leans back %.1f°' % g.dims_report()['lean_deg'], 2.1, 'middle', 'td')
+    sh.text(VF.p(0, 0)[0], TY + 3.8, 'face leans back %.1f°, nothing on it but the glass' % g.dims_report()['lean_deg'],
+            2.1, 'middle', 'td')
 
-    # ---------- TOP
-    draw_poly(sh, VT, silhouette(both, 'top'), 'o')
+    draw_poly(sh, VT, silhouette(allm, 'top'), 'o')
     draw_lines(sh, VT, feature_lines(B, 'top', 30), 'o3')
-    ys = g.SEAM_A + g.SEAM_B * z1
-    sh.line(*VT.p(x0 - 4, g.SEAM_A + g.SEAM_B * 40), *VT.p(x1 + 4, g.SEAM_A + g.SEAM_B * 40), 'ph')
-    sh.text(VT.p(x1 + 5, 0)[0], VT.p(0, g.SEAM_A + g.SEAM_B * 40)[1] + 0.8, 'SEAM', 1.9, 'start', 'td')
+    ym = g.SEAM_A + g.SEAM_B * cz
+    sh.line(*VT.p(x0 - 4, ym), *VT.p(x1 + 4, ym), 'ph')
+    sh.text(VT.p(x1 + 5, 0)[0], VT.p(0, ym)[1] + 0.8, 'SEAM', 1.9, 'start', 'td')
     sh.dim_v(*VT.p(x0, y0), *VT.p(x0, y1), VT.p(x0, 0)[0] - 7, '%.1f' % D)
-    sh.text(VT.p(0, 0)[0], VT.p(0, y1)[1] - 6, 'TOP', 3.2, 'middle', 'tx', weight='bold')
+    sh.text(VT.p(0, 0)[0], VT.p(0, y0)[1] + 8, 'TOP', 3.0, 'middle', 'tx', weight='bold')
 
-    # ---------- RIGHT SIDE
-    draw_poly(sh, VR, silhouette(both, 'right'), 'o')
-    draw_lines(sh, VR, feature_lines(B, 'right', 30), 'o3')
-    draw_lines(sh, VR, feature_lines(F, 'right', 30), 'o3')
-    # seam line (plane) in side view
-    sh.line(*VR.p(g.SEAM_A - 0.0, -2), *VR.p(g.SEAM_A + g.SEAM_B * 77, 77), 'ph')
-    sh.dim_h(*VR.p(y0, 10), *VR.p(y1, 10), VR.p(0, z0)[1] + 9, '%.1f' % D)
-    # base footprint depth
-    bw = g.dims_report()
-    sh.dim_h(*VR.p(-12.9, 0), *VR.p(14.33, 0), VR.p(0, z0)[1] + 15, 'BASE %.1f' % bw['base_d'])
-    # slot
-    rs = REP.get('plastic', {})
-    sh.leader(VR.p(g.SEAM_A + g.SEAM_B * 51, 51), (VR.p(y1 + 5, 0)[0], VR.p(0, 60)[1]), '',
-              lines=['SPEAKER SLOT', '12.0 x 1.2 in +x seam', 'Z 45.5-57.5'], side=1)
+    draw_poly(sh, VR, silhouette(allm, 'right'), 'o')
+    draw_lines(sh, VR, feature_lines(B, 'right', 30) + feature_lines(F, 'right', 30), 'o3')
+    draw_lines(sh, VR, feature_lines(BP, 'right', 30), 'o3')
+    sh.line(*VR.p(g.SEAM_A, -2), *VR.p(g.SEAM_A + g.SEAM_B * (z1 + 2), z1 + 2), 'ph')
+    sh.dim_h(*VR.p(y0, 10), *VR.p(y1, 10), VR.p(0, z0)[1] + 8, '%.1f' % D)
+    zc = 90.0
+    sh.leader(VR.p(g.SEAM_A + g.SEAM_B * zc, zc), (VR.p(y1 + 6, 0)[0], VR.p(0, 112)[1]), '',
+              lines=['SPEAKER SLOT 20 x 1.2', '+x seam, Z 80-100'], side=1)
+    sh.leader(VR.p(g.SEAM_A + g.SEAM_B * 72, 72), (VR.p(y1 + 6, 0)[0], VR.p(0, 70)[1]), '',
+              lines=['BOOT / RST pin holes Ø2.3', 'ON/OFF window 8 x 3.2', '(all in the seam)'], side=1)
+    sh.leader(VR.p(2, 1.5), (VR.p(y1 + 6, 0)[0], VR.p(0, 22)[1]), '', lines=['polymer base plate 3.0', '+ oval foot 1.2'],
+              side=1)
     sh.text(VR.p(0, 0)[0], TY, 'RIGHT (+X)', 3.2, 'middle', 'tx', weight='bold')
 
-    # ---------- BACK
-    draw_poly(sh, VB, silhouette(both, 'back'), 'o')
+    draw_poly(sh, VB, silhouette(allm, 'back'), 'o')
     draw_lines(sh, VB, feature_lines(B, 'back', 30), 'o2')
-    for s in rs.get('screws', []):
-        pass
-    sh.leader(VB.p(19.5, 11), (VB.p(-40, 0)[0] + 20, VB.p(0, -6)[1]), '', lines=['4x M2 from the back', 'cbore Ø4.3 x 1.8'],
+    scr = rs.get('screws', [])
+    if scr:
+        s0 = scr[0]
+        sh.leader(VB.p(s0['x'], s0['Z']), (VB.p(-60, 0)[0], VB.p(0, 10)[1]), '',
+                  lines=['4x M2 from the back', 'cbore Ø4.3 x 1.8'], side=1)
+    sh.leader(VB.p(0, 3.0 + 5.2), (VB.p(-60, 0)[0], VB.p(0, -6)[1]), '', lines=['USB-C socket (charge)', 'Z %.1f' % (3.0 + 5.2)],
               side=1)
-    pins = rs.get('pins', {})
-    if pins:
-        e = pins['boot']['exit']
-        sh.leader(VB.p(e[0], e[2]), (VB.p(-45, 0)[0], VB.p(0, 82)[1]), '',
-                  lines=['PWR / BOOT pin holes Ø2.3', 'Z %.1f  x ±%.1f' % (e[2], abs(e[0]))], side=1)
     sh.text(VB.p(0, 0)[0], TY, 'BACK', 3.2, 'middle', 'tx', weight='bold')
 
-    # ---------- BOTTOM
-    draw_poly(sh, VBo, silhouette(both, 'bottom'), 'o')
-    draw_lines(sh, VBo, feature_lines(B, 'bottom', 30), 'o2')
-    draw_lines(sh, VBo, feature_lines(F, 'bottom', 30), 'o2')
-    sh.dim_h(*VBo.p(-bw['base_w'] / 2, 0), *VBo.p(bw['base_w'] / 2, 0), VBo.p(0, 16)[1] - 4,
-             'FLAT BASE %.1f' % bw['base_w'])
-    sh.leader(VBo.p(0, 4.5), (VBo.p(24, 0)[0], VBo.p(0, -20)[1]), '', lines=['USB-C plug tunnel', '+ cable groove 5 x 4.5'],
-              side=1)
-    sh.leader(VBo.p(10.5, -2.5), (VBo.p(24, 0)[0], VBo.p(0, 22)[1]), '', lines=['2x magnet Ø6.2 x 2.1', '(optional)'], side=1)
-    sh.text(VBo.p(0, 0)[0], VBo.p(0, -y0)[1] - 7 + 20 * 0, '', 1)
-    sh.text(VBo.p(0, 0)[0], VBo.p(0, 18)[1] - 12, 'BOTTOM', 3.2, 'middle', 'tx', weight='bold')
+    draw_poly(sh, VBo, silhouette(allm, 'bottom'), 'o')
+    draw_lines(sh, VBo, feature_lines(BP, 'bottom', 30), 'o2')
+    bw = g.dims_report()
+    sh.dim_h(*VBo.p(-bw['base_w'] / 2, 0), *VBo.p(bw['base_w'] / 2, 0), VBo.p(0, -y0)[1] + 8 if False else VBo.p(0, -20)[1] + 4,
+             'FLAT BASE %.1f x %.1f' % (bw['base_w'], bw['base_d']))
+    sh.text(VBo.p(0, 0)[0], VBo.p(0, 22)[1] - 4, 'BOTTOM', 3.0, 'middle', 'tx', weight='bold')
+    sh.text(VBo.p(0, 0)[0], VBo.p(0, -20)[1] + 9, 'foot %.1f x %.1f (v6 30 x 14 x K), 2x M2 countersunk' % (2 * g.FOOT_A, 2 * g.FOOT_B),
+            1.9, 'middle', 'td')
 
-    # notes
     ms = rs.get('dims', {}).get('mass_g', {})
-    notes(sh, 250, 110, [
-        'Envelope %.1f x %.1f x %.1f mm (W x H x D)' % (W, H, D),
-        'Flat base %.1f x %.1f mm, no rocker' % (bw['base_w'], bw['base_d']),
-        'Split on one plane y = %.2f + %.4f Z (%.1f° off vertical)' % (g.SEAM_A, g.SEAM_B, math.degrees(math.atan(g.SEAM_B))),
-        '  = the silhouette line -> no undercut, 3-axis CNC',
-        'Stock Waveshare glass Ø48.96 framed by a 1.5 mm lip',
-        'Walls: plastic 2.0 / aluminium 1.4 (sheet 4)',
-        'Shell mass PLA: front %.1f g, back %.1f g, chassis %.1f g' % (
-            ms.get('front_shell', 0), ms.get('back_shell', 0), ms.get('chassis', 0)),
-        '4x M2 heat-set insert in the front (plastic)',
-        'Nothing on the front but the glass.',
-    ], head='NOTES')
-    title_block(sh, 'GENERAL ARRANGEMENT', 'SOUL-P0 plastic variant, all views from the CAD mesh', '1.6 : 1', '1 / 4',
-                'SOUL-P0-01')
+    notes(sh, 342, 100, [
+        'Envelope %.1f x %.1f x %.1f' % (W, H, D),
+        '  (W x H incl. foot x D)',
+        'v6 front silhouette x %.2f' % g.K,
+        '  depth x %.2f' % g.KY,
+        'Lens Ø95.86 stock (2.8C)',
+        'Split plane y=%.2f+%.4fZ' % (g.SEAM_A, g.SEAM_B),
+        '  = silhouette, no undercut',
+        'Masses (%s):' % v,
+        '  front %.0f g back %.0f g' % (ms.get('front_shell', 0), ms.get('back_shell', 0)),
+        '  base %.0f g chassis %.0f g' % (ms.get('base_plate', 0), ms.get('chassis', 0)),
+    ], size=2.0, head='NOTES')
+    title_block(sh, 'GENERAL ARRANGEMENT', 'SOUL-P0 M, %s, views projected from the CAD' % v, '1 : 1', '1 / 4',
+                'SOUL-P0M-01')
     return sh
 
 
 # ================================================================== SHEET 2: SECTION A-A
 SEC_STYLE = {
-    'front_shell': ('o', 'hA'), 'back_shell': ('o', 'hB'), 'seam_band': ('o', 'hC'), 'chassis': ('o2', 'hC'),
-    'battery': ('fb', None), 'speaker': ('f2', None), 'board_glass': ('gl', None), 'board_module': ('f2', None),
-    'board_components': ('f2', None), 'board_usb_receptacle': ('f2', None), 'usb_plug': ('o3', None),
-    'board_header_8pin': ('f2', None), 'board_standoff_1': ('f2', None), 'board_standoff_2': ('f2', None),
-    'board_standoff_3': ('f2', None), 'pin_pwr': ('o2', 'hS'), 'pin_boot': ('o2', 'hS'),
+    'front_shell': ('o', 'hA'), 'back_shell': ('o', 'hB'), 'base_plate': ('o', 'hD'), 'chassis': ('o2', 'hC'),
+    'in_battery': ('fb', None), 'in_speaker': ('f2', None), 'in_amp': ('f2', None), 'in_mic': ('f2', None),
+    'in_lens': ('gl', None), 'in_lcd': ('f2', None), 'in_pcb': ('f2', None), 'in_pcb_tab': ('f2', None),
+    'in_components': ('o3', None), 'in_usb_socket': ('f2', None), 'in_usb_plug': ('o3', None), 'in_bat_plug': ('o3', None),
 }
 
 
@@ -332,179 +334,135 @@ def draw_section(sh, V, v, x_cut, names=None):
 
 
 def sheet_section(theme='blue'):
-    v = 'plastic'
+    v = 'plastic' if 'plastic' in REP else 'alu'
     rs = REP.get(v, {})
     sh = Sheet(theme)
     sh.frame()
-    k = 3.0
-    V = View(95, 250, k)       # u = Y, v = Z
+    k = 1.75
+    V = View(78, 262, k)
     secs = draw_section(sh, V, v, 0.0)
-    # outline of the whole body (projection) for context
-    sh.text(V.p(0, 0)[0], 268, 'SECTION A-A  (plane x = 0, seen from +X)', 3.2, 'middle', 'tx', weight='bold')
-    # key vertical dims (from the section geometry)
-    fs = unary_union([secs.get('front_shell', Polygon()), secs.get('back_shell', Polygon())])
-    (ya, za, yb, zb) = fs.bounds
-    sh.dim_v(*V.p(ya, za), *V.p(ya, zb), V.p(ya, 0)[0] - 7, '%.1f' % (zb - za))
-    sh.dim_h(*V.p(ya, 8), *V.p(yb, 8), V.p(0, za)[1] + 10, '%.1f @ x=0' % (yb - ya))
-    # glass and table
-    G = secs.get('board_glass')
-    if G is not None:
-        gy0, gz0, gy1, gz1 = G.bounds
-        sh.dim_v(*V.p(gy0, gz0), *V.p(gy0, gz1), V.p(ya, 0)[0] - 16, 'GLASS %.2f' % (gz1 - gz0))
-    # wall thickness callouts
-    notes_y = 20
-    cl = rs.get('clearance', {})
-
-    def cmin(n):
-        r = cl.get(n, {})
-        return min(r.values()) if r else float('nan')
-    # balloons for parts
-    items = [('front_shell', 1), ('back_shell', 2), ('chassis', 3), ('board_glass', 4), ('board_module', 5),
-             ('battery', 6), ('speaker', 7), ('usb_plug', 8), ('board_usb_receptacle', 9)]
-    xs = V.p(yb, 0)[0] + 18
-    yy = 36
+    sh.text(V.p(0, 0)[0], 278, 'SECTION A-A  (x = 0, seen from +X)', 3.0, 'middle', 'tx', weight='bold')
+    fs = unary_union([secs.get(n, Polygon()) for n in ('front_shell', 'back_shell', 'base_plate')])
+    ya, za, yb, zb = fs.bounds
+    sh.dim_v(*V.p(ya, za), *V.p(ya, zb), V.p(ya, 0)[0] - 8, '%.1f' % (zb - za))
+    sh.dim_h(*V.p(ya, 20), *V.p(yb, 20), V.p(0, za)[1] + 8, '%.1f' % (yb - ya))
+    items = [('front_shell', 1), ('in_lens', 2), ('in_lcd', 3), ('in_pcb', 4), ('chassis', 5), ('in_battery', 6),
+             ('back_shell', 7), ('base_plate', 8), ('in_usb_socket', 9), ('in_speaker', 10), ('in_amp', 11)]
+    xs = V.p(yb, 0)[0] + 14
+    yy = 30
     for n, i in items:
         p = secs.get(n)
         if p is None:
             continue
         rp = p.representative_point()
-        sh.balloon(xs, yy, i, tip=V.p(rp.x, rp.y))
-        yy += 21
-    # legend + clearance table from the checks
+        sh.balloon(xs + (i % 2) * 9, yy, i, tip=V.p(rp.x, rp.y))
+        yy += 17
+    cl = rs.get('clearance', {})
     rows = []
-    for n, lab in [('board_glass', 'stock glass Ø48.96 (V)'), ('board_module', 'module/PCB Ø46.0 (V)'),
-                   ('board_header_8pin', '8-pin header, 12.7 deep'), ('board_usb_receptacle', 'USB-C receptacle'),
-                   ('usb_plug', 'USB-C plug 12.4x7.0 (U)'), ('plug_spk', 'SPK plug+wires (U)'),
-                   ('plug_bat', 'BAT plug+wires (U)'), ('btn_pwr', 'PWR key'), ('btn_boot', 'BOOT key'),
-                   ('battery', 'LiPo 503035 envelope'), ('speaker', 'speaker 1511')]:
+    for n, lab in [('lens', 'lens Ø95.86 (drawing)'), ('lcd', 'LCD cell env. Ø77.6'), ('pcb', 'PCB Ø73'),
+                   ('components', 'parts to 9.7 (drawing)'), ('bat_plug', 'BAT plug + wires (U)'),
+                   ('usb_plug', 'USB-C 90° plug (U)'), ('usb_socket', 'rear USB-C socket (U)'),
+                   ('switch', 'ON/OFF switch (U)'), ('key_boot', 'BOOT key (U)'), ('battery', 'LiPo 605060'),
+                   ('speaker', 'speaker 2030'), ('amp', 'MAX98357A'), ('mic', 'INMP441')]:
         r = cl.get(n, {})
         if not r:
             continue
-        rows.append((lab, '%.2f' % r.get('front_shell', float('nan')), '%.2f' % r.get('back_shell', float('nan')),
-                     '%.2f' % r.get('chassis', float('nan'))))
-    ty = table(sh, 240, 20, [('internal part', 58), ('front', 16), ('back', 16), ('chassis', 18)], rows, size=2.0)
-    sh.text(240, ty + 4, 'Minimum distance (mm) from each internal part to each shell,', 2.0, 'start', 'td')
-    sh.text(240, ty + 7, 'measured on the meshes (soul_p0.py mesh_checks). (U) = unverified', 2.0, 'start', 'td')
-    sh.text(240, ty + 10, 'size, measure your part. 0.0x at the glass = intended lip contact.', 2.0, 'start', 'td')
+        rows.append((lab, *['%.2f' % r.get(s, float('nan')) for s in ('front_shell', 'back_shell', 'base_plate', 'chassis')]))
+    ty = table(sh, 190, 18, [('internal part', 52), ('front', 14), ('back', 14), ('base', 14), ('chassis', 16)], rows, size=1.9)
+    ty = notes(sh, 190, ty + 4, [
+        'Minimum distance (mm) from each internal part to each printed / machined',
+        'part, measured on the meshes. <= 0.05 at the lens = intended lip contact;',
+        'chassis 0.0 = the part rests on its cradle. (U) = unverified size.',
+    ], size=1.8)
     inter = rs.get('interference', {})
-    bad = {k_: v_ for k_, v_ in inter.items() if v_ > 0.01}
-    ty = notes(sh, 240, ty + 17, [
-        'Interference check: %d pairs, %d overlapping%s' % (len(inter), len(bad), ':' if bad else ' (all 0.00 mm3)'),
-    ] + ['  %s = %.2f mm3' % kv for kv in list(bad.items())[:6]], head='CHECKS')
-    parts_legend = ['1 front shell (hatch /)', '2 back shell (hatch \\)', '3 chassis (cross hatch, printed)',
-                    '4 stock glass', '5 AMOLED module + PCB', '6 LiPo 503035, tilted %.1f° in its cradle' % tilt_deg(),
-                    '7 speaker 1511, membrane to the back', '8 USB-C plug in its tunnel',
-                    '9 USB-C receptacle (board)']
-    notes(sh, 240, ty + 4, parts_legend, head='PARTS IN SECTION')
-    title_block(sh, 'SECTION A-A (x = 0)', 'plastic variant, wall 2.0, clearances 0.2', '3 : 1', '2 / 4', 'SOUL-P0-02')
+    bad = {k_: v_ for k_, v_ in inter.items() if v_ > 0.05}
+    ty = notes(sh, 190, ty + 3, ['%d pairs checked, %d overlapping > 0.05 mm3' % (len(inter), len(bad))]
+               + ['  %s = %.2f' % kv for kv in list(bad.items())[:5]], size=1.9, head='INTERFERENCE CHECK')
+    notes(sh, 190, ty + 3, ['1 front shell  2 stock lens  3 LCD  4 PCB  5 chassis (printed)',
+                            '6 LiPo 605060  7 back shell  8 base plate + foot (polymer)',
+                            '9 USB-C socket (charge)  10 speaker 2030  11 amp'], size=1.9, head='PARTS')
+    title_block(sh, 'SECTION A-A (x = 0)', '%s variant, clearances from the CAD check' % v, '1.75 : 1', '2 / 4',
+                'SOUL-P0M-02')
     return sh
-
-
-def tilt_deg():
-    b = (6.0, 9.1)
-    a = (-30.1, 14.4)
-    return math.degrees(math.atan2(a[1] - b[1], b[0] - a[0]))
 
 
 # ================================================================== SHEET 3: EXPLODED + BOM
 BOM = [
-    # n, part, material, qty, source, price
-    (1, 'front_shell', 'Front shell', 'PLA/PETG/resin | Al 6061-T6', 1, 'print (sheet F) | CNC', '15-60 lei | 60-120 EUR'),
-    (2, 'board', 'ESP32-S3-Touch-AMOLED-1.75', 'Waveshare, stock glass', 1, 'waveshare.com / AliExpress', '30-40 USD'),
-    (3, 'chassis', 'Chassis (battery cradle, spk frame)', 'PETG / resin', 1, 'print', '3-10 lei'),
-    (4, 'battery', 'LiPo 503035 500 mAh, MX1.25', 'Li-polymer + PCM', 1, 'AliExpress', '3-5 USD'),
-    (5, 'speaker', 'Micro speaker 1511 8 ohm 1 W', 'wired', 1, 'AliExpress', '1-2 USD'),
-    (6, 'back_shell', 'Back shell', 'PLA/PETG/resin | Al 6061-T6', 1, 'print | CNC', '15-60 lei | 60-120 EUR'),
-    (7, 'pin_pwr', 'Button pin PWR / BOOT', 'PETG / resin', 2, 'print', '<1 lei'),
-    (8, None, 'Heat-set insert M2 x 3 x Ø3.5', 'brass', 4, 'eMAG / 3DPrintX', '30-60 lei/set'),
-    (9, None, 'Screw M2 x 16 (lower) / M2 x 8 (upper)', 'A2 stainless', '2+2', 'hardware kit', '30-40 lei/kit'),
-    (10, None, 'EVA foam 0.5-1 mm, VHB, Kapton', '-', '-', 'eMAG / hobby', '40-60 lei'),
-    (11, None, 'Magnet Ø6 x 2 N52 (optional)', 'NdFeB', 2, 'eMAG', '15-25 lei'),
+    (1, 'Front shell', 'PLA/PETG/resin | Al 6061', '1', 'print | CNC', '40-150 lei | 90-200 EUR'),
+    (2, 'ESP32-S3-Touch-LCD-2.8C', 'Waveshare', '1', 'waveshare / AliExpress', '30-43 USD'),
+    (3, 'Chassis', 'PETG / resin', '1', 'print', '5-15 lei'),
+    (4, 'LiPo 605060 ~2000 mAh', 'Li-po + PCM, MX1.25', '1', 'AliExpress / eMAG', '30-60 lei'),
+    (5, 'Speaker 2030 8 ohm 1 W', 'box speaker', '1', 'AliExpress / eMAG', '10-20 lei'),
+    (6, 'MAX98357A + INMP441', 'I2S amp + I2S mic', '1+1', 'ardushop / optimus', '35-60 lei'),
+    (7, 'Back shell', 'PLA/PETG/resin | Al 6061', '1', 'print | CNC', '40-150 lei | 90-200 EUR'),
+    (8, 'Base plate + foot', 'PETG/resin, matte', '1', 'print', '5-15 lei'),
+    (9, 'Pins BOOT / RST', 'PETG / resin', '2', 'print', '<1 lei'),
+    (10, 'USB-C 90° ext. M-F', 'panel socket', '1', 'AliExpress / eMAG', '20-40 lei'),
+    (11, 'Insert M2x3 Ø3.5', 'brass', '6', 'eMAG / 3DPrintX', '30-60 lei/set'),
+    (12, 'Screw M2 (see sheet 4)', 'A2 inox', '6', 'kit', '30-40 lei/kit'),
+    (13, 'EVA foam, VHB, Kapton', '-', '-', 'eMAG', '40-60 lei'),
 ]
 
 
 def sheet_exploded(theme='blue'):
-    v = 'plastic'
+    v = 'plastic' if 'plastic' in REP else 'alu'
     sh = Sheet(theme)
     sh.frame()
-    # isometric-ish view direction
-    az, el = math.radians(-35), math.radians(22)
+    az, el = math.radians(-35), math.radians(20)
     dview = -np.array([math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el)])
-    dview = dview / np.linalg.norm(dview)
+    dview /= np.linalg.norm(dview)
     U = np.cross(dview, [0, 0, 1.0])
     U /= np.linalg.norm(U)
     Vv = np.cross(U, dview)
     view = (dview, U, Vv)
     NS = np.array([0, 1.0, -g.SEAM_B])
     NS /= np.linalg.norm(NS)
-    offs = {'front_shell': -34, 'board': -16, 'chassis': 6, 'battery': 14, 'speaker': 20, 'back_shell': 44}
-    groups = [
-        ('front_shell', ['front_shell']),
-        ('board', ['board_glass', 'board_module', 'board_components', 'board_header_8pin', 'board_usb_receptacle',
-                   'board_standoff_1', 'board_standoff_2', 'board_standoff_3', 'board_conn_spk', 'board_conn_bat']),
-        ('chassis', ['chassis']), ('battery', ['battery']), ('speaker', ['speaker']), ('back_shell', ['back_shell']),
-    ]
-    k = 1.55
-    VV = View(120, 150, k)
-    # painter: far first (largest depth along dview)
+    groups = [('front_shell', ['front_shell'], -60), ('lens', ['in_lens'], -38),
+              ('board', BOARD_IN, -22), ('chassis', ['chassis'], 4),
+              ('inside', ['in_battery', 'in_speaker', 'in_amp', 'in_mic'], 18), ('back_shell', ['back_shell'], 62)]
+    k = 0.95
+    VV = View(118, 150, k)
     items = []
-    for gname, names in groups:
-        off = NS * offs[gname]
+    for gname, names, off_ in groups:
+        off = NS * off_
         ms = [mesh(v, n) for n in names if mesh(v, n) is not None]
         if not ms:
             continue
         m = trimesh.util.concatenate(ms)
-        depth = float(((m.vertices + off) @ dview).mean())
-        items.append((depth, gname, m, off))
+        items.append((float(((m.vertices + off) @ dview).mean()), gname, m, off))
+    bpm = mesh(v, 'base_plate')
+    if bpm is not None:
+        items.append((float(((bpm.vertices + [0, 0, -40]) @ dview).mean()), 'base_plate', bpm, np.array([0, 0, -40.0])))
     items.sort(key=lambda t: -t[0])
-    cls = {'front_shell': 'ob', 'back_shell': 'ob', 'chassis': 'ob', 'battery': 'ob', 'speaker': 'ob', 'board': 'ob'}
     anchors = {}
     for depth, gname, m, off in items:
         sil = silhouette(m, view, off)
-        draw_poly(sh, VV, sil, 'ob')
-        if gname == 'board':
-            gl = mesh(v, 'board_glass')
-            draw_poly(sh, VV, silhouette(gl, view, off), 'gl')
-        draw_lines(sh, VV, feature_lines(m, view, 35, off), 'o3')
+        draw_poly(sh, VV, sil, 'gl' if gname == 'lens' else 'ob')
+        if gname != 'lens':
+            draw_lines(sh, VV, feature_lines(m, view, 35, off), 'o3')
         c = sil.representative_point()
         anchors[gname] = VV.p(c.x, c.y)
-    # pins
-    for pn, dx in [('pin_pwr', -1), ('pin_boot', 1)]:
-        m = mesh(v, pn)
-        if m is not None:
-            off = NS * 58 + np.array([0, 0, 10])
-            sil = silhouette(m, view, off)
-            draw_poly(sh, VV, sil, 'ob')
-            c = sil.representative_point()
-            anchors[pn] = VV.p(c.x, c.y)
-    # explode axis
-    a0 = np.array([0, -60, 40.0]) @ np.array([U, Vv]).T
-    a1 = np.array([0, 75, 34.0]) @ np.array([U, Vv]).T
-    sh.line(*VV.p(*a0), *VV.p(*a1), 'c')
-    # balloons
-    bal = {'front_shell': (1, (30, 40)), 'board': (2, (60, 30)), 'chassis': (3, (110, 26)), 'battery': (4, (150, 32)),
-           'speaker': (5, (185, 40)), 'back_shell': (6, (215, 60)), 'pin_boot': (7, (225, 95))}
+    bal = {'front_shell': (1, (26, 36)), 'lens': (2, (48, 26)), 'board': (2, (70, 22)), 'chassis': (3, (120, 20)),
+           'inside': (4, (160, 26)), 'back_shell': (7, (205, 46)), 'base_plate': (8, (205, 205))}
     for gname, (n, pos) in bal.items():
         if gname in anchors:
             sh.balloon(pos[0], pos[1], n, tip=anchors[gname])
-    sh.text(120, 236, 'EXPLODED VIEW - along the seam normal', 3.2, 'middle', 'tx', weight='bold')
-    sh.text(120, 240.5, 'axonometric projection of the CAD meshes (plastic variant)', 2.1, 'middle', 'td')
-    # BOM
-    rows = [(n, name, mat, q, src, pr) for (n, key, name, mat, q, src, pr) in BOM]
-    ty = table(sh, 238, 16, [('#', 6), ('part', 56), ('material', 38), ('qty', 8), ('source', 30), ('price', 30)][:6],
-               [(r[0], r[1][:30], r[2][:20], r[3], r[4][:16], r[5]) for r in rows], size=1.8, rh=3.4)
-    notes(sh, 238, ty + 5, [
-        'Assembly order (README E):',
-        '1 inserts into the front shell (soldering iron 230°C)',
-        '2 glass into the front pocket, USB-C down',
-        '3 EVA dot on standoff 1, chassis on the 2 lower bosses',
-        '4 battery into the cradle (no glue), plug BAT',
-        '5 speaker into its frame, membrane to the back',
-        '6 pins into the back shell from inside',
-        '7 close: 2x M2x16 low, 2x M2x8 up, finger-tight',
-        'Prices: Sept 2026, approximate (README A).',
-    ], head='ASSEMBLY')
-    title_block(sh, 'EXPLODED VIEW + BOM', 'SOUL-P0 plastic, 1 unit', 'NTS', '3 / 4', 'SOUL-P0-03')
+    sh.text(118, 244, 'EXPLODED VIEW along the seam normal (base plate down)', 3.0, 'middle', 'tx', weight='bold')
+    sh.text(118, 248.5, 'axonometric projection of the CAD meshes', 2.1, 'middle', 'td')
+    ty = table(sh, 232, 16, [('#', 6), ('part', 44), ('material', 40), ('qty', 8), ('source', 36), ('price', 36)],
+               [(r[0], r[1], r[2], r[3], r[4], r[5]) for r in BOM], size=1.75, rh=3.3)
+    notes(sh, 232, ty + 5, [
+        'Assembly (README E):',
+        '1 inserts: 4 front bosses + 2 base bosses (iron 230°C)',
+        '2 lens + board into the front pocket, USB-C corners down',
+        '3 EVA dots on the 4 M2 pads, chassis on top',
+        '4 battery, speaker, amp, mic onto the chassis (VHB)',
+        '5 wires: see README (I2S on the 12-pin connector)',
+        '6 pins in, back shell on, 4x M2 from the back',
+        '7 USB-C socket in the clamp, base plate, 2x M2',
+        'Prices Sept 2026, approximate (README A).',
+    ], size=1.9, head='ASSEMBLY')
+    title_block(sh, 'EXPLODED VIEW + BOM', 'SOUL-P0 M, %s, 1 unit' % v, 'NTS', '3 / 4', 'SOUL-P0M-03')
     return sh
 
 
@@ -512,20 +470,17 @@ def sheet_exploded(theme='blue'):
 def sheet_variants(theme='blue'):
     sh = Sheet(theme)
     sh.frame()
-    k = 2.2
-    cols = [('plastic', 'PLASTIC  FDM / SLA'), ('alu', 'ALUMINIUM  CNC 6061-T6'), ('alu_band', 'ALU + 3 mm RF BAND')]
+    k = 1.3
+    cols = [('plastic', 'PLASTIC  FDM / SLA'), ('alu', 'ALUMINIUM  CNC 6061-T6')]
     for i, (v, lab) in enumerate(cols):
         if v not in REP:
             continue
-        V = View(62 + i * 118, 190, k)
-        draw_section(sh, V, v, 0.0, ['front_shell', 'back_shell', 'seam_band', 'board_glass', 'board_module',
-                                      'battery', 'speaker'])
-        # seam plane
-        sh.line(*V.p(g.SEAM_A - 0.2, -3), *V.p(g.SEAM_A + g.SEAM_B * 78, 78), 'cut')
-        sh.text(V.p(0, 0)[0], 205, lab, 3.0, 'middle', 'tx', weight='bold')
-        sh.text(V.p(0, 0)[0], 209, 'section x = 0', 2.1, 'middle', 'td')
-        # second section through the lower screw (x = 19.5)
-    # table
+        V = View(70 + i * 120, 200, k)
+        draw_section(sh, V, v, 0.0, ['front_shell', 'back_shell', 'base_plate', 'in_lens', 'in_lcd', 'in_pcb',
+                                      'in_battery', 'chassis'])
+        sh.line(*V.p(g.SEAM_A - 0.2, -3), *V.p(g.SEAM_A + g.SEAM_B * 130, 130), 'cut')
+        sh.text(V.p(0, 0)[0], 212, lab, 3.0, 'middle', 'tx', weight='bold')
+        sh.text(V.p(0, 0)[0], 216, 'section x = 0 (dash-dot = split plane)', 2.0, 'middle', 'td')
     rows = []
     for v, lab in cols:
         r = REP.get(v)
@@ -533,52 +488,40 @@ def sheet_variants(theme='blue'):
             continue
         ms = r['dims']['mass_g']
         sc = r['screws']
-        low = [s for s in sc if s['kind'] == 'low'][0]
-        up = [s for s in sc if s['kind'] == 'up'][0]
-        rows.append((lab.split()[0] + (' +band' if v == 'alu_band' else ''),
-                     {'plastic': '2.0', 'alu': '1.4', 'alu_band': '1.4'}[v],
-                     {'plastic': '0.2', 'alu': '0.1', 'alu_band': '0.1'}[v],
-                     {'plastic': '1.2', 'alu': '0.8', 'alu_band': '0.8'}[v],
-                     {'plastic': 'heat-set M2', 'alu': 'tapped M2', 'alu_band': 'tapped M2'}[v],
-                     '%.0f / %.0f' % (ms.get('front_shell', 0), ms.get('back_shell', 0)),
+        low = [s for s in sc if s['Z'] < 60][0]
+        up = [s for s in sc if s['Z'] >= 60][0]
+        Vv_ = {'plastic': ('2.0', '0.2', '1.2', 'heat-set M2'), 'alu': ('1.6', '0.1', '0.8', 'tapped M2')}[v]
+        rows.append((lab.split()[0], *Vv_, '%.0f / %.0f' % (ms.get('front_shell', 0), ms.get('back_shell', 0)),
                      'M2x%d / M2x%d' % (screw_std(low['screw_len_max']), screw_std(up['screw_len_max']))))
-    ty = table(sh, 20, 218, [('variant', 30), ('wall', 12), ('fit', 10), ('lip', 10), ('threads', 24),
-                             ('shells g F/B', 24), ('screws low/up', 30)], rows, size=1.9, rh=3.6)
+    ty = table(sh, 20, 226, [('variant', 30), ('wall', 12), ('fit', 10), ('lip', 10), ('threads', 24),
+                             ('shells g F/B', 26), ('screws low/up', 32)], rows, size=1.9, rh=3.6)
     notes(sh, 20, ty + 5, [
-        'Seam = one plane through the silhouette (max width) -> each half is 3-axis machinable, no undercut.',
-        'ALU: internal radii >= 1 mm, tapped M2 x 3.5 in the 4 front bosses (Ø1.6 pilot in the STEP), bead blast + anodise II.',
-        'RF: a closed Al body blocks Wi-Fi/BLE. Test with the 1.75C (Al case) first; if RSSI drops > 6 dB use the band.',
-    ], size=1.9)
-    notes(sh, 240, 20, [
-        'Wall thickness, fit clearances and lip',
-        'are the only parameters that change;',
-        'the board, battery, speaker and chassis',
-        'positions are shared (chassis always printed).',
+        'One split plane through the silhouette -> each half is 3-axis machinable (two set-ups: outside, inside).',
+        'ALU: internal radii >= 1 mm, Ø1.6 pilots tapped M2 x 4 in the front bosses, bead blast + anodise type II.',
+        'RF: the polymer base plate + foot is the antenna window (v6); test RSSI before ordering 3 sets.',
+    ], size=1.85)
+    notes(sh, 272, 20, [
+        'Only wall, fit and lip change.',
+        'Board, battery, speaker, chassis',
+        'and base plate are shared',
+        '(chassis + base always printed).',
         '',
-        'Tolerances plastic: 0.2 mm on every fit',
-        '  (glass pocket, tongue, pins, plug tunnel).',
-        'Tolerances aluminium: 0.1 mm on the fits,',
-        '  ISO 2768-m elsewhere, ±0.05 on the glass',
-        '  pocket and the seam faces.',
+        'Plastic: 0.2 mm on every fit',
+        '  (lens pocket, tongue, pins).',
+        'Aluminium: 0.1 mm on the fits,',
+        '  ISO 2768-m elsewhere; ±0.05',
+        '  on the lens pocket and seam.',
         '',
-        'Band (right): each Al half ends 1.5 mm',
-        '  short of the seam; a printed 3 mm band',
-        '  carries the tongue and the screw sleeves.',
-    ], head='VARIANTS')
-    title_block(sh, 'MATERIAL VARIANTS', 'plastic vs CNC aluminium vs aluminium + RF band', '2.2 : 1', '4 / 4',
-                'SOUL-P0-04')
+        'Colours (v6): Silver, Graphite,',
+        '  Midnight, Ember, Champagne;',
+        '  polymer in the body tone.',
+    ], size=2.0, head='VARIANTS')
+    title_block(sh, 'MATERIAL VARIANTS', 'plastic (FDM/SLA) vs CNC aluminium, polymer base', '1.3 : 1', '4 / 4',
+                'SOUL-P0M-04')
     return sh
 
 
-def screw_std(Lmax):
-    for L in (20, 16, 14, 12, 10, 8, 6, 5, 4):
-        if L <= Lmax - 0.3:
-            return L
-    return 4
-
-
 def render_png(paths):
-    sys.path.insert(0, os.path.join(MS, 'blueprints', 'src'))
     from render import render
     render([(p, os.path.splitext(p)[0] + '.png') for p in paths])
 
@@ -587,12 +530,12 @@ if __name__ == '__main__':
     out = []
     which = sys.argv[1:] or ['ga', 'sec', 'exp', 'var']
     if 'ga' in which:
-        out.append(write(sheet_ga('blue'), 'soul_p0_1_general_arrangement'))
-        out.append(write(sheet_ga('white'), 'soul_p0_1_general_arrangement_white'))
+        out.append(write(sheet_ga('blue'), 'soul_m_1_general_arrangement'))
+        out.append(write(sheet_ga('white'), 'soul_m_1_general_arrangement_white'))
     if 'sec' in which:
-        out.append(write(sheet_section('blue'), 'soul_p0_2_section_AA'))
+        out.append(write(sheet_section('blue'), 'soul_m_2_section_AA'))
     if 'exp' in which:
-        out.append(write(sheet_exploded('blue'), 'soul_p0_3_exploded_bom'))
+        out.append(write(sheet_exploded('blue'), 'soul_m_3_exploded_bom'))
     if 'var' in which:
-        out.append(write(sheet_variants('blue'), 'soul_p0_4_variants'))
+        out.append(write(sheet_variants('blue'), 'soul_m_4_variants'))
     render_png(out)

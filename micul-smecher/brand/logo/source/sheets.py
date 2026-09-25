@@ -204,7 +204,7 @@ th{{font:500 11px Mart;letter-spacing:.08em;text-transform:uppercase;color:#676B
  <b>Disc</b> radius R, colour Glass #0B0B0C.<br>
  <b>Eyes</b> ellipses 0.40 R wide × 0.68 R tall, centres 0.64 R apart, 0.04 R below centre.<br>
  <b>Lids</b> one straight cut per eye: 0.24 R above the eye centre at the outer edge, 0.16 R at the inner edge (an 11° brow); the same knowing look as the eyes in the v6 renders.<br>
- <b>In the wordmark</b> the disc replaces the Bricolage O at 1.02 × the O's height (1.06 H), same centre, optically kerned 1.5% of cap height tighter on both sides.<br>
+ <b>In the wordmark</b> the disc replaces the Bricolage O at 1.02 × the O's height (1.06 H), same centre, optically kerned ≈2% of cap height tighter on both sides.<br>
  <b>Letters</b> S, U, L: Bricolage Grotesque, wght 700, opsz 96, wdth 100, tracking +55/1000, outlined; overlaps removed.<br>
  <b>Dark grounds</b> add the silver bezel: disc at 0.915 R inside a #CBCDCF ring (like the chrome ring round the real glass).<br><br>
  <h2 style='margin-top:10px'>Minimum sizes</h2>

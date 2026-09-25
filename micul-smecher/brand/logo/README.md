@@ -55,7 +55,7 @@ We explored six directions. All the SVGs are in `directions/`, and the contact s
 
 ### Construction (`construction-clearspace.png`)
 - **Letters** S, U and L are Bricolage Grotesque with wght 700, opsz 96, wdth 100 and tracking +55/1000. They are outlined and their overlaps removed.
-- **The O disc** is 1.02 × the height of Bricolage's O, which is **1.06 × cap height (H)**. It shares the O's centre and is optically kerned 1.5 % H tighter on both sides.
+- **The O disc** is 1.02 × the height of Bricolage's O, which is **1.06 × cap height (H)**. It shares the O's centre and is optically kerned ≈2 % H tighter on both sides.
 - **The eyes** (for a disc of radius R):
   - Each eye is an ellipse 0.40 R wide × 0.68 R tall.
   - The eye centres sit 0.64 R apart and 0.04 R below the centre of the disc.
