@@ -26,6 +26,7 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 | Cercetare (piață, hardware, conformitate, AI, brand, finanțare) — cu surse | ✅ | `micul-smecher/research/` |
 
 ## Notele proiectului
+- **Pachetul complet SOUL (EN):** `micul-smecher/docs/00-START-HERE.md` (BOM, fabricație, software, conformitate, plan de lansare, furnizori) · arhivă: `micul-smecher/dist/SOUL-package.zip`
 - [[Viziunea — momentul iPhone]] — ce lansăm, de ce e altceva, scenariul filmului de lansare
 - [[Planul de bani Micul Șmecher]] — fazele, cifrele pe bucată, scenarii, finanțare, filtrul celor 5 întrebări
 - [[Produs și dezvoltare Micul Șmecher]] — plăci, piese, ce cumperi azi, prototipul în 14 zile, drumul spre producție

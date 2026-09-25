@@ -114,7 +114,7 @@ It sleeps and charges in **OU**, an egg-shaped capsule (77 × 88 × 42 mm).
 | `media/` | Simulator clips (idle, boop, purr, dizzy, sleep, missed_you, rare, ai_talk, claude_buddy, night) + SoulOS keyboard/time-picker frames |
 | `research/` | 01 market · 02 hardware · 03 compliance · 04 AI companions · 05 brand/product dev/funding · 06 design v2 · 07 amulet language · 08 CMF · **09 final design (HOPA)** · **10 aluminium case** · 11 competitors · **12 bigger screen** · `design-max/` (CMF, creatures, dock, icons, trends, render brief) |
 | `investors/` | `DECK.md`, `INVESTORS.md`, `FINANTARE-ROMANIA.md`, **`poc-1.1/`** (official PR BI PoC 1.1 annexes: business plan template, ETF grid, scientific report model, TRL levels) |
-| `dist/SOUL-package.zip` | This package zipped (see its `README.md` and `SKIPPED.txt`) |
+| `dist/SOUL-package.zip` | This package zipped (~30 MB; see its `README.md` and `SKIPPED.txt`). Rebuild it with `python3 docs/_tools/build_zip.py`. The big plastic shell STEPs and the 113 MB assembly STEP are left out; the plastic parts print from the STLs. |
 
 Vault notes (`01 Afaceri/Micul Șmecher/`):
 - „Micul Șmecher" (the hub);

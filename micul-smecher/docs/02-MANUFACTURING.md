@@ -23,7 +23,7 @@ research/12 found that no round AMOLED larger than 1.75" can be bought in small 
 | File (path in the vault) | Format | Send to | Purpose |
 |---|---|---|---|
 | `prototip/stl/plastic/soul_p0_plastic_{front_shell,back_shell,chassis,pin_pwr,pin_boot}.stl` | STL, already in print pose | **Home FDM / Bambu** (fit test), then an **SLA print shop** (looks-like) | P0 plastic, 2.0 mm walls, M2 inserts. **Exported** (5 STL + 5 STEP in `prototip/step/plastic/`) |
-| `prototip/step/alu/soul_p0_alu_front_shell.step` + `…_back_shell.step` | STEP AP214 | **CNC**: JLCCNC, PCBWay, RapidDirect, Weerg, Xometry, ARSAT, Alvi Technik (the same STEP to all) | P0 aluminium shells, 1.4 mm walls, tapped M2. **Only `front_shell` exists today** (17 MB STEP + STL). **[GAP: back shell]** |
+| `prototip/step/alu/soul_p0_alu_front_shell.step` + `…_back_shell.step` | STEP AP214 | **CNC**: JLCCNC, PCBWay, RapidDirect, Weerg, Xometry, ARSAT, Alvi Technik (the same STEP to all) | P0 aluminium shells, 1.4 mm walls, tapped M2. **Only `front_shell` exists today** (17 MB STEP + STL; the zip ships it as `.step.gz`, so run `gunzip` first). **[GAP: back shell]** |
 | `prototip/step/alu_band/…` + `prototip/stl/alu_band/…_seam_band.stl` | STEP + STL | CNC (shells) + SLA/MJF (3 mm band) | Variant with a plastic RF window at the seam. **Choose this one if the RSSI test loses more than 6 dB** |
 | `prototip/stl/*/…_chassis.stl`, `…_pin_pwr.stl`, `…_pin_boot.stl` | STL | **SLA (black Tough) or MJF PA12** at JLC3DP / PCBWay / a local shop | Always printed, in both variants |
 | `prototip/step/soul_p0_plastic_ASSEMBLY_with_board.step` | STEP assembly | Reference for suppliers and for you | Board, cell and speaker in place (112 MB; **not in the zip**, too big) |
