@@ -4,7 +4,7 @@
 <meta name="description" content="Interactive prototype of SoulOS, the round interface of SOUL.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..700&family=Martian+Mono:wght@300..600&family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
   --bg:#E4E6E1; --surface:#EFF0EC; --ink:#161819; --muted:#5A615F; --line:#C9CDC6;
@@ -12,9 +12,9 @@
   --amber-ink:#9A5A00; --mint-ink:#1D6E54;
   --peb-hi:rgba(255,255,255,.96); --peb-mid:rgba(233,236,236,.92); --peb-lo:rgba(190,196,198,.95); --peb-edge:rgba(150,158,160,.9);
   --peb-shadow:rgba(40,46,44,.28);
-  --display:"Fredoka","Nunito",system-ui,sans-serif;
+  --display:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;
   --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --mono:"Martian Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   /* device (always AMOLED) */
   --cream:#FFF0C8; --amber:#FFB347; --mint:#C9F2E4; --ice:#9FC6FF;
 }
@@ -83,161 +83,166 @@ button{font:inherit;color:inherit}
 .keys span{white-space:nowrap}
 kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:3px 6px;background:var(--surface);color:var(--ink)}
 
-/* ---------- device UI (466px space) ---------- */
+/* ================= SoulOS 3 · design language "Orbit" =================
+   A round black face with two living eyes. Nothing on the glass is a panel, a card, a tile or a toggle:
+   everything is something SOUL says (big words under the eyes) or holds up (one thin line glyph),
+   and the rim is the dial: words orbit along it and you spin them with a finger.
+   One light at a time: cream = idle/info · ice = listening · amber = Claude / needs you · mint = done.
+   Type: Bricolage Grotesque (the voice) + Martian Mono (the rim). Glyphs: 24-grid, one 2 px stroke, round caps. */
+.screen{--fs-hero:104px;--fs-xl:64px;--fs-l:34px;--fs-m:27px;--fs-s:22px;--fs-xs:19px;
+  --v:"Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;--r:"Martian Mono",ui-monospace,monospace;
+  --dim:rgba(255,240,200,.56);--faint:rgba(255,240,200,.3);--hair:rgba(255,240,200,.12);--spring:cubic-bezier(.34,1.56,.64,1);
+  font-family:var(--v);font-variation-settings:"opsz" 96}
 #cards{position:absolute;inset:0}
-.card{position:absolute;inset:0;will-change:transform,opacity;transform-origin:233px 233px;backface-visibility:hidden}
+.card{position:absolute;inset:0;will-change:transform,opacity;transform-origin:233px 150px;backface-visibility:hidden}
 .card.leaving{pointer-events:none}
 .c{position:absolute;left:68px;right:68px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
-.lbl{position:absolute;left:0;right:0;top:136px;text-align:center;font:500 19px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,240,200,.56)}
-.lbl.amber{color:var(--amber)}.lbl.mint{color:var(--mint)}.lbl.ice{color:var(--ice)}
-.t1{font:500 34px/1.15 var(--display);text-wrap:balance}
-.t2{font:400 27px/1.22 var(--display);text-wrap:balance}
-.t3{font:400 22px/1.25 var(--display);color:rgba(255,240,200,.62);text-wrap:balance}
-.mono{font-family:var(--mono)}
-.clock{position:absolute;top:34px;left:0;right:0;text-align:center;font:500 25px/1 var(--display);color:rgba(255,240,200,.5);letter-spacing:.04em;transition:opacity .3s;font-variant-numeric:tabular-nums}
-.homeTag{position:absolute;bottom:52px;left:0;right:0;text-align:center;font:500 21px/1 var(--display)}
-.homeTag.amber{color:var(--amber)}.homeTag.cream{color:rgba(255,240,200,.6)}
-.screen.has-pill .clock{opacity:0}
-#cards{transition:opacity .6s ease}
-.screen.asleep #cards{opacity:0}
-.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
-.chip{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 22px;border-radius:26px;font:500 22px/1 var(--display);background:#1d1b16;color:var(--cream);border:2px solid rgba(255,240,200,.18)}
-.chip.ok{background:rgba(201,242,228,.14);border-color:rgba(201,242,228,.55);color:var(--mint)}
-.chip.warn{background:rgba(255,179,71,.12);border-color:rgba(255,179,71,.55);color:var(--amber)}
+/* rim words: set on the circle with SVG textPath (top arc = titles and status, bottom arc = the orbit) */
+.rim{position:absolute;inset:0;width:466px;height:466px;pointer-events:none;overflow:visible}
+.rim text{font:400 15px/1 var(--r);letter-spacing:.16em;text-transform:uppercase;fill:var(--dim)}
+.rim .amber{fill:var(--amber)}.rim .mint{fill:var(--mint)}.rim .ice{fill:var(--ice)}.rim .cream{fill:var(--cream)}
+.rim .say{font:560 26px/1 var(--v);letter-spacing:0;text-transform:none}
+.rim [data-act]{pointer-events:auto;cursor:pointer}
+.rim .hit{fill:none;stroke:transparent;stroke-width:46;pointer-events:stroke;cursor:pointer}
+.rimlbl{transition:opacity .3s}
+.screen.has-pill .rimlbl,.screen.has-pill .clock{opacity:0}
+.t1{font:560 34px/1.12 var(--v);text-wrap:balance;letter-spacing:-.01em}
+.t2{font:420 27px/1.2 var(--v);text-wrap:balance}
+.t3{font:400 22px/1.25 var(--v);color:var(--dim);text-wrap:balance}
+.mono{font-family:var(--r)}
+.clock{transition:opacity .3s}
+#cards{transition:opacity .45s ease}
+.screen.asleep #cards,.screen.cc-on #cards{opacity:0}
+/* actions are spoken words: no pill, no fill, no border. A thin line under the word says "touch me". */
+.chips{display:flex;flex-wrap:wrap;gap:4px 26px;justify-content:center}
+.chip{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 4px;font:560 24px/1 var(--v);color:var(--cream);white-space:nowrap;background:none;border:0}
+.chip::after{content:"";position:absolute;left:4px;right:4px;bottom:9px;height:2px;border-radius:1px;background:currentColor;opacity:.4}
+.chip.ok{color:var(--mint)}.chip.warn{color:var(--amber)}.chip.ice{color:var(--ice)}
+.chip:not(.btn)::after{display:none}
+.chip:not(.btn){font-weight:420;font-size:22px}
 .chip.btn{cursor:pointer}
-.tool{font:400 19px/1 var(--mono);color:rgba(159,198,255,.8)}
-
-.dots{position:absolute;inset:0;display:block;transition:opacity .3s;pointer-events:none;z-index:2}
-.dots i{position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(255,240,200,.24);transition:background .3s,transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
-.dots i.on{background:var(--cream);transform:scale(1.4);box-shadow:0 0 8px rgba(255,240,200,.7)}
-.dots i.home{border-radius:2px}
+.lg{display:block;flex:none;overflow:visible}
+.lg *{vector-effect:non-scaling-stroke}
+.tool{font:400 15px/1 var(--r);letter-spacing:.06em;color:rgba(159,198,255,.8)}
+.dots{position:absolute;inset:0;display:block;transition:opacity .35s;pointer-events:none;z-index:2}
 .dots.hide{opacity:0}
-
-.pill{position:absolute;top:18px;left:50%;transform:translate(-50%,-150%);max-width:330px;min-height:54px;padding:8px 24px;border-radius:27px;
-  display:flex;align-items:center;gap:12px;background:rgba(36,33,27,.74);color:var(--cream);font:500 22px/1.1 var(--display);white-space:nowrap;
-  -webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5);
-  transition:transform .6s cubic-bezier(.3,1.45,.45,1),opacity .35s;border:1.5px solid rgba(255,240,200,.16);z-index:7;
-  box-shadow:0 12px 30px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
-.pill.show{transform:translate(-50%,0)}
-.pill .who{color:rgba(255,240,200,.6)}
-.pill.amber{border-color:rgba(255,179,71,.85);color:var(--amber);background:rgba(44,30,10,.8);box-shadow:0 0 22px rgba(255,179,71,.35),0 12px 30px rgba(0,0,0,.55)}
-.pill.mint{border-color:rgba(201,242,228,.6);color:var(--mint);background:rgba(16,34,28,.8)}
-.pill.ghost{z-index:6;pointer-events:none;transition:transform .5s cubic-bezier(.3,1.3,.5,1),opacity .7s ease}
-.pill span{overflow:hidden;text-overflow:ellipsis}
-
-.stack{position:absolute;top:168px;left:74px;right:74px;display:flex;flex-direction:column;gap:12px}
-.row{display:flex;align-items:center;gap:14px;text-align:left}
-.row .dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--cream);box-shadow:0 0 8px currentColor}
-.row .dot.ice{background:var(--ice);color:var(--ice)}.row .dot.amber{background:var(--amber);color:var(--amber)}.row .dot.mint{background:var(--mint);color:var(--mint)}.row .dot.cream{color:var(--cream)}
-.row div{display:flex;flex-direction:column;gap:3px;min-width:0}
-.row small{font:500 15px/1 var(--display);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,240,200,.5)}
-.row b{font:500 24px/1.1 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row b.amber{color:var(--amber)}
-
-.list{position:absolute;top:176px;left:72px;right:72px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.list li{display:flex;align-items:center;gap:14px;min-height:62px;padding:0 6px;border-radius:18px;text-align:left}
-.list .tm{font:500 20px/1 var(--mono);color:rgba(255,240,200,.55);flex:none;width:66px;font-variant-numeric:tabular-nums}
-.list .tx{font:400 24px/1.15 var(--display);flex:1;min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.list li.col{flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;padding:8px 6px}
-.list .ck{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,240,200,.35);flex:none;display:grid;place-items:center}
-.list li.done .tx{color:rgba(255,240,200,.4);text-decoration:line-through;text-decoration-color:rgba(201,242,228,.6)}
-.list li.done .ck{border-color:var(--mint);background:var(--mint)}
-.list li.done .ck::after{content:"";width:12px;height:7px;border:3px solid #10201b;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-2px)}
-.list li.new{background:rgba(201,242,228,.08)}
-.list .st{font:400 17px/1 var(--display);color:rgba(255,240,200,.45);flex:none}
+/* notifications: words that orbit in along the top rim; the eyes look up at them */
+.pill{position:absolute;inset:0;pointer-events:none;z-index:7;opacity:0;transform:rotate(38deg);transform-origin:233px 233px;
+  transition:transform .75s cubic-bezier(.2,1.1,.3,1),opacity .4s ease}
+.pill.show{opacity:1;transform:rotate(0deg)}
+.pill svg{position:absolute;inset:0;width:466px;height:466px;overflow:visible}
+.pill text{font:560 23px/1 var(--v);fill:var(--cream)}
+.pill .who{font:400 14px/1 var(--r);letter-spacing:.16em;text-transform:uppercase;fill:var(--dim)}
+.pill .ln{fill:none;stroke:var(--cream);stroke-width:3;stroke-linecap:round;opacity:.55}
+.pill.amber text:not(.who){fill:var(--amber)}.pill.amber .ln{stroke:var(--amber);opacity:.9}
+.pill.mint text:not(.who){fill:var(--mint)}.pill.mint .ln{stroke:var(--mint);opacity:.8}
+.pill .hit{fill:none;stroke:transparent;stroke-width:64;pointer-events:stroke;cursor:pointer}
+.pill.ghost{z-index:6;pointer-events:none;transition:transform .7s cubic-bezier(.2,1,.3,1),opacity .7s ease}
+.pill.ghost .hit{pointer-events:none}
+/* lists: a time on the rim font, the words in the voice font; no rows, no boxes */
+.list{position:absolute;top:150px;left:74px;right:74px;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.list li{display:flex;align-items:center;gap:14px;min-height:62px;padding:0 4px;text-align:left;position:relative}
+.list .tm{font:400 16px/1 var(--r);letter-spacing:.04em;color:var(--dim);flex:none;width:62px;font-variant-numeric:tabular-nums}
+.list .tx{font:420 24px/1.15 var(--v);flex:1;min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.list li.col{flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;padding:8px 4px}
+.list .ck{width:30px;height:30px;flex:none;color:var(--faint)}
+.list li.done .tx{color:rgba(255,240,200,.4);text-decoration:line-through;text-decoration-color:rgba(201,242,228,.6);text-decoration-thickness:2px}
+.list li.done .ck{color:var(--mint)}
+.list li.new::before{content:"";position:absolute;left:-16px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint)}
+.list .st{font:400 13px/1 var(--r);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);flex:none}
 .list .st.ok{color:var(--mint)}
-
 .ring{position:absolute;inset:0;width:466px;height:466px;pointer-events:none}
-.fdig{font:500 104px/1 var(--display);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-.cmd{font:500 25px/1.2 var(--mono);background:#15120c;border:2px solid rgba(255,179,71,.4);color:var(--cream);border-radius:16px;padding:12px 18px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.langs{display:flex;align-items:center;gap:14px}
-.lp{font:500 24px/1 var(--display);padding:12px 20px;border-radius:24px;border:2px solid rgba(255,240,200,.25)}
-.lp.a{background:var(--cream);color:#16130c;border-color:var(--cream)}
-.swap{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,240,200,.25);cursor:pointer}
-.ctrls{display:flex;gap:22px;align-items:center}
-.cb{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,240,200,.22);cursor:pointer}
-.cb.big{width:92px;height:92px;background:var(--cream);border-color:var(--cream)}
-.cb svg{width:30px;height:30px;fill:var(--cream)}
-.cb.big svg{width:38px;height:38px;fill:#16130c}
-.bar{width:220px;height:6px;border-radius:3px;background:rgba(255,240,200,.18);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--cream);border-radius:3px}
-.set{position:absolute;top:170px;left:76px;right:76px;display:flex;flex-direction:column}
-.set div{display:flex;justify-content:space-between;align-items:center;gap:12px;height:58px;border-bottom:1px solid rgba(255,240,200,.1);cursor:pointer}
-.set div:last-child{border-bottom:0}
-.set span{font:400 24px/1 var(--display)}
-.set b{font:500 22px/1 var(--display);color:var(--mint)}
-.set b.dim{color:rgba(255,240,200,.55)}
-.fade-in{animation:fin .4s ease both}
-@keyframes fin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.caret{display:inline-block;width:3px;height:1em;background:var(--ice);vertical-align:-.12em;margin-left:3px;animation:blink 1s steps(2) infinite}
+.fdig{font:500 104px/1 var(--v);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.cmd{font:400 25px/1.2 var(--r);color:var(--cream);max-width:330px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.02em}
+.langs{display:flex;align-items:center;gap:18px}
+.lp{font:560 34px/1 var(--v);color:var(--faint)}
+.lp.a{color:var(--cream)}
+.swap{width:56px;height:56px;display:grid;place-items:center;cursor:pointer;color:var(--cream)}
+.ctrls{display:flex;gap:30px;align-items:center}
+.cb{width:64px;height:64px;display:grid;place-items:center;cursor:pointer;color:var(--cream)}
+.cb.big{width:84px;height:84px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--cream)}
+.set{position:absolute;top:150px;left:84px;right:84px;display:flex;flex-direction:column}
+.set div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;height:54px;align-items:center;cursor:pointer}
+.set span{font:420 25px/1 var(--v)}
+.set b{font:400 15px/1 var(--r);letter-spacing:.08em;text-transform:uppercase;color:var(--mint)}
+.set b.dim{color:var(--dim)}
+.fade-in{animation:fin .5s cubic-bezier(.2,.9,.3,1) both}
+@keyframes fin{from{opacity:0;transform:translateY(-14px) scale(.94)}to{opacity:1;transform:none}}
+.caret{display:inline-block;width:3px;height:1em;background:var(--ice);vertical-align:-.12em;margin-left:3px;animation:blink 1s steps(2) infinite;border-radius:1px}
 @keyframes blink{50%{opacity:0}}
 
-/* ---------- keyboard: Round QWERTY (research/04). Nunito everywhere (Fredoka lacks ă ș ț) ---------- */
-#kb{position:absolute;inset:0;display:none;z-index:3;font-family:"Nunito",var(--display)}
+/* ---------- keyboard: the same Round QWERTY geometry, but letters, not keycaps ---------- */
+#kb{position:absolute;inset:0;display:none;z-index:3;font-family:var(--v)}
 #kb.on{display:block}
 .kf{position:absolute;left:72px;right:72px;top:56px;height:72px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;
-  text-align:center;font:500 28px/36px "Nunito",sans-serif;color:var(--cream);overflow-wrap:anywhere;white-space:pre-wrap}
-.kf .ph{color:rgba(255,240,200,.4)}
+  text-align:center;font:460 28px/36px var(--v);color:var(--cream);overflow-wrap:anywhere;white-space:pre-wrap}
+.kf .ph{color:rgba(255,240,200,.36)}
 .kf u{text-decoration:none;box-shadow:inset 0 -3px 0 var(--mint)}
 .kf .dz{color:var(--ice)}
-.kcar{display:inline-block;width:3px;height:29px;background:var(--ice);vertical-align:-6px;margin:0 1px;animation:blink 1s steps(2) infinite}
-.kcnt{position:absolute;right:92px;top:44px;font:600 18px/1 "Nunito",system-ui,sans-serif;color:rgba(255,240,200,.5)}
-.ks{position:absolute;top:134px;height:46px;display:flex;align-items:center;justify-content:center;border-radius:23px;padding:0 8px;
-  font:500 26px/1 "Nunito",system-ui,sans-serif;color:rgba(255,240,200,.74);white-space:nowrap;overflow:hidden}
+.kcar{display:inline-block;width:3px;height:29px;background:var(--ice);vertical-align:-6px;margin:0 1px;animation:blink 1s steps(2) infinite;border-radius:1px}
+.kcnt{position:absolute;right:92px;top:44px;font:400 13px/1 var(--r);color:var(--dim)}
+.ks{position:absolute;top:134px;height:46px;display:flex;align-items:center;justify-content:center;padding:0 8px;
+  font:420 25px/1 var(--v);color:rgba(255,240,200,.66);white-space:nowrap;overflow:hidden}
 .ks span{overflow:hidden;text-overflow:ellipsis}
-.ks.b{background:#1D1B16;color:var(--cream);font-weight:700}
-.ks.ctx{border:2px solid rgba(255,240,200,.22);color:var(--cream);font-size:22px;padding:0 10px}
-.ks.tm,.ks.un{border:2px solid rgba(201,242,228,.55);color:var(--mint);background:rgba(201,242,228,.1);font-size:22px;font-weight:600}
+.ks.b{color:var(--cream);font-weight:620}
+.ks.ctx{color:var(--cream);font-size:22px;font-weight:520}
+.ks.ctx span{box-shadow:inset 0 -2px 0 rgba(255,240,200,.4);padding-bottom:3px}
+.ks.tm,.ks.un{color:var(--mint);font-size:22px;font-weight:560}
+.ks.tm span,.ks.un span{box-shadow:inset 0 -2px 0 rgba(201,242,228,.55);padding-bottom:3px}
 .ks i{font-style:normal;color:var(--mint)}
-.ksep{position:absolute;top:146px;width:2px;height:22px;background:rgba(255,240,200,.18)}
-.kk{position:absolute;height:46px;border-radius:9px;background:#1A1813;color:rgba(255,240,200,.95);display:grid;place-items:center;
-  font:600 28px/1 "Nunito",system-ui,sans-serif;transition:background .06s,opacity .15s;white-space:nowrap;overflow:hidden}
-.kk.fn{background:#26231B;color:rgba(255,240,200,.82);font-size:21px;font-weight:700;letter-spacing:-.02em}
-.kk.sp{font-size:20px;font-weight:600;color:rgba(255,240,200,.4);letter-spacing:.04em}
-.kk.on{background:#4A4434}
-.kk.lit{background:#4A4434;color:var(--cream)}
-.kk.lock{box-shadow:inset 0 -3px 0 var(--cream)}
-.kk.send{background:var(--amber);color:#16130c}
-.kk.save{background:var(--mint);color:#10201b}
+.ksep{position:absolute;top:150px;width:4px;height:4px;border-radius:50%;background:var(--faint)}
+.kbk::before{content:"";position:absolute;left:30px;right:30px;top:182px;height:1px;background:linear-gradient(90deg,transparent,var(--hair) 18%,var(--hair) 82%,transparent)}
+.kk{position:absolute;height:46px;color:rgba(255,240,200,.95);display:grid;place-items:center;
+  font:460 28px/1 var(--v);transition:color .06s,opacity .15s;white-space:nowrap;overflow:hidden}
+.kk::after{content:"";position:absolute;left:50%;bottom:3px;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:var(--hair)}
+.kk.fn{color:var(--dim);font:400 14px/1 var(--r);letter-spacing:.06em}
+.kk.fn::after,.kk.sp::after{display:none}
+.kk.sp{color:var(--faint);font:400 13px/1 var(--r);letter-spacing:.14em;box-shadow:inset 0 -2px 0 -0px transparent}
+.kk.sp::before{content:"";position:absolute;left:10px;right:10px;bottom:9px;height:2px;border-radius:1px;background:var(--faint)}
+.kk.on{color:#fff}
+.kk.lit{color:var(--cream)}
+.kk.lock{box-shadow:inset 0 -2px 0 var(--cream)}
+.kk.send{color:var(--amber)}
+.kk.save{color:var(--mint)}
+.kk.send svg,.kk.save svg{width:34px;height:34px;padding:6px;border-radius:50%;box-shadow:inset 0 0 0 2px currentColor;stroke-width:2.6}
 .kk.dis{opacity:.35}
 .kk.off{opacity:.4}
-.kk svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.kk.send svg,.kk.save svg{stroke-width:3.4}
+.kk svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .kk.lit svg path.fl{fill:currentColor}
 .kbk.hide .kk{opacity:0}
-.kcall{position:absolute;width:58px;height:66px;border-radius:12px;background:#2E2A20;border:1.5px solid rgba(255,240,200,.4);display:grid;place-items:center;
-  font:700 36px/1 "Nunito",system-ui,sans-serif;color:var(--cream);pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.6)}
-.ktray{position:absolute;height:60px;display:flex;border-radius:14px;background:#2E2A20;border:1.5px solid rgba(255,240,200,.4);padding:5px;pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.6)}
-.ktray b{width:44px;height:48px;display:grid;place-items:center;font:700 30px/1 "Nunito",system-ui,sans-serif;color:var(--cream);border-radius:10px}
-.ktray b.sel{background:var(--cream);color:#16130c}
-.kdl{position:absolute;left:0;right:0;top:196px;text-align:center;font:600 22px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ice)}
-.kstop{position:absolute;left:163px;width:140px;top:352px;height:52px;border-radius:26px;background:var(--ice);color:#0c1624;display:flex;align-items:center;justify-content:center;gap:10px;font:700 24px/1 "Nunito",system-ui,sans-serif}
-.kstop i{width:14px;height:14px;background:#0c1624;border-radius:2px}
+.kcall{position:absolute;width:58px;height:66px;display:grid;place-items:center;pointer-events:none;
+  font:560 40px/1 var(--v);color:var(--cream);text-shadow:0 0 14px rgba(255,240,200,.5)}
+.kcall::before{content:"";position:absolute;left:1px;top:5px;width:56px;height:56px;border-radius:50%;background:#000;box-shadow:inset 0 0 0 2px var(--cream);z-index:-1}
+.ktray{position:absolute;height:60px;display:flex;border-radius:30px;background:#000;box-shadow:inset 0 0 0 2px var(--cream),0 0 0 6px #000;padding:5px;pointer-events:none}
+.ktray b{width:44px;height:48px;display:grid;place-items:center;font:560 29px/1 var(--v);color:var(--cream);border-radius:50%}
+.ktray b.sel{color:#000;background:var(--cream)}
+.kdl{position:absolute;left:0;right:0;top:196px;text-align:center;font:400 15px/1 var(--r);letter-spacing:.2em;text-transform:uppercase;color:var(--ice)}
+.kstop{position:absolute;left:163px;width:140px;top:352px;height:52px;color:var(--ice);display:flex;align-items:center;justify-content:center;gap:10px;font:560 24px/1 var(--v)}
+.kstop i{width:14px;height:14px;box-shadow:inset 0 0 0 2px var(--ice);border-radius:2px}
 
-/* ---------- apps: add button, alarms, Rim-Dial time picker ---------- */
-.addb{position:absolute;top:112px;left:346px;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(201,242,228,.55);background:rgba(201,242,228,.1);cursor:pointer}
-.addb svg{width:24px;height:24px;stroke:var(--mint);stroke-width:3.2;fill:none;stroke-linecap:round}
+/* ---------- apps: "+ new", alarms, Rim-Dial ---------- */
+.addb{position:absolute;top:104px;left:330px;width:66px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:var(--mint)}
+.addb small{font:400 11px/1 var(--r);letter-spacing:.16em;text-transform:uppercase}
 .alist li{justify-content:space-between;min-height:70px}
-.ainfo{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;cursor:pointer}
-.ainfo b{font:500 38px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:.01em}
-.ainfo b.off{color:rgba(255,240,200,.4)}
-.ainfo small{font:400 21px/1.1 "Nunito",var(--display);color:rgba(255,240,200,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tog{width:62px;height:36px;border-radius:18px;background:rgba(255,240,200,.16);position:relative;flex:none;cursor:pointer;transition:background .2s}
-.tog i{position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;background:rgba(255,240,200,.65);transition:transform .2s,background .2s}
-.tog.on{background:var(--mint)}
-.tog.on i{transform:translateX(26px);background:#10201b}
-.ddig{position:absolute;left:0;right:0;text-align:center;font:500 104px/1 var(--display);font-variant-numeric:tabular-nums;color:rgba(255,240,200,.38);letter-spacing:-.01em}
+.ainfo{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1;cursor:pointer}
+.ainfo b{font:500 40px/1 var(--v);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.ainfo b.off{color:rgba(255,240,200,.34)}
+.ainfo small{font:400 13px/1.1 var(--r);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tog{min-width:58px;height:52px;display:flex;align-items:center;justify-content:flex-end;gap:7px;cursor:pointer;flex:none;font:400 14px/1 var(--r);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.tog i{width:8px;height:8px;border-radius:50%;box-shadow:inset 0 0 0 1.5px currentColor}
+.tog.on{color:var(--mint)}
+.tog.on i{background:var(--mint);box-shadow:0 0 8px var(--mint)}
+.ddig{position:absolute;left:0;right:0;text-align:center;font:500 104px/1 var(--v);font-variant-numeric:tabular-nums;color:rgba(255,240,200,.34);letter-spacing:-.03em}
 .ddig span{cursor:pointer;display:inline-block;padding:0 2px 6px}
-.ddig span.a{color:var(--cream);box-shadow:inset 0 -4px 0 -1px rgba(255,240,200,.9)}
-.drel{position:absolute;left:0;right:0;text-align:center;font:400 25px/1 "Nunito",var(--display);color:rgba(255,240,200,.62)}
-.dok{position:absolute;left:173px;width:120px;height:52px;border-radius:26px;background:var(--mint);display:grid;place-items:center;cursor:pointer}
-.dok svg{width:30px;height:30px;stroke:#10201b;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.wd{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;display:grid;place-items:center;font:700 20px/1 "Nunito",system-ui,sans-serif;
-  border:2px solid rgba(255,240,200,.3);color:rgba(255,240,200,.7);cursor:pointer}
-.wd.on{background:var(--cream);color:#16130c;border-color:var(--cream)}
-.dtag{font:600 22px/1.2 "Nunito",system-ui,sans-serif;color:var(--ice);letter-spacing:.01em}
+.ddig span.a{color:var(--cream);box-shadow:inset 0 -3px 0 -1px rgba(255,240,200,.9)}
+.drel{position:absolute;left:0;right:0;text-align:center;font:400 14px/1 var(--r);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.dok{position:absolute;left:193px;width:80px;height:60px;display:grid;place-items:center;cursor:pointer;color:var(--mint)}
+.dok svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;padding:12px;box-sizing:content-box;border-radius:50%;box-shadow:inset 0 0 0 2px currentColor}
+.wd{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;display:grid;place-items:center;font:400 14px/1 var(--r);letter-spacing:.04em;color:var(--faint);cursor:pointer}
+.wd.on{color:var(--cream);font-weight:600}
+.wd.on::after{content:"";position:absolute;bottom:6px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--cream);box-shadow:0 0 6px var(--cream)}
+.dtag{font:400 13px/1.2 var(--r);letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
 .nrow{cursor:pointer}
-
 /* ---------- panel ---------- */
 .panel{display:flex;flex-direction:column;gap:30px;min-width:0}
 .panel h1{font:500 40px/1 var(--display);margin:0;letter-spacing:-.01em}
@@ -270,81 +275,61 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .foot{font-size:13px;color:var(--muted);margin:0;max-width:52ch}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);margin-top:12px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:#000;box-shadow:inset 0 0 0 3px var(--c)}
-/* ================= SoulOS 2 ================= */
-/* type scale for the 466 px round glass: 104 hero · 64 xl · 34 l · 27 m · 22 s · 19 caps labels */
-.screen{--fs-hero:104px;--fs-xl:64px;--fs-l:34px;--fs-m:27px;--fs-s:22px;--fs-xs:19px;
-  --glass:rgba(30,28,23,.6);--glass-line:rgba(255,240,200,.15);--spring:cubic-bezier(.34,1.56,.64,1)}
-/* micro-interactions: every control dips and brightens under the finger, then springs back */
-[data-act]{transition:scale .34s var(--spring),filter .2s ease}
-.prs{scale:.92;filter:brightness(1.35)}
+/* ================= SoulOS 3 · motion + system layers ================= */
+/* touch: the word dips a little and the eyes glance at the finger; a small mark marks where you touched */
+[data-act]{transition:scale .34s var(--spring),opacity .2s ease}
+.prs{scale:.94;opacity:.78}
 #fx{position:absolute;inset:0;pointer-events:none;z-index:9;overflow:hidden;border-radius:50%}
-.rip{position:absolute;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,240,200,.2),rgba(255,240,200,.06) 45%,rgba(255,240,200,0) 70%);animation:rip .55s cubic-bezier(.2,.7,.3,1) forwards}
-@keyframes rip{from{transform:scale(.15);opacity:1}to{transform:scale(1.3);opacity:0}}
+.rip{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--cream);box-shadow:0 0 12px rgba(255,240,200,.7);animation:rip .5s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes rip{from{transform:scale(1);opacity:.55}to{transform:scale(.2);opacity:0}}
 #dimmer{position:absolute;inset:0;background:#000;pointer-events:none;z-index:12;opacity:0;border-radius:50%}
-.sg{display:inline-flex;gap:6px;vertical-align:-2px;margin-left:8px}
-.sg svg{width:20px;height:20px;fill:none;stroke:rgba(255,240,200,.55);stroke-width:2.2;stroke-linecap:round}
-.sg svg .f{fill:rgba(255,240,200,.55);stroke:none}
-.coach{position:absolute;left:0;right:0;bottom:56px;text-align:center;font:500 20px/1 var(--display);color:rgba(255,240,200,.42);letter-spacing:.02em;animation:fin .8s .6s ease both}
+.coach{animation:fin .8s .6s ease both}
 
-/* launcher: honeycomb of round icons, fisheye toward the rim */
-.lnc{position:absolute;inset:0}
-.lic{position:absolute;left:0;top:0;width:80px;height:80px;border-radius:50%;will-change:transform,opacity;cursor:pointer;
-  box-shadow:0 9px 18px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.5),inset 0 1.5px 0 rgba(255,255,255,.4),inset 0 -4px 8px rgba(0,0,0,.28)}
-.lic svg{width:100%;height:100%;display:block;border-radius:50%}
-.lic::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
-  background:radial-gradient(110% 80% at 32% 10%,rgba(255,255,255,.42),rgba(255,255,255,.08) 38%,rgba(255,255,255,0) 52%)}
-.lic.face{box-shadow:inset 0 0 0 2px rgba(255,240,200,.3),0 0 26px rgba(255,240,200,.1)}
-.lic.face::after{display:none}
-.lnl{position:absolute;left:50%;top:402px;opacity:0;transition:opacity .3s ease;transform:translateX(-50%);padding:9px 20px;border-radius:22px;font:500 22px/1 var(--display);color:var(--cream);
-  background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--glass-line);white-space:nowrap;pointer-events:none}
+/* launcher: the Orbit. App names ride the lower rim like a smile; the eyes look at the word in the middle */
+.orb{position:absolute;inset:0}
+.orb svg{position:absolute;inset:0;width:466px;height:466px;overflow:visible}
+.orb .ow{cursor:pointer}
+.orb .ow .m{font:400 15px/1 var(--r);letter-spacing:.16em;text-transform:uppercase;fill:var(--cream)}
+.orb .ow .d{font:560 31px/1 var(--v);fill:var(--cream)}
+.orb .hitw{fill:none;stroke:transparent;stroke-width:52;pointer-events:stroke}
+.opv{position:absolute;left:78px;right:78px;top:252px;height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;color:var(--cream)}
+.opv b{font:500 44px/1 var(--v);letter-spacing:-.02em;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.opv small{font:400 14px/1 var(--r);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+.opv .row1{display:flex;align-items:center;gap:14px;max-width:100%}
+.opv.swap{animation:fin .35s cubic-bezier(.2,.9,.3,1) both}
+.otick{position:absolute;left:231px;top:446px;width:4px;height:12px;border-radius:2px;background:var(--cream);box-shadow:0 0 8px rgba(255,240,200,.7)}
 
-/* Today: a snapping stack of widgets */
-.wg{position:absolute;left:68px;top:0;width:330px;height:164px;border-radius:44px;padding:20px 28px;will-change:transform,opacity;cursor:pointer;overflow:hidden;
-  background:linear-gradient(165deg,rgba(255,240,200,.13),rgba(255,240,200,.045) 60%);border:1px solid var(--glass-line);
-  box-shadow:0 14px 30px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.09);display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:left}
-.wg-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:500 17px/1 var(--display);letter-spacing:.13em;text-transform:uppercase;color:rgba(255,240,200,.55)}
-.wg-h small{font:inherit;letter-spacing:.04em;text-transform:none}
-.wg-row{display:flex;align-items:center;gap:16px;min-width:0}
-.wg-big{font:500 52px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.wg-sub{font:400 21px/1.2 var(--display);color:rgba(255,240,200,.7);min-width:0;overflow:hidden;text-overflow:ellipsis}
-.wg-t{font:500 26px/1.15 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wg.amber{border-color:rgba(255,179,71,.55);background:linear-gradient(165deg,rgba(255,179,71,.2),rgba(255,179,71,.05) 60%)}
-.wg .pdot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
+/* Today: things it wants to tell you, one at a time, like a teleprompter under the eyes */
+.wg{position:absolute;left:68px;top:0;width:330px;height:164px;padding:14px 16px;will-change:transform,opacity;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.wg-h{display:flex;justify-content:center;align-items:center;gap:12px;font:400 14px/1 var(--r);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.wg-h small{font:inherit;letter-spacing:.08em;text-transform:none;color:var(--faint)}
+.wg-row{display:flex;align-items:center;justify-content:center;gap:16px;min-width:0;max-width:100%}
+.wg-big{font:500 58px/1 var(--v);font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.wg-sub{font:420 21px/1.2 var(--v);color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.wg-t{font:520 26px/1.15 var(--v);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.wg.amber .wg-h{color:var(--amber)}
+.wg .pdot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
 .tdots{position:absolute;inset:0;pointer-events:none}
-.tdots i{position:absolute;width:7px;height:7px;border-radius:50%;background:rgba(255,240,200,.25);transition:background .25s,transform .3s var(--spring)}
-.tdots i.on{background:var(--cream);transform:scale(1.35)}
+.tdots i{position:absolute;width:5px;height:14px;margin-top:-4px;border-radius:3px;background:rgba(255,240,200,.2);transition:background .25s,transform .3s var(--spring)}
+.tdots i.on{background:var(--cream);box-shadow:0 0 8px rgba(255,240,200,.6)}
 
-/* Control Center: pulled down over the face, frosted */
-#cc{position:absolute;inset:0;border-radius:50%;z-index:6;pointer-events:none;opacity:0;transform:translate3d(0,-466px,0);will-change:transform,opacity;
-  background:radial-gradient(circle at 50% 30%,rgba(40,37,30,.55),rgba(12,11,9,.78));-webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5)}
-.cch{position:absolute;top:48px;left:0;right:0;display:flex;justify-content:center;gap:18px;font:500 22px/1 var(--display);color:rgba(255,240,200,.7);font-variant-numeric:tabular-nums}
-.cch span{display:inline-flex;align-items:center;gap:4px;color:var(--mint)}
-.cch svg{width:18px;height:18px;fill:currentColor}
-.cct{position:absolute;top:96px;left:0;right:0;display:flex;justify-content:center;gap:14px}
-.ccb{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:rgba(255,240,200,.1);border:1px solid rgba(255,240,200,.14);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);transition:scale .34s var(--spring),filter .2s,background .25s,border-color .25s}
-.ccb svg{width:30px;height:30px;fill:none;stroke:var(--cream);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.ccb svg .f{fill:var(--cream);stroke:none}
-.ccb.on{background:var(--cream);border-color:var(--cream)}
-.ccb.on svg{stroke:#16130c}.ccb.on svg .f{fill:#16130c}
-.ccb.ice.on{background:var(--ice);border-color:var(--ice)}
-.ccb.mint.on{background:var(--mint);border-color:var(--mint)}
-.ccb.warn{background:rgba(255,179,71,.2);border-color:rgba(255,179,71,.7)}
-.ccb.warn svg{stroke:var(--amber)}
-.ccst{position:absolute;top:180px;left:60px;right:60px;text-align:center;font:500 20px/1 var(--display);color:rgba(255,240,200,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ccs{position:absolute;left:73px;width:320px;height:62px;border-radius:31px;overflow:hidden;cursor:ew-resize;display:flex;align-items:center;gap:12px;padding:0 22px;
-  background:rgba(255,240,200,.1);border:1px solid rgba(255,240,200,.14);font:500 22px/1 var(--display);color:var(--cream)}
-.ccs .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,240,200,.75),rgba(255,240,200,.95));border-radius:31px 0 0 31px;pointer-events:none}
-.ccs[data-slider="vol"] .fill{background:linear-gradient(90deg,rgba(159,198,255,.7),rgba(159,198,255,.95))}
-.ccs svg,.ccs b{position:relative;mix-blend-mode:difference}
-.ccs b{font-weight:500;color:#fff}
-.ccs svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;flex:none}
-.ccai{position:absolute;left:50%;transform:translateX(-50%);height:52px;padding:0 22px;border-radius:26px;display:flex;align-items:center;gap:10px;cursor:pointer;white-space:nowrap;
-  font:500 22px/1 var(--display);color:var(--amber);background:rgba(255,179,71,.12);border:1.5px solid rgba(255,179,71,.5)}
-.ccai.off{color:rgba(255,240,200,.7);background:rgba(255,240,200,.08);border-color:rgba(255,240,200,.2)}
-.ccai svg{width:22px;height:22px;fill:currentColor}
-.ccgrab{position:absolute;left:209px;top:436px;width:48px;height:6px;border-radius:3px;background:rgba(255,240,200,.35)}
+/* Control: no sheet. The rim becomes two dials (light on the left, volume on the right); four glyph-words in the middle */
+#cc{position:absolute;inset:0;border-radius:50%;z-index:6;pointer-events:none;opacity:0;transform:translate3d(0,-466px,0);will-change:transform,opacity}
+#cc svg.rim{pointer-events:none}
+#cc .arcw{fill:none;stroke-linecap:round;stroke-width:8}
+#cc .knob{filter:drop-shadow(0 0 6px rgba(255,240,200,.7))}
+.ccv{position:absolute;top:130px;font:400 13px/1 var(--r);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-variant-numeric:tabular-nums}
+.ccv b{display:block;margin-top:6px;font:500 30px/1 var(--v);letter-spacing:-.02em;text-transform:none;color:var(--cream)}
+.ccv.vol b{color:var(--ice)}
+.cct{position:absolute;top:156px;left:113px;width:240px;display:grid;grid-template-columns:1fr 1fr;gap:4px 0}
+.ccb{height:94px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;color:rgba(255,240,200,.42);font:420 21px/1 var(--v);
+  transition:scale .34s var(--spring),color .25s}
+.ccb svg{width:36px;height:36px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ccb.on{color:var(--mint);font-weight:600}
+.ccb.on.ice{color:var(--ice)}
+.ccb.warn{color:var(--amber);font-weight:600}
+.ccst{position:absolute;top:360px;left:90px;right:90px;text-align:center;font:400 12px/1 var(--r);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* status ring on the rim: battery (left), Claude (right); listening is the full ice ring drawn by the face */
 #sring{position:absolute;inset:0;width:466px;height:466px;pointer-events:none;z-index:2;transition:opacity .35s ease}
@@ -352,16 +337,16 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 /* always-on clock while asleep */
 #aod{position:absolute;left:0;right:0;top:318px;text-align:center;pointer-events:none;opacity:0;transition:opacity 1s ease;z-index:2}
 #aod.on{opacity:1}
-#aod b{display:block;font:500 58px/1 var(--display);color:rgba(255,240,200,.36);font-variant-numeric:tabular-nums;letter-spacing:.02em}
-#aod small{display:block;margin-top:10px;font:500 19px/1 var(--display);color:rgba(255,240,200,.26);letter-spacing:.12em;text-transform:uppercase}
+#aod b{display:block;font:500 60px/1 var(--v);color:rgba(255,240,200,.36);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+#aod small{display:block;margin-top:12px;font:400 13px/1 var(--r);color:rgba(255,240,200,.26);letter-spacing:.18em;text-transform:uppercase}
 /* charging */
 #chg{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .45s ease;z-index:4}
 #chg.on{opacity:1}
 #chg .chg-arc{transition:stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 8px rgba(201,242,228,.8))}
-.chg-c{position:absolute;left:0;right:0;top:282px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--mint)}
-.chg-c b{display:flex;align-items:center;gap:6px;font:500 58px/1 var(--display);font-variant-numeric:tabular-nums}
-.chg-c b svg{width:40px;height:40px;fill:var(--mint);filter:drop-shadow(0 0 8px rgba(201,242,228,.7))}
-.chg-c small{font:500 20px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:rgba(201,242,228,.7)}
+.chg-c{position:absolute;left:0;right:0;top:290px;display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--mint)}
+.chg-c b{display:flex;align-items:center;gap:8px;font:500 60px/1 var(--v);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.chg-c b svg{width:34px;height:34px;fill:none;stroke:var(--mint);stroke-width:2;stroke-linejoin:round}
+.chg-c small{font:400 13px/1 var(--r);letter-spacing:.18em;text-transform:uppercase;color:rgba(201,242,228,.7)}
 /* the tour's finger */
 #finger{position:absolute;left:0;top:0;width:52px;height:52px;border-radius:50%;pointer-events:none;z-index:11;opacity:0;
   background:radial-gradient(circle,rgba(255,255,255,.4),rgba(255,255,255,.14) 60%,rgba(255,255,255,0) 72%);border:2px solid rgba(255,255,255,.55);
@@ -369,78 +354,72 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 #finger.show{opacity:1}
 #finger.down{scale:.8;background:radial-gradient(circle,rgba(255,255,255,.7),rgba(255,255,255,.25) 60%,rgba(255,255,255,0) 72%)}
 
-/* Weather */
-.wxmain{position:absolute;top:150px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:4px}
-.wxt{font:500 92px/1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.wxc{position:absolute;top:262px;left:0;right:0;text-align:center;font:400 24px/1 var(--display);color:rgba(255,240,200,.72)}
-.wxh{position:absolute;top:302px;left:0;right:0;display:flex;justify-content:center;gap:4px}
-.wxh div{width:58px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.wxh small{font:500 16px/1 var(--mono);color:rgba(255,240,200,.5)}
-.wxh b{font:500 21px/1 var(--display)}
-.wxd{position:absolute;top:410px;left:0;right:0;display:flex;justify-content:center;gap:8px}
-.wxd i{width:7px;height:7px;border-radius:50%;background:rgba(255,240,200,.25)}.wxd i.on{background:var(--cream)}
-.wx-rays{transform-origin:50px 50px;animation:spin 16s linear infinite}
+/* Weather: it holds up one line glyph and says the number */
+.wxmain{position:absolute;top:146px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:14px;color:var(--cream)}
+.wxt{font:500 96px/1 var(--v);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.wxc{position:absolute;top:262px;left:0;right:0;text-align:center;font:420 24px/1 var(--v);color:var(--dim)}
+.wxh{position:absolute;top:300px;left:0;right:0;display:flex;justify-content:center;gap:6px;color:var(--dim)}
+.wxh div{width:56px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.wxh small{font:400 12px/1 var(--r);letter-spacing:.06em;color:var(--faint)}
+.wxh b{font:500 21px/1 var(--v);color:var(--cream)}
+.wx-rays{transform-origin:12px 12px;animation:spin 18s linear infinite}
 .wx-cloud{animation:drift 5s ease-in-out infinite alternate}
-.wx-rain line{animation:drop 1s linear infinite}
-.wx-rain line:nth-child(2){animation-delay:-.33s}.wx-rain line:nth-child(3){animation-delay:-.66s}
+.wx-rain line{animation:drop 1.1s linear infinite}
+.wx-rain line:nth-child(2){animation-delay:-.36s}.wx-rain line:nth-child(3){animation-delay:-.72s}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes drift{from{transform:translateX(-2.5px)}to{transform:translateX(2.5px)}}
-@keyframes drop{0%{transform:translateY(-5px);opacity:0}30%{opacity:1}100%{transform:translateY(7px);opacity:0}}
+@keyframes drift{from{transform:translateX(-.6px)}to{transform:translateX(.6px)}}
+@keyframes drop{0%{transform:translateY(-1.2px);opacity:0}30%{opacity:1}100%{transform:translateY(1.8px);opacity:0}}
 .wxbody{position:absolute;inset:0}
 .wxbody.wxin{animation:fin .45s ease both}
 
 /* Timer / stopwatch */
-.seg2{position:absolute;top:122px;left:50%;transform:translateX(-50%);display:flex;padding:4px;border-radius:26px;background:rgba(255,240,200,.08);border:1px solid var(--glass-line)}
-.seg2 span{padding:10px 18px;border-radius:22px;font:500 20px/1 var(--display);color:rgba(255,240,200,.6);cursor:pointer;white-space:nowrap}
-.seg2 span.on{background:var(--cream);color:#16130c}
-.tdig{position:absolute;top:186px;left:0;right:0;text-align:center;font:500 78px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.tdig small{font-size:42px;color:rgba(255,240,200,.55)}
-.tlaps{position:absolute;top:276px;left:120px;right:120px;display:flex;flex-direction:column;gap:6px}
-.tlaps div{display:flex;justify-content:space-between;font:500 20px/1 var(--display);color:rgba(255,240,200,.6);font-variant-numeric:tabular-nums}
-.tpre{position:absolute;top:274px;left:0;right:0;display:flex;justify-content:center;gap:10px}
-.tpre span{min-width:58px;height:44px;padding:0 12px;border-radius:22px;display:grid;place-items:center;font:500 21px/1 var(--display);cursor:pointer;
-  background:rgba(255,240,200,.08);border:1.5px solid rgba(255,240,200,.2)}
-.tpre span.on{border-color:var(--amber);color:var(--amber);background:rgba(255,179,71,.12)}
-.tbtns{position:absolute;top:334px;left:0;right:0;display:flex;justify-content:center;gap:22px}
-.tb{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:rgba(255,240,200,.1);border:1.5px solid rgba(255,240,200,.2)}
-.tb svg{width:30px;height:30px;fill:var(--cream)}
-.tb.go{background:var(--mint);border-color:var(--mint)}.tb.go svg{fill:#10201b}
-.tb.stop{background:var(--amber);border-color:var(--amber)}.tb.stop svg{fill:#241a0c}
+.seg2{position:absolute;top:118px;left:0;right:0;display:flex;justify-content:center;gap:22px}
+.seg2 span{height:40px;display:grid;place-items:center;font:400 13px/1 var(--r);letter-spacing:.16em;text-transform:uppercase;color:var(--faint);cursor:pointer;white-space:nowrap}
+.seg2 span.on{color:var(--cream);box-shadow:inset 0 -2px 0 var(--cream)}
+.tdig{position:absolute;top:180px;left:0;right:0;text-align:center;font:500 84px/1 var(--v);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.tdig small{font-size:44px;color:var(--dim);letter-spacing:-.02em}
+.tlaps{position:absolute;top:276px;left:120px;right:120px;display:flex;flex-direction:column;gap:8px}
+.tlaps div{display:flex;justify-content:space-between;font:400 14px/1 var(--r);letter-spacing:.06em;color:var(--dim);font-variant-numeric:tabular-nums}
+.tpre{position:absolute;top:272px;left:0;right:0;display:flex;justify-content:center;gap:16px}
+.tpre span{min-width:44px;height:48px;display:grid;place-items:center;font:500 24px/1 var(--v);cursor:pointer;color:var(--dim)}
+.tpre span.on{color:var(--amber);box-shadow:inset 0 -2px 0 var(--amber)}
+.tbtns{position:absolute;top:334px;left:0;right:0;display:flex;justify-content:center;gap:34px}
+.tb{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--cream);box-shadow:inset 0 0 0 2px rgba(255,240,200,.3)}
+.tb svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tb.go{color:var(--mint);box-shadow:inset 0 0 0 2px var(--mint)}
+.tb.stop{color:var(--amber);box-shadow:inset 0 0 0 2px var(--amber)}
 .tb.dis{opacity:.35}
 
 /* Soul page */
-.sname{position:absolute;top:142px;left:0;right:0;text-align:center;font:500 48px/1 var(--display);cursor:pointer;letter-spacing:.01em}
-.sname i{font-style:normal;font-size:26px;color:rgba(255,240,200,.45);margin-left:8px;vertical-align:10px}
-.sborn{position:absolute;top:202px;left:70px;right:70px;text-align:center;font:400 20px/1.3 var(--display);color:rgba(255,240,200,.6)}
-.smood{position:absolute;top:258px;left:50%;transform:translateX(-50%);height:52px;padding:0 24px;border-radius:26px;display:flex;align-items:center;gap:12px;white-space:nowrap;cursor:pointer;
-  font:500 24px/1 var(--display);background:rgba(255,240,200,.08);border:1.5px solid rgba(255,240,200,.2)}
-.smood i{width:14px;height:14px;border-radius:50%;box-shadow:0 0 10px currentColor}
-.smet{position:absolute;top:328px;left:86px;right:86px;display:flex;flex-direction:column;gap:9px}
-.smet div{display:grid;grid-template-columns:118px 1fr;align-items:center;gap:12px;font:500 18px/1 var(--display);color:rgba(255,240,200,.6)}
-.smet span{height:8px;border-radius:4px;background:rgba(255,240,200,.12);overflow:hidden}
-.smet span i{display:block;height:100%;border-radius:4px;transition:width .8s var(--spring)}
+.sname{position:absolute;top:132px;left:0;right:0;text-align:center;font:560 54px/1 var(--v);cursor:pointer;letter-spacing:-.02em}
+.sname i{font:400 13px/1 var(--r);letter-spacing:.14em;color:var(--faint);margin-left:10px;vertical-align:14px;font-style:normal}
+.sborn{position:absolute;top:200px;left:70px;right:70px;text-align:center;font:400 13px/1.7 var(--r);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.smood{position:absolute;top:252px;left:50%;transform:translateX(-50%);min-height:52px;display:flex;align-items:center;gap:10px;white-space:nowrap;cursor:pointer;font:420 25px/1 var(--v)}
+.smood i{width:10px;height:10px;border-radius:50%;box-shadow:0 0 10px currentColor}
+.smet{position:absolute;top:322px;left:96px;right:96px;display:flex;flex-direction:column;gap:12px}
+.smet div{display:grid;grid-template-columns:112px 1fr;align-items:center;gap:12px;font:400 12px/1 var(--r);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.smet span{height:2px;background:var(--hair);position:relative}
+.smet span i{display:block;height:2px;transition:width .8s var(--spring)}
 
 /* Games */
-.gtile{position:absolute;top:168px;left:83px;width:300px;height:212px;border-radius:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-align:center;
-  background:linear-gradient(165deg,rgba(255,215,107,.18),rgba(255,215,107,.04) 65%);border:1px solid rgba(255,215,107,.3);box-shadow:0 14px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
-.gtile svg{width:60px;height:60px;animation:twinkle 2.4s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(255,215,107,.6))}
-.gtile b{font:500 28px/1 var(--display)}
-.gtile small{font:400 18px/1.25 var(--display);color:rgba(255,240,200,.62);max-width:240px}
-.gtile em{font-style:normal;margin-top:4px;height:40px;padding:0 20px;border-radius:20px;display:grid;place-items:center;font:500 21px/1 var(--display);background:#FFD76B;color:#2a1f05}
-.gbest{position:absolute;top:392px;left:0;right:0;text-align:center;font:500 19px/1 var(--display);color:var(--mint);letter-spacing:.04em}
+.gtile{position:absolute;top:150px;left:83px;width:300px;height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center}
+.gtile svg{width:72px;height:72px;animation:twinkle 2.4s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(255,215,107,.5))}
+.gtile b{font:560 30px/1 var(--v)}
+.gtile small{font:400 18px/1.3 var(--v);color:var(--dim);max-width:250px}
+.gtile em{font-style:normal;margin-top:6px;min-height:46px;display:grid;place-items:center;font:560 24px/1 var(--v);color:#FFD76B;box-shadow:inset 0 -2px 0 rgba(255,215,107,.5)}
+.gbest{position:absolute;top:396px;left:0;right:0;text-align:center;font:400 12px/1 var(--r);letter-spacing:.16em;text-transform:uppercase;color:var(--mint)}
 .gfield{position:absolute;inset:0}
 .gstar{position:absolute;width:64px;height:64px;pointer-events:none;will-change:transform,opacity}
 .gstar svg{width:100%;height:100%;filter:drop-shadow(0 0 10px rgba(255,215,107,.85))}
-.gscore{position:absolute;top:90px;left:0;right:0;text-align:center;font:500 40px/1 var(--display);color:var(--cream);font-variant-numeric:tabular-nums}
-.gburst{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:3px solid #FFD76B;pointer-events:none;animation:burst .5s ease-out forwards}
-.gplus{position:absolute;font:600 26px/1 var(--display);color:#FFD76B;pointer-events:none;animation:plus .8s ease-out forwards;transform:translate(-50%,-50%)}
+.gscore{position:absolute;top:90px;left:0;right:0;text-align:center;font:500 44px/1 var(--v);color:var(--cream);font-variant-numeric:tabular-nums}
+.gburst{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:2px solid #FFD76B;pointer-events:none;animation:burst .5s ease-out forwards}
+.gplus{position:absolute;font:560 26px/1 var(--v);color:#FFD76B;pointer-events:none;animation:plus .8s ease-out forwards;transform:translate(-50%,-50%)}
 @keyframes burst{from{transform:scale(.3);opacity:1}to{transform:scale(1.5);opacity:0}}
 @keyframes plus{from{opacity:1;margin-top:0}to{opacity:0;margin-top:-46px}}
-@keyframes twinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.1) rotate(12deg)}}
-.gover{position:absolute;top:166px;left:0;right:0;text-align:center;font:500 96px/1 var(--display);font-variant-numeric:tabular-nums}
+@keyframes twinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.08) rotate(10deg)}}
+.gover{position:absolute;top:160px;left:0;right:0;text-align:center;font:500 100px/1 var(--v);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
 /* music extras */
-.mt{display:flex;justify-content:space-between;width:220px;margin-top:6px;font:500 16px/1 var(--mono);color:rgba(255,240,200,.45)}
-
+.mt{display:flex;justify-content:space-between;width:230px;margin-top:4px;font:400 12px/1 var(--r);letter-spacing:.06em;color:var(--faint)}
 /* ---------- page: tour bar under the device, foldable panel sections ---------- */
 .tourbar{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:440px}
 .tourbtns{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
@@ -459,8 +438,8 @@ details.fold[open]>summary::after{content:"–"}
 @media (hover:none) and (pointer:coarse),(max-width:600px){.keys{display:none}}
 html{overscroll-behavior-x:none}
 
-@media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in,.coach,.wxbody.wxin{animation:none}
-  .rip,.wx-rays,.wx-cloud,.wx-rain line,.gtile svg{animation:none!important}[data-act],.ccb,.tdots i,.dots i{transition:none!important}}
+@media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in,.coach,.wxbody.wxin,.opv.swap{animation:none}
+  .rip,.wx-rays,.wx-cloud,.wx-rain line,.gtile svg{animation:none!important}[data-act],.ccb,.tdots i{transition:none!important}}
 </style>
 
 <header class="top">
@@ -1155,26 +1134,85 @@ let timers = [];
 const after = (ms, fn, tag) => { const id = setTimeout(() => { timers = timers.filter(x => x.id !== id); fn(); }, ms); timers.push({ id, tag }); return id; };
 const cancel = tag => { timers.filter(x => x.tag === tag).forEach(x => clearTimeout(x.id)); timers = timers.filter(x => x.tag !== tag); };
 
-/* ---------------------------------------------------------------- icons */
-const IC = {
-  prev: '<svg viewBox="0 0 24 24"><path d="M6 5h2.5v14H6zM20 5v14L9.5 12z"/></svg>',
-  next: '<svg viewBox="0 0 24 24"><path d="M15.5 5H18v14h-2.5zM4 5l10.5 7L4 19z"/></svg>',
-  play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>',
-  pause: '<svg viewBox="0 0 24 24"><path d="M6 4.5h4.2v15H6zM13.8 4.5H18v15h-4.2z"/></svg>',
-  swap: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#FFF0C8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h15l-4-4M20 16H5l4 4"/></svg>'
+/* ---------------------------------------------------------------- glyphs: the SoulOS line set
+   24-unit grid, one stroke (2 px at the size drawn), round caps and joins, no fills, no containers. */
+const GP = {
+  home: '<ellipse cx="8.4" cy="12" rx="2.7" ry="4.4"/><ellipse cx="15.6" cy="12" rx="2.7" ry="4.4"/>',
+  soul: '<circle cx="12" cy="12" r="9.5"/><ellipse cx="9" cy="12.4" rx="1.8" ry="3"/><ellipse cx="15" cy="12.4" rx="1.8" ry="3"/>',
+  talk: '<path d="M8.6 8.9a4.4 4.4 0 0 0 0 6.2M5.7 6.1a8.4 8.4 0 0 0 0 11.8M15.4 8.9a4.4 4.4 0 0 1 0 6.2M18.3 6.1a8.4 8.4 0 0 1 0 11.8"/><circle cx="12" cy="12" r=".9"/>',
+  claude: '<path d="M4.5 7l5 5-5 5M12 17.5h7.5"/>',
+  weather: '<path d="M8.7 4.9V3.4M3.9 9.6H2.4M5 5.9l-1-1M12.4 5.9l1-1"/><path d="M5.5 11.8a3.3 3.3 0 0 1 6.1-2.6"/><path d="M8 20h9.6a3.5 3.5 0 0 0 .3-7 5 5 0 0 0-9.6 1.3A2.9 2.9 0 0 0 8 20z"/>',
+  music: '<path d="M9 17.5V6.2l10.5-2.2v11.5"/><circle cx="6.6" cy="17.5" r="2.4"/><circle cx="17.1" cy="15.5" r="2.4"/>',
+  games: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/>',
+  reminders: '<path d="M4 7.6l1.9 1.9L9.3 6M4 16.6l1.9 1.9 3.4-3.5M12.8 7.8H20M12.8 16.8H20"/>',
+  notes: '<path d="M6 3.5h8.5L18 7v13.5H6z"/><path d="M14.5 3.5V7H18M9 11.5h6M9 14.8h6M9 18h3.2"/>',
+  focus: '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="4.3"/><circle cx="12" cy="12" r=".5"/>',
+  alarms: '<circle cx="12" cy="13" r="7.3"/><path d="M12 9.2V13l2.7 1.8M3.8 6.7l3-2.6M20.2 6.7l-3-2.6"/>',
+  timer: '<circle cx="12" cy="13.6" r="7.1"/><path d="M12 13.6V9.9M9.8 2.9h4.4M12 2.9v3.6M18.1 6.6l1.4-1.4"/>',
+  settings: '<circle cx="12" cy="12" r="7.6"/><path d="M12 12l3.9-3.9M12 1.6v1.6M22.4 12h-1.6M12 22.4v-1.6M1.6 12h1.6"/>',
+  diary: '<path d="M12 6.6C10 5 7 4.6 3.5 5v13.6c3.5-.4 6.5 0 8.5 1.6 2-1.6 5-2 8.5-1.6V5C17 4.6 14 5 12 6.6zM12 6.6v13.6"/>',
+  translate: '<path d="M3.5 6h9M8 4v2M10.6 6c-.6 3.6-3 6.5-6.6 8M6 9c1 2 2.6 3.6 4.6 4.6M13 20.2l3.7-8.6 3.8 8.6M14.3 17.2h4.8"/>',
+  today: '<path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 7.2v2.3M5.7 10.6l1.6 1.6M18.3 10.6l-1.6 1.6"/>',
+  memory: '<circle cx="8.2" cy="14.8" r="4.6"/><circle cx="15.8" cy="9.2" r="3.4"/><circle cx="19.2" cy="17.4" r="1.7"/>',
+  about: '<path d="M12 3.5c.5 4.1 2.2 6.9 7.5 8.5-5.3 1.6-7 4.4-7.5 8.5-.5-4.1-2.2-6.9-7.5-8.5 5.3-1.6 7-4.4 7.5-8.5z"/>',
+  cc: '<circle cx="12" cy="12" r="8.5"/><circle cx="18" cy="6" r="2.2"/><path d="M12 12h.01"/>',
+  moon: '<path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1z"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3"/>',
+  micOff: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3M4 4l16 16"/>',
+  snd: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.2 6.5a7.6 7.6 0 0 1 0 11"/>',
+  sndOff: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
+  sleep: '<path d="M3.5 11.5q3.2 3.4 6.4 0M14.1 11.5q3.2 3.4 6.4 0"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+  bolt: '<path d="M13 2.5L5 13.5h6l-1 8 8-11h-6z"/>',
+  plus: '<path d="M12 4.5v15M4.5 12h15"/>',
+  check: '<path d="M4.5 12.5l4.8 4.8L19.5 7"/>',
+  ring: '<circle cx="12" cy="12" r="7"/>',
+  send: '<path d="M12 19.5V5M5.5 11.5L12 5l6.5 6.5"/>',
+  pen: '<path d="M4.5 19.5l4.3-1 10-10a2.1 2.1 0 0 0-3-3l-10 10z"/>',
+  play: '<path d="M7.5 4.8v14.4L19 12z"/>',
+  pause: '<path d="M8.5 5v14M15.5 5v14"/>',
+  prev: '<path d="M18 5.5L9.5 12l8.5 6.5zM6 5.5v13"/>',
+  next: '<path d="M6 5.5l8.5 6.5L6 18.5zM18 5.5v13"/>',
+  flag: '<path d="M6 21V3.5M6 4.5h11l-2.5 4 2.5 4H6"/>',
+  reset: '<path d="M5.5 12a6.5 6.5 0 1 0 2-4.7M5 3.8v4h4"/>',
+  swap: '<path d="M4 8h15l-4-4M20 16H5l4 4"/>',
+  shift: '<path class="fl" d="M12 4l8.5 8.5H16V20H8v-7.5H3.5z"/>',
+  bksp: '<path d="M2.5 12l6-7h13v14h-13z"/><path d="M12 9.5l5 5M17 9.5l-5 5"/>',
+  sunwx: '<g class="wx-rays"><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></g><circle cx="12" cy="12" r="4"/>',
+  cloud: '<path class="wx-cloud" d="M7 18.5h10a4 4 0 0 0 .4-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 18.5z"/>',
+  rain: '<path class="wx-cloud" d="M7 15h10a4 4 0 0 0 .4-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 15z"/><g class="wx-rain"><line x1="9" y1="18" x2="8.2" y2="20.6"/><line x1="12.6" y1="18" x2="11.8" y2="20.6"/><line x1="16.2" y1="18" x2="15.4" y2="20.6"/></g>'
 };
+GP.part = GP.weather; GP.star = GP.games;
+/* one glyph: size in 466-space px; the stroke stays 2 px whatever the size */
+const lg = (k, s = 24, w = 2, st = "") => `<svg class="lg" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${(w * 24 / s).toFixed(3)}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${st ? ` style="${st}"` : ""}>${GP[k] || ""}</svg>`;
+/* rim words: #rT runs clockwise over the top (text outside the path), #rB runs left→right through 6 o'clock (text inside) */
+const arcPath = (r, span, top) => { const a0 = (top ? -90 - span / 2 : 90 + span / 2) * Math.PI / 180, a1 = (top ? -90 + span / 2 : 90 - span / 2) * Math.PI / 180;
+  return `M${(233 + r * Math.cos(a0)).toFixed(2)} ${(233 + r * Math.sin(a0)).toFixed(2)}A${r} ${r} 0 1 ${top ? 1 : 0} ${(233 + r * Math.cos(a1)).toFixed(2)} ${(233 + r * Math.sin(a1)).toFixed(2)}`; };
+function rimDefs() { return `<path id="rT" d="${arcPath(198, 250, 1)}"/><path id="rB" d="${arcPath(201, 250, 0)}"/><path id="rO" d="${arcPath(203, 250, 0)}"/><path id="rP" d="${arcPath(197, 250, 1)}"/>`; }
+const rimTxt = (href, inner, cls = "", deg = 0, act = "") => `<g transform="rotate(${deg} 233 233)"${act}><text class="${cls}"><textPath href="#${href}" startOffset="50%" text-anchor="middle">${inner}</textPath></text></g>`;
+const rimTop = (inner, cls = "", box = "rimlbl") => `<svg class="rim ${box}" viewBox="0 0 466 466">${rimTxt("rT", inner, cls)}</svg>`;
+const rimBot = (inner, cls = "", box = "") => `<svg class="rim ${box}" viewBox="0 0 466 466">${rimTxt("rB", inner, cls)}</svg>`;
+const lbl = (t, cls = "") => rimTop(esc(t), cls);
+const dateShort = () => new Date().toLocaleDateString(LANG === "ro" ? "ro-RO" : "en-GB", { weekday: "short", day: "numeric" }).replace(/[.,]/g, "");
+/* an arc on the rim (angles in degrees, 0 = 3 o'clock, clockwise) */
+function arcD(a0, a1, r = 223) {
+  const P = a => [233 + r * Math.cos(a * Math.PI / 180), 233 + r * Math.sin(a * Math.PI / 180)], [x0, y0] = P(a0), [x1, y1] = P(a1);
+  return `M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 ${Math.abs(a1 - a0) > 180 ? 1 : 0} ${a1 > a0 ? 1 : 0} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+}
+const wordBtn = (act, label, cls = "", attrs = "", glyph = "") => `<span class="chip btn ${cls}" data-act="${act}" role="button"${attrs}>${glyph ? lg(glyph, 22) : ""}${esc(label)}</span>`;
+const unpen = s => String(s).replace(/^[✎+⏰]\s*/, "");
 
-/* ---------------------------------------------------------------- card renderers */
+/* ---------------------------------------------------------------- what it says: one renderer per screen */
 function cardHTML(v) {
   const L = T();
   switch (v) {
     case "home": {
       let tag = "";
-      if (S.claude.pending) tag = `<div class="homeTag amber">${L.homeClaude}</div>`;
-      else if (S.focus.run) tag = `<div class="homeTag cream" data-live="homefocus">${L.homeFocus(mmss(S.focus.left))}</div>`;
-      else if (S.tm.cd.run) tag = `<div class="homeTag cream" data-live="homecd">${L.homeCd(mmss(S.tm.cd.left))}</div>`;
-      else if (S.coach) tag = `<div class="coach">${esc(L.coach)}</div>`;
-      return `<div class="clock"><span data-live="clock">${hhmm()}</span>${statusGlyphs()}</div>${tag}`;
+      if (S.claude.pending) tag = rimBot(esc(L.homeClaude), "say amber", "homeTag");
+      else if (S.focus.run) tag = rimBot(`<tspan data-live="homefocus">${esc(L.homeFocus(mmss(S.focus.left)))}</tspan>`, "cream", "homeTag");
+      else if (S.tm.cd.run) tag = rimBot(`<tspan data-live="homecd">${esc(L.homeCd(mmss(S.tm.cd.left)))}</tspan>`, "cream", "homeTag");
+      else if (S.coach) tag = rimBot(esc(L.coach), "", "coach");
+      return rimTop(`<tspan data-live="clock">${hhmm()}</tspan> · ${esc(dateShort())}${statusGlyphs()}`, "", "clock") + tag;
     }
     case "today": return todayHTML();
     case "apps": return launcherHTML();
@@ -1184,96 +1222,93 @@ function cardHTML(v) {
     case "games": return gamesHTML();
     case "talk": {
       const qa = S.lastQA, off = S.ai === "none";
-      return `<div class="c" style="top:256px;gap:10px"><div style="font:600 22px/1.2 'Nunito',system-ui,sans-serif;color:${off ? "var(--amber)" : "var(--ice)"}">${esc(L.aiModes[S.ai])} · ${esc(L.aiTag[S.ai])}</div>
+      return lbl(L.talk) + `<div class="c" style="top:258px;gap:8px"><div class="dtag" style="color:${off ? "var(--amber)" : "var(--ice)"}">${esc(L.aiModes[S.ai])} · ${esc(L.aiTag[S.ai])}</div>
         ${off ? `<div class="t2" style="font-size:28px">${L.talkOff}</div>` : qa ? `<div class="t2" style="font-size:26px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">„${esc(qa)}”</div>` : `<div class="t2" style="font-size:28px">${L.talkHint}</div>`}
-        <span class="chip btn" data-act="type-ai" data-o="talk">${esc(off ? L.typeOff : L.typeBtn(aiName()))}</span></div>`;
+        ${wordBtn("type-ai", unpen(off ? L.typeOff : L.typeBtn(aiName())), off ? "" : "", ' data-o="talk"', "pen")}</div>`;
     }
     case "reminders": {
       let list = S.rems.slice().sort((a, b) => (a.day || 0) - (b.day || 0) || a.time.localeCompare(b.time));
       if (list.length > 3) { const f = list.find(r => r.fresh); list = list.filter(r => !r.done || r.fresh); if (list.length > 3) list = f ? [f, ...list.filter(r => r !== f)].slice(0, 3).sort((a, b) => (a.day || 0) - (b.day || 0) || a.time.localeCompare(b.time)) : list.slice(0, 3); }
-      return `<div class="lbl">${L.reminders}</div>${addBtn("rem-add")}<ul class="list">${list.map(r =>
-        `<li data-act="rem" data-k="${r.key}" class="${r.done ? "done" : ""} ${r.fresh && !r.done ? "new" : ""}"><span class="tm">${r.time}</span><span class="tx">${esc(remText(r))}${r.day ? ` · ${L.remTomorrow}` : ""}</span><i class="ck"></i></li>`).join("")}</ul>`;
+      return lbl(L.reminders) + addBtn("rem-add") + `<ul class="list" style="top:166px">${list.map(r =>
+        `<li data-act="rem" data-k="${r.key}" class="${r.done ? "done" : ""} ${r.fresh && !r.done ? "new" : ""}"><span class="tm">${r.time}</span><span class="tx">${esc(remText(r))}${r.day ? ` · ${L.remTomorrow}` : ""}</span><span class="ck">${lg(r.done ? "check" : "ring", 30)}</span></li>`).join("")}</ul>`;
     }
     case "notes": {
       const all = S.notes.slice().reverse(), pages = Math.max(1, Math.ceil(all.length / 2));
       S.notePage = Math.min(S.notePage, pages - 1);
       const list = all.slice(S.notePage * 2, S.notePage * 2 + 2);
-      return `<div class="lbl">${L.notes} · ${all.length}</div>${addBtn("note-add")}
-      <div class="c" style="top:176px"><div class="t3" style="font-size:24px">${L.holdNote}${pages > 1 ? ` · ${S.notePage + 1}/${pages} ↑` : ""}</div></div>
-      <ul class="list" style="top:216px">${list.map(n => `<li class="col nrow ${n.fresh ? "new" : ""}" data-act="note-edit" data-k="${n.key}"><span class="tx" style="font-size:26px">${esc(noteText(n))}</span><span class="st ${n.sync ? "ok" : ""}" style="font-size:20px">✎ · ${n.sync ? L.toPhone : L.sending}</span></li>`).join("")}</ul>`;
+      return lbl(`${L.notes} · ${all.length}`) + addBtn("note-add") +
+        `<div class="c" style="top:172px"><div class="t3" style="font-size:21px">${L.holdNote}${pages > 1 ? ` · ${S.notePage + 1}/${pages} ↑` : ""}</div></div>
+      <ul class="list" style="top:212px">${list.map(n => `<li class="col nrow ${n.fresh ? "new" : ""}" data-act="note-edit" data-k="${n.key}"><span class="tx" style="font-size:26px">${esc(noteText(n))}</span><span class="st ${n.sync ? "ok" : ""}">${n.sync ? L.toPhone : L.sending}</span></li>`).join("")}</ul>`;
     }
     case "alarms": {
       const list = S.alarms.slice().sort((a, b) => a.h * 60 + a.m - b.h * 60 - b.m).slice(0, 3);
-      return `<div class="lbl">${L.alarms}</div>${addBtn("al-add")}${list.length ? `<ul class="list alist" style="top:172px">${list.map(a =>
-        `<li><div class="ainfo" data-act="al-edit" data-id="${a.id}"><b class="${a.on ? "" : "off"}">${hm(a.h, a.m)}</b><small>${esc(daysStr(a.days))} · ${esc(alarmLabel(a))}</small></div><span class="tog ${a.on ? "on" : ""}" data-act="al-tog" data-id="${a.id}" role="switch" aria-checked="${a.on}"><i></i></span></li>`).join("")}</ul>`
-        : `<div class="c" style="top:230px"><div class="t2">${L.noAlarms}</div></div>`}`;
+      return lbl(L.alarms) + addBtn("al-add") + (list.length ? `<ul class="list alist" style="top:166px">${list.map(a =>
+        `<li><div class="ainfo" data-act="al-edit" data-id="${a.id}"><b class="${a.on ? "" : "off"}">${hm(a.h, a.m)}</b><small>${esc(daysStr(a.days))} · ${esc(alarmLabel(a))}</small></div><span class="tog ${a.on ? "on" : ""}" data-act="al-tog" data-id="${a.id}" role="switch" aria-checked="${a.on}"><i></i>${esc(a.on ? L.on : L.off)}</span></li>`).join("")}</ul>`
+        : `<div class="c" style="top:230px"><div class="t2">${L.noAlarms}</div></div>`);
     }
     case "focus": {
       const F = S.focus, frac = F.left / F.total, C = 2 * Math.PI * 222;
       const sub = F.done ? L.focusDone : F.run ? L.focusRun : F.left < F.total ? L.focusPaused : L.focusTap;
-      return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(255,240,200,.12)" stroke-width="10"/>
-        <circle data-live="fring" cx="233" cy="233" r="222" fill="none" stroke="${F.done ? "#C9F2E4" : "#FFF0C8"}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 233 233)"/></svg>
-        <div class="c" style="top:188px;gap:14px"><div class="fdig" data-live="fdig">${mmss(F.left)}</div><div class="t3">${sub}</div></div>`;
+      return lbl(L.focus, F.done ? "mint" : "") + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(255,240,200,.1)" stroke-width="6"/>
+        <circle data-live="fring" cx="233" cy="233" r="222" fill="none" stroke="${F.done ? "#C9F2E4" : "#FFF0C8"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px ${F.done ? "rgba(201,242,228,.7)" : "rgba(255,240,200,.5)"})"/></svg>
+        <div class="c" style="top:184px;gap:16px"><div class="fdig" data-live="fdig" style="${F.done ? "color:var(--mint)" : ""}">${mmss(F.left)}</div><div class="t3">${sub}</div></div>`;
     }
     case "claude": {
       const P = S.claude.pending;
-      if (P) return `<div class="lbl amber">${L.cAsk}</div><div class="c" style="top:184px;gap:16px"><div class="t3">site · Bash</div><div class="cmd">${esc(P.cmd)}</div><div class="t2" style="font-size:25px">${L.cHint}</div></div>`;
-      return `<div class="lbl">Claude</div><div class="c" style="top:184px;gap:12px"><div class="t1">${L.cWorking}</div><div class="t3">${L.cProj}</div>
-        <span class="chip btn" data-act="type-ai" data-o="claude" style="margin-top:6px">${esc(S.ai === "none" ? L.typeOff : L.typeBtn(aiName()))}</span></div>`;
+      if (P) return lbl(L.cAsk, "amber") + `<div class="c" style="top:128px;gap:12px"><span style="color:var(--amber)">${lg("claude", 50)}</span><div class="t3" style="font-size:20px">site · Bash</div><div class="cmd">${esc(P.cmd)}</div></div>` + rimBot(esc(L.cHint), "say amber");
+      return lbl("Claude") + `<div class="c" style="top:136px;gap:10px"><span style="color:var(--dim)">${lg("claude", 40)}</span><div class="t1">${L.cWorking}</div><div class="t3" style="font-size:20px">${L.cProj}</div>
+        ${wordBtn("type-ai", unpen(S.ai === "none" ? L.typeOff : L.typeBtn(aiName())), "", ' data-o="claude" style="margin-top:4px"', "pen")}</div>`;
     }
     case "diary": {
       const list = S.diary.slice(-3);
-      return `<div class="lbl">${L.diaryT}</div><ul class="list">${list.map(d => `<li><span class="tm">${d.time}</span><span class="tx" style="white-space:normal;font-size:23px">${esc(diaryText(d))}</span></li>`).join("")}</ul>`;
+      return lbl(L.diaryT) + `<ul class="list" style="top:150px">${list.map(d => `<li><span class="tm">${d.time}</span><span class="tx" style="white-space:normal;font-size:23px">${esc(diaryText(d))}</span></li>`).join("")}</ul>`;
     }
     case "translate": {
       const tr = S.tr, last = tr.last;
-      return `<div class="lbl">${L.translate}</div>
-      <div class="c" style="top:178px;gap:22px"><div class="langs"><span class="lp a">${tr.a}</span><span class="swap" data-act="swap" role="button" aria-label="swap">${IC.swap}</span><span class="lp">${tr.b}</span></div>
-      ${last ? `<div class="t3" style="font-size:21px">${esc(last.q)}</div><div class="t2" style="color:var(--mint);font-size:26px">${esc(last.a)}</div>` : `<div class="t2">${L.trHint}</div>`}</div>`;
+      return lbl(L.translate) + `<div class="c" style="top:150px;gap:20px"><div class="langs"><span class="lp a">${tr.a}</span><span class="swap" data-act="swap" role="button" aria-label="swap">${lg("swap", 30)}</span><span class="lp">${tr.b}</span></div>
+      ${last ? `<div class="t3" style="font-size:21px">${esc(last.q)}</div><div class="t2" style="color:var(--mint);font-size:27px">${esc(last.a)}</div>` : `<div class="t2">${L.trHint}</div>`}</div>`;
     }
     case "music": {
       const M = S.music;
-      return `<div class="lbl">${L.musT}</div>
-      <div class="c" style="top:176px;gap:8px"><div class="t1" style="font-size:31px">${L.song}</div><div class="t3">${L.artist}</div>
-      <div class="ctrls" style="margin-top:14px"><span class="cb" data-act="prev" role="button" aria-label="prev">${IC.prev}</span><span class="cb big" data-act="play" role="button" aria-label="play">${M.play ? IC.pause : IC.play}</span><span class="cb" data-act="next" role="button" aria-label="next">${IC.next}</span></div>
-      <div class="bar" style="margin-top:16px"><i data-live="mbar" style="width:${(M.pos * 100).toFixed(1)}%"></i></div><div class="mt"><span data-live="mt">${mmss(M.pos * 214)}</span><span>3:34</span></div></div>`;
+      return lbl(L.musT) + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><path d="${arcD(140, 40, 214)}" fill="none" stroke="rgba(255,240,200,.12)" stroke-width="4" stroke-linecap="round"/><path data-live="mbar" d="${arcD(140, 140 - 100 * Math.max(0.005, M.pos), 214)}" fill="none" stroke="#FFF0C8" stroke-width="4" stroke-linecap="round"/></svg>
+      <div class="c" style="top:150px;gap:6px"><div class="t1" style="font-size:32px">${L.song}</div><div class="t3">${L.artist}</div>
+      <div class="ctrls" style="margin-top:18px"><span class="cb" data-act="prev" role="button" aria-label="prev">${lg("prev", 30)}</span><span class="cb big" data-act="play" role="button" aria-label="play">${lg(M.play ? "pause" : "play", 32)}</span><span class="cb" data-act="next" role="button" aria-label="next">${lg("next", 30)}</span></div>
+      <div class="mt" style="margin-top:22px"><span data-live="mt">${mmss(M.pos * 214)}</span><span>3:34</span></div></div>`;
     }
     case "settings":
-      return `<div class="lbl">${L.settings}</div><div class="set" style="top:160px">
-        <div data-act="bright" style="height:50px"><span>${L.setBright}</span><b>${Math.round(S.bright * 100)}%</b></div>
-        <div data-act="snd" style="height:50px"><span>${L.setSnd}</span><b class="${AU.on ? "" : "dim"}">${AU.on ? L.on : L.off}</b></div>
-        <div data-act="ai" style="height:50px"><span>${L.setAi}</span><b class="${S.ai === "none" ? "dim" : ""}">${esc(L.aiShort[S.ai])} ›</b></div>
-        <div data-act="mem" style="height:50px"><span>${L.setMem}</span><b class="dim">${L.setMemV(S.memWiped ? 0 : S.memCount)} ›</b></div>
-        <div data-act="about" style="height:50px"><span>${L.setAbout}</span><b class="dim">${L.setAboutV} ›</b></div></div>`;
+      return lbl(L.settings) + `<div class="set" style="top:120px">
+        <div data-act="bright"><span>${L.setBright}</span><b>${Math.round(S.bright * 100)}%</b></div>
+        <div data-act="snd"><span>${L.setSnd}</span><b class="${AU.on ? "" : "dim"}">${AU.on ? L.on : L.off}</b></div>
+        <div data-act="ai"><span>${L.setAi}</span><b class="${S.ai === "none" ? "dim" : ""}" style="${S.ai === "none" ? "" : "color:var(--amber)"}">${esc(L.aiShort[S.ai])} ›</b></div>
+        <div data-act="mem"><span>${L.setMem}</span><b class="dim">${L.setMemV(S.memWiped ? 0 : S.memCount)} ›</b></div>
+        <div data-act="about"><span>${L.setAbout}</span><b class="dim">${L.setAboutV} ›</b></div></div>`;
     case "aimode":
-      return `<div class="lbl">${L.aimT}</div><div class="set">${["none", "claude", "chatgpt", "api"].map(m =>
-        `<div data-act="aim" data-m="${m}" role="radio" aria-checked="${S.ai === m}"><span${S.ai === m ? ' style="color:var(--mint)"' : ""}>${esc(L.aiModes[m])}</span><b>${S.ai === m ? "✓" : ""}</b></div>`).join("")}</div>`;
+      return lbl(L.aimT) + `<div class="set" style="top:130px">${["none", "claude", "chatgpt", "api"].map(m =>
+        `<div data-act="aim" data-m="${m}" role="radio" aria-checked="${S.ai === m}"><span${S.ai === m ? ' style="color:var(--amber);font-weight:600"' : ""}>${esc(L.aiModes[m])}</span><b style="color:var(--amber)">${S.ai === m ? lg("check", 24) : ""}</b></div>`).join("")}</div>`;
     case "dial": return dialHTML();
     case "alarmsum": return alarmSumHTML();
     case "ring": {
       const A = S.ringing; if (!A) return "";
-      return `<div class="lbl amber" style="top:34px">${L.dlAlarm}</div>
-        <div class="c" style="top:196px;gap:6px"><div class="fdig" style="font-size:80px">${hm(A.h, A.m)}</div><div class="t2" style="font-size:28px">${esc(alarmLabel(A))}</div></div>
-        <div class="chips" style="position:absolute;top:338px;left:0;right:0"><span class="chip btn" data-act="ring-snooze">${L.ringSnooze}</span><span class="chip ok btn" data-act="ring-stop">${L.ringStop}</span></div>`;
+      return lbl(L.dlAlarm, "amber") + `<div class="c" style="top:200px;gap:6px"><div class="fdig" style="font-size:84px">${hm(A.h, A.m)}</div><div class="t2" style="font-size:28px">${esc(alarmLabel(A))}</div></div>
+        <div class="chips" style="position:absolute;top:336px;left:0;right:0">${wordBtn("ring-snooze", L.ringSnooze)}${wordBtn("ring-stop", L.ringStop, "ok")}</div>`;
     }
     case "memory":
-      if (S.memWiped) return `<div class="lbl mint">${L.memDone}</div><div class="c" style="top:210px"><div class="t2">${L.memEmpty}</div></div>`;
-      return `<div class="lbl">${L.memT}</div><ul class="list" style="top:170px">${L.mem.map(m => `<li style="min-height:54px"><span class="tx" style="font-size:22px">${esc(m)}</span></li>`).join("")}</ul>
-        <div class="c" style="top:360px"><div class="t3" style="color:var(--amber)">${L.memWipe}</div></div>`;
+      if (S.memWiped) return lbl(L.memDone, "mint") + `<div class="c" style="top:210px"><div class="t2">${L.memEmpty}</div></div>`;
+      return lbl(L.memT) + `<ul class="list" style="top:140px">${L.mem.map(m => `<li style="min-height:58px"><span class="tx" style="font-size:23px">${esc(m)}</span></li>`).join("")}</ul>` + rimBot(esc(L.memWipe), "amber");
     case "about":
-      return `<div class="c" style="top:150px;gap:14px;left:74px;right:74px"><div class="t1">${L.aboutT}</div><div class="t3" style="font-size:21px;color:rgba(255,240,200,.75)">${L.aboutB}</div></div>`;
+      return `<div class="c" style="top:130px;gap:14px;left:74px;right:74px"><span style="color:var(--dim)">${lg("about", 34)}</span><div class="t1">${L.aboutT}</div><div class="t3" style="font-size:21px;color:rgba(255,240,200,.75)">${L.aboutB}</div></div>`;
     case "msg":
-      return `<div class="lbl">${L.msgT} · ${L.msgFrom}</div><div class="c" style="top:180px;gap:22px"><div class="t1">${L.msgBody}</div>
-        <div class="chips" style="flex-direction:column;align-items:center"><span class="chip btn" data-act="reply" data-r="1">${L.reply1}</span><span class="chip btn" data-act="reply" data-r="2">${L.reply2}</span></div></div>`;
+      return lbl(`${L.msgT} · ${L.msgFrom}`) + `<div class="c" style="top:156px;gap:18px"><div class="t1">${L.msgBody}</div>
+        <div class="chips" style="flex-direction:column;align-items:center;gap:0">${wordBtn("reply", L.reply1, "", ' data-r="1"')}${wordBtn("reply", L.reply2, "", ' data-r="2"')}</div></div>`;
     case "voice": {
       const V = S.voice; if (!V) return "";
-      if (V.phase === "listen") return `<div class="lbl ice" style="top:44px">${L.listen}</div><div class="c" style="top:318px"><div class="t2" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>`;
-      if (V.phase === "think") return `<div class="lbl" style="top:44px">${L.thinking(aiName())}</div><div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">„${esc(V.p.q)}”</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
+      if (V.phase === "listen") return lbl(L.listen, "ice") + `<div class="c" style="top:318px"><div class="t2" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>`;
+      if (V.phase === "think") return lbl(L.thinking(aiName()), "amber") + `<div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">„${esc(V.p.q)}”</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
       const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips;
-      if (V.kind === "typed") return `<div class="c fade-in" style="top:178px;gap:14px;left:44px;right:44px"><div class="dtag">${esc(S.ai === "none" ? L.localTag : L.demoTag(L.aiModes[S.ai]))}</div>
+      if (V.kind === "typed") return `<div class="c fade-in" style="top:176px;gap:12px;left:52px;right:52px"><div class="dtag">${esc(S.ai === "none" ? L.localTag : L.demoTag(L.aiModes[S.ai]))}</div>
         <div class="t1" style="font-size:${V.p.a.length > 44 ? 27 : 31}px">${esc(V.p.a)}</div>
-        <div class="chips">${chips.map(c => `<span class="chip ${c[0]}" style="white-space:nowrap;padding:0 18px">${esc(c[1])}</span>`).join("")}</div><div class="tool">→ ${esc(V.p.tool)}</div></div>`;
-      return `<div class="c fade-in" style="top:${V.kind === "tr" ? 196 : 206}px;gap:18px">${V.kind === "tr" ? `<div class="t3" style="font-size:21px">${esc(V.p.q)}</div>` : ""}
+        <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div><div class="tool">→ ${esc(V.p.tool)}</div></div>`;
+      return `<div class="c fade-in" style="top:${V.kind === "tr" ? 196 : 206}px;gap:14px">${V.kind === "tr" ? `<div class="t3" style="font-size:21px">${esc(V.p.q)}</div>` : ""}
         <div class="t1" style="font-size:${V.kind === "tr" ? 30 : 32}px">${esc(V.p.a)}</div>
         <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div></div>`;
     }

@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "Color.h"
+#include "Font.h"
 
 namespace suflet {
 
@@ -128,6 +129,20 @@ class Canvas {
              float glowA = 0);
   void star(float cx, float cy, float r, float rot, Rgb c, float alpha = 1, float glowR = 0,
             float glowA = 0);
+  // Filled box with rounded corners (radius r), anti-aliased edges.
+  void roundRect(float x0, float y0, float x1, float y1, float r, Rgb c, float alpha = 1,
+                 float glowR = 0, float glowA = 0);
+
+  // ---- text -------------------------------------------------------------
+  // Draws UTF-8 text with its baseline at y. x is the left edge, the centre
+  // or the right edge depending on `align`. Clipped to the canvas, marks the
+  // touched area dirty, returns the advance width in pixels. When `accent`
+  // is given, the Romanian letters ă â î ș ț use that colour (how the
+  // keyboard shows an automatic diacritic).
+  int drawText(const Font& f, float x, int y, const char* s, Rgb c, float alpha = 1,
+               Align align = Align::Left, const Rgb* accent = nullptr, int nBytes = -1);
+  // Width in pixels of the first nBytes of s (-1 = the whole string).
+  static int measureText(const Font& f, const char* s, int nBytes = -1);
 
   // ---- SDF helpers (public so the face renderer can combine them) ------
   static float sdEllipse(float px, float py, float cx, float cy, float rx, float ry);
@@ -135,6 +150,7 @@ class Canvas {
   static float sdArc(float px, float py, float cx, float cy, float r, float a0, float a1);
   static float sdHeart(float x, float y);  // unit heart, tip at (0,0), y up
   static float sdStar5(float x, float y, float r);
+  static float sdRoundBox(float px, float py, float cx, float cy, float hw, float hh, float r);
 
  private:
   int w_, h_;

@@ -139,4 +139,71 @@ void Canvas::star(float cx, float cy, float r, float rot, Rgb c, float alpha, fl
       c, alpha, glowR, glowA);
 }
 
+float Canvas::sdRoundBox(float px, float py, float cx, float cy, float hw, float hh, float r) {
+  const float qx = fabsf(px - cx) - hw + r, qy = fabsf(py - cy) - hh + r;
+  const float ox = qx > 0 ? qx : 0, oy = qy > 0 ? qy : 0;
+  const float in = qx > qy ? qx : qy;
+  return sqrtf(ox * ox + oy * oy) + (in < 0 ? in : 0) - r;
+}
+
+void Canvas::roundRect(float x0, float y0, float x1, float y1, float r, Rgb c, float alpha,
+                       float glowR, float glowA) {
+  if (x1 - x0 < 0.5f || y1 - y0 < 0.5f) return;
+  const float cx = (x0 + x1) * 0.5f, cy = (y0 + y1) * 0.5f;
+  const float hw = (x1 - x0) * 0.5f, hh = (y1 - y0) * 0.5f;
+  const float rr = fminf(r, fminf(hw, hh));
+  fillSdf(
+      x0, y0, x1, y1, [=](float px, float py) { return sdRoundBox(px, py, cx, cy, hw, hh, rr); },
+      c, alpha, glowR, glowA);
+}
+
+// ------------------------------------------------------------------ text ---
+
+int Canvas::measureText(const Font& f, const char* s, int nBytes) {
+  if (!s) return 0;
+  const char* end = nBytes < 0 ? nullptr : s + nBytes;
+  int adv16 = 0;
+  const char* p = s;
+  while ((end ? p < end : *p != 0) && *p) {
+    const Glyph* g = f.find(utf8::next(p, end));
+    if (g) adv16 += g->adv16;
+  }
+  return (adv16 + 8) >> 4;
+}
+
+int Canvas::drawText(const Font& f, float x, int y, const char* s, Rgb c, float alpha, Align align,
+                     const Rgb* accent, int nBytes) {
+  if (!s || alpha <= 0.004f) return 0;
+  const int width = measureText(f, s, nBytes);
+  if (align == Align::Center) x -= width * 0.5f;
+  else if (align == Align::Right) x -= (float)width;
+  const char* end = nBytes < 0 ? nullptr : s + nBytes;
+  int pen16 = (int)lroundf(x * 16.0f);
+  Rect touched;
+  const char* p = s;
+  while ((end ? p < end : *p != 0) && *p) {
+    const uint32_t cp = utf8::next(p, end);
+    const Glyph* g = f.find(cp);
+    if (!g) continue;
+    const int gx = ((pen16 + 8) >> 4) + g->x, gy = y + g->y;
+    pen16 += g->adv16;
+    if (!g->w || !g->h) continue;
+    const Rect box = clip(Rect{gx, gy, gx + g->w, gy + g->h});
+    if (box.empty()) continue;
+    touched.add(box);
+    const Rgb col = (accent && utf8::isRoDiacritic(cp)) ? *accent : c;
+    const uint16_t solid = col.to565();
+    for (int py = box.y0; py < box.y1; ++py) {
+      for (int px = box.x0; px < box.x1; ++px) {
+        const uint8_t k = f.cov(*g, px - gx, py - gy);
+        if (!k) continue;
+        if (k == 15 && alpha >= 0.999f) buf_[py * w_ + px] = solid;
+        else blend(px, py, col, k * (1.0f / 15.0f) * alpha);
+      }
+    }
+  }
+  markDirty(touched);
+  return width;
+}
+
 }  // namespace suflet

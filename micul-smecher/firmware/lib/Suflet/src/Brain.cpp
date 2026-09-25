@@ -76,6 +76,7 @@ bool isUserEvent(Ev e) {
     case Ev::ClaudePromptGone:
     case Ev::ClaudeLevelUp:
     case Ev::ClaudeQuickApprove:
+    case Ev::AlarmDue:
     case Ev::None:
     case Ev::Count:
       return false;
@@ -412,6 +413,18 @@ void Brain::event(Ev e) {
     case Ev::ClaudeQuickApprove:
       start(Reaction::Love);  // approved within 5 s: hearts
       break;
+    case Ev::AlarmDue:  // an alarm rings: wake up, whatever the mode
+      if (deep) wake(false);
+      start(Reaction::Startle);
+      break;
+    case Ev::TextCommit:  // you wrote something: a little celebration
+      if (deep) wake(false);
+      start(Reaction::Celebrate);
+      break;
+    case Ev::TouchDown:  // raw touches belong to the text input, not the face
+    case Ev::TouchMove:
+    case Ev::TouchUp:
+    case Ev::TextCancel:
     case Ev::None:
     case Ev::Count:
       break;
