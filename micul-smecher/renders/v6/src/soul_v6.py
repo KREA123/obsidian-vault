@@ -284,11 +284,7 @@ def foot_mesh(tag, n=192):
     rows.append(rows[0].copy())                        # close the top annulus back onto the outer rim
     Rn = len(rows)
     verts = np.vstack(rows)
-    quads = grid_quads(Rn, n)
-    ob = build_mesh(tag + '_foot', verts[: (Rn - 1) * n], None)
-    # rebuild with the last row welded to the first
-    quads = quads % ((Rn - 1) * n)
-    bpy.data.objects.remove(ob)
+    quads = grid_quads(Rn, n) % ((Rn - 1) * n)       # the last row is welded onto the first
     ob = build_mesh(tag + '_foot', verts[: (Rn - 1) * n], quads)
     orient_outward(ob, (FOOT_A * 0.7, 0, (Z_FOOT + Z_CUT) / 2))
     set_auto_smooth(ob, 50.0)
