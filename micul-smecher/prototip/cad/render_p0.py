@@ -58,8 +58,8 @@ def reset(res=(1600, 1200), samples=int(os.environ.get('P0_SAMPLES', 64))):
     sc.world = w
     w.use_nodes = True
     bg = w.node_tree.nodes['Background']
-    bg.inputs[0].default_value = srgb('#EFE9E2')
-    bg.inputs[1].default_value = 0.35
+    bg.inputs[0].default_value = srgb('#EFE8E0')
+    bg.inputs[1].default_value = 0.7
     return sc
 
 
@@ -136,14 +136,15 @@ def eyes(offset=Vector((0, 0, 0)), night=False):
     col = srgb('#FFC96B') if night else srgb('#FFF0C8')
     m = m_plain('eye', col, 0.4, emit=col, strength=4.0)
     xax = Vector((1, 0, 0))
-    base = G + offset + N_OUT * 0.00008
+    lip = (0.8 if VAR.startswith('alu') else 1.2) * MM          # lens front sits under the lip
+    base = G + offset - N_OUT * lip + N_OUT * 0.00003
     rx, ry = 0.0079, 0.0125
     for sx in (-1, 1):
         pts = []
         for k in range(96):
             a = 2 * math.pi * k / 96
             x, y = rx * math.cos(a), ry * math.sin(a)
-            ycut = 0.55 * ry + (-sx) * 0.42 * x          # brow: lower on the inner side
+            ycut = 0.55 * ry + sx * 0.42 * x             # brow: lower on the inner side
             pts.append((x, min(y, ycut)))
         c = base + xax * (sx * 0.0130) - UP * 0.0012
         me = bpy.data.meshes.new('eye')
@@ -158,7 +159,7 @@ def eyes(offset=Vector((0, 0, 0)), night=False):
 
 
 def studio(sc, target):
-    for loc, e, sz, col in [((-0.35, -0.45, 0.45), 14, 0.35, '#FFF4E8'), ((0.45, -0.15, 0.25), 5, 0.4, '#E8F0FF'),
+    for loc, e, sz, col in [((-0.35, -0.45, 0.45), 10, 0.35, '#FFF4E8'), ((0.45, -0.15, 0.25), 5, 0.4, '#E8F0FF'),
                             ((0.05, 0.45, 0.4), 7, 0.4, '#FFFFFF'), ((0.0, -0.25, 0.6), 4, 0.6, '#FFFFFF')]:
         L = bpy.data.lights.new('L', 'AREA')
         L.energy, L.size = e, sz
