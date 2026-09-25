@@ -31,8 +31,9 @@ SPEC = [
     ('prototip/cad', ['*.py', '*.json', '*.txt'], False),
     ('prototip/img', ['*.png'], True),
     ('blueprints', ['*.png', '*.svg', 'README.md'], True),
-    ('renders/v6', ['*.png', '*.gif', '*.mp4', 'README.md'], False),
-    ('renders/v7', ['*.png', '*.gif', '*.mp4', 'README.md'], False),   # size study (pending decision)
+    ('renders/v8', ['*.png', '*.gif', '*.mp4', 'README.md'], False),   # final design, size M
+    ('renders/v6', ['README.md'], False),          # CMF + hex colours
+    ('brand/logo', ['*'], True),
     ('research', ['*.md'], True),                  # so the links in docs/ work
     ('investors', ['*'], True),                    # incl. poc-1.1 official annexes
 ]
@@ -53,8 +54,8 @@ Folders:
 - os/ (SoulOS web prototype + spec + architecture)
 - site/ (landing page)
 - prototip/ (DIY P0: STL, STEP, CAD sources)
-- blueprints/ (drawings)
-- renders/ (v6 final design, v7 size study; all CGI, not photos)
+- blueprints/final (SOUL M drawings) + older sheets
+- renders/v8 (final design, size M; CGI, not photos) · brand/logo (The Glass O)
 - research/ and investors/ (background)
 
 Files left out for size are listed in SKIPPED.txt. They are in the original vault folder micul-smecher/.
