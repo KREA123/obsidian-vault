@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SOUL</title>
-<meta name="description" content="SOUL is a small frosted-glass stone with two living eyes. It breathes, blinks and looks back at you, with no internet. It works with Claude. Reserve a numbered Founders Desk Edition.">
+<meta name="description" content="SOUL is a small aluminium stone with two living eyes. It breathes, blinks and looks back at you, with no internet. It runs SoulOS and works with Claude. Reserve one of 25 numbered Founders 00.">
 <meta property="og:title" content="SOUL · Your AI, alive.">
 <meta property="og:description" content="The AI labs make the brain. We make the body and the soul.">
-<meta property="og:image" content="media/posters/idle.jpg">
+<meta property="og:image" content="media/soul-hero.jpg">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23000%27 stroke=%27%23D9DCE2%27 stroke-width=%274%27/%3E%3Cellipse cx=%2722%27 cy=%2734%27 rx=%277%27 ry=%2711%27 fill=%27%23FFF0C8%27/%3E%3Cellipse cx=%2742%27 cy=%2734%27 rx=%277%27 ry=%2711%27 fill=%27%23FFF0C8%27/%3E%3Cpath d=%27M13 20 L30 27 L30 18 L13 18Z M34 27 L51 20 L51 18 L34 18Z%27 fill=%27%23000%27/%3E%3C/svg%3E">
 <script>
@@ -20,15 +20,14 @@ window.SOUL_CONFIG = {
   WAITLIST_ENDPOINT: "",
   CURRENCY: "EUR",
   PRICES: {
-    founders: 119,       // Founders Desk Edition, full price
-    voiceDeposit: 10,    // Voice Edition refundable deposit
-    voiceExpected: 149   // Voice Edition expected price
+    founders: 349,       // Founders 00, aluminium, 25 numbered units, full price
+    standardFrom: 249    // Standard edition, "from" price, later
   },
-  FOUNDERS_RANGE: "001–300",
-  VOICE_AI_MONTHS: 6,
+  FOUNDERS_RANGE: "001–025",
+  FOUNDERS_COUNT: 25,
   SHIP: {                // estimated shipping, shown in Editions + FAQ
-    founders: { en: "spring 2027", ro: "primăvara 2027" },
-    voice:    { en: "autumn 2027", ro: "toamna 2027" }
+    founders: { en: "spring 2027", ro: "primăvara 2027" },           // only after CE radio testing
+    standard: { en: "after Founders 00", ro: "după Founders 00" }
   },
   CONTACT_EMAIL: "hello@soul.example"
 };
@@ -133,7 +132,7 @@ button,input,select{font:inherit;color:inherit}
 .lang button{border:0;background:transparent;color:rgba(243,240,233,.8);font:600 .78rem/1 var(--f-text);letter-spacing:.06em;padding:8px 10px;border-radius:999px;cursor:pointer}
 .lang button[aria-pressed="true"]{background:#F3F0E9;color:#16181D}
 .nav .btn{background:var(--cream);color:#16181D;min-height:38px;padding:0 1em;font-size:.9rem}
-@media (max-width:900px){.nav-links{display:none}.lang{margin-left:auto}}
+@media (max-width:1180px){.nav-links{display:none}.lang{margin-left:auto}}
 
 /* stone (the device) */
 .stone{position:relative;aspect-ratio:1/1;border-radius:50%;padding:6.6%;margin-inline:auto;user-select:none;-webkit-user-select:none;
@@ -437,8 +436,10 @@ select.input option{background:#101114;color:#F6F3EC}
       <a href="#three" data-i18n="nav.what">What it is</a>
       <a href="#alive" data-i18n="nav.alive">Alive</a>
       <a href="#yourai" data-i18n="nav.ai">Your AI</a>
+      <a href="#soulos" data-i18n="nav.os">SoulOS</a>
       <a href="#claude" data-i18n="nav.claude">Claude</a>
       <a href="#born" data-i18n="nav.born">Born</a>
+      <a href="#design" data-i18n="nav.design">Design</a>
       <a href="#editions" data-i18n="nav.editions">Editions</a>
       <a href="#faq" data-i18n="nav.faq">FAQ</a>
     </nav>
@@ -464,12 +465,12 @@ select.input option{background:#101114;color:#F6F3EC}
       <p class="hint" data-i18n="hero.hint">Tap to boop. Double-tap to make it laugh. Leave it alone and it dozes off.</p>
     </div>
     <div class="hero-copy">
-      <p class="lead" data-i18n="hero.sub">A small frosted-glass stone with two living eyes. It breathes, blinks and looks back at you, with no internet at all. <strong>And it works with Claude.</strong></p>
+      <p class="lead" data-i18n="hero.sub">A small aluminium stone with two living eyes. It breathes, blinks and looks back at you, with no internet at all. <strong>And it works with Claude.</strong></p>
       <div class="cta">
         <a class="btn btn-primary" href="#reserve" data-edition="founders" data-i18n="hero.cta1">Reserve yours</a>
         <a class="btn btn-ghost" href="#alive" data-i18n="hero.cta2">Watch it live</a>
       </div>
-      <p class="hero-meta"><span data-i18n="hero.meta1"><b>Founders Desk Edition</b></span><span data-i18n="hero.meta2">numbered <span data-cfg="range">001–300</span></span><span><b data-price="founders">€119</b></span></p>
+      <p class="hero-meta"><span data-i18n="hero.meta1"><b>Founders 00</b></span><span data-i18n="hero.meta2">25 numbered, <span data-cfg="range">001–025</span></span><span><b data-price="founders">€349</b></span></p>
     </div>
   </div>
 </section>
@@ -498,7 +499,7 @@ select.input option{background:#101114;color:#F6F3EC}
       </article>
       <article class="trio-card">
         <div class="stone"><canvas data-soul="talk" role="img" data-i18n-attr="aria-label:three.a2" aria-label="Eyes listening, with a pulsing ring, then thinking."></canvas></div>
-        <span class="tag" data-i18n="three.c2tag">Voice Edition · in development</span>
+        <span class="tag" data-i18n="three.c2tag">Hold to talk · in development</span>
         <h3 class="h-m" data-i18n="three.c2t">A personal AI you can hold.</h3>
         <p data-i18n="three.c2p">Hold a finger on the stone and talk. It answers with Claude or ChatGPT, remembers the people and plans in your life, keeps notes and reminders, wakes you up and writes a diary of your day.</p>
       </article>
@@ -543,7 +544,7 @@ select.input option{background:#101114;color:#F6F3EC}
   <div class="wrap split">
     <video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/ai_talk.jpg" aria-hidden="true"><source src="media/ai_talk.mp4" type="video/mp4"></video>
     <div class="stack">
-      <span class="tag" data-i18n="talk.badge">In development · Voice Edition</span>
+      <span class="tag" data-i18n="talk.badge">In development · voice</span>
       <h2 class="h-l" id="talk-title" data-i18n="talk.h2">Hold to talk.</h2>
       <p class="lead" data-i18n="talk.lead">Put a finger on the stone and speak. It answers with Claude, or ChatGPT if you prefer. It remembers the people and plans in your life.</p>
       <ul class="bubbles" aria-label="Things you can say">
@@ -554,7 +555,7 @@ select.input option{background:#101114;color:#F6F3EC}
       </ul>
       <div class="privacy">
         <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Zm-7 10a7 7 0 0 0 14 0M12 19v3" fill="none" stroke="#16181D" stroke-width="2" stroke-linecap="round"/></svg>
-        <p data-i18n="talk.privacy">It listens only while your finger is on the stone. Lift it, and the microphone is off.</p>
+        <p data-i18n="talk.privacy">It listens only while your finger is on the stone. Lift it, and the microphone is off. Close its egg, and the microphone is cut in hardware.</p>
       </div>
     </div>
   </div>
@@ -572,7 +573,7 @@ select.input option{background:#101114;color:#F6F3EC}
         <div class="stone"><canvas data-soul="alive" role="img" data-i18n-attr="aria-label:ai.a1" aria-label="Eyes living on their own, with no internet."></canvas></div>
         <span class="tag cream" data-i18n="ai.c1tag">No account · no internet</span>
         <h3 class="h-m" data-i18n="ai.c1t">No AI. Still alive.</h3>
-        <p data-i18n="ai.c1p">Out of the box it needs nothing. It lives, reacts, keeps the time, runs your timers, focus sessions and alarms, and shows reminders you add from your phone over Bluetooth. No sign-up. Ever.</p>
+        <p data-i18n="ai.c1p">Out of the box it needs nothing. It lives, reacts, keeps the time, runs your timers, focus sessions and alarms, and keeps the notes and reminders you type on its own keyboard. No sign-up. Ever.</p>
       </article>
       <article class="trio-card">
         <div class="stone"><canvas data-soul="claude" role="img" data-i18n-attr="aria-label:ai.a2" aria-label="Eyes connected to Claude."></canvas></div>
@@ -587,7 +588,7 @@ select.input option{background:#101114;color:#F6F3EC}
         <p data-i18n="ai.c3p">Prefer ChatGPT? Add SOUL as an app in your ChatGPT and send it your list, a reminder or a translation. Same stone, same soul. You can switch any time.</p>
       </article>
     </div>
-    <p class="lead" style="margin:36px auto 0;max-width:62ch;text-align:center" data-i18n="ai.voice">To talk to it by voice, use the SOUL voice service (6 months included with the Voice Edition) or bring your own Anthropic or OpenAI API key. Your account, your data, your choice.</p>
+    <p class="lead" style="margin:36px auto 0;max-width:62ch;text-align:center" data-i18n="ai.voice">To talk to it by voice, use your connected Claude or ChatGPT, or bring your own Anthropic or OpenAI API key. Your account, your data, your choice. You switch AI mode from its Control Center in one tap.</p>
     <p style="margin:14px auto 0;text-align:center;color:var(--muted);font-size:.85rem" data-i18n="ai.note">Claude and ChatGPT connections are in development. Claude is a trademark of Anthropic, ChatGPT of OpenAI. SOUL is independent and not endorsed by either.</p>
   </div>
 </section>

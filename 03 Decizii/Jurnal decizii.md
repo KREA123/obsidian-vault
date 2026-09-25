@@ -17,6 +17,7 @@ Format: `YYYY-MM-DD — decizie — de ce — sursa`. Cele mai noi sus. Se adaug
 - „Nu punem la dispoziție ce nu avem în stoc.”
 
 ## Septembrie 2026
+- 2026-09-25 — **Forma și culorile SOUL sunt fixate (Andu: „chiar îmi place, rămân”)**: piatra HOPA în picioare, talpă plată, aluminiu sablat anodizat; culori Argintiu, Grafit, Midnight (albastru), Ember (portocaliu), Șampanie — `micul-smecher/renders/v6/`
 - 2026-09-25 — **Prima serie: 10–25 bucăți**, ca test de vânzare (Andu) → fără matrițe: carcasă aluminiu tăiată CNC + anodizată, placa Waveshare cu sticla ei, talpă printată 3D; costurile și prețul se calculează pentru 10 și 25 buc.
 - 2026-09-25 — **Ales de Andu: designul HOPA**, numele produsului rămâne doar **SOUL**. Carcasa: **aluminiu** (metal, ieftin), nu plastic perlat/aspect de sticlă — randări v6 și research cost aluminiu în lucru
 - 2026-09-25 — Propunere design final (de confirmat de Andu): **SOUL „HOPA”** — piatră-perlă în picioare 63×74×27 mm, pe talpă-balansoar ascunsă: o împingi, se leagănă și revine („hopa!”), ochii rămân la orizontală; pe față doar sticla neagră Ø52; capsula de încărcare **„OU”** (S-OU-L). Ales de 3 jurați din 5 concepte; alternative: PIATRA, MĂRGĂRITAR — `micul-smecher/research/09-product-design-max-2026-09-24.md`
