@@ -268,3 +268,14 @@ Implementat în `os/index.html` (copie în `site/os.html`). Designul complet: `r
 - ✓ duce la rezumat: ora, eticheta (✎ deschide tastatura), cele 7 zile pe marginea de jos, `✓ Setează`.
 - La ora alarmei se deschide ecranul de sunat: ochii dorm (zzz), apoi se trezesc. Inelul e chihlimbar și dispozitivul vibrează. Alegi `Amână 5` sau `Oprește`. Butonul lateral oprește alarma, iar cu fața în jos o amâni.
 - Panoul are „Sună alarma acum” pentru demo.
+
+## 10. SoulOS 2: motion, launcher, system UI (prototype v0.3, 25 Sept 2026)
+
+Implemented in `os/index.html` (copy in `site/os.html`). **English is the default language** (first load = EN); Romanian stays complete behind the EN/RO toggle. Screenshots: `screenshots/soulos2-*` (390 and 1440 px).
+
+- **Motion.** Every card is moved by springs (stiffness/damping, with velocity carried over from the finger). Cards follow the finger and spring back if the drag is short; edges rubber-band. Apps opened from the honeycomb zoom out of their icon. The face's size and position are a spring too. `prefers-reduced-motion` makes every transition instant.
+- **Home.** The face is still home. Swipe → from the face, press the side button or turn the wheel to open the **honeycomb**: a round hex grid of 18 original SoulOS icons, with the live face as the centre cell. A fisheye lens shrinks cells toward the rim, and you drag it with inertia. Swipe ↑ opens **Today**, a snapping stack of widgets: weather, next reminder, focus, Claude, battery and notifications.
+- **System UI.** Pull down from the face (or the top edge of any card) for **Control Center**: do not disturb, mic mute, sounds, sleep, brightness and volume sliders, and the AI mode. Notification banners slide in and stack; the history is kept in Today, and do not disturb holds everything except amber. A **status ring** sits on the rim: battery on the left (mint and flowing while charging), Claude on the right. **Charging** fills a mint rim ring. After 45 s idle it **sleeps**: the screen dims, the eyes breathe, and an always-on clock shows. A tap or pick-up wakes the eyes.
+- **Polish.** Frosted layers, a type scale (104/64/34/27/22/19), a press-dip and ripple on every control, and WebAudio sounds (off until the first touch, with a toggle in Settings and Control Center). Haptics are simulated: the device nudges, and on phones the vibration motor ticks too.
+- **New apps.** Weather (scripted, 3 days), Timer (stopwatch with laps, and a countdown with a rim ring), Soul (name editable with the keyboard, birthday, mood and meters), and Games → "Catch the star" (the eyes follow each star). The panel's **Guided tour** plays the best moments by itself; touching the screen takes over.
+- **Keyboard.** In the English UI, Romanian auto-diacritics apply only when the sentence contains real Romanian words. On a long-press, ă î ș ț move to the end of the tray.
