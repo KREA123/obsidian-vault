@@ -254,9 +254,9 @@ def shot_desk():
     ph = phone8(TUNE.get('ph_yaw', 74.0))
     under(root, ph, (TUNE.get('ph_x', -118.0), TUNE.get('ph_y', -40.0), 3.9))
     mg = mug((0, 0), TUNE.get('mug_yaw', -40.0))
-    under(root, mg, (TUNE.get('mug_x', 118.0), TUNE.get('mug_y', 70.0), 0.0))
+    under(root, mg, (TUNE.get('mug_x', 150.0), TUNE.get('mug_y', 70.0), 0.0))
     T = pk((TUNE.get('dk_tx', 0.0) * MM, TUNE.get('dk_ty', 10.0) * MM, TUNE.get('dk_tz', 38.0) * MM))
-    cam = cam_aed(T, TUNE.get('dk_az', -24.0), TUNE.get('dk_el', 17.0), TUNE.get('dk_d', 780.0) / K,
+    cam = cam_aed(T, TUNE.get('dk_az', -24.0), TUNE.get('dk_el', 13.0), TUNE.get('dk_d', 780.0) / K,
                   TUNE.get('dk_lens', 60.0), TUNE.get('dk_f', 5.6), focus=eye_point(s))
     black_glass(cam, T, [s], glint=True)
     metalise(cam, T, [s])
@@ -281,10 +281,11 @@ def shot_typing8():
     s = build_soul('ty', 'silver', eyes='soul_front')
     pose_soul(s, (0, 0, 0), yaw=TUNE.get('ty_yaw', -10.0))
     set_screen(s, os.path.join(TEX8, 'kbd_soulos3.png'), TUNE.get('kbd_str', 2.4))
+    TUNE.setdefault('mcard', 0.8)            # close, larger glass: a bigger glossy-only black card keeps it black
     mg = mug((0, 0), TUNE.get('mug_yaw', -60.0))
     under(root, mg, (TUNE.get('mug_x', 150.0), TUNE.get('mug_y', 150.0), 0.0))
-    T = pk((0.0, TUNE.get('ty_ty', -4.0) * MM, TUNE.get('ty_tz', 50.0) * MM))
-    cam = cam_aed(T, TUNE.get('ty_az', -14.0), TUNE.get('ty_el', 24.0), TUNE.get('ty_d', 470.0) / K,
+    T = pk((0.0, TUNE.get('ty_ty', -4.0) * MM, TUNE.get('ty_tz', 48.0) * MM))
+    cam = cam_aed(T, TUNE.get('ty_az', -14.0), TUNE.get('ty_el', 14.0), TUNE.get('ty_d', 540.0) / K,
                   TUNE.get('ty_lens', 85.0), TUNE.get('ty_f', 5.6), focus=eye_point(s))
     black_glass(cam, T, [s], glint=TUNE.get('ty_glint', 1) > 0, d=TUNE.get('ty_gd', 0.80))
     metalise(cam, T, [s])
