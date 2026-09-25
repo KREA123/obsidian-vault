@@ -122,7 +122,10 @@ def eroded_solid(t):
         p = g.eroded_poly(Z, t)
         if p.is_empty or p.area < 30.0:
             break
-        rings.append((Z, g.poly_ring(p, 72)))
+        r_ = g.poly_ring_angular(p, 96, cy=float(g.sections(np.array([Z]))[3][0]))
+        if r_ is None:
+            break
+        rings.append((Z, r_))
     return loft(rings)
 
 
@@ -429,8 +432,8 @@ def build(vname):
         sub['front'].append(s)
         sub['back'].append(s)
 
-    add['front'].append(hollow(TONG_OUT, TONG_IN).intersect(SeamFrame.slab(-0.01, V['tongue_h'])).intersect(ABOVE))
-    sub['back'].append(hollow(INNER, TONG_CLR).intersect(SeamFrame.slab(-0.05, V['tongue_h'] + tol)))
+    add['front'].append(TONG_OUT.intersect(SeamFrame.slab(-0.01, V['tongue_h'])).cut(TONG_IN).cut(zslab(-50, BASE_T)))
+    sub['back'].append(INNER.intersect(SeamFrame.slab(-0.05, V['tongue_h'] + tol)).cut(TONG_CLR))
 
     # ------------------------------------------------ 4 screws from the back
     say('  screw columns (x, Z): front surface / back surface along the seam normal (s)')
@@ -511,7 +514,7 @@ def build(vname):
     # ------------------------------------------------ base plate (polymer, antenna window) + v6 oval foot
     yc = 0.5 * float(g.sections(np.array([0.0]))[1][0] + g.sections(np.array([0.0]))[2][0])
     base = OUTER.intersect(zslab(0.0, BASE_T))
-    rim = hollow(TONG_OUT, TONG_IN).intersect(zslab(BASE_T - 0.01, BASE_T + 2.5))
+    rim = TONG_OUT.intersect(zslab(BASE_T - 0.01, BASE_T + 2.5)).cut(TONG_IN)
     add['base'] += [rim, foot_solid(yc)]
     clamp = (cq.Workplane('XY', origin=(0, y_back - 0.8 - S_['L'] / 2 - 0.5, BASE_T - 0.01))
              .rect(S_['w'] + 3.0, S_['L'] - 3.0).extrude(S_['z'] - BASE_T - S_['h'] / 2 + 0.01).val())
@@ -556,10 +559,9 @@ def build(vname):
                     say(f'   !! {tag}: {kind} #{i} failed: {e!r}')
         return s
     t1 = time.time()
-    say(f'  halves before features: front {vol(SHELL.intersect(FRONT_HALF)):.0f}, back {vol(SHELL.intersect(BACK_HALF)):.0f}, '
-        f'base {vol(base):.0f} mm3')
-    front = finish(SHELL.intersect(FRONT_HALF), add['front'], sub['front'], 'front')
-    back = finish(SHELL.intersect(BACK_HALF), add['back'], sub['back'], 'back')
+    say(f'  shell {vol(SHELL):.0f} mm3, base plate {vol(base):.0f} mm3')
+    front = finish(OUTER.intersect(FRONT_HALF).cut(INNER), add['front'], sub['front'], 'front')
+    back = finish(OUTER.intersect(BACK_HALF).cut(INNER), add['back'], sub['back'], 'back')
     base_plate = finish(base, add['base'], sub['base'], 'base')
     say(f'  shells assembled ({time.time()-t1:.0f}s); valid: front {front.isValid()} back {back.isValid()} '
         f'base {base_plate.isValid()}; volumes {vol(front):.0f} / {vol(back):.0f} / {vol(base_plate):.0f}')

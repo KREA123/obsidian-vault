@@ -281,3 +281,23 @@ def dims_report():
 
 if __name__ == '__main__':
     print(dims_report())
+
+
+def poly_ring_angular(poly, n, cy=None):
+    """Resample a star-shaped polygon at n uniform angles about (0, cy): consistent point correspondence between
+    rings (a loft through rings resampled by arc length can twist and give a solid OCCT cannot Boolean)."""
+    from shapely.geometry import LineString
+    c = poly.centroid
+    cx0, cy0 = 0.0, c.y if cy is None else cy
+    R = 400.0
+    out = []
+    for a in np.linspace(0.5 * math.pi, 0.5 * math.pi + 2 * math.pi, n, endpoint=False):
+        ray = LineString([(cx0, cy0), (cx0 + R * math.cos(a), cy0 + R * math.sin(a))])
+        ip = poly.exterior.intersection(ray)
+        pts = [ip] if ip.geom_type == 'Point' else list(getattr(ip, 'geoms', []))
+        pts = [p for p in pts if p.geom_type == 'Point']
+        if not pts:
+            return None
+        far = max(pts, key=lambda p: (p.x - cx0) ** 2 + (p.y - cy0) ** 2)
+        out.append((far.x, far.y))
+    return np.array(out)
