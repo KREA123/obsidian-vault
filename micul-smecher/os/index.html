@@ -108,7 +108,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .chip.ok{background:rgba(201,242,228,.14);border-color:rgba(201,242,228,.55);color:var(--mint)}
 .chip.warn{background:rgba(255,179,71,.12);border-color:rgba(255,179,71,.55);color:var(--amber)}
 .chip.btn{cursor:pointer}
-.tool{font:400 17px/1 var(--mono);color:rgba(159,198,255,.8)}
+.tool{font:400 19px/1 var(--mono);color:rgba(159,198,255,.8)}
 
 .dots{position:absolute;left:0;right:0;bottom:27px;display:flex;justify-content:center;gap:9px;transition:opacity .3s;pointer-events:none}
 .dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,240,200,.25);transition:background .3s,transform .3s}
@@ -235,7 +235,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .wd{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;display:grid;place-items:center;font:700 20px/1 "Nunito",system-ui,sans-serif;
   border:2px solid rgba(255,240,200,.3);color:rgba(255,240,200,.7);cursor:pointer}
 .wd.on{background:var(--cream);color:#16130c;border-color:var(--cream)}
-.dtag{font:500 19px/1.2 var(--mono);color:rgba(159,198,255,.9);letter-spacing:.01em}
+.dtag{font:500 22px/1.2 var(--mono);color:rgba(159,198,255,.9);letter-spacing:.01em}
 .nrow{cursor:pointer}
 
 /* ---------- panel ---------- */
@@ -975,9 +975,9 @@ function cardHTML(v) {
       if (V.phase === "listen") return `<div class="lbl ice" style="top:44px">${L.listen}</div><div class="c" style="top:318px"><div class="t2" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>`;
       if (V.phase === "think") return `<div class="lbl" style="top:44px">${L.thinking(aiName())}</div><div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">„${esc(V.p.q)}”</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
       const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips;
-      if (V.kind === "typed") return `<div class="c fade-in" style="top:172px;gap:14px"><div class="dtag">${esc(L.demoTag(S.ai === "none" ? L.aiModes.none : L.aiModes[S.ai]))}</div>
+      if (V.kind === "typed") return `<div class="c fade-in" style="top:178px;gap:14px;left:44px;right:44px"><div class="dtag">${esc(L.demoTag(S.ai === "none" ? L.aiModes.none : L.aiModes[S.ai]))}</div>
         <div class="t1" style="font-size:${V.p.a.length > 44 ? 27 : 31}px">${esc(V.p.a)}</div>
-        <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div><div class="tool">→ ${esc(V.p.tool)}</div></div>`;
+        <div class="chips">${chips.map(c => `<span class="chip ${c[0]}" style="white-space:nowrap;padding:0 18px">${esc(c[1])}</span>`).join("")}</div><div class="tool">→ ${esc(V.p.tool)}</div></div>`;
       return `<div class="c fade-in" style="top:${V.kind === "tr" ? 196 : 206}px;gap:18px">${V.kind === "tr" ? `<div class="t3" style="font-size:21px">${esc(V.p.q)}</div>` : ""}
         <div class="t1" style="font-size:${V.kind === "tr" ? 30 : 32}px">${esc(V.p.a)}</div>
         <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div></div>`;
@@ -1355,7 +1355,8 @@ function kbSuggestions() {
   const w = curWord(), prev = prevWords(), tm = K.ctx !== "alarm_label" && /\s$/.test(K.text) ? parseTime(K.text) : null;
   if (w) {
     const c = candidates(w, prev), a = autoForm(w, prev), rest = c.filter(x => x !== w && x !== a);
-    const best = a || rest[0] || w;
+    const exact = LEX.some(e => e.w === w.toLowerCase());
+    const best = a || (exact ? w : rest[0]) || w;
     if (best === w) return [rest[1] ? { t: "w", v: rest[1], label: rest[1] } : null, { t: "w", v: w, label: w, b: 1 }, rest[0] ? { t: "w", v: rest[0], label: rest[0] } : null];
     return [{ t: "w", v: w, label: `“${w}”` }, { t: "w", v: best, label: best, b: 1 }, rest.find(x => x !== best) ? { t: "w", v: rest.find(x => x !== best), label: rest.find(x => x !== best) } : null];
   }
