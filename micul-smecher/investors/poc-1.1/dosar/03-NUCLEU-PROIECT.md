@@ -86,7 +86,7 @@ Sub-ipotezele H1–H5 sunt în §7.
 ### 4.1 Ce avem deja (dovezi, cu locul din vault)
 | # | Dovada | Unde | Ce demonstrează |
 |---|---|---|---|
-| D1 | Firmware „Suflet” + modulele SoulOS v1 (Canvas SDF, Face, Brain, Personality, Gestures, ClaudeLink, Keyboard, TextField, Predictor, TimePicker, Alarms, Shell); **55/55 teste Unity** trec; compilează pentru `amoled143`/`amoled175`/`sim` | `firmware/` (README) | funcțiile critice validate analitic/experimental pe componente separate |
+| D1 | Firmware „Suflet” + modulele SoulOS v1 (Canvas SDF, Face, Brain, Personality, Gestures, ClaudeLink, Keyboard, TextField, Predictor, TimePicker, Alarms, Shell); **61/61 teste Unity** trec; compilează pentru `amoled143`/`amoled175`/`sim` | `firmware/` (README) | funcțiile critice validate analitic/experimental pe componente separate |
 | D2 | Simulator pe PC care produce cadrele reale ale motorului (10 clipuri: idle, boop, purr, dizzy, sleep…) + cadre cu tastatura și time-picker-ul | `firmware/sim`, `media/` | comportamentul vizual și logica UI, reproductibil |
 | D3 | Serviciul AI `suflet_ai` v0.2: 3 moduri, 8 acțiuni cu scheme JSON stricte, parser local RO/EN, conector MCP, cheie proprie criptată; **49/49 teste** | `ai/` | arhitectura hibridă și degradarea controlată |
 | D4 | Prototipul web SoulOS (tastatura rotundă interactivă) | `os/index.html`, `os/research/04` | geometria tastaturii, testabilă cu utilizatori |
