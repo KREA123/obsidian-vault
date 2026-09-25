@@ -35,7 +35,7 @@ ALU = {
     'silver':    dict(col='#CBCDCF', sole='#B4B6B8', rough=0.34, coat=0.10, name='Argint natural'),
     'graphite':  dict(col='#55575B', sole='#3C3E41', rough=0.36, coat=0.22, name='Grafit'),
     'midnight':  dict(col='#26324C', sole='#1D2435', rough=0.36, coat=0.22, name='Albastru noapte'),
-    'ember':     dict(col='#C75A2A', sole='#A44A22', rough=0.35, coat=0.18, name='Jar'),
+    'ember':     dict(col='#D2622C', sole='#A44A22', rough=0.35, coat=0.18, name='Jar'),
     'champagne': dict(col='#D8C3A2', sole='#BDAA8A', rough=0.34, coat=0.12, name='Șampanie'),
 }
 CW_ALIAS = {'perla': 'silver', 'onix': 'graphite', 'lapis': 'midnight', 'chihlimbar': 'ember', 'fum': 'champagne'}
@@ -99,7 +99,7 @@ def mat_alu(name, cw):
     m, nt, p, out = new_mat(name)
     col = srgb(a['col'])
     set_in(p, 'Metallic', 1.0)
-    set_in(p, 'Roughness', a['rough'] * TUNE.get('rough_k', 1.0))
+    set_in(p, 'Roughness', a['rough'] * TUNE.get('rough_k', 1.1))
     set_in(p, 'Anisotropic', TUNE.get('aniso', 0.15))
     tg = nt.nodes.new('ShaderNodeTangent')
     tg.direction_type = 'RADIAL'
@@ -115,7 +115,7 @@ def mat_alu(name, cw):
     nt.links.new(mc.outputs['Result'], p.inputs['Base Color'])
     # roughness jitter from the grain (+-0.03)
     rr = nt.nodes.new('ShaderNodeMapRange')
-    base_r = a['rough'] * TUNE.get('rough_k', 1.0)
+    base_r = a['rough'] * TUNE.get('rough_k', 1.1)
     rr.inputs['To Min'].default_value = base_r - 0.03
     rr.inputs['To Max'].default_value = base_r + 0.03
     nt.links.new(nz.outputs['Fac'], rr.inputs['Value'])
@@ -460,11 +460,13 @@ def shot_side6():
     sc = reset()
     T = Vector((0, 0, 37 * MM))
     TUNE.setdefault('mcard', 0.16)
+    TUNE.setdefault('front_card', 0)       # grazing view: the glass would mirror a grey card; keep the black flag
+    TUNE.setdefault('mcard', 0.4)
     day_studio(T, rot=TUNE.get('side_rot', 60.0))
     s = build_soul('side', 'silver', eyes='soul_left')
     pose_soul(s, (0, 0, 0), yaw=0.0)
-    cam = cam_aed(T, TUNE.get('side_az', 62.0), TUNE.get('side_el', 8.0), TUNE.get('side_d', 330.0), 100, 8.0,
-                  focus=V((25, -6, 45)))
+    cam = cam_aed(T, TUNE.get('side_az', 78.0), TUNE.get('side_el', 7.0), TUNE.get('side_d', 350.0), 100, 11.0,
+                  focus=V((28, -4, 45)))
     black_glass(cam, T, [s], glint=False)
     metalise(cam, T, [s])
     chamfer_kick(s, cam, TUNE.get('kick_ang', 20.0), power=TUNE.get('kick', 1.0))
@@ -479,6 +481,8 @@ def shot_back6():
 def shot_macro():
     """Close-up: the bead-blast grain and the machined chamfer meeting the black glass (upper-left of the face)."""
     sc = reset()
+    TUNE.setdefault('mcard', 0.5)
+    TUNE.setdefault('bb_str', 0.7)
     world_color((0.95, 0.92, 0.88), 0.03)
     sweep('#D9CDBE')
     s = build_soul('mac', 'silver', eyes='cream_look')
@@ -491,20 +495,20 @@ def shot_macro():
     a = R(TUNE.get('mac_ang', 125.0))
     rad = (ex * math.cos(a) + ey * math.sin(a)).normalized()
     tang = n.cross(rad).normalized()
-    P = c + rad * TUNE.get('mac_r', 27.5) * MM
+    P = c + rad * TUNE.get('mac_r', 28.0) * MM
     # camera: in front and outward, looking back across the edge toward the glass centre
-    el = R(TUNE.get('mac_el', 38.0))      # angle away from the face normal
+    el = R(TUNE.get('mac_el', 30.0))      # angle away from the face normal
     sw = R(TUNE.get('mac_sw', 25.0))      # swing along the ring tangent
     d = (n * math.cos(el) + rad * math.sin(el) * math.cos(sw) + tang * math.sin(el) * math.sin(sw)).normalized()
-    D = TUNE.get('mac_d', 70.0) * MM
-    cam = camera(P + d * D, P - rad * TUNE.get('mac_look', 6.0) * MM, lens=100, fstop=TUNE.get('mac_f', 4.0),
+    D = TUNE.get('mac_d', 48.0) * MM
+    cam = camera(P + d * D, P - rad * TUNE.get('mac_look', 1.0) * MM, lens=100, fstop=TUNE.get('mac_f', 16.0),
                  focus=P)
     cam.data.clip_start = 0.002
     studio3(Vector(c), 1.0, bg=7.5)
     black_glass(cam, Vector(c), [s], glint=False, card=True)
     metalise(cam, Vector(c), [s])
     chamfer_kick(s, cam, TUNE.get('mac_ang', 125.0) + TUNE.get('mac_kick_off', 6.0), dist=0.12,
-                 power=TUNE.get('kick', 0.6), size=(0.006, 0.05))
+                 power=TUNE.get('mac_kick', 2.0), size=(0.006, 0.08))
     POST['exposure'] = -0.35 + TUNE.get('mac_exp', 0.0)
     POST['bloom'] = 0.02
     return sc

@@ -181,9 +181,9 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .kf u{text-decoration:none;box-shadow:inset 0 -3px 0 var(--mint)}
 .kf .dz{color:var(--ice)}
 .kcar{display:inline-block;width:3px;height:29px;background:var(--ice);vertical-align:-6px;margin:0 1px;animation:blink 1s steps(2) infinite}
-.kcnt{position:absolute;right:92px;top:44px;font:600 18px/1 "Nunito";color:rgba(255,240,200,.5)}
+.kcnt{position:absolute;right:92px;top:44px;font:600 18px/1 "Nunito",system-ui,sans-serif;color:rgba(255,240,200,.5)}
 .ks{position:absolute;top:134px;height:46px;display:flex;align-items:center;justify-content:center;border-radius:23px;padding:0 8px;
-  font:500 26px/1 "Nunito";color:rgba(255,240,200,.74);white-space:nowrap;overflow:hidden}
+  font:500 26px/1 "Nunito",system-ui,sans-serif;color:rgba(255,240,200,.74);white-space:nowrap;overflow:hidden}
 .ks span{overflow:hidden;text-overflow:ellipsis}
 .ks.b{background:#1D1B16;color:var(--cream);font-weight:700}
 .ks.ctx{border:2px solid rgba(255,240,200,.22);color:var(--cream);font-size:22px;padding:0 10px}
@@ -191,7 +191,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .ks i{font-style:normal;color:var(--mint)}
 .ksep{position:absolute;top:146px;width:2px;height:22px;background:rgba(255,240,200,.18)}
 .kk{position:absolute;height:46px;border-radius:9px;background:#1A1813;color:rgba(255,240,200,.95);display:grid;place-items:center;
-  font:600 28px/1 "Nunito";transition:background .06s,opacity .15s}
+  font:600 28px/1 "Nunito",system-ui,sans-serif;transition:background .06s,opacity .15s}
 .kk.fn{background:#26231B;color:rgba(255,240,200,.82);font-size:22px;font-weight:700}
 .kk.sp{font-size:20px;font-weight:600;color:rgba(255,240,200,.4);letter-spacing:.04em}
 .kk.on{background:#4A4434}
@@ -206,12 +206,12 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .kk.lit svg path.fl{fill:currentColor}
 .kbk.hide .kk{opacity:0}
 .kcall{position:absolute;width:58px;height:66px;border-radius:12px;background:#2E2A20;border:1.5px solid rgba(255,240,200,.4);display:grid;place-items:center;
-  font:700 36px/1 "Nunito";color:var(--cream);pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.6)}
+  font:700 36px/1 "Nunito",system-ui,sans-serif;color:var(--cream);pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.6)}
 .ktray{position:absolute;height:60px;display:flex;border-radius:14px;background:#2E2A20;border:1.5px solid rgba(255,240,200,.4);padding:5px;pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.6)}
-.ktray b{width:44px;height:48px;display:grid;place-items:center;font:700 30px/1 "Nunito";color:var(--cream);border-radius:10px}
+.ktray b{width:44px;height:48px;display:grid;place-items:center;font:700 30px/1 "Nunito",system-ui,sans-serif;color:var(--cream);border-radius:10px}
 .ktray b.sel{background:var(--cream);color:#16130c}
 .kdl{position:absolute;left:0;right:0;top:196px;text-align:center;font:600 22px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ice)}
-.kstop{position:absolute;left:163px;width:140px;top:352px;height:52px;border-radius:26px;background:var(--ice);color:#0c1624;display:flex;align-items:center;justify-content:center;gap:10px;font:700 24px/1 "Nunito"}
+.kstop{position:absolute;left:163px;width:140px;top:352px;height:52px;border-radius:26px;background:var(--ice);color:#0c1624;display:flex;align-items:center;justify-content:center;gap:10px;font:700 24px/1 "Nunito",system-ui,sans-serif}
 .kstop i{width:14px;height:14px;background:#0c1624;border-radius:2px}
 
 /* ---------- apps: add button, alarms, Rim-Dial time picker ---------- */
@@ -232,7 +232,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .drel{position:absolute;left:0;right:0;text-align:center;font:400 25px/1 "Nunito",var(--display);color:rgba(255,240,200,.62)}
 .dok{position:absolute;left:173px;width:120px;height:52px;border-radius:26px;background:var(--mint);display:grid;place-items:center;cursor:pointer}
 .dok svg{width:30px;height:30px;stroke:#10201b;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.wd{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;display:grid;place-items:center;font:700 20px/1 "Nunito";
+.wd{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;display:grid;place-items:center;font:700 20px/1 "Nunito",system-ui,sans-serif;
   border:2px solid rgba(255,240,200,.3);color:rgba(255,240,200,.7);cursor:pointer}
 .wd.on{background:var(--cream);color:#16130c;border-color:var(--cream)}
 .dtag{font:500 19px/1.2 var(--mono);color:rgba(159,198,255,.9);letter-spacing:.01em}
@@ -1200,7 +1200,7 @@ const LEX = [], RO_SET = new Set(), EN_SET = new Set();
 const AUTO = Object.fromEntries(("sa:să si:și maine:mâine tara:țară pana:până fara:fără dupa:după cand:când asa:așa stiu:știu stii:știi stie:știe paine:pâine caine:câine " +
   "inca:încă iti:îți imi:îmi isi:își in:în ma:mă multumesc:mulțumesc dimineata:dimineață diseara:diseară notita:notiță notite:notițe cumpara:cumpără aminteste:amintește " +
   "amintestemi:amintește-mi noteaza:notează suna:sună sambata:sâmbătă marti:marți duminica:duminică sase:șase sapte:șapte jumatate:jumătate intrebare:întrebare " +
-  "intalnire:întâlnire intarzii:întârzii acasa:acasă gandesc:gândesc urmeaza:urmează poti:poți nam:n-am spunemi:spune-mi dami:dă-mi dont:don't im:I'm").split(" ").map(p => p.split(":")));
+  "intalnire:întâlnire intarzii:întârzii oua:ouă acasa:acasă gandesc:gândesc urmeaza:urmează poti:poți nam:n-am spunemi:spune-mi dami:dă-mi dont:don't im:I'm").split(" ").map(p => p.split(":")));
 const NEXTW = {
   ro: { să: ["sun", "iau", "cumpăr"], la: ["5", "bancă", "ora"], mâine: ["la", "dimineață", "seară"], "amintește-mi": ["să", "mâine", "la"], și: ["apoi", "eu", "la"], ce: ["faci", "urmează", "mai"], sun: ["la", "pe", "mama"], "": ["și", "la", "să"] },
   en: { remind: ["me", "you", "us"], me: ["to", "at", "tomorrow"], at: ["5", "7", "9"], to: ["call", "buy", "the"], call: ["mom", "the", "dad"], hello: ["there", "world", "how"], how: ["are", "is", "to"], are: ["you", "we", "they"], "": ["the", "to", "and"] }
@@ -1356,6 +1356,7 @@ function kbSuggestions() {
   if (w) {
     const c = candidates(w, prev), a = autoForm(w, prev), rest = c.filter(x => x !== w && x !== a);
     const best = a || rest[0] || w;
+    if (best === w) return [rest[1] ? { t: "w", v: rest[1], label: rest[1] } : null, { t: "w", v: w, label: w, b: 1 }, rest[0] ? { t: "w", v: rest[0], label: rest[0] } : null];
     return [{ t: "w", v: w, label: `“${w}”` }, { t: "w", v: best, label: best, b: 1 }, rest.find(x => x !== best) ? { t: "w", v: rest.find(x => x !== best), label: rest.find(x => x !== best) } : null];
   }
   const { pref } = langScore(prev), last = prev.length ? prev[prev.length - 1].toLowerCase() : "";
@@ -1412,7 +1413,7 @@ function kbRender() {
   const K = S.kb; if (!K) return;
   K.keys = kbKeys(); K.sug = kbSuggestions();
   const L = T(), mark = s => esc(s).replace(/[ăâîșțĂÂÎȘȚ]/g, c => `<i>${c}</i>`);
-  let h = `<div class="kf" id="kf">${fieldHTML()}</div>`;
+  let h = `<div class="kf" id="kf"><div>${fieldHTML()}</div></div>`;
   if (K.text.length > K.maxLen * 0.9) h += `<div class="kcnt">${K.text.length}/${K.maxLen}</div>`;
   if (K.dict) {
     h += `<div class="kdl">${L.kbListen}</div><div class="kstop"><i></i>${L.kbStop}</div>`;
@@ -1832,27 +1833,39 @@ function imu(k) {
 
 /* pointer on the round screen */
 let ptr = null;
+const to466 = e => { const b = screen.getBoundingClientRect(); return { x: (e.clientX - b.left) / b.width * 466, y: (e.clientY - b.top) / b.height * 466 }; };
 screen.addEventListener("pointerdown", e => {
   e.preventDefault(); screen.focus({ preventScroll: true });
   try { screen.setPointerCapture(e.pointerId); } catch (x) {}
+  if (S.kb && kp) kbUp();                       // a second finger landed before the first lifted: commit the first key
   ptr = { x: e.clientX, y: e.clientY, target: e.target, held: false, id: e.pointerId };
   const pEl = e.target.closest && e.target.closest(".pill");
   if (pEl && S.pill) { ptr.pill = true; }
+  if (!ptr.pill && !S.sleeping) {
+    const p = to466(e);
+    // the keyboard owns every touch over it: no hold-to-talk, no swipes, no double-tap merge
+    if (S.kb) { ptr.kb = true; cancel("hold"); kbDown(p); return; }
+    if (S.view === "dial" && !(e.target.closest && e.target.closest("[data-act]")) && Math.hypot(p.x - 233, p.y - 233) >= 165) { ptr.dial = true; cancel("hold"); dialDown(p); return; }
+  }
   cancel("hold"); after(380, () => { if (ptr && !ptr.moved && !ptr.pill) { ptr.held = true; holdStart(); } }, "hold");
 });
 screen.addEventListener("pointermove", e => {
   const b = screen.getBoundingClientRect();
   soul.follow = S.view === "home" ? { x: clamp((e.clientX - b.left) / b.width * 2 - 1, -1, 1), y: clamp((e.clientY - b.top) / b.height * 2 - 1, -1, 1), t: performance.now() } : null;
   if (!ptr) return;
+  if (ptr.kb) { kbMove(to466(e)); return; }
+  if (ptr.dial) { dialMove(to466(e)); return; }
   if (Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > 14 && !ptr.held) { ptr.moved = true; cancel("hold"); }
 });
 const ptrUp = e => {
   if (!ptr) return; cancel("hold");
   const p = ptr; ptr = null;
+  if (p.kb) { if (e.type === "pointercancel") { kp = null; kbHidePress(); } else kbUp(); return; }
+  if (p.dial) { dialUp(); return; }
   if (p.held) { holdEnd(); return; }
   if (e.type === "pointercancel") return;
   const dx = e.clientX - p.x, dy = e.clientY - p.y, b = screen.getBoundingClientRect(), th = Math.max(22, b.width * 0.1);
-  if (p.pill && Math.hypot(dx, dy) < th) { const a = S.pill && S.pill.act; if (a === "claude") { hidePill(); go("claude", "up"); } else if (a === "msg") { hidePill(); go("msg", "up"); } else hidePill(); return; }
+  if (p.pill && Math.hypot(dx, dy) < th) { const a = S.pill && S.pill.act; if (a === "claude") { hidePill(); go("claude", "up"); } else if (a === "kbundo") { hidePill(); kbUndo(); } else if (a === "msg") { hidePill(); go("msg", "up"); } else hidePill(); return; }
   if (Math.abs(dx) > th || Math.abs(dy) > th) {
     if (p.pill && dy < 0) { hidePill(); return; }
     swipe(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down"));
@@ -1866,12 +1879,18 @@ const sideEl = $("#side"); let sideP = null, sideLast = 0;
 sideEl.addEventListener("pointerdown", e => {
   e.preventDefault(); try { sideEl.setPointerCapture(e.pointerId); } catch (x) {}
   sideEl.classList.add("down"); sideP = { held: false };
-  cancel("shold"); after(380, () => { if (sideP) { sideP.held = true; if (S.sleeping) wake(); if (S.view === "claude" && S.claude.pending) return; hold = { kind: "voice" }; startVoice("ask"); } }, "shold");
+  cancel("shold"); after(380, () => {
+    if (!sideP) return; sideP.held = true; if (S.sleeping) wake();
+    if (S.kb) { kbDictStart(); sideP.kb = true; return; }            // typing: hold the side button = dictate into the field
+    if (S.view === "claude" && S.claude.pending) return;
+    if (["dial", "alarmsum", "ring"].includes(S.view)) return;
+    hold = { kind: "voice" }; startVoice("ask");
+  }, "shold");
 });
 const sideUp = e => {
   sideEl.classList.remove("down"); cancel("shold");
   const p = sideP; sideP = null; if (!p) return;
-  if (p.held) { holdEnd(); return; }
+  if (p.held) { if (p.kb) kbDictStop(); else holdEnd(); return; }
   if (e.type === "pointercancel") return;
   const now = performance.now();
   if (now - sideLast < 350) { sideLast = 0; cancelAll(); return; }
@@ -1879,12 +1898,30 @@ const sideUp = e => {
 };
 sideEl.addEventListener("pointerup", sideUp); sideEl.addEventListener("pointercancel", sideUp);
 sideEl.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sideButton(); } });
-function cancelAll() { if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); } if (S.pill) hidePill(); go("home", "down"); soul.react("nope"); }
+function cancelAll() { if (S.kb) return; if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); } if (S.pill) hidePill(); go("home", "down"); soul.react("nope"); }
 
 /* keyboard */
 let spaceT = null;
 document.addEventListener("keydown", e => {
-  const inPanel = e.target.closest && e.target.closest(".panel, .lang, .side");
+  const tg = e.target;
+  // a real text field has focus: never steal its keys
+  if (tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName))) return;
+  const inPanel = tg.closest && tg.closest(".panel, .lang, .side");
+  // the SOUL keyboard is open: the desktop keyboard types into the field; global shortcuts are off
+  if (S.kb) {
+    if (e.ctrlKey || e.metaKey || e.key === "Tab") return;
+    if (inPanel && (e.key === " " || e.key === "Enter")) return;
+    if (e.key === "Backspace") { e.preventDefault(); kbBksp(); return; }
+    if (e.key === "Enter") { e.preventDefault(); kbDone(); return; }
+    if (e.key === "Escape") { e.preventDefault(); kbBack(); return; }
+    if (e.key.length === 1 || (e.key.length === 2 && e.key.normalize("NFC").length === 1)) { e.preventDefault(); kbCommitChar(e.key.normalize("NFC"), true); return; }
+    return;
+  }
+  if (S.view === "dial" && !inPanel) {
+    const E = S.edit;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); E.typed = ((E.typed || "") + e.key).slice(-4); const t = E.typed.padStart(4, "0"); const h = +t.slice(0, 2), m = +t.slice(2); if (h < 24 && m < 60) { E.h = h; E.m = m; E.mode = "m"; refresh(); } return; }
+    if (e.key === "Enter") { e.preventDefault(); E.typed = ""; dialOk(); return; }
+  }
   if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
     if (e.target.closest && e.target.closest(".screens")) return;
     e.preventDefault();
@@ -1925,8 +1962,27 @@ function renderPanel() {
   $("#legend").innerHTML = L.legend.map(l => `<span><i style="--c:${l[0]}"></i>${l[1]}</span>`).join("");
   document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
   $("#side").setAttribute("aria-label", LANG === "ro" ? "Buton lateral" : "Side button");
-  syncPanel();
+  $("#aiH").textContent = L.aiH; $("#aiHint").textContent = L.aiHint; $("#typeH").textContent = L.typeH;
+  $("#typeBtns").innerHTML = L.typeBtns.map((t, i) => `<button type="button" class="type" id="type-${i}" data-t="${i}">${esc(t)}</button>`).join("");
+  renderAiSeg(); syncPanel();
 }
+function renderAiSeg() {
+  const L = T();
+  $("#aiSeg").innerHTML = ["none", "claude", "chatgpt", "api"].map(m => `<button type="button" id="ai-${m}" data-m="${m}" aria-pressed="${S.ai === m}">${esc(L.aiModes[m])}</button>`).join("");
+}
+$("#aiSeg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; if (S.sleeping) wake(); setAi(b.dataset.m); screen.focus({ preventScroll: true }); });
+$("#typeBtns").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  screen.focus({ preventScroll: true });
+  if (S.sleeping) wake();
+  if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); }
+  const i = +b.dataset.t;
+  if (i === 0) { go("claude", "left"); openTypeAI("claude"); }
+  else if (i === 1) { go("notes", "left"); newNote(); }
+  else if (i === 2) { go("reminders", "left"); newReminder(); }
+  else if (i === 3) { go("alarms", "left"); newAlarm(); }
+  else ringAlarm(S.alarms.find(a => a.on) || S.alarms[0] || addAlarm(7, 0, T().labelDef));
+});
 $("#say").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   screen.focus({ preventScroll: true });
@@ -1944,7 +2000,7 @@ $("#screens").addEventListener("click", () => screen.focus({ preventScroll: true
 $("#sens").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { imu(b.dataset.imu); screen.focus({ preventScroll: true }); } });
 document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
   LANG = b.dataset.lang; try { localStorage.setItem("soulos-lang", LANG); } catch (e) {}
-  renderPanel(); refresh();
+  renderPanel(); refresh(); if (S.kb) kbRender();
   if (S.pill && S.pill.kind === "amber") showPill({ kind: "amber", text: T().claudePill, act: "claude", dur: 3000 });
 }));
 
@@ -1998,6 +2054,8 @@ go("home", "fade");
 soul.react("intro");
 requestAnimationFrame(frame);
 setInterval(() => { const c = curCard && curCard.querySelector('[data-live="clock"]'); if (c) c.textContent = hhmm(); }, 10000);
+setInterval(checkAlarms, 1000);
+window.__soul = { S, go, kbOpen, kbRender, setAi, ringAlarm, parseTime, candidates, cancel };   /* test hook (Playwright) */
 after(9000, () => { if (!S.pill && !S.sleeping && S.view !== "voice") { buzz(); showPill({ kind: "", who: T().msgFrom, text: T().msgBody, act: "msg", dur: 6000 }); } }, "msg");
 after(20000, claudeArrive, "claude");
 </script>
