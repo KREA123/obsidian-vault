@@ -99,7 +99,7 @@ def mat_alu(name, cw):
     m, nt, p, out = new_mat(name)
     col = srgb(a['col'])
     set_in(p, 'Metallic', 1.0)
-    set_in(p, 'Roughness', a['rough'] * TUNE.get('rough_k', 1.1))
+    set_in(p, 'Roughness', a['rough'] * TUNE.get('rough_k', 1.15))
     set_in(p, 'Anisotropic', TUNE.get('aniso', 0.15))
     tg = nt.nodes.new('ShaderNodeTangent')
     tg.direction_type = 'RADIAL'
@@ -115,7 +115,7 @@ def mat_alu(name, cw):
     nt.links.new(mc.outputs['Result'], p.inputs['Base Color'])
     # roughness jitter from the grain (+-0.03)
     rr = nt.nodes.new('ShaderNodeMapRange')
-    base_r = a['rough'] * TUNE.get('rough_k', 1.1)
+    base_r = a['rough'] * TUNE.get('rough_k', 1.15)
     rr.inputs['To Min'].default_value = base_r - 0.03
     rr.inputs['To Max'].default_value = base_r + 0.03
     nt.links.new(nz.outputs['Fac'], rr.inputs['Value'])
@@ -469,6 +469,13 @@ def shot_side6():
                   focus=V((28, -4, 45)))
     black_glass(cam, T, [s], glint=False)
     metalise(cam, T, [s])
+    bpy.context.view_layer.update()
+    c, n = glass_world(s)
+    v = (c - Vector(cam.location)).normalized()
+    Rv = (v - 2 * v.dot(n) * n).normalized()
+    print('  side mirror dir', tuple(round(x, 3) for x in Rv))
+    big = glossy_card(tuple(c + Rv * 0.25), (1.2, 1.2))
+    big.rotation_euler = Rv.to_track_quat('Z', 'Y').to_euler()
     chamfer_kick(s, cam, TUNE.get('kick_ang', 20.0), power=TUNE.get('kick', 1.0))
     return sc
 
@@ -519,6 +526,7 @@ def shot_bottom6():
 
 
 def shot_ou_night6():
+    TUNE.setdefault('win', 9.0)      # a touch more window: the dark metal needs something to mirror
     return shot_ou(False)
 
 
@@ -574,14 +582,14 @@ def _post_generic():
 
 
 SHOTS = {
-    'hero': (shot_hero6, 1600, 1200, 160),
-    'family': (_wrap(shot_family6, _post_family), 2000, 1125, 128),
-    'side': (shot_side6, 1600, 1200, 128),
-    'back': (_wrap(shot_back6, _post_generic), 1600, 1200, 128),
+    'hero': (shot_hero6, 1600, 1200, 128),
+    'family': (_wrap(shot_family6, _post_family), 2000, 1125, 96),
+    'side': (shot_side6, 1600, 1200, 96),
+    'back': (_wrap(shot_back6, _post_generic), 1600, 1200, 96),
     'bottom': (_wrap(shot_bottom6, _post_generic), 1600, 1200, 128),
-    'ou_night': (shot_ou_night6, 1600, 1200, 192),
+    'ou_night': (shot_ou_night6, 1600, 1200, 128),
     'hand': (_wrap(shot_hand6, _post_generic), 1600, 1200, 128),
-    'macro': (shot_macro, 1600, 1200, 192),
+    'macro': (shot_macro, 1600, 1200, 128),
     'alive': (shot_alive, 720, 720, 64),
     'test': (shot_test6, 1200, 1200, 48),
 }

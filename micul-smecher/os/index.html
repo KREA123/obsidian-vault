@@ -61,7 +61,7 @@ button{font:inherit;color:inherit}
 .pebble{position:relative;width:min(440px,calc(100% - 24px));aspect-ratio:63/74;max-width:100%;
   filter:drop-shadow(0 28px 26px var(--peb-shadow)) drop-shadow(0 6px 8px var(--peb-shadow));transition:transform .12s}
 .body{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
-.pebble:has(.screen:focus-visible){outline:2px dashed var(--muted);outline-offset:8px;border-radius:18%}
+.glass:has(.screen:focus-visible){outline:2px dashed rgba(90,97,95,.55);outline-offset:12px}
 .pebble.buzz{animation:buzz .32s linear 2}
 @keyframes buzz{0%,100%{transform:translate(0,0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(2px,1px)}}
 .glass{position:absolute;left:8.75%;width:82.5%;top:9.2%;aspect-ratio:1;border-radius:50%;background:#000;
@@ -191,8 +191,8 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .ks i{font-style:normal;color:var(--mint)}
 .ksep{position:absolute;top:146px;width:2px;height:22px;background:rgba(255,240,200,.18)}
 .kk{position:absolute;height:46px;border-radius:9px;background:#1A1813;color:rgba(255,240,200,.95);display:grid;place-items:center;
-  font:600 28px/1 "Nunito",system-ui,sans-serif;transition:background .06s,opacity .15s}
-.kk.fn{background:#26231B;color:rgba(255,240,200,.82);font-size:22px;font-weight:700}
+  font:600 28px/1 "Nunito",system-ui,sans-serif;transition:background .06s,opacity .15s;white-space:nowrap;overflow:hidden}
+.kk.fn{background:#26231B;color:rgba(255,240,200,.82);font-size:21px;font-weight:700;letter-spacing:-.02em}
 .kk.sp{font-size:20px;font-weight:600;color:rgba(255,240,200,.4);letter-spacing:.04em}
 .kk.on{background:#4A4434}
 .kk.lit{background:#4A4434;color:var(--cream)}
@@ -235,7 +235,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .wd{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;display:grid;place-items:center;font:700 20px/1 "Nunito",system-ui,sans-serif;
   border:2px solid rgba(255,240,200,.3);color:rgba(255,240,200,.7);cursor:pointer}
 .wd.on{background:var(--cream);color:#16130c;border-color:var(--cream)}
-.dtag{font:500 22px/1.2 var(--mono);color:rgba(159,198,255,.9);letter-spacing:.01em}
+.dtag{font:600 22px/1.2 "Nunito",system-ui,sans-serif;color:var(--ice);letter-spacing:.01em}
 .nrow{cursor:pointer}
 
 /* ---------- panel ---------- */
@@ -428,11 +428,11 @@ ro: {
   aiH: "AI-ul tău (Setări › AI)", aiHint: "SOUL merge și fără AI: notițele, alarmele și mementourile se fac pe device. Cu Claude-ul sau ChatGPT-ul tău, AI-ul face lucruri pentru tine.",
   aiModes: { none: "Fără AI", claude: "Claude-ul tău", chatgpt: "ChatGPT-ul tău", api: "Cheia ta API" },
   aiShort: { none: "Fără AI", claude: "Claude", chatgpt: "ChatGPT", api: "Cheie API" },
-  aiTag: { none: "offline · pe device", claude: "prin conectorul SOUL", chatgpt: "prin aplicația SOUL", api: "direct, cheia e pe telefon" },
+  aiTag: { none: "totul pe device", claude: "prin conectorul SOUL", chatgpt: "prin aplicația SOUL", api: "direct, cheia e pe telefon" },
   aimT: "AI-ul tău", aimPill: m => `${m} ✓`,
-  talkHint: "Ține apăsat sau scrie", talkOff: "Fără AI acum", talkOffHint: "Notițe, alarme și mementouri merg și așa.",
+  talkHint: "Ține apăsat sau scrie", talkOff: "Notițe și alarme merg", talkOffHint: "Notițe, alarme și mementouri merg și așa.",
   typeBtn: n => `✎ Scrie lui ${n}`, typeOff: "✎ Scrie (fără AI)",
-  demoTag: n => `${n} · demo scriptat`,
+  demoTag: n => `${n} · demo scriptat`, localTag: "Fără AI · pe device",
   aiRem: (t, d) => `Gata. Te anunț ${d ? "mâine " : ""}la ${t}.`, chipRem: t => `✓ Memento pus pentru ${t}`,
   aiAlarm: t => `Am pus alarma la ${t}. Somn ușor.`, chipAlarm: t => `✓ Alarmă ${t}`,
   aiNote: "Am notat. E în Notițe, pe telefon.", chipNote: "✓ Notiță creată",
@@ -458,7 +458,7 @@ ro: {
   todayW: "Azi", tomorrowW: "Mâine", once: "O dată", daily: "Zilnic", wkdays: "L–V", weekend: "Weekend",
   days: ["L", "Ma", "Mi", "J", "V", "S", "D"], setBtn: "✓ Setează", labelDef: "Alarmă", noAlarms: "Nicio alarmă. Atinge +",
   alarmSet: (t, r) => `Alarmă ${t} ✓ · ${r}`, ringSnooze: "Amână 5", ringStop: "Oprește", snoozed: t => `Amânat · ${t}`, goodMorning: "Bună dimineața!",
-  alarmsInit: [[7, 0, [1, 1, 1, 1, 1, 0, 0], "Trezirea", 1], [9, 30, [0, 0, 0, 0, 0, 1, 1], "Weekend", 0]],
+  alarmsInit: [[7, 0, [1, 1, 1, 1, 1, 0, 0], "Trezirea", 1], [9, 30, [0, 0, 0, 0, 0, 1, 1], "Cafea lungă", 0]],
   remTomorrow: "mâine", remDef: "Memento",
   typeH: "Scrie pe SOUL (tastatura rotundă)", typeBtns: ["✎ Scrie lui Claude", "✎ Notiță nouă", "+ Memento nou", "+ Alarmă nouă", "⏰ Sună alarma acum"],
   dx2: { aiT: "Ai scris AI-ului tău.", remT: "Am pus un memento.", noteT: "Ai scris o notiță.", alarmT: "Am pus o alarmă.", ring: "Te-am trezit." }
@@ -523,11 +523,11 @@ en: {
   aiH: "Your AI (Settings › AI)", aiHint: "SOUL works with no AI: notes, alarms and reminders happen on the device. With your own Claude or ChatGPT, the AI does things for you.",
   aiModes: { none: "No AI", claude: "Your Claude", chatgpt: "Your ChatGPT", api: "Your API key" },
   aiShort: { none: "No AI", claude: "Claude", chatgpt: "ChatGPT", api: "API key" },
-  aiTag: { none: "offline · on device", claude: "via the SOUL connector", chatgpt: "via the SOUL app", api: "direct, key on your phone" },
+  aiTag: { none: "all on the device", claude: "via the SOUL connector", chatgpt: "via the SOUL app", api: "direct, key on your phone" },
   aimT: "Your AI", aimPill: m => `${m} ✓`,
-  talkHint: "Hold, or type", talkOff: "No AI right now", talkOffHint: "Notes, alarms and reminders still work.",
+  talkHint: "Hold, or type", talkOff: "Notes & alarms still work", talkOffHint: "Notes, alarms and reminders still work.",
   typeBtn: n => `✎ Write to ${n}`, typeOff: "✎ Write (no AI)",
-  demoTag: n => `${n} · scripted demo`,
+  demoTag: n => `${n} · scripted demo`, localTag: "No AI · on the device",
   aiRem: (t, d) => `Done. I'll ping you ${d ? "tomorrow " : ""}at ${t}.`, chipRem: t => `✓ Reminder set for ${t}`,
   aiAlarm: t => `Alarm set for ${t}. Sleep well.`, chipAlarm: t => `✓ Alarm ${t}`,
   aiNote: "Noted. It's in Notes, on your phone.", chipNote: "✓ Note created",
@@ -551,7 +551,7 @@ en: {
   todayW: "Today", tomorrowW: "Tomorrow", once: "Once", daily: "Daily", wkdays: "Mon–Fri", weekend: "Weekend",
   days: ["M", "T", "W", "T", "F", "S", "S"], setBtn: "✓ Set", labelDef: "Alarm", noAlarms: "No alarms. Tap +",
   alarmSet: (t, r) => `Alarm ${t} ✓ · ${r}`, ringSnooze: "Snooze 5", ringStop: "Stop", snoozed: t => `Snoozed · ${t}`, goodMorning: "Good morning!",
-  alarmsInit: [[7, 0, [1, 1, 1, 1, 1, 0, 0], "Wake up", 1], [9, 30, [0, 0, 0, 0, 0, 1, 1], "Weekend", 0]],
+  alarmsInit: [[7, 0, [1, 1, 1, 1, 1, 0, 0], "Wake up", 1], [9, 30, [0, 0, 0, 0, 0, 1, 1], "Slow coffee", 0]],
   remTomorrow: "tomorrow", remDef: "Reminder",
   typeH: "Type on SOUL (round keyboard)", typeBtns: ["✎ Write to Claude", "✎ New note", "+ New reminder", "+ New alarm", "⏰ Ring an alarm now"],
   dx2: { aiT: "You wrote to your AI.", remT: "Set a reminder.", noteT: "You wrote a note.", alarmT: "Set an alarm.", ring: "Woke you up." }
@@ -890,7 +890,7 @@ function cardHTML(v) {
     }
     case "talk": {
       const qa = S.lastQA, off = S.ai === "none";
-      return `<div class="c" style="top:256px;gap:10px"><div class="dtag" style="font-size:20px;color:${off ? "var(--amber)" : "rgba(159,198,255,.9)"}">${esc(L.aiModes[S.ai])} · ${esc(L.aiTag[S.ai])}</div>
+      return `<div class="c" style="top:256px;gap:10px"><div style="font:600 22px/1.2 'Nunito',system-ui,sans-serif;color:${off ? "var(--amber)" : "var(--ice)"}">${esc(L.aiModes[S.ai])} · ${esc(L.aiTag[S.ai])}</div>
         ${off ? `<div class="t2" style="font-size:28px">${L.talkOff}</div>` : qa ? `<div class="t2" style="font-size:26px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">„${esc(qa)}”</div>` : `<div class="t2" style="font-size:28px">${L.talkHint}</div>`}
         <span class="chip btn" data-act="type-ai" data-o="talk">${esc(off ? L.typeOff : L.typeBtn(aiName()))}</span></div>`;
     }
@@ -975,7 +975,7 @@ function cardHTML(v) {
       if (V.phase === "listen") return `<div class="lbl ice" style="top:44px">${L.listen}</div><div class="c" style="top:318px"><div class="t2" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>`;
       if (V.phase === "think") return `<div class="lbl" style="top:44px">${L.thinking(aiName())}</div><div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">„${esc(V.p.q)}”</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
       const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips;
-      if (V.kind === "typed") return `<div class="c fade-in" style="top:178px;gap:14px;left:44px;right:44px"><div class="dtag">${esc(L.demoTag(S.ai === "none" ? L.aiModes.none : L.aiModes[S.ai]))}</div>
+      if (V.kind === "typed") return `<div class="c fade-in" style="top:178px;gap:14px;left:44px;right:44px"><div class="dtag">${esc(S.ai === "none" ? L.localTag : L.demoTag(L.aiModes[S.ai]))}</div>
         <div class="t1" style="font-size:${V.p.a.length > 44 ? 27 : 31}px">${esc(V.p.a)}</div>
         <div class="chips">${chips.map(c => `<span class="chip ${c[0]}" style="white-space:nowrap;padding:0 18px">${esc(c[1])}</span>`).join("")}</div><div class="tool">→ ${esc(V.p.tool)}</div></div>`;
       return `<div class="c fade-in" style="top:${V.kind === "tr" ? 196 : 206}px;gap:18px">${V.kind === "tr" ? `<div class="t3" style="font-size:21px">${esc(V.p.q)}</div>` : ""}
@@ -1255,7 +1255,8 @@ function parseTime(text) {
   return { h, m, day, alarm };
 }
 function cleanLabel(text) {
-  let t = text.replace(/^\s*(amintește-mi|aminteste-mi|amintește|remind me|pune-mi o alarmă|pune o alarmă|trezește-mă|set an alarm|wake me( up)?)\s*/i, "")
+  let t = text.replace(/^\s*(amintește-mi|aminteste-mi|amintește|remind me|trezește-mă|trezeste-ma|wake me( up)?)\s*/i, "")
+    .replace(/^\s*(pune-mi|pune|set|setează|seteaza|fă-mi|make)?\s*(o\s+|an\s+|a\s+)?(alarmă|alarma|alarm)\s*/i, "")
     .replace(/\b(la|at|ora)\s+\d{1,2}([:.]\d{2})?(\s*(am|pm))?(\s+(și\s+)?jumătate)?/gi, "").replace(/\b\d{1,2}[:.]\d{2}\b/g, "").replace(/\b\d{1,2}\s*(am|pm)\b/gi, "")
     .replace(/\b(mâine|maine|tomorrow|azi|today|diseară|tonight)\b/gi, "").replace(/\s+/g, " ").trim().replace(/^(să|sa|to)\s+/i, "").replace(/^[,.:;\s]+|[,.:;\s]+$/g, "");
   return t ? t[0].toUpperCase() + t.slice(1) : "";
@@ -1350,7 +1351,7 @@ function kbUndo() {
 }
 function kbSuggestions() {
   const K = S.kb, L = T();
-  if (K.undoChip && performance.now() < K.undoChip) return [{ t: "undo", label: L.undoChip }, null, null];
+  if (K.undoChip && performance.now() < K.undoChip) return [null, { t: "undo", label: L.undoChip }, null];
   if (!K.text.trim()) return K.chips.map(c => ({ t: "ctx", label: c[0], v: c[1] }));
   const w = curWord(), prev = prevWords(), tm = K.ctx !== "alarm_label" && /\s$/.test(K.text) ? parseTime(K.text) : null;
   if (w) {
@@ -1562,7 +1563,8 @@ function aiReply(text, forceLocal) {
   return { a: L.aiGeneric(n), chips: [["ok", L.chipNoteSaved]], tool: "note.create", fx: "noteT", args: { text } };
 }
 function addNote(text) { const n = { key: uid("t"), text, sync: false, fresh: true }; S.notes.forEach(x => x.fresh = false); S.notes.push(n); S.notePage = 0; after(2600, () => { n.sync = true; if (S.view === "notes") refresh(); }, "sync"); return n; }
-function addRem(h, m, text, day) { S.rems.forEach(x => x.fresh = false); const r = { time: hm(h, m), key: uid("u"), text, done: false, day: day || 0, fresh: true }; S.rems.push(r); return r; }
+function addRem(h, m, text, day) {
+  if (!day) { const t = new Date(); t.setHours(h, m, 0, 0); if (t <= new Date()) day = 1; } S.rems.forEach(x => x.fresh = false); const r = { time: hm(h, m), key: uid("u"), text, done: false, day: day || 0, fresh: true }; S.rems.push(r); return r; }
 function addAlarm(h, m, label, days) { const a = { id: uid("a"), h, m, days: days || [0, 0, 0, 0, 0, 0, 0].map(Boolean), label, on: true }; S.alarms.push(a); return a; }
 function newNote() {
   kbOpen({ ctx: "note", action: "save", onDone: t => { addNote(t); addDiary("noteT"); soul.react("happy", 2); showPill({ kind: "mint", text: T().noteSaved, dur: 2000 }); refresh(); },
@@ -1615,6 +1617,7 @@ function dialHTML() {
   (H ? [0, 6, 12, 18] : [0, 15, 30, 45]).forEach(v => { const [x, y] = dpos(H ? 90 + 15 * v : -90 + 6 * v, DR); g += `<text x="${f1(x)}" y="${f1(y + 8)}" text-anchor="middle" font-family="Fredoka,Nunito,sans-serif" font-size="23" font-weight="500" fill="rgba(255,240,200,.6)">${H ? v : pad2(v)}</text>`; });
   const [kx, ky] = dpos(H ? 90 + 15 * E.h : -90 + 6 * E.m, DR);
   g += `<circle cx="${f1(kx)}" cy="${f1(ky)}" r="28" fill="#FFF0C8" style="filter:drop-shadow(0 0 8px rgba(255,240,200,.7))"/><text x="${f1(kx)}" y="${f1(ky + 9)}" text-anchor="middle" font-family="Fredoka,Nunito,sans-serif" font-size="25" font-weight="600" fill="#16130c">${pad2(H ? E.h : E.m)}</text></svg>`;
+  if (E.kind === "rem") E.day = remDay(E);
   const nf = E.kind === "rem" ? (() => { const t = new Date(); t.setDate(t.getDate() + (E.day || 0)); t.setHours(E.h, E.m, 0, 0); return t; })() : nextFire(E);
   const [rh, rm] = nf && nf > Date.now() ? relParts(nf) : [0, 0];
   const rel = E.kind === "rem" ? `<span class="chip btn" data-act="dial-day" style="position:absolute;left:50%;transform:translateX(-50%);top:276px;white-space:nowrap">${E.day ? L.tomorrowW : L.todayW} · ${nf > Date.now() ? L.relShort(rh, rm) : "—"}</span>`
@@ -1628,9 +1631,11 @@ function alarmSumHTML() {
   const nf = nextFire(E), [rh, rm] = nf ? relParts(nf) : [0, 0];
   const dots = L.days.map((d, i) => { const [x, y] = dpos(144 - 18 * i, 180); return `<span class="wd ${E.days[i] ? "on" : ""}" data-act="as-day" data-i="${i}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px">${d}</span>`; }).join("");
   return `<div class="lbl" style="top:46px">${L.dlAlarm}</div>
-    <div class="c" style="top:116px;gap:6px"><div class="fdig" data-act="as-time" style="font-size:66px;cursor:pointer">${hm(E.h, E.m)}</div><div class="t3" style="font-size:24px">${nf ? `${esc(dayWord(nf))} · ${L.relShort(rh, rm)}` : ""}</div></div>
+    <div class="c" style="top:116px;gap:6px"><div class="fdig" data-act="as-time" style="font-size:66px;cursor:pointer">${hm(E.h, E.m)}</div><div class="t3" style="font-size:24px">${nf ? (rh < 24 ? `${esc(dayWord(nf))} · ${L.relShort(rh, rm)}` : esc(dayWord(nf))) : ""}</div></div>
     <div class="c" style="top:222px;gap:12px"><span class="chip btn" data-act="as-label" style="max-width:300px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">✎ ${esc(E.label || L.labelDef)}</span></span><span class="chip ok btn" data-act="as-set">${L.setBtn}</span></div>${dots}`;
 }
+/* a reminder time that already passed today rolls to tomorrow (unless the user picked tomorrow) */
+function remDay(E) { if (E.dayPick) return E.day; const t = new Date(); t.setHours(E.h, E.m, 0, 0); return t <= new Date() ? 1 : 0; }
 let dg = null;
 function dialAt(p) {
   const E = S.edit, dx = p.x - DC, dy = p.y - DC, deg = Math.atan2(dy, dx) * 180 / Math.PI, now = performance.now();
@@ -1768,7 +1773,7 @@ function act(a, el) {
     case "al-tog": { const a = S.alarms.find(x => x.id === el.dataset.id); if (a) { a.on = !a.on; if (a.on) soul.react("happy", 1.2); else soul.lookAt(0.6, 0.6, 0.5); refresh(); } break; }
     case "dial-h": cancel("dialm"); S.edit.mode = "h"; refresh(); break;
     case "dial-m": cancel("dialm"); S.edit.mode = "m"; refresh(); break;
-    case "dial-day": S.edit.day = S.edit.day ? 0 : 1; refresh(); break;
+    case "dial-day": S.edit.day = S.edit.day ? 0 : 1; S.edit.dayPick = true; refresh(); break;
     case "dial-ok": dialOk(); break;
     case "as-time": S.edit.mode = "h"; S.edit.fromSum = true; go("dial", "fade"); break;
     case "as-day": { const i = +el.dataset.i; S.edit.days[i] = !S.edit.days[i]; soul.lookAt(i < 3 ? -0.5 : i > 3 ? 0.5 : 0, 0.9, 0.5); refresh(); break; }

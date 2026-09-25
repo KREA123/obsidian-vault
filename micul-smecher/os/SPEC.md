@@ -232,3 +232,39 @@ Frame: Brain.update() → Shell.update() → renderFace(canvas, face, shell.face
 | 6 | Performanță (DMA dublu buffer, tranziții 30 fps), baterie (somn agresiv, AMOLED negru), teste `pio test -e native` pentru Shell/Notifier | 1,5 săpt. |
 
 Criterii de gata: nicio acțiune nu cere mai mult de 2 gesturi de pe față; de la eliberarea degetului la primul cuvânt < 1,8 s (p50); inelul gheață e prezent în 100% din cadrele cu microfon activ; 18 ore de folosire tipică pe 1000 mAh.
+
+---
+
+## 9. Tastatura, modurile AI și Alarmele (prototip v0.2, 25 sept. 2026)
+
+Implementat în `os/index.html` (copie în `site/os.html`). Designul complet: `research/04-keyboard-design-familiar.md`. Capturi: `screenshots/soulos-keyboard-*`, `soulos-claude-type-*`, `soulos-ai-mode-*`, `soulos-notes-type-*`, `soulos-alarm-*` (390 și 1440 px). Corpul desenat e forma finală v5: piatră verticală 63×74 mm, mai lată sus, bază plată, aluminiu sablat, sticla neagră Ø52 ocupă fața; pe față nu mai e nimic altceva.
+
+**Tastatura (QWERTY rotund).** E un serviciu de sistem: aplicația cere text (`text.request`) și primește doar textul final.
+- Ochii urcă într-un antet mic (y 40) și se uită după deget. Câmpul are 2 rânduri, cursorul e gheață. Sub el e bara de sugestii: stânga = ce ai scris, mijloc (îngroșat) = cea mai bună variantă, dreapta = următoarea. Cu câmpul gol apar 3 chipuri de context, date de aplicație.
+- Taste de 44–47 px (≈4,1–4,4 mm), 3 rânduri + rândul de acțiuni: `?123` · microfon · spațiu `RO · EN` · Gata. Gata e chihlimbar cu ↑ când trimiți (Claude) și mentă cu ✓ când salvezi (notiță, memento, alarmă). Litera intră când ridici degetul și poți aluneca pe tasta corectă. Straturi: `?123` și `#+=`.
+- Predicție locală dintr-un lexic mic EN+RO (index fără diacritice). **Auto-diacritice** la spațiu sau punctuație, doar pentru formele sigure: `sa`→`să`, `si`→`și`, `maine`→`mâine`, `tara`→`țară`. Cuvântul schimbat e subliniat cu mentă. **⌫ imediat după** readuce exact ce ai scris, iar cuvântul nu mai e schimbat în sesiunea aceea. Într-o propoziție în engleză nu se aplică.
+- **Apăsare lungă** (380 ms) pe a/i/s/t: tava are litera românească deja aleasă (ă, î, ș, ț). Aluneci pentru â, à…
+- ⌫ ținut repetă, apoi șterge cuvinte întregi și oferă `↶ Anulează` 5 s. Scuturarea oferă și ea anularea (doar ca pastilă, nu aplică singură). Două spații = „. ”.
+- O gramatică locală de timp („la 5”, „mâine la 9:30”, „at 7pm”, „în 10 min”) oferă chipul mentă `⏰ 17:00`. Merge fără AI.
+- Microfonul dictează (demo scriptat) doar cu AI. În modul „Fără AI” e tăiat și spune că dictarea cere AI și net.
+- **Butonul lateral = înapoi**: tastatura se închide și ciorna rămâne. Ținut = dictezi în câmp.
+- Tastatura fizică a desktopului scrie în câmpul deschis (Enter = Gata, Esc = înapoi). Scurtăturile globale (Space, Enter, D, Backspace, săgeți) merg doar când nu e deschis niciun câmp. Atingerile pe taste nu mai trec prin detectorul de dublă atingere, iar butoanele (`data-act`) reacționează la fiecare atingere, oricât de rapidă.
+
+**Modurile AI** (Setări › AI și panoul prototipului): **Fără AI** · **Claude-ul tău** (conectorul SOUL) · **ChatGPT-ul tău** (aplicația SOUL) · **Cheia ta API** (direct, cheia stă pe telefon).
+- Antetul din Vorbește, butonul „Scrie lui …”, eticheta „… se gândește” și eticheta răspunsului arată modul ales.
+- Fluxul „Scrie lui Claude”: scrii → trimiți (↑) → ochii se gândesc → cartonaș scurt, marcat **„demo scriptat”**, care și face ceva prin intenții: `reminder.create` („✓ Memento pus pentru 17:00”), `note.create`, `alarm.set`.
+- **Fără AI:** scrisul merge în continuare. Mementourile și alarmele cu oră se fac local, prin gramatică. Restul mesajelor ajunge în Notițe (outbox), iar aplicația spune că e offline. Vocea ținută explică că fără AI nu poate asculta.
+
+**Notițe și Mementouri.**
+- Notițe: `+` = notiță nouă scrisă. Atingi o notiță = o editezi. ↑ răsfoiește notițele mai vechi.
+- Mementouri: `+` = text. Dacă textul are oră, mementoul se pune direct. Dacă nu, se deschide cadranul, cu chipul Azi/Mâine. O oră trecută trece singură pe mâine.
+
+**Alarme** (aplicație nouă în cerc, după Mementouri).
+- Lista are comutatoare. `+` deschide **Rim-Dial**:
+  - Orele sunt pe un inel de 24 h ca un cadran solar: 0 jos, 12 sus, jumătatea de zi cremă, noaptea gheață.
+  - Când ridici degetul, după 400 ms trece la minute.
+  - Minutele sunt pe un cadran obișnuit (00 sus). Mișcarea rapidă sare din 5 în 5.
+  - Rândul „sună în X h Y min” te ferește de confuzia între jumătățile zilei. Tastatura fizică acceptă cifre (`0730`).
+- ✓ duce la rezumat: ora, eticheta (✎ deschide tastatura), cele 7 zile pe marginea de jos, `✓ Setează`.
+- La ora alarmei se deschide ecranul de sunat: ochii dorm (zzz), apoi se trezesc. Inelul e chihlimbar și dispozitivul vibrează. Alegi `Amână 5` sau `Oprește`. Butonul lateral oprește alarma, iar cu fața în jos o amâni.
+- Panoul are „Sună alarma acum” pentru demo.
