@@ -566,7 +566,7 @@ def mat_led(name, strength, temp=2200.0):
     return m
 
 
-def mat_ou_lid(name, outer=True, dark=False, night=False):
+def mat_ou_lid(name, outer=True, dark=False, night=False, glow=0.0):
     """Frosted PC lid: gloss outside (r 0.05), VDI-18 frost inside (r 0.45), Transmission 0.9, IOR 1.58; a milky
     volume scatter in the 2.2 mm wall gives the frosted-PC diffusion (and the lantern glow when closed)."""
     m, nt, p, out = new_mat(name)
@@ -589,6 +589,38 @@ def mat_ou_lid(name, outer=True, dark=False, night=False):
     nt.links.new(vs.outputs[0], add.inputs[0])
     nt.links.new(va.outputs[0], add.inputs[1])
     nt.links.new(add.outputs[0], out.inputs['Volume'])
+    if glow > 0:
+        # closed at night the frosted wall is an edge-lit light guide: the halo LEDs feed its rim, the glow fades
+        # upward (SOUL fills the lid, so no light reaches the lid's front from inside)
+        tc = _tc(nt)
+        dp = nt.nodes.new('ShaderNodeVectorMath')
+        dp.operation = 'DOT_PRODUCT'
+        dp.inputs[1].default_value = tuple(PART_N)
+        nt.links.new(tc.outputs['Object'], dp.inputs[0])
+        off = nt.nodes.new('ShaderNodeMath')              # distance above the parting plane (m)
+        off.operation = 'SUBTRACT'
+        off.inputs[1].default_value = float(np.dot(PART_N, [0, -21.0 * MM, 18.0 * MM]))
+        nt.links.new(dp.outputs['Value'], off.inputs[0])
+        sc_ = nt.nodes.new('ShaderNodeMath')
+        sc_.operation = 'MULTIPLY'
+        sc_.inputs[1].default_value = -1.0 / 0.014
+        nt.links.new(off.outputs[0], sc_.inputs[0])
+        ex = nt.nodes.new('ShaderNodeMath')
+        ex.operation = 'EXPONENT'
+        nt.links.new(sc_.outputs[0], ex.inputs[0])
+        base = nt.nodes.new('ShaderNodeMath')
+        base.operation = 'MULTIPLY_ADD'
+        base.inputs[1].default_value = 0.92
+        base.inputs[2].default_value = 0.08
+        nt.links.new(ex.outputs[0], base.inputs[0])
+        st = nt.nodes.new('ShaderNodeMath')
+        st.operation = 'MULTIPLY'
+        st.inputs[1].default_value = glow
+        nt.links.new(base.outputs[0], st.inputs[0])
+        bb = nt.nodes.new('ShaderNodeBlackbody')
+        bb.inputs['Temperature'].default_value = 2200.0
+        nt.links.new(bb.outputs['Color'], p.inputs['Emission Color'])
+        nt.links.new(st.outputs[0], p.inputs['Emission Strength'])
     return m
 
 
@@ -1288,8 +1320,9 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
                'lapis': mat_lapis('liner_lapis'),
                'chihlimbar': mat_amber('liner_amber'),
                'fum': mat_solid_sole('liner_smoke', '#6E6E74', engrave=False)}[cw]
-    lo = mat_ou_lid('ou_lid_out', True, dark, night)
-    li = mat_ou_lid('ou_lid_in', False, dark, night)
+    lg = TUNE.get('lantern', 0.4) if (night and not lid_open) else 0.0
+    lo = mat_ou_lid('ou_lid_out', True, dark, night, lg)
+    li = mat_ou_lid('ou_lid_in', False, dark, night, lg)
     gd = gap_dark()
     cup, rc, lid, rl = ou_meshes(tag)
     for ob, roles in ((cup, rc), (lid, rl)):
@@ -1334,7 +1367,7 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
     if night and not lid_open:
         # closed at night: the whole egg is the lantern -- the rear strip fills the closed cavity (SOUL is asleep,
         # its face is inside and unseen) so the frosted lid glows, not just the halo line
-        s_str *= TUNE.get('closed_strip_k', 4.0)
+        s_str *= TUNE.get('closed_strip_k', 1.0)
     rear = lip_i[lip_i[:, 1] > 1.0 + 3.0]
     rear = rear[np.argsort(np.arctan2(rear[:, 1] - 1.0, rear[:, 0]))]
     cen = np.array([0.0, 1.0])
@@ -1877,6 +1910,7 @@ def shot_hero():
     pose_soul(s, (0, 0, 0), yaw=-8.0)
     # brief: OU at (-95, +120), yaw +20 -- that is 17 deg outside the frame of the -24 deg camera (the rev. moved
     # the camera to -x); mirrored to (+95, +120), yaw -20 so it stays soft in the background, behind-right
+    TUNE['lid_tr'] = TUNE.get('hero_lid_tr', 0.15)    # the out-of-focus lid interior reads lighter, not as a taupe blob
     ou = build_ou('bg', 'perla', lid_open=True, night=False)
     ou.location = V((95, 120, 0.5))
     ou.rotation_euler = (0, 0, R(-20.0))
