@@ -580,7 +580,7 @@ def mat_ou_lid(name, outer=True, dark=False, night=False):
     set_in(p, 'Roughness', 0.05 if outer else 0.45)
     vs = nt.nodes.new('ShaderNodeVolumeScatter')
     vs.inputs['Color'].default_value = (0.985, 0.975, 0.96, 1) if not dark else srgb(base)
-    vs.inputs['Density'].default_value = TUNE.get('lid_dens', 320.0)
+    vs.inputs['Density'].default_value = TUNE.get('lid_dens', 700.0 if night else 320.0)
     vs.inputs['Anisotropy'].default_value = 0.0
     va = nt.nodes.new('ShaderNodeVolumeAbsorption')
     va.inputs['Color'].default_value = (1.0, 0.95, 0.88, 1) if not dark else (0.5, 0.5, 0.52, 1)
@@ -1331,6 +1331,10 @@ def build_ou(tag, cw='perla', lid_open=True, night=False, strip=None, halo=None,
     # at 1 mm scale they need LED_K to light the walnut and the lid as the brief asks (tuned by eye)
     K = TUNE.get('led_k', 40.0) if night else TUNE.get('led_k_day', 6.0)
     s_str = strip if strip is not None else ((4.0 if night else 1.6 * 0.2) * K)
+    if night and not lid_open:
+        # closed at night: the whole egg is the lantern -- the rear strip fills the closed cavity (SOUL is asleep,
+        # its face is inside and unseen) so the frosted lid glows, not just the halo line
+        s_str *= TUNE.get('closed_strip_k', 4.0)
     rear = lip_i[lip_i[:, 1] > 1.0 + 3.0]
     rear = rear[np.argsort(np.arctan2(rear[:, 1] - 1.0, rear[:, 0]))]
     cen = np.array([0.0, 1.0])
@@ -1487,7 +1491,7 @@ def glint_strip(par, cam, d=0.72, ang=135.0, width=1.6, dist=0.30, strength=None
     return ob
 
 
-def mirror_card(par, cam, dist=0.40, size=0.22):
+def mirror_card(par, cam, dist=0.40, size=None):
     """Glossy-only black card exactly where the flat glass mirrors the camera's view (keeps the glass L* < 5 when
     the reflection would otherwise see a light, e.g. a face-up SOUL in the hand)."""
     bpy.context.view_layer.update()
@@ -1502,6 +1506,7 @@ def mirror_card(par, cam, dist=0.40, size=0.22):
         w = 0.052 * (1 + t / dc) * 1.5
         ob = glossy_card((hit.x, hit.y, 0.0005), (w, w / max(abs(Rv.z), 0.3)), (0, 0, math.atan2(-Rv.x, Rv.y)))
         return ob
+    size = size or TUNE.get('mcard', 0.6)
     ob = glossy_card(tuple(c + Rv * dist), (size, size))
     ob.rotation_euler = Rv.to_track_quat('Z', 'Y').to_euler()
     return ob
@@ -1697,38 +1702,38 @@ def _stretch_mouth(surf, lift, off, ctr_y=-0.8):
     fa = ia - np.floor(ia)
     need = ((1 - fz) * ((1 - fa) * tab[i0, j0] + fa * tab[i0, j1]) + fz * ((1 - fa) * tab[i1, j0] + fa * tab[i1, j1]))
     need = need + off
-    k = SG.smoothstep((z - 40.0) / 16.0) * ok
-    new = np.maximum(rr, rr + (need - rr) * k)
+    # soft ease-in of the stretch below the belly, plus a hard rule: the knit never passes inside SOUL (+ wall)
+    k = SG.smoothstep((z - 30.0) / 22.0)
+    new = np.maximum(rr, rr + (need - rr) * k * ok)
+    new = np.maximum(new, np.where(ok, need, 0.0))
     P[:, 0] = new * np.cos(a)
     P[:, 1] = ctr_y + new * np.sin(a)
     return P.reshape(surf.shape)
 
 
 def woven_loop(tag, open_):
-    """8 x 45 x 1.2 woven loop sewn at the top of the back seam, hanging as a U (swung a little toward -x)."""
-    top = np.array([0.0, 6.2, 74.0])
+    """Woven loop 8 x 45 x 1.2: a ribbon folded in half (two layers, round fold at the bottom), both ends sewn into
+    the top of the back seam, hanging as a flat U tab down the back."""
+    top = np.array([0.0, 5.2, 74.3])
     L = 45.0
-    s = np.linspace(0, 1, 80)
-    # U: down 20 mm, around, back up; drawn in the plane of the back, tilted out and toward -x
-    depth = L / 2 - 4.0
+    leg = (L - math.pi * 1.4) / 2.0
     pts = []
-    for t in s:
-        a = t * math.pi
-        x = -4.2 * math.cos(a)
-        zz = -depth * math.sin(a) ** 0.6
-        pts.append([x, 0.0, zz])
+    for t in np.linspace(0, leg, 26):                       # outer leg, going down
+        pts.append([0.0, 1.4, -t])
+    for a in np.linspace(0, math.pi, 14)[1:-1]:             # the fold (R 1.4)
+        pts.append([0.0, 1.4 * math.cos(a), -leg - 1.4 * math.sin(a)])
+    for t in np.linspace(leg, 0, 26):                       # inner leg, back up
+        pts.append([0.0, -1.4, -t])
     pts = np.array(pts)
-    rot = Matrix.Rotation(R(TUNE.get('loop_swing', 0.0)), 3, 'Y') @ Matrix.Rotation(R(26.0), 3, 'X')
-    P = np.array([rot @ Vector(p) for p in pts]) + top + np.array([0, 1.6, 0])
-    # ribbon: 8 mm wide along the path normal to the back, 1.2 thick
-    n_side = np.array([0.0, 1.0, 0.2])
-    n_side /= np.linalg.norm(n_side)
+    rot = Matrix.Rotation(R(24.0), 3, 'X')                  # hangs a little away from the back
+    P = np.array([rot @ Vector(p) for p in pts]) + top + np.array([0, 2.2, 0])
     tang = np.gradient(P, axis=0)
     tang /= np.linalg.norm(tang, axis=1, keepdims=True)
-    wdir = np.cross(tang, n_side)
-    wdir /= np.linalg.norm(wdir, axis=1, keepdims=True)
-    ring = np.stack([P - wdir * 4.0 - n_side * 0.6, P + wdir * 4.0 - n_side * 0.6, P + wdir * 4.0 + n_side * 0.6,
-                     P - wdir * 4.0 + n_side * 0.6], 1)
+    wdir = np.tile(np.array([1.0, 0, 0]), (len(P), 1))
+    thk = np.cross(tang, wdir)
+    thk /= np.linalg.norm(thk, axis=1, keepdims=True)
+    ring = np.stack([P - wdir * 4.0 - thk * 0.6, P + wdir * 4.0 - thk * 0.6, P + wdir * 4.0 + thk * 0.6,
+                     P - wdir * 4.0 + thk * 0.6], 1)
     Rn = len(P)
     verts = ring.reshape(-1, 3)
     quads = grid_quads(Rn, 4)
@@ -1736,11 +1741,11 @@ def woven_loop(tag, open_):
     ob = build_mesh(tag + '_loop', verts, np.vstack([quads, caps]), smooth=True)
     orient_outward(ob, P.mean(0))
     bv = ob.modifiers.new('bev', 'BEVEL')
-    bv.width = 0.35 * MM
+    bv.width = 0.3 * MM
     bv.segments = 2
-    m = mat_simple('knit_loop', '#D8572A', 0.8)
     m2, nt, p, out = new_mat('knit_loop_w')
-    set_in(p, 'Base Color', srgb('#D8572A'))
+    # brief colour #D8572A r 0.8; a touch deeper so the directly lit rough ribbon still reads ember after AgX
+    set_in(p, 'Base Color', srgb(TUNE.get('loop_col', '#C24A20') if isinstance(TUNE.get('loop_col', 0), str) else '#C24A20'))
     set_in(p, 'Roughness', 0.8)
     set_in(p, 'Specular IOR Level', 0.3)
     _noise_bump(nt, p, 3000.0, 0.5, 0.0002)
@@ -2123,7 +2128,7 @@ def shot_boxback():
     sweep('#D9CDBE')
     sl = build_sleeve('b')
     sl.rotation_euler = (0, 0, R(180))
-    T = Vector((0, -0.039, TUNE.get('bb_z', 60.0) * MM))
+    T = Vector((0, -0.039, TUNE.get('bb_z', 56.0) * MM))
     studio3(T, 1.0, bg=7.0)
     # straight on, 0 / 0 / 400; a 95 mm lens so the 6 pt legal block is legible (x-height ~ 11 px)
     cam = cam_aed(T, 0.0, 0.0, 400.0, TUNE.get('bb_lens', 95.0), 11.0, focus=T)
