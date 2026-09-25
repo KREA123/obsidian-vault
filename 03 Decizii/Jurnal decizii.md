@@ -17,6 +17,7 @@ Format: `YYYY-MM-DD — decizie — de ce — sursa`. Cele mai noi sus. Se adaug
 - „Nu punem la dispoziție ce nu avem în stoc.”
 
 ## Septembrie 2026
+- 2026-09-25 — Reconfirmat de Andu: **forma și culorile v6 rămân singurul design aprobat** (`renders/v6/`). Studiul de mărimi v7 (S/M/L) a fost doar un test și nu schimbă designul; orice variantă mai mare păstrează exact proporțiile v6
 - 2026-09-25 — **Fără firmă nouă**: SOUL se dezvoltă în **ARTEMIS DIGITAL S.R.L.** (firma existentă, KREA/MundiShop); căutăm finanțare pentru ea (Startup Nation iese din calcul) — Andu
 - 2026-09-25 — **SOUL e internațional: engleza e limba implicită** (produs, SoulOS, site, materiale pentru investitori); româna rămâne a doua limbă. Notele interne din Obsidian rămân în română — Andu
 - 2026-09-25 — **Forma și culorile SOUL sunt fixate (Andu: „chiar îmi place, rămân”)**: piatra HOPA în picioare, talpă plată, aluminiu sablat anodizat; culori Argintiu, Grafit, Midnight (albastru), Ember (portocaliu), Șampanie — `micul-smecher/renders/v6/`
