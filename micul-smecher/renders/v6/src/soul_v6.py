@@ -33,8 +33,8 @@ os.makedirs(CACHE6, exist_ok=True)
 # tone-matched polymer soles
 ALU = {
     'silver':    dict(col='#CBCDCF', sole='#B4B6B8', rough=0.34, coat=0.10, name='Argint natural'),
-    'graphite':  dict(col='#55575B', sole='#3C3E41', rough=0.36, coat=0.22, name='Grafit'),
-    'midnight':  dict(col='#26324C', sole='#1D2435', rough=0.36, coat=0.22, name='Albastru noapte'),
+    'graphite':  dict(col='#55575B', sole='#3C3E41', rough=0.40, coat=0.22, name='Grafit'),
+    'midnight':  dict(col='#26324C', sole='#1D2435', rough=0.39, coat=0.22, name='Albastru noapte'),
     'ember':     dict(col='#D2622C', sole='#A44A22', rough=0.35, coat=0.18, name='Jar'),
     'champagne': dict(col='#D8C3A2', sole='#BDAA8A', rough=0.34, coat=0.12, name='Șampanie'),
 }
@@ -444,9 +444,10 @@ def shot_family6():
     return shot_family()
 
 
-FAMILY = [('graphite', 'soul_smug', dict(roll=-5.0)), ('ember', 'soul_left', dict(pitch=6.0)),
-          ('perla', 'soul_front', dict()), ('midnight', 'cream_look', dict(roll=6.0)),
-          ('champagne', 'soul_wide', dict(roll=-3.0))]
+# flat base: every SOUL stands upright (no rocked poses any more); the life is in the eyes
+FAMILY = [('graphite', 'soul_smug', dict()), ('ember', 'soul_left', dict()),
+          ('perla', 'soul_front', dict()), ('midnight', 'cream_look', dict()),
+          ('champagne', 'soul_wide', dict())]
 
 
 def _post_family():

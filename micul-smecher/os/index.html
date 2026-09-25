@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SoulOS</title>
 <meta name="description" content="Prototip interactiv pentru SoulOS, interfața rotundă a lui SOUL.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -63,6 +65,8 @@ button{font:inherit;color:inherit}
 .body{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 .glass:has(.screen:focus-visible){outline:2px dashed rgba(90,97,95,.55);outline-offset:12px}
 .pebble.buzz{animation:buzz .32s linear 2}
+.pebble.tick{animation:tick .14s ease-out 1}
+@keyframes tick{0%,100%{transform:translate(0,0)}35%{transform:translate(-1px,.5px)}70%{transform:translate(1px,-.5px)}}
 @keyframes buzz{0%,100%{transform:translate(0,0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(2px,1px)}}
 .glass{position:absolute;left:8.75%;width:82.5%;top:9.2%;aspect-ratio:1;border-radius:50%;background:#000;
   box-shadow:0 0 0 1.5px #050505,0 0 0 3.5px rgba(255,255,255,.55),0 0 0 5px rgba(90,96,100,.35),inset 0 0 18px rgba(0,0,0,.9)}
@@ -81,17 +85,8 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 
 /* ---------- device UI (466px space) ---------- */
 #cards{position:absolute;inset:0}
-.card{position:absolute;inset:0;transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .32s ease}
-.card.in-left{transform:translateX(62%);opacity:0}
-.card.in-right{transform:translateX(-62%);opacity:0}
-.card.in-up{transform:translateY(40%);opacity:0}
-.card.in-down{transform:translateY(-40%);opacity:0}
-.card.in-fade{transform:scale(.94);opacity:0}
-.card.out-left{transform:translateX(-62%);opacity:0}
-.card.out-right{transform:translateX(62%);opacity:0}
-.card.out-up{transform:translateY(-30%);opacity:0}
-.card.out-down{transform:translateY(40%);opacity:0}
-.card.out-fade{transform:scale(1.04);opacity:0}
+.card{position:absolute;inset:0;will-change:transform,opacity;transform-origin:233px 233px;backface-visibility:hidden}
+.card.leaving{pointer-events:none}
 .c{position:absolute;left:68px;right:68px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
 .lbl{position:absolute;left:0;right:0;top:136px;text-align:center;font:500 19px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,240,200,.56)}
 .lbl.amber{color:var(--amber)}.lbl.mint{color:var(--mint)}.lbl.ice{color:var(--ice)}
@@ -110,19 +105,22 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .chip.btn{cursor:pointer}
 .tool{font:400 19px/1 var(--mono);color:rgba(159,198,255,.8)}
 
-.dots{position:absolute;left:0;right:0;bottom:27px;display:flex;justify-content:center;gap:9px;transition:opacity .3s;pointer-events:none}
-.dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,240,200,.25);transition:background .3s,transform .3s}
-.dots i.on{background:var(--cream);transform:scale(1.25)}
-.dots i.home{width:9px;border-radius:2px}
+.dots{position:absolute;inset:0;display:block;transition:opacity .3s;pointer-events:none;z-index:2}
+.dots i{position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(255,240,200,.24);transition:background .3s,transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .3s}
+.dots i.on{background:var(--cream);transform:scale(1.4);box-shadow:0 0 8px rgba(255,240,200,.7)}
+.dots i.home{border-radius:2px}
 .dots.hide{opacity:0}
 
-.pill{position:absolute;top:18px;left:50%;transform:translate(-50%,-140%);max-width:320px;min-height:54px;padding:8px 24px;border-radius:27px;
-  display:flex;align-items:center;gap:12px;background:#1f1d18;color:var(--cream);font:500 22px/1.1 var(--display);white-space:nowrap;
-  transition:transform .45s cubic-bezier(.2,.9,.25,1.2);border:2px solid rgba(255,240,200,.15);z-index:5}
+.pill{position:absolute;top:18px;left:50%;transform:translate(-50%,-150%);max-width:330px;min-height:54px;padding:8px 24px;border-radius:27px;
+  display:flex;align-items:center;gap:12px;background:rgba(36,33,27,.74);color:var(--cream);font:500 22px/1.1 var(--display);white-space:nowrap;
+  -webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5);
+  transition:transform .6s cubic-bezier(.3,1.45,.45,1),opacity .35s;border:1.5px solid rgba(255,240,200,.16);z-index:7;
+  box-shadow:0 12px 30px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
 .pill.show{transform:translate(-50%,0)}
 .pill .who{color:rgba(255,240,200,.6)}
-.pill.amber{border-color:var(--amber);color:var(--amber);background:#241a0c;box-shadow:0 0 18px rgba(255,179,71,.35)}
-.pill.mint{border-color:rgba(201,242,228,.6);color:var(--mint);background:#10201b}
+.pill.amber{border-color:rgba(255,179,71,.85);color:var(--amber);background:rgba(44,30,10,.8);box-shadow:0 0 22px rgba(255,179,71,.35),0 12px 30px rgba(0,0,0,.55)}
+.pill.mint{border-color:rgba(201,242,228,.6);color:var(--mint);background:rgba(16,34,28,.8)}
+.pill.ghost{z-index:6;pointer-events:none;transition:transform .5s cubic-bezier(.3,1.3,.5,1),opacity .7s ease}
 .pill span{overflow:hidden;text-overflow:ellipsis}
 
 .stack{position:absolute;top:168px;left:74px;right:74px;display:flex;flex-direction:column;gap:12px}
@@ -270,7 +268,196 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .foot{font-size:13px;color:var(--muted);margin:0;max-width:52ch}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);margin-top:12px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:#000;box-shadow:inset 0 0 0 3px var(--c)}
-@media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in{animation:none}}
+/* ================= SoulOS 2 ================= */
+/* type scale for the 466 px round glass: 104 hero · 64 xl · 34 l · 27 m · 22 s · 19 caps labels */
+.screen{--fs-hero:104px;--fs-xl:64px;--fs-l:34px;--fs-m:27px;--fs-s:22px;--fs-xs:19px;
+  --glass:rgba(30,28,23,.6);--glass-line:rgba(255,240,200,.15);--spring:cubic-bezier(.34,1.56,.64,1)}
+/* micro-interactions: every control dips and brightens under the finger, then springs back */
+[data-act]{transition:scale .34s var(--spring),filter .2s ease}
+.prs{scale:.92;filter:brightness(1.35)}
+#fx{position:absolute;inset:0;pointer-events:none;z-index:9;overflow:hidden;border-radius:50%}
+.rip{position:absolute;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,240,200,.2),rgba(255,240,200,.06) 45%,rgba(255,240,200,0) 70%);animation:rip .55s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes rip{from{transform:scale(.15);opacity:1}to{transform:scale(1.3);opacity:0}}
+#dimmer{position:absolute;inset:0;background:#000;pointer-events:none;z-index:12;opacity:0;border-radius:50%}
+.sg{display:inline-flex;gap:6px;vertical-align:-2px;margin-left:8px}
+.sg svg{width:20px;height:20px;fill:rgba(255,240,200,.55)}
+.coach{position:absolute;left:0;right:0;bottom:56px;text-align:center;font:500 20px/1 var(--display);color:rgba(255,240,200,.42);letter-spacing:.02em;animation:fin .8s .6s ease both}
+
+/* launcher: honeycomb of round icons, fisheye toward the rim */
+.lnc{position:absolute;inset:0}
+.lic{position:absolute;left:0;top:0;width:80px;height:80px;border-radius:50%;will-change:transform,opacity;cursor:pointer;
+  box-shadow:0 9px 18px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.5),inset 0 1.5px 0 rgba(255,255,255,.4),inset 0 -4px 8px rgba(0,0,0,.28)}
+.lic svg{width:100%;height:100%;display:block;border-radius:50%}
+.lic::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(110% 80% at 32% 10%,rgba(255,255,255,.42),rgba(255,255,255,.08) 38%,rgba(255,255,255,0) 52%)}
+.lic.face{box-shadow:inset 0 0 0 2px rgba(255,240,200,.3),0 0 26px rgba(255,240,200,.1)}
+.lic.face::after{display:none}
+.lnl{position:absolute;left:50%;top:402px;transform:translateX(-50%);padding:9px 20px;border-radius:22px;font:500 22px/1 var(--display);color:var(--cream);
+  background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--glass-line);white-space:nowrap;pointer-events:none}
+
+/* Today: a snapping stack of widgets */
+.wg{position:absolute;left:68px;top:0;width:330px;height:164px;border-radius:44px;padding:20px 28px;will-change:transform,opacity;cursor:pointer;overflow:hidden;
+  background:linear-gradient(165deg,rgba(255,240,200,.13),rgba(255,240,200,.045) 60%);border:1px solid var(--glass-line);
+  box-shadow:0 14px 30px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.09);display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:left}
+.wg-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:500 17px/1 var(--display);letter-spacing:.13em;text-transform:uppercase;color:rgba(255,240,200,.55)}
+.wg-h small{font:inherit;letter-spacing:.04em;text-transform:none}
+.wg-row{display:flex;align-items:center;gap:16px;min-width:0}
+.wg-big{font:500 52px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.wg-sub{font:400 21px/1.2 var(--display);color:rgba(255,240,200,.7);min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wg-t{font:500 26px/1.15 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wg.amber{border-color:rgba(255,179,71,.55);background:linear-gradient(165deg,rgba(255,179,71,.2),rgba(255,179,71,.05) 60%)}
+.wg .pdot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
+.tdots{position:absolute;inset:0;pointer-events:none}
+.tdots i{position:absolute;width:7px;height:7px;border-radius:50%;background:rgba(255,240,200,.25);transition:background .25s,transform .3s var(--spring)}
+.tdots i.on{background:var(--cream);transform:scale(1.35)}
+
+/* Control Center: pulled down over the face, frosted */
+#cc{position:absolute;inset:0;border-radius:50%;z-index:6;pointer-events:none;opacity:0;transform:translate3d(0,-466px,0);will-change:transform,opacity;
+  background:radial-gradient(circle at 50% 30%,rgba(40,37,30,.55),rgba(12,11,9,.78));-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6)}
+.cch{position:absolute;top:48px;left:0;right:0;display:flex;justify-content:center;gap:18px;font:500 22px/1 var(--display);color:rgba(255,240,200,.7);font-variant-numeric:tabular-nums}
+.cch span{display:inline-flex;align-items:center;gap:4px;color:var(--mint)}
+.cch svg{width:18px;height:18px;fill:currentColor}
+.cct{position:absolute;top:96px;left:0;right:0;display:flex;justify-content:center;gap:14px}
+.ccb{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:rgba(255,240,200,.1);border:1px solid rgba(255,240,200,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);transition:scale .34s var(--spring),filter .2s,background .25s,border-color .25s}
+.ccb svg{width:30px;height:30px;fill:none;stroke:var(--cream);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ccb svg .f{fill:var(--cream);stroke:none}
+.ccb.on{background:var(--cream);border-color:var(--cream)}
+.ccb.on svg{stroke:#16130c}.ccb.on svg .f{fill:#16130c}
+.ccb.ice.on{background:var(--ice);border-color:var(--ice)}
+.ccb.mint.on{background:var(--mint);border-color:var(--mint)}
+.ccb.warn{background:rgba(255,179,71,.2);border-color:rgba(255,179,71,.7)}
+.ccb.warn svg{stroke:var(--amber)}
+.ccst{position:absolute;top:180px;left:60px;right:60px;text-align:center;font:500 20px/1 var(--display);color:rgba(255,240,200,.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccs{position:absolute;left:73px;width:320px;height:62px;border-radius:31px;overflow:hidden;cursor:ew-resize;display:flex;align-items:center;gap:12px;padding:0 22px;
+  background:rgba(255,240,200,.1);border:1px solid rgba(255,240,200,.14);font:500 22px/1 var(--display);color:var(--cream)}
+.ccs .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,240,200,.75),rgba(255,240,200,.95));border-radius:31px 0 0 31px;pointer-events:none}
+.ccs[data-slider="vol"] .fill{background:linear-gradient(90deg,rgba(159,198,255,.7),rgba(159,198,255,.95))}
+.ccs svg,.ccs b{position:relative;mix-blend-mode:difference}
+.ccs b{font-weight:500;color:#fff}
+.ccs svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;flex:none}
+.ccai{position:absolute;left:50%;transform:translateX(-50%);height:52px;padding:0 22px;border-radius:26px;display:flex;align-items:center;gap:10px;cursor:pointer;white-space:nowrap;
+  font:500 22px/1 var(--display);color:var(--amber);background:rgba(255,179,71,.12);border:1.5px solid rgba(255,179,71,.5)}
+.ccai.off{color:rgba(255,240,200,.7);background:rgba(255,240,200,.08);border-color:rgba(255,240,200,.2)}
+.ccai svg{width:22px;height:22px;fill:currentColor}
+.ccgrab{position:absolute;left:209px;top:436px;width:48px;height:6px;border-radius:3px;background:rgba(255,240,200,.35)}
+
+/* status ring on the rim: battery (left), Claude (right); listening is the full ice ring drawn by the face */
+#sring{position:absolute;inset:0;width:466px;height:466px;pointer-events:none;z-index:2;transition:opacity .35s ease}
+#sring path{fill:none;stroke-linecap:round}
+/* always-on clock while asleep */
+#aod{position:absolute;left:0;right:0;top:318px;text-align:center;pointer-events:none;opacity:0;transition:opacity 1s ease;z-index:2}
+#aod.on{opacity:1}
+#aod b{display:block;font:500 58px/1 var(--display);color:rgba(255,240,200,.36);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+#aod small{display:block;margin-top:10px;font:500 19px/1 var(--display);color:rgba(255,240,200,.26);letter-spacing:.12em;text-transform:uppercase}
+/* charging */
+#chg{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .45s ease;z-index:4}
+#chg.on{opacity:1}
+#chg .chg-arc{transition:stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 8px rgba(201,242,228,.8))}
+.chg-c{position:absolute;left:0;right:0;top:282px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--mint)}
+.chg-c b{display:flex;align-items:center;gap:6px;font:500 58px/1 var(--display);font-variant-numeric:tabular-nums}
+.chg-c b svg{width:40px;height:40px;fill:var(--mint);filter:drop-shadow(0 0 8px rgba(201,242,228,.7))}
+.chg-c small{font:500 20px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:rgba(201,242,228,.7)}
+/* the tour's finger */
+#finger{position:absolute;left:0;top:0;width:52px;height:52px;border-radius:50%;pointer-events:none;z-index:11;opacity:0;
+  background:radial-gradient(circle,rgba(255,255,255,.4),rgba(255,255,255,.14) 60%,rgba(255,255,255,0) 72%);border:2px solid rgba(255,255,255,.55);
+  transition:opacity .25s,scale .15s ease;box-shadow:0 0 18px rgba(255,255,255,.25)}
+#finger.show{opacity:1}
+#finger.down{scale:.8;background:radial-gradient(circle,rgba(255,255,255,.7),rgba(255,255,255,.25) 60%,rgba(255,255,255,0) 72%)}
+
+/* Weather */
+.wxmain{position:absolute;top:150px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:4px}
+.wxt{font:500 92px/1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.wxc{position:absolute;top:262px;left:0;right:0;text-align:center;font:400 24px/1 var(--display);color:rgba(255,240,200,.72)}
+.wxh{position:absolute;top:302px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+.wxh div{width:58px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.wxh small{font:500 16px/1 var(--mono);color:rgba(255,240,200,.5)}
+.wxh b{font:500 21px/1 var(--display)}
+.wxd{position:absolute;top:410px;left:0;right:0;display:flex;justify-content:center;gap:8px}
+.wxd i{width:7px;height:7px;border-radius:50%;background:rgba(255,240,200,.25)}.wxd i.on{background:var(--cream)}
+.wx-rays{transform-origin:50px 50px;animation:spin 16s linear infinite}
+.wx-cloud{animation:drift 5s ease-in-out infinite alternate}
+.wx-rain line{animation:drop 1s linear infinite}
+.wx-rain line:nth-child(2){animation-delay:-.33s}.wx-rain line:nth-child(3){animation-delay:-.66s}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift{from{transform:translateX(-2.5px)}to{transform:translateX(2.5px)}}
+@keyframes drop{0%{transform:translateY(-5px);opacity:0}30%{opacity:1}100%{transform:translateY(7px);opacity:0}}
+.wxbody{position:absolute;inset:0}
+.wxbody.swap{animation:fin .45s ease both}
+
+/* Timer / stopwatch */
+.seg2{position:absolute;top:122px;left:50%;transform:translateX(-50%);display:flex;padding:4px;border-radius:26px;background:rgba(255,240,200,.08);border:1px solid var(--glass-line)}
+.seg2 span{padding:10px 18px;border-radius:22px;font:500 20px/1 var(--display);color:rgba(255,240,200,.6);cursor:pointer;white-space:nowrap}
+.seg2 span.on{background:var(--cream);color:#16130c}
+.tdig{position:absolute;top:186px;left:0;right:0;text-align:center;font:500 78px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.tdig small{font-size:42px;color:rgba(255,240,200,.55)}
+.tlaps{position:absolute;top:276px;left:120px;right:120px;display:flex;flex-direction:column;gap:6px}
+.tlaps div{display:flex;justify-content:space-between;font:500 20px/1 var(--display);color:rgba(255,240,200,.6);font-variant-numeric:tabular-nums}
+.tpre{position:absolute;top:274px;left:0;right:0;display:flex;justify-content:center;gap:10px}
+.tpre span{min-width:58px;height:44px;padding:0 12px;border-radius:22px;display:grid;place-items:center;font:500 21px/1 var(--display);cursor:pointer;
+  background:rgba(255,240,200,.08);border:1.5px solid rgba(255,240,200,.2)}
+.tpre span.on{border-color:var(--amber);color:var(--amber);background:rgba(255,179,71,.12)}
+.tbtns{position:absolute;top:334px;left:0;right:0;display:flex;justify-content:center;gap:22px}
+.tb{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:rgba(255,240,200,.1);border:1.5px solid rgba(255,240,200,.2)}
+.tb svg{width:30px;height:30px;fill:var(--cream)}
+.tb.go{background:var(--mint);border-color:var(--mint)}.tb.go svg{fill:#10201b}
+.tb.stop{background:var(--amber);border-color:var(--amber)}.tb.stop svg{fill:#241a0c}
+.tb.dis{opacity:.35}
+
+/* Soul page */
+.sname{position:absolute;top:142px;left:0;right:0;text-align:center;font:500 48px/1 var(--display);cursor:pointer;letter-spacing:.01em}
+.sname i{font-style:normal;font-size:26px;color:rgba(255,240,200,.45);margin-left:8px;vertical-align:10px}
+.sborn{position:absolute;top:202px;left:70px;right:70px;text-align:center;font:400 20px/1.3 var(--display);color:rgba(255,240,200,.6)}
+.smood{position:absolute;top:258px;left:50%;transform:translateX(-50%);height:52px;padding:0 24px;border-radius:26px;display:flex;align-items:center;gap:12px;white-space:nowrap;cursor:pointer;
+  font:500 24px/1 var(--display);background:rgba(255,240,200,.08);border:1.5px solid rgba(255,240,200,.2)}
+.smood i{width:14px;height:14px;border-radius:50%;box-shadow:0 0 10px currentColor}
+.smet{position:absolute;top:328px;left:86px;right:86px;display:flex;flex-direction:column;gap:9px}
+.smet div{display:grid;grid-template-columns:118px 1fr;align-items:center;gap:12px;font:500 18px/1 var(--display);color:rgba(255,240,200,.6)}
+.smet span{height:8px;border-radius:4px;background:rgba(255,240,200,.12);overflow:hidden}
+.smet span i{display:block;height:100%;border-radius:4px;transition:width .8s var(--spring)}
+
+/* Games */
+.gtile{position:absolute;top:168px;left:83px;width:300px;height:212px;border-radius:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-align:center;
+  background:linear-gradient(165deg,rgba(255,215,107,.18),rgba(255,215,107,.04) 65%);border:1px solid rgba(255,215,107,.3);box-shadow:0 14px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
+.gtile svg{width:60px;height:60px;animation:twinkle 2.4s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(255,215,107,.6))}
+.gtile b{font:500 28px/1 var(--display)}
+.gtile small{font:400 18px/1.25 var(--display);color:rgba(255,240,200,.62);max-width:240px}
+.gtile em{font-style:normal;margin-top:4px;height:40px;padding:0 20px;border-radius:20px;display:grid;place-items:center;font:500 21px/1 var(--display);background:#FFD76B;color:#2a1f05}
+.gbest{position:absolute;top:392px;left:0;right:0;text-align:center;font:500 19px/1 var(--display);color:var(--mint);letter-spacing:.04em}
+.gfield{position:absolute;inset:0}
+.gstar{position:absolute;width:64px;height:64px;pointer-events:none;will-change:transform,opacity}
+.gstar svg{width:100%;height:100%;filter:drop-shadow(0 0 10px rgba(255,215,107,.85))}
+.gscore{position:absolute;top:90px;left:0;right:0;text-align:center;font:500 40px/1 var(--display);color:var(--cream);font-variant-numeric:tabular-nums}
+.gburst{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:3px solid #FFD76B;pointer-events:none;animation:burst .5s ease-out forwards}
+.gplus{position:absolute;font:600 26px/1 var(--display);color:#FFD76B;pointer-events:none;animation:plus .8s ease-out forwards;transform:translate(-50%,-50%)}
+@keyframes burst{from{transform:scale(.3);opacity:1}to{transform:scale(1.5);opacity:0}}
+@keyframes plus{from{opacity:1;margin-top:0}to{opacity:0;margin-top:-46px}}
+@keyframes twinkle{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.1) rotate(12deg)}}
+.gover{position:absolute;top:166px;left:0;right:0;text-align:center;font:500 96px/1 var(--display);font-variant-numeric:tabular-nums}
+/* music extras */
+.mt{display:flex;justify-content:space-between;width:220px;margin-top:6px;font:500 16px/1 var(--mono);color:rgba(255,240,200,.45)}
+
+/* ---------- page: tour bar under the device, foldable panel sections ---------- */
+.tourbar{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:440px}
+.tourbtns{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.tourb{border:0;border-radius:999px;padding:11px 20px;cursor:pointer;font:500 16px/1 var(--display);background:var(--on);color:var(--on-ink);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.tourb:active{transform:scale(.95)}
+.tourb.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.tourb.live{background:var(--amber);color:#1b1206}
+.tourcap{min-height:1.5em;margin:0;text-align:center;font:500 16px/1.4 var(--display);color:var(--ink);max-width:40ch;text-wrap:balance;transition:opacity .3s}
+.tourcap small{display:block;font:400 12px/1 var(--mono);color:var(--muted);margin-bottom:4px}
+.tourcap:empty{opacity:0}
+details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::after{content:"+";font:400 18px/1 var(--mono);color:var(--muted);margin-bottom:12px}
+details.fold[open]>summary::after{content:"–"}
+@media (max-width:480px){.pebble{width:calc(100% - 4px)}body{padding-inline:14px}}
+@media (hover:none) and (pointer:coarse){.keys{display:none}}
+html{overscroll-behavior-x:none}
+
+@media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in,.coach,.wxbody.swap{animation:none}
+  .rip,.wx-rays,.wx-cloud,.wx-rain line,.gtile svg{animation:none!important}[data-act],.ccb,.tdots i,.dots i{transition:none!important}}
 </style>
 
 <header class="top">
@@ -317,22 +504,40 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
       <div class="glass" id="glass">
         <div class="screen" id="screen" tabindex="0" role="application" aria-label="SOUL screen">
           <canvas id="face" aria-hidden="true"></canvas>
+          <div id="aod" aria-hidden="true"><b data-live="aod"></b><small id="aodd"></small></div>
           <div id="cards"></div>
+          <svg id="sring" viewBox="0 0 466 466" aria-hidden="true"><path id="sr-bat" stroke-width="5"/><path id="sr-batg" stroke-width="5"/><path id="sr-cl" stroke-width="5"/></svg>
           <div class="dots hide" id="dots" aria-hidden="true"></div>
+          <div id="chg" aria-hidden="true"></div>
           <div id="kb" aria-live="polite"></div>
+          <div id="cc" role="dialog" aria-label="Control"></div>
           <div class="pill" id="pill" aria-live="polite"></div>
+          <div id="fx" aria-hidden="true"></div>
+          <div id="finger" aria-hidden="true"></div>
+          <div id="dimmer" aria-hidden="true"></div>
         </div>
       </div>
       <button class="side" id="side" type="button" aria-label="Side button"></button>
     </div>
+    <div class="tourbar">
+      <div class="tourbtns"><button type="button" class="tourb" id="tourBtn"></button><button type="button" class="tourb ghost" id="sndBtn"></button></div>
+      <p class="tourcap" id="tourCap" aria-live="polite"></p>
+    </div>
     <p class="keys" id="keys"></p>
   </section>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="icdefs"></defs></svg>
 
   <aside class="panel">
     <div>
       <h1>SoulOS</h1>
       <p class="lede" id="lede"></p>
     </div>
+    <section>
+      <h2 id="tourH"></h2>
+      <p class="hint" id="tourHint" style="margin:0 0 12px"></p>
+      <h2 id="sysH" style="margin-top:18px"></h2>
+      <div class="sens" id="sys"></div>
+    </section>
     <section>
       <h2 id="aiH"></h2>
       <div class="seg" id="aiSeg" role="group"></div>
@@ -346,19 +551,19 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
       <h2 id="sayH"></h2>
       <div class="say" id="say"></div>
     </section>
-    <section>
-      <h2 id="scrH"></h2>
+    <details class="fold" open>
+      <summary><h2 id="scrH"></h2></summary>
       <ul class="screens" id="screens"></ul>
-    </section>
-    <section>
-      <h2 id="ctlH"></h2>
+    </details>
+    <details class="fold" open>
+      <summary><h2 id="ctlH"></h2></summary>
       <dl class="ctrl" id="ctrl"></dl>
-    </section>
-    <section>
-      <h2 id="senH"></h2>
+    </details>
+    <details class="fold" open>
+      <summary><h2 id="senH"></h2></summary>
       <div class="sens" id="sens"></div>
       <div class="legend" id="legend"></div>
-    </section>
+    </details>
     <p class="foot" id="foot"></p>
   </aside>
 </main>
@@ -559,6 +764,83 @@ en: {
 let LANG = "ro";
 try { const l = localStorage.getItem("soulos-lang"); if (l === "en" || l === "ro") LANG = l; } catch (e) {}
 const T = () => STR[LANG];
+/* ---- SoulOS 2 strings (merged into STR) ---- */
+const STR2 = {
+ro: {
+  weather: "Vremea", timer: "Cronometru", soul: "Soul", games: "Jocuri", apps: "Aplicații", memory: "Memorie", about: "Sunt un AI", cc: "Control",
+  d2: { today: "Glisează ↑ de pe față: widgeturi care se așază singure (vreme, memento, focus, Claude, baterie, notificări).",
+    apps: "Fagurele rotund cu toate aplicațiile. Glisează → de pe față, apasă butonul lateral sau dă din rotița mouse-ului.",
+    weather: "Trei zile, scriptat. Atinge pentru ziua următoare.", timer: "Cronometru cu ture și minutar cu inel pe margine.",
+    soul: "Cum îl cheamă, când s-a născut, cum se simte azi.", games: "Prinde steaua: ochii urmăresc fiecare stea." },
+  keys: [["←", "→", "aplicații / fagure"], ["↑", "Azi"], ["↓", "control / înapoi"], ["Space", "ține = vorbește"], ["Enter", "atinge"], ["D", "atinge de 2×"], ["Esc", "buton"], ["A–Z", "cu tastatura deschisă: scrii în câmp"]],
+  ctrl: [["Atinge", "Acțiunea principală a ecranului. Pe față: bup."], ["Atinge de 2×", "Refuză o cerere Claude. Pe față: râde."], ["Ține apăsat", "Vorbești cu el (inel albastru = ascultă). Pe o cerere Claude: aprobă."],
+    ["Glisează → pe față", "Fagurele de aplicații. Tragi de el cu inerție; atingi o iconiță și aplicația crește din ea."], ["Glisează ← → în aplicații", "Aplicația următoare. Cartonașul vine după deget și revine elastic dacă nu tragi destul."],
+    ["Glisează ↑ / ↓", "Azi (widgeturi) / înapoi acasă. Pe față, ↓ trage Centrul de control."], ["Butonul lateral", "Apasă: acasă, apoi fagurele. Ține: vorbești. Apăsat de 2×: anulează."],
+    ["Tastatura", "Atingi literele (litera intră la ridicarea degetului). Ține pe a/i/s/t: ă â î ș ț. „sa” devine „să” la spațiu; ⌫ imediat după anulează schimbarea. ⌫ ținut șterge cuvinte. Butonul lateral = înapoi, ciorna rămâne."]],
+  coach: "→ aplicații · ↑ Azi · ↓ control",
+  wx: { city: "București", days: [
+    { d: "Azi", t: 17, c: "Înnorat", hi: 19, lo: 11, ic: "cloud", h: [["12", 16, "cloud"], ["14", 17, "part"], ["16", 18, "part"], ["18", 15, "cloud"], ["20", 13, "rain"]] },
+    { d: "Mâine", t: 19, c: "Însorit", hi: 21, lo: 10, ic: "sun", h: [["09", 12, "sun"], ["12", 18, "sun"], ["15", 21, "sun"], ["18", 19, "part"], ["21", 14, "cloud"]] },
+    { d: "Sâmbătă", t: 14, c: "Ploaie", hi: 15, lo: 9, ic: "rain", h: [["09", 11, "cloud"], ["12", 13, "rain"], ["15", 14, "rain"], ["18", 12, "rain"], ["21", 10, "cloud"]] }] },
+  swT: "Cronometru", cdT: "Minutar", lapN: n => `Tur ${n}`, cdDone: "Minutar gata ✓", homeCd: t => `Minutar · ${t}`,
+  born: "Născut pe 24 sept. 2026", together: n => n <= 1 ? "prima zi împreună" : `${n} zile împreună`, moodL: "Azi e",
+  moods: ["jucăuș", "curios", "liniștit", "somnoros", "îndrăgostit"], meters: ["Energie", "Bucurie", "Curiozitate"], nameSet: n => `Mă cheamă ${n} ✓`,
+  g1: "Prinde steaua", g1d: "Atinge stelele până se sting. Ochii le urmăresc.", play: "▶ Joacă", again: "↻ Din nou", best: n => `Record: ${n}`, newBest: "Record nou! ★", gOver: "Gata jocul", noBest: "Încă niciun record",
+  ccDnd: "Nu deranja", ccMic: "Microfon", ccSnd: "Sunete", ccLock: "Somn", ccBright: "Luminozitate", ccVol: "Volum", on: "pornit", off: "oprit", ccHint: "Glisează ↑ ca să închizi",
+  micMuted: "Microfonul e oprit", nT: "Notificări", nEmpty: "Nimic nou. Liniște.",
+  chg: "Se încarcă", unplug: "Scos de la încărcat", battLeft: p => `~${Math.max(1, Math.round(p / 38))} zile`,
+  wFocusIdle: "25 min · atinge", setSnd: "Sunete",
+  nfake: [["Ana", "Ajungi la 6?", "msg"], ["Mama", "Ai mâncat ceva?"], ["Curier", "Coletul vine la 15:00"]],
+  kbPh2: { name: "Cum îl cheamă?" }, kbChips2: { name: [["Soul", "Soul"], ["Pufi", "Pufi"], ["Luma", "Luma"]] }, dict2: { name: "Pufi" },
+  dx3: { game: "Ne-am jucat „prinde steaua”.", chg: "Am stat la încărcat." },
+  tourBtn: "▶ Tur ghidat", tourStopB: "■ Oprește turul", tourH: "Tur ghidat · 1 minut", tourHint: "SoulOS se arată singur: fagurele, widgeturile, Centrul de control, notificările, Claude, jocul, încărcarea și somnul. Atinge ecranul ca să preiei controlul.",
+  snd: on => on ? "♪ Sunet: pornit" : "♪ Sunet: oprit",
+  sysH: "Sistem", sys: { apps: "Fagure", today: "Azi", cc: "Centrul de control", notif: "+ Notificare", charge: on => on ? "Scoate din priză" : "⚡ Pune la încărcat", sleep: s => s ? "Trezește-l" : "Adoarme-l" },
+  tour: ["Acasă e fața. O atingi și se bucură; de două ori și râde.", "Glisezi → și apar aplicațiile, într-un fagure rotund.", "Tragi de fagure: iconițele cresc spre centru, ca sub o lupă.",
+    "Atingi o iconiță și aplicația crește din ea.", "Butonul lateral te duce oricând acasă.", "Glisezi ↑: Azi, un teanc de widgeturi care se așază singure.",
+    "Tragi de sus în jos: Centrul de control.", "Notificările alunecă de sus și se așază una peste alta.", "Claude cere voie. Ții apăsat 1,2 s și aprobi.",
+    "Jocuri: prinde steaua. Ochii o urmăresc.", "Îl pui la încărcat și inelul se umple.", "Dacă nu-l atingi, adoarme: doar ochii respiră.", "Îl atingi sau îl ridici și se trezește.", "Gata. Acum e rândul tău!"]
+},
+en: {
+  weather: "Weather", timer: "Timer", soul: "Soul", games: "Games", apps: "Apps", memory: "Memory", about: "I'm an AI", cc: "Control",
+  d2: { today: "Swipe ↑ from the face: widgets that snap into place (weather, reminder, focus, Claude, battery, notifications).",
+    apps: "The round honeycomb of every app. Swipe → from the face, press the side button or turn the mouse wheel.",
+    weather: "Three days, scripted. Tap for the next day.", timer: "Stopwatch with laps and a countdown with a rim ring.",
+    soul: "Its name, its birthday, how it feels today.", games: "Catch the star: the eyes follow every star." },
+  keys: [["←", "→", "apps / honeycomb"], ["↑", "Today"], ["↓", "control / back"], ["Space", "hold = talk"], ["Enter", "tap"], ["D", "double-tap"], ["Esc", "button"], ["A–Z", "keyboard open: types into the field"]],
+  ctrl: [["Tap", "The screen's main action. On the face: boop."], ["Double-tap", "Deny a Claude request. On the face: it laughs."], ["Hold", "Talk to it (blue ring = listening). On a Claude request: approve."],
+    ["Swipe → on the face", "The app honeycomb. Drag it with inertia; tap an icon and the app grows out of it."], ["Swipe ← → in apps", "Next app. The card follows your finger and springs back if you don't pull far enough."],
+    ["Swipe ↑ / ↓", "Today (widgets) / back home. On the face, ↓ pulls down Control Center."], ["Side button", "Press: home, then the honeycomb. Hold: talk. Double-press: cancel."],
+    ["Keyboard", "Tap letters (a letter commits on lift). Hold a/i/s/t: ă â î ș ț. “sa” becomes “să” on space; ⌫ right after undoes it. Holding ⌫ deletes words. Side button = back, the draft is kept."]],
+  coach: "→ apps · ↑ Today · ↓ control",
+  wx: { city: "Bucharest", days: [
+    { d: "Today", t: 17, c: "Cloudy", hi: 19, lo: 11, ic: "cloud", h: [["12", 16, "cloud"], ["14", 17, "part"], ["16", 18, "part"], ["18", 15, "cloud"], ["20", 13, "rain"]] },
+    { d: "Tomorrow", t: 19, c: "Sunny", hi: 21, lo: 10, ic: "sun", h: [["09", 12, "sun"], ["12", 18, "sun"], ["15", 21, "sun"], ["18", 19, "part"], ["21", 14, "cloud"]] },
+    { d: "Saturday", t: 14, c: "Rain", hi: 15, lo: 9, ic: "rain", h: [["09", 11, "cloud"], ["12", 13, "rain"], ["15", 14, "rain"], ["18", 12, "rain"], ["21", 10, "cloud"]] }] },
+  swT: "Stopwatch", cdT: "Countdown", lapN: n => `Lap ${n}`, cdDone: "Timer done ✓", homeCd: t => `Timer · ${t}`,
+  born: "Born on 24 Sep 2026", together: n => n <= 1 ? "our first day together" : `${n} days together`, moodL: "Today it's",
+  moods: ["playful", "curious", "calm", "sleepy", "in love"], meters: ["Energy", "Joy", "Curiosity"], nameSet: n => `My name is ${n} ✓`,
+  g1: "Catch the star", g1d: "Tap the stars before they fade. The eyes follow them.", play: "▶ Play", again: "↻ Again", best: n => `Best: ${n}`, newBest: "New best! ★", gOver: "Game over", noBest: "No best score yet",
+  ccDnd: "Do not disturb", ccMic: "Microphone", ccSnd: "Sounds", ccLock: "Sleep", ccBright: "Brightness", ccVol: "Volume", on: "on", off: "off", ccHint: "Swipe ↑ to close",
+  micMuted: "The microphone is off", nT: "Notifications", nEmpty: "Nothing new. Quiet.",
+  chg: "Charging", unplug: "Unplugged", battLeft: p => `~${Math.max(1, Math.round(p / 38))} days`,
+  wFocusIdle: "25 min · tap", setSnd: "Sounds",
+  nfake: [["Ana", "Will you be there at 6?", "msg"], ["Mom", "Have you eaten?"], ["Courier", "Parcel arrives at 15:00"]],
+  kbPh2: { name: "What's its name?" }, kbChips2: { name: [["Soul", "Soul"], ["Pip", "Pip"], ["Luma", "Luma"]] }, dict2: { name: "Pip" },
+  dx3: { game: "We played catch-the-star.", chg: "Had a nap on the charger." },
+  tourBtn: "▶ Guided tour", tourStopB: "■ Stop the tour", tourH: "Guided tour · 1 minute", tourHint: "SoulOS shows itself: the honeycomb, widgets, Control Center, notifications, Claude, the game, charging and sleep. Touch the screen to take over.",
+  snd: on => on ? "♪ Sound: on" : "♪ Sound: off",
+  sysH: "System", sys: { apps: "Honeycomb", today: "Today", cc: "Control Center", notif: "+ Notification", charge: on => on ? "Unplug" : "⚡ Plug in", sleep: s => s ? "Wake it" : "Put to sleep" },
+  tour: ["Home is the face. Tap it and it's happy; tap twice and it laughs.", "Swipe → and the apps appear, in a round honeycomb.", "Drag the honeycomb: icons grow toward the centre, like under a lens.",
+    "Tap an icon and the app grows out of it.", "The side button always takes you home.", "Swipe ↑: Today, a stack of widgets that snap into place.",
+    "Pull down from the top: Control Center.", "Notifications slide in from the top and stack.", "Claude asks for permission. Hold 1.2 s to approve.",
+    "Games: catch the star. The eyes follow it.", "Put it on the charger and the ring fills up.", "Leave it alone and it falls asleep: only the eyes breathe.", "Tap it or pick it up and it wakes.", "That's it. Your turn!"]
+}};
+for (const l of ["ro", "en"]) {
+  const A = STR[l], B = STR2[l];
+  Object.assign(A.d, B.d2); Object.assign(A.kbPh, B.kbPh2); Object.assign(A.kbChips, B.kbChips2); Object.assign(A.dict, B.dict2); Object.assign(A.dx2, B.dx3);
+  for (const k in B) if (!/^(d2|kbPh2|kbChips2|dict2|dx3)$/.test(k)) A[k] = B[k];
+}
 
 /* ================================================================ eye renderer (port of Face.cpp, from the site) */
 const TAU = Math.PI * 2;
@@ -643,7 +925,7 @@ function drawFace(ctx, S, f, lay) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S);
   if (f.bright <= 0.01) return;
-  const Sk = S * lay.k, cx = S / 2, cy = S / 2 + lay.cy * S, col = f.color, t = f.ot, B = f.bright;
+  const Sk = S * lay.k, cx = S / 2 + (lay.cx || 0) * S, cy = S / 2 + lay.cy * S, col = f.color, t = f.ot, B = f.bright;
   drawEye(ctx, f, f.L, -1, Sk, cx, cy, col);
   drawEye(ctx, f, f.R, 1, Sk, cx, cy, col);
   const th = 0.018 * Sk;
@@ -701,7 +983,7 @@ function drawFace(ctx, S, f, lay) {
 }
 
 /* ================================================================ soul (a trimmed Brain for the OS) */
-const DUR = { boop: 1.7, laugh: 1.5, happy: 2.0, love: 2.2, dizzy: 2.4, star: 2.4, wake: 1.0, nope: 1.2, shy: 2.0, intro: 2.2 };
+const DUR = { wakeup: 1.9, boop: 1.7, laugh: 1.5, happy: 2.0, love: 2.2, dizzy: 2.4, star: 2.4, wake: 1.0, nope: 1.2, shy: 2.0, intro: 2.2 };
 class Soul {
   constructor(cv) {
     this.cv = cv; this.ctx = cv.getContext("2d"); this.S = 0; this.t = 0;
@@ -710,7 +992,7 @@ class Soul {
     this.nextBlink = 1.6; this.blinkAt = -9; this.dbl = false; this.nextGlance = 1; this.glance = [0, 0];
     this.rx = null; this.st = "idle"; this.alert = false; this.prog = 0; this.progCol = PAL.mint; this.look = null;
     this.level = 0; this.lvlT = 0; this.lvlNext = 0; this.dim = 1;
-    this.lay = { k: 1, cy: 0 }; this.layS = { k: 1, cy: 0 }; this.follow = null;
+    this.lay = { k: 1, cy: 0, cx: 0 }; this.layS = { k: 1, cy: 0, cx: 0 }; this.layV = { k: 0, cy: 0, cx: 0 }; this.layDirect = false; this.follow = null;
     const p = this.p = { eyeW: 0.12, eyeH: 0.19, spacing: 0.19, lidTilt: 0.16, lidTop: 0.19 };
     const eye = () => ({ open: 1, scale: 1, sx: 1, sy: 1, lidTop: p.lidTop, lidTilt: p.lidTilt, lidBot: 0, dx: 0, dy: 0 });
     this.f = { L: eye(), R: eye(), gx: 0, gy: 0, spacing: p.spacing, eyeW: p.eyeW, eyeH: p.eyeH, cy: 0.02, bright: 0, glow: 1, color: hex("#FFF0C8"),
@@ -724,6 +1006,7 @@ class Soul {
     if (n === "happy") this.sq.v += 3;
     if (n === "wake" || n === "intro") { this.blinkAt = this.t + (n === "intro" ? 1.3 : 0.15); this.dbl = true; }
     if (n === "intro") { this.brightS = 0; this.openS = 0.05; }
+    if (n === "wakeup") { this.openS = 0.06; this.blinkAt = this.t + 0.8; this.dbl = true; this.sq.v += 3; }
   }
   lookAt(x, y, d) { this.look = { x, y, until: this.t + d }; }
   update(dt) {
@@ -753,6 +1036,8 @@ class Soul {
         case "shy": blush = 1; lid = 0.36; gaze = [0.6, 0.6]; break;
         case "nope": gaze = [0.75 * Math.sin(v * 18) * Math.max(0, 1 - v / 1.1), 0.12]; tilt = -0.2; lid = 0.3; break;
         case "wake": scale = 1.07 - 0.07 * Math.min(1, v / 0.6); gaze = [0, 0]; break;
+        case "wakeup": { const e = Math.min(1, v / 0.6); open = 0.06 + 0.94 * (1 - Math.pow(1 - e, 3)); if (v < 0.5) lid = 0.34;
+          scale = 1 + 0.07 * Math.sin(Math.min(1, v / 0.9) * Math.PI); gaze = v < 0.75 ? [0, 0.15] : v < 1.1 ? [-0.75, -0.1] : v < 1.45 ? [0.75, -0.1] : [0, 0]; break; }
       }
     }
     if (t > this.lvlNext) { this.lvlT = Math.pow(Math.random(), 1.4); this.lvlNext = t + rnd(0.07, 0.16); }
@@ -791,8 +1076,12 @@ class Soul {
     this.openS = approach(this.openS, open, 12 * R, dt);
     this.scaleS = approach(this.scaleS, scale, 10 * R, dt);
     this.brightS = r && r.n === "intro" ? bright : approach(this.brightS, bright, 4 * R, dt);
-    this.layS.k = approach(this.layS.k, this.lay.k, 9 * R, dt);
-    this.layS.cy = approach(this.layS.cy, this.lay.cy, 9 * R, dt);
+    /* the face's size/position is a spring (slight overshoot), or follows directly while a finger/launcher drives it */
+    for (const q of ["k", "cy", "cx"]) {
+      const tg = this.lay[q] || 0;
+      if (RM || this.layDirect) { this.layS[q] = tg; this.layV[q] = 0; }
+      else { const K = 160, C = 2 * Math.sqrt(K) * 0.8; this.layV[q] += (K * (tg - this.layS[q]) - C * this.layV[q]) * dt; this.layS[q] += this.layV[q] * dt; }
+    }
     const sx = 1 + 0.14 * this.sq.x, sy = 1 - 0.14 * this.sq.x;
     for (const e of [f.L, f.R]) {
       e.lidTop = approach(e.lidTop, lid, 9 * R, dt); e.lidTilt = approach(e.lidTilt, tilt, 9 * R, dt);
@@ -815,14 +1104,15 @@ class Soul {
 const $ = s => document.querySelector(s);
 const screen = $("#screen"), cards = $("#cards"), pillEl = $("#pill"), dotsEl = $("#dots"), pebble = $("#pebble");
 const soul = new Soul($("#face"));
-const RING = ["home", "talk", "reminders", "alarms", "notes", "focus", "claude", "diary", "translate", "music", "settings"];
+const RING = ["home", "talk", "weather", "reminders", "alarms", "notes", "focus", "timer", "claude", "diary", "translate", "music", "soul", "games", "settings"];
 const OVERLAY = ["today", "voice", "msg", "memory", "about", "aimode", "dial", "alarmsum", "ring"];
 const PARENT = { memory: "settings", about: "settings", aimode: "settings", alarmsum: "alarms" };
 const LAYOUT = {
   home: { k: 1, cy: 0 }, talk: { k: 0.62, cy: -0.11 }, today: { k: 0.25, cy: -0.35 },
   focus: { k: 0.28, cy: -0.34 }, card: { k: 0.3, cy: -0.33 },
   listen: { k: 0.7, cy: -0.1 }, answer: { k: 0.42, cy: -0.26 }, about: { k: 0.34, cy: -0.3 },
-  kb: { k: 0.2, cy: -0.414 }, kbdict: { k: 0.46, cy: 0.04 }, dial: { k: 0.19, cy: -0.268 }, alarmsum: { k: 0.17, cy: -0.3 }, ring: { k: 0.44, cy: -0.2 }
+  kb: { k: 0.2, cy: -0.414 }, kbdict: { k: 0.46, cy: 0.04 }, dial: { k: 0.19, cy: -0.268 }, alarmsum: { k: 0.17, cy: -0.3 }, ring: { k: 0.44, cy: -0.2 },
+  sleep: { k: 0.74, cy: -0.07 }, chg: { k: 0.5, cy: -0.15 }, game: { k: 0.4, cy: 0 }, apps: { k: 0.165, cy: 0 }
 };
 const S = {
   view: "home", ret: "home", ai: "claude", bright: 1, sleeping: false,
@@ -831,8 +1121,13 @@ const S = {
   focus: { run: false, left: 1500, total: 1500, done: false },
   claude: { pending: null }, music: { play: true, pos: 0.38 },
   tr: { a: "RO", b: "EN", last: null },
-  voice: null, pill: null, phraseIdx: 0, memCount: 12, memWiped: false, lastQA: null
+  voice: null, pill: null, phraseIdx: 0, memCount: 12, memWiped: false, lastQA: null,
+  /* SoulOS 2 */
+  cc: false, dnd: false, micMute: false, vol: 0.7, batt: { lvl: 78, chg: false }, chgShow: false, nh: [], nfIdx: 0, coach: true, lastAct: performance.now(),
+  wx: { day: 0 }, tm: { mode: "sw", sw: { run: false, acc: 0, t0: 0, laps: [] }, cd: { run: false, left: 180, total: 180, done: false } },
+  soul: { name: null, mood: 0, boops: 0 }, game: { run: false, over: false, score: 0, best: 0, left: 25, t: 0, stars: [], next: 0, id: 0, streak: 0, newBest: false }
 };
+try { S.game.best = +localStorage.getItem("soulos-best") || 0; const nm = localStorage.getItem("soulos-name"); if (nm) S.soul.name = nm; } catch (e) {}
 function initData() {
   const L = T();
   if (!S.rems) S.rems = L.rems.map((r, i) => ({ time: r[0], key: "r" + i, done: !!r[2] }));
@@ -874,20 +1169,16 @@ function cardHTML(v) {
       let tag = "";
       if (S.claude.pending) tag = `<div class="homeTag amber">${L.homeClaude}</div>`;
       else if (S.focus.run) tag = `<div class="homeTag cream" data-live="homefocus">${L.homeFocus(mmss(S.focus.left))}</div>`;
-      return `<div class="clock" data-live="clock">${hhmm()}</div>${tag}`;
+      else if (S.tm.cd.run) tag = `<div class="homeTag cream" data-live="homecd">${L.homeCd(mmss(S.tm.cd.left))}</div>`;
+      else if (S.coach) tag = `<div class="coach">${esc(L.coach)}</div>`;
+      return `<div class="clock"><span data-live="clock">${hhmm()}</span>${statusGlyphs()}</div>${tag}`;
     }
-    case "today": {
-      const next = S.rems.filter(r => !r.done).sort((a, b) => a.time.localeCompare(b.time))[0];
-      const c = S.claude.pending ? [`amber`, L.cWait] : [`ice`, L.cBusy];
-      const date = new Date().toLocaleDateString(LANG === "ro" ? "ro-RO" : "en-GB", { weekday: "short", day: "numeric", month: "short" });
-      return `<div class="lbl" style="top:118px">${L.lblToday} · ${esc(date)}</div>
-      <div class="stack">
-        <div class="row"><i class="dot cream"></i><div><small>${L.nextRem}</small><b>${next ? next.time + " " + esc(remText(next)) : "—"}</b></div></div>
-        <div class="row"><i class="dot mint"></i><div><small>${L.weather}</small><b>${L.weatherV}</b></div></div>
-        <div class="row"><i class="dot ${c[0]}"></i><div><small>Claude</small><b class="${S.claude.pending ? "amber" : ""}">${c[1]}</b></div></div>
-        <div class="row"><i class="dot mint"></i><div><small>${L.battery}</small><b>${L.batteryV}</b></div></div>
-      </div>`;
-    }
+    case "today": return todayHTML();
+    case "apps": return launcherHTML();
+    case "weather": return weatherHTML();
+    case "timer": return timerHTML();
+    case "soul": return soulHTML();
+    case "games": return gamesHTML();
     case "talk": {
       const qa = S.lastQA, off = S.ai === "none";
       return `<div class="c" style="top:256px;gap:10px"><div style="font:600 22px/1.2 'Nunito',system-ui,sans-serif;color:${off ? "var(--amber)" : "var(--ice)"}">${esc(L.aiModes[S.ai])} · ${esc(L.aiTag[S.ai])}</div>
@@ -942,14 +1233,15 @@ function cardHTML(v) {
       return `<div class="lbl">${L.musT}</div>
       <div class="c" style="top:176px;gap:8px"><div class="t1" style="font-size:31px">${L.song}</div><div class="t3">${L.artist}</div>
       <div class="ctrls" style="margin-top:14px"><span class="cb" data-act="prev" role="button" aria-label="prev">${IC.prev}</span><span class="cb big" data-act="play" role="button" aria-label="play">${M.play ? IC.pause : IC.play}</span><span class="cb" data-act="next" role="button" aria-label="next">${IC.next}</span></div>
-      <div class="bar" style="margin-top:16px"><i style="width:${Math.round(M.pos * 100)}%"></i></div></div>`;
+      <div class="bar" style="margin-top:16px"><i data-live="mbar" style="width:${(M.pos * 100).toFixed(1)}%"></i></div><div class="mt"><span data-live="mt">${mmss(M.pos * 214)}</span><span>3:34</span></div></div>`;
     }
     case "settings":
-      return `<div class="lbl">${L.settings}</div><div class="set">
-        <div data-act="bright"><span>${L.setBright}</span><b>${Math.round(S.bright * 100)}%</b></div>
-        <div data-act="ai"><span>${L.setAi}</span><b class="${S.ai === "none" ? "dim" : ""}">${esc(L.aiShort[S.ai])} ›</b></div>
-        <div data-act="mem"><span>${L.setMem}</span><b class="dim">${L.setMemV(S.memWiped ? 0 : S.memCount)} ›</b></div>
-        <div data-act="about"><span>${L.setAbout}</span><b class="dim">${L.setAboutV} ›</b></div></div>`;
+      return `<div class="lbl">${L.settings}</div><div class="set" style="top:160px">
+        <div data-act="bright" style="height:50px"><span>${L.setBright}</span><b>${Math.round(S.bright * 100)}%</b></div>
+        <div data-act="snd" style="height:50px"><span>${L.setSnd}</span><b class="${AU.on ? "" : "dim"}">${AU.on ? L.on : L.off}</b></div>
+        <div data-act="ai" style="height:50px"><span>${L.setAi}</span><b class="${S.ai === "none" ? "dim" : ""}">${esc(L.aiShort[S.ai])} ›</b></div>
+        <div data-act="mem" style="height:50px"><span>${L.setMem}</span><b class="dim">${L.setMemV(S.memWiped ? 0 : S.memCount)} ›</b></div>
+        <div data-act="about" style="height:50px"><span>${L.setAbout}</span><b class="dim">${L.setAboutV} ›</b></div></div>`;
     case "aimode":
       return `<div class="lbl">${L.aimT}</div><div class="set">${["none", "claude", "chatgpt", "api"].map(m =>
         `<div data-act="aim" data-m="${m}" role="radio" aria-checked="${S.ai === m}"><span${S.ai === m ? ' style="color:var(--mint)"' : ""}>${esc(L.aiModes[m])}</span><b>${S.ai === m ? "✓" : ""}</b></div>`).join("")}</div>`;
@@ -986,22 +1278,26 @@ function cardHTML(v) {
   return "";
 }
 
-/* ---------------------------------------------------------------- navigation */
-let curCard = null;
+/* ---------------------------------------------------------------- navigation (spring-driven cards) */
+let curCard = null, NAV = null;
 function layoutFor(v) {
   if (v === "voice") { const V = S.voice; return V && V.phase === "answer" ? LAYOUT.answer : LAYOUT.listen; }
-  if (["home", "talk", "today", "focus", "dial", "alarmsum", "ring"].includes(v)) return LAYOUT[v];
+  if (v === "games" && S.game.run) return LAYOUT.game;
+  if (["home", "talk", "today", "focus", "dial", "alarmsum", "ring", "apps"].includes(v)) return LAYOUT[v];
   return LAYOUT.card;
 }
 function applyFaceState() {
   const v = S.view;
+  soul.layDirect = false;
   if (S.kb && !S.sleeping) {
-    soul.lay = Object.assign({}, S.kb.dict ? LAYOUT.kbdict : LAYOUT.kb);
+    soul.lay = Object.assign({ cx: 0 }, S.kb.dict ? LAYOUT.kbdict : LAYOUT.kb);
     soul.st = S.kb.dict ? "listen" : "idle"; soul.alert = false; return;
   }
-  const lay = Object.assign({}, layoutFor(v));
-  if (S.pill && lay.k < 0.9) { lay.k = Math.min(lay.k, 0.22); lay.cy = S.view === "today" ? -0.31 : -0.28; }
-  soul.lay = lay;
+  let lay = Object.assign({ cx: 0 }, layoutFor(v));
+  if (S.pill && lay.k < 0.9 && v !== "apps" && !(v === "games" && S.game.run)) { lay.k = Math.min(lay.k, 0.22); lay.cy = S.view === "today" ? -0.31 : -0.28; }
+  if (S.sleeping) lay = Object.assign({ cx: 0 }, LAYOUT.sleep);
+  else if (S.chgShow && v === "home") lay = Object.assign({ cx: 0 }, LAYOUT.chg);
+  if (v !== "apps" || S.sleeping) soul.lay = lay;      // in the launcher the face is the centre cell (launcherFrame moves it)
   if (S.sleeping) { soul.st = "sleep"; return; }
   if (v === "voice") soul.st = S.voice.phase === "listen" ? "listen" : S.voice.phase === "think" ? "think" : S.voice.speaking ? "speak" : "idle";
   else if (v === "focus" && S.focus.run) soul.st = "focus";
@@ -1010,54 +1306,93 @@ function applyFaceState() {
   else soul.st = "idle";
   soul.alert = (!!S.claude.pending && v !== "voice") || (v === "ring" && S.ringWake);
 }
+/* page dots sit on an arc along the bottom rim, like the rest of the round UI */
 function renderDots() {
-  const i = RING.indexOf(S.view);
+  const i = RING.indexOf(S.view), n = RING.length, step = 4.4;
   dotsEl.classList.toggle("hide", i <= 0 || !!S.kb);
-  dotsEl.innerHTML = RING.map((r, j) => `<i class="${j === 0 ? "home" : ""} ${j === i ? "on" : ""}"></i>`).join("");
+  dotsEl.innerHTML = RING.map((r, j) => {
+    const a = (90 + ((n - 1) / 2 - j) * step) * Math.PI / 180, x = 233 + 216 * Math.cos(a) - 4, y = 233 + 216 * Math.sin(a) - 4;
+    return `<i class="${j === 0 ? "home" : ""} ${j === i ? "on" : ""}" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px"></i>`;
+  }).join("");
 }
-function go(v, dir = "fade") {
+const ENTER = { left: { x: 300, o: 0 }, right: { x: -300, o: 0 }, up: { y: 210, o: 0 }, down: { y: -170, o: 0 }, fade: { s: 0.93, o: 0 }, zoom: { s: 0.17, o: 0.1 }, none: {} };
+const EXIT = { left: { x: -300, o: 0 }, right: { x: 300, o: 0 }, up: { y: -170, o: 0 }, down: { y: 230, o: 0 }, fade: { s: 1.05, o: 0 }, zoom: { s: 1.8, o: 0 }, shrink: { s: 0.62, o: 0 }, none: { o: 0 } };
+function go(v, dir = "fade", opt = {}) {
+  if (NAV) opt = Object.assign({}, NAV, opt);
   if (S.kb) kbBack(true);
+  if (S.cc) ccClose(true);
+  bumpIdle();
   if (S.view === v && curCard) { refresh(); return; }
   const prev = S.view;
+  if (prev === "games" && v !== "games" && S.game.run) gameEnd(true);
   if (!OVERLAY.includes(v) || v === "today") S.ret = v;
   if (OVERLAY.includes(v) && v !== "today" && !OVERLAY.includes(prev)) S.ret = prev;
   S.view = v;
+  if (v === "apps") Object.assign(LN, { open: RM ? 1 : 0, ov: 0, px: 0, py: 0, vx: 0, vy: 0, drag: null, tgt: null, near: null });
+  if (v === "today") Object.assign(TD, { s: RM ? 0 : -0.55, v: 0, tgt: 0, drag: null });
   if (S.pill && S.pill.act && S.pill.act === v) hidePill();
   if (v !== "voice") cancel("answer");
   const el = document.createElement("div");
-  el.className = "card" + (RM ? "" : " in-" + dir);
+  el.className = "card"; el.dataset.v = v;
   el.innerHTML = cardHTML(v);
+  if (opt.origin) el.style.transformOrigin = `${opt.origin[0].toFixed(1)}px ${opt.origin[1].toFixed(1)}px`;
   cards.appendChild(el);
+  setSt(el, Object.assign({ x: 0, y: 0, s: 1, o: 1 }, RM ? {} : (ENTER[dir] || ENTER.fade)));
+  spring(el, { x: 0, y: 0, s: 1, o: 1 }, dir === "zoom" ? { k: 250, c: 27 } : { k: 330, c: 31 });
   if (curCard) {
-    const old = curCard;
+    const old = curCard; old.classList.add("leaving");
+    const ex = opt.exit || (v === "home" && dir === "down" && !["today", "apps"].includes(prev) ? "shrink" : dir);
+    if (ex === "zoom" && opt.origin) old.style.transformOrigin = el.style.transformOrigin;
     if (RM) old.remove();
-    else { old.className = "card out-" + dir; setTimeout(() => old.remove(), 450); }
+    else spring(old, EXIT[ex] || EXIT.fade, { v: opt.vOut, k: 300, c: 30, done: () => old.remove() });
   }
   curCard = el;
-  void el.offsetWidth; el.className = "card";
   // eyes follow the card in, then settle on it
   if (dir === "left") soul.lookAt(0.8, 0.3, 0.45);
   else if (dir === "right") soul.lookAt(-0.8, 0.3, 0.45);
   else if (dir === "up") soul.lookAt(0, 0.9, 0.5);
+  else if (dir === "zoom" && opt.origin) soul.lookAt(clamp((opt.origin[0] - 233) / 150, -1, 1), clamp((opt.origin[1] - 233) / 150, -1, 1), 0.5);
   if (v === "home" && prev !== "home") soul.lookAt(0, 0, 0.4);
+  sfx(dir === "zoom" || v === "apps" ? "open" : v === "home" && prev !== "home" ? "close" : "swish");
   applyFaceState(); renderDots(); syncPanel();
 }
 function refresh() { if (curCard) curCard.innerHTML = cardHTML(S.view); applyFaceState(); renderDots(); }
 function back() { const r = S.ret && S.ret !== S.view ? S.ret : "home"; go(RING.includes(r) || r === "today" ? r : "home", "down"); }
 function parentOf(v) { if (v === "dial") return S.edit && S.edit.kind === "rem" ? "reminders" : S.edit && S.edit.fromSum ? "alarmsum" : "alarms"; return PARENT[v] || (RING.includes(S.ret) ? S.ret : "home"); }
 
-/* ---------------------------------------------------------------- pill (notifications) */
+/* ---------------------------------------------------------------- pill (notifications): slide in, older ones stack behind */
+let ghosts = [];
 function showPill(o) {
+  if (o.incoming) {
+    S.nh.unshift({ who: o.who || "", text: o.text, kind: o.kind || "", t: hhmm() }); if (S.nh.length > 6) S.nh.length = 6;
+    if (S.dnd && o.kind !== "amber") { if (S.view === "today") refresh(); return; }       // Do not disturb: kept in Today, no banner
+  }
+  const wasShown = S.pill && pillEl.classList.contains("show");
+  if (wasShown && !RM && o.incoming) {
+    const g = pillEl.cloneNode(true); g.removeAttribute("id"); g.removeAttribute("aria-live"); g.classList.add("ghost");
+    screen.insertBefore(g, pillEl); ghosts.unshift(g);
+    ghosts.forEach((x, i) => requestAnimationFrame(() => { x.style.transform = `translate(-50%,${14 + i * 10}px) scale(${(0.9 - i * 0.06).toFixed(2)})`; x.style.opacity = i > 1 ? "0" : String(0.5 - i * 0.2); }));
+    setTimeout(() => { g.style.opacity = "0"; }, 2600); setTimeout(() => { g.remove(); ghosts = ghosts.filter(x => x !== g); }, 3400);
+  }
   S.pill = o; cancel("pill");
   pillEl.className = "pill " + (o.kind || "");
   pillEl.innerHTML = (o.who ? `<span class="who">${esc(o.who)}</span>` : "") + `<span>${esc(o.text)}</span>`;
   void pillEl.offsetWidth; pillEl.classList.add("show"); screen.classList.add("has-pill");
   if (!S.sleeping) soul.lookAt(0, -1, 1.4);
   applyFaceState();
+  sfx(o.kind === "amber" ? "alert" : o.incoming ? "notify" : o.kind === "mint" ? "chime" : "soft");
   if (o.dur) after(o.dur, hidePill, "pill");
 }
 function hidePill() { S.pill = null; pillEl.classList.remove("show"); screen.classList.remove("has-pill"); applyFaceState(); }
-function buzz() { if (RM) return; pebble.classList.remove("buzz"); void pebble.offsetWidth; pebble.classList.add("buzz"); }
+function buzz() { hap("heavy", true); if (RM) return; pebble.classList.remove("buzz"); void pebble.offsetWidth; pebble.classList.add("buzz"); }
+/* simulated haptics: the drawn device nudges; on a phone the real motor ticks too */
+const COARSE = matchMedia("(pointer: coarse)").matches;
+function hap(kind = "light", noVisual) {
+  const ua = navigator.userActivation;
+  if (COARSE && navigator.vibrate && (!ua || ua.hasBeenActive)) { try { navigator.vibrate(kind === "light" ? 8 : kind === "double" ? [14, 70, 14] : kind === "heavy" ? [40, 60, 40] : 16); } catch (e) {} }
+  if (RM || noVisual || kind === "light") return;
+  pebble.classList.remove("tick"); void pebble.offsetWidth; pebble.classList.add("tick");
+}
 
 /* ---------------------------------------------------------------- voice pipeline (scripted) */
 function nextPhrase(kind) {
@@ -1125,15 +1460,15 @@ function claudeArrive() {
   if (S.claude.pending) return;
   if (S.view === "voice" || S.sleeping) { after(4000, claudeArrive, "claude"); return; }
   S.claude.pending = { cmd: "npm run build" };
-  buzz();
-  if (S.view !== "claude") showPill({ kind: "amber", text: T().claudePill, act: "claude", dur: 5000 });
+  if (!S.dnd) buzz();
+  if (S.view !== "claude") showPill({ kind: "amber", text: T().claudePill, act: "claude", dur: 5000, incoming: true });
   if (S.view === "claude" || S.view === "home" || S.view === "today") refresh();
 }
 function claudeDecide(ok) {
   if (!S.claude.pending) return;
   S.claude.pending = null; soul.prog = 0;
   hidePill();
-  if (ok) { soul.react("happy", 2.2); showPill({ kind: "mint", text: T().approved, dur: 2200 }); addDiary("ok"); }
+  if (ok) { soul.react("happy", 2.2); hap("double"); showPill({ kind: "mint", text: T().approved, dur: 2200 }); addDiary("ok"); }
   else { soul.react("nope"); showPill({ text: T().denied, dur: 2000 }); addDiary("no"); }
   refresh();
 }
@@ -1682,12 +2017,13 @@ function checkAlarms() {
 function ringAlarm(a) {
   if (S.kb) kbBack(true);
   if (hold) holdEnd();
-  if (S.sleeping) { S.sleeping = false; soul.dim = 1; screen.style.opacity = ""; }
+  if (S.sleeping) { S.sleeping = false; soul.dim = 1; screen.style.opacity = ""; aodEl.classList.remove("on"); }
+  if (S.cc) ccClose(true);
   if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); }
   hidePill(); S.ringing = a; S.ringWake = false; addDiary("ring");
   go("ring", "fade");
   after(RM ? 50 : 900, () => { if (S.ringing !== a) return; S.ringWake = true; soul.react("wake"); applyFaceState(); }, "ring");
-  const bz = () => { if (S.ringing !== a) return; buzz(); after(1600, bz, "ringbuzz"); }; bz();
+  const bz = () => { if (S.ringing !== a) return; buzz(); sfx("alarm"); after(1600, bz, "ringbuzz"); }; bz();
 }
 function ringEnd(snooze) {
   const a = S.ringing, L = T(); if (!a) return;
@@ -1710,11 +2046,14 @@ let hold = null; // {kind, p}
 function holdStart() {
   if (S.sleeping) { wake(); return; }
   const v = S.view;
+  if (S.cc || v === "apps" || (v === "games" && S.game.run)) return;
   if (v === "claude" && S.claude.pending) { hold = { kind: "approve", p: 0 }; soul.progCol = PAL.mint; return; }
   if (v === "memory" && !S.memWiped) { hold = { kind: "wipe", p: 0 }; soul.progCol = PAL.amber; return; }
   if (["dial", "alarmsum", "ring", "aimode"].includes(v)) return;
+  if (S.micMute) { showPill({ kind: "amber", text: T().micMuted, dur: 2200 }); soul.react("nope"); hap("double"); return; }
   if (v === "voice" && S.voice && S.voice.phase !== "listen") { S.voice = null; }
   const kind = v === "notes" ? "note" : v === "translate" ? "tr" : "ask";
+  sfx("listen"); hap("light");
   hold = { kind: "voice" };
   startVoice(kind);
 }
@@ -1730,11 +2069,14 @@ function tap(target) {
   // buttons act on every tap: a fast second tap on a control is never swallowed as a double-tap
   const actEl = target && target.closest && target.closest("[data-act]");
   if (actEl) { lastTap = 0; act(actEl.dataset.act, actEl); return; }
+  if (S.cc) return;
   const now = performance.now(), dbl = now - lastTap < 330;
   lastTap = dbl ? 0 : now;
   if (dbl) { doubleTap(); return; }
   switch (S.view) {
-    case "home": soul.react("boop"); break;
+    case "home": soul.react("boop"); S.soul.boops++; sfx("boop"); hap("light"); break;
+    case "weather": act("wx-next"); break;
+    case "apps": if (!target) { const n = LN.near; if (n) openApp(n, lnIcon(n)); } break;
     case "focus": {
       const F = S.focus;
       if (F.done) { S.focus = { run: true, left: 1500, total: 1500, done: false }; }
@@ -1749,10 +2091,11 @@ function tap(target) {
 }
 function doubleTap() {
   if (S.view === "claude" && S.claude.pending) { claudeDecide(false); return; }
-  if (S.view === "home" || S.view === "talk") soul.react("laugh");
+  if (S.view === "home" || S.view === "talk") { soul.react("laugh"); sfx("laugh"); S.soul.boops++; }
 }
 function act(a, el) {
   const L = T();
+  if (!/^(cc-|snd|game-start|open)/.test(a)) { sfx("tap"); hap("light"); }
   switch (a) {
     case "rem": {
       const r = S.rems.find(x => x.key === el.dataset.k); if (!r) return;
@@ -1761,7 +2104,9 @@ function act(a, el) {
     case "swap": { const t = S.tr.a; S.tr.a = S.tr.b; S.tr.b = t; S.tr.last = null; soul.lookAt(0.8, 0.2, 0.3); refresh(); break; }
     case "play": S.music.play = !S.music.play; refresh(); break;
     case "prev": case "next": S.music.pos = a === "next" ? 0.02 : 0; soul.lookAt(a === "next" ? 0.9 : -0.9, 0.4, 0.5); refresh(); break;
-    case "bright": S.bright = S.bright >= 1 ? 0.4 : S.bright >= 0.7 ? 1 : 0.7; screen.style.filter = S.bright < 1 ? `brightness(${0.35 + 0.65 * S.bright})` : ""; refresh(); break;
+    case "bright": setBright(S.bright >= 1 ? 0.4 : S.bright >= 0.7 ? 1 : 0.7); refresh(); break;
+    case "snd": setSound(!AU.on); refresh(); break;
+    default: act2(a, el); break;
     case "ai": go("aimode", "left"); break;
     case "aim": setAi(el.dataset.m); break;
     case "type-ai": openTypeAI(el.dataset.o || S.view); break;
@@ -1789,8 +2134,14 @@ function act(a, el) {
 function swipe(dir) {
   if (S.sleeping) return;
   const v = S.view;
+  S.coach = false;
+  if (S.cc) { if (dir === "up") ccClose(); return; }
+  if (v === "apps") { lnNudge(dir); return; }
+  if (v === "games" && S.game.run) return;
+  if (v === "today") { if (dir === "up") stackGo(TD.tgt + 1); else if (dir === "down") { if (TD.tgt > 0) stackGo(TD.tgt - 1); else go("home", "down"); } return; }
+  if (v === "home" && dir === "right") { go("apps", "none"); return; }
+  if (v === "home" && dir === "down") { ccOpen(); return; }
   if (v === "voice") { if (S.voice && S.voice.phase === "answer") { S.voice = null; cancel("answer"); go("home", "down"); } return; }
-  if (v === "today") { if (dir === "down") go("home", "down"); return; }
   if (v === "ring") return;
   if (OVERLAY.includes(v)) { if (dir === "down" || dir === "right") { const r = parentOf(v); go(RING.includes(r) || OVERLAY.includes(r) ? r : "home", dir === "right" ? "right" : "down"); } return; }
   if (v === "notes" && (dir === "up" || (dir === "down" && S.notePage > 0))) {
@@ -1805,19 +2156,33 @@ function swipe(dir) {
   go(RING[(i + (dir === "left" ? 1 : -1) + n) % n], dir);
 }
 function sideButton() {
+  sfx("click"); hap("light");
   if (S.sleeping) { wake(); return; }
+  if (S.cc) { ccClose(); return; }
   if (S.kb) { if (S.kb.dict) kbDictStop(); else kbBack(); return; }     // keyboard open: side press = back, the draft is kept
   if (S.view === "ring") { ringEnd(false); return; }
   if (S.view === "dial" || S.view === "alarmsum" || S.view === "aimode") { go(parentOf(S.view), "down"); return; }
   if (hold) holdEnd();
   if (S.view === "voice") { S.voice = null; cancel("voice"); cancel("answer"); }
-  if (S.view === "home") { soul.react("wake"); soul.lookAt(0.9, 0, 0.6); return; }
+  if (S.view === "home") { go("apps", "none"); return; }                 // like a crown press: face ⇄ honeycomb
+  if (S.view === "apps") { go("home", "fade", { exit: "shrink" }); return; }
   go("home", "down");
 }
 function wake() {
   if (!S.sleeping) return;
-  S.sleeping = false; soul.dim = 1; screen.style.opacity = "";
-  soul.react("wake"); hidePill(); go("home", "fade"); applyFaceState();
+  S.sleeping = false; screen.style.opacity = ""; aodEl.classList.remove("on");
+  soul.react("wakeup"); hidePill(); go("home", "fade"); applyFaceState(); sfx("wake"); hap("light"); syncPanel();
+}
+function goSleep(withPill) {
+  if (S.ringing) return;
+  if (S.kb) kbBack(true);
+  if (hold) holdEnd();
+  if (S.cc) ccClose(true);
+  S.voice = null; cancel("voice"); cancel("answer");
+  if (S.game.run) gameEnd(true);
+  go("home", "fade"); S.sleeping = true; hidePill(); applyFaceState();
+  aodEl.classList.add("on"); updateAod(); sfx("sleep"); syncPanel();
+  if (withPill) showPill({ text: T().dnd, dur: 1600 });
 }
 function imu(k) {
   const L = T();
@@ -1828,50 +2193,138 @@ function imu(k) {
     if (S.pill && S.pill.kind !== "amber") hidePill();
   }
   if (k === "down") {
-    if (S.kb) kbBack(true);
     if (S.ringing) ringEnd(true);
-    if (hold) holdEnd();
-    S.voice = null; cancel("voice"); cancel("answer");
-    go("home", "fade"); S.sleeping = true; hidePill(); applyFaceState();
-    showPill({ text: L.dnd, dur: 1600 });
+    goSleep(true);
   }
 }
 
-/* pointer on the round screen */
+/* pointer on the round screen: taps, holds and live drags. A drag moves the thing under the finger
+   (card, face, honeycomb, widget stack, Control Center); on release a spring finishes the motion or rubber-bands back. */
 let ptr = null;
 const to466 = e => { const b = screen.getBoundingClientRect(); return { x: (e.clientX - b.left) / b.width * 466, y: (e.clientY - b.top) / b.height * 466 }; };
+function velOf(p) {
+  const h = p.hist, n = h.length; if (n < 2) return [0, 0];
+  const b = h[n - 1]; if (performance.now() - b.t > 80) return [0, 0];
+  const a = h[Math.max(0, n - 5)], dt = (b.t - a.t) / 1000; if (dt < 0.004) return [0, 0];
+  return [(b.x - a.x) / dt, (b.y - a.y) / dt];
+}
+function pressOn(t) { const a = t && t.closest && t.closest("[data-act]"); if (a) a.classList.add("prs"); return a; }
+function pressOff(p) { if (p && p.prsEl) { p.prsEl.classList.remove("prs"); p.prsEl = null; } }
+const fxEl = $("#fx");
+function ripple(p) { if (RM) return; const i = document.createElement("i"); i.className = "rip"; i.style.left = p.x.toFixed(0) + "px"; i.style.top = p.y.toFixed(0) + "px"; fxEl.appendChild(i); setTimeout(() => i.remove(), 600); }
+function dragKind(p, dx, dy) {
+  const v = S.view, ax = p.axis;
+  if (S.cc) return ax === "y" ? "ccclose" : null;
+  if (p.pill) return null;
+  if (v === "apps") return "pan";
+  if (["voice", "ring", "dial"].includes(v) || (v === "games" && S.game.run)) return null;
+  if (ax === "y" && dy > 0 && (v === "home" || p.p0.y < 62) && v !== "today") return "cc";
+  if (v === "home") return "face";
+  if (v === "today") return ax === "y" ? "stack" : null;
+  if (v === "notes" && ax === "y") return null;              // notes page with ↑/↓: release semantics
+  return "card";
+}
+function cardTargets(v) {
+  if (RING.includes(v)) return { left: 1, right: 1, down: 1, up: 0 };
+  return { left: 0, right: 1, down: 1, up: 0 };                // overlays: → and ↓ go back
+}
+function dragMove(p, dx, dy) {
+  switch (p.drag) {
+    case "pan": lnDrag(dx, dy); break;
+    case "stack": stackDrag(dy); break;
+    case "cc": ccDrag(-466 + dy * 1.45); break;
+    case "ccclose": ccDrag(dy < 0 ? dy * 1.25 : rubber(dy, 40)); break;
+    case "face": {
+      const x = rubber(dx, 110), y = rubber(dy, 110);
+      soul.layDirect = true; soul.lay = { k: 1 - Math.min(0.2, (Math.abs(x) + Math.abs(y)) / 466 * 0.45), cy: y / 466, cx: x / 466 }; break;
+    }
+    case "card": {
+      const t = cardTargets(S.view), el = curCard; if (!el) return;
+      let x = 0, y = 0;
+      if (p.axis === "x") x = (dx < 0 ? t.left : t.right) ? dx : rubber(dx, 80);
+      else y = (dy > 0 ? t.down : t.up) ? dy : rubber(dy, 80);
+      const m = Math.abs(x) + Math.abs(y);
+      setSt(el, { x, y, s: 1 - Math.min(0.1, m / 466 * 0.2), o: 1 - Math.min(0.6, m / 466 * 0.95) });
+      const now = performance.now(); if (!p.lookT || now - p.lookT > 120) { p.lookT = now; soul.lookAt(clamp(x / 140, -1, 1), clamp(y / 140 + 0.2, -1, 1), 0.35); }
+    }
+  }
+}
+function dragEnd(p, dx, dy, vx, vy, cancelled) {
+  const ax = p.axis, d = ax === "x" ? dx : dy, vel = ax === "x" ? vx : vy;
+  const flick = (dist, vmin) => !cancelled && (Math.abs(d) > dist || (Math.abs(vel) > vmin && Math.sign(vel) === Math.sign(d)));
+  switch (p.drag) {
+    case "pan": lnRelease(cancelled ? 0 : vx, cancelled ? 0 : vy); break;
+    case "stack": stackRelease(cancelled ? 0 : dy, cancelled ? 0 : vy); break;
+    case "cc": if (!cancelled && (ccY() > -300 || vy > 500)) ccOpen(vy); else ccClose(false, vy); break;
+    case "ccclose": if (!cancelled && (dy < -80 || vy < -500)) ccClose(false, vy); else ccOpen(vy); break;
+    case "face": soul.layDirect = false; applyFaceState();
+      if (flick(70, 450)) swipe(ax === "x" ? (d < 0 ? "left" : "right") : (d < 0 ? "up" : "down"));
+      break;
+    case "card": {
+      const t = cardTargets(S.view), dir = ax === "x" ? (d < 0 ? "left" : "right") : (d > 0 ? "down" : "up");
+      if (t[dir] && flick(105, 520)) {
+        NAV = { vOut: ax === "x" ? { x: vel } : { y: vel }, exit: dir === "down" ? "down" : undefined };
+        try { swipe(dir); } finally { NAV = null; }
+        if (curCard && curCard._st && (curCard._st.x || curCard._st.y) && !ANIMS.has(curCard)) spring(curCard, { x: 0, y: 0, s: 1, o: 1 });
+        return;
+      }
+      if (curCard) spring(curCard, { x: 0, y: 0, s: 1, o: 1 }, { v: ax === "x" ? { x: vx } : { y: vy }, k: 420, c: 30 });
+    }
+  }
+}
 screen.addEventListener("pointerdown", e => {
   e.preventDefault(); screen.focus({ preventScroll: true });
   try { screen.setPointerCapture(e.pointerId); } catch (x) {}
   if (S.kb && kp) kbUp();                       // a second finger landed before the first lifted: commit the first key
-  ptr = { x: e.clientX, y: e.clientY, target: e.target, held: false, id: e.pointerId };
+  const p = to466(e), now = performance.now();
+  ptr = { x: e.clientX, y: e.clientY, p0: p, target: e.target, held: false, id: e.pointerId, hist: [{ t: now, x: p.x, y: p.y }] };
   const pEl = e.target.closest && e.target.closest(".pill");
   if (pEl && S.pill) { ptr.pill = true; }
   if (!ptr.pill && !S.sleeping) {
-    const p = to466(e);
     // the keyboard owns every touch over it: no hold-to-talk, no swipes, no double-tap merge
     if (S.kb) { ptr.kb = true; cancel("hold"); kbDown(p); return; }
+    if (S.cc) { cancel("hold"); ptr.prsEl = pressOn(e.target); const sl = e.target.closest && e.target.closest("[data-slider]"); if (sl) { ptr.slider = sl.dataset.slider; ccSlide(p); } return; }
     if (S.view === "dial" && !(e.target.closest && e.target.closest("[data-act]")) && Math.hypot(p.x - 233, p.y - 233) >= 165) { ptr.dial = true; cancel("hold"); dialDown(p); return; }
+    if (S.view === "games" && S.game.run) { ptr.game = true; cancel("hold"); gameTap(p); ripple(p); return; }
+    if (S.view === "apps") { ptr.pan = true; lnGrab(); }
   }
-  cancel("hold"); after(380, () => { if (ptr && !ptr.moved && !ptr.pill) { ptr.held = true; holdStart(); } }, "hold");
+  ptr.prsEl = pressOn(e.target);
+  if (!S.sleeping && !ptr.pill) ripple(p);
+  cancel("hold");
+  if (!ptr.pan) after(380, () => { if (ptr && !ptr.moved && !ptr.pill) { ptr.held = true; pressOff(ptr); holdStart(); } }, "hold");
 });
 screen.addEventListener("pointermove", e => {
   const b = screen.getBoundingClientRect();
   soul.follow = S.view === "home" ? { x: clamp((e.clientX - b.left) / b.width * 2 - 1, -1, 1), y: clamp((e.clientY - b.top) / b.height * 2 - 1, -1, 1), t: performance.now() } : null;
   if (!ptr) return;
-  if (ptr.kb) { kbMove(to466(e)); return; }
-  if (ptr.dial) { dialMove(to466(e)); return; }
-  if (Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > 14 && !ptr.held) { ptr.moved = true; cancel("hold"); }
+  const p = to466(e);
+  ptr.hist.push({ t: performance.now(), x: p.x, y: p.y }); if (ptr.hist.length > 8) ptr.hist.shift();
+  if (ptr.kb) { kbMove(p); return; }
+  if (ptr.dial) { dialMove(p); return; }
+  if (ptr.slider) { ccSlide(p); return; }
+  if (ptr.game) return;
+  const dx = p.x - ptr.p0.x, dy = p.y - ptr.p0.y;
+  if (!ptr.moved && !ptr.held && Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > 10) {
+    ptr.moved = true; cancel("hold"); pressOff(ptr);
+    ptr.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    if (!S.sleeping) { ptr.drag = dragKind(ptr, dx, dy); if (ptr.drag === "stack") stackGrab(); if (ptr.drag === "cc") ccPrep(); }
+  }
+  if (ptr.moved && ptr.drag) dragMove(ptr, dx, dy);
 });
 const ptrUp = e => {
   if (!ptr) return; cancel("hold");
-  const p = ptr; ptr = null;
+  const p = ptr; ptr = null; pressOff(p);
   if (p.kb) { if (e.type === "pointercancel") { kp = null; kbHidePress(); } else kbUp(); return; }
   if (p.dial) { dialUp(); return; }
+  if (p.slider) { if (S.cc) ccRender(); return; }
+  if (p.game) return;
   if (p.held) { holdEnd(); return; }
-  if (e.type === "pointercancel") return;
+  const q = to466(e), [vx, vy] = velOf(p);
+  if (e.type === "pointercancel") { if (p.drag) dragEnd(p, 0, 0, 0, 0, true); else if (p.pan) LN.drag = null; return; }
+  if (p.drag) { S.coach = false; dragEnd(p, q.x - p.p0.x, q.y - p.p0.y, vx, vy); return; }
+  if (p.pan) { LN.drag = null; if (LN.wasFast) return; }
   const dx = e.clientX - p.x, dy = e.clientY - p.y, b = screen.getBoundingClientRect(), th = Math.max(22, b.width * 0.1);
-  if (p.pill && Math.hypot(dx, dy) < th) { const a = S.pill && S.pill.act; if (a === "claude") { hidePill(); go("claude", "up"); } else if (a === "kbundo") { hidePill(); kbUndo(); } else if (a === "msg") { hidePill(); go("msg", "up"); } else hidePill(); return; }
+  if (p.pill && Math.hypot(dx, dy) < th) { const a = S.pill && S.pill.act; sfx("tap"); if (a === "claude") { hidePill(); go("claude", "up"); } else if (a === "kbundo") { hidePill(); kbUndo(); } else if (a === "msg") { hidePill(); go("msg", "up"); } else if (a === "timer") { hidePill(); go("timer", "up"); } else hidePill(); return; }
   if (Math.abs(dx) > th || Math.abs(dy) > th) {
     if (p.pill && dy < 0) { hidePill(); return; }
     swipe(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down"));
@@ -1880,6 +2333,19 @@ const ptrUp = e => {
 screen.addEventListener("pointerup", ptrUp);
 screen.addEventListener("pointercancel", ptrUp);
 screen.addEventListener("contextmenu", e => e.preventDefault());
+/* the wheel is the "crown": turns the honeycomb, walks the widget stack, opens the honeycomb from the face */
+let wheelT = 0;
+screen.addEventListener("wheel", e => {
+  e.preventDefault(); bumpIdle();
+  const now = performance.now(), dy = e.deltaY;
+  if (S.sleeping) { wake(); return; }
+  if (S.kb || S.cc) return;
+  if (S.view === "apps") { LN.tgt = null; LN.vx = 0; LN.vy = 0; const ny = LN.py - dy * 0.5, r = Math.hypot(LN.px, ny); if (r < 190) LN.py = ny; return; }
+  if (now - wheelT < 380 || Math.abs(dy) < 4) return;
+  wheelT = now;
+  if (S.view === "home") { if (dy > 0) go("apps", "none"); else go("today", "up"); return; }
+  if (S.view === "today") { if (dy > 0) stackGo(TD.tgt + 1); else if (TD.tgt > 0) stackGo(TD.tgt - 1); else go("home", "down"); }
+}, { passive: false });
 /* side button: press = home, hold = talk (the mic is gated by hardware), double-press = cancel */
 const sideEl = $("#side"); let sideP = null, sideLast = 0;
 sideEl.addEventListener("pointerdown", e => {
@@ -1890,7 +2356,9 @@ sideEl.addEventListener("pointerdown", e => {
     if (S.kb) { kbDictStart(); sideP.kb = true; return; }            // typing: hold the side button = dictate into the field
     if (S.view === "claude" && S.claude.pending) return;
     if (["dial", "alarmsum", "ring"].includes(S.view)) return;
-    hold = { kind: "voice" }; startVoice("ask");
+    if (S.cc) ccClose(true);
+    if (S.micMute) { showPill({ kind: "amber", text: T().micMuted, dur: 2200 }); soul.react("nope"); return; }
+    hold = { kind: "voice" }; sfx("listen"); startVoice("ask");
   }, "shold");
 });
 const sideUp = e => {
@@ -2062,6 +2530,6 @@ requestAnimationFrame(frame);
 setInterval(() => { const c = curCard && curCard.querySelector('[data-live="clock"]'); if (c) c.textContent = hhmm(); }, 10000);
 setInterval(checkAlarms, 1000);
 window.__soul = { S, go, kbOpen, kbRender, setAi, ringAlarm, parseTime, candidates, cancel };   /* test hook (Playwright) */
-after(9000, () => { if (!S.pill && !S.sleeping && S.view !== "voice") { buzz(); showPill({ kind: "", who: T().msgFrom, text: T().msgBody, act: "msg", dur: 6000 }); } }, "msg");
+after(9000, () => { if (!S.pill && !S.sleeping && S.view !== "voice" && !TOUR) { if (!S.dnd) buzz(); showPill({ kind: "", who: T().msgFrom, text: T().msgBody, act: "msg", dur: 6000, incoming: true }); } }, "msg");
 after(20000, claudeArrive, "claude");
 </script>
