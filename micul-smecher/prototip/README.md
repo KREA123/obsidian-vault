@@ -14,7 +14,7 @@ SOUL-P0 M este prototipul „se poate face acasă” al lui SOUL mărimea **M**.
 
 ## 0. Ce trebuie să știi înainte
 
-### Mărimea reală: ~112 × 128 × 31 mm, nu 90 × 103
+### Mărimea reală: ~112 × 128 × 34 mm, nu 90 × 103
 
 Estimarea „≈ 90 × 103” pornea de la **panoul gol** de 2,8″, care are ~73 mm. Placa 2.8C de cumpărat are însă sticla lipită din fabrică, cu **diametrul de 95,86 mm** (desenul Waveshare `ESP32-S3-Touch-LCD-2.8C-20241226`). Sticla nu se poate scoate acasă.
 
@@ -23,7 +23,7 @@ Ca sticla să stea în masa plată a feței, cum stă sticla Ø52 la v6, silueta
 | | S (v6, 1,75″) | **M-P0 (2.8C)** |
 |---|---|---|
 | Lățime × înălțime | 63 × 72,2 | **112,1 × 127,6** (cu piciorul de 1,2) |
-| Adâncime | 27 | **31,2** (crește doar cu 15 %, nu cu 78 %) |
+| Adâncime | 27 | **33,6** (crește cu 24 %, nu cu 78 %: stiva de 9,7 mm + bateria de 6 mm + difuzorul) |
 | Sticla vizibilă / lățime | 52 / 63 = 0,825 | 92,9 / 112,1 = **0,83** (la fel ca v6) |
 | Ecran activ | Ø43,8 | **Ø70,64** (tastele de ~6,6 mm) |
 
@@ -263,8 +263,8 @@ Imaginile sunt în `img/`. Planșele tehnice (cote, secțiune, explodat cu list�
 2. Așezi **șasiul** peste placă. Cei 4 stâlpi cad pe buline, iar cele 4 picioare pe bosajele de pe cusătură.
 3. Pe șasiu lipești cu **VHB**:
    - **bateria** între cele două șine, cu firele spre dreapta-sus, spre mufa BAT;
-   - **difuzorul** în rama lui (dreapta-sus), cu **membrana în sus, spre capacul din spate**;
-   - **amplificatorul MAX98357A** în rama din stânga-sus;
+   - **difuzorul** în fereastra lui din stânga-sus, **pe o foaie de spumă EVA de 0,3–0,5 mm** (stă prin fereastră direct peste piesele plăcii), cu **membrana spre capacul din spate**;
+   - **amplificatorul MAX98357A** în fereastra din dreapta-sus, tot pe spumă, **fără pini de header lipiți** (fire direct în găuri);
    - **microfonul INMP441** în rama din stânga, **cu gaura de sunet spre marginea din stânga** (acolo e gaura de Ø1 din cusătură).
 4. **Bateria NU se conectează încă.**
 
@@ -378,7 +378,7 @@ Cifrele sunt trecute și pe planșa 2 (secțiunea A-A).
 prototip/
   README.md, COMANDA.md
   cad/soul_p0.py          modelul parametric (CadQuery): toate piesele + verificarea + exportul
-  cad/soul_geom.py        silueta v6 (tabelele din render-brief v5 §2), scalată pentru M (K = 1,78, KY = 1,15)
+  cad/soul_geom.py        silueta v6 (tabelele din render-brief v5 §2), scalată pentru M (K = 1,78, KY = 1,24)
   cad/render_p0.py        randările (Blender) din STL-urile exportate, cu materialele v6
   cad/blueprints_p0.py    planșele din ../blueprints/final/, proiectate din mesh
   cad/report_m_*.json     rezultatele verificării (coliziuni, jocuri, șuruburi, mase)

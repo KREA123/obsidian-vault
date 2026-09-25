@@ -12,7 +12,7 @@ Fondatorul a ales **mărimea M** (ecran rotund IPS de 2,8″, 480×480, Ø activ
 | `soul_v8_side.png` | Din partea difuzorului (+x): fanta, teșitura, fața bombată și spatele |
 | `soul_v8_hand.png` | În aceeași mână stilizată ca în v4–v6. Mâna are mărimea reală, iar SOUL M o umple ca o piatră mare |
 | `soul_v8_desk.png` | Pe un birou de stejar, lângă un telefon generic (71,5 × 147 × 7,8 mm, fără marcă) și o cană (Ø82 × 95 mm) |
-| `soul_v8_typing.png` | Pe birou, cu tastatura SoulOS pe ecran (captura `os/screenshots/soulos3-keyboard-hello-1440.png`, decupată la cercul ecranului) |
+| `soul_v8_typing.png` | Pe birou, cu tastatura SoulOS pe ecran (captura în engleză `os/screenshots/soulos3-EN-keyboard-hello-1440.png`, decupată la cercul ecranului) |
 | `soul_v8_ou_night.png` | Noaptea, în capsula OU scalată proporțional, cu ochi chihlimbar |
 
 ## Ce s-a păstrat din v6 (identic)

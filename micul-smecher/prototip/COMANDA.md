@@ -1,6 +1,6 @@
 # Ce comanzi azi: SOUL-P0 mărimea M
 
-Aceasta e lista minimă pentru SOUL-P0 M (placa Waveshare 2.8C, corp de 112 × 128 × 31 mm, aspect v6), în varianta cea mai rapidă: **carcasa printată online în România**. Detaliile sunt în [README.md](README.md).
+Aceasta e lista minimă pentru SOUL-P0 M (placa Waveshare 2.8C, corp de 112 × 128 × 34 mm, aspect v6), în varianta cea mai rapidă: **carcasa printată online în România**. Detaliile sunt în [README.md](README.md).
 
 Prețurile sunt aproximative (septembrie 2026) și includ TVA. Am folosit 1 € ≈ 5,1 lei și 1 $ ≈ 4,4 lei.
 

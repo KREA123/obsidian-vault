@@ -58,23 +58,25 @@ button{font:inherit;color:inherit}
 
 .stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;align-items:center;gap:18px;min-width:0}
 @media (max-width:920px){.stage{position:static}}
-/* SOUL body (v5 final): upright rounded-rectangle pebble 63 x 74 mm, wider at the top, flat base,
-   bead-blasted aluminium; the round black glass (Ø52) fills most of the front; nothing else on the front. */
-.pebble{position:relative;width:min(440px,calc(100% - 24px));aspect-ratio:63/74;max-width:100%;
-  filter:drop-shadow(0 28px 26px var(--peb-shadow)) drop-shadow(0 6px 8px var(--peb-shadow));transition:transform .12s}
-.body{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+/* SOUL size M (the current product): 90 x 103 x 31 mm bead-blasted, anodised aluminium, seen from the front.
+   Same drawing as the landing page's .stone: a soft, almost square pebble (90:103) whose round black glass (Ø74 mm)
+   fills 82.5 % of the width; nothing else on the front. The side button sits on the right flank. */
+.pebble{position:relative;width:min(440px,calc(100% - 24px));aspect-ratio:90/103;max-width:100%;transition:transform .12s}
+.body{position:absolute;inset:0;pointer-events:none;border-radius:36% 36% 31% 31% / 32% 32% 27% 27%;
+  background:radial-gradient(120% 100% at 32% 14%,#FFFFFF 0%,#EFF1F3 32%,#D3D6DA 64%,#AEB2B8 100%);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.95),inset 0 -9px 0 -3px rgba(60,64,70,.16),inset 0 -14px 24px rgba(30,34,42,.22),0 26px 50px -16px var(--peb-shadow),0 4px 10px rgba(22,24,29,.12)}
 :root[data-kbd] .glass:has(.screen:focus){outline:2px dashed rgba(90,97,95,.55);outline-offset:12px}
 .pebble.buzz{animation:buzz .32s linear 2}
 .pebble.tick{animation:tick .14s ease-out 1}
 @keyframes tick{0%,100%{transform:translate(0,0)}35%{transform:translate(-1px,.5px)}70%{transform:translate(1px,-.5px)}}
 @keyframes buzz{0%,100%{transform:translate(0,0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(2px,1px)}}
-.glass{position:absolute;left:8.75%;width:82.5%;top:9.2%;aspect-ratio:1;border-radius:50%;background:#000;
-  box-shadow:0 0 0 1.5px #050505,0 0 0 3.5px rgba(255,255,255,.55),0 0 0 5px rgba(90,96,100,.35),inset 0 0 18px rgba(0,0,0,.9)}
+.glass{position:absolute;left:8.75%;width:82.5%;top:10.05%;aspect-ratio:1;border-radius:50%;background:#000;
+  box-shadow:0 0 0 2px #0b0c0f,0 0 0 4px rgba(255,255,255,.6),inset 0 0 18px rgba(0,0,0,.9)}
 .screen{position:absolute;left:0;top:0;width:466px;height:466px;transform-origin:0 0;border-radius:50%;overflow:hidden;background:#000;
   color:var(--cream);font-family:var(--display);touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer;outline:none}
 .glass::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:linear-gradient(150deg,rgba(255,255,255,.13),rgba(255,255,255,.03) 30%,transparent 42%)}
-.side{position:absolute;right:-5px;top:19%;width:9px;height:12%;border-radius:5px;border:0;cursor:pointer;padding:0;touch-action:none;
+.side{position:absolute;right:-4px;top:34%;width:8px;height:11%;border-radius:5px;border:0;cursor:pointer;padding:0;touch-action:none;
   background:linear-gradient(90deg,#8d9398,#e9ecee 55%,#b4babe);box-shadow:1px 2px 4px var(--peb-shadow),inset 0 0 0 1px rgba(80,86,90,.5)}
 .side:active,.side.down{transform:translateX(-2px)}
 #face{position:absolute;inset:0;width:466px;height:466px;display:block}
@@ -448,8 +450,8 @@ html{overscroll-behavior-x:none}
 </style>
 
 <header class="top">
-  <div class="brand"><span class="mark" aria-hidden="true"></span>SoulOS <small>SOUL · 466 px AMOLED</small></div>
-  <div class="lang" role="group" aria-label="Limba / Language">
+  <div class="brand"><span class="mark" aria-hidden="true"></span>SoulOS <small>SOUL M · round 2.8″ screen</small></div>
+  <div class="lang" role="group" aria-label="Language">
     <button id="lang-en" type="button" data-lang="en" aria-pressed="true">EN</button>
     <button id="lang-ro" type="button" data-lang="ro" aria-pressed="false">RO</button>
   </div>
@@ -458,36 +460,7 @@ html{overscroll-behavior-x:none}
 <main class="wrap">
   <section class="stage" aria-label="Device">
     <div class="pebble" id="pebble">
-      <svg class="body" viewBox="0 0 630 740" preserveAspectRatio="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="alH" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0" stop-color="#8f969b"/><stop offset=".05" stop-color="#c3c8cb"/><stop offset=".2" stop-color="#e9ecee"/>
-            <stop offset=".45" stop-color="#d9dde0"/><stop offset=".7" stop-color="#e6e9eb"/><stop offset=".93" stop-color="#bcc2c6"/><stop offset="1" stop-color="#868d92"/>
-          </linearGradient>
-          <linearGradient id="alV" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".1" stop-color="#fff" stop-opacity="0"/>
-            <stop offset=".78" stop-color="#000" stop-opacity="0"/><stop offset=".97" stop-color="#000" stop-opacity=".22"/><stop offset="1" stop-color="#000" stop-opacity=".35"/>
-          </linearGradient>
-          <filter id="alGrain" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency=".9 .9" numOctaves="2" seed="7"/>
-            <feColorMatrix type="matrix" values="0 0 0 0 .5  0 0 0 0 .52  0 0 0 0 .54  0 0 0 .55 0"/>
-            <feComposite in2="SourceGraphic" operator="in"/>
-          </filter>
-          <filter id="alBrush" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency=".003 .55" numOctaves="1" seed="3"/>
-            <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .35 -.05"/>
-            <feComposite in2="SourceGraphic" operator="in"/>
-          </filter>
-          <path id="alBody" d="M122 3 C250 -1 380 -1 508 3 C590 6 628 50 628 132 C628 300 622 468 607 578 C594 676 540 737 440 737 L190 737 C90 737 36 676 23 578 C8 468 2 300 2 132 C2 50 40 6 122 3 Z"/>
-        </defs>
-        <use href="#alBody" fill="url(#alH)"/>
-        <use href="#alBody" fill="url(#alV)"/>
-        <use href="#alBody" fill="#fff" filter="url(#alBrush)" opacity=".5"/>
-        <use href="#alBody" fill="#fff" filter="url(#alGrain)" opacity=".35"/>
-        <use href="#alBody" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="3" transform="translate(7 6) scale(.978 .983)"/>
-        <use href="#alBody" fill="none" stroke="rgba(52,58,62,.55)" stroke-width="2"/>
-        <path d="M200 733 H430" stroke="rgba(40,44,48,.35)" stroke-width="3" stroke-linecap="round"/>
-      </svg>
+      <div class="body" aria-hidden="true"></div>
       <div class="glass" id="glass">
         <div class="screen" id="screen" tabindex="0" role="application" aria-label="SOUL screen">
           <canvas id="face" aria-hidden="true"></canvas>
@@ -608,7 +581,7 @@ ro: {
     { q: "Stinge lumina în sufragerie", a: "Am stins lumina în sufragerie.", chips: [["ok", "Sufragerie · stins ✓"]], tool: "mcp · home.lights", fx: "light" }
   ],
   notePhrase: { q: "Cumpără baterii pentru telecomandă", a: "Notat.", chips: [["ok", "Notiță pe telefon ✓"]], tool: "notes.append", fx: "note2" },
-  trPhrase: { q: "Unde e gara, vă rog?", a: "Where is the train station, please?", tool: "translate" },
+  trPair: ["RO", "EN"],
   diaryInit: [["08:40", "M-ai luat la cafea."], ["11:15", "Am râs de două ori."], ["13:05", "Am dormit în buzunar."]],
   dx: { rem: "Am pus un memento pentru bancă.", note: "Am notat ideea de breloc.", note2: "Am notat bateriile.", focus: "Am stat de pază 25 min.", msg: "I-am scris Anei.", light: "Am stins lumina.", ok: "Am aprobat ceva pentru Claude.", no: "Am refuzat o cerere.", wipe: "Am uitat tot, cum ai cerut." },
   rems: [["11:30", "Cafea cu Ana", 1], ["15:00", "Coletul de la poștă", 0], ["19:30", "Udă florile", 0]],
@@ -659,9 +632,9 @@ en: {
   lede: "The operating system of SOUL. Not a phone: a being. Home is the living face; everything else is words it says under its eyes, and the round rim is the dial: the apps sit on it like a smile and you spin them with a finger.",
   sayH: "Say to it (scripted demo answers)", scrH: "Screens", ctlH: "Gestures", senH: "Sensors (IMU)",
   claudeNow: "Send a Claude request now",
-  foot: "Prototype. No answer comes from a real AI: everything is scripted (and marked “demo”) to show the rhythm, the reactions and the actions. The keyboard, RO/EN prediction, diacritics, alarms and reminders run locally, as on the device. The Claude request arrives on its own after ~20 s.",
+  foot: "Prototype. No answer comes from a real AI: everything is scripted (and marked “demo”) to show the rhythm, the reactions and the actions. The keyboard, word prediction, accents, alarms and reminders run locally, as on the device. The Claude request arrives on its own after ~20 s.",
   keys: [["←", "→", "apps"], ["↑", "Today"], ["↓", "back"], ["Space", "hold = talk"], ["Enter", "tap"], ["D", "double-tap"], ["Esc", "button"], ["A–Z", "keyboard open: types into the field"]],
-  ctrl: [["Tap", "The screen's main action. On the face: boop."], ["Double-tap", "Deny a Claude request. On the face: it laughs."], ["Hold", "Talk to it (blue ring = listening). On a Claude request: approve."], ["Swipe ← →", "The apps, one by one, in a loop."], ["Swipe ↑ / ↓", "Today / back to the face."], ["Side button", "Press: home. Hold: talk (the mic only opens with the button or a finger on the screen). Double-press: cancel."], ["Keyboard", "Tap letters (a letter commits on lift). Hold a/i/s/t: ă â î ș ț. “sa” becomes “să” on space; ⌫ right after undoes it. Holding ⌫ deletes words. Side button = back, the draft is kept."]],
+  ctrl: [["Tap", "The screen's main action. On the face: boop."], ["Double-tap", "Deny a Claude request. On the face: it laughs."], ["Hold", "Talk to it (blue ring = listening). On a Claude request: approve."], ["Swipe ← →", "The apps, one by one, in a loop."], ["Swipe ↑ / ↓", "Today / back to the face."], ["Side button", "Press: home. Hold: talk (the mic only opens with the button or a finger on the screen). Double-press: cancel."], ["Keyboard", "Tap letters (a letter commits on lift). Hold a letter for its accents (é, ü, ñ…). Words are predicted as you type; ⌫ right after a correction undoes it. Holding ⌫ deletes words. Side button = back, the draft is kept."]],
   sens: { pick: "Pick it up", shake: "Shake it", down: "Face down" },
   legend: [["#FFF0C8", "cream = information"], ["#FFB347", "amber = Claude / needs you"], ["#C9F2E4", "mint = done"], ["#9FC6FF", "ice = listening"]],
   lblToday: "Today", listen: "Listening…", thinking: p => `${p} is thinking…`, speaking: "",
@@ -688,26 +661,26 @@ en: {
   cAsk: "Claude asks", cHint: "Hold = yes · 2× = no", cWorking: "Claude is working", cProj: "project “site” · 3 approvals today", cCalm: "No requests. I'm keeping an eye on it.",
   diaryT: "Diary · today",
   trHint: "Hold and speak",
-  musT: "Music · phone", song: "Perfect fără tine", artist: "Vama Veche",
+  musT: "Music · phone", song: "Slow Sunday", artist: "Luma Park",
   setBright: "Brightness", setAi: "AI", setMem: "Memory", setMemV: n => n ? `${n} things` : "empty", setAbout: "I'm an AI", setAboutV: "read",
   memT: "What I remember", memWipe: "Hold = forget everything", memEmpty: "I remember nothing. Yet.", memDone: "Memory wiped",
   aboutT: "I'm an AI.", aboutB: "I'm not a person and I can be wrong. I only listen while your finger is on me, and what you say goes through your phone to your AI.",
-  msgT: "Message", msgFrom: "Ana", msgBody: "Will you be there at 6?", reply1: "Yes, see you", reply2: "10 min late", sent: "Sent ✓",
+  msgT: "Message", msgFrom: "Mom", msgBody: "Home for dinner at 6?", reply1: "Yes, see you", reply2: "10 min late", sent: "Sent ✓",
   approved: "Approved ✓", denied: "Denied", claudePill: "Claude needs you", focusPill: "Focus done ✓", dnd: "Do not disturb",
-  mem: ["You like tea without sugar", "Ana is your sister", "You work on “site” in the mornings"],
+  mem: ["You like tea without sugar", "Sam is your sister", "You work on “site” in the mornings"],
   phrases: [
-    { q: "Remind me at 5 to call the bank", a: "Done. I'll ping you at 17:00.", chips: [["ok", "17:00 · Call the bank ✓"]], tool: "reminders.create", fx: "rem" },
-    { q: "What's the weather tomorrow?", a: "Tomorrow, 19° and sunny. Rain after 16:00.", chips: [["", "Take an umbrella"]], tool: "weather.forecast" },
+    { q: "Remind me at 5 to call the bank", a: "Done. I'll ping you at 5:00 PM.", chips: [["ok", "5:00 PM · Call the bank ✓"]], tool: "reminders.create", fx: "rem" },
+    { q: "What's the weather tomorrow?", a: "Tomorrow, 19° and sunny. Rain after 4 PM.", chips: [["", "Take an umbrella"]], tool: "weather.forecast" },
     { q: "Note: keychain idea", a: "Noted. It's in Notes, on your phone.", chips: [["ok", "Note saved ✓"]], tool: "notes.append", fx: "note" },
     { q: "Start focus 25 min", a: "Focus for 25 minutes. I'll guard it.", chips: [["ok", "Focus started ✓"]], tool: "timer.focus", fx: "focus" },
-    { q: "Tell Ana I'm 10 minutes late", a: "I told Ana: “Running 10 minutes late.”", chips: [["ok", "Message sent ✓"]], tool: "messages.send", fx: "msg" },
+    { q: "Tell Sam I'm 10 minutes late", a: "I told Sam: “Running 10 minutes late.”", chips: [["ok", "Message sent ✓"]], tool: "messages.send", fx: "msg" },
     { q: "Turn off the living room light", a: "The living room light is off.", chips: [["ok", "Living room · off ✓"]], tool: "mcp · home.lights", fx: "light" }
   ],
   notePhrase: { q: "Buy batteries for the remote", a: "Noted.", chips: [["ok", "Note on phone ✓"]], tool: "notes.append", fx: "note2" },
-  trPhrase: { q: "Where is the train station, please?", a: "Unde e gara, vă rog?", tool: "translate" },
+  trPair: ["EN", "FR"],
   diaryInit: [["08:40", "You took me for coffee."], ["11:15", "I laughed twice."], ["13:05", "I napped in your pocket."]],
-  dx: { rem: "Set a reminder for the bank.", note: "Noted the keychain idea.", note2: "Noted the batteries.", focus: "Guarded 25 min of focus.", msg: "Messaged Ana.", light: "Turned off the light.", ok: "Approved something for Claude.", no: "Denied a request.", wipe: "Forgot everything, as asked." },
-  rems: [["11:30", "Coffee with Ana", 1], ["15:00", "Parcel at the post office", 0], ["19:30", "Water the plants", 0]],
+  dx: { rem: "Set a reminder for the bank.", note: "Noted the keychain idea.", note2: "Noted the batteries.", focus: "Guarded 25 min of focus.", msg: "Messaged Sam.", light: "Turned off the light.", ok: "Approved something for Claude.", no: "Denied a request.", wipe: "Forgot everything, as asked." },
+  rems: [["11:30", "Coffee with Sam", 1], ["15:00", "Parcel at the post office", 0], ["19:30", "Water the plants", 0]],
   remNew: "Call the bank",
   notesInit: [["Cat name: Fluff", 1], ["Gift for dad: thermos", 1]],
   noteNew: "Keychain idea", noteNew2: "Batteries for the remote",
@@ -720,11 +693,11 @@ en: {
   talkHint: "Hold, or type", talkOff: "Notes & alarms still work", talkOffHint: "Notes, alarms and reminders still work.",
   typeBtn: n => `✎ Write to ${n}`, typeOff: "✎ Write (no AI)",
   demoTag: n => `${n} · scripted demo`, localTag: "No AI · on the device",
-  aiRem: (t, d) => `Done. I'll ping you ${d ? "tomorrow " : ""}at ${t}.`, chipRem: t => `✓ Reminder set for ${t}`,
-  aiAlarm: t => `Alarm set for ${t}. Sleep well.`, chipAlarm: t => `✓ Alarm ${t}`,
+  aiRem: (t, d) => `Done. I'll ping you ${d ? "tomorrow " : ""}at ${t12(t)}.`, chipRem: t => `✓ Reminder set for ${t12(t)}`,
+  aiAlarm: t => `Alarm set for ${t12(t)}. Sleep well.`, chipAlarm: t => `✓ Alarm ${t12(t)}`,
   aiNote: "Noted. It's in Notes, on your phone.", chipNote: "✓ Note created",
-  aiDay: "Today: coffee with Ana, the parcel at 15:00, the plants at 19:30. Summary saved.", chipDay: "✓ Summary in Notes", dayNote: "Day summary: Ana, parcel, plants",
-  aiNext: "Next: the parcel at the post office, 15:00. I'll ping you at 14:45.", nextRemText: "Leave for the post office",
+  aiDay: "Today: coffee with Sam, the parcel at 3:00 PM, the plants at 7:30 PM. Summary saved.", chipDay: "✓ Summary in Notes", dayNote: "Day summary: Sam, parcel, plants",
+  aiNext: "Next: the parcel at the post office, 3:00 PM. I'll ping you at 2:45 PM.", nextRemText: "Leave for the post office",
   aiGeneric: n => `Demo: ${n} would answer here. I put the question in Notes.`, chipNoteSaved: "✓ Saved to Notes",
   offAsk: "I'm on “No AI”. I kept your message in Notes.", offLocal: "No AI, but I understood the time right here, on the device.",
   offVoice: "With no AI I can't listen. Type to me: notes, alarms and reminders work offline.", offChip: "Settings › AI",
@@ -737,12 +710,12 @@ en: {
   },
   dict: { claude: "Remind me tomorrow at 9 to call the bank", note: "Buy milk and bread", reminder: "Call the bank", alarm_label: "Wake up" },
   kbListen: "Listening…", kbStop: "Done", kbNoMic: "Dictation needs AI + net", kbDraft: "Draft kept",
-  undoChip: "↶ Undo", timeChip: t => `⏰ ${t}`,
-  noteSaved: "Note saved ✓", noteEdited: "Note updated ✓", remSet: t => `Reminder ${t} ✓`,
+  undoChip: "↶ Undo", timeChip: t => `⏰ ${t12(t)}`,
+  noteSaved: "Note saved ✓", noteEdited: "Note updated ✓", remSet: t => `Reminder ${t12(t)} ✓`,
   dlAlarm: "Alarm", dlRem: "Reminder", inRel: (h, m) => `rings in ${h ? h + " h " : ""}${m} min`, relShort: (h, m) => `in ${h ? h + " h " : ""}${m} min`,
   todayW: "Today", tomorrowW: "Tomorrow", once: "Once", daily: "Daily", wkdays: "Mon–Fri", weekend: "Weekend",
   days: ["M", "T", "W", "T", "F", "S", "S"], setBtn: "✓ Set", labelDef: "Alarm", noAlarms: "No alarms. Tap +",
-  alarmSet: (t, r) => `Alarm ${t} ✓ · ${r}`, ringSnooze: "Snooze 5", ringStop: "Stop", snoozed: t => `Snoozed · ${t}`, goodMorning: "Good morning!",
+  alarmSet: (t, r) => `Alarm ${t12(t)} ✓ · ${r}`, ringSnooze: "Snooze 5", ringStop: "Stop", snoozed: t => `Snoozed · ${t12(t)}`, goodMorning: "Good morning!",
   alarmsInit: [[7, 0, [1, 1, 1, 1, 1, 0, 0], "Wake up", 1], [9, 30, [0, 0, 0, 0, 0, 1, 1], "Slow coffee", 0]],
   remTomorrow: "tomorrow", remDef: "Reminder",
   typeH: "Type on SOUL (round keyboard)", typeBtns: ["✎ Write to Claude", "✎ New note", "+ New reminder", "+ New alarm", "⏰ Ring an alarm now"],
@@ -751,6 +724,12 @@ en: {
 let LANG = "en";   /* SOUL is international: English first, Romanian via the toggle / Settings */
 try { const l = localStorage.getItem("soulos-lang"); if (l === "en" || l === "ro") LANG = l; } catch (e) {}
 const T = () => STR[LANG];
+/* English shows the 12-hour clock in what SOUL says ("5:00 PM"); Romanian keeps 17:00 */
+const qo = x => LANG === "ro" ? `„${x}”` : `“${x}”`;   /* quotes: „…” in Romanian, “…” in English */
+function t12(t) { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t)); if (!m) return t; const h = +m[1]; return `${(h + 11) % 12 + 1}:${m[2]} ${h < 12 ? "AM" : "PM"}`; }
+/* the Translate app's demo phrase, per language pair */
+const TRP = { "RO>EN": ["Unde e gara, vă rog?", "Where is the train station, please?"], "EN>RO": ["Where is the train station, please?", "Unde e gara, vă rog?"],
+  "EN>FR": ["Where is the train station, please?", "Où est la gare, s'il vous plaît ?"], "FR>EN": ["Où est la gare, s'il vous plaît ?", "Where is the train station, please?"] };
 /* ---- SoulOS 2 strings (merged into STR) ---- */
 const STR2 = {
 ro: {
@@ -800,9 +779,9 @@ en: {
   ctrl: [["Tap", "The screen's main action. On the face: boop."], ["Double-tap", "Deny a Claude request. On the face: it laughs."], ["Hold", "Talk to it (blue ring = listening). On a Claude request: approve."],
     ["Swipe → on the face", "The app orbit. Spin it with a finger; it coasts and settles on a word. Tap the word and the app comes out of the eyes."], ["Swipe ← → in apps", "Next app. The card follows your finger and springs back if you don't pull far enough."],
     ["Swipe ↑ / ↓", "Today (what it wants to tell you) / back home. On the face, ↓ pulls down Control: light and volume live on the rim."], ["Side button", "Press: home, then the orbit. Hold: talk. Double-press: cancel."],
-    ["Keyboard", "Tap letters (a letter commits on lift). Hold a/i/s/t: ă â î ș ț. “sa” becomes “să” on space; ⌫ right after undoes it. Holding ⌫ deletes words. Side button = back, the draft is kept."]],
+    ["Keyboard", "Tap letters (a letter commits on lift). Hold a letter for its accents (é, ü, ñ…). Words are predicted as you type; ⌫ right after a correction undoes it. Holding ⌫ deletes words. Side button = back, the draft is kept."]],
   coach: "→ apps · ↑ Today · ↓ control",
-  wx: { city: "Bucharest", days: [
+  wx: { city: "London", days: [
     { d: "Today", t: 17, c: "Cloudy", hi: 19, lo: 11, ic: "cloud", h: [["12", 16, "cloud"], ["14", 17, "part"], ["16", 18, "part"], ["18", 15, "cloud"], ["20", 13, "rain"]] },
     { d: "Tomorrow", t: 19, c: "Sunny", hi: 21, lo: 10, ic: "sun", h: [["09", 12, "sun"], ["12", 18, "sun"], ["15", 21, "sun"], ["18", 19, "part"], ["21", 14, "cloud"]] },
     { d: "Saturday", t: 14, c: "Rain", hi: 15, lo: 9, ic: "rain", h: [["09", 11, "cloud"], ["12", 13, "rain"], ["15", 14, "rain"], ["18", 12, "rain"], ["21", 10, "cloud"]] }] },
@@ -814,7 +793,7 @@ en: {
   micMuted: "The microphone is off", nT: "Notifications", nEmpty: "Nothing new. Quiet.",
   chg: "Charging", unplug: "Unplugged", battLeft: p => `~${Math.max(1, Math.round(p / 38))} days`,
   wFocusIdle: "25 min · tap", setSnd: "Sounds",
-  nfake: [["Ana", "Will you be there at 6?", "msg"], ["Mom", "Have you eaten?"], ["Courier", "Parcel arrives at 15:00"]],
+  nfake: [["Mom", "Home for dinner at 6?", "msg"], ["Sam", "Coffee tomorrow?"], ["Courier", "Parcel arrives at 3:00 PM"]],
   kbPh2: { name: "What's its name?" }, kbChips2: { name: [["Soul", "Soul"], ["Pip", "Pip"], ["Luma", "Luma"]] }, dict2: { name: "Pip" },
   dx3: { game: "We played catch-the-star.", chg: "Had a nap on the charger." },
   tourBtn: "▶ Guided tour", tourStopB: "■ Stop the tour", tourH: "Guided tour · 1 minute", tourHint: "SoulOS shows itself: the orbit, Today, Control on the rim, notifications, Claude, the game, charging and sleep. Touch the screen to take over.",
@@ -1112,7 +1091,7 @@ const S = {
   rems: null, notes: null, diary: null, remDoneNew: false,
   focus: { run: false, left: 1500, total: 1500, done: false },
   claude: { pending: null }, music: { play: true, pos: 0.38 },
-  tr: { a: "RO", b: "EN", last: null },
+  tr: { a: STR[LANG].trPair[0], b: STR[LANG].trPair[1], last: null },
   voice: null, pill: null, phraseIdx: 0, memCount: 12, memWiped: false, lastQA: null,
   /* SoulOS 2 */
   cc: false, dnd: false, micMute: false, vol: 0.7, batt: { lvl: 78, chg: false }, chgShow: false, nh: [], nfIdx: 0, coach: true, lastAct: performance.now(),
@@ -1233,7 +1212,7 @@ function cardHTML(v) {
     case "talk": {
       const qa = S.lastQA, off = S.ai === "none";
       return lbl(L.talk) + `<div class="c" style="top:258px;gap:8px"><div class="dtag" style="color:${off ? "var(--amber)" : "var(--ice)"}">${esc(L.aiModes[S.ai])} · ${esc(L.aiTag[S.ai])}</div>
-        ${off ? `<div class="t2" style="font-size:28px">${L.talkOff}</div>` : qa ? `<div class="t2" style="font-size:26px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">„${esc(qa)}”</div>` : `<div class="t2" style="font-size:28px">${L.talkHint}</div>`}
+        ${off ? `<div class="t2" style="font-size:28px">${L.talkOff}</div>` : qa ? `<div class="t2" style="font-size:26px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${qo(esc(qa))}</div>` : `<div class="t2" style="font-size:28px">${L.talkHint}</div>`}
         ${wordBtn("type-ai", unpen(off ? L.typeOff : L.typeBtn(aiName())), off ? "" : "", ' data-o="talk"', "pen")}</div>`;
     }
     case "reminders": {
@@ -1313,7 +1292,7 @@ function cardHTML(v) {
     case "voice": {
       const V = S.voice; if (!V) return "";
       if (V.phase === "listen") return lbl(L.listen, "ice") + `<div class="c" style="top:318px"><div class="t2" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>`;
-      if (V.phase === "think") return lbl(L.thinking(aiName()), "amber") + `<div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">„${esc(V.p.q)}”</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
+      if (V.phase === "think") return lbl(L.thinking(aiName()), "amber") + `<div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">${qo(esc(V.p.q))}</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
       const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips;
       if (V.kind === "typed") return `<div class="c fade-in" style="top:176px;gap:12px;left:52px;right:52px"><div class="dtag">${esc(S.ai === "none" ? L.localTag : L.demoTag(L.aiModes[S.ai]))}</div>
         <div class="t1" style="font-size:${V.p.a.length > 44 ? 27 : 31}px">${esc(V.p.a)}</div>
@@ -1461,7 +1440,7 @@ function hap(kind = "light", noVisual) {
 function nextPhrase(kind) {
   const L = T();
   if (kind === "note") return L.notePhrase;
-  if (kind === "tr") return S.tr.a === "RO" ? STR.ro.trPhrase : STR.en.trPhrase;
+  if (kind === "tr") { const p = TRP[S.tr.a + ">" + S.tr.b] || TRP["EN>FR"]; return { q: p[0], a: p[1], tool: "translate" }; }
   const p = L.phrases[S.phraseIdx % L.phrases.length]; S.phraseIdx++; return p;
 }
 function startVoice(kind, preset) {
@@ -1787,7 +1766,7 @@ function kbKeys() {
   const can = K.text.trim().length > 0;
   put("layer", K.layer === "abc" ? "?123" : "ABC", 108, 346, 62, "fn");
   put("mic", S.ai === "none" ? SVGI.micOff : SVGI.mic, 166, 346, 54, "fn" + (S.ai === "none" ? " off" : ""));
-  put("space", LANG === "ro" ? "RO · EN" : "EN · RO", 257, 346, 128, "fn sp");
+  put("space", LANG === "ro" ? "RO · EN" : "English", 257, 346, 128, "fn sp");
   put("done", K.action === "send" ? SVGI.send : SVGI.ok, 355, 346, 68, (K.action === "send" ? "send" : "save") + (can ? "" : " dis"));
   return keys;
 }
@@ -2492,7 +2471,7 @@ function renderPanel() {
   $("#lede").textContent = L.lede; $("#sayH").textContent = L.sayH; $("#scrH").textContent = L.scrH;
   $("#ctlH").textContent = L.ctlH; $("#senH").textContent = L.senH; $("#foot").textContent = L.foot;
   $("#keys").innerHTML = L.keys.map(k => `<span>${k.slice(0, -1).map(x => `<kbd>${x}</kbd>`).join(" ")} ${k[k.length - 1]}</span>`).join("");
-  $("#say").innerHTML = L.phrases.map((p, i) => `<button type="button" id="say-${i}" data-i="${i}">„${esc(p.q)}”</button>`).join("") + `<button type="button" id="say-claude" class="claude" data-c="1">${L.claudeNow}</button>`;
+  $("#say").innerHTML = L.phrases.map((p, i) => `<button type="button" id="say-${i}" data-i="${i}">${qo(esc(p.q))}</button>`).join("") + `<button type="button" id="say-claude" class="claude" data-c="1">${L.claudeNow}</button>`;
   const order = ["home", "today", "apps", ...RING.slice(1)];
   $("#screens").innerHTML = order.map((v, i) => `<li><button type="button" id="scr-${v}" data-v="${v}"><span class="n">${v === "today" ? "↑" : v === "apps" ? "⬡" : i === 0 ? "●" : String(i - 2).padStart(2, "0")}</span><span class="nm">${L[v]}</span><span class="ds">${L.d[v]}</span></button></li>`).join("");
   $("#ctrl").innerHTML = L.ctrl.map(c => `<dt>${c[0]}</dt><dd>${c[1]}</dd>`).join("");
@@ -2561,6 +2540,7 @@ for (const ev of ["pointerdown", "pointerup", "keydown"]) document.addEventListe
 $("#sens").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { imu(b.dataset.imu); screen.focus({ preventScroll: true }); } });
 document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
   LANG = b.dataset.lang; try { localStorage.setItem("soulos-lang", LANG); } catch (e) {}
+  S.tr = { a: T().trPair[0], b: T().trPair[1], last: null };
   renderPanel(); refresh(); if (S.kb) kbRender(); if (S.cc) ccRender(); if (S.sleeping) updateAod();
   if (S.pill && S.pill.kind === "amber") showPill({ kind: "amber", text: T().claudePill, act: "claude", dur: 3000 });
 }));

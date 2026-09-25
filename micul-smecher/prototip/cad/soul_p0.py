@@ -75,6 +75,7 @@ SPK = dict(name='speaker 2030 cavity 8 ohm 1 W', a=30.0, b=20.0, t=5.2, bx=-20.0
 AMP = dict(name='MAX98357A I2S amp breakout', a=18.0, b=20.0, t=3.6, bx=12.0, by=32.5)
 MIC = dict(name='INMP441 I2S mic breakout', a=14.0, b=14.0, t=3.4, bx=-34.0, by=-1.0)
 PLATE_DD = (10.0, 11.4)                 # chassis plate behind the tallest board parts
+SINK = PLATE_DD[1] + 0.3 - (COMP_D + 0.3)   # speaker + amp drop through plate windows onto foam: 1.4 mm
 # screws: 4x M2 from the back, through the chassis legs, into the front bosses; 2x M2 from below (base plate)
 SCREWS = [(-35.0, 22.0), (35.0, 22.0), (-40.5, 102.0), (40.5, 102.0)]     # (x, Z) on the parting plane
 BASE_SCREWS = [(-16.0, -9.0), (16.0, -9.0)]                                # (x, y), into front-shell bosses
@@ -348,6 +349,11 @@ def half_prism(side, z0=None, big=300.0):
     return w.val()
 
 
+def item_window(bf, D):
+    a_, b_ = D['a'] / 2 + 0.3, D['b'] / 2 + 0.3
+    return bf.box(D['bx'] - a_, D['bx'] + a_, D['by'] - b_, D['by'] + b_, PLATE_DD[0] - 1, PLATE_DD[1] + 1)
+
+
 def zslab(z0, z1, big=300.0):
     return cq.Workplane('XY').workplane(offset=z0).rect(big, big).extrude(z1 - z0).val()
 
@@ -420,6 +426,9 @@ def build(vname):
         a, b = D.get('W', D.get('a')), D.get('L', D.get('b'))
         return bf.box(D['bx'] - a / 2, D['bx'] + a / 2, D['by'] - b / 2, D['by'] + b / 2, d_in, d_in + D['T' if 'T' in D else 't'])
     battery, speaker, amp, mic = flat(BAT), flat(SPK), flat(AMP), flat(MIC)
+    # speaker and amp sit in windows of the chassis plate, on 0.3 mm foam over the board's back parts
+    speaker = speaker.translate(vec(-SINK * g.INW))
+    amp = amp.translate(vec(-SINK * g.INW))
 
     # ------------------------------------------------ halves: additions / cuts collected, applied once
     BIG = 300.0
@@ -606,6 +615,8 @@ def build(vname):
                             )).clean()
     # holes for wires: one window in the plate next to the BAT connector
     chassis = chassis.cut(bf.box(BATCONN[0] - 7, BATCONN[0] + 7, BATCONN[1] - 5, BATCONN[1] + 5, p0 - 1, p1 + 1)).clean()
+    for D in (SPK, AMP):
+        chassis = chassis.cut(item_window(bf, D)).clean()
     say(f'  chassis ({time.time()-t1:.0f}s), volume {vol(chassis):.0f} mm3, valid {chassis.isValid()}')
 
     shells = {'front_shell': front, 'back_shell': back, 'base_plate': base_plate, 'chassis': chassis}
@@ -663,12 +674,17 @@ def mesh_checks(shells, parts_in, say):
         for pn, pm in P.items():
             if sn == 'chassis' and pn in env:
                 continue
-            inter[f'{sn} x {pn}'] = round(inter_vol(sm, pm, shells[sn], parts_in[pn]), 3)
+            if sm.is_volume and pm.is_volume:
+                inter[f'{sn} x {pn}'] = round(inter_vol(sm, pm), 3)
     names = list(M)
     for i in range(len(names)):
         for j in range(i + 1, len(names)):
-            inter[f'{names[i]} x {names[j]}'] = round(inter_vol(M[names[i]], M[names[j]], shells[names[i]],
-                                                                shells[names[j]]), 3)
+            if M[names[i]].is_volume and M[names[j]].is_volume:
+                inter[f'{names[i]} x {names[j]}'] = round(inter_vol(M[names[i]], M[names[j]]), 3)
+            else:   # non-watertight tessellation: use the surface-distance test instead of a volume Boolean
+                pts, _ = trimesh.sample.sample_surface_even(M[names[j]], 3000)
+                d = trimesh.proximity.signed_distance(M[names[i]], pts)
+                inter[f'{names[i]} x {names[j]} (max penetration mm)'] = round(float(max(d.max(), 0.0)), 3)
     inside = ['battery', 'speaker', 'amp', 'mic', 'usb_plug', 'usb_socket']
     for i in range(len(inside)):
         for j in range(i + 1, len(inside)):
@@ -677,7 +693,7 @@ def mesh_checks(shells, parts_in, say):
         for bn in ('components', 'bat_plug', 'lcd', 'pcb'):
             inter[f'{inside[i]} x {bn}'] = round(inter_vol(P[inside[i]], P[bn], parts_in[inside[i]], parts_in[bn]), 3)
     bad = {k: v for k, v in inter.items() if abs(v) > 0.05}
-    say(f'   interference: {len(inter)} pairs checked, {len(bad)} with overlap > 0.05 mm3 {bad if bad else ""}')
+    say(f'   interference (volume pairs so far): {len(inter)} pairs, {len(bad)} > 0.05 {bad if bad else ""}')
     say('   minimum clearance of each internal part to each printed/machined part (mm, <0 = overlap):')
     for pn in parts_in:
         pts, _ = trimesh.sample.sample_surface_even(P[pn], 1500)
@@ -686,7 +702,12 @@ def mesh_checks(shells, parts_in, say):
             d = trimesh.proximity.signed_distance(sm, pts[:1500])
             row[sn] = round(float(-d.max()), 2)
         clear[pn] = row
+        for sn, v_ in row.items():
+            if f'{sn} x {pn}' not in inter and not (sn == 'chassis' and pn in env):
+                inter[f'{sn} x {pn} (max penetration mm)'] = round(max(-v_, 0.0), 3)
         say('    %-15s ' % pn + '  '.join('%s %6.2f' % (k[:6], v) for k, v in row.items()))
+    bad = {k: v for k, v in inter.items() if abs(v) > 0.05}
+    say(f'   INTERFERENCE TOTAL: {len(inter)} pairs checked (mm3 volume or mm penetration), {len(bad)} > 0.05: {bad}')
     return inter, clear
 
 
@@ -730,16 +751,7 @@ def export_all(vname, parts, ctx):
     for name, s in ctx['board'].items():
         cq.exporters.export(cq.Workplane().add(s), os.path.join(OUT, 'stl', 'assembly', f'm_{vname}_in_{name}.stl'),
                             tolerance=0.05)
-    asm = cq.Assembly()
-    for name, s in parts.items():
-        if not name.startswith('pin_'):
-            asm.add(s, name=name)
-    for n_, s_ in ctx['board'].items():
-        asm.add(s_, name='dummy_' + n_, color=cq.Color(0.1, 0.1, 0.12))
-    ap = os.path.join(OUT, 'step', f'soul_m_{vname}_ASSEMBLY_with_board.step')
-    asm.save(ap)
-    gz(ap)
-    files += [ap, ap + '.gz']
+    # no assembly STEP: with the B-spline shells it is > 45 MB gzipped; the assembled STLs are in stl/assembly/
     return files
 
 
@@ -817,8 +829,32 @@ def repair(vname):
         S.exportBrep(os.path.join(cdir, part + '.brep'))
 
 
+def postfix(vname):
+    """apply the plate windows for speaker + amp and keep the chassis out of the shells, on the cached parts"""
+    V = VARIANTS[vname]
+    bf = BoardFrame(V['lip_t'])
+    cdir = os.path.join(HERE, 'cache', 'm_' + vname)
+    ld = lambda n: cq.Shape.importBrep(os.path.join(cdir, n + '.brep'))  # noqa: E731
+    ch = ld('chassis')
+    for D in (SPK, AMP):
+        ch = ch.cut(item_window(bf, D)).clean()
+    for n in ('speaker', 'amp'):
+        ld(n).translate(vec(-SINK * g.INW)).exportBrep(os.path.join(cdir, n + '.brep'))
+    t0 = time.time()
+    for n in ('back_shell', 'front_shell', 'base_plate'):
+        r = ch.cut(ld(n)).clean()
+        if r.isValid() and vol(r) > 0.8 * vol(ch):
+            ch = r
+        print(f'  chassis minus {n}: {vol(ch):.0f} mm3 ({time.time()-t0:.0f}s)', flush=True)
+    ch.exportBrep(os.path.join(cdir, 'chassis.brep'))
+
+
 def main():
     a = sys.argv[1:]
+    if a and a[0] == 'postfix':
+        for vn in a[1:]:
+            postfix(vn)
+        return
     if a and a[0] == 'repair':
         for vn in a[1:]:
             repair(vn)
