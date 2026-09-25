@@ -1,0 +1,43 @@
+<!-- Direction B · "Subtitles": SOUL speaks in sentences; the words you can touch are the underlined ones -->
+<meta charset="utf-8">
+<style>
+body{margin:0;background:#1b1c1c;color:#bbb;font:14px/1.4 system-ui;display:flex;flex-wrap:wrap;gap:30px;padding:30px}
+figure{margin:0}.scr{width:466px;height:466px;border-radius:50%;overflow:hidden;background:#000}figcaption{margin-top:8px}
+svg text{font-kerning:normal}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,100;1,9..144,300..600,100&family=Geist+Mono:wght@300..600&display=swap">
+<div id="out"></div>
+<script src="common.js"></script>
+<script>
+const cream = "#FFF0C8", amber = "#FFB347", mint = "#C9F2E4", ice = "#9FC6FF";
+const serif = (sz, col = cream, w = 380, it = 0) => `font:${it ? "italic " : ""}${w} ${sz}px Fraunces;font-variation-settings:'SOFT' 100,'opsz' 72;fill:${col}`;
+const gm = (sz, col, op = 1) => `font:400 ${sz}px 'Geist Mono';letter-spacing:.06em;fill:${col};opacity:${op}`;
+/* a spoken line: segments [text, kind] where kind "u" = touchable (italic + underline) */
+function line(x, y, segs, sz, col = cream, acc = cream) {
+  return `<text x="${x}" y="${y}" text-anchor="middle">` + segs.map(([t, k]) => k === "u" ? `<tspan style="${serif(sz, acc, 420, 1)};text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:6px">${t}</tspan>` : k === "m" ? `<tspan style="font:500 ${sz * 0.9}px 'Geist Mono';fill:${acc}">${t}</tspan>` : `<tspan style="${serif(sz, col)}">${t}</tspan>`).join("") + `</text>`;
+}
+let h = "";
+h += screen("B-home", "B · home: the menu is a sentence, scrolled like subtitles",
+  `<text x="233" y="46" text-anchor="middle" style="${gm(15, cream, .5)}">10:24</text>` +
+  eyes(233, 130, 0.55, 0, 0.6) +
+  line(233, 272, [["talk", ""]], 22, "rgba(255,240,200,.28)") +
+  line(233, 318, [["It's ", ""], ["17°", "u"], [" and cloudy.", ""]], 34) +
+  line(233, 356, [["Want your ", ""], ["day", "u"], [" or a ", ""], ["note", "u"], ["?", ""]], 26, "rgba(255,240,200,.8)") +
+  line(233, 402, [["alarms · 07:00", ""]], 20, "rgba(255,240,200,.28)"));
+h += screen("B-claude", "B · a Claude request (amber)",
+  arc(222, 0, 360, "rgba(255,179,71,.55)", 4) +
+  eyes(233, 110, 0.4, 0, 0.8, amber) +
+  line(233, 232, [["Claude wants to run", ""]], 27, "rgba(255,240,200,.75)") +
+  line(233, 280, [["npm run build", "m"]], 32, cream, cream) +
+  line(233, 322, [["in ", ""], ["site", "u"], [".", ""]], 27, "rgba(255,240,200,.75)", amber) +
+  line(233, 370, [["Hold me for ", ""], ["yes", "u"], [".", ""]], 27, cream, amber));
+h += screen("B-control", "B · Control: a paragraph of switches",
+  `<text x="233" y="46" text-anchor="middle" style="${gm(15, cream, .5)}">10:24 · 77%</text>` +
+  eyes(233, 96, 0.26, 0, 0.8) +
+  line(233, 200, [["I'm ", ""], ["awake", "u"], [", and ", ""], ["not quiet", "u"], [".", ""]], 28, cream, cream) +
+  line(233, 246, [["The mic is ", ""], ["on", "u"], [", sound ", ""], ["on", "u"], [".", ""]], 28, cream, mint) +
+  line(233, 292, [["Light ", ""], ["80%", "u"], [", voice ", ""], ["60%", "u"], [".", ""]], 28, cream, cream) +
+  line(233, 338, [["Thinking with ", ""], ["Claude", "u"], [".", ""]], 28, cream, amber) +
+  `<text x="233" y="410" text-anchor="middle" style="${gm(13, cream, .4)}">drag a number · tap a word</text>`);
+document.getElementById("out").innerHTML = h;
+</script>

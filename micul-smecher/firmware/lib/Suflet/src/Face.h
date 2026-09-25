@@ -68,6 +68,14 @@ struct Face {
   float progress = 0;  // 0..1 for ov::Progress
 };
 
+// Where the face sits on the screen: k scales it (1 = full screen) and
+// cx/cy move its centre, as fractions of half the screen (-1..1). Cards and
+// the keyboard shrink the eyes into a header (SPEC §2, research/04 §10).
+struct FaceLayout {
+  float k = 1, cx = 0, cy = 0;
+};
+
 void renderFace(Canvas& cv, const Face& f);
+void renderFace(Canvas& cv, const Face& f, const FaceLayout& lay);
 
 }  // namespace suflet

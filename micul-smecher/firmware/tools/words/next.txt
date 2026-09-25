@@ -1,0 +1,20 @@
+# lang prev: three next-word predictions ("-" = start of a sentence / unknown)
+ro să: sun iau cumpăr
+ro la: 5 bancă ora
+ro mâine: la dimineață seară
+ro amintește-mi: să mâine la
+ro și: apoi eu la
+ro ce: faci urmează mai
+ro sun: la pe mama
+ro salut: ce ești bună
+ro -: și la să
+en remind: me you us
+en me: to at tomorrow
+en at: 5 7 9
+en to: call buy the
+en call: mom the dad
+en hello: there world how
+en how: are is to
+en are: you we they
+en i: am will have
+en -: the to and

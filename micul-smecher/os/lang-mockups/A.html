@@ -1,0 +1,48 @@
+<!-- Direction A · "Orbit": words on the rim form a smile you spin; the eyes look at the word they hold -->
+<meta charset="utf-8">
+<style>
+body{margin:0;background:#1b1c1c;color:#bbb;font:14px/1.4 system-ui;display:flex;flex-wrap:wrap;gap:30px;padding:30px}
+figure{margin:0}.scr{width:466px;height:466px;border-radius:50%;overflow:hidden;background:#000}figcaption{margin-top:8px}
+svg text{font-kerning:normal}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..700&family=Martian+Mono:wght@300..600&display=swap">
+<div id="out"></div>
+<script src="common.js"></script>
+<script>
+const cream = "#FFF0C8", amber = "#FFB347", mint = "#C9F2E4", ice = "#9FC6FF";
+const disp = (sz, w = 500, col = cream, extra = "") => `font:${w} ${sz}px 'Bricolage Grotesque';font-variation-settings:'opsz' 96;fill:${col};${extra}`;
+const mono = (sz, col, op = 1, extra = "") => `font:400 ${sz}px 'Martian Mono';letter-spacing:.14em;text-transform:uppercase;fill:${col};opacity:${op};${extra}`;
+function smile(items, sel, col = cream) {
+  let s = ""; const step = 25;
+  items.forEach((w, i) => { const j = i - sel, d = Math.sign(j) * [0, 33, 55, 75, 95][Math.min(4, Math.abs(j))], ad = Math.abs(d); if (ad > 80) return;
+    s += i === sel ? rimText(w, d, 200, disp(30, 560, col)) : rimText(w, d, 203, mono(14, cream, Math.max(.18, .62 - ad / 150))); });
+  return s + `<path d="M233 448 v10" stroke="${col}" stroke-width="3" stroke-linecap="round"/>`;
+}
+const apps = ["music", "talk", "claude", "weather", "alarms", "notes", "focus"];
+let h = "";
+h += screen("A-home", "A · home = the orbit (the smile of words)",
+  rimText("10:24 · thu 25", 0, 206, mono(14, cream, .5), "top") +
+  eyes(233, 150, 0.5, 0.05, 0.75) +
+  glyph("cloud", 150, 290, 44, cream, 2) +
+  `<text x="186" y="310" style="${disp(72, 400)}">17°</text>` +
+  `<text x="233" y="346" text-anchor="middle" style="${disp(21, 400, "rgba(255,240,200,.62)")}">cloudy · 19° tomorrow</text>` +
+  smile(apps, 3));
+h += screen("A-claude", "A · a Claude request (amber)",
+  arc(222, -90, 54, amber, 6, 'filter="url(#soft)"') + arc(222, 54, 270, "rgba(255,179,71,.16)", 6) +
+  rimText("claude · site", 0, 206, mono(14, amber, .9), "top") +
+  eyes(233, 112, 0.36, 0, 0.8, amber) +
+  `<text x="233" y="228" text-anchor="middle" style="${disp(24, 400, "rgba(255,240,200,.7)")}">May I run</text>` +
+  `<text x="233" y="278" text-anchor="middle" style="font:500 31px 'Martian Mono';fill:${cream}">npm run build</text>` +
+  `<text x="233" y="318" text-anchor="middle" style="${disp(20, 400, "rgba(255,240,200,.5)")}">in site · Bash</text>` +
+  rimText("hold me · yes", -22, 200, disp(26, 560, amber)) + rimText("twice · no", 30, 203, mono(14, cream, .5)));
+h += screen("A-control", "A · Control: rim arcs, toggles as lit words",
+  rimText("10:24 · 77%", 0, 206, mono(14, cream, .55), "top") +
+  eyes(233, 92, 0.2, -0.6, 0.3) +
+  arc(214, 128, 232, "rgba(255,240,200,.14)", 8) + arc(214, 128, 205, cream, 8) + `<circle cx="${233 + 214 * Math.cos(205 * Math.PI / 180)}" cy="${233 + 214 * Math.sin(205 * Math.PI / 180)}" r="11" fill="${cream}"/>` +
+  arc(214, -52, 52, "rgba(159,198,255,.14)", 8) + arc(214, 52, 10, ice, 8) +
+  `<text x="92" y="160" style="${mono(12, cream, .6)}">light 80</text><text x="316" y="160" style="${mono(12, ice, .8)}">vol 60</text>` +
+  [["moon", "quiet", 0, 180, 205], ["mic", "mic", 1, 286, 205], ["wave", "sound", 1, 180, 305], ["eyeClosed", "sleep", 0, 286, 305]].map(([g, w, on, x, y]) =>
+    glyph(g, x, y, 40, on ? mint : "rgba(255,240,200,.45)", 2) + `<text x="${x}" y="${y + 46}" text-anchor="middle" style="${disp(21, on ? 560 : 400, on ? mint : "rgba(255,240,200,.45)")}">${w}</text>`).join("") +
+  rimText("ai · claude", 0, 200, disp(24, 560, amber)));
+document.getElementById("out").innerHTML = h;
+</script>

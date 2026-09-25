@@ -1,11 +1,15 @@
 // Native simulator: runs the exact firmware "soul" (lib/Suflet) on the PC,
 // drives it with scripted sensor events and writes the frames it draws.
 //
-//   ./suflet_sim <out_dir> [scenario] [seed]
+//   ./suflet_sim <out_dir> [scenario] [seed] [466|480]
 //
-// Each scenario writes <out_dir>/<name>.rgb (raw RGB888 frames, 466x466)
-// plus <name>.json (frame count, fps, body-light per frame). The Python
-// script tools/frames_to_media.py turns them into GIF/MP4/contact sheets.
+// The last argument picks the display: 466 (AMOLED, default) or 480 (the
+// 2.8" IPS "SOUL M"); scene coordinates are design pixels scaled to it.
+// Each scenario writes <out_dir>/<name>.rgb (raw RGB888 frames, W x H)
+// plus <name>.json (frame count, fps, body-light per frame, marked stills).
+// The Python script tools/frames_to_media.py turns them into GIF/MP4/contact
+// sheets, or PNG stills (--png). The soulos_* scenes drive the SoulOS Shell
+// (keyboard, time picker) with simulated finger touches at screen points.
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -17,14 +21,19 @@
 #include "Brain.h"
 #include "ClaudeLink.h"
 #include "Face.h"
+#include "Geometry.h"
 #include "Gestures.h"
 #include "Personality.h"
+#include "Shell.h"
 
 using namespace suflet;
 
 namespace {
 
-constexpr int W = 466, H = 466;
+DisplayGeometry gGeom;  // set from argv before any scene runs
+int W = 466, H = 466;
+// design pixels (466 px disc) -> this display
+inline float P(float designPx) { return gGeom.s(designPx); }
 constexpr float kFps = 30.0f;
 
 struct Recorder {
@@ -32,6 +41,7 @@ struct Recorder {
   FILE* f = nullptr;
   int frames = 0;
   std::string bodyJson;
+  std::vector<int> stills;
   std::vector<uint16_t> fb = std::vector<uint16_t>(W * H);
   Canvas cv{W, H, fb.data()};
 
@@ -42,9 +52,16 @@ struct Recorder {
       exit(1);
     }
   }
-  void frame(const Brain& b) {
+  void frame(const Brain& b, Shell* shell) {
     cv.fill(pal::kBlack);
-    renderFace(cv, b.face());
+    Face face = b.face();
+    if (shell) {
+      shell->render(cv, Rect{0, 0, W, H});
+      shell->adjustFace(face);
+      renderFace(cv, face, shell->faceLayout());
+    } else {
+      renderFace(cv, face);
+    }
     static std::vector<uint8_t> rgb(W * H * 3);
     for (int i = 0; i < W * H; ++i) {
       const Rgb p = Rgb::from565(fb[i]);
@@ -62,11 +79,13 @@ struct Recorder {
   }
   void close(const char* caption) {
     fclose(f);
+    std::string st;
+    for (size_t i = 0; i < stills.size(); ++i) st += (i ? "," : "") + std::to_string(stills[i]);
     FILE* j = fopen((dir + "/" + name + ".json").c_str(), "wb");
-    fprintf(j, "{\"name\":\"%s\",\"w\":%d,\"h\":%d,\"fps\":%.0f,\"frames\":%d,\"caption\":\"%s\",\"body\":[%s]}\n",
-            name.c_str(), W, H, kFps, frames, caption, bodyJson.c_str());
+    fprintf(j, "{\"name\":\"%s\",\"w\":%d,\"h\":%d,\"fps\":%.0f,\"frames\":%d,\"caption\":\"%s\",\"stills\":[%s],\"body\":[%s]}\n",
+            name.c_str(), W, H, kFps, frames, caption, st.c_str(), bodyJson.c_str());
     fclose(j);
-    printf("%-16s %4d frames  %s\n", name.c_str(), frames, caption);
+    printf("%-18s %4d frames  %s\n", name.c_str(), frames, caption);
   }
 };
 
@@ -78,13 +97,37 @@ struct Sim {
   Recorder* rec = nullptr;
   float still = 0;
   bool moving = false;
+  // SoulOS: the screen router, fed by a simulated finger
+  Alarms alarms;
+  Shell shell{&alarms};
+  TouchGestures touch;
+  bool useShell = false, finger = false;
+  float fx = P(233), fy = P(233);
+  uint32_t clock = 1790374680u;  // 2026-09-25 22:18 local
+  float clockFrac = 0;
   explicit Sim(uint64_t seed) : brain(Personality::fromSeed(seed), seed * 7 + 1) {
     in.hour = 14.5f;
+    shell.setGeometry(gGeom);
   }
   void step(bool render) {
     const float dt = 1.0f / kFps;
     still = moving ? 0 : still + dt;
     in.stillFor = still;
+    clockFrac += dt;
+    while (clockFrac >= 1.0f) {
+      clockFrac -= 1.0f;
+      ++clock;
+    }
+    if (useShell) {
+      touch.update(finger, fx, fy, dt);
+      TouchEv te;
+      while (touch.poll(te))
+        if (!shell.event(te)) brain.event(te.e);
+      touch.setMode(shell.wantsTextTouch() ? TouchMode::Text : TouchMode::Face);
+      shell.update(dt, clock);
+      Ev se;
+      while (shell.poll(se)) brain.event(se);
+    }
     brain.update(dt, in);
     Cue c;
     while (brain.popCue(c)) {
@@ -95,7 +138,7 @@ struct Sim {
     }
     Ev e;
     while (claude.poll(e)) brain.event(e);
-    if (render && rec) rec->frame(brain);
+    if (render && rec) rec->frame(brain, useShell ? &shell : nullptr);
   }
   void run(float seconds, bool render = true) {
     const int n = (int)(seconds * kFps + 0.5f);
@@ -107,6 +150,44 @@ struct Sim {
   void feed(const char* json) {
     claude.feed((const uint8_t*)json, strlen(json));
     claude.feed((const uint8_t*)"\n", 1);
+  }
+  // mark the last rendered frame as a still for --png
+  void mark() {
+    if (rec && rec->frames) rec->stills.push_back(rec->frames - 1);
+  }
+  // a finger: press at (x, y) for `holdS`, then lift and wait `gapS`
+  void press(float x, float y, float holdS, float gapS, bool markWhileDown = false) {
+    fx = x;
+    fy = y;
+    finger = true;
+    run(holdS);
+    if (markWhileDown) mark();
+    finger = false;
+    run(gapS);
+  }
+  void drag(float x0, float y0, float x1, float y1, float seconds) {
+    const int n = (int)(seconds * kFps + 0.5f);
+    finger = true;
+    for (int i = 0; i <= n; ++i) {
+      const float t = n ? (float)i / n : 1.0f;
+      fx = x0 + (x1 - x0) * t;
+      fy = y0 + (y1 - y0) * t;
+      step(true);
+    }
+  }
+  void lift(float gapS) {
+    finger = false;
+    run(gapS);
+  }
+  // type with fast, human-ish taps (~5 keys/s), marking the key named `markCp`
+  void type(const char* text, uint32_t markCp = 0) {
+    const char* p = text;
+    while (*p) {
+      const uint32_t cp = utf8::next(p);
+      float x, y;
+      if (!shell.keyboard().keyCenter(cp, x, y)) continue;
+      press(x + 2, y + 3, 0.1f, 0.067f, cp == markCp);
+    }
   }
 };
 
@@ -224,6 +305,66 @@ std::vector<Scenario> scenarios() {
          s.feed("{\"total\":1,\"running\":0,\"waiting\":0,\"msg\":\"done\",\"tokens\":52400,\"tokens_today\":52400}");
          s.run(2.0f);
        }},
+      {"keyboard", "SoulOS: long-press the face, type Hello on the round keyboard, save the note",
+       [](Sim& s) {
+         s.useShell = true;
+         s.run(0.6f);
+         s.press(P(233), P(250), 0.75f, 0.6f);  // long press: the note field opens
+         s.mark();                          // empty field + context chips
+         s.type("Hell");
+         s.type("o", 'o');                  // the key callout while pressed
+         s.run(0.5f);
+         s.mark();                          // "Hello" + suggestions
+         float x, y;
+         s.shell.keyboard().keyCenter((uint32_t)' ', x, y);
+         s.press(x, y, 0.1f, 0.3f);
+         s.shell.keyboard().keyCenter((uint32_t)'a', x, y);
+         s.press(x, y, 0.7f, 0.0f, true);  // long-press a: the variant tray
+         s.finger = true;
+         s.fx = x + P(44);  // slide to the next variant
+         s.run(0.2f);
+         s.mark();
+         s.lift(0.4f);
+         s.shell.keyboard().keyCenter(KeyId::Bksp, x, y);
+         s.press(x, y, 0.1f, 0.3f);
+         s.shell.keyboard().keyCenter(KeyId::Bksp, x, y);
+         s.press(x, y, 0.1f, 0.3f);  // back to "Hello"
+         s.mark();
+         s.shell.keyboard().keyCenter(KeyId::Done, x, y);
+         s.press(x, y, 0.1f, 1.4f);  // done: the note is saved, eyes celebrate
+         s.mark();
+       }},
+      {"timepicker", "SoulOS: Rim-Dial time picker, drag the hour ring then the minutes to 07:30",
+       [](Sim& s) {
+         s.useShell = true;
+         s.shell.openTimePicker(23, 0);  // next whole hour
+         s.run(0.6f);
+         s.mark();
+         // drag on the rim from 23 h round to 7 h (bottom-left)
+         for (int i = 0; i <= 24; ++i) {
+           const float a = TimePicker::hourAngle(23) - (360.0f - 8 * 15.0f) * i / 24.0f;
+           s.fx = P(233) + P(205) * cosf(a * 3.14159265f / 180);
+           s.fy = P(233) + P(205) * sinf(a * 3.14159265f / 180);
+           s.finger = true;
+           s.step(true);
+         }
+         s.run(0.2f);
+         s.mark();  // hours, knob on 07
+         s.lift(0.7f);
+         s.mark();  // switched to minutes
+         for (int i = 0; i <= 90; ++i) {  // slow drag (60°/s): 1-minute steps
+           const float a = TimePicker::minuteAngle(0) + 180.0f * i / 90.0f;
+           s.fx = P(233) + P(200) * cosf(a * 3.14159265f / 180);
+           s.fy = P(233) + P(200) * sinf(a * 3.14159265f / 180);
+           s.finger = true;
+           s.step(true);
+         }
+         s.run(0.2f);
+         s.mark();  // 07:30, "rings in 9 h 12 min"
+         s.lift(0.5f);
+         s.press(P(233), P(350), 0.1f, 1.2f);  // ✓
+         s.mark();
+       }},
       {"night", "At night: warm amber eyes, sleepy, a night light",
        [](Sim& s) {
          s.in.hour = 23.2f;
@@ -244,12 +385,20 @@ std::vector<Scenario> scenarios() {
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    fprintf(stderr, "usage: %s <out_dir> [scenario|all] [seed]\n", argv[0]);
+    fprintf(stderr, "usage: %s <out_dir> [scenario|all] [seed] [466|480]\n", argv[0]);
     return 2;
   }
   const std::string dir = argv[1];
   const std::string which = argc > 2 ? argv[2] : "all";
   const uint64_t seed = argc > 3 ? strtoull(argv[3], nullptr, 0) : 0xC0FFEEull;
+  const int px = argc > 4 ? atoi(argv[4]) : 466;
+  if (px == 480) gGeom = displays::kLcd28;
+  else if (px != 466) {
+    fprintf(stderr, "display must be 466 or 480\n");
+    return 2;
+  }
+  W = gGeom.w;
+  H = gGeom.h;
 
   const Personality p = Personality::fromSeed(seed);
   printf("seed %llx: %s, eyes %s (%s), shy %.2f, curious %.2f, sleepy %.2f\n",

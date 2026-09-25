@@ -19,5 +19,14 @@ Copyright (c) 2025 Shenzhen Xinzhi Future Technology Co., Ltd.).
 ## Inigo Quilez — 2D SDF functions (MIT)
 `sdHeart` and `sdStar5` in `lib/Suflet/src/Canvas.cpp` follow https://iquilezles.org/articles/distfunctions2d/ (MIT).
 
+## Nunito — SIL Open Font License 1.1
+`lib/Suflet/src/FontData.h` holds glyph bitmaps rasterised by `tools/gen_font.py` from Nunito
+SemiBold/Bold (`tools/fonts/*.ttf`, from Google Fonts). Copyright 2014 The Nunito Project Authors
+(https://github.com/googlefonts/nunito). Full licence: `tools/fonts/OFL.txt`.
+
+## Keyboard word lists — not third-party
+`tools/words/*.txt` (→ `lib/Suflet/src/WordListData.h`) were written by hand for this project and
+are not derived from FrequencyWords (CC-BY-SA) or any other corpus; see `tools/words/README.md`.
+
 ## Libraries (fetched by PlatformIO, not vendored)
 GFX Library for Arduino (BSD), SensorLib (MIT), ArduinoJson (MIT), Unity (MIT).

@@ -1,0 +1,38 @@
+<!-- Direction C · "Signs": SOUL holds up one big line glyph at a time; the rim is a string of beads -->
+<meta charset="utf-8">
+<style>
+body{margin:0;background:#1b1c1c;color:#bbb;font:14px/1.4 system-ui;display:flex;flex-wrap:wrap;gap:30px;padding:30px}
+figure{margin:0}.scr{width:466px;height:466px;border-radius:50%;overflow:hidden;background:#000}figcaption{margin-top:8px}
+svg text{font-kerning:normal}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300..600&family=Space+Mono&display=swap">
+<div id="out"></div>
+<script src="common.js"></script>
+<script>
+const cream = "#FFF0C8", amber = "#FFB347", mint = "#C9F2E4", ice = "#9FC6FF";
+const unb = (sz, col = cream, w = 400) => `font:${w} ${sz}px Unbounded;fill:${col}`;
+const sm = (sz, col, op = 1) => `font:400 ${sz}px 'Space Mono';fill:${col};opacity:${op};letter-spacing:.04em`;
+function beads(keys, sel, col = cream) {
+  return keys.map((k, i) => { const a = (90 + (sel - i) * 16) * Math.PI / 180, x = 233 + 208 * Math.cos(a), y = 233 + 208 * Math.sin(a);
+    return i === sel ? `<circle cx="${x}" cy="${y}" r="5" fill="${col}"/>` : glyph(k, x, y, 20, "rgba(255,240,200,.4)", 1.6); }).join("");
+}
+let h = "";
+h += screen("C-home", "C · home: it holds up one sign; the rim is a string of glyph beads",
+  `<text x="233" y="50" text-anchor="middle" style="${sm(15, cream, .5)}">10:24</text>` +
+  eyes(233, 108, 0.36, 0, 0.9) +
+  glyph("cloud", 233, 262, 124, cream, 3) +
+  `<text x="233" y="360" text-anchor="middle" style="${unb(30, cream, 400)}">17° cloudy</text>` +
+  beads(["talk", "prompt", "alarm", "cloud", "note", "bell", "moon"], 3));
+h += screen("C-claude", "C · a Claude request (amber)",
+  arc(222, 0, 360, "rgba(255,179,71,.2)", 6) + arc(222, -90, 40, amber, 6) +
+  eyes(233, 104, 0.34, 0, 0.9, amber) +
+  glyph("prompt", 233, 240, 96, amber, 3) +
+  `<text x="233" y="330" text-anchor="middle" style="font:400 26px 'Space Mono';fill:${cream}">npm run build</text>` +
+  `<text x="233" y="372" text-anchor="middle" style="${unb(17, "rgba(255,240,200,.6)", 300)}">hold = yes · 2× = no</text>`);
+h += screen("C-control", "C · Control: four signs around the eyes; drag the eyes to dim",
+  eyes(233, 222, 0.34, -0.5, -0.2) +
+  [["moon", 233, 88, 0], ["mic", 372, 233, 1], ["wave", 233, 372, 1], ["eyeClosed", 94, 233, 0]].map(([g, x, y, on]) => glyph(g, x, y, 54, on ? mint : "rgba(255,240,200,.4)", 2.6)).join("") +
+  `<text x="233" y="146" text-anchor="middle" style="${sm(13, cream, .5)}">quiet</text><text x="372" y="290" text-anchor="middle" style="${sm(13, mint, .9)}">mic</text><text x="233" y="428" text-anchor="middle" style="${sm(13, mint, .9)}">sound</text><text x="94" y="290" text-anchor="middle" style="${sm(13, cream, .5)}">sleep</text>` +
+  `<text x="233" y="316" text-anchor="middle" style="${unb(20, cream, 300)}">light 80</text>`);
+document.getElementById("out").innerHTML = h;
+</script>

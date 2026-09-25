@@ -4,7 +4,10 @@ afacere: Micul Șmecher
 status: activ
 actualizat: 2026-09-24
 ---
-# Micul Șmecher — brand de lucru SUFLET
+
+![[suflet_hero.png]]
+
+# Micul Șmecher — produsul SOUL
 
 > **Pe scurt:** o amuletă din sticlă mată cu doi ochi vii pe un ecran AMOLED rotund. E **vie și fără internet**, devine **AI-ul tău personal** când ții degetul pe „piatră” (Claude sau ChatGPT în spate) și **se leagă deja de Claude Code / Cowork** pe calculator. „Laboratoarele fac creierul. Noi facem corpul și sufletul.”
 
@@ -17,20 +20,24 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 | „Works with Claude” (protocolul Bluetooth al Claude Desktop: lucrează / cere aprobare / sărbătorește) | ✅ în firmware, testat pe PC | `firmware/lib/Suflet/src/ClaudeLink.*` |
 | Simulator: clipuri din codul real (boop, tors, amețit, somn, „mi-a fost dor”, AI, Claude, noapte) | ✅ | `micul-smecher/media/` |
 | Creierul AI în cloud (Claude): naștere de personaj, conversație, memorie, mementouri, notițe, jurnalul zilei | ✅ 9/9 teste, fără cheie API încă | `micul-smecher/ai/` |
-| Carcasă 3D (OpenSCAD → STL) | în lucru | `micul-smecher/cad/` |
-| Pagina de lansare / pre-comandă (EN/RO) | în lucru | `micul-smecher/site/` |
+| **Randări fotorealiste** ale produsului (Blender): erou, 4 forme, noapte, pe geantă, pe birou, vertical social, turntable | ✅ (randări de concept, nu poze) | `micul-smecher/renders/` |
+| Carcasă 3D parametrică (OpenSCAD): 4 forme × 2 plăci, față/spate/capac/lentilă + suport de birou, 33 STL verificate | ✅ de printat după măsurători cu șublerul | `micul-smecher/cad/` |
+| Pagina de lansare / pre-comandă (EN/RO, ochi vii în browser, demo Claude, rezervări) | ✅ previzualizare: https://claude.ai/artifact/BUAPPdP1W5xnCvSVcsQXoX | `micul-smecher/site/` |
 | Cercetare (piață, hardware, conformitate, AI, brand, finanțare) — cu surse | ✅ | `micul-smecher/research/` |
 
 ## Notele proiectului
+- **Pachetul complet SOUL (EN):** `micul-smecher/docs/00-START-HERE.md` (BOM, fabricație, software, conformitate, plan de lansare, furnizori) · arhivă: `micul-smecher/dist/SOUL-package.zip`
 - [[Viziunea — momentul iPhone]] — ce lansăm, de ce e altceva, scenariul filmului de lansare
 - [[Planul de bani Micul Șmecher]] — fazele, cifrele pe bucată, scenarii, finanțare, filtrul celor 5 întrebări
 - [[Produs și dezvoltare Micul Șmecher]] — plăci, piese, ce cumperi azi, prototipul în 14 zile, drumul spre producție
+- [[Design produs v3 — SOUL amuleta]] — **direcția în lucru**: piatră-lentilă Ø64, fără toartă, husă separată, ieftină de făcut
+- [[Design produs v2 — SUFLET Pebble]] — (abandonat) piatra de buzunar; funcțiile și bateria rămân utile
 - [[Brand și lansare Micul Șmecher]] — nume, carta companionului, mecanica de lansare, conținut
 - [[Conformitate și riscuri Micul Șmecher]] — CE, baterie, AI Act, Anthropic, pre-mortem
 - [[Piață și concurență Micul Șmecher]] — cine a vândut ce, la ce preț
 
 ## Deciziile care îți aparțin (Andu)
-- [ ] **Numele**: SUFLET (recomandat) sau altul — apoi verificare EUIPO + domeniu înainte de orice cheltuială pe brand.
+- [x] **Numele**: **SOUL** (ales de Andu, 2026-09-24) — urmează verificare EUIPO + domeniu înainte de orice cheltuială pe brand.
 - [ ] **Prețul Founders Desk Edition**: €119 (recomandat; la €99 rămân doar ~€33/bucată).
 - [ ] **Modelul AI** pentru voce: Claude Opus 5 (implicit) vs Sonnet 5 / Haiku 4.5 (mai ieftine, mai rapide) — după un test real de latență și cost.
 - [ ] **Firmă nouă** pentru proiect (SRL separat) — necesară pentru Startup Nation 2026 (250.000 lei) și pentru investitori.

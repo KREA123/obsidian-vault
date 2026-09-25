@@ -2,6 +2,11 @@
 """Turn simulator output (raw RGB frames + JSON) into product-shot media.
 
     python3 tools/frames_to_media.py <sim_out_dir> <media_dir> [--gif] [--mp4] [--sheet]
+                                     [--png [--prefix soulos_fw_]] [--only a,b]
+
+--png writes the frames a scene marked as stills (sim: Sim::mark()) as
+<prefix><scene>_<n>.png product shots, plus <prefix><scene>_<n>_screen.png
+(the raw 466x466 panel picture, for checking pixels).
 
 Every frame is composited as the real object would look: the AMOLED under
 its lens, set in a frosted body that glows with the "body light" colour the
@@ -91,6 +96,8 @@ def main():
     ap.add_argument("--gif", action="store_true")
     ap.add_argument("--mp4", action="store_true")
     ap.add_argument("--sheet", action="store_true")
+    ap.add_argument("--png", action="store_true")
+    ap.add_argument("--prefix", default="")
     ap.add_argument("--only", default="")
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
@@ -103,7 +110,20 @@ def main():
         meta, raw = frames_of(a.sim_dir, name)
         fps = int(meta["fps"])
         body = meta["body"]
+        if a.png and not (a.mp4 or a.gif or a.sheet):
+            stills = meta.get("stills") or [len(raw) // 2]
+            for k, i in enumerate(stills):
+                base = os.path.join(a.out_dir, f"{a.prefix}{name}_{k + 1}")
+                Image.fromarray(compose(raw[i], body[i], static)).save(base + ".png", optimize=True)
+                Image.fromarray(raw[i]).save(base + "_screen.png", optimize=True)
+            print(f"{name}: {len(stills)} stills", file=sys.stderr)
+            continue
         comp = [compose(raw[i], body[i], static) for i in range(len(raw))]
+        if a.png:
+            for k, i in enumerate(meta.get("stills") or [len(raw) // 2]):
+                base = os.path.join(a.out_dir, f"{a.prefix}{name}_{k + 1}")
+                Image.fromarray(comp[i]).save(base + ".png", optimize=True)
+                Image.fromarray(raw[i]).save(base + "_screen.png", optimize=True)
         if a.mp4:
             out = os.path.join(a.out_dir, name + ".mp4")
             p = subprocess.Popen(

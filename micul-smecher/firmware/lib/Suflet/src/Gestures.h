@@ -5,26 +5,60 @@
 
 namespace suflet {
 
+enum class TouchMode : uint8_t {
+  Face,  // the character: Tap / DoubleTap / Hold / Stroke
+  Text,  // keyboards and dials: raw Down / Move / Up + Hold, every tap counts
+};
+
 class TouchGestures {
  public:
   // x, y in display pixels; call every frame.
   void update(bool down, float x, float y, float dt);
-  bool poll(Ev& e) { return q_.pop(e); }
+  // Events with the point they happened at (preferred) ...
+  bool poll(TouchEv& e) { return q_.pop(e); }
+  // ... or just the kind (the Brain only needs that).
+  bool poll(Ev& e) {
+    TouchEv t;
+    if (!q_.pop(t)) return false;
+    e = t.e;
+    return true;
+  }
   bool isDown() const { return down_; }
   float x() const { return x_; }
   float y() const { return y_; }
 
+  // Switching mode while a finger is down swallows the rest of that touch,
+  // so the long-press that opens a keyboard does not also type a key.
+  void setMode(TouchMode m);
+  TouchMode mode() const { return mode_; }
+
+  // Face mode
   float tapMaxS = 0.35f;     // longer than this is not a tap
   float holdAfterS = 0.5f;   // finger resting this long = HoldStart
   float moveSlopPx = 25.0f;  // below this the finger "didn't move"
   float strokePx = 45.0f;    // beyond this it's a stroke
   float doubleTapS = 0.40f;
+  // Text mode (research/04 §4: hold 380 ms within 12 px)
+  float textHoldS = 0.38f;
+  float textSlopPx = 12.0f;
+  float textMovePx = 2.0f;   // report moves of at least this much
+  float textJumpPx = 70.0f;  // a jump this big between two samples = a new finger
 
  private:
-  EvQueue<8> q_;
+  void push(Ev e, float x, float y) {
+    TouchEv t;
+    t.e = e;
+    t.x = (int16_t)(x + 0.5f);
+    t.y = (int16_t)(y + 0.5f);
+    t.t = t_;
+    q_.push(t);
+  }
+  void updateText(bool down, float x, float y);
+  EvQueue<16, TouchEv> q_;
+  TouchMode mode_ = TouchMode::Face;
   float t_ = 0, tDown_ = 0, lastTap_ = -10;
-  float x0_ = 0, y0_ = 0, x_ = 0, y_ = 0, moved_ = 0;
-  bool down_ = false, holding_ = false, stroking_ = false;
+  float x0_ = 0, y0_ = 0, x_ = 0, y_ = 0, moved_ = 0, mx_ = 0, my_ = 0;
+  bool down_ = false, holding_ = false, stroking_ = false, swallow_ = false;
 };
 
 // Device frame: +X right on the screen, +Y up (towards the ring),

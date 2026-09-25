@@ -111,9 +111,12 @@ static void drawEye(Canvas& cv, const Face& f, const Eye& e, int side, float S, 
   }
 }
 
-void renderFace(Canvas& cv, const Face& f) {
-  const float S = (float)(cv.width() < cv.height() ? cv.width() : cv.height());
-  const float cx0 = cv.width() * 0.5f, cy0 = cv.height() * 0.5f;
+void renderFace(Canvas& cv, const Face& f) { renderFace(cv, f, FaceLayout{}); }
+
+void renderFace(Canvas& cv, const Face& f, const FaceLayout& lay) {
+  if (lay.k <= 0.01f) return;
+  const float S = (float)(cv.width() < cv.height() ? cv.width() : cv.height()) * lay.k;
+  const float cx0 = cv.width() * 0.5f * (1.0f + lay.cx), cy0 = cv.height() * 0.5f * (1.0f + lay.cy);
   const Rgb col = f.color.scaled(f.bright);
   if (f.bright <= 0.01f) return;
 

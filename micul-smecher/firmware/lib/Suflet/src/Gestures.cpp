@@ -6,8 +6,30 @@ namespace suflet {
 
 // ---------------------------------------------------------------- touch ---
 
+void TouchGestures::setMode(TouchMode m) {
+  if (m == mode_) return;
+  mode_ = m;
+  if (down_) swallow_ = true;
+  holding_ = stroking_ = false;
+  lastTap_ = -10;
+}
+
 void TouchGestures::update(bool down, float x, float y, float dt) {
   t_ += dt;
+  if (swallow_) {  // the finger that was down when the mode changed
+    if (down) {
+      x_ = x;
+      y_ = y;
+    } else {
+      swallow_ = false;
+      down_ = false;
+    }
+    return;
+  }
+  if (mode_ == TouchMode::Text) {
+    updateText(down, x, y);
+    return;
+  }
   if (down && !down_) {  // press
     down_ = true;
     tDown_ = t_;
@@ -25,30 +47,77 @@ void TouchGestures::update(bool down, float x, float y, float dt) {
     if (!holding_ && !stroking_) {
       if (moved_ > strokePx) {
         stroking_ = true;
-        q_.push(Ev::StrokeStart);
+        push(Ev::StrokeStart, x, y);
       } else if (t_ - tDown_ >= holdAfterS && moved_ < moveSlopPx) {
         holding_ = true;
-        q_.push(Ev::HoldStart);
+        push(Ev::HoldStart, x, y);
       }
     }
     return;
   }
-  if (!down && down_) {  // release
+  if (!down && down_) {  // release (the point is the last one we saw)
     down_ = false;
     if (holding_) {
-      q_.push(Ev::HoldEnd);
+      push(Ev::HoldEnd, x_, y_);
     } else if (stroking_) {
-      q_.push(Ev::StrokeEnd);
+      push(Ev::StrokeEnd, x_, y_);
     } else if (t_ - tDown_ <= tapMaxS && moved_ < moveSlopPx) {
       if (t_ - lastTap_ <= doubleTapS) {
-        q_.push(Ev::DoubleTap);
+        push(Ev::DoubleTap, x_, y_);
         lastTap_ = -10;  // a third tap starts a new sequence
       } else {
-        q_.push(Ev::Tap);
+        push(Ev::Tap, x_, y_);
         lastTap_ = t_;
       }
     }
     holding_ = stroking_ = false;
+  }
+}
+
+// Text mode: every press is reported (no double-tap merge, no tap time
+// limit), so fast typing never loses a key. The key commits on TouchUp.
+void TouchGestures::updateText(bool down, float x, float y) {
+  if (down && down_) {
+    const float jx = x - x_, jy = y - y_;
+    if (jx * jx + jy * jy > textJumpPx * textJumpPx) {
+      // single-touch panels report a quick second finger as a jump: treat
+      // it as lift + new press instead of a slide across the keyboard
+      if (holding_) push(Ev::HoldEnd, x_, y_);
+      push(Ev::TouchUp, x_, y_);
+      down_ = false;
+    }
+  }
+  if (down && !down_) {
+    down_ = true;
+    tDown_ = t_;
+    x0_ = x_ = mx_ = x;
+    y0_ = y_ = my_ = y;
+    moved_ = 0;
+    holding_ = stroking_ = false;
+    push(Ev::TouchDown, x, y);
+    return;
+  }
+  if (down && down_) {
+    x_ = x;
+    y_ = y;
+    const float d = sqrtf((x - x0_) * (x - x0_) + (y - y0_) * (y - y0_));
+    if (d > moved_) moved_ = d;
+    if ((x - mx_) * (x - mx_) + (y - my_) * (y - my_) >= textMovePx * textMovePx) {
+      mx_ = x;
+      my_ = y;
+      push(Ev::TouchMove, x, y);
+    }
+    if (!holding_ && moved_ < textSlopPx && t_ - tDown_ >= textHoldS) {
+      holding_ = true;
+      push(Ev::HoldStart, x, y);
+    }
+    return;
+  }
+  if (!down && down_) {
+    down_ = false;
+    if (holding_) push(Ev::HoldEnd, x_, y_);
+    push(Ev::TouchUp, x_, y_);
+    holding_ = false;
   }
 }
 
