@@ -333,6 +333,18 @@ def rbox(bf, cx, cy, ang, L, W, d0, d1):
             .rect(L, W).extrude(d1 - d0).val())
 
 
+def half_prism(side, z0=None, big=300.0):
+    """one clean prism: the front (side -1) or back (+1) of the parting plane, above the base plate (Z > z0)"""
+    z0 = BASE_T if z0 is None else z0
+    A, B = g.SEAM_A, g.SEAM_B
+    zt = 400.0
+    ys0, ys1 = A + B * z0, A + B * zt
+    far = -big if side < 0 else big
+    pts = [(ys0, z0), (ys1, zt), (far, zt), (far, z0)]
+    w = cq.Workplane('YZ', origin=(-big, 0, 0)).polyline(pts).close().extrude(2 * big)
+    return w.val()
+
+
 def zslab(z0, z1, big=300.0):
     return cq.Workplane('XY').workplane(offset=z0).rect(big, big).extrude(z1 - z0).val()
 
@@ -408,8 +420,8 @@ def build(vname):
 
     # ------------------------------------------------ halves: additions / cuts collected, applied once
     BIG = 300.0
-    FRONT_HALF = SeamFrame.slab(-BIG, 0).intersect(ABOVE)
-    BACK_HALF = SeamFrame.slab(0, BIG).intersect(ABOVE)
+    FRONT_HALF = half_prism(-1)
+    BACK_HALF = half_prism(+1)
     add = {'front': [], 'back': [], 'base': []}
     sub = {'front': [], 'back': [], 'base': []}
 
