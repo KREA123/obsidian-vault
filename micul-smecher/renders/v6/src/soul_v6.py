@@ -404,6 +404,12 @@ def metal_front_card(cam, T, col=0.55, size=(1.4, 1.0), dist=0.10):
 def metalise(cam, T, par_list, card=0.14):
     """After a v5 shot has set its studio: soften the flag, shrink the glass-only mirror card."""
     TUNE.setdefault('mcard', card)
+    bpy.context.view_layer.update()
+    if TUNE.get('floor_card', 0) <= 0:
+        # the long glossy-black floor card of protect_screens() would be mirrored by the whole lower body
+        for ob in list(bpy.data.objects):
+            if ob.name.startswith('card') and ob.matrix_world.translation.z < 0.002 and max(ob.dimensions) > 0.3:
+                bpy.data.objects.remove(ob)
     if TUNE.get('front_card', 1) > 0:
         metal_front_card(cam, T, col=TUNE.get('fc_col', 0.5))
 
@@ -520,6 +526,33 @@ def shot_hopa6():
     return shot_hopa()
 
 
+def shot_alive():
+    """5 s 'alive' clip, one frame per call (render_v6.sh renders each unique eye state once): SOUL stands still on
+    its flat foot, only the eyes blink and glance. Silver, 3/4, the OU soft behind."""
+    f = int(TUNE.get('alive_frame', 1))
+    sc = shot_hero6()
+    s = bpy.data.objects['soul_hero']
+    g = SOULS[s.name]['glass']
+    node = next(n for n in g.active_material.node_tree.nodes if n.type == 'TEX_IMAGE')
+    node.image = bpy.data.images.load('/tmp/soul_v6_cache/alive_eyes/eyes_alive_%04d.png' % f)
+    cam = sc.camera
+    cam.data.lens = TUNE.get('alive_lens', 100.0)
+    return sc
+
+
+def shot_test6():
+    sc = reset()
+    T = Vector((0, 0, 36 * MM))
+    TUNE.setdefault('mcard', 0.16)
+    day_studio(T)
+    s = build_soul('t', TUNE.get('test_cw_s', 'silver'), eyes='soul_front')
+    pose_soul(s, (0, 0, 0))
+    cam = cam_aed(T, TUNE.get('t_az', 0.0), TUNE.get('t_el', 4.0), 560.0, 100, 11.0, focus=eye_point(s))
+    black_glass(cam, T, [s])
+    metalise(cam, T, [s])
+    return sc
+
+
 def _wrap(fn, post=None):
     def run():
         sc = fn()
@@ -545,7 +578,8 @@ SHOTS = {
     'ou_night': (shot_ou_night6, 1600, 1200, 192),
     'hand': (_wrap(shot_hand6, _post_generic), 1600, 1200, 128),
     'macro': (shot_macro, 1600, 1200, 192),
-    'hopa': (_wrap(shot_hopa6, _post_generic), 720, 720, 24),
+    'alive': (shot_alive, 720, 720, 64),
+    'test': (shot_test6, 1200, 1200, 48),
 }
 
 main()

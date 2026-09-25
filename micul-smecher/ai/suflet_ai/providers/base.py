@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Protocol
 
 from pydantic import BaseModel, Field
@@ -37,9 +37,12 @@ class AskContext:
     lang: str  # "ro" | "en" (best guess; providers may reply in the user's language anyway)
     dispatcher: Dispatcher
     mode: str = "none"
+    executed: List[ActionResult] = field(default_factory=list)
 
     def run(self, name: str, args: dict, source: str) -> ActionResult:
-        return self.dispatcher.dispatch(self.device, name, args, lang=self.lang, source=source, now=self.now)
+        r = self.dispatcher.dispatch(self.device, name, args, lang=self.lang, source=source, now=self.now)
+        self.executed.append(r)
+        return r
 
 
 class Provider(Protocol):

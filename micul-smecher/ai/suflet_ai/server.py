@@ -1,4 +1,4 @@
-"""HTTP API for the phone app, the web demo and the voice gateway.
+"""HTTP API for the SOUL device, the phone app, the web demo and the voice gateway.
 
     SUFLET_API_TOKEN=... uvicorn suflet_ai.server:app --port 8787
 
@@ -11,14 +11,33 @@ import hmac
 import os
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, SecretStr
 
+from .actions import action_catalog
 from .companion import Companion
 from .llm import LlmError
+from .soul import SoulService
 
-app = FastAPI(title="Suflet AI", version="0.1.0")
+app = FastAPI(title="SOUL AI", version="0.2.0")
 _companion: Optional[Companion] = None
+_soul: Optional[SoulService] = None
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error(request: Request, exc: RequestValidationError):
+    # FastAPI echoes the offending input by default; a request body may hold an API key.
+    errors = [{"loc": e.get("loc"), "msg": e.get("msg"), "type": e.get("type")} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": errors})
+
+
+def soul() -> SoulService:
+    global _soul
+    if _soul is None:
+        _soul = SoulService()
+    return _soul
 
 
 def companion() -> Companion:
@@ -109,3 +128,152 @@ def forget(device_id: str):
     except ValueError as e:
         raise HTTPException(422, str(e))
     return {"forgotten": True}
+
+
+# =============================================================== SOUL v1 ==
+# The same endpoints serve every AI mode (none / claude / chatgpt). The device
+# id travels in the body (or query), so one token can serve a user's devices.
+
+DeviceId = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+
+
+class AskIn(BaseModel):
+    device_id: str = DeviceId
+    text: str = Field(min_length=1, max_length=2000)
+    lang: Optional[str] = Field(default=None, pattern=r"^(ro|en)$")
+
+
+class ActionIn(BaseModel):
+    device_id: str = DeviceId
+    name: str = Field(max_length=40)
+    args: dict = Field(default_factory=dict)
+    lang: str = Field(default="en", pattern=r"^(ro|en)$")
+
+
+class ModeIn(BaseModel):
+    device_id: str = DeviceId
+    mode: str = Field(pattern=r"^(none|claude|chatgpt)$")
+    lang: Optional[str] = Field(default=None, pattern=r"^(ro|en)$")
+
+
+class KeyIn(BaseModel):
+    device_id: str = DeviceId
+    provider: str = Field(pattern=r"^(anthropic|openai)$")
+    api_key: SecretStr  # never echoed, never in reprs or validation errors
+
+
+class KeyTestIn(BaseModel):
+    device_id: str = DeviceId
+    provider: str = Field(pattern=r"^(anthropic|openai)$")
+    api_key: Optional[SecretStr] = None  # test a key before saving it; omitted = the stored one
+
+
+def _bad(e: Exception):
+    raise HTTPException(422, str(e))
+
+
+@app.post("/v1/ask", dependencies=[Depends(auth)])
+def ask(body: AskIn):
+    """Text in, {say, face, card, chips, actions, provider, mode, note} out, in any AI mode."""
+    try:
+        return soul().ask(body.device_id, body.text, lang=body.lang).model_dump()
+    except ValueError as e:
+        _bad(e)
+
+
+@app.post("/v1/action", dependencies=[Depends(auth)])
+def action(body: ActionIn):
+    """Run one typed action directly (phone app UI, on-device keyboard)."""
+    try:
+        r = soul().action(body.device_id, body.name, body.args, lang=body.lang, source="app")
+    except ValueError as e:
+        _bad(e)
+    if not r.ok:
+        raise HTTPException(422, r.error)
+    return r.model_dump()
+
+
+@app.get("/v1/actions", dependencies=[Depends(auth)])
+def actions():
+    """The action catalog with JSON Schemas (same ones the LLMs get)."""
+    return action_catalog()
+
+
+@app.get("/v1/mode", dependencies=[Depends(auth)])
+def get_mode(device_id: str):
+    try:
+        return soul().mode_info(device_id)
+    except ValueError as e:
+        _bad(e)
+
+
+@app.post("/v1/mode", dependencies=[Depends(auth)])
+def set_mode(body: ModeIn):
+    s = soul()
+    try:
+        s.set_mode(body.device_id, body.mode)
+        if body.lang:
+            s.state.set_setting(body.device_id, "lang", body.lang)
+        return s.mode_info(body.device_id)
+    except ValueError as e:
+        _bad(e)
+
+
+@app.get("/v1/key", dependencies=[Depends(auth)])
+def key_status(device_id: str):
+    """Which keys are set. Never returns a key or any part of it."""
+    try:
+        return soul().keys.status(device_id)
+    except ValueError as e:
+        _bad(e)
+
+
+@app.post("/v1/key", dependencies=[Depends(auth)])
+def set_key(body: KeyIn):
+    try:
+        return soul().set_key(body.device_id, body.provider, body.api_key.get_secret_value())
+    except ValueError as e:
+        _bad(e)
+
+
+@app.post("/v1/key/test", dependencies=[Depends(auth)])
+def test_key(body: KeyTestIn):
+    try:
+        key = body.api_key.get_secret_value() if body.api_key else None
+        return soul().test_key(body.device_id, body.provider, key)
+    except ValueError as e:
+        _bad(e)
+
+
+@app.delete("/v1/key", dependencies=[Depends(auth)])
+def remove_key(device_id: str, provider: str):
+    try:
+        return soul().remove_key(device_id, provider)
+    except ValueError as e:
+        _bad(e)
+
+
+@app.get("/v1/today", dependencies=[Depends(auth)])
+def today(device_id: str, day: Optional[str] = None):
+    try:
+        return soul().today(device_id, day)
+    except ValueError as e:
+        _bad(e)
+
+
+@app.get("/v1/sync", dependencies=[Depends(auth)])
+def sync(device_id: str, since: int = 0):
+    """Items created after `since` (use the last id you have); the device pulls this."""
+    try:
+        return soul().sync(device_id, since)
+    except ValueError as e:
+        _bad(e)
+
+
+@app.get("/v1/due", dependencies=[Depends(auth)])
+def due_soul(device_id: str):
+    """Reminders whose time has come; each is returned once."""
+    try:
+        return soul().due(device_id)
+    except ValueError as e:
+        _bad(e)

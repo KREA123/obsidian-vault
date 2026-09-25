@@ -1,4 +1,7 @@
 anthropic>=1.8,<2
+openai>=1.60            # ChatGPT mode (bring your own OpenAI key); optional at runtime
+mcp>=2.0,<3             # SOUL connector for Claude / ChatGPT (MCPServer API)
+cryptography>=41        # API keys encrypted at rest (Fernet + HKDF)
 pydantic>=2.7,<3
 fastapi>=0.110
 uvicorn>=0.29
