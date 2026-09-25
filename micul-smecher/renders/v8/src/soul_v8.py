@@ -315,20 +315,21 @@ def shot_hand8():
     sc = reset()
     world_color((0.95, 0.92, 0.88), 0.03)
     root = props_root()
-    sw = sweep('#CDBFAE', wall_y=0.55)
-    under(root, sw)
+    sweep('#CDBFAE', wall_y=0.55)            # plain paper: scales with the scene, as in v6 (same reflections)
     s = build_soul('hand', 'silver', eyes=TUNE.get('hd_eyes', 'cream_down'))
     ctr, half = body_box_local(s)
     # device pose in hand coordinates (true mm): face up, crown toward the fingers
-    Rot = (Euler((R(TUNE.get('hd_rx', 20.0)), R(TUNE.get('hd_ry', -6.0)), R(TUNE.get('hd_rz', 8.0)))).to_matrix()
+    Rot = (Euler((R(TUNE.get('hd_rx', -16.0)), R(TUNE.get('hd_ry', -6.0)), R(TUNE.get('hd_rz', 188.0)))).to_matrix()
            @ Matrix.Rotation(R(-90), 3, 'X'))
     hK = half * K
-    c_h = Vector((TUNE.get('hd_cx', 2.0), TUNE.get('hd_cy', 2.0), TUNE.get('hd_cz', 14.0 + hK[1])))
+    c_h = Vector((TUNE.get('hd_cx', 2.0), TUNE.get('hd_cy', 6.0), TUNE.get('hd_cz', 14.0 + hK[1])))
     ax = [Rot @ Vector(e) for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]
     args = ['bx_cx=%.2f' % c_h.x, 'bx_cy=%.2f' % c_h.y, 'bx_cz=%.2f' % c_h.z,
             'bx_hw=%.2f' % hK[0], 'bx_hd=%.2f' % hK[1], 'bx_hh=%.2f' % hK[2], 'bx_r=%.2f' % TUNE.get('hd_br', 13.0)]
     for i, a_ in enumerate(ax):
         args += ['bx_x%d=%.4f' % (i, a_.x), 'bx_y%d=%.4f' % (i, a_.y), 'bx_z%d=%.4f' % (i, a_.z)]
+    TUNE.setdefault('hd_fk', 1.3)
+    TUNE.setdefault('hd_f0', 2.2)
     for kk in ('fk', 'f0', 'cup_z', 'cup_r', 't_yaw', 't_f1', 't_f2', 't_f3', 't_side', 'carve_k'):
         if 'hd_' + kk in TUNE:
             args.append('%s=%g' % (kk, TUNE['hd_' + kk]))
