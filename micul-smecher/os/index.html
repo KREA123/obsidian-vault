@@ -317,7 +317,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 
 /* Control Center: pulled down over the face, frosted */
 #cc{position:absolute;inset:0;border-radius:50%;z-index:6;pointer-events:none;opacity:0;transform:translate3d(0,-466px,0);will-change:transform,opacity;
-  background:radial-gradient(circle at 50% 30%,rgba(40,37,30,.55),rgba(12,11,9,.78));-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6)}
+  background:radial-gradient(circle at 50% 30%,rgba(40,37,30,.55),rgba(12,11,9,.78));-webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5)}
 .cch{position:absolute;top:48px;left:0;right:0;display:flex;justify-content:center;gap:18px;font:500 22px/1 var(--display);color:rgba(255,240,200,.7);font-variant-numeric:tabular-nums}
 .cch span{display:inline-flex;align-items:center;gap:4px;color:var(--mint)}
 .cch svg{width:18px;height:18px;fill:currentColor}
@@ -456,7 +456,7 @@ details.fold>summary::-webkit-details-marker{display:none}
 details.fold>summary::after{content:"+";font:400 18px/1 var(--mono);color:var(--muted);margin-bottom:12px}
 details.fold[open]>summary::after{content:"–"}
 @media (max-width:480px){.pebble{width:calc(100% - 4px)}body{padding-inline:14px}}
-@media (hover:none) and (pointer:coarse){.keys{display:none}}
+@media (hover:none) and (pointer:coarse),(max-width:600px){.keys{display:none}}
 html{overscroll-behavior-x:none}
 
 @media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in,.coach,.wxbody.wxin{animation:none}
@@ -1359,7 +1359,7 @@ function go(v, dir = "fade", opt = {}) {
   sfx(dir === "zoom" || v === "apps" ? "open" : v === "home" && prev !== "home" ? "close" : "swish");
   applyFaceState(); renderDots(); syncPanel();
 }
-function refresh() { if (curCard) curCard.innerHTML = cardHTML(S.view); applyFaceState(); renderDots(); }
+function refresh() { if (curCard) { curCard.innerHTML = cardHTML(S.view); curCard._lics = curCard._lnl = curCard._lkey = null; } applyFaceState(); renderDots(); }
 function back() { const r = S.ret && S.ret !== S.view ? S.ret : "home"; go(RING.includes(r) || r === "today" ? r : "home", "down"); }
 function parentOf(v) { if (v === "dial") return S.edit && S.edit.kind === "rem" ? "reminders" : S.edit && S.edit.fromSum ? "alarmsum" : "alarms"; return PARENT[v] || (RING.includes(S.ret) ? S.ret : "home"); }
 
@@ -2692,7 +2692,10 @@ function launcherFrame(dt) {
     }
     LN.px += LN.vx * dt; LN.py += LN.vy * dt;
   }
-  const els = curCard.querySelectorAll(".lic"); let best = null, bd = 1e9;
+  const key = `${LN.px.toFixed(2)},${LN.py.toFixed(2)},${LN.open.toFixed(4)}`;
+  if (curCard._lkey === key && !LN.lblOn) return;                 // nothing moved: no DOM writes this frame
+  curCard._lkey = key;
+  const els = curCard._lics || (curCard._lics = Array.from(curCard.querySelectorAll(".lic"))); let best = null, bd = 1e9;
   els.forEach((el, i) => {
     const [v, q, r] = HEX[i], ring = Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r));
     const o = clamp((LN.open - ring * 0.08) / 0.84, 0, 1.25);
@@ -2706,7 +2709,7 @@ function launcherFrame(dt) {
     const d = Math.hypot(fx, fy); if (d < bd) { bd = d; best = v; }
     if (v === "home") { soul.layDirect = LN.open > 0.97; soul.lay = { k: 0.165 * Math.max(0.3, sc), cy: (Y - 233) / 466, cx: (X - 233) / 466 }; }
   });
-  const moving = !!(LN.drag || LN.tgt || Math.hypot(LN.vx, LN.vy) > 30), l = curCard.querySelector('[data-live="lnl"]');
+  const moving = !!(LN.drag || LN.tgt || Math.hypot(LN.vx, LN.vy) > 30), l = curCard._lnl || (curCard._lnl = curCard.querySelector('[data-live="lnl"]'));
   if (best !== LN.near) { LN.near = best; if (l) l.textContent = appName(best); if (moving) sfx("tick"); }
   if (moving) LN.lblT = performance.now();
   if (l) { const show = performance.now() - (LN.lblT || -9e9) < 1100 && best !== "home"; if (show !== LN.lblOn) { LN.lblOn = show; l.style.opacity = show ? "1" : "0"; } }

@@ -470,7 +470,17 @@ def build(vname):
     parts_in['battery'] = battery
     parts_in['speaker'] = speaker
     parts_in['usb_plug'] = usb_plug
-    inter, clear = mesh_checks(shells, parts_in, say)
+    cdir = os.path.join(HERE, 'cache', vname)
+    os.makedirs(cdir, exist_ok=True)
+    for k, v in list(shells.items()) + list(parts_in.items()):
+        v.exportBrep(os.path.join(cdir, k + '.brep'))
+    try:
+        inter, clear = mesh_checks(shells, parts_in, say)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        say('  !! mesh checks failed: %r' % e)
+        inter, clear = {}, {}
 
     # ------------------------------------------------ dimensions / masses
     bb = OUTER.BoundingBox()
@@ -493,11 +503,27 @@ def build(vname):
 
 
 def to_mesh(shape, tol=0.03):
+    import tempfile
     import trimesh
-    vs, ts = shape.tessellate(tol, 0.2)
-    m = trimesh.Trimesh(np.array([(v.x, v.y, v.z) for v in vs]), np.array(ts), process=True)
+    fd, fn = tempfile.mkstemp(suffix='.stl')
+    os.close(fd)
+    cq.exporters.export(cq.Workplane().add(shape), fn, tolerance=tol, angularTolerance=0.2)
+    m = trimesh.load(fn)
+    os.remove(fn)
     m.merge_vertices()
+    if not m.is_volume:
+        trimesh.repair.fill_holes(m)
+        trimesh.repair.fix_normals(m)
     return m
+
+
+def inter_vol(a, b, A=None, B=None):
+    import trimesh
+    try:
+        iv = trimesh.boolean.intersection([a, b], engine='manifold')
+        return float(iv.volume) if len(iv.faces) else 0.0
+    except Exception:
+        return vol(A.intersect(B)) if A is not None else -1.0
 
 
 def mesh_checks(shells, parts_in, say):
@@ -506,24 +532,18 @@ def mesh_checks(shells, parts_in, say):
     import trimesh
     say('  -- checks on meshes (tessellation 0.03 mm) --')
     M = {k: to_mesh(v) for k, v in shells.items()}
+    say('   watertight: ' + ', '.join('%s %s' % (k, m.is_volume) for k, m in M.items()))
     P = {k: to_mesh(v, 0.02) for k, v in parts_in.items()}
     inter, clear = {}, {}
     for sn, sm in M.items():
         for pn, pm in P.items():
-            try:
-                iv = trimesh.boolean.intersection([sm, pm], engine='manifold')
-                v = float(iv.volume) if iv is not None and len(iv.faces) else 0.0
-            except Exception as e:
-                v = -1.0
-            inter[f'{sn} x {pn}'] = round(v, 3)
+            inter[f'{sn} x {pn}'] = round(inter_vol(sm, pm, shells[sn], parts_in[pn]), 3)
     for a_, b_ in [('front_shell', 'back_shell'), ('front_shell', 'chassis'), ('back_shell', 'chassis')] + \
             ([('seam_band', 'front_shell'), ('seam_band', 'back_shell'), ('seam_band', 'chassis')] if 'seam_band' in M else []):
-        iv = trimesh.boolean.intersection([M[a_], M[b_]], engine='manifold')
-        inter[f'{a_} x {b_}'] = round(float(iv.volume) if len(iv.faces) else 0.0, 3)
+        inter[f'{a_} x {b_}'] = round(inter_vol(M[a_], M[b_], shells[a_], shells[b_]), 3)
     for a_, b_ in [('battery', 'speaker'), ('battery', 'components'), ('speaker', 'components'),
                    ('battery', 'usb_receptacle'), ('battery', 'plug_bat'), ('speaker', 'btn_boot')]:
-        iv = trimesh.boolean.intersection([P[a_], P[b_]], engine='manifold')
-        inter[f'{a_} x {b_}'] = round(float(iv.volume) if len(iv.faces) else 0.0, 3)
+        inter[f'{a_} x {b_}'] = round(inter_vol(P[a_], P[b_], parts_in[a_], parts_in[b_]), 3)
     bad = {k: v for k, v in inter.items() if abs(v) > 0.01}
     say(f'   interference: {len(inter)} pairs checked, {len(bad)} with overlap > 0.01 mm3 {bad if bad else ""}')
     # clearances

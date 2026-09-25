@@ -17,6 +17,7 @@ Format: `YYYY-MM-DD — decizie — de ce — sursa`. Cele mai noi sus. Se adaug
 - „Nu punem la dispoziție ce nu avem în stoc.”
 
 ## Septembrie 2026
+- 2026-09-25 — **SOUL e internațional: engleza e limba implicită** (produs, SoulOS, site, materiale pentru investitori); româna rămâne a doua limbă. Notele interne din Obsidian rămân în română — Andu
 - 2026-09-25 — **Forma și culorile SOUL sunt fixate (Andu: „chiar îmi place, rămân”)**: piatra HOPA în picioare, talpă plată, aluminiu sablat anodizat; culori Argintiu, Grafit, Midnight (albastru), Ember (portocaliu), Șampanie — `micul-smecher/renders/v6/`
 - 2026-09-25 — **Prima serie: 10–25 bucăți**, ca test de vânzare (Andu) → fără matrițe: carcasă aluminiu tăiată CNC + anodizată, placa Waveshare cu sticla ei, talpă printată 3D; costurile și prețul se calculează pentru 10 și 25 buc.
 - 2026-09-25 — **Ales de Andu: designul HOPA**, numele produsului rămâne doar **SOUL**. Carcasa: **aluminiu** (metal, ieftin), nu plastic perlat/aspect de sticlă — randări v6 și research cost aluminiu în lucru
