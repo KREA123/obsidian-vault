@@ -1,0 +1,382 @@
+{
+ "screws": [
+  {
+   "x": -35.0,
+   "Z": 22.0,
+   "s_front": -9.26,
+   "s_back": 14.15,
+   "hole_depth": 4.6,
+   "skin_under_hole": 4.66,
+   "s_leg1": 7.0,
+   "screw_len_max": 16.45
+  },
+  {
+   "x": 35.0,
+   "Z": 22.0,
+   "s_front": -9.26,
+   "s_back": 14.15,
+   "hole_depth": 4.6,
+   "skin_under_hole": 4.66,
+   "s_leg1": 7.0,
+   "screw_len_max": 16.45
+  },
+  {
+   "x": -40.5,
+   "Z": 102.0,
+   "s_front": -5.38,
+   "s_back": 7.35,
+   "hole_depth": 3.78,
+   "skin_under_hole": 1.6,
+   "s_leg1": 2.85,
+   "screw_len_max": 8.83
+  },
+  {
+   "x": 40.5,
+   "Z": 102.0,
+   "s_front": -5.38,
+   "s_back": 7.35,
+   "hole_depth": 3.78,
+   "skin_under_hole": 1.6,
+   "s_leg1": 2.85,
+   "screw_len_max": 8.83
+  }
+ ],
+ "interference": {
+  "front_shell x lens": 66.699,
+  "front_shell x lcd": 0.0,
+  "front_shell x pcb": 0.0,
+  "front_shell x pcb_tab": 0.072,
+  "front_shell x components": 0.0,
+  "front_shell x bat_conn": 0.0,
+  "front_shell x bat_plug": 0.0,
+  "front_shell x switch": 0.0,
+  "front_shell x key_boot": 0.0,
+  "front_shell x key_rst": 0.0,
+  "front_shell x usb_r": 0.0,
+  "front_shell x usb_l": 0.0,
+  "front_shell x battery": 0.0,
+  "front_shell x speaker": 0.0,
+  "front_shell x amp": 0.0,
+  "front_shell x mic": 0.0,
+  "front_shell x usb_plug": 0.0,
+  "front_shell x usb_socket": 0.0,
+  "back_shell x lens": 0.0,
+  "back_shell x lcd": 0.0,
+  "back_shell x pcb": 0.0,
+  "back_shell x pcb_tab": 0.0,
+  "back_shell x components": 0.0,
+  "back_shell x bat_conn": 0.0,
+  "back_shell x bat_plug": 0.0,
+  "back_shell x switch": 0.0,
+  "back_shell x key_boot": 0.0,
+  "back_shell x key_rst": 0.0,
+  "back_shell x usb_r": 0.0,
+  "back_shell x usb_l": 0.0,
+  "back_shell x battery": 9.687,
+  "back_shell x speaker": 1131.904,
+  "back_shell x amp": 165.878,
+  "back_shell x mic": 0.0,
+  "back_shell x usb_plug": 0.0,
+  "back_shell x usb_socket": 0.0,
+  "base_plate x lens": 0.0,
+  "base_plate x lcd": 0.0,
+  "base_plate x pcb": 0.0,
+  "base_plate x pcb_tab": 0.0,
+  "base_plate x components": 0.0,
+  "base_plate x bat_conn": 0.0,
+  "base_plate x bat_plug": 0.0,
+  "base_plate x switch": 0.0,
+  "base_plate x key_boot": 0.0,
+  "base_plate x key_rst": 0.0,
+  "base_plate x usb_r": 0.0,
+  "base_plate x usb_l": 0.0,
+  "base_plate x battery": 0.0,
+  "base_plate x speaker": 0.0,
+  "base_plate x amp": 0.0,
+  "base_plate x mic": 0.0,
+  "base_plate x usb_plug": 0.0,
+  "base_plate x usb_socket": 0.0,
+  "chassis x lens": 0.0,
+  "chassis x pcb_tab": 0.0,
+  "chassis x bat_conn": 0.0,
+  "chassis x bat_plug": 0.0,
+  "chassis x switch": 0.0,
+  "chassis x key_boot": 0.0,
+  "chassis x key_rst": 0.0,
+  "chassis x usb_r": 0.0,
+  "chassis x usb_l": 0.0,
+  "chassis x battery": 0.0,
+  "chassis x speaker": 0.0,
+  "chassis x amp": 0.0,
+  "chassis x mic": 0.0,
+  "chassis x usb_plug": 0.0,
+  "chassis x usb_socket": 0.0,
+  "front_shell x back_shell": 0.0,
+  "front_shell x base_plate": 41.281,
+  "front_shell x chassis": 0.0,
+  "back_shell x base_plate": 0.11,
+  "back_shell x chassis": 7.791,
+  "base_plate x chassis": 0.0,
+  "battery x speaker": 0.0,
+  "battery x amp": 0.0,
+  "battery x mic": 0.0,
+  "battery x usb_plug": 7.162,
+  "battery x usb_socket": 0.0,
+  "battery x components": 0.0,
+  "battery x bat_plug": 0.0,
+  "battery x lcd": 0.0,
+  "battery x pcb": 0.0,
+  "speaker x amp": 0.0,
+  "speaker x mic": 0.0,
+  "speaker x usb_plug": 0.0,
+  "speaker x usb_socket": 0.0,
+  "speaker x components": 0.0,
+  "speaker x bat_plug": 0.0,
+  "speaker x lcd": 0.0,
+  "speaker x pcb": 0.0,
+  "amp x mic": 0.0,
+  "amp x usb_plug": 0.0,
+  "amp x usb_socket": 0.0,
+  "amp x components": 0.0,
+  "amp x bat_plug": 0.0,
+  "amp x lcd": 0.0,
+  "amp x pcb": 0.0,
+  "mic x usb_plug": 0.0,
+  "mic x usb_socket": 0.0,
+  "mic x components": 0.0,
+  "mic x bat_plug": 0.0,
+  "mic x lcd": 0.0,
+  "mic x pcb": 0.0,
+  "usb_plug x usb_socket": 0.0,
+  "usb_plug x components": 0.0,
+  "usb_plug x bat_plug": 0.0,
+  "usb_plug x lcd": 0.0,
+  "usb_plug x pcb": 0.0,
+  "usb_socket x components": 0.0,
+  "usb_socket x bat_plug": 0.0,
+  "usb_socket x lcd": 0.0,
+  "usb_socket x pcb": 0.0
+ },
+ "clearance": {
+  "lens": {
+   "front_shell": -0.15,
+   "back_shell": 6.54,
+   "base_plate": 13.49,
+   "chassis": 5.38
+  },
+  "lcd": {
+   "front_shell": 7.64,
+   "back_shell": 8.89,
+   "base_plate": 22.36,
+   "chassis": 2.54
+  },
+  "pcb": {
+   "front_shell": 10.52,
+   "back_shell": 7.67,
+   "base_plate": 24.68,
+   "chassis": 0.5
+  },
+  "pcb_tab": {
+   "front_shell": 0.21,
+   "back_shell": 16.2,
+   "base_plate": 17.01,
+   "chassis": 3.6
+  },
+  "components": {
+   "front_shell": 11.81,
+   "back_shell": 3.89,
+   "base_plate": 25.28,
+   "chassis": -1.69
+  },
+  "bat_conn": {
+   "front_shell": 14.83,
+   "back_shell": 5.03,
+   "base_plate": 76.22,
+   "chassis": 1.59
+  },
+  "bat_plug": {
+   "front_shell": 16.33,
+   "back_shell": 2.32,
+   "base_plate": 74.97,
+   "chassis": 0.27
+  },
+  "switch": {
+   "front_shell": 9.19,
+   "back_shell": 7.73,
+   "base_plate": 48.97,
+   "chassis": 0.8
+  },
+  "key_boot": {
+   "front_shell": 10.31,
+   "back_shell": 5.89,
+   "base_plate": 67.11,
+   "chassis": 1.0
+  },
+  "key_rst": {
+   "front_shell": 11.46,
+   "back_shell": 7.07,
+   "base_plate": 57.55,
+   "chassis": 1.0
+  },
+  "usb_r": {
+   "front_shell": 7.19,
+   "back_shell": 10.68,
+   "base_plate": 28.49,
+   "chassis": 0.8
+  },
+  "usb_l": {
+   "front_shell": 7.16,
+   "back_shell": 10.87,
+   "base_plate": 28.49,
+   "chassis": 0.8
+  },
+  "battery": {
+   "front_shell": 3.93,
+   "back_shell": -0.68,
+   "base_plate": 10.18,
+   "chassis": -0.0
+  },
+  "speaker": {
+   "front_shell": 7.51,
+   "back_shell": -1.15,
+   "base_plate": 81.55,
+   "chassis": 0.03
+  },
+  "amp": {
+   "front_shell": 12.11,
+   "back_shell": -0.99,
+   "base_plate": 75.78,
+   "chassis": 0.1
+  },
+  "mic": {
+   "front_shell": 11.33,
+   "back_shell": 0.2,
+   "base_plate": 51.82,
+   "chassis": 0.05
+  },
+  "usb_plug": {
+   "front_shell": 1.81,
+   "back_shell": 1.98,
+   "base_plate": 19.89,
+   "chassis": -0.0
+  },
+  "usb_socket": {
+   "front_shell": 1.4,
+   "back_shell": -0.0,
+   "base_plate": -0.0,
+   "chassis": 1.43
+  }
+ },
+ "dims": {
+  "W": 112.15,
+  "H_shells": 126.36,
+  "H_total": 127.56,
+  "D": 31.28,
+  "base": {
+   "width": 112.13999408976372,
+   "height": 126.38,
+   "depth": 31.182375526352395,
+   "z_wmax": 66.72864,
+   "z_dmax": 8.172573333333334,
+   "base_w": 58.95106763272458,
+   "base_d": 29.439999999999998,
+   "lean_deg": 5.188164500472253,
+   "G": [
+    0.0,
+    -12.19,
+    66.75
+   ]
+  },
+  "mass_g": {
+   "front_shell": 16.0,
+   "back_shell": 34.3,
+   "base_plate": 8.7,
+   "chassis": 14.6
+  }
+ },
+ "pins": {
+  "boot": {
+   "L": 18.76,
+   "exit": [
+    55.76,
+    -2.8,
+    74.53
+   ],
+   "s_exit": 1.11
+  },
+  "rst": {
+   "L": 19.04,
+   "exit": [
+    56.04,
+    -3.67,
+    64.97
+   ],
+   "s_exit": 0.51
+  }
+ },
+ "log": [
+  "== plastic: wall 2.0 tol 0.2 lip 1.2  (K 1.78, KY 1.15)",
+  "  outer vol 243807 mm3, inner 187461 mm3  (60.6s)",
+  "  screw columns (x, Z): front surface / back surface along the seam normal (s)",
+  "   (-35.0,22.0): front -9.26 back 14.15 hole 4.6, skin 4.66, leg to s=7.0 -> screw <= 16.4 mm",
+  "   (+35.0,22.0): front -9.26 back 14.15 hole 4.6, skin 4.66, leg to s=7.0 -> screw <= 16.4 mm",
+  "   (-40.5,102.0): front -5.38 back 7.35 hole 3.8, skin 1.60, leg to s=2.85 -> screw <= 8.8 mm",
+  "   (+40.5,102.0): front -5.38 back 7.35 hole 3.8, skin 1.60, leg to s=2.85 -> screw <= 8.8 mm",
+  "  pin boot: length 18.8 mm, exits at [55.76, -2.8, 74.53] (s = +1.11, on the seam line)",
+  "  pin rst: length 19.0 mm, exits at [56.04, -3.67, 64.97] (s = +0.51, on the seam line)",
+  "  switch window 8 x 3.2 mm in the +x seam (push the ON/OFF lever with a toothpick)",
+  "  shell 56344 mm3, base plate 4849 mm3",
+  "   !! front: cut #7 skipped (invalid result)",
+  "   !! front: cut #8 skipped (invalid result)",
+  "   !! front: cut #10 skipped (invalid result)",
+  "   !! front: cut #11 skipped (invalid result)",
+  "   !! back: cut #11 skipped (invalid result)",
+  "  shells assembled (1972s); valid: front True back True base True; volumes 12909 / 27698 / 7012",
+  "  chassis (565s), volume 11807 mm3, valid True",
+  "  -- checks on meshes --",
+  "   watertight: front_shell False, back_shell True, base_plate True, chassis True",
+  "   interference: 114 pairs checked, 9 with overlap > 0.05 mm3 {'front_shell x lens': 66.699, 'front_shell x pcb_tab': 0.072, 'back_shell x battery': 9.687, 'back_shell x speaker': 1131.904, 'back_shell x amp': 165.878, 'front_shell x base_plate': 41.281, 'back_shell x base_plate': 0.11, 'back_shell x chassis': 7.791, 'battery x usb_plug': 7.162}",
+  "   minimum clearance of each internal part to each printed/machined part (mm, <0 = overlap):",
+  "    lens            front_  -0.15  back_s   6.54  base_p  13.49  chassi   5.38",
+  "    lcd             front_   7.64  back_s   8.89  base_p  22.36  chassi   2.54",
+  "    pcb             front_  10.52  back_s   7.67  base_p  24.68  chassi   0.50",
+  "    pcb_tab         front_   0.21  back_s  16.20  base_p  17.01  chassi   3.60",
+  "    components      front_  11.81  back_s   3.89  base_p  25.28  chassi  -1.69",
+  "    bat_conn        front_  14.83  back_s   5.03  base_p  76.22  chassi   1.59",
+  "    bat_plug        front_  16.33  back_s   2.32  base_p  74.97  chassi   0.27",
+  "    switch          front_   9.19  back_s   7.73  base_p  48.97  chassi   0.80",
+  "    key_boot        front_  10.31  back_s   5.89  base_p  67.11  chassi   1.00",
+  "    key_rst         front_  11.46  back_s   7.07  base_p  57.55  chassi   1.00",
+  "    usb_r           front_   7.19  back_s  10.68  base_p  28.49  chassi   0.80",
+  "    usb_l           front_   7.16  back_s  10.87  base_p  28.49  chassi   0.80",
+  "    battery         front_   3.93  back_s  -0.68  base_p  10.18  chassi  -0.00",
+  "    speaker         front_   7.51  back_s  -1.15  base_p  81.55  chassi   0.03",
+  "    amp             front_  12.11  back_s  -0.99  base_p  75.78  chassi   0.10",
+  "    mic             front_  11.33  back_s   0.20  base_p  51.82  chassi   0.05",
+  "    usb_plug        front_   1.81  back_s   1.98  base_p  19.89  chassi  -0.00",
+  "    usb_socket      front_   1.40  back_s  -0.00  base_p  -0.00  chassi   1.43",
+  "  size 112.15 x 127.56 (incl. foot) x 31.28 mm; masses {'front_shell': 16.0, 'back_shell': 34.3, 'base_plate': 8.7, 'chassis': 14.6}"
+ ],
+ "files": [
+  "stl/plastic/soul_m_plastic_front_shell.stl",
+  "step/plastic/soul_m_plastic_front_shell.step",
+  "step/plastic/soul_m_plastic_front_shell.step.gz",
+  "stl/plastic/soul_m_plastic_back_shell.stl",
+  "step/plastic/soul_m_plastic_back_shell.step",
+  "step/plastic/soul_m_plastic_back_shell.step.gz",
+  "stl/plastic/soul_m_plastic_base_plate.stl",
+  "step/plastic/soul_m_plastic_base_plate.step",
+  "step/plastic/soul_m_plastic_base_plate.step.gz",
+  "stl/plastic/soul_m_plastic_chassis.stl",
+  "step/plastic/soul_m_plastic_chassis.step",
+  "step/plastic/soul_m_plastic_chassis.step.gz",
+  "stl/plastic/soul_m_plastic_pin_boot.stl",
+  "step/plastic/soul_m_plastic_pin_boot.step",
+  "step/plastic/soul_m_plastic_pin_boot.step.gz",
+  "stl/plastic/soul_m_plastic_pin_rst.stl",
+  "step/plastic/soul_m_plastic_pin_rst.step",
+  "step/plastic/soul_m_plastic_pin_rst.step.gz",
+  "step/soul_m_plastic_ASSEMBLY_with_board.step",
+  "step/soul_m_plastic_ASSEMBLY_with_board.step.gz"
+ ]
+}

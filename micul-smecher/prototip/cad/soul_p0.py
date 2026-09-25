@@ -544,13 +544,14 @@ def build(vname):
                         continue
                     r = (s.fuse(o) if kind == 'fuse' else s.cut(o)).clean()
                     vr = vol(r)
-                    ok = ((kind == 'fuse' and v0 - 0.5 <= vr <= v0 + vo + 0.5) or
-                                          (kind == 'cut' and max(0.0, v0 - vo) - 0.5 <= vr <= v0 + 0.5)) and vr > 1.0
+                    tv = 0.004 * v0 + 1.0     # B-spline volumes are only good to ~0.1 %
+                    ok = ((kind == 'fuse' and v0 - tv <= vr <= v0 + vo + tv) or
+                          (kind == 'cut' and max(0.0, v0 - vo) - tv <= vr <= v0 + tv)) and vr > 1.0
                     if not ok:
                         r = (s.fuse(o.fix()) if kind == 'fuse' else s.cut(o.fix())).clean().fix()
                         vr = vol(r)
-                        ok = vr > 1.0 and ((kind == 'fuse' and v0 - 0.5 <= vr <= v0 + vo + 0.5) or
-                                                          (kind == 'cut' and max(0.0, v0 - vo) - 0.5 <= vr <= v0 + 0.5))
+                        ok = vr > 1.0 and ((kind == 'fuse' and v0 - tv <= vr <= v0 + vo + tv) or
+                                           (kind == 'cut' and max(0.0, v0 - vo) - tv <= vr <= v0 + tv))
                     if ok:
                         s, v0 = r, vr
                     else:
