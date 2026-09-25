@@ -4,12 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SOUL</title>
-<meta name="description" content="SOUL is a small aluminium stone with two living eyes. It breathes, blinks and looks back at you, with no internet. It runs SoulOS and works with Claude. Reserve one of 25 numbered Founders 00.">
+<meta name="description" content="SOUL is a palm-sized aluminium stone with a round 2.8″ screen and two living eyes. It breathes, blinks and looks back at you, with no internet. It runs SoulOS and works with Claude. Reserve one of 25 numbered Founders 00.">
 <meta property="og:title" content="SOUL · Your AI, alive.">
 <meta property="og:description" content="The AI labs make the brain. We make the body and the soul.">
-<meta property="og:image" content="media/soul-hero.jpg">
+<meta property="og:image" content="media/soul-m-hero.jpg">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="1200">
+<meta property="og:image:alt" content="Concept render of SOUL in silver aluminium: a round black glass face with two glowing cream eyes.">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#000000">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23000%27 stroke=%27%23D9DCE2%27 stroke-width=%274%27/%3E%3Cellipse cx=%2722%27 cy=%2734%27 rx=%277%27 ry=%2711%27 fill=%27%23FFF0C8%27/%3E%3Cellipse cx=%2742%27 cy=%2734%27 rx=%277%27 ry=%2711%27 fill=%27%23FFF0C8%27/%3E%3Cpath d=%27M13 20 L30 27 L30 18 L13 18Z M34 27 L51 20 L51 18 L34 18Z%27 fill=%27%23000%27/%3E%3C/svg%3E">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
 <script>
 /* ==========================================================================
    SITE CONFIG — the only place to change prices, dates, endpoint and contact.
@@ -34,7 +41,7 @@ window.SOUL_CONFIG = {
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Instrument+Sans:wght@400;500;600;700&family=Martian+Mono:wght@400;500&display=swap">
 <style>
 :root{
   --amoled:#000;
@@ -56,9 +63,9 @@ window.SOUL_CONFIG = {
   --blush-ink:#B42F50;
   --focus:#B86400;
   --shadow:0 1px 2px rgba(22,24,29,.06),0 18px 50px -18px rgba(22,24,29,.22);
-  --f-display:"Fredoka",ui-rounded,"SF Pro Rounded","Arial Rounded MT Bold",system-ui,sans-serif;
+  --f-display:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --f-text:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --f-mono:"Martian Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -121,10 +128,8 @@ button,input,select{font:inherit;color:inherit}
 /* nav */
 .nav{position:fixed;top:0;left:0;right:0;padding-top:env(safe-area-inset-top,0px);z-index:50;background:rgba(10,10,12,.8);-webkit-backdrop-filter:saturate(1.5) blur(18px);backdrop-filter:saturate(1.5) blur(18px);color:#F3F0E9;border-bottom:1px solid rgba(255,255,255,.08);--focus:#FFB347}
 .nav .wrap{display:flex;align-items:center;gap:14px;height:58px}
-.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font:600 1.22rem/1 var(--f-display);letter-spacing:.06em}
-.brand-eyes{display:inline-flex;gap:4px;width:28px;height:28px;border-radius:50%;background:#000;align-items:center;justify-content:center;box-shadow:0 0 0 2px #d9dce2,0 0 12px rgba(255,240,200,.25)}
-.brand-eyes i{display:block;width:6px;height:10px;border-radius:50%;background:var(--cream);box-shadow:0 0 5px rgba(255,240,200,.8);clip-path:polygon(0 30%,100% 42%,100% 100%,0 100%)}
-.brand-eyes i+i{clip-path:polygon(0 42%,100% 30%,100% 100%,0 100%)}
+.brand{display:inline-flex;align-items:center;text-decoration:none;padding-block:8px;flex:none}
+.brand svg{display:block;height:22px;width:auto}
 .nav-links{display:flex;gap:clamp(14px,2vw,26px);margin-left:auto;font-size:.92rem}
 .nav-links a{color:rgba(243,240,233,.74);text-decoration:none;padding-block:8px}
 .nav-links a:hover{color:#fff}
@@ -134,13 +139,15 @@ button,input,select{font:inherit;color:inherit}
 .nav .btn{background:var(--cream);color:#16181D;min-height:38px;padding:0 1em;font-size:.9rem}
 @media (max-width:1180px){.nav-links{display:none}.lang{margin-left:auto}}
 
-/* stone (the device) */
-.stone{position:relative;aspect-ratio:1/1;border-radius:50%;padding:6.6%;margin-inline:auto;user-select:none;-webkit-user-select:none;
-  background:radial-gradient(closest-side,transparent 90%,rgba(255,255,255,.5) 94%,transparent 99%),radial-gradient(125% 125% at 30% 16%,#FFFFFF 0%,#EEF0F3 30%,#CDD1D8 62%,#A0A6B0 100%);
-  box-shadow:inset 0 2px 2px rgba(255,255,255,.95),inset 0 -10px 22px rgba(30,34,42,.28),0 26px 50px -16px rgba(22,24,29,.38),0 4px 10px rgba(22,24,29,.12)}
-.stone canvas{display:block;width:100%;height:100%;border-radius:50%;background:#000;box-shadow:0 0 0 2px #0b0c0f,0 0 0 4px rgba(255,255,255,.55);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* stone (the device): SOUL size M seen from the front, 90 × 103 mm, round glass Ø74 mm */
+.stone{position:relative;aspect-ratio:90/103;border-radius:36% 36% 31% 31% / 32% 32% 27% 27%;padding:11.5% 8.75% 0;margin-inline:auto;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(120% 100% at 32% 14%,#FFFFFF 0%,#EFF1F3 32%,#D3D6DA 64%,#AEB2B8 100%);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.95),inset 0 -9px 0 -3px rgba(60,64,70,.16),inset 0 -14px 24px rgba(30,34,42,.22),0 26px 50px -16px rgba(22,24,29,.38),0 4px 10px rgba(22,24,29,.12)}
+.stone canvas,.stone .screen{display:block;width:100%;height:auto;aspect-ratio:1/1;border-radius:50%;background:#000;box-shadow:0 0 0 2px #0b0c0f,0 0 0 4px rgba(255,255,255,.6);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .stone canvas[role="button"]{cursor:pointer}
-.stone::after{content:"";position:absolute;inset:6.6%;border-radius:50%;pointer-events:none;background:radial-gradient(70% 36% at 50% 5%,rgba(255,255,255,.15),transparent 72%)}
+.stone::after{content:"";position:absolute;left:8.75%;right:8.75%;top:10.05%;aspect-ratio:1/1;border-radius:50%;pointer-events:none;background:radial-gradient(70% 36% at 50% 5%,rgba(255,255,255,.15),transparent 72%)}
+.stone .screen{position:relative;overflow:hidden;isolation:isolate}
+.stone .screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.36);background:#000}
 
 /* hero */
 .hero{background:var(--amoled);color:var(--hero-ink);position:relative;overflow:hidden;--focus:#FFB347;padding-block:calc(58px + clamp(36px,6vw,80px)) clamp(72px,9vw,128px)}
@@ -165,7 +172,7 @@ button,input,select{font:inherit;color:inherit}
 .hint{font-size:.86rem;color:var(--hero-muted);text-align:center;max-width:36ch}
 @media (max-width:860px){
   .hero .wrap{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stone" "copy";row-gap:36px}
-  .hero .stone{width:min(84vw,400px)}
+  .hero .stone{width:min(68vw,340px)}
 }
 
 /* thesis */
@@ -189,14 +196,16 @@ button,input,select{font:inherit;color:inherit}
 
 /* video grid */
 .vgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,1.6vw,20px)}
-.vgrid figure{display:grid;gap:12px}
-.vid{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:26px;background:#14161b;max-width:100%}
+.vgrid figure{display:grid;gap:14px;justify-items:center;text-align:center}
+.vgrid .stone{width:min(100%,230px)}
 .vgrid figcaption{font:500 1.06rem/1.25 var(--f-display);padding-inline:4px}
-@media (max-width:760px){.vgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.vid{border-radius:20px}.vgrid figcaption{font-size:.98rem}}
+.vgrid{row-gap:clamp(28px,4vw,44px)}
+@media (max-width:760px){.vgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.vgrid figcaption{font-size:.98rem}}
 
 /* split layouts */
 .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(36px,6vw,96px);align-items:center}
-.split .vid{border-radius:32px}
+.split > .stone{width:min(100%,400px)}
+@media (max-width:860px){.split > .stone{width:min(72vw,320px)}}
 @media (max-width:860px){.split{grid-template-columns:minmax(0,1fr)}}
 .stack{display:grid;gap:22px;align-content:start}
 .bubbles{display:grid;gap:10px;margin-block:8px}
@@ -248,7 +257,7 @@ button,input,select{font:inherit;color:inherit}
 .steps h3{font-size:1.45rem}
 .steps p{color:var(--muted)}
 .claude-video{display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px;align-items:center;margin-top:28px}
-.claude-video .vid{border-radius:20px}
+.claude-video .stone{width:100%}
 .claude-video p{font-size:.95rem;color:var(--muted)}
 .compat{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
 
@@ -279,7 +288,7 @@ button,input,select{font:inherit;color:inherit}
 .cert-fields div{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;padding-block:9px;border-bottom:1px dashed var(--line);align-items:baseline}
 .cert-fields dt{font:600 .72rem/1.3 var(--f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .cert-fields dd{font-weight:500;overflow-wrap:anywhere}
-.cert-fields dd.mono{font-size:.92rem;white-space:nowrap;overflow-wrap:normal}
+.cert-fields dd.mono{font-size:.8rem;white-space:nowrap;overflow-wrap:normal}
 .cert-fields dd .sw{width:16px;height:16px;vertical-align:-3px;margin-right:6px}
 .cert-fields dd .sw::after{inset:4px 3px}
 .gloss{color:var(--muted);font-weight:400}
@@ -298,10 +307,10 @@ button,input,select{font:inherit;color:inherit}
 .cap>span:last-child{flex:1 1 22ch;min-width:0}
 .cap .kind{font:500 .66rem/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);padding:5px 8px;border-radius:999px;border:1px solid var(--line-strong);white-space:nowrap;transform:translateY(-1px)}
 .scene{margin-top:clamp(40px,6vw,72px)}
-.scene .shot,.charter-fig .shot{aspect-ratio:16/9;object-fit:cover}
-.charter-fig{margin-bottom:clamp(32px,5vw,56px)}
+.scene .shot,.os-scene .shot{aspect-ratio:16/9;object-fit:cover}
+.os-scene{margin-bottom:clamp(32px,5vw,56px)}
 #desk-render{object-position:50% 50%}
-@media (max-width:560px){.shot{border-radius:22px}.scene .shot,.charter-fig .shot{aspect-ratio:4/3}}
+@media (max-width:560px){.shot{border-radius:22px}.scene .shot,.os-scene .shot{aspect-ratio:4/3}}
 
 /* design */
 .design-top,.design-duo{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,3fr);gap:clamp(16px,2.4vw,28px);align-items:start}
@@ -314,7 +323,8 @@ button,input,select{font:inherit;color:inherit}
 .fin{width:22px;height:22px;border-radius:50%;background:radial-gradient(90% 90% at 30% 25%,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 80%,#000));box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 .inside{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:clamp(24px,5vw,72px);align-items:center}
 .inside.ou{grid-template-columns:minmax(0,400px) minmax(0,1fr)}
-@media (max-width:760px){.inside,.inside.ou{grid-template-columns:minmax(0,1fr)}.inside.ou .fig{max-width:400px}}
+.inside.scale{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+@media (max-width:760px){.inside,.inside.ou,.inside.scale{grid-template-columns:minmax(0,1fr)}.inside.ou .fig{max-width:400px}}
 .ou-shot{background:#000}
 .inside-copy{display:grid;gap:16px;align-content:start;max-width:560px}
 .inside-copy .lead{font-size:clamp(1.05rem,1.4vw,1.2rem)}
@@ -336,7 +346,7 @@ button,input,select{font:inherit;color:inherit}
 @media (max-width:560px){.charter{grid-template-columns:minmax(0,1fr)}}
 
 /* editions */
-.eds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2vw,22px);align-items:stretch}
+.eds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:920px;gap:clamp(14px,2vw,22px);align-items:stretch}
 @media (max-width:980px){.eds{grid-template-columns:minmax(0,1fr);max-width:560px}}
 .ed{display:flex;flex-direction:column;gap:18px;padding:clamp(24px,3vw,34px);border-radius:30px;background:var(--card);border:1px solid var(--line)}
 .ed.feature{background:#0C0D10;color:#F3F0E9;border-color:transparent;--muted:#A3A7AF;--line:rgba(255,255,255,.12);--focus:#FFB347;box-shadow:var(--shadow)}
@@ -401,7 +411,7 @@ select.input option{background:#101114;color:#F6F3EC}
 .foot{background:#0A0A0B;color:#9EA2AA;font-size:.86rem;padding-block:56px calc(40px + env(safe-area-inset-bottom,0px));--focus:#FFB347}
 .foot .wrap{display:grid;gap:26px}
 .foot-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:center;color:#F3F0E9}
-.foot-top .brand{font-size:1.1rem}
+.foot-top .brand svg{height:26px}
 .foot-links{display:flex;flex-wrap:wrap;gap:8px 20px}
 .foot-links a{color:#C9CCD2;text-decoration:none}
 .foot-links a:hover{color:#fff;text-decoration:underline}
@@ -425,7 +435,7 @@ select.input option{background:#101114;color:#F6F3EC}
 
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="SOUL, back to top"><span class="brand-eyes" aria-hidden="true"><i></i><i></i></span>SOUL</a>
+    <a class="brand" href="#top" aria-label="SOUL, back to top"><svg xmlns="http://www.w3.org/2000/svg" viewBox="2.96 61.82 489.04 144.35" aria-hidden="true" focusable="false"><path fill="#F6F3EC" d="M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z M408.8 200V68H437.6V175.2H490V200Z"/><circle cx="190.2" cy="134" r="70.18" fill="#CBCDCF"/><circle cx="190.2" cy="134" r="64.21" fill="#0B0B0C"/><path fill="#FFF0C8" d="M180.82 125.78A12.84 21.83 0 1 1 160.14 121.91ZM220.26 121.91A12.84 21.83 0 1 1 199.58 125.78Z"/></svg></a>
     <nav class="nav-links" aria-label="Sections">
       <a href="#three" data-i18n="nav.what">What it is</a>
       <a href="#alive" data-i18n="nav.alive">Alive</a>
@@ -459,7 +469,7 @@ select.input option{background:#101114;color:#F6F3EC}
       <p class="hint" data-i18n="hero.hint">Tap to boop. Double-tap to make it laugh. Leave it alone and it dozes off.</p>
     </div>
     <div class="hero-copy">
-      <p class="lead" data-i18n="hero.sub">A small aluminium stone with two living eyes. It breathes, blinks and looks back at you, with no internet at all. <strong>And it works with Claude.</strong></p>
+      <p class="lead" data-i18n="hero.sub">A palm-sized aluminium stone with two living eyes. It breathes, blinks and looks back at you, with no internet at all. <strong>And it works with Claude.</strong></p>
       <div class="cta">
         <a class="btn btn-primary" href="#reserve" data-edition="founders" data-i18n="hero.cta1">Reserve yours</a>
         <a class="btn btn-ghost" href="#alive" data-i18n="hero.cta2">Watch it live</a>
@@ -521,14 +531,14 @@ select.input option{background:#101114;color:#F6F3EC}
       <p class="lead" data-i18n="alive.lead">Everything you see runs on the stone itself. No account, no app, no servers. It keeps living even if the Wi-Fi never comes back.</p>
     </div>
     <ul class="vgrid">
-      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/idle.jpg" aria-hidden="true"><source src="media/idle.mp4" type="video/mp4"></video><figcaption data-i18n="cap.idle">Just hanging out</figcaption></figure></li>
-      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/boop.jpg" aria-hidden="true"><source src="media/boop.mp4" type="video/mp4"></video><figcaption data-i18n="cap.boop">Boop. Blush.</figcaption></figure></li>
-      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/purr.jpg" aria-hidden="true"><source src="media/purr.mp4" type="video/mp4"></video><figcaption data-i18n="cap.purr">Pet it. It purrs.</figcaption></figure></li>
-      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/dizzy.jpg" aria-hidden="true"><source src="media/dizzy.mp4" type="video/mp4"></video><figcaption data-i18n="cap.dizzy">Shake it. Dizzy.</figcaption></figure></li>
-      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/sleep.jpg" aria-hidden="true"><source src="media/sleep.mp4" type="video/mp4"></video><figcaption data-i18n="cap.sleep">Dozes off</figcaption></figure></li>
-      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/missed_you.jpg" aria-hidden="true"><source src="media/missed_you.mp4" type="video/mp4"></video><figcaption data-i18n="cap.missed">Missed you</figcaption></figure></li>
-      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/rare.jpg" aria-hidden="true"><source src="media/rare.mp4" type="video/mp4"></video><figcaption data-i18n="cap.rare">Rare moods</figcaption></figure></li>
-      <li><figure><video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/night.jpg" aria-hidden="true"><source src="media/night.mp4" type="video/mp4"></video><figcaption data-i18n="cap.night">Night-light mode</figcaption></figure></li>
+      <li><figure><div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/idle.jpg" aria-hidden="true"><source src="media/idle.mp4" type="video/mp4"></video></div></div><figcaption data-i18n="cap.idle">Just hanging out</figcaption></figure></li>
+      <li><figure><div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/boop.jpg" aria-hidden="true"><source src="media/boop.mp4" type="video/mp4"></video></div></div><figcaption data-i18n="cap.boop">Boop. Blush.</figcaption></figure></li>
+      <li><figure><div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/purr.jpg" aria-hidden="true"><source src="media/purr.mp4" type="video/mp4"></video></div></div><figcaption data-i18n="cap.purr">Pet it. It purrs.</figcaption></figure></li>
+      <li><figure><div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/dizzy.jpg" aria-hidden="true"><source src="media/dizzy.mp4" type="video/mp4"></video></div></div><figcaption data-i18n="cap.dizzy">Shake it. Dizzy.</figcaption></figure></li>
+      <li><figure><div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/sleep.jpg" aria-hidden="true"><source src="media/sleep.mp4" type="video/mp4"></video></div></div><figcaption data-i18n="cap.sleep">Dozes off</figcaption></figure></li>
+      <li><figure><div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/missed_you.jpg" aria-hidden="true"><source src="media/missed_you.mp4" type="video/mp4"></video></div></div><figcaption data-i18n="cap.missed">Missed you</figcaption></figure></li>
+      <li><figure><div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/rare.jpg" aria-hidden="true"><source src="media/rare.mp4" type="video/mp4"></video></div></div><figcaption data-i18n="cap.rare">Rare moods</figcaption></figure></li>
+      <li><figure><div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/night.jpg" aria-hidden="true"><source src="media/night.mp4" type="video/mp4"></video></div></div><figcaption data-i18n="cap.night">Night-light mode</figcaption></figure></li>
     </ul>
   </div>
 </section>
@@ -536,7 +546,7 @@ select.input option{background:#101114;color:#F6F3EC}
 <!-- HOLD TO TALK -->
 <section class="sec" id="talk" aria-labelledby="talk-title">
   <div class="wrap split">
-    <video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/ai_talk.jpg" aria-hidden="true"><source src="media/ai_talk.mp4" type="video/mp4"></video>
+    <div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/ai_talk.jpg" aria-hidden="true"><source src="media/ai_talk.mp4" type="video/mp4"></video></div></div>
     <div class="stack">
       <span class="tag" data-i18n="talk.badge">In development · voice</span>
       <h2 class="h-l" id="talk-title" data-i18n="talk.h2">Hold to talk.</h2>
@@ -595,6 +605,10 @@ select.input option{background:#101114;color:#F6F3EC}
       <h2 class="h-l" id="os-title" data-i18n="os.h2">A whole little OS. On a circle.</h2>
       <p class="lead" data-i18n="os.lead">SoulOS is what runs on the stone. You type on it, you write to Claude and Claude does it, and it keeps your notes, reminders and alarms, with or without AI.</p>
     </div>
+    <figure class="fig os-scene">
+      <img class="shot" id="typing-render" src="media/soul-m-typing.jpg" srcset="media/soul-m-typing-sm.jpg 800w, media/soul-m-typing.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of SOUL on a wooden desk with the SoulOS keyboard on its round screen: the word “Hello” typed above a round QWERTY keyboard." data-i18n-attr="alt:os.alt0">
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="os.cap0">SoulOS on the stone. The round 2.8″ screen fits a real keyboard: type a note with SOUL standing on your desk.</span></figcaption>
+    </figure>
     <ul class="os-shots">
       <li><figure class="fig"><img class="os-shot" src="media/os-keyboard.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS keyboard on the round screen: the text reads “Mâine și tara” and the suggestion bar offers “țară” with the right diacritics." data-i18n-attr="alt:os.alt1"><figcaption class="cap"><span class="kind" data-i18n="os.kind">SoulOS</span><span data-i18n="os.cap1">A keyboard made for a round screen. English and Romanian, with ă, â, î, ș and ț suggested for you.</span></figcaption></figure></li>
       <li><figure class="fig"><img class="os-shot" src="media/os-claude.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS after a message to Claude: “Done. I'll tell you at 17:00.” with a confirmation chip “Reminder set for 17:00”." data-i18n-attr="alt:os.alt2"><figcaption class="cap"><span class="kind" data-i18n="os.kind2">SoulOS</span><span data-i18n="os.cap2">Write to Claude and it does it. “Remind me at five” becomes a real reminder.</span></figcaption></figure></li>
@@ -641,15 +655,15 @@ select.input option{background:#101114;color:#F6F3EC}
           <li><span class="n" aria-hidden="true">3</span><h3 data-i18n="claude.s3t">You decide.</h3><p data-i18n="claude.s3p">Hold 1.2 seconds to approve. Double-tap to deny. No window switching.</p></li>
         </ol>
         <div class="claude-video">
-          <video class="vid" autoplay muted loop playsinline preload="metadata" poster="media/posters/claude_buddy.jpg" aria-hidden="true"><source src="media/claude_buddy.mp4" type="video/mp4"></video>
-          <p data-i18n="claude.video">The real firmware: busy, asking, approved. Recorded from the simulator of the 466 × 466 AMOLED screen.</p>
+          <div class="stone"><div class="screen"><video autoplay muted loop playsinline preload="metadata" poster="media/posters/claude_buddy.jpg" aria-hidden="true"><source src="media/claude_buddy.mp4" type="video/mp4"></video></div></div>
+          <p data-i18n="claude.video">The real firmware: busy, asking, approved. Recorded from the firmware simulator.</p>
         </div>
         <div class="compat"><span class="tag">Claude Code</span><span class="tag">Claude Cowork</span><span class="tag">macOS</span><span class="tag">Windows</span><span class="tag">Bluetooth LE</span></div>
       </div>
     </div>
     <figure class="fig scene">
-      <img class="shot" id="desk-render" src="media/ou-day.jpg" srcset="media/ou-day-sm.jpg 800w, media/ou-day.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of SOUL standing in its open OU charging egg on a walnut desk, in front of a laptop, its glowing eyes glancing to the side." data-i18n-attr="alt:claude.alt">
-      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="claude.cap">In its open egg next to your laptop. While Claude works, you can look away. When Claude needs you, the stone looks at you.</span></figcaption>
+      <img class="shot" id="desk-render" src="media/soul-m-desk.jpg" srcset="media/soul-m-desk-sm.jpg 800w, media/soul-m-desk.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of SOUL in silver on an oak desk, next to a phone and a white mug, its glowing eyes looking out." data-i18n-attr="alt:claude.alt">
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="claude.cap">On your desk, next to your phone and your coffee. While Claude works, you can look away. When Claude needs you, the stone looks at you.</span></figcaption>
     </figure>
   </div>
 </section>
@@ -681,7 +695,7 @@ select.input option{background:#101114;color:#F6F3EC}
       <div class="cert-head">
         <div><p class="cert-title" id="cert-title" data-i18n="cert.title">Birth certificate</p>
         <p class="cert-sub" data-i18n="cert.sub">Certificat de naștere</p></div>
-      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="sealpath" d="M50 50 m-36 0 a36 36 0 1 1 72 0 a36 36 0 1 1 -72 0"/></defs><circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" stroke-width="1"/><text font-family="JetBrains Mono,monospace" font-size="8.6" letter-spacing="1.6" fill="currentColor"><textPath href="#sealpath">SOUL · BUCUREȘTI · MMXXVI ·</textPath></text><ellipse cx="42" cy="51" rx="4" ry="7" fill="currentColor"/><ellipse cx="58" cy="51" rx="4" ry="7" fill="currentColor"/></svg>
+      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="sealpath" d="M50 50 m-36 0 a36 36 0 1 1 72 0 a36 36 0 1 1 -72 0"/></defs><circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" stroke-width="1"/><text font-family="Martian Mono,monospace" font-size="8.6" letter-spacing="1.6" fill="currentColor"><textPath href="#sealpath">SOUL · BUCUREȘTI · MMXXVI ·</textPath></text><ellipse cx="42" cy="51" rx="4" ry="7" fill="currentColor"/><ellipse cx="58" cy="51" rx="4" ry="7" fill="currentColor"/></svg>
       </div>
       <div class="cert-body">
         <div class="stone"><canvas data-soul="cert" role="img" id="cert-canvas" aria-label="Mira's eyes"></canvas></div>
@@ -709,26 +723,26 @@ select.input option{background:#101114;color:#F6F3EC}
 <section class="sec alt" id="design" aria-labelledby="design-title">
   <div class="wrap">
     <div class="sec-head">
-      <p class="eyebrow" data-i18n="design.eyebrow">Design</p>
-      <h2 class="h-l" id="design-title" data-i18n="design.h2">A little stone of light.</h2>
-      <p class="lead" data-i18n="design.lead">An upright pebble of bead-blasted, anodised aluminium. The front is only black glass and two living eyes. No logo, no buttons, no holes.</p>
+      <p class="eyebrow" data-i18n="design.eyebrow">Design · size M</p>
+      <h2 class="h-l" id="design-title" data-i18n="design.h2">A stone of light, the size of your palm.</h2>
+      <p class="lead" data-i18n="design.lead">An upright pebble of bead-blasted, anodised aluminium. The front is only black glass over a round 2.8″ screen, and two living eyes. No logo, no buttons, no holes.</p>
     </div>
-    <!-- RENDERS: media/soul-*.jpg from ../renders/v6, media/ou-*.jpg from ../renders/v5 (CGI concept renders, not photos). -->
+    <!-- RENDERS: media/soul-m-*.jpg from ../renders/v8 (SOUL size M, CGI concept renders, not photos). -->
     <div class="design-top">
       <figure class="fig">
-        <img class="shot" id="hero-render" src="media/soul-hero.jpg" srcset="media/soul-hero-sm.jpg 800w, media/soul-hero.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 680px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL in silver aluminium, standing upright: a soft rounded pebble whose front is a round black glass with two glowing cream eyes." data-i18n-attr="alt:design.alt1">
+        <img class="shot" id="hero-render" src="media/soul-m-hero.jpg" srcset="media/soul-m-hero-sm.jpg 800w, media/soul-m-hero.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 680px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL in silver aluminium, standing upright: a soft, rounded, almost square pebble whose front is a large round black glass with two glowing cream eyes." data-i18n-attr="alt:design.alt1">
         <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap1">Silver. It stands on its own, on a small flat foot, and stays put when you tap it.</span></figcaption>
       </figure>
       <figure class="fig">
-        <img class="shot" id="side-render" src="media/soul-side.jpg" srcset="media/soul-side-sm.jpg 480w, media/soul-side.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 410px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL seen from the side: a slim wedge of silver aluminium with a fine seam around its edge and a thin speaker slit in the seam." data-i18n-attr="alt:design.alt3">
-        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap3">The speaker is one fine slit in the side seam.</span></figcaption>
+        <img class="shot" id="side-render" src="media/soul-m-side.jpg" srcset="media/soul-m-side-sm.jpg 480w, media/soul-m-side.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 410px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL seen from the side: a domed front of black glass, a fine seam around the silver aluminium body and a thin speaker slit in the seam." data-i18n-attr="alt:design.alt3">
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap3">The speaker is one fine slit in the side seam. About 31 mm deep.</span></figcaption>
       </figure>
     </div>
     <figure class="fig design-row">
       <div class="lineup">
-        <img id="lineup-render" src="media/soul-family.jpg" srcset="media/soul-family-sm.jpg 800w, media/soul-family.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of five SOULs in a row, in anodised Graphite, Ember, Silver, Midnight and Champagne aluminium, each with glowing eyes." data-i18n-attr="alt:design.alt2">
+        <img id="lineup-render" src="media/soul-m-family.jpg" srcset="media/soul-m-family-sm.jpg 800w, media/soul-m-family.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of the same SOUL in its five colours, in a row: anodised Graphite, Ember, Silver, Midnight and Champagne aluminium, each with glowing eyes." data-i18n-attr="alt:design.alt2">
       </div>
-      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap2">Five anodised colours. From left: Graphite, Ember, Silver, Midnight, Champagne.</span></figcaption>
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap2">One SOUL, five anodised colours. From left: Graphite, Ember, Silver, Midnight, Champagne.</span></figcaption>
     </figure>
     <ul class="finishes" aria-label="Colours" data-i18n-attr="aria-label:design.colours">
       <li><span class="fin" style="--c:#CBCDCF"></span><span data-i18n="c.silver">Silver</span></li>
@@ -737,23 +751,31 @@ select.input option{background:#101114;color:#F6F3EC}
       <li><span class="fin" style="--c:#D2622C"></span><span data-i18n="c.ember">Ember</span></li>
       <li><span class="fin" style="--c:#D8C3A2"></span><span data-i18n="c.champagne">Champagne</span></li>
     </ul>
-    <div class="design-duo design-row">
+    <div class="inside scale design-row">
       <figure class="fig">
-        <img class="shot" id="macro-render" src="media/soul-macro.jpg" srcset="media/soul-macro-sm.jpg 800w, media/soul-macro.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 640px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render, close-up: the fine grain of bead-blasted aluminium and a polished chamfer where the metal meets the black glass." data-i18n-attr="alt:design.alt4">
-        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap4">A machined chamfer draws one thin line of light where the metal meets the glass.</span></figcaption>
+        <img class="shot" id="hand-render" src="media/soul-m-hand.jpg" srcset="media/soul-m-hand-sm.jpg 800w, media/soul-m-hand.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 560px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL in silver resting on an open hand: it covers the whole palm, like a big smooth stone." data-i18n-attr="alt:design.alt4">
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap4">Size M, true to scale. It fills your palm.</span></figcaption>
       </figure>
-      <figure class="fig">
-        <img class="shot" id="back-render" src="media/soul-back.jpg" srcset="media/soul-back-sm.jpg 480w, media/soul-back.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 440px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of the back of SOUL: a smooth, clean dome of silver aluminium with no text and no screws." data-i18n-attr="alt:design.alt5">
-        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap5">The back is a clean dome. No text, no screws.</span></figcaption>
-      </figure>
+      <div class="inside-copy">
+        <p class="eyebrow" data-i18n="spec.eyebrow">Size M · specifications</p>
+        <h3 class="h-m" data-i18n="spec.h">Big enough to type on. Small enough to hold.</h3>
+        <ol class="layers">
+          <li><b data-i18n="spec.l1b">Round 2.8″ display</b><span data-i18n="spec.l1">IPS, 480 × 480 pixels, under black glass.</span></li>
+          <li><b data-i18n="spec.l2b">About 90 × 103 × 31 mm</b><span data-i18n="spec.l2">Bead-blasted, anodised aluminium 6061, with a flat polymer foot.</span></li>
+          <li><b data-i18n="spec.l3b">Five colours</b><span data-i18n="spec.l3">Silver, Graphite, Midnight, Ember and Champagne.</span></li>
+          <li><b data-i18n="spec.l4b">Speaker in the side seam</b><span data-i18n="spec.l4">One fine slit. Nothing on the front but the glass.</span></li>
+          <li><b data-i18n="spec.l5b">Bluetooth LE and Wi-Fi</b><span data-i18n="spec.l5">ESP32-S3 inside. Alive with no internet at all.</span></li>
+          <li><b data-i18n="spec.l6b">SoulOS, with a keyboard</b><span data-i18n="spec.l6">Works with no AI, your Claude, your ChatGPT or your own API key.</span></li>
+        </ol>
+      </div>
     </div>
     <div class="inside ou design-row">
       <figure class="fig">
-        <img class="shot ou-shot" id="ou-night-render" src="media/ou-night.jpg" srcset="media/ou-night-sm.jpg 480w, media/ou-night.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 400px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render at night: SOUL resting in its open OU egg on a bedside table, sleepy amber eyes, lit only by a warm glow from the egg." data-i18n-attr="alt:design.alt6">
+        <img class="shot ou-shot" id="ou-night-render" src="media/soul-m-ou-night.jpg" srcset="media/soul-m-ou-night-sm.jpg 480w, media/soul-m-ou-night.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 400px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render at night: SOUL resting in its open OU capsule in the dark, sleepy amber eyes, lit only by a warm glow from the capsule." data-i18n-attr="alt:design.alt6">
         <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap6">In OU at night, lid open.</span></figcaption>
       </figure>
       <div class="inside-copy">
-        <p class="eyebrow" data-i18n="in.eyebrow">OU · its charging egg</p>
+        <p class="eyebrow" data-i18n="in.eyebrow">OU · its charging capsule</p>
         <h3 class="h-m" data-i18n="in.h">At night it sleeps in its egg.</h3>
         <p class="lead" data-i18n="in.lead">Closing the lid cuts the microphone in hardware. Not muted by software: disconnected.</p>
         <ol class="layers">
@@ -764,7 +786,7 @@ select.input option{background:#101114;color:#F6F3EC}
         </ol>
       </div>
     </div>
-    <div class="specs"><span class="tag" data-i18n="design.s1">1.75″ round AMOLED</span><span class="tag">466 × 466 px</span><span class="tag" data-i18n="design.s2">Anodised aluminium 6061</span><span class="tag">63 × 72 × 27 mm</span><span class="tag">ESP32-S3</span><span class="tag">Bluetooth LE · Wi-Fi</span><span class="tag" data-i18n="design.s3">Charges in OU</span></div>
+    <div class="specs"><span class="tag" data-i18n="design.s0">Size M</span><span class="tag" data-i18n="design.s1">2.8″ round IPS display</span><span class="tag">480 × 480 px</span><span class="tag" data-i18n="design.s2">Anodised aluminium 6061</span><span class="tag">≈ 90 × 103 × 31 mm</span><span class="tag">ESP32-S3</span><span class="tag">Bluetooth LE · Wi-Fi</span><span class="tag" data-i18n="design.s3">Charges in OU</span></div>
     <p class="design-note" data-i18n="design.note">Concept renders, not photos. Final materials, colours and finishes may change before production.</p>
   </div>
 </section>
@@ -776,10 +798,6 @@ select.input option{background:#101114;color:#F6F3EC}
       <p class="eyebrow" data-i18n="charter.eyebrow">Companion Charter</p>
       <h2 class="h-l" id="charter-title" data-i18n="charter.h2">Our promises, in writing.</h2>
     </div>
-    <figure class="fig charter-fig">
-      <img class="shot" id="night-render" src="media/ou-closed-wide.jpg" srcset="media/ou-closed-wide-sm.jpg 800w, media/ou-closed-wide.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render at night: the OU egg with its frosted lid closed, glowing warm amber like a small lantern on a dark bedside table." data-i18n-attr="alt:charter.alt">
-      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="charter.cap">By the bed at night, its egg is a warm night-light. With the lid closed, the microphone is cut in hardware. It has no camera, and it never listens unless your finger is on it.</span></figcaption>
-    </figure>
     <ul class="charter">
       <li><h3 data-i18n="ch1t">It always says it's an AI.</h3><p data-i18n="ch1p">It never pretends to be a person.</p></li>
       <li><h3 data-i18n="ch2t">It listens only while you hold it.</h3><p data-i18n="ch2p">No wake word. No microphone that's always on.</p></li>
@@ -808,7 +826,7 @@ select.input option{background:#101114;color:#F6F3EC}
         <p class="desc" data-i18n="ed.f.desc">The first 25 SOULs, in anodised aluminium, each engraved with its own number. Ships only after CE radio testing.</p>
         <div class="price"><span class="big" data-price="founders">€349</span><span class="small" data-i18n="ed.f.small">One-time. No subscription to be alive. The reservation is fully refundable.</span></div>
         <ul>
-          <li data-i18n="ed.f.l1">Bead-blasted, anodised aluminium body with a 1.75″ round AMOLED under black glass</li>
+          <li data-i18n="ed.f.l1">SOUL size M: bead-blasted, anodised aluminium, with a round 2.8″ screen under black glass</li>
           <li data-i18n="ed.f.l2">OU, its charging egg, in the box</li>
           <li data-i18n="ed.f.l3">SoulOS, all 24 reactions offline, and works with Claude</li>
           <li data-i18n="ed.f.l4">Your founder number engraved, and a birth certificate</li>
@@ -824,27 +842,13 @@ select.input option{background:#101114;color:#F6F3EC}
         <p class="desc" data-i18n="ed.s.desc">The same SOUL and the same soul, made in larger numbers, without the founder number.</p>
         <div class="price"><span class="small" data-i18n="ed.s.from">From</span><span class="big" data-price="standardFrom">€249</span><span class="small" data-i18n="ed.s.small">Final price announced before orders open.</span></div>
         <ul>
-          <li data-i18n="ed.s.l1">Aluminium, in the SOUL colours</li>
-          <li data-i18n="ed.s.l2">SoulOS, Claude and ChatGPT, or no AI at all</li>
+          <li data-i18n="ed.s.l1">Size M, in aluminium, in the five SOUL colours</li>
+          <li data-i18n="ed.s.l2">SoulOS with its keyboard. No AI, your Claude, your ChatGPT or your own API key</li>
           <li data-i18n="ed.s.l3">Charges in OU</li>
         </ul>
         <div class="push">
           <a class="btn btn-ghost btn-block" href="#reserve" data-edition="standard" data-i18n="ed.s.cta">Join the waitlist</a>
           <p class="ship"><span data-i18n="ed.est2">Estimated shipping:</span> <span data-cfg="shipStandard">after Founders 00</span></p>
-        </div>
-      </article>
-      <article class="ed" aria-labelledby="ed-l">
-        <div class="ed-top"><span class="tag" data-i18n="ed.l.tag">Later</span></div>
-        <h3 id="ed-l" data-i18n="ed.l.name">Legendary Editions</h3>
-        <p class="desc" data-i18n="ed.l.desc">Limited-edition finishes in tiny numbered runs, for the ones who collect.</p>
-        <div class="price"><span class="big">—</span><span class="small" data-i18n="ed.l.small">Price announced with the first run.</span></div>
-        <ul>
-          <li data-i18n="ed.l.l1">Special materials and finishes</li>
-          <li data-i18n="ed.l.l2">Very small, numbered runs</li>
-          <li data-i18n="ed.l.l3">Same soul inside</li>
-        </ul>
-        <div class="push">
-          <a class="btn btn-ghost btn-block" href="#reserve" data-edition="legendary" data-i18n="ed.l.cta">Tell me first</a>
         </div>
       </article>
     </div>
@@ -866,7 +870,7 @@ select.input option{background:#101114;color:#F6F3EC}
       <details><summary data-i18n="q3">Which AI does it use?</summary><div class="a" data-i18n="a3">The one you choose, in its AI modes: no AI at all, your Claude, your ChatGPT, or your own Anthropic or OpenAI API key. You switch from its Control Center. Claude and ChatGPT connections are in development. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so the stone can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
       <details><summary data-i18n="q7">What happens to my voice and my data?</summary><div class="a" data-i18n="a7">It listens only while your finger is on the stone. Close the lid of its egg, and the microphone is cut in hardware. With no AI, nothing leaves the stone. With AI, your request goes only to the AI you chose. Our own servers are in the EU. Its memory is a list you can read and delete. No camera, no ads, and we never sell your data.</div></details>
       <details><summary data-i18n="q5">How long does the battery last?</summary><div class="a" data-i18n="a5">SOUL has a small rechargeable lithium battery inside. It charges from the five gold contacts on its bottom: you set it in OU, its egg, and that's it. No cable to plug into the stone. We'll publish measured battery life before we ask for full payment.</div></details>
-      <details><summary data-i18n="q12">What is it made of?</summary><div class="a" data-i18n="a12">A body of aluminium 6061, bead-blasted and anodised, in Silver, Graphite, Midnight, Ember or Champagne. The front is black glass over a 1.75″ round AMOLED screen. Underneath is a matching polymer plate, because metal blocks radio, with a small flat foot and the charging contacts. About 63 × 72 × 27 mm. The Founders 00 bodies are CNC-machined from solid aluminium.</div></details>
+      <details><summary data-i18n="q12">What is it made of?</summary><div class="a" data-i18n="a12">A body of aluminium 6061, bead-blasted and anodised, in Silver, Graphite, Midnight, Ember or Champagne. The front is black glass over a round 2.8″ IPS screen, 480 × 480 pixels. The speaker is a fine slit in the side seam. Underneath is a matching polymer plate, because metal blocks radio, with a small flat foot and the charging contacts. Size M, about 90 × 103 × 31 mm. The Founders 00 bodies are CNC-machined from solid aluminium.</div></details>
       <details><summary data-i18n="q4">Does it need my phone or computer?</summary><div class="a" data-i18n="a4">Not to be alive, and not to type: it has its own keyboard. To reach your Claude or ChatGPT it uses Wi-Fi. To work with Claude Code and Cowork, it pairs over Bluetooth with the Claude desktop app on your Mac or Windows PC.</div></details>
       <details><summary data-i18n="q8">Can I choose its eye colour?</summary><div class="a" data-i18n="a8">You choose the colour of its body, not of its eyes. Each stone is born with its own eye colour and personality, decided by its chip. Every colour has the same features: rarity changes only the colour.</div></details>
       <details><summary data-i18n="q6">Is it a toy?</summary><div class="a" data-i18n="a6">No. SOUL is made for adults and teens 16 and over. It contains small parts and a lithium battery. Keep it away from young children.</div></details>
@@ -897,7 +901,6 @@ select.input option{background:#101114;color:#F6F3EC}
             <select class="input" id="wl-edition" name="edition">
               <option value="founders" data-i18n="res.o1">Founders 00</option>
               <option value="standard" data-i18n="res.o2">Standard</option>
-              <option value="legendary" data-i18n="res.o3">Legendary Editions</option>
               <option value="unsure" data-i18n="res.o4">Not sure yet</option>
             </select>
           </div>
@@ -920,7 +923,7 @@ select.input option{background:#101114;color:#F6F3EC}
 <footer class="foot" id="legal">
   <div class="wrap">
     <div class="foot-top">
-      <a class="brand" href="#top"><span class="brand-eyes" aria-hidden="true"><i></i><i></i></span>SOUL</a>
+      <a class="brand" href="#top" aria-label="SOUL"><svg xmlns="http://www.w3.org/2000/svg" viewBox="2.96 61.82 489.04 144.35" aria-hidden="true" focusable="false"><path fill="#F6F3EC" d="M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z M408.8 200V68H437.6V175.2H490V200Z"/><circle cx="190.2" cy="134" r="70.18" fill="#CBCDCF"/><circle cx="190.2" cy="134" r="64.21" fill="#0B0B0C"/><path fill="#FFF0C8" d="M180.82 125.78A12.84 21.83 0 1 1 160.14 121.91ZM220.26 121.91A12.84 21.83 0 1 1 199.58 125.78Z"/></svg></a>
       <nav class="foot-links" aria-label="Legal">
         <a href="#privacy" id="privacy" data-i18n="f.privacy">Privacy Policy</a>
         <a href="#terms" id="terms" data-i18n="f.terms">Terms of Sale</a>
@@ -936,7 +939,7 @@ select.input option{background:#101114;color:#F6F3EC}
       </div>
       <div>
         <h4 data-i18n="f.gpsr">Manufacturer (GPSR)</h4>
-        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SOUL, model <span class="ph">[SL-175]</span> Founders 00, with the OU charging capsule. Not a toy. For ages 16+. Contains a lithium battery.</p>
+        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SOUL, model <span class="ph">[SL-M]</span> Founders 00, with the OU charging capsule. Not a toy. For ages 16+. Contains a lithium battery.</p>
       </div>
     </div>
     <p class="tm" data-i18n="f.tm">Claude is a trademark of Anthropic. SOUL is independent and not affiliated with or endorsed by Anthropic. 'Works with Claude' uses the Hardware Buddy developer API of the Claude desktop apps. ChatGPT is a trademark of OpenAI; SOUL is not affiliated with OpenAI.</p>
@@ -964,7 +967,7 @@ const RO = {
   "hero.h1": "AI-ul tău, <span class=\"glow\">viu.</span>",
   "hero.aria": "Ochii vii ai lui SOUL. Apasă Enter ca să-l atingi, apasă de două ori repede ca să râdă.",
   "hero.hint": "Atinge-l. Atinge-l de două ori și râde. Lasă-l în pace și ațipește.",
-  "hero.sub": "O mică piatră de aluminiu cu doi ochi vii. Respiră, clipește și se uită înapoi la tine, fără pic de internet. <strong>Și lucrează cu Claude.</strong>",
+  "hero.sub": "O piatră de aluminiu cât palma, cu doi ochi vii. Respiră, clipește și se uită înapoi la tine, fără pic de internet. <strong>Și lucrează cu Claude.</strong>",
   "hero.cta1": "Rezervă-l", "hero.cta2": "Vezi-l în acțiune",
   "hero.meta1": "<b>Founders 00</b>", "hero.meta2": "25 numerotate, <span data-cfg=\"range\">001–025</span>",
   "soul.brain": "Laboratoarele de AI fac creierul.", "soul.body": "Noi facem corpul și sufletul.", "soul.name": "În română, acolo unde s-a născut, numele lui e <em>suflet</em>. AI-ul tău are deja un creier. Sufletul i-l dai tu.",
@@ -1016,9 +1019,9 @@ const RO = {
   "claude.s1t": "Claude lucrează.", "claude.s1p": "Piatra ta pare ocupată și citește odată cu el.",
   "claude.s2t": "Claude întreabă.", "claude.s2p": "Când Claude are nevoie de permisiune, se aprinde un inel cald, chihlimbariu, și ochii se uită la tine.",
   "claude.s3t": "Tu decizi.", "claude.s3p": "Ține apăsat 1,2 secunde ca să aprobi. Atinge de două ori ca să refuzi. Fără să schimbi ferestre.",
-  "claude.video": "Firmware-ul real: ocupat, întreabă, aprobat. Înregistrat din simulatorul ecranului AMOLED de 466 × 466.",
-  "claude.alt": "Randare de concept: SOUL în oul lui de încărcare OU, deschis, pe un birou de nuc, în fața unui laptop, cu ochii luminoși privind într-o parte.",
-  "claude.cap": "În oul lui deschis, lângă laptop. Cât lucrează Claude, poți să te uiți în altă parte. Când Claude are nevoie de tine, piatra se uită la tine.",
+  "claude.video": "Firmware-ul real: ocupat, întreabă, aprobat. Înregistrat din simulatorul firmware-ului.",
+  "claude.alt": "Randare de concept: SOUL argintiu pe un birou de stejar, lângă un telefon și o cană albă, cu ochii luminoși privind înainte.",
+  "claude.cap": "Pe biroul tău, lângă telefon și cafea. Cât lucrează Claude, poți să te uiți în altă parte. Când Claude are nevoie de tine, piatra se uită la tine.",
   "born.eyebrow": "Născut, nu fabricat",
   "born.h2": "Nu există doi la fel.",
   "born.lead": "La prima pornire, fiecare SOUL se naște din ID-ul unic al cipului său. Personalitatea, culoarea ochilor și forma privirii rămân ale lui pe viață. Nu le alege nimeni. Nici măcar noi.",
@@ -1031,19 +1034,27 @@ const RO = {
   "cert.sub": "Birth certificate",
   "cert.hatch": "Mai naște unul",
   "cert.sample": "Certificat exemplu. Al tău se emite în clipa în care se naște.",
-  "design.eyebrow": "Design",
-  "design.h2": "O mică piatră de lumină.",
-  "design.lead": "O pietricică verticală din aluminiu sablat și anodizat. Fața e doar sticlă neagră și doi ochi vii. Fără logo, fără butoane, fără găuri.",
-  "design.alt1": "Randare de concept: SOUL din aluminiu argintiu, în picioare, o pietricică rotunjită a cărei față e o sticlă neagră rotundă cu doi ochi crem luminoși.",
-  "design.alt2": "Randare de concept: cinci SOUL în șir, din aluminiu anodizat Grafit, Jar, Argint, Albastru noapte și Șampanie, fiecare cu ochii aprinși.",
-  "design.alt3": "Randare de concept: SOUL văzut din lateral, o pană subțire de aluminiu argintiu, cu o cusătură fină pe margine și fanta difuzorului în cusătură.",
-  "design.alt4": "Randare de concept, prim-plan: granulația fină a aluminiului sablat și o teșitură lustruită acolo unde metalul întâlnește sticla neagră.",
+  "design.eyebrow": "Design · mărimea M",
+  "design.h2": "O piatră de lumină, cât palma ta.",
+  "design.lead": "O pietricică verticală din aluminiu sablat și anodizat. Fața e doar sticlă neagră peste un ecran rotund de 2,8″ și doi ochi vii. Fără logo, fără butoane, fără găuri.",
+  "design.alt1": "Randare de concept: SOUL din aluminiu argintiu, în picioare, o pietricică rotunjită, aproape pătrată, a cărei față e o sticlă neagră rotundă și mare, cu doi ochi crem luminoși.",
+  "design.alt2": "Randare de concept: același SOUL în cele cinci culori, în șir, din aluminiu anodizat Grafit, Jar, Argint, Albastru noapte și Șampanie, fiecare cu ochii aprinși.",
+  "design.alt3": "Randare de concept: SOUL văzut din lateral, cu fața bombată de sticlă neagră, o cusătură fină pe corpul de aluminiu argintiu și fanta subțire a difuzorului în cusătură.",
+  "design.alt4": "Randare de concept: SOUL argintiu așezat pe o palmă deschisă. Acoperă toată palma, ca o piatră mare și netedă.",
   "fig.render": "Randare de concept",
   "design.cap1": "Argint. Stă singur în picioare, pe un picior mic și plat, și nu se clintește când îl atingi.",
-  "design.cap2": "Cinci culori anodizate. De la stânga: Grafit, Jar, Argint, Albastru noapte, Șampanie.",
-  "design.cap3": "Difuzorul e o singură fantă fină în cusătura laterală.",
-  "design.cap4": "O teșitură prelucrată CNC desenează o singură linie subțire de lumină acolo unde metalul întâlnește sticla.",
-  "in.eyebrow": "OU · oul lui de încărcare",
+  "design.cap2": "Un singur SOUL, cinci culori anodizate. De la stânga: Grafit, Jar, Argint, Albastru noapte, Șampanie.",
+  "design.cap3": "Difuzorul e o singură fantă fină în cusătura laterală. Are cam 31 mm adâncime.",
+  "design.cap4": "Mărimea M, la scară reală. Îți umple palma.",
+  "spec.eyebrow": "Mărimea M · specificații",
+  "spec.h": "Destul de mare ca să scrii pe el. Destul de mic ca să-l ții în mână.",
+  "spec.l1b": "Ecran rotund de 2,8″", "spec.l1": "IPS, 480 × 480 pixeli, sub sticlă neagră.",
+  "spec.l2b": "Cam 90 × 103 × 31 mm", "spec.l2": "Aluminiu 6061 sablat și anodizat, cu un picior plat din polimer.",
+  "spec.l3b": "Cinci culori", "spec.l3": "Argint, Grafit, Albastru noapte, Jar și Șampanie.",
+  "spec.l4b": "Difuzorul, în cusătura laterală", "spec.l4": "O singură fantă fină. Pe față nu e nimic în afară de sticlă.",
+  "spec.l5b": "Bluetooth LE și Wi-Fi", "spec.l5": "ESP32-S3 înăuntru. Viu fără pic de internet.",
+  "spec.l6b": "SoulOS, cu tastatură", "spec.l6": "Merge fără AI, cu Claude-ul tău, cu ChatGPT-ul tău sau cu propria ta cheie API.",
+  "in.eyebrow": "OU · capsula lui de încărcare",
   "in.h": "Noaptea doarme în oul lui.",
   "in.l1b": "Se încarcă pe dedesubt", "in.l1": "Cinci contacte aurii în piciorul lui. Îl pui în OU și se încarcă. Fără cablu de băgat în el.",
   "in.l2b": "Lampă de veghe, niciodată în ochi", "in.l2": "Lumina caldă vine din ou, nu din ecran.",
@@ -1052,9 +1063,7 @@ const RO = {
         "design.note": "Randări de concept, nu fotografii. Materialele, culorile și finisajele finale se pot schimba înainte de producție.",
   "charter.eyebrow": "Carta companionului",
   "charter.h2": "Promisiunile noastre, în scris.",
-  "charter.alt": "Randare de concept, noaptea: oul OU cu capacul mătuit închis, strălucind cald, chihlimbariu, ca un mic felinar pe o noptieră întunecată.",
-  "charter.cap": "Noaptea, lângă pat, oul lui e o lampă de veghe caldă. Cu capacul închis, microfonul e tăiat din hardware. Nu are cameră și nu ascultă niciodată dacă nu ții degetul pe el.",
-  "ch1t": "Spune mereu că e un AI.", "ch1p": "Nu se dă niciodată drept om.",
+    "ch1t": "Spune mereu că e un AI.", "ch1p": "Nu se dă niciodată drept om.",
   "ch2t": "Ascultă doar cât îl ții.", "ch2p": "Fără cuvânt de trezire. Fără microfon mereu pornit.",
   "ch3t": "Fără cameră.", "ch3p": "Nu în primele ediții. Nimic nu te privește.",
   "ch4t": "Nu te face să te simți vinovat.", "ch4p": "Fără „nu mă lăsa”, fără serii de zile, fără bosumflări pentru atenție.",
@@ -1068,18 +1077,12 @@ const RO = {
   "ed.f.tag": "25 numerotate · aluminiu",
   "ed.f.desc": "Primele 25 de SOUL, din aluminiu anodizat, fiecare gravat cu numărul lui. Se livrează doar după testele radio CE.",
   "ed.f.small": "O singură plată. Fără abonament ca să fie viu. Rezervarea e rambursabilă integral.",
-  "ed.f.l1": "Corp din aluminiu sablat și anodizat, cu AMOLED rotund de 1,75″ sub sticlă neagră",
+  "ed.f.l1": "SOUL mărimea M: aluminiu sablat și anodizat, cu ecran rotund de 2,8″ sub sticlă neagră",
   "ed.f.l2": "OU, oul lui de încărcare, în cutie",
   "ed.f.l3": "SoulOS, toate cele 24 de reacții offline și merge cu Claude",
   "ed.f.l4": "Numărul tău de fondator gravat și un certificat de naștere",
   "ed.f.cta": "Rezervă un număr",
   "ed.est": "Se livrează după testele radio CE. Estimat:", "ed.est2": "Livrare estimată:",
-                  "ed.l.tag": "Mai târziu",
-  "ed.l.name": "Ediții Legendare",
-  "ed.l.desc": "Finisaje în ediție limitată, în serii mici numerotate, pentru colecționari.",
-  "ed.l.small": "Prețul se anunță odată cu prima serie.",
-  "ed.l.l1": "Materiale și finisaje speciale", "ed.l.l2": "Serii foarte mici, numerotate", "ed.l.l3": "Același suflet înăuntru",
-  "ed.l.cta": "Anunță-mă primul",
   "ed.vat": "Prețurile includ TVA. Pe această pagină nu se plătește nimic: când se deschid rezervările, îți trimitem pe email un link securizat. Founders 00 se livrează doar după testele radio CE și poți anula oricând înainte de livrare, cu banii înapoi integral.",
   "faq.eyebrow": "Întrebări",
   "faq.h2": "Întrebări bune.",
@@ -1107,7 +1110,7 @@ const RO = {
   "res.h2": "Fii acolo când deschide ochii.",
   "res.lead": "Lasă-ne emailul. Îți scriem când se deschid rezervările, înaintea tuturor.",
   "res.email": "Email", "res.edition": "Ediția",
-  "res.o1": "Founders 00", "res.o2": "Standard", "res.o3": "Ediții Legendare", "res.o4": "Încă nu știu",
+  "res.o1": "Founders 00", "res.o2": "Standard", "res.o4": "Încă nu știu",
   "res.consent": "Sunt de acord să primesc emailuri despre SOUL și mă pot dezabona oricând. Citește <a href=\"#privacy\">Politica de confidențialitate</a>.",
   "res.submit": "Intră pe listă",
   "res.fine": "Aici nu se plătește nimic. Rezervarea Founders 00 se plătește mai târziu, printr-un link securizat, și e rambursabilă integral până la livrare.",
@@ -1116,7 +1119,7 @@ const RO = {
   "f.privacy": "Politica de confidențialitate", "f.terms": "Termeni de vânzare", "f.cookies": "Cookie-uri",
   "f.seller": "Vânzător", "f.addr": "Adresă:", "f.contact": "Contact:",
   "f.gpsr": "Producător (GPSR)",
-  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelul <span class=\"ph\">[SL-175]</span> Founders 00, cu capsula de încărcare OU. Nu e o jucărie. Pentru 16+. Conține o baterie cu litiu.",
+  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelul <span class=\"ph\">[SL-M]</span> Founders 00, cu capsula de încărcare OU. Nu e o jucărie. Pentru 16+. Conține o baterie cu litiu.",
   "f.tm": "Claude este o marcă comercială a Anthropic. SOUL este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude. ChatGPT este o marcă comercială a OpenAI; SOUL nu este afiliat cu OpenAI.",
   "f.made": "© 2026 SOUL. Proiectat în București.",
   "nav.os": "SoulOS",
@@ -1128,6 +1131,8 @@ const RO = {
   "os.kind2": "SoulOS",
   "os.kind3": "SoulOS",
   "os.kind4": "SoulOS",
+  "os.alt0": "Randare de concept: SOUL pe un birou de lemn, cu tastatura SoulOS pe ecranul rotund: cuvântul „Hello” scris deasupra unei tastaturi QWERTY rotunde.",
+  "os.cap0": "SoulOS pe piatră. Pe ecranul rotund de 2,8″ încape o tastatură adevărată: scrii o notiță cu SOUL-ul în picioare pe birou.",
   "os.alt1": "Tastatura SoulOS pe ecranul rotund: textul „Mâine și tara”, iar bara de sugestii propune „țară”, cu diacriticele corecte.",
   "os.alt2": "SoulOS după un mesaj către Claude: „Gata. Te anunț la 17:00.” și confirmarea „Memento pus pentru 17:00”.",
   "os.alt3": "Alegerea modului AI în SoulOS: Fără AI, Claude-ul tău, ChatGPT-ul tău (bifat) și Cheia ta API.",
@@ -1154,10 +1159,8 @@ const RO = {
   "os.f8": "Luminozitate, sunet, modul liniștit și modul AI, la o glisare distanță.",
   "os.cta": "Încearcă SoulOS",
   "os.ctap": "Rulează chiar aici, în browser. Scrii, îi scrii lui Claude, pui o alarmă. Același sistem ca pe piatră.",
-  "design.alt5": "Randare de concept: spatele lui SOUL, o cupolă netedă și curată din aluminiu argintiu, fără text și fără șuruburi.",
-  "design.alt6": "Randare de concept, noaptea: SOUL se odihnește în oul OU deschis, pe o noptieră, cu ochi chihlimbarii somnoroși, luminat doar de strălucirea caldă a oului.",
-  "design.cap5": "Spatele e o cupolă curată. Fără text, fără șuruburi.",
-  "design.cap6": "În OU, noaptea, cu capacul deschis.",
+    "design.alt6": "Randare de concept, noaptea: SOUL se odihnește în capsula OU deschisă, în întuneric, cu ochi chihlimbarii somnoroși, luminat doar de strălucirea caldă a capsulei.",
+    "design.cap6": "În OU, noaptea, cu capacul deschis.",
   "design.colours": "Culori",
   "c.silver": "Argint",
   "c.graphite": "Grafit",
@@ -1165,7 +1168,8 @@ const RO = {
   "c.ember": "Jar",
   "c.champagne": "Șampanie",
   "in.lead": "Când închizi capacul, microfonul e tăiat din hardware. Nu e pus pe mut din software: e deconectat.",
-  "design.s1": "AMOLED rotund de 1,75″",
+  "design.s0": "Mărimea M",
+  "design.s1": "Ecran rotund IPS de 2,8″",
   "design.s2": "Aluminiu anodizat 6061",
   "design.s3": "Se încarcă în OU",
   "ed.s.tag": "Mai târziu",
@@ -1173,14 +1177,14 @@ const RO = {
   "ed.s.desc": "Același SOUL și același suflet, făcut în serii mai mari, fără numărul de fondator.",
   "ed.s.from": "De la",
   "ed.s.small": "Prețul final se anunță înainte de deschiderea comenzilor.",
-  "ed.s.l1": "Aluminiu, în culorile SOUL",
-  "ed.s.l2": "SoulOS, Claude și ChatGPT, sau deloc AI",
+  "ed.s.l1": "Mărimea M, din aluminiu, în cele cinci culori SOUL",
+  "ed.s.l2": "SoulOS cu tastatura lui. Fără AI, Claude-ul tău, ChatGPT-ul tău sau propria ta cheie API",
   "ed.s.l3": "Se încarcă în OU",
   "ed.s.cta": "Intră pe lista de așteptare",
   "q11": "Are certificare CE?",
   "a11": "Încă nu, și de asta Founders 00 așteaptă. SOUL are Bluetooth și Wi-Fi, deci trebuie să treacă testele radio CE (Directiva UE privind echipamentele radio) într-un laborator acreditat înainte să-l poată vinde cineva. Nu livrăm nicio bucată înainte de asta. Rezervarea ta rămâne rambursabilă integral până la livrare.",
   "q12": "Din ce e făcut?",
-  "a12": "Un corp din aluminiu 6061, sablat și anodizat, în Argint, Grafit, Albastru noapte, Jar sau Șampanie. Fața e sticlă neagră peste un ecran AMOLED rotund de 1,75″. Dedesubt e o placă din polimer în aceeași culoare, pentru că metalul blochează semnalul radio, cu un picior mic și plat și contactele de încărcare. Cam 63 × 72 × 27 mm. Corpurile Founders 00 sunt frezate CNC din aluminiu masiv.",
+  "a12": "Un corp din aluminiu 6061, sablat și anodizat, în Argint, Grafit, Albastru noapte, Jar sau Șampanie. Fața e sticlă neagră peste un ecran rotund IPS de 2,8″, cu 480 × 480 pixeli. Difuzorul e o fantă fină în cusătura laterală. Dedesubt e o placă din polimer în aceeași culoare, pentru că metalul blochează semnalul radio, cu un picior mic și plat și contactele de încărcare. Mărimea M, cam 90 × 103 × 31 mm. Corpurile Founders 00 sunt frezate CNC din aluminiu masiv.",
   "f.os": "Încearcă SoulOS"
 };
 const DYN = {

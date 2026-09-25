@@ -39,7 +39,7 @@ FADE = 1.5
 # ---------------------------------------------------------------- pilot parameters (size M)
 Z_CUT = 3.0                       # v5 height where the flat base is cut (as v6)
 K = float(__import__("os").environ.get("SOUL_K", 1.78))                           # uniform front-view scale (x, z): v6 63 x 71 -> 112.1 x 126.4 (+1.2 foot); smallest k that holds the Ø95.86 lens with the v6 glass/body ratio
-KY = float(__import__("os").environ.get("SOUL_KY", 1.15))                          # depth scale: 27.1 -> ~31 mm
+KY = float(__import__("os").environ.get("SOUL_KY", 1.24))                          # depth scale: v6 27.1 -> ~33.6 mm (stack 9.7 + LiPo 6 + speaker)
 SZ = K
 H_TOTAL = (74.0 - Z_CUT) * K      # shell height above the flat base plane (the foot adds FOOT_H below)
 K_BACK = 1.0                      # extra back-half depth scale about the seam (1.0 = none)

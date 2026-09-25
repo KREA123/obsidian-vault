@@ -70,9 +70,9 @@ BATCONN = (22.0, 18.0)                                                      # MX
 PLUG_DD = 13.0                                                              # mated plug + wires keep-out
 
 # ============================================================================ bought parts inside (board frame)
-BAT = dict(name='LiPo 605060 (6 x 50 x 60, ~2000 mAh, PCM, MX1.25)', W=50.5, L=61.0, T=6.3, bx=0.0, by=-20.0)
-SPK = dict(name='speaker 2030 cavity 8 ohm 1 W', a=30.0, b=20.0, t=5.2, bx=20.0, by=32.0)
-AMP = dict(name='MAX98357A I2S amp breakout', a=18.0, b=20.0, t=3.6, bx=-15.0, by=26.0)
+BAT = dict(name='LiPo 605060 (6 x 50 x 60, ~2000 mAh, PCM, MX1.25)', W=50.5, L=61.0, T=6.3, bx=-1.2, by=-20.0)
+SPK = dict(name='speaker 2030 cavity 8 ohm 1 W', a=30.0, b=20.0, t=5.2, bx=-20.0, by=24.0)
+AMP = dict(name='MAX98357A I2S amp breakout', a=18.0, b=20.0, t=3.6, bx=12.0, by=32.5)
 MIC = dict(name='INMP441 I2S mic breakout', a=14.0, b=14.0, t=3.4, bx=-34.0, by=-1.0)
 PLATE_DD = (10.0, 11.4)                 # chassis plate behind the tallest board parts
 # screws: 4x M2 from the back, through the chassis legs, into the front bosses; 2x M2 from below (base plate)
@@ -380,7 +380,7 @@ def build(vname):
         log.append(s)
 
     wall, tol = V['wall'], V['tol']
-    dg = V['lip_t'] - 0.15
+    dg = V['lip_t']                   # lens front against the lip underside
     bf = BoardFrame(dg)
     say(f'== {vname}: wall {wall} tol {tol} lip {V["lip_t"]}  (K {g.K}, KY {g.KY})')
     OUTER = outer_solid()
@@ -397,7 +397,7 @@ def build(vname):
         'lens': bf.cyl(LENS_R, 0.0, LENS_T),
         'lcd': bf.cyl(LCD_R, LENS_T, LCD_D),
         'pcb': bf.cyl(PCB_R, LCD_D, PCB_D),
-        'pcb_tab': bf.box(-20.4, 20.4, -44.0, -33.0, LENS_T, PCB_D),
+        'pcb_tab': bf.box(-20.4, 20.4, -44.0, -33.0, LENS_T, PCB_D).intersect(bf.cyl(46.5, 0, 20)),
         'components': bf.cyl(COMP_R, PCB_D, COMP_D),
         'bat_conn': bf.box(BATCONN[0] - 3.8, BATCONN[0] + 3.8, BATCONN[1] - 2.1, BATCONN[1] + 2.1, PCB_D, 10.5),
         'bat_plug': bf.box(BATCONN[0] - 4.8, BATCONN[0] + 4.8, BATCONN[1] - 3.0, BATCONN[1] + 3.0, 10.5, PLUG_DD),
@@ -459,7 +459,8 @@ def build(vname):
     # ------------------------------------------------ lens pocket, aperture, v6 chamfer
     r_ap = LENS_R - V['lip_over']
     pocket = bf.cyl(LENS_R + tol, V['lip_t'] - dg, LENS_T + 0.5).fuse(
-        bf.cyl(LCD_R + tol + 0.3, LENS_T + 0.2, PCB_D + 0.5), bf.box(-21, 21, -45, -30, LENS_T + 0.2, PCB_D + 0.5))
+        bf.cyl(LCD_R + tol + 0.3, LENS_T + 0.2, PCB_D + 0.5),
+        bf.box(-21, 21, -45, -30, LENS_T + 0.2, PCB_D + 0.5).intersect(bf.cyl(47.0, 0, 20)))
     to_shells(pocket)
     sub['front'].append(bf.cyl(r_ap, -dg - 3.0, 1.0))
     ch = V['chamfer']
@@ -521,9 +522,9 @@ def build(vname):
     add['base'].append(clamp.intersect(TONG_OUT))
     sub['base'].append(sock_body)
     for (bx_, by_) in BASE_SCREWS:
-        col = cq.Workplane('XY', origin=(bx_, by_, BASE_T - 0.01)).circle(3.0).extrude(9.0).val().intersect(OUTER)
+        col = cq.Workplane('XY', origin=(bx_, by_, BASE_T + 2.8)).circle(3.0).extrude(8.0).val().intersect(OUTER)
         add['front'].append(col.intersect(FRONT_HALF))
-        sub['front'].append(cq.Workplane('XY', origin=(bx_, by_, BASE_T - 0.1)).circle(V['insert_d'] / 2).extrude(4.7).val())
+        sub['front'].append(cq.Workplane('XY', origin=(bx_, by_, BASE_T + 2.7)).circle(V['insert_d'] / 2).extrude(4.7).val())
         sub['base'].append(cq.Workplane('XY', origin=(bx_, by_, -5)).circle(V['clear_d'] / 2).extrude(20).val())
         sub['base'].append(cq.Workplane('XY', origin=(bx_, by_, -g.FOOT_H - 0.01)).circle(2.2).extrude(2.0).val())
         sub['base'].append(cq.Workplane('XY', origin=(bx_, by_, -g.FOOT_H + 1.99)).circle(2.2)
@@ -544,7 +545,7 @@ def build(vname):
                         continue
                     r = (s.fuse(o) if kind == 'fuse' else s.cut(o)).clean()
                     vr = vol(r)
-                    tv = 0.004 * v0 + 1.0     # B-spline volumes are only good to ~0.1 %
+                    tv = 0.03 * v0 + 1.0      # OCCT volumes of B-spline solids drift by ~1-2 %; this only catches gross failures
                     ok = ((kind == 'fuse' and v0 - tv <= vr <= v0 + vo + tv) or
                           (kind == 'cut' and max(0.0, v0 - vo) - tv <= vr <= v0 + tv)) and vr > 1.0
                     if not ok:
@@ -599,6 +600,8 @@ def build(vname):
     chassis = ch_add[0].fuse(*ch_add[1:]).clean().intersect(TONG_OUT)
     keep = [s for k, s in board.items() if k not in ('components',)]
     keep.append(board['components'].cut(fuse(*[bf.cyl(2.3, 0, 20, x, y) for x, y in MH])))
+    for si in screw_info:     # room for the back-shell boss above each leg
+        ch_sub.append(SeamFrame.cyl(si['x'], si['Z'], V['boss_d'] / 2 + 0.3, si['s_leg1'] + 0.05, si['s_back'] + 2))
     chassis = chassis.cut(*(ch_sub + keep + [battery, speaker, amp, mic, usb_plug, grow(board['bat_plug'], 0.3), sock_body]
                             )).clean()
     # holes for wires: one window in the plate next to the BAT connector
@@ -755,7 +758,7 @@ def from_cache(vname):
     shells = {n: ld(n) for n in ('front_shell', 'back_shell', 'base_plate', 'chassis')}
     names = [f[:-5] for f in os.listdir(cdir) if f.endswith('.brep') and f[:-5] not in shells]
     parts_in = {n: ld(n) for n in names}
-    bf = BoardFrame(V['lip_t'] - 0.15)
+    bf = BoardFrame(V['lip_t'])
     pins = {}
     for k, (kx, ky_) in KEYS.items():
         w_act = bf.w(kx + 2.0, ky_, KEY_DD)

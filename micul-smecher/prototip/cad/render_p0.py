@@ -14,7 +14,7 @@ import os
 import sys
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..'))
@@ -42,21 +42,24 @@ def srgb(h):
     return tuple(((x / 12.92) if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4) for x in c) + (1.0,)
 
 
-def reset(res=(1600, 1200), samples=64):
+def reset(res=(1600, 1200), samples=int(os.environ.get('P0_SAMPLES', 64))):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     sc.render.engine = 'CYCLES'
     sc.cycles.samples = samples
-    sc.cycles.use_denoising = True
+    sc.cycles.use_denoising = False
     sc.render.resolution_x, sc.render.resolution_y = res
-    sc.view_settings.view_transform = 'Filmic' if 'Filmic' in [e.identifier for e in
-                                                              sc.view_settings.bl_rna.properties['view_transform'].enum_items] else 'Standard'
+    sc.view_settings.view_transform = 'AgX'
+    try:
+        sc.view_settings.look = 'AgX - Medium High Contrast'
+    except TypeError:
+        pass
     w = bpy.data.worlds.new('w')
     sc.world = w
     w.use_nodes = True
     bg = w.node_tree.nodes['Background']
     bg.inputs[0].default_value = srgb('#EFE9E2')
-    bg.inputs[1].default_value = 0.55
+    bg.inputs[1].default_value = 0.35
     return sc
 
 
@@ -104,60 +107,80 @@ def load(name, mat):
     fn = os.path.join(ASM, f'm_{VAR}_{name}.stl')
     if not os.path.exists(fn):
         return None
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
     try:
         bpy.ops.wm.stl_import(filepath=fn)
     except Exception:
         bpy.ops.import_mesh.stl(filepath=fn)
     ob = bpy.context.selected_objects[0]
     ob.name = name
-    ob.scale = (MM, MM, MM)
-    bpy.ops.object.transform_apply(scale=True)
-    bpy.ops.object.shade_smooth()
+    ob.data = ob.data.copy()
+    ob.data.transform(Matrix.Scale(MM, 4))
+    ob.data.update()
+    for poly in ob.data.polygons:
+        poly.use_smooth = True
     try:
-        bpy.ops.object.shade_smooth_by_angle(angle=math.radians(30))
+        ob.data.use_auto_smooth = True
+        ob.data.auto_smooth_angle = math.radians(30)
     except Exception:
         pass
     ob.data.materials.append(mat)
+    ob.select_set(False)
     return ob
 
 
 def eyes(offset=Vector((0, 0, 0)), night=False):
-    """two cream eye capsules on the screen (the SOUL face), slightly in front of the lens"""
+    """the two SOUL eyes on the screen: upright ovals whose top is cut by a slanted brow line (as in v6/v8)"""
+    import bmesh
     col = srgb('#FFC96B') if night else srgb('#FFF0C8')
-    m = m_plain('eye', col, 0.4, emit=col, strength=6.0)
+    m = m_plain('eye', col, 0.4, emit=col, strength=4.0)
     xax = Vector((1, 0, 0))
-    base = G + offset + N_OUT * 0.00005
+    base = G + offset + N_OUT * 0.00008
+    rx, ry = 0.0079, 0.0125
     for sx in (-1, 1):
-        bpy.ops.mesh.primitive_circle_add(vertices=64, radius=1.0, fill_type='NGON')
-        ob = bpy.context.active_object
-        ob.scale = (0.0079, 0.0125, 1)
+        pts = []
+        for k in range(96):
+            a = 2 * math.pi * k / 96
+            x, y = rx * math.cos(a), ry * math.sin(a)
+            ycut = 0.55 * ry + (-sx) * 0.42 * x          # brow: lower on the inner side
+            pts.append((x, min(y, ycut)))
         c = base + xax * (sx * 0.0130) - UP * 0.0012
-        ob.location = c
-        ob.rotation_euler = N_OUT.to_track_quat('Z', 'Y').to_euler()
-        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        ob.data.materials.append(m)
-        # brow cut: a thin black disc overlapping the top of each eye (the "focused" look of the renders)
-        bpy.ops.mesh.primitive_circle_add(vertices=64, radius=1.0, fill_type='NGON')
-        br = bpy.context.active_object
-        br.scale = (0.0125, 0.0068, 1)
-        br.location = c + UP * 0.0150 + xax * (sx * 0.004) + N_OUT * 0.00002
-        br.rotation_euler = N_OUT.to_track_quat('Z', 'Y').to_euler()
-        br.rotation_euler.rotate_axis('Z', math.radians(-12 * sx))
-        br.data.materials.append(m_plain('lid', (0.0, 0.0, 0.0, 1), 0.1))
+        me = bpy.data.meshes.new('eye')
+        bm = bmesh.new()
+        vs = [bm.verts.new(c + xax * x + UP * y) for x, y in pts]
+        bm.faces.new(vs)
+        bm.to_mesh(me)
+        bm.free()
+        ob = bpy.data.objects.new('eye', me)
+        bpy.context.scene.collection.objects.link(ob)
+        me.materials.append(m)
 
 
 def studio(sc, target):
-    for loc, e, s, col in [((-0.35, -0.45, 0.45), 90, 0.35, '#FFF4E8'), ((0.45, -0.15, 0.25), 35, 0.4, '#E8F0FF'),
-                           ((0.05, 0.45, 0.4), 45, 0.4, '#FFFFFF'), ((0.0, -0.2, 0.6), 25, 0.6, '#FFFFFF')]:
+    for loc, e, sz, col in [((-0.35, -0.45, 0.45), 14, 0.35, '#FFF4E8'), ((0.45, -0.15, 0.25), 5, 0.4, '#E8F0FF'),
+                            ((0.05, 0.45, 0.4), 7, 0.4, '#FFFFFF'), ((0.0, -0.25, 0.6), 4, 0.6, '#FFFFFF')]:
         L = bpy.data.lights.new('L', 'AREA')
-        L.energy, L.size = e, s
+        L.energy, L.size = e, sz
         L.color = srgb(col)[:3]
         o = bpy.data.objects.new('L', L)
         sc.collection.objects.link(o)
         o.location = loc
         o.rotation_euler = (target - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
+        o.visible_camera = False
+    # a long soft card above-left: the single diagonal glint on the black glass
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(-0.10, -0.55, 0.30))
+    card = bpy.context.active_object
+    card.scale = (0.05, 0.6, 1)
+    card.rotation_euler = (math.radians(60), 0, math.radians(35))
+    card.data.materials.append(m_plain('card', (1, 1, 1, 1), 1.0, emit=(1, 1, 1, 1), strength=3.0))
+    card.visible_camera = False
+    card.select_set(False)
     bpy.ops.mesh.primitive_plane_add(size=4, location=(0, 0, -FR['FOOT_H'] * MM))
-    bpy.data.objects['Plane'].data.materials.append(m_plain('floor', srgb('#F1ECE6'), 0.85))
+    fl = bpy.context.active_object
+    fl.name = 'Plane'
+    fl.data.materials.append(m_plain('floor', srgb('#EFE8E0'), 0.85))
+    fl.select_set(False)
 
 
 def camera(sc, loc, target, lens=85):
@@ -185,7 +208,7 @@ def body(colour='silver', offset=Vector((0, 0, 0)), with_eyes=True):
     else:
         shell = m_alu('alu_' + colour, al, 0.40 if colour == 'silver' else 0.46)
     obs = [load('front_shell', shell), load('back_shell', shell), load('base_plate', m_plain('poly_' + colour, srgb(poly), 0.7))]
-    gl = load('in_lens', m_plain('glass', (0.004, 0.004, 0.005, 1), 0.04))
+    gl = load('in_lens', m_plain('glass', (0.002, 0.002, 0.0025, 1), 0.03))
     for o in obs + [gl]:
         if o is not None:
             o.location = offset
