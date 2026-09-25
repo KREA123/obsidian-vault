@@ -91,6 +91,10 @@ pio device monitor -b 115200        # "[board] LCD-2.8C 480x480, disc 70.1 mm, k
 ```
 If the upload does not start: hold **BOOT**, tap **RESET**, release BOOT, upload again.
 
+Build size (2026-09-25): `lcd28` flash 913,806 B (13.9 % of the 6.25 MB app slot), static RAM 38,668 B;
+with both optional I2S parts 944,218 B / 38,812 B. At run time PSRAM holds three 460,800 B buffers
+(our Canvas, the push buffer, the panel's scanned framebuffer): ~1.4 MB of 8 MB.
+
 **What the board has** (Waveshare wiki, vendor ESP-IDF demo and schematic, read 2026-09-25)
 
 | Part | Details | Used by the firmware |

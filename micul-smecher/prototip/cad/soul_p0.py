@@ -516,17 +516,39 @@ def build(vname):
     for (mx, my) in MAGNETS:
         sub['base'].append(cq.Workplane('XY', origin=(mx, my, BASE_T - MAG_H)).circle(MAG_D / 2).extrude(MAG_H + 0.1).val())
     # ------------------------------------------------ assemble
-    def finish(base_s, adds, subs):
+    def finish(base_s, adds, subs, tag=''):
+        """Booleans one at a time, each guarded: an op that makes the solid invalid or changes its volume
+        implausibly is retried after .fix() and otherwise skipped (and logged)."""
         s = base_s
-        if adds:
-            s = s.fuse(*adds).clean()
-        if subs:
-            s = s.cut(*subs).clean()
+        v0 = vol(s)
+        for kind, ops in (('fuse', adds), ('cut', subs)):
+            for i, o in enumerate(ops):
+                try:
+                    vo = vol(o)
+                    if vo < 1e-6:
+                        continue
+                    r = (s.fuse(o) if kind == 'fuse' else s.cut(o)).clean()
+                    vr = vol(r)
+                    ok = r.isValid() and ((kind == 'fuse' and v0 - 0.5 <= vr <= v0 + vo + 0.5) or
+                                          (kind == 'cut' and max(0.0, v0 - vo) - 0.5 <= vr <= v0 + 0.5)) and vr > 1.0
+                    if not ok:
+                        r = (s.fuse(o.fix()) if kind == 'fuse' else s.cut(o.fix())).clean().fix()
+                        vr = vol(r)
+                        ok = r.isValid() and vr > 1.0 and ((kind == 'fuse' and v0 - 0.5 <= vr <= v0 + vo + 0.5) or
+                                                          (kind == 'cut' and max(0.0, v0 - vo) - 0.5 <= vr <= v0 + 0.5))
+                    if ok:
+                        s, v0 = r, vr
+                    else:
+                        say(f'   !! {tag}: {kind} #{i} skipped (invalid result)')
+                except Exception as e:
+                    say(f'   !! {tag}: {kind} #{i} failed: {e!r}')
         return s
     t1 = time.time()
-    front = finish(SHELL.intersect(FRONT_HALF), add['front'], sub['front'])
-    back = finish(SHELL.intersect(BACK_HALF), add['back'], sub['back'])
-    base_plate = finish(base, add['base'], sub['base'])
+    say(f'  halves before features: front {vol(SHELL.intersect(FRONT_HALF)):.0f}, back {vol(SHELL.intersect(BACK_HALF)):.0f}, '
+        f'base {vol(base):.0f} mm3')
+    front = finish(SHELL.intersect(FRONT_HALF), add['front'], sub['front'], 'front')
+    back = finish(SHELL.intersect(BACK_HALF), add['back'], sub['back'], 'back')
+    base_plate = finish(base, add['base'], sub['base'], 'base')
     say(f'  shells assembled ({time.time()-t1:.0f}s); valid: front {front.isValid()} back {back.isValid()} '
         f'base {base_plate.isValid()}; volumes {vol(front):.0f} / {vol(back):.0f} / {vol(base_plate):.0f}')
 
