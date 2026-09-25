@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SoulOS</title>
-<meta name="description" content="Prototip interactiv pentru SoulOS, interfața rotundă a lui SOUL.">
+<meta name="description" content="Interactive prototype of SoulOS, the round interface of SOUL.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -466,8 +466,8 @@ html{overscroll-behavior-x:none}
 <header class="top">
   <div class="brand"><span class="mark" aria-hidden="true"></span>SoulOS <small>SOUL · 466 px AMOLED</small></div>
   <div class="lang" role="group" aria-label="Limba / Language">
-    <button id="lang-ro" type="button" data-lang="ro" aria-pressed="true">RO</button>
-    <button id="lang-en" type="button" data-lang="en" aria-pressed="false">EN</button>
+    <button id="lang-en" type="button" data-lang="en" aria-pressed="true">EN</button>
+    <button id="lang-ro" type="button" data-lang="ro" aria-pressed="false">RO</button>
   </div>
 </header>
 
@@ -764,7 +764,7 @@ en: {
   typeH: "Type on SOUL (round keyboard)", typeBtns: ["✎ Write to Claude", "✎ New note", "+ New reminder", "+ New alarm", "⏰ Ring an alarm now"],
   dx2: { aiT: "You wrote to your AI.", remT: "Set a reminder.", noteT: "You wrote a note.", alarmT: "Set an alarm.", ring: "Woke you up." }
 }};
-let LANG = "ro";
+let LANG = "en";   /* SOUL is international: English first, Romanian via the toggle / Settings */
 try { const l = localStorage.getItem("soulos-lang"); if (l === "en" || l === "ro") LANG = l; } catch (e) {}
 const T = () => STR[LANG];
 /* ---- SoulOS 2 strings (merged into STR) ---- */
@@ -1531,8 +1531,9 @@ const W_EN = ("the to and a of i you it in is that for on my me be have this wit
   "site build check email plan week weekend friday monday saturday sunday tuesday wednesday thursday happy birthday party train station ticket car pick kids school walk run " +
   "make take give think want day new first last back after before then now also well way because any these them some could would should into over only come look use two " +
   "three four five ten half here right left start stop again done ready thing things something anything money pay bill remember forget what's that's there's doesn't didn't").split(" ");
+const DIAC_RX = /[ăâîșțĂÂÎȘȚ]/;
 const fold = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-'’]/g, "");
-const LEX = [], RO_SET = new Set(), EN_SET = new Set();
+const LEX = [], RO_SET = new Set(), EN_SET = new Set(), RO_EXACT = new Set(W_RO.filter(w => w && (DIAC_RX.test(w) || fold(w) === w.replace(/[-'’]/g, "")) && !W_RO.some(x => x !== w && fold(x) === fold(w) && /[ăâîșț]/.test(x))));
 [[W_RO, "ro", RO_SET], [W_EN, "en", EN_SET]].forEach(([list, lang, set]) => list.forEach((w, r) => { if (w) { LEX.push({ w, f: fold(w), lang, r }); set.add(fold(w)); } }));
 /* confident diacritic restorations, applied at space/punctuation (P ≥ .8 and ≥ 2× the runner-up in a real model) */
 const AUTO = Object.fromEntries(("sa:să si:și maine:mâine tara:țară pana:până fara:fără dupa:după cand:când asa:așa stiu:știu stii:știi stie:știe paine:pâine caine:câine " +
@@ -1551,7 +1552,8 @@ const kbEl = $("#kb");
 function matchCase(w, like) { return like && like[0] !== like[0].toLowerCase() ? w[0].toUpperCase() + w.slice(1) : w; }
 function langScore(words) {
   let ro = 0, en = 0;
-  words.slice(-6).forEach(w => { const f = fold(w), r = RO_SET.has(f), e = EN_SET.has(f); if (r && !e) ro++; if (e && !r) en++; });
+  // English UI: only exact Romanian words count as evidence ("la", "mâine", "amintește-mi"), not diacritic-less look-alikes ("sa", "si")
+  words.slice(-6).forEach(w => { const f = fold(w), r = LANG === "en" ? RO_EXACT.has(w.toLowerCase()) : RO_SET.has(f), e = EN_SET.has(f); if (r && !e) ro++; if (e && !r) en++; });
   return { ro, en, pref: ro > en ? "ro" : en > ro ? "en" : LANG };
 }
 function candidates(word, prev) {
@@ -1575,7 +1577,7 @@ function autoForm(word, prev) {
   const { ro, en } = langScore(prev);
   if (a.includes("'")) return ro > en ? null : a === "I'm" ? a : matchCase(a, word);   // English contractions
   if (en > ro) return null;                       // English sentence: leave plain letters alone
-  if (EN_SET.has(f) && ro === 0) return null;     // "in", "im", "dont": only with Romanian evidence
+  if (ro === 0 && (LANG === "en" || EN_SET.has(f))) return null;   // English UI, or "in"/"im": diacritics only with Romanian evidence
   return matchCase(a, word);
 }
 /* local EN/RO time grammar: "la 5", "mâine la 9:30", "at 7pm", "în 10 min", "diseară" (works with no AI) */
@@ -1787,7 +1789,12 @@ function kbHidePress() { if (!kbEl) return; kbEl.querySelectorAll(".kk.on").forE
 function kbTray(k) {
   const K = S.kb; let items;
   if (k.id === "layer") items = PUNCT_TRAY;
-  else { const v = VAR[k.ch.toLowerCase()]; if (!v) return false; items = Array.from(v).map(c => K.shift !== "off" ? c.toUpperCase() : c); }
+  else {
+    const v = VAR[k.ch.toLowerCase()]; if (!v) return false;
+    let arr = Array.from(v);
+    if (langScore(prevWords()).pref === "en") arr = arr.filter(c => !DIAC.test(c)).concat(arr.filter(c => DIAC.test(c)));   // typing English: ă î ș ț move to the end
+    items = arr.map(c => K.shift !== "off" ? c.toUpperCase() : c);
+  }
   const dir = k.cx > 233 ? -1 : 1, n = items.length, top = k.y0 - 64;
   const left = dir > 0 ? k.cx - 27 : k.cx - 27 - 44 * (n - 1);
   kp.tray = { items: dir > 0 ? items : items.slice().reverse(), dir, n, top, left, sel: dir > 0 ? 0 : n - 1, orig: items };
