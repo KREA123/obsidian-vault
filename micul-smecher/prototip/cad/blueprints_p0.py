@@ -362,7 +362,7 @@ def sheet_section(theme='blue'):
     for n, lab in [('lens', 'lens Ø95.86 (drawing)'), ('lcd', 'LCD cell env. Ø77.6'), ('pcb', 'PCB Ø73'),
                    ('components', 'parts to 9.7 (drawing)'), ('bat_plug', 'BAT plug + wires (U)'),
                    ('usb_plug', 'USB-C 90° plug (U)'), ('usb_socket', 'rear USB-C socket (U)'),
-                   ('switch', 'ON/OFF switch (U)'), ('key_boot', 'BOOT key (U)'), ('battery', 'LiPo 605060'),
+                   ('switch', 'ON/OFF switch (U)'), ('key_boot', 'BOOT key (U)'), ('battery', 'LiPo 604050'),
                    ('speaker', 'speaker 2030'), ('amp', 'MAX98357A'), ('mic', 'INMP441')]:
         r = cl.get(n, {})
         if not r:
@@ -379,7 +379,7 @@ def sheet_section(theme='blue'):
     ty = notes(sh, 190, ty + 3, ['%d pairs checked, %d overlapping > 0.05 mm3' % (len(inter), len(bad))]
                + ['  %s = %.2f' % kv for kv in list(bad.items())[:5]], size=1.9, head='INTERFERENCE CHECK')
     notes(sh, 190, ty + 3, ['1 front shell  2 stock lens  3 LCD  4 PCB  5 chassis (printed)',
-                            '6 LiPo 605060  7 back shell  8 base plate + foot (polymer)',
+                            '6 LiPo 604050  7 back shell  8 base plate + foot (polymer)',
                             '9 USB-C socket (charge)  10 speaker 2030  11 amp'], size=1.9, head='PARTS')
     title_block(sh, 'SECTION A-A (x = 0)', '%s variant, clearances from the CAD check' % v, '1.75 : 1', '2 / 4',
                 'SOUL-P0M-02')
@@ -391,7 +391,7 @@ BOM = [
     (1, 'Front shell', 'PLA/PETG/resin | Al 6061', '1', 'print | CNC', '40-150 lei | 90-200 EUR'),
     (2, 'ESP32-S3-Touch-LCD-2.8C', 'Waveshare', '1', 'waveshare / AliExpress', '30-43 USD'),
     (3, 'Chassis', 'PETG / resin', '1', 'print', '5-15 lei'),
-    (4, 'LiPo 605060 ~2000 mAh', 'Li-po + PCM, MX1.25', '1', 'AliExpress / eMAG', '30-60 lei'),
+    (4, 'LiPo 604050 ~1500 mAh', 'Li-po + PCM, MX1.25', '1', 'AliExpress / eMAG', '25-45 lei'),
     (5, 'Speaker 2030 8 ohm 1 W', 'box speaker', '1', 'AliExpress / eMAG', '10-20 lei'),
     (6, 'MAX98357A + INMP441', 'I2S amp + I2S mic', '1+1', 'ardushop / optimus', '35-60 lei'),
     (7, 'Back shell', 'PLA/PETG/resin | Al 6061', '1', 'print | CNC', '40-150 lei | 90-200 EUR'),
@@ -399,7 +399,7 @@ BOM = [
     (9, 'Pins BOOT / RST', 'PETG / resin', '2', 'print', '<1 lei'),
     (10, 'USB-C 90° ext. M-F', 'panel socket', '1', 'AliExpress / eMAG', '20-40 lei'),
     (11, 'Insert M2x3 Ø3.5', 'brass', '6', 'eMAG / 3DPrintX', '30-60 lei/set'),
-    (12, 'Screw M2 (see sheet 4)', 'A2 inox', '6', 'kit', '30-40 lei/kit'),
+    (12, 'M2x16, M2x8, M2x8 cs', 'A2 inox', '2+2+2', 'kit', '30-40 lei/kit'),
     (13, 'EVA foam, VHB, Kapton', '-', '-', 'eMAG', '40-60 lei'),
 ]
 

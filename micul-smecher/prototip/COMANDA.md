@@ -9,7 +9,7 @@ Prețurile sunt aproximative (septembrie 2026) și includ TVA. Am folosit 1 € 
 | # | Ce comanzi | Unde | 1 buc. | 3 buc. |
 |---|---|---|---|---|
 | 1 | **Waveshare ESP32-S3-Touch-LCD-2.8C** (varianta **cu touch**, rotundă, 480×480) | [waveshare.com](https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm) sau [AliExpress](https://www.aliexpress.com/item/1005009311521684.html) | 190 | 570 |
-| 2 | **LiPo 605060**, ~2000 mAh, 3,7 V, PCM, mufă **MX1.25** (sau PH2.0 + adaptor). Ia **una în plus** | AliExpress: „605060 2000mAh MX1.25” | 35 | 140 (4 buc.) |
+| 2 | **LiPo 604050**, ~1500 mAh, 3,7 V, PCM, mufă **MX1.25** (sau PH2.0 + adaptor). Ia **una în plus** | AliExpress: „604050 1500mAh MX1.25” | 35 | 140 (4 buc.) |
 | 3 | **Difuzor 2030**, 8 Ω, 1 W (cutie de 20 × 30 × 5) | AliExpress / eMAG | 12 | 36 |
 | 4 | **MAX98357A**, amplificator I2S | [ArduShop](https://ardushop.ro/en/modules/1549-max98357-i2s-3w-class-d-amplifier-6427854022967.html) / [Optimus](https://www.optimusdigital.ro/ro/audio-amplificatoare-audio/1656-modul-cu-amplificator-adafruit-i2s-de-3-w-in-clasa-d-max98357a.html) | 25 | 75 |
 | 5 | **INMP441**, microfon I2S | [eMAG](https://www.emag.ro/modul-microfon-inmp441-omnidirectional-i2s-24-biti-mems-12-x-14-x-3-mm-negru-s9/pd/D83G1QYBM/) / [ArduShop](https://ardushop.ro/ro/home/2092-omnidirectional-microphone-module-i2s-interface-inmp441-mems-high-precision-low-power-ultra-small-volume-for-esp32.html) | 20 | 60 |
@@ -21,7 +21,7 @@ Prețurile sunt aproximative (septembrie 2026) și includ TVA. Am folosit 1 € 
 | Ce | Preț |
 |---|---|
 | Inserții M2 la cald ([set eMAG](https://www.emag.ro/set-300-insertii-filetate-jormftte-m2-m2-5-m3-m4-m5-m6-alama-auriu-mc-1017-017/pd/DFGRH7YBM/)) | 40 |
-| Șuruburi M2 inox. **Pe bucată:** 2 × M2×16, 2 × M2×8, 2 × M2×6 cu cap înecat. Un set mixt | 35 |
+| Șuruburi M2 inox. **Pe bucată:** 2 × M2×16, 2 × M2×8, 2 × M2×8 cu cap înecat. Un set mixt | 35 |
 | 3M VHB, spumă EVA de 0,5–1 mm, bandă Kapton | 60 |
 | Fire siliconice de 26–28 AWG, tub termocontractabil | 25 |
 | **Subtotal** | **≈ 160 lei** |

@@ -51,7 +51,7 @@ Prețurile sunt orientative, din septembrie 2026. Am folosit 1 € ≈ 5,1 lei �
 | # | Ce | Exact ce cauți | De unde (linkuri) | Preț / buc. |
 |---|---|---|---|---|
 | 1 | **Placa** | **Waveshare ESP32-S3-Touch-LCD-2.8C** (varianta **cu touch**, „Touch”). **Nu** ESP32-S3-Touch-LCD-2.8, care e dreptunghiulară, 240×320 | [waveshare.com (oficial)](https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm) ~$30–40 + transport · [AliExpress](https://www.aliexpress.com/item/1005009311521684.html) ~$41–43 · [Amazon](https://www.amazon.com/Waveshare-Capacitive-Development-Dual-core-Processor/dp/B0DMJZPH2R) ~$43 | **≈ 180–200 lei** |
-| 2 | **Baterie LiPo** | **605060**, 3,7 V, **~2000 mAh**, cu PCM (protecție), mufă **MX1.25 2 pini** (sau PH2.0 + adaptor). Plicul: **6 × 50 × 60 mm**, iar CAD-ul lasă loc pentru 6,3 × 50,5 × 61 | AliExpress: „605060 2000mAh 3.7V MX1.25” · [exemplu de celulă](https://www.ufinebattery.com/products/3-7-v-2000-mah-lithium-ion-battery-605060/) | **≈ 30–45 lei** |
+| 2 | **Baterie LiPo** | **604050**, 3,7 V, **~1500 mAh**, cu PCM (protecție), mufă **MX1.25 2 pini** (sau PH2.0 + adaptor). Plicul: **6 × 40 × 50 mm**, iar CAD-ul lasă loc pentru 6,3 × 40,5 × 50,5 (o celulă 605060 de 2000 mAh nu mai lasă loc difuzorului) | AliExpress: „604050 1500mAh 3.7V MX1.25” sau „604050 lipo” | **≈ 30–45 lei** |
 | 3 | **Difuzor** | „2030 cavity speaker”, **8 Ω, 1 W**, cutie de 20 × 30 × ~5 mm, cu fire | AliExpress: „2030 speaker 8ohm 1W” · eMAG: „difuzor 8 ohm 1W 2030” | **≈ 8–15 lei** |
 | 4 | **Amplificator I2S** | **MAX98357A** (modul de 3 W, clasa D) | [Optimus Digital (Adafruit)](https://www.optimusdigital.ro/ro/audio-amplificatoare-audio/1656-modul-cu-amplificator-adafruit-i2s-de-3-w-in-clasa-d-max98357a.html) · [ArduShop](https://ardushop.ro/en/modules/1549-max98357-i2s-3w-class-d-amplifier-6427854022967.html) | **≈ 20–45 lei** |
 | 5 | **Microfon I2S** | **INMP441** (modul de 12 × 14 × 3 mm) | [eMAG](https://www.emag.ro/modul-microfon-inmp441-omnidirectional-i2s-24-biti-mems-12-x-14-x-3-mm-negru-s9/pd/D83G1QYBM/) · [ArduShop](https://ardushop.ro/ro/home/2092-omnidirectional-microphone-module-i2s-interface-inmp441-mems-high-precision-low-power-ultra-small-volume-for-esp32.html) | **≈ 15–25 lei** |
@@ -68,7 +68,7 @@ Prețurile sunt orientative, din septembrie 2026. Am folosit 1 € ≈ 5,1 lei �
 | Ce | Detalii | De unde | Preț |
 |---|---|---|---|
 | **Inserții filetate M2** (la cald) | M2 × 3 × Ø3,5. Trebuie **6 / bucată** (4 în carcasa din față și 2 pentru placa de bază) | [eMAG, set 300](https://www.emag.ro/set-300-insertii-filetate-jormftte-m2-m2-5-m3-m4-m5-m6-alama-auriu-mc-1017-017/pd/DFGRH7YBM/) · [massgadgets, 70 × M2](https://massgadgets.com/produs/set-70-insertii-filetate-m2-din-alama/) · [3DPrintX](https://3dprintx.ro/magazin/set-de-insertii-m2-m3-m4-m5/) | 30–60 lei |
-| **Șuruburi M2 inox** | Pe bucată: 2 × **M2×16** (jos, prin spate), 2 × **M2×8** (sus, prin spate), 2 × **M2×6 cu cap înecat DIN 965** (placa de bază). Plus 4 șaibe M2 | „set șuruburi M2 inox” pe eMAG / Dedeman / AliExpress | 30–40 lei |
+| **Șuruburi M2 inox** | Pe bucată: 2 × **M2×16** (jos, prin spate), 2 × **M2×8** (sus, prin spate), 2 × **M2×8 cu cap înecat DIN 965** (placa de bază). Plus 4 șaibe M2 | „set șuruburi M2 inox” pe eMAG / Dedeman / AliExpress | 30–40 lei |
 | **Bandă 3M VHB** (dublu adezivă, 0,5–1 mm) | ține bateria, difuzorul, amplificatorul și microfonul pe șasiu | eMAG / Dedeman: „3M VHB 4910” sau „VHB 5952” | 20–40 lei |
 | **Spumă EVA** 0,5–1 mm (autoadezivă) | 4 buline pe plăcuțele M2, un strat pe spatele bateriei, garnitura difuzorului | papetărie sau hobby, eMAG („foi spumă EVA autoadezive”) | 10–20 lei |
 | **Bandă Kapton** | izolează firele și mufele | eMAG | 15–25 lei |
@@ -262,9 +262,9 @@ Imaginile sunt în `img/`. Planșele tehnice (cote, secțiune, explodat cu list�
 1. Lipești câte o **bulină de spumă EVA de 0,5 mm** pe cele 4 găuri M2 de pe spatele plăcii.
 2. Așezi **șasiul** peste placă. Cei 4 stâlpi cad pe buline, iar cele 4 picioare pe bosajele de pe cusătură.
 3. Pe șasiu lipești cu **VHB**:
-   - **bateria** între cele două șine, cu firele spre dreapta-sus, spre mufa BAT;
-   - **difuzorul** în fereastra lui din stânga-sus, **pe o foaie de spumă EVA de 0,3–0,5 mm** (stă prin fereastră direct peste piesele plăcii), cu **membrana spre capacul din spate**;
-   - **amplificatorul MAX98357A** în fereastra din dreapta-sus, tot pe spumă, **fără pini de header lipiți** (fire direct în găuri);
+   - **bateria** între cele două șine, în partea de jos, cu firele în sus, spre mufa BAT (dreapta-sus);
+   - **difuzorul** în fereastra de deasupra bateriei (centru-stânga), **pe o foaie de spumă EVA de 0,3–0,5 mm** (stă prin fereastră direct peste piesele plăcii), cu **membrana spre capacul din spate**;
+   - **amplificatorul MAX98357A** în fereastra din dreapta, lângă tastele BOOT/RST, tot pe spumă, **fără pini de header lipiți** (fire direct în găuri);
    - **microfonul INMP441** în rama din stânga, **cu gaura de sunet spre marginea din stânga** (acolo e gaura de Ø1 din cusătură).
 4. **Bateria NU se conectează încă.**
 
@@ -291,7 +291,7 @@ Imaginile sunt în `img/`. Planșele tehnice (cote, secțiune, explodat cu list�
 3. Conectezi **bateria** în mufa BAT, **după ce ai verificat polaritatea** (A1).
 4. Pui carcasa din spate. Limba de pe cusătură intră în ea.
 5. Strângi **2 × M2×16** (jos) și **2 × M2×8** (sus) din spate, până simți rezistență. **Nu forța**, altfel inserția se rupe din plastic.
-6. **Placa de bază:** mufa USB-C mamă stă în clemă, cu gura în gaura din spate. Așezi placa de bază, prinzi 2 × **M2×6 cu cap înecat** din talpă și lipești, dacă vrei, magneții de Ø6.
+6. **Placa de bază:** mufa USB-C mamă stă în clemă, cu gura în gaura din spate. Așezi placa de bază, prinzi 2 × **M2×8 cu cap înecat** din talpă și lipești, dacă vrei, magneții de Ø6.
 
 ### E7. Firmware-ul, ~20 min prima dată
 
@@ -324,7 +324,7 @@ Imaginile sunt în `img/`. Planșele tehnice (cote, secțiune, explodat cu list�
 
 - **Nu înțepa, nu îndoi și nu strivi bateria.** În model are 0,7–1 mm de spațiu liber. Dacă nu intră ușor, **nu o forța**: verifici dimensiunea reală cu șublerul.
 - **Nu lipi cu letconul pe baterie.** Folosești doar mufa.
-- Prima încărcare o faci supravegheat, pe o suprafață neinflamabilă (farfurie ceramică). Placa ETA6098 încarcă cu curentul setat de R7 (vezi `firmware/README.md`). O celulă de 2000 mAh suportă ~1 A.
+- Prima încărcare o faci supravegheat, pe o suprafață neinflamabilă (farfurie ceramică). Placa ETA6098 încarcă cu curentul setat de R7 (vezi `firmware/README.md`). O celulă de 1500 mAh suportă ~0,75 A (0,5 C).
 - Dacă bateria se **umflă**, miroase dulceag sau se încinge: o scoți, o pui afară pe o suprafață de piatră sau metal și o duci la reciclare (magazinele de electronice au cutii). **Nu o arunci la gunoi.**
 - Nu lași SOUL la încărcat peste noapte până nu ai verificat de câteva ori că rămâne rece.
 - Nu îl lași la soare sau în mașină vara (> 45 °C).

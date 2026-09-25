@@ -70,9 +70,9 @@ BATCONN = (22.0, 18.0)                                                      # MX
 PLUG_DD = 13.0                                                              # mated plug + wires keep-out
 
 # ============================================================================ bought parts inside (board frame)
-BAT = dict(name='LiPo 605060 (6 x 50 x 60, ~2000 mAh, PCM, MX1.25)', W=50.5, L=61.0, T=6.3, bx=-1.2, by=-20.0)
-SPK = dict(name='speaker 2030 cavity 8 ohm 1 W', a=30.0, b=20.0, t=5.2, bx=-20.0, by=24.0)
-AMP = dict(name='MAX98357A I2S amp breakout', a=18.0, b=20.0, t=3.6, bx=12.0, by=32.5)
+BAT = dict(name='LiPo 604050 (6 x 40 x 50, ~1500 mAh, PCM, MX1.25)', W=40.5, L=50.5, T=6.3, bx=0.0, by=-27.0)
+SPK = dict(name='speaker 2030 cavity 8 ohm 1 W', a=30.0, b=20.0, t=5.2, bx=-11.0, by=8.5)
+AMP = dict(name='MAX98357A I2S amp breakout (no header pins)', a=18.0, b=20.0, t=2.8, bx=31.0, by=2.0)
 MIC = dict(name='INMP441 I2S mic breakout', a=14.0, b=14.0, t=3.4, bx=-34.0, by=-1.0)
 PLATE_DD = (10.0, 11.4)                 # chassis plate behind the tallest board parts
 SINK = PLATE_DD[1] + 0.3 - (COMP_D + 0.3)   # speaker + amp drop through plate windows onto foam: 1.4 mm
@@ -403,7 +403,7 @@ def build(vname):
         'lens': bf.cyl(LENS_R, 0.0, LENS_T),
         'lcd': bf.cyl(LCD_R, LENS_T, LCD_D),
         'pcb': bf.cyl(PCB_R, LCD_D, PCB_D),
-        'pcb_tab': bf.box(-20.4, 20.4, -44.0, -33.0, LENS_T, PCB_D).intersect(bf.cyl(46.5, 0, 20)),
+        'pcb_tab': bf.box(-20.4, 20.4, -44.0, -33.0, LENS_T, PCB_D).intersect(bf.cyl(45.3, 0, 20)),
         'components': bf.cyl(COMP_R, PCB_D, COMP_D),
         'bat_conn': bf.box(BATCONN[0] - 3.8, BATCONN[0] + 3.8, BATCONN[1] - 2.1, BATCONN[1] + 2.1, PCB_D, 10.5),
         'bat_plug': bf.box(BATCONN[0] - 4.8, BATCONN[0] + 4.8, BATCONN[1] - 3.0, BATCONN[1] + 3.0, 10.5, PLUG_DD),
@@ -469,7 +469,7 @@ def build(vname):
     r_ap = LENS_R - V['lip_over']
     pocket = bf.cyl(LENS_R + tol, V['lip_t'] - dg, LENS_T + 0.5).fuse(
         bf.cyl(LCD_R + tol + 0.3, LENS_T + 0.2, PCB_D + 0.5),
-        bf.box(-21, 21, -45, -30, LENS_T + 0.2, PCB_D + 0.5).intersect(bf.cyl(47.0, 0, 20)))
+        bf.box(-21, 21, -45, -30, LENS_T + 0.2, PCB_D + 0.5).intersect(bf.cyl(45.5, 0, 20)))
     to_shells(pocket)
     sub['front'].append(bf.cyl(r_ap, -dg - 3.0, 1.0))
     ch = V['chamfer']
@@ -577,6 +577,23 @@ def build(vname):
     say(f'  shells assembled ({time.time()-t1:.0f}s); valid: front {front.isValid()} back {back.isValid()} '
         f'base {base_plate.isValid()}; volumes {vol(front):.0f} / {vol(back):.0f} / {vol(base_plate):.0f}')
 
+    t1 = time.time()
+    chassis = make_chassis(V, bf, screw_info, board, battery, speaker, amp, mic, usb_plug, sock_body, TONG_OUT)
+    say(f'  chassis ({time.time()-t1:.0f}s), volume {vol(chassis):.0f} mm3, valid {chassis.isValid()}')
+
+    shells = {'front_shell': front, 'back_shell': back, 'base_plate': base_plate, 'chassis': chassis}
+    parts_in = dict(board)
+    parts_in.update(battery=battery, speaker=speaker, amp=amp, mic=mic, usb_plug=usb_plug, usb_socket=sock_body)
+    cdir = os.path.join(HERE, 'cache', 'm_' + vname)
+    os.makedirs(cdir, exist_ok=True)
+    for k, v in list(shells.items()) + list(parts_in.items()):
+        v.exportBrep(os.path.join(cdir, k + '.brep'))
+    json.dump(dict(screws=screw_info, pins={k: dict(L=v['L'], exit=v['exit'], s_exit=v['s_exit']) for k, v in pins.items()}),
+              open(os.path.join(cdir, 'info.json'), 'w'), indent=1)
+    return finish_parts(vname, shells, parts_in, pins, screw_info, bf, log, say, t0)
+
+
+def make_chassis(V, bf, screw_info, board, battery, speaker, amp, mic, usb_plug, sock_body, TONG_OUT):
     # ------------------------------------------------ CHASSIS (printed): plate + posts + rails + pockets + legs
     p0, p1 = PLATE_DD
     ch_add = [bf.cyl(44.0, p0, p1).fuse(bf.box(-BAT['W'] / 2 - 2.0, BAT['W'] / 2 + 2.0,
@@ -617,18 +634,7 @@ def build(vname):
     chassis = chassis.cut(bf.box(BATCONN[0] - 7, BATCONN[0] + 7, BATCONN[1] - 5, BATCONN[1] + 5, p0 - 1, p1 + 1)).clean()
     for D in (SPK, AMP):
         chassis = chassis.cut(item_window(bf, D)).clean()
-    say(f'  chassis ({time.time()-t1:.0f}s), volume {vol(chassis):.0f} mm3, valid {chassis.isValid()}')
-
-    shells = {'front_shell': front, 'back_shell': back, 'base_plate': base_plate, 'chassis': chassis}
-    parts_in = dict(board)
-    parts_in.update(battery=battery, speaker=speaker, amp=amp, mic=mic, usb_plug=usb_plug, usb_socket=sock_body)
-    cdir = os.path.join(HERE, 'cache', 'm_' + vname)
-    os.makedirs(cdir, exist_ok=True)
-    for k, v in list(shells.items()) + list(parts_in.items()):
-        v.exportBrep(os.path.join(cdir, k + '.brep'))
-    json.dump(dict(screws=screw_info, pins={k: dict(L=v['L'], exit=v['exit'], s_exit=v['s_exit']) for k, v in pins.items()}),
-              open(os.path.join(cdir, 'info.json'), 'w'), indent=1)
-    return finish_parts(vname, shells, parts_in, pins, screw_info, bf, log, say, t0)
+    return chassis
 
 
 def finish_parts(vname, shells, parts_in, pins, screw_info, bf, log, say, t0):
@@ -849,8 +855,67 @@ def postfix(vname):
     ch.exportBrep(os.path.join(cdir, 'chassis.brep'))
 
 
+def rechassis(vname):
+    """rebuild only the chassis + the bought parts (layout change) on the cached shells, then cut the shells out"""
+    V = VARIANTS[vname]
+    bf = BoardFrame(V['lip_t'])
+    cdir = os.path.join(HERE, 'cache', 'm_' + vname)
+    ld = lambda n: cq.Shape.importBrep(os.path.join(cdir, n + '.brep'))  # noqa: E731
+    info = json.load(open(os.path.join(cdir, 'info.json')))
+    names = ['lens', 'lcd', 'pcb', 'pcb_tab', 'components', 'bat_conn', 'bat_plug', 'switch', 'key_boot', 'key_rst',
+             'usb_r', 'usb_l']
+    board = {n: ld(n) for n in names}
+    d_in = PLATE_DD[1] + 0.3
+
+    def flat(D):
+        a, b = D.get('W', D.get('a')), D.get('L', D.get('b'))
+        return bf.box(D['bx'] - a / 2, D['bx'] + a / 2, D['by'] - b / 2, D['by'] + b / 2, d_in, d_in + D['T' if 'T' in D else 't'])
+    battery, mic = flat(BAT), flat(MIC)
+    speaker = flat(SPK).translate(vec(-SINK * g.INW))
+    amp = flat(AMP).translate(vec(-SINK * g.INW))
+    TONG_OUT = eroded_solid(V['wall'] + V['tol'])
+    t0 = time.time()
+    ch = make_chassis(V, bf, info['screws'], board, battery, speaker, amp, mic, ld('usb_plug'), ld('usb_socket'), TONG_OUT)
+    print(f'  chassis {vol(ch):.0f} mm3 ({time.time()-t0:.0f}s)', flush=True)
+    for n in ('back_shell', 'front_shell', 'base_plate'):
+        r = ch.cut(ld(n)).clean()
+        if r.isValid() and vol(r) > 0.8 * vol(ch):
+            ch = r
+        print(f'  chassis minus {n}: {vol(ch):.0f} mm3 ({time.time()-t0:.0f}s)', flush=True)
+    ch.exportBrep(os.path.join(cdir, 'chassis.brep'))
+    for n, sh in (('battery', battery), ('speaker', speaker), ('amp', amp), ('mic', mic)):
+        sh.exportBrep(os.path.join(cdir, n + '.brep'))
+
+
+def patch_front(vname):
+    """close the two small holes the FPC-tab pocket punched through the rolled front below the lens: re-add shell
+    material outside r 45.5 in that sector, and clip the tab keep-out to r 45.3 (the tab lies inside Ø91)"""
+    V = VARIANTS[vname]
+    bf = BoardFrame(V['lip_t'])
+    cdir = os.path.join(HERE, 'cache', 'm_' + vname)
+    ld = lambda n: cq.Shape.importBrep(os.path.join(cdir, n + '.brep'))  # noqa: E731
+    OUTER = outer_solid()
+    INNER = eroded_solid(V['wall'])
+    sector = bf.box(-22, 22, -50, -28, LENS_T + 0.55, PCB_D + 0.6).cut(bf.cyl(45.5, 0, 20))
+    patch = OUTER.intersect(sector).cut(INNER).intersect(half_prism(-1))
+    F = ld('front_shell')
+    r = F.fuse(patch).clean()
+    print(f'  patch {vol(patch):.1f} mm3 -> front {vol(F):.0f} -> {vol(r):.0f}, valid {r.isValid()}', flush=True)
+    if r.isValid():
+        r.exportBrep(os.path.join(cdir, 'front_shell.brep'))
+    ld('pcb_tab').intersect(bf.cyl(45.3, 0, 20)).exportBrep(os.path.join(cdir, 'pcb_tab.brep'))
+
+
 def main():
     a = sys.argv[1:]
+    if a and a[0] == 'patch':
+        for vn in a[1:]:
+            patch_front(vn)
+        return
+    if a and a[0] == 'rechassis':
+        for vn in a[1:]:
+            rechassis(vn)
+        return
     if a and a[0] == 'postfix':
         for vn in a[1:]:
             postfix(vn)

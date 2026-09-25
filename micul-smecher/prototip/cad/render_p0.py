@@ -144,7 +144,7 @@ def eyes(offset=Vector((0, 0, 0)), night=False):
         for k in range(96):
             a = 2 * math.pi * k / 96
             x, y = rx * math.cos(a), ry * math.sin(a)
-            ycut = 0.55 * ry + sx * 0.42 * x             # brow: lower on the inner side
+            ycut = 0.62 * ry + sx * 0.24 * x             # brow: lower on the inner side
             pts.append((x, min(y, ycut)))
         c = base + xax * (sx * 0.0130) - UP * 0.0012
         me = bpy.data.meshes.new('eye')
