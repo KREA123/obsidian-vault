@@ -18,6 +18,8 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+sys.dont_write_bytecode = True
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans-ExtraLight.ttf'
 FONT_R = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'

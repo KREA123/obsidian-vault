@@ -60,16 +60,25 @@ plus cadrul opțional F. Alternativele PIATRA și MĂRGĂRITAR nu sunt în acest
   L-am oglindit la (+95, +120), rotit −20°, ca să rămână estompat în fundal, în spate-dreapta.
 - **Sclipirea:** parametrii `screen_highlight` (11° / 8,5°) erau pentru sticla bombată din v4 și nu ating o sticlă
   plată. Aici banda e pusă geometric (prin imaginea în oglindă a camerei), ca o singură diagonală sus-stânga,
-  departe de ochi (~4–6 % din sticlă). Cu light linking, fiecare bandă se vede doar în sticla ei.
+  departe de ochi (2,7 % din sticlă geometric). Cu light linking, fiecare bandă se vede doar în sticla ei. În palmă,
+  unde sticla e privită de sus, sclipirea e o bandă moale pe marginea de sus.
 - **Sticla neagră:** pe lângă `protect_screens` și `flag` am pus un carton negru, văzut doar în reflexii, exact unde se
   oglindește sticla (necesar în palmă și în cadrele de sus). În nopți și în familie, bloom-ul din post e 0,03, ca
   halo-ul ochilor să nu gri-eze sticla.
 - **Capacul OU:** cu Transmission 0,9, Blender 4.0 (fără difuzie mătuită multiplă) îl face să arate ca sticlă fumurie.
-  Folosesc 0,4 ziua și 0,6 noaptea, plus un volum lăptos, ca să arate a PC mătuit perlat.
+  Folosesc 0,4 ziua (0,15 în hero, unde oul e estompat în fundal) și 0,6 noaptea, plus un volum lăptos, ca să arate a PC
+  mătuit perlat.
+- **Felinarul (6b):** SOUL umple aproape tot capacul, așa că lumina benzii din spate nu ajunge la fața capacului.
+  Peretele mătuit e redat ca ghid de lumină luminat pe margine: o strălucire caldă de 2200 K, maximă la linia-halo și
+  care se stinge spre creștet. Vine din ou, nu de la SOUL.
 - **LED-urile OU:** valorile briefului (bandă 1,6 / 4, fantă 1,5, halo 6) sunt relative. La scara de 1 mm le-am
   înmulțit (×40 noaptea, ×6 ziua), ca să lumineze nucul și capacul cum cere brieful. Fereastra de noapte e mutată în
   fața peretelui camerei; la 2,5 m în spatele lui nu ajungea.
-- **Căptușeala ember** e satinată (coat 0,12): cu coat 1,0 / 0,10 devenea somon (pastel) sub lumina de studio.
+- **Căptușeala ember** e satinată (coat 0,12): cu coat 1,0 / 0,10 devenea somon (pastel) sub lumina de studio. În hero,
+  unde e estompată și foarte luminată, tot iese spre corai. **Bucla țesută** e cu o nuanță mai închisă (#C24A20), ca
+  panglica mată luminată direct să se citească tot ember.
+- **Moneda de sub talpă** iese 0,16 mm din suprafața de sprijin, în loc să fie la nivel, ca pad-urile retrase 0,15 să
+  nu fie ascunse de fața corpului. Rămâne în interiorul inelului TPU de 0,2 mm, deci nu atinge masa.
 - **LAPIS** e închis puțin (#132B6E → #1F3F95): rampa din brief ieșea la L* ≈ 40 pe partea luminată, iar ținta
   briefului e ≈ 30.
 - **Familia:** cu 70 mm, cele cinci corpuri (371 mm) nu încap de la 660 mm; am folosit 58 mm, din aceeași poziție.
@@ -86,9 +95,22 @@ plus cadrul opțional F. Alternativele PIATRA și MĂRGĂRITAR nu sunt în acest
 - **Placeholder-e:** numele, adresa și e-mailul producătorului nu sunt stabilite, așa că apar ca [denumire],
   [stradă, nr., oraș] și [e-mail]. Codul QR e doar decor, nu un cod real.
 
-## Verificări (secțiunea 10 a briefului)
+## Verificări (secțiunea 10 a briefului), măsurate pe randări
 
-Vezi „Rezultate” de mai jos; valorile sunt măsurate pe randări cu `src/compose_v5.py` și `src/measure.py`.
+Valorile vin din `src/compose_v5.py` și `src/measure.py`.
+
+| # | Verificare | Rezultat |
+|---|---|---|
+| 1 | Față: doar corp + sticlă; sticla L* < 5 cu o singură sclipire; fără fantă în 1 și 2 | **Da.** `front_00`: sticla are L* median 0,1 și p95 3,1. Hero: median 0,3, p95 4,0. Sclipirea e o singură bandă (2,7 % din sticlă geometric, ~6 % măsurat cu marginile). Fanta e pe +x, deci invizibilă din −x și din față. |
+| 2 | Proporții pe randarea din față | Centrul sticlei e la **54,3 %** (țintă 54–56), linia ochilor la **52,2 %** (50–52, la limită), sticla are **51,4 %** din față (~52), iar capătul lat e în sus cu **+4,5 %** (~+5). |
+| 3 | Talpa | Ton pe ton în hero, față și familie; ember apare doar în 2b. **Banda ember măsurată:** la nivelul mesei 2,15 mm la centru, 2,15 / 2,28 mm la x ±20 și ~51 mm lățime (09 §3.2: 1,7–2,4 × ~50). La 9°: 0,5 mm la centru și 0,8 mm la x ±20 (09 §3.2: 0,8–0,9). |
+| 4 | Lumina | SOUL emite doar prin ochi. Noaptea, fața rămâne neluminată; oul luminează capacul, căptușeala și nucul. |
+| 5 | Materiale și etichete | Fără pasteluri pe corpuri, fără buclă pe SOUL, ochi crem ziua și chihlimbar doar noaptea. Perla are L* 91 pe flancul luminat (țintă 90–93), iar LAPIS L* ≈ 31 (țintă ≈ 30). Toate fișierele sunt „randare / concept (CGI)”. |
+| 6 | Buget | 4 nuclee CPU, 128 spp (noaptea 192). Majoritatea cadrelor durează 5–9 min, nopțile 10–11 min, iar hero-ul (2000 × 2000) ~16 min. |
+
+**Geometrie** (`python3 src/soul_geo.py`): marginea tălpii e la 1,72 în față, 1,52 în spate și 6,84 pe axele ±x
+(brief: 1,7 / 1,5 / 6,8 ± 0,5). Talpa are 46,5 × 24,2 în plan (≈ 46 × 24,5), suprafața de sprijin 13,80 × 12,73,
+lățimea maximă 63,0 la 54,7 %, iar adâncimea maximă 27,12 (20,0 la centrul sticlei și 14,6 la z 60).
 
 ## Cum se re-randează
 
@@ -106,8 +128,8 @@ python3 compose_v5.py shadow20 - ..  # testul siluetei la 20 px
 
 - `src/soul_geo.py` e geometria pură (numpy) a corpului: loft-ul din tabele, intersectat analitic cu elipsoidul tălpii,
   coloană cu coloană, apoi racordarea R1,5.
-- `src/soul_v5.py` e scena: materialele din §7, corpul cu locașul sticlei, fanta și găurile (Boolean exact, salvate în
-  `src/tex/cache/`), OU (profil de super-revoluție, capac și cupă cu pereți de 2,2 mm, căptușeala analitică cu soclul),
+- `src/soul_v5.py` e scena: materialele din §7, corpul cu locașul sticlei, fanta și găurile (Boolean exact, salvate
+  într-un cache în afara seifului, `/tmp/soul_v5_cache`, și refăcute automat în ~2 min), OU (profil de super-revoluție, capac și cupă cu pereți de 2,2 mm, căptușeala analitică cu soclul),
   COCON, manșonul, cofrajul, cartonașele și cadrele. Încarcă `concepts.py`, care încarcă `soul_scene.py`, ca la v4.
 - `src/eyes.py` are variantele de ochi v5 (`soul_front`, `soul_smug`, `soul_wide`, `soul_left`, `soul_closed`,
   `soul_dizzy` cu `split`). `src/textures_v5.py` face gravura tălpii, fețele manșonului, sigiliul și cartonașele.

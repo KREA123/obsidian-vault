@@ -19,7 +19,7 @@ sys.path.insert(0, _HERE)
 import soul_geo as SG  # noqa: E402
 from mathutils import Matrix  # noqa: E402
 
-CACHE = os.path.join(TEX, 'cache')
+CACHE = os.environ.get('SOUL_V5_CACHE', '/tmp/soul_v5_cache')     # applied booleans (rebuilt automatically, ~2 min)
 os.makedirs(CACHE, exist_ok=True)
 NU_BODY = 384
 N_SHELL = 360
@@ -580,7 +580,7 @@ def mat_ou_lid(name, outer=True, dark=False, night=False, glow=0.0):
     set_in(p, 'Roughness', 0.05 if outer else 0.45)
     vs = nt.nodes.new('ShaderNodeVolumeScatter')
     vs.inputs['Color'].default_value = (0.985, 0.975, 0.96, 1) if not dark else srgb(base)
-    vs.inputs['Density'].default_value = TUNE.get('lid_dens', 700.0 if night else 320.0)
+    vs.inputs['Density'].default_value = TUNE.get('lid_dens', 700.0 if glow > 0 else 320.0)
     vs.inputs['Anisotropy'].default_value = 0.0
     va = nt.nodes.new('ShaderNodeVolumeAbsorption')
     va.inputs['Color'].default_value = (1.0, 0.95, 0.88, 1) if not dark else (0.5, 0.5, 0.52, 1)
@@ -998,11 +998,13 @@ def bottom_details(tag):
     obs = []
     ea, eb = 6.0, 5.45
     pads = [circle(0.9, 48)] + [arc_pad(4.0, 1.2, R(a), R(60)) for a in (0, 90, 180, 270)]
-    coin = extrude_loops(tag + '_coin', [ellipse(ea, eb, 160)] + pads, -0.003, 1.0)
+    # the body's land face sits at z 0, so the coin face is 0.16 proud (inside the 0.2 TPU ring) and the pads,
+    # recessed 0.15 in the coin, face the table just in front of the land
+    coin = extrude_loops(tag + '_coin', [ellipse(ea, eb, 160)] + pads, -0.16, 1.0)
     assign(coin, mat_simple('fr4', '#121212', 0.55, spec=0.4))
     obs.append(coin)
     for i, pl in enumerate(pads):
-        pd = extrude_loops(tag + '_pad%d' % i, [pl], 0.15, 0.6)
+        pd = extrude_loops(tag + '_pad%d' % i, [pl], -0.012, 0.6)
         assign(pd, mat_simple('gold', '#E3C07A', 0.18, metal=1.0))
         obs.append(pd)
     ring = extrude_loops(tag + '_tpu', [ellipse(6.8, 6.25, 160), ellipse(6.0, 5.45, 160)], -LAND_Z, 0.3)
