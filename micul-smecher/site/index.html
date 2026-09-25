@@ -206,6 +206,25 @@ button,input,select{font:inherit;color:inherit}
 .privacy svg{flex:none;margin-top:2px}
 .privacy p{font-weight:500}
 
+/* soulos */
+.os-shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2vw,24px)}
+.os-shot{display:block;width:100%;height:auto;border-radius:28px;background:#DDE0DA;box-shadow:var(--shadow)}
+.os-shots .cap{padding-inline:2px}
+@media (max-width:900px){.os-shots{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.os-shot{border-radius:20px}.os-shots .cap .kind{display:none}}
+.os-feats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:clamp(18px,3vw,40px);margin-top:clamp(40px,6vw,64px)}
+.os-feats li{display:grid;gap:6px;align-content:start;padding-block:18px 22px;border-top:1px solid var(--line-strong)}
+.os-feats b{font:600 1.12rem/1.2 var(--f-display)}
+.os-feats span{color:var(--muted);font-size:.95rem}
+@media (max-width:900px){.os-feats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.os-feats{grid-template-columns:minmax(0,1fr)}}
+.os-cta{display:flex;flex-wrap:wrap;align-items:center;gap:16px 24px;margin-top:clamp(32px,5vw,56px);padding:clamp(22px,3vw,32px);border-radius:30px;background:#0C0D10;color:#F3F0E9;--focus:#FFB347}
+.os-cta p{flex:1 1 280px;color:#A3A7AF;max-width:52ch}
+.btn-os{background:var(--cream);color:#16181D;min-height:58px;padding:0 2em;font-size:1.08rem}
+.btn-os:hover{background:#fff}
+.btn-os::after{content:"→";font-weight:500}
+@media (max-width:520px){.btn-os{width:100%}}
+
 /* claude */
 .claude-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start}
 @media (max-width:860px){.claude-grid{grid-template-columns:minmax(0,1fr)}}
@@ -281,35 +300,29 @@ button,input,select{font:inherit;color:inherit}
 .scene{margin-top:clamp(40px,6vw,72px)}
 .scene .shot,.charter-fig .shot{aspect-ratio:16/9;object-fit:cover}
 .charter-fig{margin-bottom:clamp(32px,5vw,56px)}
-#desk-render{object-position:0% 50%}
+#desk-render{object-position:50% 50%}
 @media (max-width:560px){.shot{border-radius:22px}.scene .shot,.charter-fig .shot{aspect-ratio:4/3}}
 
 /* design */
-.design-top{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,3fr);gap:clamp(16px,2.4vw,28px);align-items:start}
-@media (max-width:760px){.design-top{grid-template-columns:minmax(0,1fr)}}
+.design-top,.design-duo{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,3fr);gap:clamp(16px,2.4vw,28px);align-items:start}
+@media (max-width:760px){.design-top,.design-duo{grid-template-columns:minmax(0,1fr)}}
 .design-row{margin-top:clamp(28px,4vw,48px)}
-.design-stage{border-radius:30px;background:radial-gradient(60% 70% at 50% 40%,var(--card),var(--bg-alt));overflow:hidden;display:grid;place-items:center;min-height:200px}
-.design-stage img{display:block;width:100%;height:auto}
-.fallback{width:100%;display:grid;place-items:center;padding:clamp(28px,5vw,64px) 16px}
-.fallback svg{width:min(100%,520px);height:auto}
 .lineup{border-radius:30px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
 .lineup img{display:block;width:100%;height:auto}
+.finishes{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:18px;padding-inline:4px;font:500 1rem/1.2 var(--f-display)}
+.finishes li{display:inline-flex;align-items:center;gap:9px}
+.fin{width:22px;height:22px;border-radius:50%;background:radial-gradient(90% 90% at 30% 25%,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 80%,#000));box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 .inside{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:clamp(24px,5vw,72px);align-items:center}
-@media (max-width:760px){.inside{grid-template-columns:minmax(0,1fr)}.inside .fig{max-width:340px}}
-.plate{display:block;width:100%;height:auto;border-radius:24px;background:#F8F8F8;border:1px solid var(--line)}
+.inside.ou{grid-template-columns:minmax(0,400px) minmax(0,1fr)}
+@media (max-width:760px){.inside,.inside.ou{grid-template-columns:minmax(0,1fr)}.inside.ou .fig{max-width:400px}}
+.ou-shot{background:#000}
 .inside-copy{display:grid;gap:16px;align-content:start;max-width:560px}
+.inside-copy .lead{font-size:clamp(1.05rem,1.4vw,1.2rem)}
 .layers{display:grid;counter-reset:l;border-top:1px solid var(--line-strong)}
 .layers li{counter-increment:l;display:grid;grid-template-columns:2.2em minmax(0,1fr);column-gap:10px;padding-block:13px;border-bottom:1px solid var(--line)}
 .layers li::before{content:counter(l,decimal-leading-zero);font:500 .8rem/1.6 var(--f-mono);color:var(--muted);grid-row:span 2}
 .layers b{font:600 1.08rem/1.3 var(--f-display)}
 .layers span{color:var(--muted);font-size:.95rem}
-.inside-copy .fine{font-size:.86rem;color:var(--muted)}
-.shapes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,2vw,24px);padding:clamp(20px,3vw,40px) clamp(12px,2vw,32px);align-items:end}
-.shapes figure{display:grid;gap:10px;justify-items:center;text-align:center}
-.shapes svg{width:100%;height:auto;max-width:170px}
-.shapes b{font:600 1.08rem/1.1 var(--f-display)}
-.shapes span{font:400 .76rem/1.3 var(--f-mono);color:var(--muted)}
-@media (max-width:640px){.shapes{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:28px}}
 .specs{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
 .design-note{margin-top:18px;font-size:.88rem;color:var(--muted)}
 
@@ -409,25 +422,6 @@ select.input option{background:#101114;color:#F6F3EC}
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 
-<!-- shared SVG defs for the design fallback -->
-<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
-  <defs>
-    <linearGradient id="frost" gradientUnits="userSpaceOnUse" x1="-40" y1="-90" x2="40" y2="70">
-      <stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#E3E6EA"/><stop offset="1" stop-color="#AEB4BE"/>
-    </linearGradient>
-    <filter id="eyeglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <symbol id="face" viewBox="-34 -34 68 68">
-      <circle r="34" fill="#000"/>
-      <g filter="url(#eyeglow)">
-        <ellipse cx="-12.9" cy="1.4" rx="8.2" ry="12.9" fill="#FFF0C8"/>
-        <ellipse cx="12.9" cy="1.4" rx="8.2" ry="12.9" fill="#FFF0C8"/>
-      </g>
-      <ellipse cx="-11.1" cy="-.2" rx="2.8" ry="5.9" fill="#fff" opacity=".45"/>
-      <ellipse cx="14.7" cy="-.2" rx="2.8" ry="5.9" fill="#fff" opacity=".45"/>
-      <path d="M-23 -7.9 L-3.6 -4.8 L-3.6 -22 L-23 -22 Z M3.6 -4.8 L23 -7.9 L23 -22 L3.6 -22 Z" fill="#000"/>
-    </symbol>
-  </defs>
-</svg>
 
 <header class="nav">
   <div class="wrap">
@@ -593,6 +587,36 @@ select.input option{background:#101114;color:#F6F3EC}
   </div>
 </section>
 
+<!-- SOULOS -->
+<section class="sec" id="soulos" aria-labelledby="os-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-i18n="os.eyebrow">SoulOS</p>
+      <h2 class="h-l" id="os-title" data-i18n="os.h2">A whole little OS. On a circle.</h2>
+      <p class="lead" data-i18n="os.lead">SoulOS is what runs on the stone. You type on it, you write to Claude and Claude does it, and it keeps your notes, reminders and alarms, with or without AI.</p>
+    </div>
+    <ul class="os-shots">
+      <li><figure class="fig"><img class="os-shot" src="media/os-keyboard.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS keyboard on the round screen: the text reads “Mâine și tara” and the suggestion bar offers “țară” with the right diacritics." data-i18n-attr="alt:os.alt1"><figcaption class="cap"><span class="kind" data-i18n="os.kind">SoulOS</span><span data-i18n="os.cap1">A keyboard made for a round screen. English and Romanian, with ă, â, î, ș and ț suggested for you.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-claude.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS after a message to Claude: “Done. I'll tell you at 17:00.” with a confirmation chip “Reminder set for 17:00”." data-i18n-attr="alt:os.alt2"><figcaption class="cap"><span class="kind" data-i18n="os.kind2">SoulOS</span><span data-i18n="os.cap2">Write to Claude and it does it. “Remind me at five” becomes a real reminder.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-modes.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS AI mode picker: No AI, Your Claude, Your ChatGPT (selected) and Your API key." data-i18n-attr="alt:os.alt3"><figcaption class="cap"><span class="kind" data-i18n="os.kind3">SoulOS</span><span data-i18n="os.cap3">AI modes: no AI, your Claude, your ChatGPT or your own API key.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-alarm.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS alarm on a round dial set to 07:00, with a mint confirm button." data-i18n-attr="alt:os.alt4"><figcaption class="cap"><span class="kind" data-i18n="os.kind4">SoulOS</span><span data-i18n="os.cap4">Alarms on a dial. Turn to the hour, tap to set.</span></figcaption></figure></li>
+    </ul>
+    <ul class="os-feats">
+      <li><b data-i18n="os.f1t">Keyboard</b><span data-i18n="os.f1">Round QWERTY in EN and RO, with diacritics, numbers and undo.</span></li>
+      <li><b data-i18n="os.f2t">Write to Claude</b><span data-i18n="os.f2">Ask in plain words. Claude sets the note, reminder or alarm for you.</span></li>
+      <li><b data-i18n="os.f3t">Notes</b><span data-i18n="os.f3">Type a thought. It stays on the stone.</span></li>
+      <li><b data-i18n="os.f4t">Reminders</b><span data-i18n="os.f4">Pick the time on a dial. It looks at you when it's time.</span></li>
+      <li><b data-i18n="os.f5t">Alarms</b><span data-i18n="os.f5">It wakes up first, then wakes you. Gently.</span></li>
+      <li><b data-i18n="os.f6t">Focus</b><span data-i18n="os.f6">A focus timer that keeps you company and keeps quiet.</span></li>
+      <li><b data-i18n="os.f7t">Today</b><span data-i18n="os.f7">Swipe up: the next reminder, Claude and the battery, at a glance.</span></li>
+      <li><b data-i18n="os.f8t">Control Center</b><span data-i18n="os.f8">Brightness, sound, quiet mode and your AI mode, one swipe away.</span></li>
+    </ul>
+    <div class="os-cta">
+      <a class="btn btn-primary btn-os" href="os.html" data-i18n="os.cta">Try SoulOS</a>
+      <p data-i18n="os.ctap">It runs right here in your browser. Type, write to Claude, set an alarm. The same OS as on the stone.</p>
+    </div>
+  </div>
+</section>
 
 <!-- WORKS WITH CLAUDE -->
 <section class="sec alt" id="claude" aria-labelledby="claude-title">
@@ -624,8 +648,8 @@ select.input option{background:#101114;color:#F6F3EC}
       </div>
     </div>
     <figure class="fig scene">
-      <img class="shot" id="desk-render" src="media/render-desk.jpg" srcset="media/render-desk-sm.jpg 800w, media/render-desk.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of a SOUL Coin on a small walnut stand beside an open laptop, its glowing eyes looking up." data-i18n-attr="alt:claude.alt">
-      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="claude.cap">On its stand next to your laptop. While Claude works, you can look away. When Claude needs you, the stone looks at you.</span></figcaption>
+      <img class="shot" id="desk-render" src="media/ou-day.jpg" srcset="media/ou-day-sm.jpg 800w, media/ou-day.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of SOUL standing in its open OU charging egg on a walnut desk, in front of a laptop, its glowing eyes glancing to the side." data-i18n-attr="alt:claude.alt">
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="claude.cap">In its open egg next to your laptop. While Claude works, you can look away. When Claude needs you, the stone looks at you.</span></figcaption>
     </figure>
   </div>
 </section>
@@ -681,80 +705,67 @@ select.input option{background:#101114;color:#F6F3EC}
   </div>
 </section>
 
-<!-- DESIGN (renders slot) -->
+<!-- DESIGN (renders) -->
 <section class="sec alt" id="design" aria-labelledby="design-title">
   <div class="wrap">
     <div class="sec-head">
       <p class="eyebrow" data-i18n="design.eyebrow">Design</p>
       <h2 class="h-l" id="design-title" data-i18n="design.h2">A little stone of light.</h2>
-      <p class="lead" data-i18n="design.lead">A round AMOLED screen, 466 × 466 pixels, inside a frosted shell. Wear it on your bag or keep it on your desk. Four shapes. One soul.</p>
+      <p class="lead" data-i18n="design.lead">An upright pebble of bead-blasted, anodised aluminium. The front is only black glass and two living eyes. No logo, no buttons, no holes.</p>
     </div>
-    <!-- RENDERS: media/render-*.jpg come from ../renders via `python3 ../renders/src/export_web.py`. If the hero or lineup image is missing, the SVG fallback next to it is shown. -->
+    <!-- RENDERS: media/soul-*.jpg from ../renders/v6, media/ou-*.jpg from ../renders/v5 (CGI concept renders, not photos). -->
     <div class="design-top">
       <figure class="fig">
-        <div class="design-stage">
-          <img id="hero-render" src="media/render-hero.jpg" srcset="media/render-hero-sm.jpg 800w, media/render-hero.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 680px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL: a frosted white coin-shaped stone with two glowing cream eyes and a steel split ring." data-i18n-attr="alt:design.alt1" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
-          <div class="fallback" hidden>
-            <svg viewBox="-80 -80 160 150" role="img" aria-label="Coin-shaped SOUL on a dome desk stand">
-              <ellipse cx="0" cy="66" rx="58" ry="4" fill="#000" opacity=".12"/>
-              <path d="M-44 66 A44 38 0 0 1 44 66 Z" fill="#EDE7DA" stroke="rgba(22,24,29,.14)"/>
-              <circle cx="0" cy="-4" r="54" fill="url(#frost)" stroke="rgba(22,24,29,.16)"/>
-              <circle cx="0" cy="-4" r="54" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5" transform="translate(-1 -1)"/>
-              <use href="#face" x="-35" y="-39" width="70" height="70"/>
-              <circle cx="0" cy="-61" r="4" fill="none" stroke="#B5BAC3" stroke-width="3"/>
-            </svg>
-          </div>
-        </div>
-        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap1">The Coin in white frost, with a split ring for your keys.</span></figcaption>
+        <img class="shot" id="hero-render" src="media/soul-hero.jpg" srcset="media/soul-hero-sm.jpg 800w, media/soul-hero.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 680px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL in silver aluminium, standing upright: a soft rounded pebble whose front is a round black glass with two glowing cream eyes." data-i18n-attr="alt:design.alt1">
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap1">Silver. It stands on its own, on a small flat foot, and stays put when you tap it.</span></figcaption>
       </figure>
       <figure class="fig">
-        <img class="shot" id="bag-render" src="media/render-bag.jpg" srcset="media/render-bag-sm.jpg 480w, media/render-bag.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 410px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of a sea-green SOUL Drop hanging on a short chain from the handle of a brown leather bag." data-i18n-attr="alt:design.alt3">
-        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap3">The Drop, on a bag handle.</span></figcaption>
+        <img class="shot" id="side-render" src="media/soul-side.jpg" srcset="media/soul-side-sm.jpg 480w, media/soul-side.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 410px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL seen from the side: a slim wedge of silver aluminium with a fine seam around its edge and a thin speaker slit in the seam." data-i18n-attr="alt:design.alt3">
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap3">The speaker is one fine slit in the side seam.</span></figcaption>
       </figure>
     </div>
     <figure class="fig design-row">
       <div class="lineup">
-        <img id="lineup-render" src="media/render-lineup.jpg" srcset="media/render-lineup-sm.jpg 800w, media/render-lineup.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="800" loading="lazy" decoding="async" alt="Concept render of the four SOUL shapes side by side: cloud, coin, cabochon and drop, each with a different eye colour." data-i18n-attr="alt:design.alt2" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
-        <div class="shapes" hidden>
-          <figure>
-            <svg viewBox="-75 -90 150 155" aria-hidden="true"><circle cx="0" cy="13.8" r="46.2" fill="url(#frost)" stroke="rgba(22,24,29,.18)"/><use href="#face" x="-29" y="-15.2" width="58" height="58"/></svg>
-            <figcaption><b data-i18n="design.coin">Coin</b><br><span>57.8 × 57.8 mm</span></figcaption>
-          </figure>
-          <figure>
-            <svg viewBox="-75 -90 150 155" aria-hidden="true"><path d="M0 -78 C10 -60 41 -10 41 19 A41 41 0 1 1 -41 19 C-41 -10 -10 -60 0 -78 Z" fill="url(#frost)" stroke="rgba(22,24,29,.18)"/><use href="#face" x="-29" y="-10" width="58" height="58"/></svg>
-            <figcaption><b data-i18n="design.drop">Drop</b><br><span>51.5 × 86.0 mm</span></figcaption>
-          </figure>
-          <figure>
-            <svg viewBox="-75 -90 150 155" aria-hidden="true"><ellipse cx="0" cy="8.5" rx="40.6" ry="51.5" fill="url(#frost)" stroke="rgba(22,24,29,.18)"/><use href="#face" x="-29" y="-23.5" width="58" height="58"/></svg>
-            <figcaption><b data-i18n="design.gem">Cabochon</b><br><span>50.7 × 64.4 mm</span></figcaption>
-          </figure>
-          <figure>
-            <svg viewBox="-75 -90 150 155" aria-hidden="true"><g fill="url(#frost)" style="filter:drop-shadow(0 0 .6px rgba(22,24,29,.5))"><circle cx="-40" cy="30" r="30"/><circle cx="40" cy="30" r="30"/><circle cx="-16" cy="8" r="36"/><circle cx="14" cy="-3" r="38"/><rect x="-40" y="20" width="80" height="40"/></g><use href="#face" x="-29" y="-15" width="58" height="58"/></svg>
-            <figcaption><b data-i18n="design.cloud">Cloud</b><br><span>87.6 × 63.0 mm</span></figcaption>
-          </figure>
-        </div>
+        <img id="lineup-render" src="media/soul-family.jpg" srcset="media/soul-family-sm.jpg 800w, media/soul-family.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of five SOULs in a row, in anodised Graphite, Ember, Silver, Midnight and Champagne aluminium, each with glowing eyes." data-i18n-attr="alt:design.alt2">
       </div>
-      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap2">Cloud, Coin, Cabochon, Drop. The eyes here are Cream, Lilac, Ice and Peach.</span></figcaption>
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap2">Five anodised colours. From left: Graphite, Ember, Silver, Midnight, Champagne.</span></figcaption>
     </figure>
-    <div class="inside design-row">
+    <ul class="finishes" aria-label="Colours" data-i18n-attr="aria-label:design.colours">
+      <li><span class="fin" style="--c:#CBCDCF"></span><span data-i18n="c.silver">Silver</span></li>
+      <li><span class="fin" style="--c:#55575B"></span><span data-i18n="c.graphite">Graphite</span></li>
+      <li><span class="fin" style="--c:#26324C"></span><span data-i18n="c.midnight">Midnight</span></li>
+      <li><span class="fin" style="--c:#D2622C"></span><span data-i18n="c.ember">Ember</span></li>
+      <li><span class="fin" style="--c:#D8C3A2"></span><span data-i18n="c.champagne">Champagne</span></li>
+    </ul>
+    <div class="design-duo design-row">
       <figure class="fig">
-        <img class="plate" id="inside-render" src="media/render-inside.jpg" srcset="media/render-inside-sm.jpg 469w, media/render-inside.jpg 938w" sizes="340px" width="938" height="1172" loading="lazy" decoding="async" alt="Exploded CAD view of the 1.43-inch Coin: clear dome lens, frosted shell, round AMOLED board and back cover." data-i18n-attr="alt:design.alt4">
-        <figcaption class="cap"><span class="kind">CAD</span><span data-i18n="design.cap4">1.43″ Coin, taken apart.</span></figcaption>
+        <img class="shot" id="macro-render" src="media/soul-macro.jpg" srcset="media/soul-macro-sm.jpg 800w, media/soul-macro.jpg 1600w" sizes="(max-width:760px) calc(100vw - 32px), 640px" width="1600" height="1200" loading="lazy" decoding="async" alt="Concept render, close-up: the fine grain of bead-blasted aluminium and a polished chamfer where the metal meets the black glass." data-i18n-attr="alt:design.alt4">
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap4">A machined chamfer draws one thin line of light where the metal meets the glass.</span></figcaption>
+      </figure>
+      <figure class="fig">
+        <img class="shot" id="back-render" src="media/soul-back.jpg" srcset="media/soul-back-sm.jpg 480w, media/soul-back.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 440px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render of the back of SOUL: a smooth, clean dome of silver aluminium with no text and no screws." data-i18n-attr="alt:design.alt5">
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap5">The back is a clean dome. No text, no screws.</span></figcaption>
+      </figure>
+    </div>
+    <div class="inside ou design-row">
+      <figure class="fig">
+        <img class="shot ou-shot" id="ou-night-render" src="media/ou-night.jpg" srcset="media/ou-night-sm.jpg 480w, media/ou-night.jpg 960w" sizes="(max-width:760px) calc(100vw - 32px), 400px" width="960" height="1200" loading="lazy" decoding="async" alt="Concept render at night: SOUL resting in its open OU egg on a bedside table, sleepy amber eyes, lit only by a warm glow from the egg." data-i18n-attr="alt:design.alt6">
+        <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="design.cap6">In OU at night, lid open.</span></figcaption>
       </figure>
       <div class="inside-copy">
-        <p class="eyebrow" data-i18n="in.eyebrow">Inside</p>
-        <h3 class="h-m" data-i18n="in.h">Opens with three screws. No glue.</h3>
+        <p class="eyebrow" data-i18n="in.eyebrow">OU · its charging egg</p>
+        <h3 class="h-m" data-i18n="in.h">At night it sleeps in its egg.</h3>
+        <p class="lead" data-i18n="in.lead">Closing the lid cuts the microphone in hardware. Not muted by software: disconnected.</p>
         <ol class="layers">
-          <li><b data-i18n="in.l1b">Dome lens</b><span data-i18n="in.l1">Optional. Clear, over the screen glass.</span></li>
-          <li><b data-i18n="in.l2b">Frosted shell</b><span data-i18n="in.l2">Holds the glass. The key-ring cap sits on top.</span></li>
-          <li><b data-i18n="in.l3b">Round AMOLED board</b><span data-i18n="in.l3">1.43″, 466 × 466 pixels, ESP32-S3 on the back.</span></li>
-          <li><b data-i18n="in.l4b">Back cover</b><span data-i18n="in.l4">Three M2 screws into threaded inserts, so it can be opened and repaired.</span></li>
+          <li><b data-i18n="in.l1b">Charges from the bottom</b><span data-i18n="in.l1">Five gold contacts in its foot. Set it in OU and it charges. No cable to plug in.</span></li>
+          <li><b data-i18n="in.l2b">A night-light, never in your face</b><span data-i18n="in.l2">The warm glow comes from the egg, not from the screen.</span></li>
+          <li><b data-i18n="in.l3b">Lid closed, microphone off</b><span data-i18n="in.l3">A hardware switch disconnects the microphone when the lid shuts. Lid closed means it cannot hear.</span></li>
+          <li><b data-i18n="in.l4b">Opens with two screws</b><span data-i18n="in.l4">Two Torx screws in the foot, so it can be opened and repaired.</span></li>
         </ol>
-        <p class="fine" data-i18n="in.fine">Founders Desk build: USB-C power, no battery, 57.8 × 57.8 × 17.0 mm without the lens. From the enclosure CAD, measured against Waveshare's 3D files of the board.</p>
       </div>
     </div>
-    <div class="specs"><span class="tag">1.43″ / 1.75″ AMOLED</span><span class="tag">466 × 466 px</span><span class="tag">ESP32-S3</span><span class="tag">USB-C</span><span class="tag" data-i18n="design.depth">From 17 mm thin</span></div>
-    <p class="design-note" data-i18n="design.note">Concept renders, not photos. Final materials and finishes may change before production.</p>
+    <div class="specs"><span class="tag" data-i18n="design.s1">1.75″ round AMOLED</span><span class="tag">466 × 466 px</span><span class="tag" data-i18n="design.s2">Anodised aluminium 6061</span><span class="tag">63 × 72 × 27 mm</span><span class="tag">ESP32-S3</span><span class="tag">Bluetooth LE · Wi-Fi</span><span class="tag" data-i18n="design.s3">Charges in OU</span></div>
+    <p class="design-note" data-i18n="design.note">Concept renders, not photos. Final materials, colours and finishes may change before production.</p>
   </div>
 </section>
 
@@ -766,8 +777,8 @@ select.input option{background:#101114;color:#F6F3EC}
       <h2 class="h-l" id="charter-title" data-i18n="charter.h2">Our promises, in writing.</h2>
     </div>
     <figure class="fig charter-fig">
-      <img class="shot" id="night-render" src="media/render-night.jpg" srcset="media/render-night-sm.jpg 800w, media/render-night.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render of a SOUL Coin glowing warm amber on a dark bedside table at night." data-i18n-attr="alt:charter.alt">
-      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="charter.cap">By the bed at night it is a warm night-light. It has no camera, and it never listens unless your finger is on it.</span></figcaption>
+      <img class="shot" id="night-render" src="media/ou-closed-wide.jpg" srcset="media/ou-closed-wide-sm.jpg 800w, media/ou-closed-wide.jpg 1600w" sizes="(max-width:1200px) calc(100vw - 32px), 1104px" width="1600" height="900" loading="lazy" decoding="async" alt="Concept render at night: the OU egg with its frosted lid closed, glowing warm amber like a small lantern on a dark bedside table." data-i18n-attr="alt:charter.alt">
+      <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="charter.cap">By the bed at night, its egg is a warm night-light. With the lid closed, the microphone is cut in hardware. It has no camera, and it never listens unless your finger is on it.</span></figcaption>
     </figure>
     <ul class="charter">
       <li><h3 data-i18n="ch1t">It always says it's an AI.</h3><p data-i18n="ch1p">It never pretends to be a person.</p></li>
@@ -792,44 +803,43 @@ select.input option{background:#101114;color:#F6F3EC}
     </div>
     <div class="eds">
       <article class="ed feature" aria-labelledby="ed-f">
-        <div class="ed-top"><span class="tag amber" data-i18n="ed.f.tag">Works with Claude</span><span class="mono" style="font-size:.84rem;color:var(--muted)">Nº <span data-cfg="range">001–300</span></span></div>
-        <h3 id="ed-f">Founders Desk Edition</h3>
-        <p class="desc" data-i18n="ed.f.desc">The USB-powered desk companion. Numbered, and only 300 of them.</p>
-        <div class="price"><span class="big" data-price="founders">€119</span><span class="small" data-i18n="ed.f.small">One-time. No subscription to be alive.</span></div>
+        <div class="ed-top"><span class="tag amber" data-i18n="ed.f.tag">25 numbered · aluminium</span><span class="mono" style="font-size:.84rem;color:var(--muted)">Nº <span data-cfg="range">001–025</span></span></div>
+        <h3 id="ed-f">Founders 00</h3>
+        <p class="desc" data-i18n="ed.f.desc">The first 25 SOULs, in anodised aluminium, each engraved with its own number. Ships only after CE radio testing.</p>
+        <div class="price"><span class="big" data-price="founders">€349</span><span class="small" data-i18n="ed.f.small">One-time. No subscription to be alive. The reservation is fully refundable.</span></div>
         <ul>
-          <li data-i18n="ed.f.l1">1.43″ round AMOLED stone on a desk stand</li>
-          <li data-i18n="ed.f.l2">Works with Claude Code and Claude Cowork on Mac and Windows</li>
-          <li data-i18n="ed.f.l3">All 24 reactions, offline, forever</li>
-          <li data-i18n="ed.f.l4">Your own founder number and a birth certificate in the box</li>
+          <li data-i18n="ed.f.l1">Bead-blasted, anodised aluminium body with a 1.75″ round AMOLED under black glass</li>
+          <li data-i18n="ed.f.l2">OU, its charging egg, in the box</li>
+          <li data-i18n="ed.f.l3">SoulOS, all 24 reactions offline, and works with Claude</li>
+          <li data-i18n="ed.f.l4">Your founder number engraved, and a birth certificate</li>
         </ul>
         <div class="push">
           <a class="btn btn-primary btn-block" href="#reserve" data-edition="founders" data-i18n="ed.f.cta">Reserve a number</a>
-          <p class="ship"><span data-i18n="ed.est">Estimated shipping:</span> <span data-cfg="shipFounders">spring 2027</span></p>
+          <p class="ship"><span data-i18n="ed.est">Ships after CE radio testing. Estimated:</span> <span data-cfg="shipFounders">spring 2027</span></p>
         </div>
       </article>
-      <article class="ed" aria-labelledby="ed-v">
-        <div class="ed-top"><span class="tag mint" data-i18n="ed.v.tag">Hold-to-talk AI · in development</span></div>
-        <h3 id="ed-v">Voice Edition</h3>
-        <p class="desc" data-i18n="ed.v.desc">The personal AI you can hold. Runs on a battery and hangs from your bag.</p>
-        <div class="price"><span class="big" data-price="voiceDeposit">€10</span><span class="small"><span data-i18n="ed.v.small">Refundable deposit. Expected price</span> <b data-price="voiceExpected">€149</b>.</span></div>
+      <article class="ed" aria-labelledby="ed-s">
+        <div class="ed-top"><span class="tag mint" data-i18n="ed.s.tag">Later</span></div>
+        <h3 id="ed-s" data-i18n="ed.s.name">Standard</h3>
+        <p class="desc" data-i18n="ed.s.desc">The same SOUL and the same soul, made in larger numbers, without the founder number.</p>
+        <div class="price"><span class="small" data-i18n="ed.s.from">From</span><span class="big" data-price="standardFrom">€249</span><span class="small" data-i18n="ed.s.small">Final price announced before orders open.</span></div>
         <ul>
-          <li data-i18n="ed.v.l1">1.75″ round AMOLED, two microphones and a speaker</li>
-          <li data-i18n="ed.v.l2">Hold to talk with Claude or ChatGPT</li>
-          <li data-i18n="ed.v.l3">Memory, notes, reminders, alarms and a diary of your day</li>
-          <li data-i18n="ed.v.l4"><span data-cfg="months">6</span> months of voice AI included</li>
+          <li data-i18n="ed.s.l1">Aluminium, in the SOUL colours</li>
+          <li data-i18n="ed.s.l2">SoulOS, Claude and ChatGPT, or no AI at all</li>
+          <li data-i18n="ed.s.l3">Charges in OU</li>
         </ul>
         <div class="push">
-          <a class="btn btn-primary btn-block" href="#reserve" data-edition="voice" data-i18n="ed.v.cta">Reserve with a deposit</a>
-          <p class="ship"><span data-i18n="ed.est2">Estimated shipping:</span> <span data-cfg="shipVoice">autumn 2027</span></p>
+          <a class="btn btn-ghost btn-block" href="#reserve" data-edition="standard" data-i18n="ed.s.cta">Join the waitlist</a>
+          <p class="ship"><span data-i18n="ed.est2">Estimated shipping:</span> <span data-cfg="shipStandard">after Founders 00</span></p>
         </div>
       </article>
       <article class="ed" aria-labelledby="ed-l">
         <div class="ed-top"><span class="tag" data-i18n="ed.l.tag">Later</span></div>
         <h3 id="ed-l" data-i18n="ed.l.name">Legendary Editions</h3>
-        <p class="desc" data-i18n="ed.l.desc">Limited-edition shells in tiny numbered runs, for the ones who collect.</p>
+        <p class="desc" data-i18n="ed.l.desc">Limited-edition finishes in tiny numbered runs, for the ones who collect.</p>
         <div class="price"><span class="big">—</span><span class="small" data-i18n="ed.l.small">Price announced with the first run.</span></div>
         <ul>
-          <li data-i18n="ed.l.l1">Special shell materials and finishes</li>
+          <li data-i18n="ed.l.l1">Special materials and finishes</li>
           <li data-i18n="ed.l.l2">Very small, numbered runs</li>
           <li data-i18n="ed.l.l3">Same soul inside</li>
         </ul>
@@ -838,7 +848,7 @@ select.input option{background:#101114;color:#F6F3EC}
         </div>
       </article>
     </div>
-    <p class="vat" data-i18n="ed.vat">Prices include VAT. Nothing is charged on this page: we email you a secure payment link when reservations open.</p>
+    <p class="vat" data-i18n="ed.vat">Prices include VAT. Nothing is charged on this page: when reservations open, we email you a secure link. Founders 00 ships only after CE radio testing, and you can cancel for a full refund at any time before it ships.</p>
   </div>
 </section>
 
@@ -850,16 +860,18 @@ select.input option{background:#101114;color:#F6F3EC}
       <h2 class="h-l" id="faq-title" data-i18n="faq.h2">Good questions.</h2>
     </div>
     <div class="faq">
-      <details><summary data-i18n="q1">When will it ship?</summary><div class="a" data-i18n="a1">Founders Desk Edition: estimated <span data-cfg="shipFounders">spring 2027</span>. Voice Edition: estimated <span data-cfg="shipVoice">autumn 2027</span>. If we're late, you can cancel for a full refund at any time before it ships. After delivery you have the EU 14-day right of withdrawal and a 2-year legal guarantee.</div></details>
-      <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">No. SOUL is alive with no internet and no account, forever. The Voice Edition includes <span data-cfg="months">6</span> months of voice AI. After that, an optional plan keeps the voice features on. Without it, your SOUL stays a full offline companion.</div></details>
-      <details><summary data-i18n="q3">Which AI does it use?</summary><div class="a" data-i18n="a3">None, if you like: SOUL works with no AI and no account. Or connect your own Claude or ChatGPT (in development). For voice: the SOUL voice service (Claude by default) or your own Anthropic or OpenAI API key. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so the stone can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
-      <details><summary data-i18n="q4">Does it need my phone or computer?</summary><div class="a" data-i18n="a4">Not to be alive. To work with Claude, it pairs over Bluetooth with the Claude desktop app on your Mac or Windows PC.</div></details>
-      <details><summary data-i18n="q5">How long does the battery last?</summary><div class="a" data-i18n="a5">The Founders Desk Edition has no battery: it runs on USB-C. The Voice Edition has a small, user-replaceable battery that charges over USB-C. We'll publish measured battery life before we ask for full payment.</div></details>
-      <details><summary data-i18n="q6">Is it a toy?</summary><div class="a" data-i18n="a6">No. SOUL is made for adults and teens 16 and over. It contains small parts and, in the Voice Edition, a lithium battery. Keep it away from young children.</div></details>
-      <details><summary data-i18n="q7">What happens to my voice and my data?</summary><div class="a" data-i18n="a7">It listens only while your finger is on the stone. Voice requests go to servers in the EU and to the AI you chose, and nowhere else. Its memory is a list you can read and delete. No camera, no ads, and we never sell your data.</div></details>
-      <details><summary data-i18n="q8">Can I choose its eye colour?</summary><div class="a" data-i18n="a8">No, and that's the point. Each stone is born with its own colour and personality, decided by its chip. Every colour has the same features: rarity changes only the colour.</div></details>
+      <details><summary data-i18n="q1">When will it ship?</summary><div class="a" data-i18n="a1">Founders 00 ships only after it passes CE radio testing: estimated <span data-cfg="shipFounders">spring 2027</span>. Standard comes <span data-cfg="shipStandard">after Founders 00</span>. If we're late, you can cancel for a full refund at any time before it ships. After delivery you have the EU 14-day right of withdrawal and a 2-year legal guarantee.</div></details>
+      <details><summary data-i18n="q11">Is it CE certified?</summary><div class="a" data-i18n="a11">Not yet, and that's why Founders 00 waits. SOUL has Bluetooth and Wi-Fi, so it must pass CE radio testing (the EU Radio Equipment Directive) at an accredited lab before anyone can sell it. We won't ship a single unit before that. Your reservation stays fully refundable until it ships.</div></details>
+      <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">No. SOUL is alive with no internet and no account, forever. SoulOS, the keyboard, notes, reminders, alarms and focus all work offline. For AI, you connect the Claude or ChatGPT you already have, or your own API key.</div></details>
+      <details><summary data-i18n="q3">Which AI does it use?</summary><div class="a" data-i18n="a3">The one you choose, in its AI modes: no AI at all, your Claude, your ChatGPT, or your own Anthropic or OpenAI API key. You switch from its Control Center. Claude and ChatGPT connections are in development. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so the stone can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
+      <details><summary data-i18n="q7">What happens to my voice and my data?</summary><div class="a" data-i18n="a7">It listens only while your finger is on the stone. Close the lid of its egg, and the microphone is cut in hardware. With no AI, nothing leaves the stone. With AI, your request goes only to the AI you chose. Our own servers are in the EU. Its memory is a list you can read and delete. No camera, no ads, and we never sell your data.</div></details>
+      <details><summary data-i18n="q5">How long does the battery last?</summary><div class="a" data-i18n="a5">SOUL has a small rechargeable lithium battery inside. It charges from the five gold contacts on its bottom: you set it in OU, its egg, and that's it. No cable to plug into the stone. We'll publish measured battery life before we ask for full payment.</div></details>
+      <details><summary data-i18n="q12">What is it made of?</summary><div class="a" data-i18n="a12">A body of aluminium 6061, bead-blasted and anodised, in Silver, Graphite, Midnight, Ember or Champagne. The front is black glass over a 1.75″ round AMOLED screen. Underneath is a matching polymer plate, because metal blocks radio, with a small flat foot and the charging contacts. About 63 × 72 × 27 mm. The Founders 00 bodies are CNC-machined from solid aluminium.</div></details>
+      <details><summary data-i18n="q4">Does it need my phone or computer?</summary><div class="a" data-i18n="a4">Not to be alive, and not to type: it has its own keyboard. To reach your Claude or ChatGPT it uses Wi-Fi. To work with Claude Code and Cowork, it pairs over Bluetooth with the Claude desktop app on your Mac or Windows PC.</div></details>
+      <details><summary data-i18n="q8">Can I choose its eye colour?</summary><div class="a" data-i18n="a8">You choose the colour of its body, not of its eyes. Each stone is born with its own eye colour and personality, decided by its chip. Every colour has the same features: rarity changes only the colour.</div></details>
+      <details><summary data-i18n="q6">Is it a toy?</summary><div class="a" data-i18n="a6">No. SOUL is made for adults and teens 16 and over. It contains small parts and a lithium battery. Keep it away from young children.</div></details>
       <details><summary data-i18n="q9">What if your company disappears?</summary><div class="a" data-i18n="a9">Your SOUL keeps living, because its personality runs on the device. We'll also publish the firmware, so it never becomes a brick.</div></details>
-      <details><summary data-i18n="q10">Where is it made?</summary><div class="a" data-i18n="a10">Designed in Bucharest, Romania. We'll name our manufacturing partner before we ask for full payment.</div></details>
+      <details><summary data-i18n="q10">Where is it made?</summary><div class="a" data-i18n="a10">Designed in Bucharest, Romania. We'll name our manufacturing partners before we ask for full payment.</div></details>
     </div>
   </div>
 </section>
@@ -883,8 +895,8 @@ select.input option{background:#101114;color:#F6F3EC}
           <div class="field">
             <label for="wl-edition" data-i18n="res.edition">Edition</label>
             <select class="input" id="wl-edition" name="edition">
-              <option value="founders" data-i18n="res.o1">Founders Desk Edition</option>
-              <option value="voice" data-i18n="res.o2">Voice Edition</option>
+              <option value="founders" data-i18n="res.o1">Founders 00</option>
+              <option value="standard" data-i18n="res.o2">Standard</option>
               <option value="legendary" data-i18n="res.o3">Legendary Editions</option>
               <option value="unsure" data-i18n="res.o4">Not sure yet</option>
             </select>
@@ -894,7 +906,7 @@ select.input option{background:#101114;color:#F6F3EC}
         <label class="consent" for="wl-consent"><input id="wl-consent" name="consent" type="checkbox" required><span data-i18n="res.consent">I agree to receive emails about SOUL and can unsubscribe at any time. Read the <a href="#privacy">Privacy Policy</a>.</span></label>
         <p class="form-msg" id="wl-msg" role="alert"></p>
         <button class="btn btn-primary" type="submit" id="wl-submit" data-i18n="res.submit">Join the list</button>
-        <p class="form-fine" data-i18n="res.fine">Nothing is charged here. The Voice Edition deposit is paid later, through a secure link, and is fully refundable.</p>
+        <p class="form-fine" data-i18n="res.fine">Nothing is charged here. A Founders 00 reservation is paid later, through a secure link, and is fully refundable until it ships.</p>
       </form>
       <div class="thanks" id="wl-thanks" hidden tabindex="-1">
         <h3 data-i18n="res.th">You're on the list.</h3>
@@ -913,6 +925,7 @@ select.input option{background:#101114;color:#F6F3EC}
         <a href="#privacy" id="privacy" data-i18n="f.privacy">Privacy Policy</a>
         <a href="#terms" id="terms" data-i18n="f.terms">Terms of Sale</a>
         <a href="#cookies" id="cookies" data-i18n="f.cookies">Cookies</a>
+        <a href="os.html" data-i18n="f.os">Try SoulOS</a>
         <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">ANPC · SAL</a>
       </nav>
     </div>
@@ -923,7 +936,7 @@ select.input option{background:#101114;color:#F6F3EC}
       </div>
       <div>
         <h4 data-i18n="f.gpsr">Manufacturer (GPSR)</h4>
-        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SOUL, models <span class="ph">[SL-143]</span> Founders Desk Edition and <span class="ph">[SL-175]</span> Voice Edition. Not a toy. For ages 16+. Voice Edition contains a lithium battery.</p>
+        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SOUL, model <span class="ph">[SL-175]</span> Founders 00, with the OU charging capsule. Not a toy. For ages 16+. Contains a lithium battery.</p>
       </div>
     </div>
     <p class="tm" data-i18n="f.tm">Claude is a trademark of Anthropic. SOUL is independent and not affiliated with or endorsed by Anthropic. 'Works with Claude' uses the Hardware Buddy developer API of the Claude desktop apps. ChatGPT is a trademark of OpenAI; SOUL is not affiliated with OpenAI.</p>
@@ -951,9 +964,9 @@ const RO = {
   "hero.h1": "AI-ul tău, <span class=\"glow\">viu.</span>",
   "hero.aria": "Ochii vii ai lui SOUL. Apasă Enter ca să-l atingi, apasă de două ori repede ca să râdă.",
   "hero.hint": "Atinge-l. Atinge-l de două ori și râde. Lasă-l în pace și ațipește.",
-  "hero.sub": "O mică piatră de sticlă mată cu doi ochi vii. Respiră, clipește și se uită înapoi la tine, fără pic de internet. <strong>Și lucrează cu Claude.</strong>",
+  "hero.sub": "O mică piatră de aluminiu cu doi ochi vii. Respiră, clipește și se uită înapoi la tine, fără pic de internet. <strong>Și lucrează cu Claude.</strong>",
   "hero.cta1": "Rezervă-l", "hero.cta2": "Vezi-l în acțiune",
-  "hero.meta1": "<b>Founders Desk Edition</b>", "hero.meta2": "numerotat <span data-cfg=\"range\">001–300</span>",
+  "hero.meta1": "<b>Founders 00</b>", "hero.meta2": "25 numerotate, <span data-cfg=\"range\">001–025</span>",
   "soul.brain": "Laboratoarele de AI fac creierul.", "soul.body": "Noi facem corpul și sufletul.", "soul.name": "În română, acolo unde s-a născut, numele lui e <em>suflet</em>. AI-ul tău are deja un creier. Sufletul i-l dai tu.",
   "three.eyebrow": "Trei lucruri, o singură piatră",
   "three.h2": "Azi vă prezentăm trei lucruri.",
@@ -963,7 +976,7 @@ const RO = {
   "three.c1tag": "Offline, pentru totdeauna",
   "three.c1t": "Un companion care e viu.",
   "three.c1p": "Respiră, clipește și se uită în jur. Se rușinează, amețește, îi e somn, strănută și i-a fost dor de tine. Fără internet. Pentru totdeauna.",
-  "three.c2tag": "Voice Edition · în dezvoltare",
+  "three.c2tag": "Ține și vorbește · în dezvoltare",
   "three.c2t": "Un AI personal pe care îl ții în mână.",
   "three.c2p": "Ține degetul pe piatră și vorbește. Îți răspunde cu Claude sau ChatGPT, ține minte oamenii și planurile din viața ta, notează, îți amintește, te trezește și scrie un jurnal al zilei tale.",
   "three.c3tag": "Merge cu Claude",
@@ -976,23 +989,23 @@ const RO = {
   "alive.h2": "24 de reacții.<br>Zero internet.",
   "alive.lead": "Tot ce vezi rulează pe piatră. Fără cont, fără aplicație, fără servere. Trăiește mai departe chiar dacă Wi-Fi-ul nu mai revine niciodată.",
   "cap.idle": "Doar stă cu tine", "cap.boop": "Bip. Roșește.", "cap.purr": "Mângâi-l. Toarce.", "cap.dizzy": "Scutură-l. Amețește.", "cap.sleep": "Ațipește", "cap.missed": "I-a fost dor de tine", "cap.rare": "Stări rare", "cap.night": "Lumină de noapte",
-  "talk.badge": "În dezvoltare · Voice Edition",
+  "talk.badge": "În dezvoltare · voce",
   "talk.h2": "Ține și vorbește.",
   "talk.lead": "Pune degetul pe piatră și vorbește. Îți răspunde cu Claude sau, dacă preferi, cu ChatGPT. Ține minte oamenii și planurile din viața ta.",
   "talk.b1": "Amintește-mi să o sun pe mama duminică.", "talk.b2": "Ce a zis Ana despre excursie?", "talk.b3": "Trezește-mă la șapte. Cu blândețe.", "talk.b4": "Cum a fost ziua mea?",
   "ai.eyebrow": "AI-ul tău, alegerea ta",
   "ai.h2": "AI-ul tău. Sau deloc AI.",
   "ai.c1tag": "Fără cont · fără internet", "ai.c1t": "Fără AI. Tot viu.",
-  "ai.c1p": "Din cutie nu are nevoie de nimic. Trăiește, reacționează, ține ora, îți pornește cronometrul, sesiunile de focus și alarmele și îți arată mementourile adăugate din telefon prin Bluetooth. Fără înregistrare. Niciodată.",
+  "ai.c1p": "Din cutie nu are nevoie de nimic. Trăiește, reacționează, ține ora, îți pornește cronometrul, sesiunile de focus și alarmele și păstrează notițele și mementourile pe care le scrii pe tastatura lui. Fără înregistrare. Niciodată.",
   "ai.c2tag": "Conectează-ți Claude", "ai.c2t": "Claude-ul tău, în palmă.",
   "ai.c2p": "Adaugi SOUL ca conector în contul tău Claude. Îi ceri lui Claude să-ți pună pe SOUL planul zilei, un memento sau o notiță. Pe calculator merge deja cu Claude Code și Cowork: le aprobi cererile din piatră.",
   "ai.c3tag": "Conectează-ți ChatGPT", "ai.c3t": "Sau ChatGPT-ul tău.",
   "ai.c3p": "Preferi ChatGPT? Adaugi SOUL ca aplicație în ChatGPT-ul tău și îi trimiți lista, un memento sau o traducere. Aceeași piatră, același suflet. Schimbi oricând.",
-  "ai.voice": "Ca să vorbești cu el, folosești serviciul de voce SOUL (6 luni incluse în Voice Edition) sau îți pui propria cheie API Anthropic ori OpenAI. Contul tău, datele tale, alegerea ta.",
+  "ai.voice": "Ca să vorbești cu el, folosești Claude-ul sau ChatGPT-ul tău conectat ori îți pui propria cheie API Anthropic sau OpenAI. Contul tău, datele tale, alegerea ta. Schimbi modul AI din Centrul de control, dintr-o atingere.",
   "ai.note": "Conectarea cu Claude și ChatGPT e în dezvoltare. Claude e marcă Anthropic, ChatGPT e marcă OpenAI. SOUL e independent și nu e susținut de niciunul.",
   "ai.a1": "Ochi care trăiesc singuri, fără internet.", "ai.a2": "Ochi conectați la Claude.", "ai.a3": "Ochi care ascultă, conectați la ChatGPT.",
   "nav.ai": "AI-ul tău",
-  "talk.privacy": "Ascultă doar cât timp ții degetul pe piatră. Ridică-l, și microfonul se oprește.",
+  "talk.privacy": "Ascultă doar cât timp ții degetul pe piatră. Ridică-l, și microfonul se oprește. Închide-i oul, și microfonul e tăiat din hardware.",
   "claude.eyebrow": "Merge cu Claude",
   "claude.h2": "Stă cu ochii pe Claude. Ca să nu fie nevoie să stai tu.",
   "claude.lead": "Se conectează prin Bluetooth la aplicațiile Claude pentru Mac și Windows, pentru Claude Code și Claude Cowork.",
@@ -1004,8 +1017,8 @@ const RO = {
   "claude.s2t": "Claude întreabă.", "claude.s2p": "Când Claude are nevoie de permisiune, se aprinde un inel cald, chihlimbariu, și ochii se uită la tine.",
   "claude.s3t": "Tu decizi.", "claude.s3p": "Ține apăsat 1,2 secunde ca să aprobi. Atinge de două ori ca să refuzi. Fără să schimbi ferestre.",
   "claude.video": "Firmware-ul real: ocupat, întreabă, aprobat. Înregistrat din simulatorul ecranului AMOLED de 466 × 466.",
-  "claude.alt": "Randare de concept: un SOUL Monedă pe un suport mic din nuc, lângă un laptop deschis, cu ochii luminoși privind în sus.",
-  "claude.cap": "Pe suport, lângă laptop. Cât lucrează Claude, poți să te uiți în altă parte. Când Claude are nevoie de tine, piatra se uită la tine.",
+  "claude.alt": "Randare de concept: SOUL în oul lui de încărcare OU, deschis, pe un birou de nuc, în fața unui laptop, cu ochii luminoși privind într-o parte.",
+  "claude.cap": "În oul lui deschis, lângă laptop. Cât lucrează Claude, poți să te uiți în altă parte. Când Claude are nevoie de tine, piatra se uită la tine.",
   "born.eyebrow": "Născut, nu fabricat",
   "born.h2": "Nu există doi la fel.",
   "born.lead": "La prima pornire, fiecare SOUL se naște din ID-ul unic al cipului său. Personalitatea, culoarea ochilor și forma privirii rămân ale lui pe viață. Nu le alege nimeni. Nici măcar noi.",
@@ -1020,30 +1033,27 @@ const RO = {
   "cert.sample": "Certificat exemplu. Al tău se emite în clipa în care se naște.",
   "design.eyebrow": "Design",
   "design.h2": "O mică piatră de lumină.",
-  "design.lead": "Un ecran AMOLED rotund, 466 × 466 pixeli, într-o carcasă mată. Poartă-l pe geantă sau ține-l pe birou. Patru forme. Un singur suflet.",
-  "design.alt1": "Randare de concept SOUL: o piatră albă, mată, în formă de monedă, cu doi ochi crem luminoși și un inel de oțel.",
-  "design.alt2": "Randare de concept a celor patru forme SOUL una lângă alta: nor, monedă, cabochon și picătură, fiecare cu altă culoare a ochilor.",
-  "design.alt3": "Randare de concept: un SOUL Picătură verde-apă, atârnat cu un lănțișor scurt de mânerul unei genți din piele maro.",
-  "design.alt4": "Vedere explodată din CAD a Monedei de 1,43″: lentilă dom transparentă, carcasă mată, placa rotundă AMOLED și capacul din spate.",
+  "design.lead": "O pietricică verticală din aluminiu sablat și anodizat. Fața e doar sticlă neagră și doi ochi vii. Fără logo, fără butoane, fără găuri.",
+  "design.alt1": "Randare de concept: SOUL din aluminiu argintiu, în picioare, o pietricică rotunjită a cărei față e o sticlă neagră rotundă cu doi ochi crem luminoși.",
+  "design.alt2": "Randare de concept: cinci SOUL în șir, din aluminiu anodizat Grafit, Jar, Argint, Albastru noapte și Șampanie, fiecare cu ochii aprinși.",
+  "design.alt3": "Randare de concept: SOUL văzut din lateral, o pană subțire de aluminiu argintiu, cu o cusătură fină pe margine și fanta difuzorului în cusătură.",
+  "design.alt4": "Randare de concept, prim-plan: granulația fină a aluminiului sablat și o teșitură lustruită acolo unde metalul întâlnește sticla neagră.",
   "fig.render": "Randare de concept",
-  "design.cap1": "Moneda, în alb mat, cu inel pentru chei.",
-  "design.cap2": "Nor, Monedă, Cabochon, Picătură. Ochii din imagine sunt Crem, Liliac, Gheață și Piersică.",
-  "design.cap3": "Picătura, pe mânerul unei genți.",
-  "design.cap4": "Moneda de 1,43″, desfăcută.",
-  "in.eyebrow": "Înăuntru",
-  "in.h": "Se deschide cu trei șuruburi. Fără lipici.",
-  "in.l1b": "Lentilă dom", "in.l1": "Opțională. Transparentă, peste sticla ecranului.",
-  "in.l2b": "Carcasă mată", "in.l2": "Ține sticla. Capacul pentru inelul de chei stă deasupra.",
-  "in.l3b": "Placa rotundă AMOLED", "in.l3": "1,43″, 466 × 466 pixeli, cu ESP32-S3 pe spate.",
-  "in.l4b": "Capac spate", "in.l4": "Trei șuruburi M2 în inserții filetate, ca să poată fi deschis și reparat.",
-  "in.fine": "Varianta Founders Desk: alimentare prin USB-C, fără baterie, 57,8 × 57,8 × 17,0 mm fără lentilă. Din modelul CAD al carcasei, măsurat după fișierele 3D Waveshare ale plăcii.",
-  "design.coin": "Monedă", "design.drop": "Picătură", "design.gem": "Cabochon", "design.cloud": "Nor",
-  "design.depth": "De la 17 mm grosime",
-  "design.note": "Randări de concept, nu fotografii. Materialele și finisajele finale se pot schimba înainte de producție.",
+  "design.cap1": "Argint. Stă singur în picioare, pe un picior mic și plat, și nu se clintește când îl atingi.",
+  "design.cap2": "Cinci culori anodizate. De la stânga: Grafit, Jar, Argint, Albastru noapte, Șampanie.",
+  "design.cap3": "Difuzorul e o singură fantă fină în cusătura laterală.",
+  "design.cap4": "O teșitură prelucrată CNC desenează o singură linie subțire de lumină acolo unde metalul întâlnește sticla.",
+  "in.eyebrow": "OU · oul lui de încărcare",
+  "in.h": "Noaptea doarme în oul lui.",
+  "in.l1b": "Se încarcă pe dedesubt", "in.l1": "Cinci contacte aurii în piciorul lui. Îl pui în OU și se încarcă. Fără cablu de băgat în el.",
+  "in.l2b": "Lampă de veghe, niciodată în ochi", "in.l2": "Lumina caldă vine din ou, nu din ecran.",
+  "in.l3b": "Capac închis, microfon oprit", "in.l3": "Un comutator hardware deconectează microfonul când se închide capacul. Capac închis înseamnă că nu are cum să audă.",
+  "in.l4b": "Se deschide cu două șuruburi", "in.l4": "Două șuruburi Torx în picior, ca să poată fi deschis și reparat.",
+        "design.note": "Randări de concept, nu fotografii. Materialele, culorile și finisajele finale se pot schimba înainte de producție.",
   "charter.eyebrow": "Carta companionului",
   "charter.h2": "Promisiunile noastre, în scris.",
-  "charter.alt": "Randare de concept: un SOUL Monedă care strălucește cald, chihlimbariu, pe o noptieră întunecată.",
-  "charter.cap": "Noaptea, lângă pat, e o lampă de veghe caldă. Nu are cameră și nu ascultă niciodată dacă nu ții degetul pe el.",
+  "charter.alt": "Randare de concept, noaptea: oul OU cu capacul mătuit închis, strălucind cald, chihlimbariu, ca un mic felinar pe o noptieră întunecată.",
+  "charter.cap": "Noaptea, lângă pat, oul lui e o lampă de veghe caldă. Cu capacul închis, microfonul e tăiat din hardware. Nu are cameră și nu ascultă niciodată dacă nu ții degetul pe el.",
   "ch1t": "Spune mereu că e un AI.", "ch1p": "Nu se dă niciodată drept om.",
   "ch2t": "Ascultă doar cât îl ții.", "ch2p": "Fără cuvânt de trezire. Fără microfon mereu pornit.",
   "ch3t": "Fără cameră.", "ch3p": "Nu în primele ediții. Nimic nu te privește.",
@@ -1055,68 +1065,123 @@ const RO = {
   "ch9t": "Pentru 16+. Nu e o jucărie.", "ch9p": "Gândit pentru adulți și adolescenți mari.",
   "ed.eyebrow": "Ediții",
   "ed.h2": "Alege-ți primul suflet.",
-  "ed.f.tag": "Merge cu Claude",
-  "ed.f.desc": "Companionul de birou alimentat prin USB. Numerotat, și doar 300 de bucăți.",
-  "ed.f.small": "O singură plată. Fără abonament ca să fie viu.",
-  "ed.f.l1": "Piatră AMOLED rotundă de 1,43″ pe suport de birou",
-  "ed.f.l2": "Merge cu Claude Code și Claude Cowork pe Mac și Windows",
-  "ed.f.l3": "Toate cele 24 de reacții, offline, pentru totdeauna",
-  "ed.f.l4": "Numărul tău de fondator și certificatul de naștere, în cutie",
+  "ed.f.tag": "25 numerotate · aluminiu",
+  "ed.f.desc": "Primele 25 de SOUL, din aluminiu anodizat, fiecare gravat cu numărul lui. Se livrează doar după testele radio CE.",
+  "ed.f.small": "O singură plată. Fără abonament ca să fie viu. Rezervarea e rambursabilă integral.",
+  "ed.f.l1": "Corp din aluminiu sablat și anodizat, cu AMOLED rotund de 1,75″ sub sticlă neagră",
+  "ed.f.l2": "OU, oul lui de încărcare, în cutie",
+  "ed.f.l3": "SoulOS, toate cele 24 de reacții offline și merge cu Claude",
+  "ed.f.l4": "Numărul tău de fondator gravat și un certificat de naștere",
   "ed.f.cta": "Rezervă un număr",
-  "ed.est": "Livrare estimată:", "ed.est2": "Livrare estimată:",
-  "ed.v.tag": "AI vocal · în dezvoltare",
-  "ed.v.desc": "AI-ul personal pe care îl ții în mână. Merge pe baterie și stă agățat de geantă.",
-  "ed.v.small": "Avans rambursabil. Preț estimat",
-  "ed.v.l1": "AMOLED rotund de 1,75″, două microfoane și un difuzor",
-  "ed.v.l2": "Ține apăsat și vorbești cu Claude sau ChatGPT",
-  "ed.v.l3": "Memorie, notițe, mementouri, alarme și un jurnal al zilei",
-  "ed.v.l4": "<span data-cfg=\"months\">6</span> luni de AI vocal incluse",
-  "ed.v.cta": "Rezervă cu avans",
-  "ed.l.tag": "Mai târziu",
+  "ed.est": "Se livrează după testele radio CE. Estimat:", "ed.est2": "Livrare estimată:",
+                  "ed.l.tag": "Mai târziu",
   "ed.l.name": "Ediții Legendare",
-  "ed.l.desc": "Carcase în ediție limitată, în serii mici numerotate, pentru colecționari.",
+  "ed.l.desc": "Finisaje în ediție limitată, în serii mici numerotate, pentru colecționari.",
   "ed.l.small": "Prețul se anunță odată cu prima serie.",
-  "ed.l.l1": "Materiale și finisaje speciale pentru carcasă", "ed.l.l2": "Serii foarte mici, numerotate", "ed.l.l3": "Același suflet înăuntru",
+  "ed.l.l1": "Materiale și finisaje speciale", "ed.l.l2": "Serii foarte mici, numerotate", "ed.l.l3": "Același suflet înăuntru",
   "ed.l.cta": "Anunță-mă primul",
-  "ed.vat": "Prețurile includ TVA. Pe această pagină nu se plătește nimic: îți trimitem pe email un link de plată securizat când se deschid rezervările.",
+  "ed.vat": "Prețurile includ TVA. Pe această pagină nu se plătește nimic: când se deschid rezervările, îți trimitem pe email un link securizat. Founders 00 se livrează doar după testele radio CE și poți anula oricând înainte de livrare, cu banii înapoi integral.",
   "faq.eyebrow": "Întrebări",
   "faq.h2": "Întrebări bune.",
   "q1": "Când se livrează?",
-  "a1": "Founders Desk Edition: estimat <span data-cfg=\"shipFounders\">primăvara 2027</span>. Voice Edition: estimat <span data-cfg=\"shipVoice\">toamna 2027</span>. Dacă întârziem, poți anula oricând înainte de livrare și primești toți banii înapoi. După livrare ai dreptul UE de retragere în 14 zile și garanția legală de 2 ani.",
+  "a1": "Founders 00 se livrează doar după ce trece testele radio CE: estimat <span data-cfg=\"shipFounders\">primăvara 2027</span>. Standard vine <span data-cfg=\"shipStandard\">după Founders 00</span>. Dacă întârziem, poți anula oricând înainte de livrare și primești toți banii înapoi. După livrare ai dreptul UE de retragere în 14 zile și garanția legală de 2 ani.",
   "q2": "Am nevoie de abonament?",
-  "a2": "Nu. SOUL e viu fără internet și fără cont, pentru totdeauna. Voice Edition include <span data-cfg=\"months\">6</span> luni de AI vocal. După aceea, un plan opțional păstrează funcțiile de voce. Fără el, SOUL-ul tău rămâne un companion offline complet.",
+  "a2": "Nu. SOUL e viu fără internet și fără cont, pentru totdeauna. SoulOS, tastatura, notițele, mementourile, alarmele și focusul merg toate offline. Pentru AI îți conectezi Claude-ul sau ChatGPT-ul pe care îl ai deja, ori propria cheie API.",
   "q3": "Ce AI folosește?",
-  "a3": "Niciunul, dacă vrei: SOUL merge fără AI și fără cont. Sau îți conectezi propriul Claude ori ChatGPT (în dezvoltare). Pentru voce: serviciul de voce SOUL (Claude implicit) sau propria cheie API Anthropic ori OpenAI. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy din aplicațiile desktop Claude, așa că piatra îți arată ce fac Claude Code și Claude Cowork și te lasă să le aprobi cererile.",
+  "a3": "Pe care îl alegi tu, din modurile AI: deloc AI, Claude-ul tău, ChatGPT-ul tău sau propria cheie API Anthropic ori OpenAI. Schimbi din Centrul de control. Conectarea cu Claude și ChatGPT e în dezvoltare. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy din aplicațiile desktop Claude, așa că piatra îți arată ce fac Claude Code și Claude Cowork și te lasă să le aprobi cererile.",
   "q4": "Are nevoie de telefon sau de calculator?",
-  "a4": "Nu ca să fie viu. Ca să lucreze cu Claude, se conectează prin Bluetooth la aplicația desktop Claude de pe Mac sau Windows.",
+  "a4": "Nu ca să fie viu și nici ca să scrii: are tastatura lui. Ca să ajungă la Claude-ul sau ChatGPT-ul tău, folosește Wi-Fi. Ca să lucreze cu Claude Code și Cowork, se conectează prin Bluetooth la aplicația desktop Claude de pe Mac sau Windows.",
   "q5": "Cât ține bateria?",
-  "a5": "Founders Desk Edition nu are baterie: merge prin USB-C. Voice Edition are o baterie mică, înlocuibilă de utilizator, care se încarcă prin USB-C. Publicăm autonomia măsurată înainte să cerem plata integrală.",
+  "a5": "SOUL are înăuntru o baterie mică, reîncărcabilă, cu litiu. Se încarcă prin cele cinci contacte aurii de dedesubt: îl pui în OU, oul lui, și gata. Fără cablu de băgat în piatră. Publicăm autonomia măsurată înainte să cerem plata integrală.",
   "q6": "E o jucărie?",
-  "a6": "Nu. SOUL e făcut pentru adulți și adolescenți de peste 16 ani. Conține piese mici și, la Voice Edition, o baterie cu litiu. Nu-l lăsa la îndemâna copiilor mici.",
+  "a6": "Nu. SOUL e făcut pentru adulți și adolescenți de peste 16 ani. Conține piese mici și o baterie cu litiu. Nu-l lăsa la îndemâna copiilor mici.",
   "q7": "Ce se întâmplă cu vocea și datele mele?",
-  "a7": "Ascultă doar cât timp ții degetul pe piatră. Cererile vocale ajung pe servere din UE și la AI-ul pe care l-ai ales, nicăieri altundeva. Memoria lui e o listă pe care o poți citi și șterge. Fără cameră, fără reclame, și nu îți vindem niciodată datele.",
+  "a7": "Ascultă doar cât timp ții degetul pe piatră. Închide capacul oului, și microfonul e tăiat din hardware. Fără AI, nimic nu iese din piatră. Cu AI, cererea ta ajunge doar la AI-ul pe care l-ai ales. Serverele noastre sunt în UE. Memoria lui e o listă pe care o poți citi și șterge. Fără cameră, fără reclame, și nu îți vindem niciodată datele.",
   "q8": "Pot să-i aleg culoarea ochilor?",
-  "a8": "Nu, și tocmai asta e magia. Fiecare piatră se naște cu culoarea și personalitatea ei, decise de cip. Toate culorile au aceleași funcții: raritatea schimbă doar culoarea.",
+  "a8": "Tu alegi culoarea corpului, nu a ochilor. Fiecare piatră se naște cu culoarea ochilor și personalitatea ei, decise de cip. Toate culorile au aceleași funcții: raritatea schimbă doar culoarea.",
   "q9": "Ce se întâmplă dacă firma voastră dispare?",
   "a9": "SOUL-ul tău trăiește mai departe, pentru că personalitatea lui rulează pe dispozitiv. În plus, publicăm firmware-ul, ca să nu devină niciodată o cărămidă.",
   "q10": "Unde e fabricat?",
-  "a10": "Proiectat în București, România. Anunțăm partenerul de producție înainte să cerem plata integrală.",
+  "a10": "Proiectat în București, România. Anunțăm partenerii de producție înainte să cerem plata integrală.",
   "res.eyebrow": "Rezervă",
   "res.h2": "Fii acolo când deschide ochii.",
   "res.lead": "Lasă-ne emailul. Îți scriem când se deschid rezervările, înaintea tuturor.",
   "res.email": "Email", "res.edition": "Ediția",
-  "res.o1": "Founders Desk Edition", "res.o2": "Voice Edition", "res.o3": "Ediții Legendare", "res.o4": "Încă nu știu",
+  "res.o1": "Founders 00", "res.o2": "Standard", "res.o3": "Ediții Legendare", "res.o4": "Încă nu știu",
   "res.consent": "Sunt de acord să primesc emailuri despre SOUL și mă pot dezabona oricând. Citește <a href=\"#privacy\">Politica de confidențialitate</a>.",
   "res.submit": "Intră pe listă",
-  "res.fine": "Aici nu se plătește nimic. Avansul pentru Voice Edition se plătește mai târziu, printr-un link securizat, și e rambursabil integral.",
+  "res.fine": "Aici nu se plătește nimic. Rezervarea Founders 00 se plătește mai târziu, printr-un link securizat, și e rambursabilă integral până la livrare.",
   "res.th": "Ești pe listă.",
   "res.tp": "Îți scriem înaintea tuturor. SOUL-ul tău se naște în curând.",
   "f.privacy": "Politica de confidențialitate", "f.terms": "Termeni de vânzare", "f.cookies": "Cookie-uri",
   "f.seller": "Vânzător", "f.addr": "Adresă:", "f.contact": "Contact:",
   "f.gpsr": "Producător (GPSR)",
-  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelele <span class=\"ph\">[SL-143]</span> Founders Desk Edition și <span class=\"ph\">[SL-175]</span> Voice Edition. Nu e o jucărie. Pentru 16+. Voice Edition conține o baterie cu litiu.",
+  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelul <span class=\"ph\">[SL-175]</span> Founders 00, cu capsula de încărcare OU. Nu e o jucărie. Pentru 16+. Conține o baterie cu litiu.",
   "f.tm": "Claude este o marcă comercială a Anthropic. SOUL este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude. ChatGPT este o marcă comercială a OpenAI; SOUL nu este afiliat cu OpenAI.",
-  "f.made": "© 2026 SOUL. Proiectat în București."
+  "f.made": "© 2026 SOUL. Proiectat în București.",
+  "nav.os": "SoulOS",
+  "nav.design": "Design",
+  "os.eyebrow": "SoulOS",
+  "os.h2": "Un mic sistem de operare. Pe un cerc.",
+  "os.lead": "SoulOS e ce rulează pe piatră. Scrii pe el, îi scrii lui Claude și Claude face, iar el îți păstrează notițele, mementourile și alarmele, cu AI sau fără.",
+  "os.kind": "SoulOS",
+  "os.kind2": "SoulOS",
+  "os.kind3": "SoulOS",
+  "os.kind4": "SoulOS",
+  "os.alt1": "Tastatura SoulOS pe ecranul rotund: textul „Mâine și tara”, iar bara de sugestii propune „țară”, cu diacriticele corecte.",
+  "os.alt2": "SoulOS după un mesaj către Claude: „Gata. Te anunț la 17:00.” și confirmarea „Memento pus pentru 17:00”.",
+  "os.alt3": "Alegerea modului AI în SoulOS: Fără AI, Claude-ul tău, ChatGPT-ul tău (bifat) și Cheia ta API.",
+  "os.alt4": "Alarmă SoulOS pe un cadran rotund, fixată la 07:00, cu un buton verde-mentă de confirmare.",
+  "os.cap1": "O tastatură făcută pentru un ecran rotund. Engleză și română, cu ă, â, î, ș și ț sugerate pentru tine.",
+  "os.cap2": "Îi scrii lui Claude și el face. „Amintește-mi la cinci” devine un memento adevărat.",
+  "os.cap3": "Moduri AI: fără AI, Claude-ul tău, ChatGPT-ul tău sau propria ta cheie API.",
+  "os.cap4": "Alarme pe un cadran. Rotești până la oră, atingi și gata.",
+  "os.f1t": "Tastatură",
+  "os.f1": "QWERTY rotund în EN și RO, cu diacritice, cifre și anulare.",
+  "os.f2t": "Îi scrii lui Claude",
+  "os.f2": "Ceri în cuvinte simple. Claude îți pune notița, mementoul sau alarma.",
+  "os.f3t": "Notițe",
+  "os.f3": "Scrii un gând. Rămâne pe piatră.",
+  "os.f4t": "Mementouri",
+  "os.f4": "Alegi ora pe un cadran. Când e momentul, se uită la tine.",
+  "os.f5t": "Alarme",
+  "os.f5": "Se trezește el întâi, apoi te trezește pe tine. Cu blândețe.",
+  "os.f6t": "Focus",
+  "os.f6": "Un cronometru de focus care îți ține companie și tace.",
+  "os.f7t": "Azi",
+  "os.f7": "Glisezi în sus: următorul memento, Claude și bateria, dintr-o privire.",
+  "os.f8t": "Centrul de control",
+  "os.f8": "Luminozitate, sunet, modul liniștit și modul AI, la o glisare distanță.",
+  "os.cta": "Încearcă SoulOS",
+  "os.ctap": "Rulează chiar aici, în browser. Scrii, îi scrii lui Claude, pui o alarmă. Același sistem ca pe piatră.",
+  "design.alt5": "Randare de concept: spatele lui SOUL, o cupolă netedă și curată din aluminiu argintiu, fără text și fără șuruburi.",
+  "design.alt6": "Randare de concept, noaptea: SOUL se odihnește în oul OU deschis, pe o noptieră, cu ochi chihlimbarii somnoroși, luminat doar de strălucirea caldă a oului.",
+  "design.cap5": "Spatele e o cupolă curată. Fără text, fără șuruburi.",
+  "design.cap6": "În OU, noaptea, cu capacul deschis.",
+  "design.colours": "Culori",
+  "c.silver": "Argint",
+  "c.graphite": "Grafit",
+  "c.midnight": "Albastru noapte",
+  "c.ember": "Jar",
+  "c.champagne": "Șampanie",
+  "in.lead": "Când închizi capacul, microfonul e tăiat din hardware. Nu e pus pe mut din software: e deconectat.",
+  "design.s1": "AMOLED rotund de 1,75″",
+  "design.s2": "Aluminiu anodizat 6061",
+  "design.s3": "Se încarcă în OU",
+  "ed.s.tag": "Mai târziu",
+  "ed.s.name": "Standard",
+  "ed.s.desc": "Același SOUL și același suflet, făcut în serii mai mari, fără numărul de fondator.",
+  "ed.s.from": "De la",
+  "ed.s.small": "Prețul final se anunță înainte de deschiderea comenzilor.",
+  "ed.s.l1": "Aluminiu, în culorile SOUL",
+  "ed.s.l2": "SoulOS, Claude și ChatGPT, sau deloc AI",
+  "ed.s.l3": "Se încarcă în OU",
+  "ed.s.cta": "Intră pe lista de așteptare",
+  "q11": "Are certificare CE?",
+  "a11": "Încă nu, și de asta Founders 00 așteaptă. SOUL are Bluetooth și Wi-Fi, deci trebuie să treacă testele radio CE (Directiva UE privind echipamentele radio) într-un laborator acreditat înainte să-l poată vinde cineva. Nu livrăm nicio bucată înainte de asta. Rezervarea ta rămâne rambursabilă integral până la livrare.",
+  "q12": "Din ce e făcut?",
+  "a12": "Un corp din aluminiu 6061, sablat și anodizat, în Argint, Grafit, Albastru noapte, Jar sau Șampanie. Fața e sticlă neagră peste un ecran AMOLED rotund de 1,75″. Dedesubt e o placă din polimer în aceeași culoare, pentru că metalul blochează semnalul radio, cu un picior mic și plat și contactele de încărcare. Cam 63 × 72 × 27 mm. Corpurile Founders 00 sunt frezate CNC din aluminiu masiv.",
+  "f.os": "Încearcă SoulOS"
 };
 const DYN = {
   en: {
@@ -1171,10 +1236,10 @@ function fillConfig() {
   const S = CFG.SHIP || {};
   const map = {
     range: CFG.FOUNDERS_RANGE,
-    months: CFG.VOICE_AI_MONTHS,
+    count: CFG.FOUNDERS_COUNT,
     email: CFG.CONTACT_EMAIL,
     shipFounders: S.founders && S.founders[LANG],
-    shipVoice: S.voice && S.voice[LANG]
+    shipStandard: S.standard && S.standard[LANG]
   };
   $$("[data-cfg]").forEach(el => { const v = map[el.dataset.cfg]; if (v != null && v !== "") el.textContent = v; });
 }
