@@ -299,7 +299,7 @@ The founder's brief: SoulOS must have its own look, like neither Android nor iOS
 
 **Type.** *Bricolage Grotesque* (opsz 96, 420–620) is the voice: big words, numbers and answers (104 / 84 / 58 / 46 / 34 / 27 / 24 / 22 px). *Martian Mono* (400, uppercase, tracked .16em, 12–15 px) is the rim: titles, labels, times and tool calls. Both cover ă â î ș ț (Google Fonts latin-ext subsets, checked in the RO keyboard screenshots). The keyboard uses the same pair.
 
-**Glyphs.** One original line set (`GP` in the code) on a 24-unit grid: 2 px stroke at any drawn size, round caps and joins, no fills and no containers. Home and Soul are the eyes themselves; Talk is sound waves around a dot; Claude is a prompt `>_`; Control is a circle with a moon on its orbit. There are ~50 glyphs, including weather (animated rays, drift and rain), media and keyboard.
+**Glyphs.** One original line set (`GP` in the code) on a 24-unit grid: 2 px stroke at any drawn size (2.5 px when a glyph is held up large), round caps and joins, no fills and no containers. Home and Soul are the eyes themselves; Talk is sound waves around a dot; Claude is a prompt `>_`; Control is a circle with a moon on its orbit. There are ~50 glyphs, including weather (animated rays, drift and rain), media and keyboard.
 
 **Motion signature.**
 - **Out of the eyes:** an app opens by growing from the eyes' position (scale .12 → 1), and fades into them when it closes. Answers drop out of the eyes: a short fall from above as they scale up.

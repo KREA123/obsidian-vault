@@ -1193,8 +1193,8 @@ const GP = {
   rain: '<path class="wx-cloud" d="M7 15h10a4 4 0 0 0 .4-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 15z"/><g class="wx-rain"><line x1="9" y1="18" x2="8.2" y2="20.6"/><line x1="12.6" y1="18" x2="11.8" y2="20.6"/><line x1="16.2" y1="18" x2="15.4" y2="20.6"/></g>'
 };
 GP.part = GP.weather; GP.star = GP.games;
-/* one glyph: size in 466-space px; the stroke stays 2 px whatever the size */
-const lg = (k, s = 24, w = 2, st = "") => `<svg class="lg" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${(w * 24 / s).toFixed(3)}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${st ? ` style="${st}"` : ""}>${GP[k] || ""}</svg>`;
+/* one glyph: size in 466-space px; the stroke stays 2 px whatever the size (2.5 px when it is held up large) */
+const lg = (k, s = 24, w = s >= 60 ? 2.5 : 2, st = "") => `<svg class="lg" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${(w * 24 / s).toFixed(3)}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${st ? ` style="${st}"` : ""}>${GP[k] || ""}</svg>`;
 /* rim words: #rT runs clockwise over the top (text outside the path), #rB runs left→right through 6 o'clock (text inside) */
 const arcPath = (r, span, top) => { const a0 = (top ? -90 - span / 2 : 90 + span / 2) * Math.PI / 180, a1 = (top ? -90 + span / 2 : 90 - span / 2) * Math.PI / 180;
   return `M${(233 + r * Math.cos(a0)).toFixed(2)} ${(233 + r * Math.sin(a0)).toFixed(2)}A${r} ${r} 0 1 ${top ? 1 : 0} ${(233 + r * Math.cos(a1)).toFixed(2)} ${(233 + r * Math.sin(a1)).toFixed(2)}`; };
@@ -1442,8 +1442,9 @@ function showPill(o) {
 function pillSVG(o) {
   const t = String(o.text), txt = t.length > 30 ? t.slice(0, 29) + "…" : t, who = o.who ? String(o.who).toUpperCase() : "";
   const w = txt.length * 11.6 + (who ? who.length * 12.5 + 14 : 0), half = clamp(w / 2 / 211 * 180 / Math.PI + 4, 12, 70);
-  return `<svg viewBox="0 0 466 466" aria-hidden="false"><path class="ln" d="${arcD(-90 - half, -90 + half, 224)}"/><path class="hit" d="${arcD(-90 - half - 4, -90 + half + 4, 198)}"/>
-    <text><textPath href="#rP" startOffset="50%" text-anchor="middle">${who ? `<tspan class="who">${esc(who)}</tspan><tspan dx="12">${esc(txt)}</tspan>` : esc(txt)}</textPath></text></svg>`;
+  const low = !!S.kb, c = low ? 90 : -90;          // while the keyboard (and the eyes) hold the top, a note rides the lower rim
+  return `<svg viewBox="0 0 466 466" aria-hidden="false"><path class="ln" d="${arcD(c - half, c + half, 224)}"/><path class="hit" d="${arcD(c - half - 4, c + half + 4, 198)}"/>
+    <text><textPath href="#${low ? "rB" : "rP"}" startOffset="50%" text-anchor="middle">${who ? `<tspan class="who">${esc(who)}</tspan><tspan dx="12">${esc(txt)}</tspan>` : esc(txt)}</textPath></text></svg>`;
 }
 function hidePill() { S.pill = null; pillEl.classList.remove("show"); screen.classList.remove("has-pill"); applyFaceState(); }
 function buzz() { hap("heavy", true); if (RM) return; pebble.classList.remove("buzz"); void pebble.offsetWidth; pebble.classList.add("buzz"); }
