@@ -306,6 +306,9 @@ def _hand_npz(args):
     return d
 
 
+_LIFT = {}
+
+
 def shot_hand8():
     """SOUL M lying face-up in the same stylised right hand as v4-v6, which now cradles it like a large pebble.
     The device pose is chosen in hand coordinates; the hand mesh is generated with the device carved out of it."""
@@ -317,10 +320,10 @@ def shot_hand8():
     s = build_soul('hand', 'silver', eyes=TUNE.get('hd_eyes', 'cream_down'))
     ctr, half = body_box_local(s)
     # device pose in hand coordinates (true mm): face up, crown toward the fingers
-    Rot = (Euler((R(TUNE.get('hd_rx', -4.0)), R(TUNE.get('hd_ry', -6.0)), R(TUNE.get('hd_rz', 8.0)))).to_matrix()
+    Rot = (Euler((R(TUNE.get('hd_rx', 20.0)), R(TUNE.get('hd_ry', -6.0)), R(TUNE.get('hd_rz', 8.0)))).to_matrix()
            @ Matrix.Rotation(R(-90), 3, 'X'))
     hK = half * K
-    c_h = Vector((TUNE.get('hd_cx', 2.0), TUNE.get('hd_cy', 2.0), TUNE.get('hd_cz', 14.0 + hK[1] - 2.5)))
+    c_h = Vector((TUNE.get('hd_cx', 2.0), TUNE.get('hd_cy', 2.0), TUNE.get('hd_cz', 14.0 + hK[1])))
     ax = [Rot @ Vector(e) for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]
     args = ['bx_cx=%.2f' % c_h.x, 'bx_cy=%.2f' % c_h.y, 'bx_cz=%.2f' % c_h.z,
             'bx_hw=%.2f' % hK[0], 'bx_hd=%.2f' % hK[1], 'bx_hh=%.2f' % hK[2], 'bx_r=%.2f' % TUNE.get('hd_br', 13.0)]
@@ -330,11 +333,16 @@ def shot_hand8():
         if 'hd_' + kk in TUNE:
             args.append('%s=%g' % (kk, TUNE['hd_' + kk]))
     global TEX
-    t0, TEX = TEX, _hand_npz(args)
+    hd = _hand_npz(args)
+    _LIFT['v'] = float(np.load(os.path.join(hd, 'hand.npz'))['lift'])
+    t0, TEX = TEX, hd
     try:
         hand = build_hand_v4('hand', (0.0, 0.0, 0.030), TUNE.get('hd_yaw', 18.0))
     finally:
         TEX = t0
+    lift = _LIFT.get('v', 0.0)
+    c_h = c_h - ax[1] * lift
+    print('  hand: device lifted %.2f mm along its face normal' % lift)
     HM = Matrix.Translation((0.0, 0.0, 0.030)) @ Matrix.Rotation(R(TUNE.get('hd_yaw', 18.0)), 4, 'Z')
     under(root, hand)
     hand.matrix_basis = HM

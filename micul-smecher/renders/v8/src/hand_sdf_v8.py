@@ -19,11 +19,43 @@ from hand_sdf import smin, smax, ellipsoid, rcapsule, rbox, finger_chain  # noqa
 
 P_ = dict(fk=1.0, f0=1.0, cup_z=96.0, cup_r=84.0, cup_k=9.0,
           t_yaw=42.0, t_f1=10.0, t_f2=22.0, t_f3=16.0, t_side=-14.0,
-          bx_hw=0.0, carve_k=2.5, carve_off=0.3)
+          bx_hw=0.0, carve_k=2.5, carve_off=0.3, sink=1.5, lift=0.0)
+
+
+def _axes():
+    return np.array([[P_['bx_%s%d' % (ax, i)] for ax in 'xyz'] for i in range(3)])
+
+
+def auto_lift():
+    """Move the device along its face normal (-axis 1) until it presses at most `sink` mm into the bare hand."""
+    carve = P_['bx_hw']
+    P_['bx_hw'] = 0.0                      # bare hand
+    hw = np.array([carve, P_['bx_hd'], P_['bx_hh']])
+    P_['lift'] = 0.0
+    g = [np.arange(-h, h + 0.01, 2.0) for h in hw]
+    Q = np.stack(np.meshgrid(*g, indexing='ij'), -1).reshape(-1, 3)
+    P_['bx_hw'] = carve
+    d = dev_sdf(Q @ _axes() + np.array([P_['bx_cx'], P_['bx_cy'], P_['bx_cz']]))
+    Q = Q[np.abs(d) < 1.0]
+    P_['bx_hw'] = 0.0
+    A = _axes()
+    base = Q @ A + np.array([P_['bx_cx'], P_['bx_cy'], P_['bx_cz']])
+    lift = -25.0
+    P_['_palm'] = 1                        # the palm, pads and wrist carry it; fingers are carved around it
+    while lift < 60.0:
+        m = hand_sdf(base - A[1] * lift).min()
+        if m >= -P_['sink']:
+            break
+        lift += 0.25
+    P_['_palm'] = 0
+    P_['bx_hw'] = carve
+    P_['lift'] = lift
+    print('auto lift %.2f mm (%d surface samples)' % (lift, len(Q)))
+    return lift
 
 
 def dev_sdf(P):
-    c = np.array([P_['bx_cx'], P_['bx_cy'], P_['bx_cz']])
+    c = np.array([P_['bx_cx'], P_['bx_cy'], P_['bx_cz']]) - _axes()[1] * P_['lift']
     A = np.array([[P_['bx_%s%d' % (ax, i)] for ax in 'xyz'] for i in range(3)])      # rows = box axes
     hw = np.array([P_['bx_hw'], P_['bx_hd'], P_['bx_hh']])
     q = (P - c) @ A.T
@@ -40,6 +72,8 @@ def hand_sdf(P):
     d = smin(d, rcapsule(Q, (0, -38, -3), (0, -175, -16), 17.0, 21.0), 14.0)
     # a wider, shallower hollow than v5's (the M is 90 x 103 mm)
     d = smax(d, -(np.linalg.norm(P - np.array([2.0, 6.0, P_['cup_z']]), axis=-1) - P_['cup_r']), P_['cup_k'])
+    if P_.get('_palm'):
+        return d
     fingers = [
         ((27.0, 42.0, 1.5), 4.0, (44, 26, 20), (9.4, 8.7, 8.1, 7.3), (22, 34, 24)),     # index
         ((7.5, 46.0, 2.0), 0.0, (48, 29, 21), (9.6, 8.9, 8.2, 7.4), (20, 34, 24)),      # middle
@@ -74,6 +108,8 @@ def main():
     for kv in sys.argv[2:]:
         a, b = kv.split('=')
         P_[a] = float(b)
+    if P_['bx_hw'] > 0:
+        auto_lift()
     vox = 1.0
     xs = np.arange(-72, 115, vox)
     ys = np.arange(-180, 160, vox)
@@ -85,7 +121,7 @@ def main():
         vol[i] = hand_sdf(P)
     v, f, n, _ = marching_cubes(vol, 0.0, spacing=(vox, vox, vox))
     v += np.array([xs[0], ys[0], zs[0]])
-    np.savez_compressed(out, verts=v.astype(np.float32), faces=f.astype(np.int32))
+    np.savez_compressed(out, verts=v.astype(np.float32), faces=f.astype(np.int32), lift=np.float32(P_['lift']))
     print('wrote', out, len(v), 'verts', len(f), 'faces')
 
 
