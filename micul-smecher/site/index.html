@@ -216,7 +216,7 @@ button,input,select{font:inherit;color:inherit}
 .privacy p{font-weight:500}
 
 /* soulos */
-.os-shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2vw,24px)}
+.os-shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2vw,24px)}
 .os-shot{display:block;width:100%;height:auto;border-radius:28px;background:#DDE0DA;box-shadow:var(--shadow)}
 .os-shots .cap{padding-inline:2px}
 @media (max-width:900px){.os-shots{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -553,7 +553,7 @@ select.input option{background:#101114;color:#F6F3EC}
       <p class="lead" data-i18n="talk.lead">Put a finger on the stone and speak. It answers with Claude, or ChatGPT if you prefer. It remembers the people and plans in your life.</p>
       <ul class="bubbles" aria-label="Things you can say">
         <li data-i18n="talk.b1">Remind me to call Mum on Sunday.</li>
-        <li data-i18n="talk.b2">What did Ana say about the trip?</li>
+        <li data-i18n="talk.b2">What did Sam say about the trip?</li>
         <li data-i18n="talk.b3">Wake me at seven. Gently.</li>
         <li data-i18n="talk.b4">How was my day?</li>
       </ul>
@@ -610,13 +610,15 @@ select.input option{background:#101114;color:#F6F3EC}
       <figcaption class="cap"><span class="kind" data-i18n="fig.render">Concept render</span><span data-i18n="os.cap0">SoulOS on the stone. The round 2.8″ screen fits a real keyboard: type a note with SOUL standing on your desk.</span></figcaption>
     </figure>
     <ul class="os-shots">
-      <li><figure class="fig"><img class="os-shot" src="media/os-keyboard.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS keyboard on the round screen: the text reads “Mâine și tara” and the suggestion bar offers “țară” with the right diacritics." data-i18n-attr="alt:os.alt1"><figcaption class="cap"><span class="kind" data-i18n="os.kind">SoulOS</span><span data-i18n="os.cap1">A keyboard made for a round screen. English and Romanian, with ă, â, î, ș and ț suggested for you.</span></figcaption></figure></li>
-      <li><figure class="fig"><img class="os-shot" src="media/os-claude.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS after a message to Claude: “Done. I'll tell you at 17:00.” with a confirmation chip “Reminder set for 17:00”." data-i18n-attr="alt:os.alt2"><figcaption class="cap"><span class="kind" data-i18n="os.kind2">SoulOS</span><span data-i18n="os.cap2">Write to Claude and it does it. “Remind me at five” becomes a real reminder.</span></figcaption></figure></li>
-      <li><figure class="fig"><img class="os-shot" src="media/os-modes.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS AI mode picker: No AI, Your Claude, Your ChatGPT (selected) and Your API key." data-i18n-attr="alt:os.alt3"><figcaption class="cap"><span class="kind" data-i18n="os.kind3">SoulOS</span><span data-i18n="os.cap3">AI modes: no AI, your Claude, your ChatGPT or your own API key.</span></figcaption></figure></li>
-      <li><figure class="fig"><img class="os-shot" src="media/os-alarm.jpg" width="628" height="740" loading="lazy" decoding="async" alt="SoulOS alarm on a round dial set to 07:00, with a mint confirm button." data-i18n-attr="alt:os.alt4"><figcaption class="cap"><span class="kind" data-i18n="os.kind4">SoulOS</span><span data-i18n="os.cap4">Alarms on a dial. Turn to the hour, tap to set.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-keyboard.jpg" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS keyboard on the round screen of SOUL size M: the word “Hello” typed above a round QWERTY keyboard, with “Hello” suggested." data-i18n-attr="alt:os.alt1"><figcaption class="cap"><span class="kind" data-i18n="os.kind">SoulOS</span><span data-i18n="os.cap1">A keyboard made for a round screen. Word suggestions, accents, numbers and undo.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-claude.jpg" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS after a message to Claude: “Done. I'll ping you at 5:00 PM.” with the confirmation “✓ Reminder set for 5:00 PM”." data-i18n-attr="alt:os.alt2"><figcaption class="cap"><span class="kind" data-i18n="os.kind2">SoulOS</span><span data-i18n="os.cap2">Write to Claude and it does it. “Remind me at 5 to call the bank” becomes a real reminder.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-modes.jpg" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS AI mode picker: No AI, Your Claude, Your ChatGPT (selected) and Your API key." data-i18n-attr="alt:os.alt3"><figcaption class="cap"><span class="kind" data-i18n="os.kind3">SoulOS</span><span data-i18n="os.cap3">AI modes: no AI, your Claude, your ChatGPT or your own API key.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-alarm.jpg" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS alarm: the hour is set by turning a dial on the rim of the round screen, here at 7." data-i18n-attr="alt:os.alt4"><figcaption class="cap"><span class="kind" data-i18n="os.kind4">SoulOS</span><span data-i18n="os.cap4">Alarms on a dial. Turn the rim to the hour, tap to set.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-launcher.jpg" width="628" height="719" loading="lazy" decoding="async" alt="The SoulOS 3 Orbit: app names ride the lower rim of the round screen like a smile, with Weather in the middle under the eyes." data-i18n-attr="alt:os.alt5"><figcaption class="cap"><span class="kind" data-i18n="os.kind5">SoulOS</span><span data-i18n="os.cap5">The Orbit. Your apps sit on the rim like a smile; spin them with a finger.</span></figcaption></figure></li>
+      <li><figure class="fig"><img class="os-shot" src="media/os-today.jpg" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS Today: the weather in London, 17° and cloudy, one widget at a time under the eyes." data-i18n-attr="alt:os.alt6"><figcaption class="cap"><span class="kind" data-i18n="os.kind6">SoulOS</span><span data-i18n="os.cap6">Today. Swipe up and it tells you one thing at a time.</span></figcaption></figure></li>
     </ul>
     <ul class="os-feats">
-      <li><b data-i18n="os.f1t">Keyboard</b><span data-i18n="os.f1">Round QWERTY in EN and RO, with diacritics, numbers and undo.</span></li>
+      <li><b data-i18n="os.f1t">Keyboard</b><span data-i18n="os.f1">Round QWERTY with word suggestions, accents, numbers and undo.</span></li>
       <li><b data-i18n="os.f2t">Write to Claude</b><span data-i18n="os.f2">Ask in plain words. Claude sets the note, reminder or alarm for you.</span></li>
       <li><b data-i18n="os.f3t">Notes</b><span data-i18n="os.f3">Type a thought. It stays on the stone.</span></li>
       <li><b data-i18n="os.f4t">Reminders</b><span data-i18n="os.f4">Pick the time on a dial. It looks at you when it's time.</span></li>
@@ -694,22 +696,22 @@ select.input option{background:#101114;color:#F6F3EC}
     <article class="cert" aria-labelledby="cert-title">
       <div class="cert-head">
         <div><p class="cert-title" id="cert-title" data-i18n="cert.title">Birth certificate</p>
-        <p class="cert-sub" data-i18n="cert.sub">Certificat de naștere</p></div>
-      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="sealpath" d="M50 50 m-36 0 a36 36 0 1 1 72 0 a36 36 0 1 1 -72 0"/></defs><circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" stroke-width="1"/><text font-family="Martian Mono,monospace" font-size="8.6" letter-spacing="1.6" fill="currentColor"><textPath href="#sealpath">SOUL · BUCUREȘTI · MMXXVI ·</textPath></text><ellipse cx="42" cy="51" rx="4" ry="7" fill="currentColor"/><ellipse cx="58" cy="51" rx="4" ry="7" fill="currentColor"/></svg>
+        <p class="cert-sub" data-i18n="cert.sub">SOUL · size M · Founders 00</p></div>
+      <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="sealpath" d="M50 50 m-36 0 a36 36 0 1 1 72 0 a36 36 0 1 1 -72 0"/></defs><circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" stroke-width="1"/><text font-family="Martian Mono,monospace" font-size="8.6" letter-spacing="1.6" fill="currentColor"><textPath href="#sealpath" data-i18n="cert.seal">SOUL · BUCHAREST · MMXXVI ·</textPath></text><ellipse cx="42" cy="51" rx="4" ry="7" fill="currentColor"/><ellipse cx="58" cy="51" rx="4" ry="7" fill="currentColor"/></svg>
       </div>
       <div class="cert-body">
         <div class="stone"><canvas data-soul="cert" role="img" id="cert-canvas" aria-label="Mira's eyes"></canvas></div>
         <dl class="cert-fields">
           <div><dt data-i18n="cert.name">Name</dt><dd id="c-name">Mira</dd></div>
-          <div><dt data-i18n="cert.arche">Archetype</dt><dd id="c-arche">Curiosul <span class="gloss">· the curious one</span></dd></div>
+          <div><dt data-i18n="cert.arche">Archetype</dt><dd id="c-arche">The Curious One</dd></div>
           <div><dt data-i18n="cert.eyes">Eyes</dt><dd id="c-eyes"><span class="sw" style="--c:#D2FFE6"></span>Mint · Rare</dd></div>
-          <div><dt data-i18n="cert.born">Born</dt><dd id="c-born" class="mono">24.09.2026</dd></div>
+          <div><dt data-i18n="cert.born">Born</dt><dd id="c-born" class="mono">24 Sep 2026</dd></div>
           <div><dt data-i18n="cert.chip">Chip ID</dt><dd id="c-chip" class="mono">34:85:18:6A:C2:9F</dd></div>
         </dl>
       </div>
       <blockquote class="cert-words">
-        <p id="c-words">„Salut! Sunt Mira, un mic suflet AI.”</p>
-        <p class="gloss" id="c-gloss">First words. “Hi! I'm Mira, a little AI soul.”</p>
+        <p id="c-words">“Hi! I'm Mira, a little AI soul.”</p>
+        <p class="gloss" id="c-gloss">Its first words.</p>
       </blockquote>
       <div class="cert-foot">
         <button class="btn btn-ghost btn-sm" type="button" id="hatch" data-i18n="cert.hatch">Hatch another</button>
@@ -929,13 +931,13 @@ select.input option{background:#101114;color:#F6F3EC}
         <a href="#terms" id="terms" data-i18n="f.terms">Terms of Sale</a>
         <a href="#cookies" id="cookies" data-i18n="f.cookies">Cookies</a>
         <a href="os.html" data-i18n="f.os">Try SoulOS</a>
-        <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">ANPC · SAL</a>
+        <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener" data-i18n="f.anpc">Consumer disputes (ANPC · SAL)</a>
       </nav>
     </div>
     <div class="legal">
       <div>
         <h4 data-i18n="f.seller">Seller</h4>
-        <p><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span><br><span data-i18n="f.addr">Address:</span> <span class="ph">[street, number, Bucharest, Romania]</span><br>CUI: <span class="ph">[RO00000000]</span> · Reg. Com.: <span class="ph">[J40/0000/2026]</span><br><span data-i18n="f.contact">Contact:</span> <span class="email" data-cfg="email">hello@soul.example</span></p>
+        <p><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span><br><span data-i18n="f.addr">Address:</span> <span class="ph">[street, number, Bucharest, Romania]</span><br><span data-i18n="f.cui">Tax ID (CUI):</span> <span class="ph">[RO00000000]</span> · <span data-i18n="f.reg">Trade Register No.:</span> <span class="ph">[J40/0000/2026]</span><br><span data-i18n="f.contact">Contact:</span> <span class="email" data-cfg="email">hello@soul.example</span></p>
       </div>
       <div>
         <h4 data-i18n="f.gpsr">Manufacturer (GPSR)</h4>
@@ -1031,8 +1033,9 @@ const RO = {
   "born.note": "Raritatea schimbă doar culoarea. Fiecare SOUL are aceleași 24 de reacții și aceleași funcții.",
   "cert.title": "Certificat de naștere",
   "cert.name": "Nume", "cert.arche": "Arhetip", "cert.eyes": "Ochi", "cert.born": "Născut", "cert.chip": "ID cip",
-  "cert.sub": "Birth certificate",
+  "cert.sub": "SOUL · mărimea M · Founders 00",
   "cert.hatch": "Mai naște unul",
+  "cert.seal": "SOUL · BUCUREȘTI · MMXXVI ·",
   "cert.sample": "Certificat exemplu. Al tău se emite în clipa în care se naște.",
   "design.eyebrow": "Design · mărimea M",
   "design.h2": "O piatră de lumină, cât palma ta.",
@@ -1117,7 +1120,7 @@ const RO = {
   "res.th": "Ești pe listă.",
   "res.tp": "Îți scriem înaintea tuturor. SOUL-ul tău se naște în curând.",
   "f.privacy": "Politica de confidențialitate", "f.terms": "Termeni de vânzare", "f.cookies": "Cookie-uri",
-  "f.seller": "Vânzător", "f.addr": "Adresă:", "f.contact": "Contact:",
+  "f.seller": "Vânzător", "f.addr": "Adresă:", "f.contact": "Contact:", "f.cui": "CUI:", "f.reg": "Nr. Reg. Com.:", "f.anpc": "ANPC · SAL",
   "f.gpsr": "Producător (GPSR)",
   "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelul <span class=\"ph\">[SL-M]</span> Founders 00, cu capsula de încărcare OU. Nu e o jucărie. Pentru 16+. Conține o baterie cu litiu.",
   "f.tm": "Claude este o marcă comercială a Anthropic. SOUL este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude. ChatGPT este o marcă comercială a OpenAI; SOUL nu este afiliat cu OpenAI.",
@@ -1133,14 +1136,19 @@ const RO = {
   "os.kind4": "SoulOS",
   "os.alt0": "Randare de concept: SOUL pe un birou de lemn, cu tastatura SoulOS pe ecranul rotund: cuvântul „Hello” scris deasupra unei tastaturi QWERTY rotunde.",
   "os.cap0": "SoulOS pe piatră. Pe ecranul rotund de 2,8″ încape o tastatură adevărată: scrii o notiță cu SOUL-ul în picioare pe birou.",
-  "os.alt1": "Tastatura SoulOS pe ecranul rotund: textul „Mâine și tara”, iar bara de sugestii propune „țară”, cu diacriticele corecte.",
-  "os.alt2": "SoulOS după un mesaj către Claude: „Gata. Te anunț la 17:00.” și confirmarea „Memento pus pentru 17:00”.",
+  "os.alt1": "Tastatura SoulOS pe ecranul rotund al lui SOUL mărimea M: cuvântul „Hello” scris deasupra unei tastaturi QWERTY rotunde, cu „Hello” sugerat.",
+  "os.alt2": "SoulOS (în engleză) după un mesaj către Claude: „Done. I'll ping you at 5:00 PM.” și confirmarea „✓ Reminder set for 5:00 PM” (memento pus pentru ora 17:00).",
   "os.alt3": "Alegerea modului AI în SoulOS: Fără AI, Claude-ul tău, ChatGPT-ul tău (bifat) și Cheia ta API.",
-  "os.alt4": "Alarmă SoulOS pe un cadran rotund, fixată la 07:00, cu un buton verde-mentă de confirmare.",
+  "os.alt4": "Alarmă SoulOS: ora se alege rotind un cadran pe marginea ecranului rotund, aici la 7.",
+  "os.alt5": "Orbita din SoulOS 3: numele aplicațiilor stau pe marginea de jos a ecranului rotund ca un zâmbet, cu Vremea la mijloc, sub ochi.",
+  "os.alt6": "Azi în SoulOS: vremea în Londra, 17° și înnorat, câte un widget pe rând, sub ochi.",
   "os.cap1": "O tastatură făcută pentru un ecran rotund. Engleză și română, cu ă, â, î, ș și ț sugerate pentru tine.",
-  "os.cap2": "Îi scrii lui Claude și el face. „Amintește-mi la cinci” devine un memento adevărat.",
+  "os.cap5": "Orbita. Aplicațiile stau pe margine ca un zâmbet; le învârți cu degetul.",
+  "os.cap6": "Azi. Glisezi în sus și îți spune câte un lucru pe rând.",
+  "os.kind5": "SoulOS", "os.kind6": "SoulOS",
+  "os.cap2": "Îi scrii lui Claude și el face. „Amintește-mi la 5 să sun la bancă” devine un memento adevărat.",
   "os.cap3": "Moduri AI: fără AI, Claude-ul tău, ChatGPT-ul tău sau propria ta cheie API.",
-  "os.cap4": "Alarme pe un cadran. Rotești până la oră, atingi și gata.",
+  "os.cap4": "Alarme pe un cadran. Rotești marginea până la oră, atingi și gata.",
   "os.f1t": "Tastatură",
   "os.f1": "QWERTY rotund în EN și RO, cu diacritice, cifre și anulare.",
   "os.f2t": "Îi scrii lui Claude",
@@ -1200,8 +1208,10 @@ const DYN = {
     sending: "Sending…",
     tints: { cream: "Cream", ice: "Ice", mint: "Mint", peach: "Peach", lilac: "Lilac", gold: "Gold" },
     rar: { common: "Common", rare: "Rare", veryrare: "Very rare", legendary: "Legendary" },
-    arche: { "Curiosul": "the curious one", "Timidul": "the timid one", "Obraznicul": "the cheeky one", "Somnorosul": "the sleepy one", "Sfiosul": "the bashful one", "Neastâmpăratul": "the restless one", "Șmecherul": "the little rascal" },
-    first: n => `First words. “Hi! I'm ${n}, a little AI soul.”`,
+    arche: { curious: "The Curious One", timid: "The Timid One", cheeky: "The Cheeky One", sleepy: "The Sleepy One", bashful: "The Bashful One", restless: "The Restless One", rascal: "The Little Rascal" },
+    words: n => `“Hi! I'm ${n}, a little AI soul.”`,
+    first: () => "Its first words.",
+    date: d => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).replace("Sept", "Sep"),
     eyesOf: n => `${n}'s eyes`
   },
   ro: {
@@ -1216,8 +1226,10 @@ const DYN = {
     sending: "Se trimite…",
     tints: { cream: "Crem", ice: "Gheață", mint: "Mentă", peach: "Piersică", lilac: "Liliac", gold: "Aur" },
     rar: { common: "Comun", rare: "Rar", veryrare: "Foarte rar", legendary: "Legendar" },
-    arche: {},
-    first: () => "Primele cuvinte.",
+    arche: { curious: "Curiosul", timid: "Timidul", cheeky: "Obraznicul", sleepy: "Somnorosul", bashful: "Sfiosul", restless: "Neastâmpăratul", rascal: "Șmecherul" },
+    words: n => `„Salut! Sunt ${n}, un mic suflet AI.”`,
+    first: () => "Primele lui cuvinte.",
+    date: d => { const p = n => String(n).padStart(2, "0"); return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`; },
     eyesOf: n => `Ochii lui ${n}`
   }
 };
@@ -1712,16 +1724,16 @@ if (demoSoul) {
 
 /* ---------------------------------------------------- birth certificate */
 const TINTS = [["cream", "#FFF0C8", 58, "common"], ["ice", "#D8F0FF", 16, "common"], ["mint", "#D2FFE6", 10, "rare"], ["peach", "#FFDCC8", 9, "rare"], ["lilac", "#E6DAFF", 6, "veryrare"], ["gold", "#FFD76B", 1, "legendary"]];
-const NAMES = ["Mira", "Dor", "Lumi", "Zori", "Ilinca", "Tomi", "Nara", "Ivo", "Sia", "Pip", "Ada", "Luca", "Vio", "Ema", "Bobo", "Tei"];
+const NAMES = ["Mira", "Luma", "Nova", "Kai", "Juno", "Tomi", "Nara", "Ivo", "Sia", "Pip", "Ada", "Luca", "Eli", "Ema", "Bobo", "Zia"];
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function archetype(shy, cur, slp) {
-  if (shy > 0.75 && cur < 0.5) return "Timidul";
-  if (cur > 0.75 && shy < 0.4) return "Obraznicul";
-  if (cur > 0.7) return "Curiosul";
-  if (slp > 0.72) return "Somnorosul";
-  if (shy > 0.7) return "Sfiosul";
-  if (slp < 0.25) return "Neastâmpăratul";
-  return "Șmecherul";
+  if (shy > 0.75 && cur < 0.5) return "timid";
+  if (cur > 0.75 && shy < 0.4) return "cheeky";
+  if (cur > 0.7) return "curious";
+  if (slp > 0.72) return "sleepy";
+  if (shy > 0.7) return "bashful";
+  if (slp < 0.25) return "restless";
+  return "rascal";
 }
 function birth() {
   const bytes = [0x34, 0x85, 0x18]; for (let i = 0; i < 3; i++) bytes.push((Math.random() * 256) | 0);
@@ -1730,24 +1742,23 @@ function birth() {
   let roll = r() * 100, i = 0;
   for (; i < TINTS.length - 1; i++) { if (roll < TINTS[i][2]) break; roll -= TINTS[i][2]; }
   const shy = 0.1 + r() * 0.85, cur = 0.15 + r() * 0.8, slp = 0.1 + r() * 0.8;
-  const d = new Date(), pad = n => String(n).padStart(2, "0");
   return {
     name: NAMES[(r() * NAMES.length) | 0], arche: archetype(shy, cur, slp), tint: TINTS[i],
-    born: `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`,
+    born: new Date(),
     chip: bytes.map(b => b.toString(16).toUpperCase().padStart(2, "0")).join(":"),
     p: persona(TINTS[i][1], { eyeW: 0.12 * (0.95 + r() * 0.1), eyeH: 0.19 * (0.95 + r() * 0.1), spacing: 0.19 * (0.96 + r() * 0.08), lidTilt: 0.16 * (0.8 + r() * 0.45), blink: 0.8 + r() * 0.45 })
   };
 }
-let CERT = { name: "Mira", arche: "Curiosul", tint: TINTS[2], born: "24.09.2026", chip: "34:85:18:6A:C2:9F" };
+let CERT = { name: "Mira", arche: "curious", tint: TINTS[2], born: new Date(2026, 8, 24), chip: "34:85:18:6A:C2:9F" };
 function renderCert() {
   if (!$("#c-name")) return;
-  const d = D(), c = CERT, gl = d.arche[c.arche];
+  const d = D(), c = CERT;
   $("#c-name").textContent = c.name;
-  $("#c-arche").innerHTML = c.arche + (gl ? ` <span class="gloss">· ${gl}</span>` : "");
+  $("#c-arche").textContent = d.arche[c.arche];
   $("#c-eyes").innerHTML = `<span class="sw" style="--c:${c.tint[1]}"></span>${d.tints[c.tint[0]]} · ${d.rar[c.tint[3]]}`;
-  $("#c-born").textContent = c.born;
+  $("#c-born").textContent = d.date(c.born);
   $("#c-chip").textContent = c.chip;
-  $("#c-words").textContent = `„Salut! Sunt ${c.name}, un mic suflet AI.”`;
+  $("#c-words").textContent = d.words(c.name);
   $("#c-gloss").textContent = d.first(c.name);
   const cv = $("#cert-canvas"); if (cv) cv.setAttribute("aria-label", d.eyesOf(c.name));
 }

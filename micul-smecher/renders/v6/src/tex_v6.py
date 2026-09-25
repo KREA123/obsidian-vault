@@ -5,7 +5,7 @@
 
 sole_engrave.png   plan-view laser-marking mask of the v6 flat base (as seen from BELOW, flipped for Blender's v),
                    same convention as v5 (60 x 60 mm, 50 px/mm, white = marked):
-                   front strip of the polymer base plate (y -9.6 / -11.1): "SOUL · Nº 00417 · PROIECTAT ÎN ROMÂNIA"
+                   front strip of the polymer base plate (y -9.6 / -11.1): "SOUL · Nº 00417 · DESIGNED IN ROMANIA"
                    and the small legal line; back strip (y +9.4): CE and the crossed-bin symbol.
                    The foot (30 x 14 oval) carries only the contacts and the two Torx heads.
 """
@@ -31,10 +31,10 @@ def sole_engrave(path):
     def P(x, y):      # plan mm -> canvas px (the base seen from below: x right, +y (back) down)
         return c + x * S, c + y * S
     x, y = P(0, -9.7)
-    d.text((x, y), 'SOUL · Nº 00417 · PROIECTAT ÎN ROMÂNIA', font=T5.font(T5.FONT_XL, 1.05 * S), fill=255,
+    d.text((x, y), 'SOUL · Nº 00417 · DESIGNED IN ROMANIA', font=T5.font(T5.FONT_XL, 1.05 * S), fill=255,
            anchor='mm')
     x, y = P(0, -11.35)
-    d.text((x, y), 'SOUL S1 · SN 26-00417 · [PRODUCĂTOR] SRL · RO · Li-ion', font=T5.font(T5.FONT, 0.62 * S),
+    d.text((x, y), 'SOUL M · SN 26-00417 · [MANUFACTURER] SRL · RO · Li-ion', font=T5.font(T5.FONT, 0.62 * S),
            fill=255, anchor='mm')
     ce = P(3.4, 9.3)
     T5.draw_ce(d, ce[0], ce[1], 2.6 * S * 0.62, 255, 0.16 * S)

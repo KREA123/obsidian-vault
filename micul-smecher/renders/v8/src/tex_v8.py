@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tex_v8.py -- the SoulOS keyboard screenshot (os/screenshots/soulos3-keyboard-hello-1440.png, a 440 x 517 mockup of
+"""tex_v8.py -- the SoulOS keyboard screenshot (os/screenshots/soulos3-EN-keyboard-hello-1440.png, English UI, a 660 x 755 capture of
 the whole device) cropped to its round screen and resampled to a 1024 x 1024 screen texture (the circle fills the
 square, black outside), so it maps onto the glass exactly like the v5/v6 eye textures.
     python3 tex_v8.py
@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.abspath(os.path.join(HERE, '..', '..', '..', 'os', 'screenshots', 'soulos3-keyboard-hello-1440.png'))
+SRC = os.path.abspath(os.path.join(HERE, '..', '..', '..', 'os', 'screenshots', 'soulos3-EN-keyboard-hello-1440.png'))
 OUT = os.path.join(HERE, 'tex', 'kbd_soulos3.png')
 
 

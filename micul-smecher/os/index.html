@@ -450,7 +450,7 @@ html{overscroll-behavior-x:none}
 </style>
 
 <header class="top">
-  <div class="brand"><span class="mark" aria-hidden="true"></span>SoulOS <small>SOUL · 466 px AMOLED</small></div>
+  <div class="brand"><span class="mark" aria-hidden="true"></span>SoulOS <small>SOUL M · round 2.8″ screen</small></div>
   <div class="lang" role="group" aria-label="Limba / Language">
     <button id="lang-en" type="button" data-lang="en" aria-pressed="true">EN</button>
     <button id="lang-ro" type="button" data-lang="ro" aria-pressed="false">RO</button>
@@ -725,6 +725,7 @@ let LANG = "en";   /* SOUL is international: English first, Romanian via the tog
 try { const l = localStorage.getItem("soulos-lang"); if (l === "en" || l === "ro") LANG = l; } catch (e) {}
 const T = () => STR[LANG];
 /* English shows the 12-hour clock in what SOUL says ("5:00 PM"); Romanian keeps 17:00 */
+const qo = x => LANG === "ro" ? `„${x}”` : `“${x}”`;   /* quotes: „…” in Romanian, “…” in English */
 function t12(t) { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t)); if (!m) return t; const h = +m[1]; return `${(h + 11) % 12 + 1}:${m[2]} ${h < 12 ? "AM" : "PM"}`; }
 /* the Translate app's demo phrase, per language pair */
 const TRP = { "RO>EN": ["Unde e gara, vă rog?", "Where is the train station, please?"], "EN>RO": ["Where is the train station, please?", "Unde e gara, vă rog?"],
@@ -1211,7 +1212,7 @@ function cardHTML(v) {
     case "talk": {
       const qa = S.lastQA, off = S.ai === "none";
       return lbl(L.talk) + `<div class="c" style="top:258px;gap:8px"><div class="dtag" style="color:${off ? "var(--amber)" : "var(--ice)"}">${esc(L.aiModes[S.ai])} · ${esc(L.aiTag[S.ai])}</div>
-        ${off ? `<div class="t2" style="font-size:28px">${L.talkOff}</div>` : qa ? `<div class="t2" style="font-size:26px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">„${esc(qa)}”</div>` : `<div class="t2" style="font-size:28px">${L.talkHint}</div>`}
+        ${off ? `<div class="t2" style="font-size:28px">${L.talkOff}</div>` : qa ? `<div class="t2" style="font-size:26px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${qo(esc(qa))}</div>` : `<div class="t2" style="font-size:28px">${L.talkHint}</div>`}
         ${wordBtn("type-ai", unpen(off ? L.typeOff : L.typeBtn(aiName())), off ? "" : "", ' data-o="talk"', "pen")}</div>`;
     }
     case "reminders": {
@@ -1291,7 +1292,7 @@ function cardHTML(v) {
     case "voice": {
       const V = S.voice; if (!V) return "";
       if (V.phase === "listen") return lbl(L.listen, "ice") + `<div class="c" style="top:318px"><div class="t2" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>`;
-      if (V.phase === "think") return lbl(L.thinking(aiName()), "amber") + `<div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">„${esc(V.p.q)}”</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
+      if (V.phase === "think") return lbl(L.thinking(aiName()), "amber") + `<div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">${qo(esc(V.p.q))}</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
       const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips;
       if (V.kind === "typed") return `<div class="c fade-in" style="top:176px;gap:12px;left:52px;right:52px"><div class="dtag">${esc(S.ai === "none" ? L.localTag : L.demoTag(L.aiModes[S.ai]))}</div>
         <div class="t1" style="font-size:${V.p.a.length > 44 ? 27 : 31}px">${esc(V.p.a)}</div>
@@ -2470,7 +2471,7 @@ function renderPanel() {
   $("#lede").textContent = L.lede; $("#sayH").textContent = L.sayH; $("#scrH").textContent = L.scrH;
   $("#ctlH").textContent = L.ctlH; $("#senH").textContent = L.senH; $("#foot").textContent = L.foot;
   $("#keys").innerHTML = L.keys.map(k => `<span>${k.slice(0, -1).map(x => `<kbd>${x}</kbd>`).join(" ")} ${k[k.length - 1]}</span>`).join("");
-  $("#say").innerHTML = L.phrases.map((p, i) => `<button type="button" id="say-${i}" data-i="${i}">„${esc(p.q)}”</button>`).join("") + `<button type="button" id="say-claude" class="claude" data-c="1">${L.claudeNow}</button>`;
+  $("#say").innerHTML = L.phrases.map((p, i) => `<button type="button" id="say-${i}" data-i="${i}">${qo(esc(p.q))}</button>`).join("") + `<button type="button" id="say-claude" class="claude" data-c="1">${L.claudeNow}</button>`;
   const order = ["home", "today", "apps", ...RING.slice(1)];
   $("#screens").innerHTML = order.map((v, i) => `<li><button type="button" id="scr-${v}" data-v="${v}"><span class="n">${v === "today" ? "↑" : v === "apps" ? "⬡" : i === 0 ? "●" : String(i - 2).padStart(2, "0")}</span><span class="nm">${L[v]}</span><span class="ds">${L.d[v]}</span></button></li>`).join("");
   $("#ctrl").innerHTML = L.ctrl.map(c => `<dt>${c[0]}</dt><dd>${c[1]}</dd>`).join("");
