@@ -72,7 +72,7 @@ int baselineFor(const Font& f, uint32_t cp, float cy) {
 
 // Signed distance to a polygon (Inigo Quilez, MIT), negative inside.
 struct Poly {
-  float v[16];
+  float v[16] = {0};
   int n = 0;
   void add(float x, float y) {
     v[2 * n] = x;
@@ -634,7 +634,7 @@ void Keyboard::update(float dt) {
 void Keyboard::drawField(Canvas& cv) {
   const Font& f = fonts::text();
   const std::string& s = field_.text();
-  int caretX, caretBase = kBase2;
+  int caretX = 233, caretBase = kBase2;
   if (s.empty()) {
     const int w = Canvas::measureText(f, cfg_.placeholder);
     cv.drawText(f, 233.0f + 3, kBase2, cfg_.placeholder, kCream, 0.38f, Align::Center);

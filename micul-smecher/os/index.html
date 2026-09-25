@@ -241,6 +241,7 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .wd{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;display:grid;place-items:center;font:400 14px/1 var(--r);letter-spacing:.04em;color:var(--faint);cursor:pointer}
 .wd.on{color:var(--cream);font-weight:600}
 .wd.on::after{content:"";position:absolute;bottom:6px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--cream);box-shadow:0 0 6px var(--cream)}
+.dlab{position:absolute;left:0;right:0;text-align:center;font:400 13px/1 var(--r);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
 .dtag{font:400 13px/1.2 var(--r);letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
 .nrow{cursor:pointer}
 /* ---------- panel ---------- */
@@ -1515,17 +1516,8 @@ function claudeDecide(ok) {
 const pad2 = n => String(n).padStart(2, "0");
 const hm = (h, m) => pad2(h) + ":" + pad2(m);
 const uid = p => p + (++S.uid);
-const SVGI = {
-  plus: '<svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>',
-  check: '<svg viewBox="0 0 32 32"><path d="M6 17l7 7L26 9"/></svg>',
-  shift: '<svg viewBox="0 0 28 28"><path class="fl" d="M14 4 L24 14 H19 V23 H9 V14 H4 Z"/></svg>',
-  bksp: '<svg viewBox="0 0 28 28"><path d="M2 14 L9 5 H26 V23 H9 Z"/><path d="M13 10 l8 8 M21 10 l-8 8"/></svg>',
-  mic: '<svg viewBox="0 0 28 28"><rect x="9" y="2" width="10" height="16" rx="5"/><path d="M4 13 a10 10 0 0 0 20 0 M14 23 v4"/></svg>',
-  micOff: '<svg viewBox="0 0 28 28"><rect x="9" y="2" width="10" height="16" rx="5"/><path d="M4 13 a10 10 0 0 0 20 0 M14 23 v4 M3 3 L25 25"/></svg>',
-  send: '<svg viewBox="0 0 28 28"><path d="M14 24 V5 M6 12 L14 4 L22 12"/></svg>',
-  ok: '<svg viewBox="0 0 28 28"><path d="M4 15 L11 22 L24 7"/></svg>'
-};
-const addBtn = a => `<span class="addb" data-act="${a}" role="button" aria-label="+">${SVGI.plus}</span>`;
+const SVGI = { check: lg("check", 30), shift: lg("shift", 26), bksp: lg("bksp", 28), mic: lg("mic", 26), micOff: lg("micOff", 26), send: lg("send", 22), ok: lg("check", 22) };
+const addBtn = a => `<span class="addb" data-act="${a}" role="button" aria-label="+">${lg("plus", 26)}<small>${esc(T().addNew)}</small></span>`;
 function daysStr(days) {
   const L = T(), n = days.filter(Boolean).length;
   if (!n) return L.once; if (n === 7) return L.daily;
@@ -1981,12 +1973,12 @@ const dpos = (deg, r) => [DC + r * Math.cos(deg * Math.PI / 180), DC + r * Math.
 function dialHTML() {
   const L = T(), E = S.edit; if (!E) return "";
   const H = E.mode === "h", f1 = n => n.toFixed(1);
-  let g = `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="${DR}" fill="none" stroke="#1A1813" stroke-width="30"/>`;
+  let g = `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="${DR}" fill="none" stroke="rgba(255,240,200,.1)" stroke-width="2"/>`;
   if (H) {
-    g += `<path d="M28 233 A${DR} ${DR} 0 0 1 438 233" fill="none" stroke="rgba(255,240,200,.16)" stroke-width="30"/><path d="M438 233 A${DR} ${DR} 0 0 1 28 233" fill="none" stroke="rgba(159,198,255,.16)" stroke-width="30"/>`;
+    g += `<path d="M28 233 A${DR} ${DR} 0 0 1 438 233" fill="none" stroke="rgba(255,240,200,.4)" stroke-width="3"/><path d="M438 233 A${DR} ${DR} 0 0 1 28 233" fill="none" stroke="rgba(159,198,255,.45)" stroke-width="3"/>`;
   } else if (E.m > 0) {
     const [x, y] = dpos(-90 + 6 * E.m, DR);
-    g += `<path d="M233 28 A${DR} ${DR} 0 ${E.m > 30 ? 1 : 0} 1 ${f1(x)} ${f1(y)}" fill="none" stroke="rgba(255,240,200,.24)" stroke-width="30"/>`;
+    g += `<path d="M233 28 A${DR} ${DR} 0 ${E.m > 30 ? 1 : 0} 1 ${f1(x)} ${f1(y)}" fill="none" stroke="#FFF0C8" stroke-width="3" style="filter:drop-shadow(0 0 5px rgba(255,240,200,.6))"/>`;
   }
   const N = H ? 24 : 60;
   for (let i = 0; i < N; i++) {
@@ -1994,15 +1986,15 @@ function dialHTML() {
     const [a, b] = dpos(deg, major ? 223 : 225), [c, d] = dpos(deg, 231);
     g += `<line x1="${f1(a)}" y1="${f1(b)}" x2="${f1(c)}" y2="${f1(d)}" stroke="rgba(255,240,200,${major ? .6 : .25})" stroke-width="${major ? 3 : 2}"/>`;
   }
-  (H ? [0, 6, 12, 18] : [0, 15, 30, 45]).forEach(v => { const [x, y] = dpos(H ? 90 + 15 * v : -90 + 6 * v, DR); g += `<text x="${f1(x)}" y="${f1(y + 8)}" text-anchor="middle" font-family="Fredoka,Nunito,sans-serif" font-size="23" font-weight="500" fill="rgba(255,240,200,.6)">${H ? v : pad2(v)}</text>`; });
+  (H ? [0, 6, 12, 18] : [0, 15, 30, 45]).forEach(v => { const [x, y] = dpos(H ? 90 + 15 * v : -90 + 6 * v, DR); g += `<text x="${f1(x)}" y="${f1(y + 8)}" text-anchor="middle" font-family="Martian Mono,monospace" font-size="15" letter-spacing="1" fill="rgba(255,240,200,.6)">${H ? v : pad2(v)}</text>`; });
   const [kx, ky] = dpos(H ? 90 + 15 * E.h : -90 + 6 * E.m, DR);
-  g += `<circle cx="${f1(kx)}" cy="${f1(ky)}" r="28" fill="#FFF0C8" style="filter:drop-shadow(0 0 8px rgba(255,240,200,.7))"/><text x="${f1(kx)}" y="${f1(ky + 9)}" text-anchor="middle" font-family="Fredoka,Nunito,sans-serif" font-size="25" font-weight="600" fill="#16130c">${pad2(H ? E.h : E.m)}</text></svg>`;
+  g += `<circle cx="${f1(kx)}" cy="${f1(ky)}" r="27" fill="#000" stroke="#FFF0C8" stroke-width="2.5" style="filter:drop-shadow(0 0 8px rgba(255,240,200,.6))"/><text x="${f1(kx)}" y="${f1(ky + 8.5)}" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="25" font-weight="600" fill="#FFF0C8">${pad2(H ? E.h : E.m)}</text></svg>`;
   if (E.kind === "rem") E.day = remDay(E);
   const nf = E.kind === "rem" ? (() => { const t = new Date(); t.setDate(t.getDate() + (E.day || 0)); t.setHours(E.h, E.m, 0, 0); return t; })() : nextFire(E);
   const [rh, rm] = nf && nf > Date.now() ? relParts(nf) : [0, 0];
-  const rel = E.kind === "rem" ? `<span class="chip btn" data-act="dial-day" style="position:absolute;left:50%;transform:translateX(-50%);top:276px;white-space:nowrap">${E.day ? L.tomorrowW : L.todayW} · ${nf > Date.now() ? L.relShort(rh, rm) : "—"}</span>`
+  const rel = E.kind === "rem" ? `<span class="chip btn" data-act="dial-day" style="position:absolute;left:50%;transform:translateX(-50%);top:272px;white-space:nowrap;font-size:22px">${E.day ? L.tomorrowW : L.todayW} · ${nf > Date.now() ? L.relShort(rh, rm) : "—"}</span>`
     : `<div class="drel" style="top:282px">${nf ? L.inRel(rh, rm) : ""}</div>`;
-  return `${g}<div class="lbl" style="top:56px">${E.kind === "rem" ? L.dlRem : L.dlAlarm}</div>
+  return `${g}<div class="dlab" style="top:62px">${E.kind === "rem" ? esc(L.dlRem) + " · " + esc((E.text || "").slice(0, 16)) : esc(L.dlAlarm)}</div>
     <div class="ddig" style="top:160px"><span data-act="dial-h" class="${H ? "a" : ""}">${pad2(E.h)}</span>:<span data-act="dial-m" class="${H ? "" : "a"}">${pad2(E.m)}</span></div>
     ${rel}<span class="dok" data-act="dial-ok" role="button" aria-label="OK" style="top:${E.kind === "rem" ? 338 : 324}px">${SVGI.check}</span>`;
 }
@@ -2010,9 +2002,9 @@ function alarmSumHTML() {
   const L = T(), E = S.edit; if (!E) return "";
   const nf = nextFire(E), [rh, rm] = nf ? relParts(nf) : [0, 0];
   const dots = L.days.map((d, i) => { const [x, y] = dpos(144 - 18 * i, 180); return `<span class="wd ${E.days[i] ? "on" : ""}" data-act="as-day" data-i="${i}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px">${d}</span>`; }).join("");
-  return `<div class="lbl" style="top:46px">${L.dlAlarm}</div>
+  return `${lbl(L.dlAlarm)}
     <div class="c" style="top:116px;gap:6px"><div class="fdig" data-act="as-time" style="font-size:66px;cursor:pointer">${hm(E.h, E.m)}</div><div class="t3" style="font-size:24px">${nf ? (rh < 24 ? `${esc(dayWord(nf))} · ${L.relShort(rh, rm)}` : esc(dayWord(nf))) : ""}</div></div>
-    <div class="c" style="top:222px;gap:12px"><span class="chip btn" data-act="as-label" style="max-width:300px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">✎ ${esc(E.label || L.labelDef)}</span></span><span class="chip ok btn" data-act="as-set">${L.setBtn}</span></div>${dots}`;
+    <div class="c" style="top:216px;gap:0"><span class="chip btn" data-act="as-label" style="max-width:300px">${lg("pen", 22)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(E.label || L.labelDef)}</span></span><span class="chip ok btn" data-act="as-set">${lg("check", 22)}${esc(unpen(L.setBtn.replace(/^✓\s*/, "")))}</span></div>${dots}`;
 }
 /* a reminder time that already passed today rolls to tomorrow (unless the user picked tomorrow) */
 function remDay(E) { if (E.dayPick) return E.day; const t = new Date(); t.setHours(E.h, E.m, 0, 0); return t <= new Date() ? 1 : 0; }
@@ -2642,160 +2634,144 @@ function bumpIdle() { S.lastAct = performance.now(); }
 function idleOK() { const v = S.view; return !S.kb && !hold && !S.cc && !S.ringing && !S.game.run && !TOUR && !S.chgShow && !["voice", "ring", "dial", "alarmsum"].includes(v) && !(v === "focus" && S.focus.run) && !(v === "timer" && (S.tm.sw.run || S.tm.cd.run)); }
 const dimEl = $("#dimmer");
 function setBright(b) { S.bright = clamp(b, 0.15, 1); dimEl.style.opacity = ((1 - S.bright) * 0.8).toFixed(3); }
-const GL = {
-  moon: '<svg viewBox="0 0 24 24"><path class="f" d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/></svg>',
-  mic: '<svg viewBox="0 0 24 24"><rect x="8.5" y="3" width="7" height="12" rx="3.5"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V21"/></svg>',
-  micOff: '<svg viewBox="0 0 24 24"><rect x="8.5" y="3" width="7" height="12" rx="3.5"/><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V21M4 4l16 16"/></svg>',
-  snd: '<svg viewBox="0 0 24 24"><path class="f" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
-  sndOff: '<svg viewBox="0 0 24 24"><path class="f" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>',
-  sleep: '<svg viewBox="0 0 24 24"><path d="M3.5 12q3.2 3.6 6.4 0M14.1 12q3.2 3.6 6.4 0"/><path d="M15 3.5h4l-4 4h4" stroke-width="1.7"/></svg>',
-  sun: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>',
-  vol: '<svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/></svg>',
-  bolt: '<svg viewBox="0 0 24 24"><path class="f" d="M13.5 2 4.5 13.5h6.2L9.8 22l9.7-12h-6.3z"/></svg>',
-  spark: '<svg viewBox="0 0 24 24"><path d="M12 2c.6 4.6 2.4 7.4 10 10-7.6 2.6-9.4 5.4-10 10-.6-4.6-2.4-7.4-10-10 7.6-2.6 9.4-5.4 10-10z"/></svg>'
-};
-function statusGlyphs() { const g = []; if (S.dnd) g.push(GL.moon); if (S.micMute) g.push(GL.micOff); if (S.batt.chg) g.push(GL.bolt); return g.length ? `<span class="sg">${g.join("")}</span>` : ""; }
+function statusGlyphs() { const L = T(), g = []; if (S.dnd) g.push(L.stQuiet); if (S.micMute) g.push(L.stMic); if (S.batt.chg) g.push(L.chg); return g.map(x => " · " + esc(x)).join(""); }
 
-/* ================================================================ app icons (original SoulOS set: round, lit from the top-left) */
-const ICG = { talk: ["#D2E8FF", "#3A68D2"], weather: ["#95D4FF", "#2A5FC0"], reminders: ["#FFF8E4", "#E2C27E"], alarms: ["#FFCD74", "#DD6418"], notes: ["#FFEA9E", "#E2AA2E"],
-  focus: ["#3A857A", "#0A2723"], timer: ["#FFA878", "#CF3B27"], claude: ["#4E3815", "#100A03"], diary: ["#FFA9C0", "#C23A63"], translate: ["#C4ABFF", "#5533C4"],
-  music: ["#FF8BD2", "#A51C83"], soul: ["#34332F", "#030303"], games: ["#DAF8EC", "#2F9E79"], settings: ["#ADB3B9", "#373C42"], today: ["#FFF2CE", "#AE8E4E"],
-  memory: ["#A5DEFF", "#2C71A1"], about: ["#F3EEDF", "#978F7B"], cc: ["#737B85", "#202428"] };
-const GLY = {
-  talk: '<path d="M22 22h36a9 9 0 0 1 9 9v15a9 9 0 0 1-9 9H39l-11 8.5V55h-6a9 9 0 0 1-9-9V31a9 9 0 0 1 9-9z" fill="#fff"/><rect x="31" y="31" width="7" height="13" rx="3.5" fill="#2A4E9E"/><rect x="43" y="31" width="7" height="13" rx="3.5" fill="#2A4E9E"/>',
-  weather: '<circle cx="50" cy="30" r="12" fill="#FFD76B"/><path d="M24 58h32a11 11 0 0 0 1-22 14.5 14.5 0 0 0-27.5 3.5A9.5 9.5 0 0 0 24 58z" fill="#fff"/>',
-  reminders: '<circle cx="25" cy="27" r="5" fill="#3FAF8C"/><circle cx="25" cy="40" r="5" fill="#E07A1F"/><circle cx="25" cy="53" r="5" fill="#3A68D2"/><path d="M35 27h22M35 40h22M35 53h16" stroke="#7A6232" stroke-width="5" stroke-linecap="round" opacity=".75"/>',
-  alarms: '<path d="M17 27a10 10 0 0 1 13-9M63 27a10 10 0 0 0-13-9" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="40" cy="43" r="17" fill="#fff"/><path d="M40 34v9.5l6.5 4" stroke="#C4561A" stroke-width="3.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 59l-3 4M52 59l3 4" stroke="#fff" stroke-width="4" stroke-linecap="round"/>',
-  notes: '<path d="M25 17h24l8 8v36a4 4 0 0 1-4 4H25a4 4 0 0 1-4-4V21a4 4 0 0 1 4-4z" fill="#fff"/><path d="M49 17v8h8" fill="#F1D27A"/><path d="M28 34h22M28 42h22M28 50h14" stroke="#D29E23" stroke-width="3.6" stroke-linecap="round"/>',
-  focus: '<circle cx="40" cy="40" r="19" fill="none" stroke="rgba(201,242,228,.22)" stroke-width="6"/><path d="M40 21a19 19 0 1 1-18 13" fill="none" stroke="#C9F2E4" stroke-width="6" stroke-linecap="round"/><circle cx="40" cy="40" r="5" fill="#C9F2E4"/>',
-  timer: '<rect x="35" y="15" width="10" height="7" rx="2.5" fill="#fff"/><path d="M56 25l4-4" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/><circle cx="40" cy="44" r="18" fill="#fff"/><path d="M40 44V33" stroke="#CF3B27" stroke-width="4" stroke-linecap="round"/><circle cx="40" cy="44" r="3" fill="#CF3B27"/>',
-  claude: '<circle cx="40" cy="40" r="37" fill="none" stroke="rgba(255,179,71,.45)" stroke-width="2"/><path d="M23 29l11 11-11 11" stroke="#FFB347" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 52h17" stroke="#FFB347" stroke-width="6" stroke-linecap="round"/>',
-  diary: '<path d="M20 22h16a5 5 0 0 1 4 2 5 5 0 0 1 4-2h16v36H44a5 5 0 0 0-4 2 5 5 0 0 0-4-2H20z" fill="#fff"/><path d="M40 25v33" stroke="#E7A3B6" stroke-width="2"/><path d="M50 32.5c1.8-3 6.5-2.2 6.5 1.4 0 3.4-6.5 7.6-6.5 7.6s-6.5-4.2-6.5-7.6c0-3.6 4.7-4.4 6.5-1.4z" fill="#E0567C"/><path d="M25 32h10M25 39h10M25 46h7" stroke="#E7A3B6" stroke-width="2.6" stroke-linecap="round"/>',
-  translate: '<rect x="14" y="17" width="32" height="25" rx="8" fill="rgba(255,255,255,.55)"/><text x="30" y="36.5" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="800" font-size="17" fill="#fff">A</text><rect x="32" y="35" width="34" height="27" rx="8" fill="#fff"/><text x="49" y="55" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="800" font-size="19" fill="#5533C4">ă</text>',
-  music: '<path d="M34 51V25l23-5v26" stroke="#fff" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="28.5" cy="52" r="7" fill="#fff"/><circle cx="51.5" cy="47" r="7" fill="#fff"/>',
-  soul: '<circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,240,200,.28)" stroke-width="1.6"/><ellipse cx="29" cy="42" rx="8.5" ry="12.5" fill="#FFF0C8"/><ellipse cx="51" cy="42" rx="8.5" ry="12.5" fill="#FFF0C8"/><path d="M18 26L40 33L40 20L18 20zM62 26L40 33L40 20L62 20z" fill="#0b0b0a"/><ellipse cx="31.5" cy="41" rx="2.8" ry="4.5" fill="#fff" opacity=".55"/><ellipse cx="53.5" cy="41" rx="2.8" ry="4.5" fill="#fff" opacity=".55"/><ellipse cx="27" cy="57" rx="5" ry="1.8" fill="#FF7A9A" opacity=".5"/><ellipse cx="53" cy="57" rx="5" ry="1.8" fill="#FF7A9A" opacity=".5"/>',
-  games: '<path d="M40 16l7.1 14.6 16 2.2-11.7 11.2 2.9 15.9L40 52.3l-14.3 7.6 2.9-15.9-11.7-11.2 16-2.2z" fill="#FFD76B" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="M60 54l1.4 3.6 3.6 1.4-3.6 1.4L60 64l-1.4-3.6-3.6-1.4 3.6-1.4z" fill="#fff"/>',
-  settings: '<circle cx="40" cy="40" r="17.5" fill="none" stroke="#fff" stroke-width="9" stroke-dasharray="6.87 6.87"/><circle cx="40" cy="40" r="15" fill="#fff"/><circle cx="40" cy="40" r="6.5" fill="#4B5158"/>',
-  today: '<rect x="23" y="45" width="34" height="15" rx="6" fill="rgba(255,255,255,.55)"/><rect x="19" y="21" width="42" height="26" rx="8" fill="#fff"/><circle cx="30" cy="34" r="5" fill="#E2B04A"/><path d="M39 31h14M39 38h9" stroke="#C9A860" stroke-width="3.4" stroke-linecap="round"/>',
-  memory: '<path d="M40 17a15 15 0 0 1 8.5 27.4V50h-17v-5.6A15 15 0 0 1 40 17z" fill="#fff"/><rect x="32" y="53" width="16" height="5" rx="2.5" fill="#fff"/><path d="M35 33q5 6 10 0" stroke="#2C71A1" stroke-width="3" fill="none" stroke-linecap="round"/>',
-  about: '<text x="40" y="50" text-anchor="middle" font-family="Fredoka,Nunito,sans-serif" font-weight="600" font-size="28" fill="#3A372F">AI</text><circle cx="58" cy="24" r="4" fill="#FFB347"/>',
-  cc: '<rect x="18" y="25" width="44" height="12" rx="6" fill="rgba(255,255,255,.35)"/><circle cx="51" cy="31" r="8" fill="#fff"/><rect x="18" y="44" width="44" height="12" rx="6" fill="rgba(255,255,255,.35)"/><circle cx="29" cy="50" r="8" fill="#fff"/>'
-};
-function icDefs() { $("#icdefs").innerHTML = Object.entries(ICG).map(([k, [a, b]]) => `<linearGradient id="gi-${k}" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`).join(""); }
-const icon = v => `<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="40" fill="url(#gi-${v})"/>${GLY[v] || ""}</svg>`;
+/* ================================================================ launcher: the Orbit
+   Every app is a word riding the lower rim, so the words form the face's smile. You spin them with a finger (or the
+   wheel = crown); they coast, then settle on a detent with a soft tick. The word in the middle is what the eyes look at,
+   and what SOUL holds up in the middle of the glass: its glyph and one live fact. Tap it (or the middle) to open. */
+const ORB = ["talk", "claude", "weather", "reminders", "alarms", "notes", "focus", "timer", "music", "diary", "translate", "soul", "games", "today", "memory", "settings", "about", "cc"];
+const LN = { rot: 2, vr: 0, open: 1, ov: 0, drag: null, tgt: null, near: "weather", wasFast: false, after: null };
 const appName = v => { const L = T(); return v === "home" ? L.home : L[v] || v; };
-
-/* ================================================================ launcher: a round honeycomb with a fisheye lens.
-   The centre cell is the live face; icons shrink and pull in toward the rim; drag with inertia, rubber-band at the edge. */
-const HEX = [["home", 0, 0], ["talk", 0, -1], ["claude", 1, -1], ["weather", 1, 0], ["music", 0, 1], ["games", -1, 1], ["reminders", -1, 0],
-  ["notes", 0, -2], ["focus", 1, -2], ["alarms", 2, -2], ["soul", 2, -1], ["timer", 2, 0], ["settings", 1, 1], ["diary", 0, 2], ["translate", -1, 2],
-  ["today", -2, 2], ["memory", -2, 1], ["about", -2, 0], ["cc", -1, -1]];
-const HD = 102, PMAX = 118;
-const LN = { px: 0, py: 0, vx: 0, vy: 0, open: 1, ov: 0, drag: null, tgt: null, near: null, wasFast: false };
-const hexXY = (q, r) => [HD * (q + r / 2), HD * r * Math.sqrt(3) / 2];
-function fisheye(x, y) {
-  const r = Math.hypot(x, y), R0 = 112, RE = 226;
-  const rr = r <= R0 ? r : R0 + (RE - R0) * (1 - Math.exp(-(r - R0) / 120));
-  const k = r > 0.001 ? rr / r : 1;
-  const s = r <= 100 ? 1 : Math.exp(-Math.pow((r - 100) / 150, 2) * 1.25);   // far cells shrink away to nothing at the rim
-  return [x * k, y * k, s];
-}
+const orbWrap = u => { const n = ORB.length; u = ((u % n) + n) % n; return u >= n / 2 ? u - n : u; };
+const orbAngle = u => { const a = Math.abs(u); return Math.sign(u) * (a <= 1 ? a * 40 : 40 + (a - 1) * 23); };
 function launcherHTML() {
-  return `<div class="lnc">${HEX.map(([v]) => v === "home"
-    ? `<div class="lic face" data-act="open" data-app="home" role="button" aria-label="${esc(appName(v))}"></div>`
-    : `<div class="lic" data-act="open" data-app="${v}" role="button" aria-label="${esc(appName(v))}">${icon(v)}</div>`).join("")}</div><div class="lnl" data-live="lnl"></div>`;
+  const L = T();
+  return `<div class="orb"><svg viewBox="0 0 466 466">${ORB.map(v => `<g class="ow" data-act="open" data-app="${v}" role="button" aria-label="${esc(appName(v))}" style="opacity:0">
+      <path class="hitw" d="${arcD(104, 76, 190)}"/><text class="m"><textPath href="#rO" startOffset="50%" text-anchor="middle">${esc(appName(v))}</textPath></text><text class="d" style="opacity:0"><textPath href="#rO" startOffset="50%" text-anchor="middle">${esc(appName(v))}</textPath></text></g>`).join("")}</svg>
+    <div class="opv" data-act="open" data-app="${LN.near}" role="button" data-live="opv">${orbPreview(LN.near)}</div><i class="otick"></i></div>` +
+    rimTop(`<tspan data-live="clock">${hhmm()}</tspan> · ${esc(L.apps)}`, "", "clock");
 }
-function lnIcon(v) { return curCard && curCard.querySelector(`.lic[data-app="${v}"]`); }
-function lnGrab() { LN.wasFast = Math.hypot(LN.vx, LN.vy) > 260; LN.drag = { px: LN.px, py: LN.py }; LN.vx = LN.vy = 0; LN.tgt = null; }
-function lnDrag(dx, dy) {
-  if (!LN.drag) lnGrab();
-  let x = LN.drag.px + dx, y = LN.drag.py + dy; const r = Math.hypot(x, y);
-  if (r > PMAX) { const rr = PMAX + rubber(r - PMAX, 70); x *= rr / r; y *= rr / r; }
-  LN.px = x; LN.py = y;
-}
-function lnRelease(vx, vy) { LN.drag = null; LN.vx = clamp(vx, -2600, 2600); LN.vy = clamp(vy, -2600, 2600); }
-function lnNudge(dir) {
-  const b = LN.tgt || { x: LN.px, y: LN.py }; let x = b.x, y = b.y;
-  if (dir === "left") x -= HD; if (dir === "right") x += HD; if (dir === "up") y -= HD * 0.866; if (dir === "down") y += HD * 0.866;
-  const r = Math.hypot(x, y); if (r > PMAX) { x *= PMAX / r; y *= PMAX / r; }
-  LN.tgt = { x, y }; LN.vx = LN.vy = 0; sfx("tick");
-}
-function launcherFrame(dt) {
-  if (S.view !== "apps" || !curCard || S.sleeping) return;
-  if (RM) LN.open = 1; else { LN.ov += (170 * (1 - LN.open) - 21 * LN.ov) * dt; LN.open += LN.ov * dt; }
-  if (!LN.drag) {
-    if (LN.tgt) {
-      LN.vx += (210 * (LN.tgt.x - LN.px) - 27 * LN.vx) * dt; LN.vy += (210 * (LN.tgt.y - LN.py) - 27 * LN.vy) * dt;
-      if (Math.hypot(LN.tgt.x - LN.px, LN.tgt.y - LN.py) < 0.3 && Math.hypot(LN.vx, LN.vy) < 3) { LN.px = LN.tgt.x; LN.py = LN.tgt.y; LN.vx = LN.vy = 0; LN.tgt = null; }
-    } else {
-      const r = Math.hypot(LN.px, LN.py);
-      if (r > PMAX) { const ux = LN.px / r, uy = LN.py / r, over = r - PMAX; LN.vx += (-190 * over * ux - 24 * LN.vx) * dt; LN.vy += (-190 * over * uy - 24 * LN.vy) * dt; }
-      else { const f = Math.exp(-3.4 * dt); LN.vx *= f; LN.vy *= f; if (Math.hypot(LN.vx, LN.vy) < 4) LN.vx = LN.vy = 0; }
-    }
-    LN.px += LN.vx * dt; LN.py += LN.vy * dt;
+function orbFact(v) {
+  const L = T();
+  switch (v) {
+    case "talk": return [aiName(), L.aiTag[S.ai]];
+    case "claude": return S.claude.pending ? [L.cWait, S.claude.pending.cmd, "amber"] : ["site", L.cBusy];
+    case "weather": { const W = L.wx.days[0]; return [`${W.t}° ${W.c.toLowerCase()}`, `↑${W.hi}° ↓${W.lo}° · ${L.wx.city}`]; }
+    case "reminders": { const n = S.rems.filter(r => !r.done).sort((a, b) => (a.day || 0) - (b.day || 0) || a.time.localeCompare(b.time))[0]; return n ? [n.time, remText(n)] : ["—", L.reminders]; }
+    case "alarms": { const a = S.alarms.filter(x => x.on).sort((a, b) => a.h * 60 + a.m - b.h * 60 - b.m)[0]; return a ? [hm(a.h, a.m), `${daysStr(a.days)} · ${alarmLabel(a)}`] : ["—", L.noAlarms]; }
+    case "notes": { const n = S.notes[S.notes.length - 1]; return [n ? noteText(n) : "—", `${S.notes.length} · ${L.notes}`]; }
+    case "focus": { const F = S.focus; return [mmss(F.left), F.run ? L.focusRun : L.focusTap]; }
+    case "timer": { const M = S.tm; return M.cd.run ? [mmss(M.cd.left), L.cdT] : [fmtSW(swNow())[0], L.swT]; }
+    case "music": return [L.song, L.artist];
+    case "diary": { const d = S.diary[S.diary.length - 1]; return [diaryText(d), d.time]; }
+    case "translate": return [`${S.tr.a} ⇄ ${S.tr.b}`, L.trHint];
+    case "soul": return [soulName(), `${L.moodL} ${L.moods[S.soul.mood]}`];
+    case "games": return [L.g1, S.game.best ? L.best(S.game.best) : L.noBest];
+    case "today": return [dateShort(), `${S.nh.length} · ${L.nT}`];
+    case "memory": return [L.setMemV(S.memWiped ? 0 : S.memCount), L.memT];
+    case "settings": return [`${Math.round(S.bright * 100)}%`, L.setBright];
+    case "about": return [L.aboutT, "SOUL"];
+    case "cc": return [`${Math.round(S.batt.lvl)}%`, L.cc];
   }
-  const key = `${LN.px.toFixed(2)},${LN.py.toFixed(2)},${LN.open.toFixed(4)}`;
-  if (curCard._lkey === key && !LN.lblOn) return;                 // nothing moved: no DOM writes this frame
+  return [appName(v), ""];
+}
+function orbPreview(v) {
+  const [big, small, tone] = orbFact(v), n = String(big).length, fs = n <= 7 ? 46 : n <= 11 ? 38 : n <= 16 ? 30 : 25;
+  return `<div class="row1" style="color:${tone === "amber" ? "var(--amber)" : "var(--cream)"}">${lg(v === "home" ? "home" : v, 36)}<b style="font-size:${fs}px">${esc(big)}</b></div><small>${esc(small)}</small>`;
+}
+function lnIcon(v) { const el = curCard && curCard.querySelector(`.ow[data-app="${v}"]`); if (el && !el._pos) launcherFrame(0, true); return el; }
+function lnGrab() { LN.wasFast = Math.abs(LN.vr) > 3; LN.drag = { rot: LN.rot }; LN.vr = 0; LN.tgt = null; LN.after = null; }
+function lnDrag(dx) { if (!LN.drag) lnGrab(); LN.rot = LN.drag.rot - dx / 88; }
+/* release: coast with the finger's speed, then land on the detent the coasting would have reached */
+function lnRelease(vx) { LN.drag = null; LN.vr = clamp(-vx / 88, -16, 16); LN.tgt = Math.round(LN.rot + LN.vr / 3.2); }
+function lnNudge(dir) {
+  if (dir === "up") { openApp(LN.near, lnIcon(LN.near)); return; }
+  if (dir === "down") { go("home", "down"); return; }
+  const b = LN.tgt != null ? LN.tgt : Math.round(LN.rot); LN.tgt = b + (dir === "left" ? 1 : -1); LN.after = null;
+}
+function lnSpinTo(v, open) {
+  const i = ORB.indexOf(v); if (i < 0) return;
+  LN.tgt = Math.round(LN.rot) + orbWrap(i - LN.rot); LN.vr = 0; LN.after = open ? v : null;
+  if (RM) { LN.rot = LN.tgt; launcherFrame(0, true); }
+}
+function launcherFrame(dt, force) {
+  if (S.view !== "apps" || !curCard || S.sleeping) return;
+  if (RM) LN.open = 1; else { LN.ov += (150 * (1 - LN.open) - 22 * LN.ov) * dt; LN.open += LN.ov * dt; if (Math.abs(1 - LN.open) < 0.001 && Math.abs(LN.ov) < 0.01) { LN.open = 1; LN.ov = 0; } }
+  if (!LN.drag && dt > 0) {
+    if (LN.tgt != null) {
+      if (RM) { LN.rot = LN.tgt; LN.vr = 0; }
+      else { LN.vr += (95 * (LN.tgt - LN.rot) - 17 * LN.vr) * dt; LN.rot += LN.vr * dt; }
+      if (Math.abs(LN.tgt - LN.rot) < 0.002 && Math.abs(LN.vr) < 0.02) {
+        const n = ORB.length; LN.rot = ((LN.tgt % n) + n) % n; LN.vr = 0; LN.tgt = null;
+        if (LN.after) { const a = LN.after; LN.after = null; openApp(a, lnIcon(a)); return; }
+      }
+    } else if (Math.abs(LN.vr) > 0.01) { LN.tgt = Math.round(LN.rot + LN.vr / 3.2); }
+  }
+  const key = `${LN.rot.toFixed(4)},${LN.open.toFixed(4)}`;
+  if (curCard._lkey === key && !force) return;                    // nothing moved: no DOM writes this frame
   curCard._lkey = key;
-  const els = curCard._lics || (curCard._lics = Array.from(curCard.querySelectorAll(".lic"))); let best = null, bd = 1e9;
+  const els = curCard._lics || (curCard._lics = Array.from(curCard.querySelectorAll(".ow"))), op = clamp(LN.open, 0, 1);
   els.forEach((el, i) => {
-    const [v, q, r] = HEX[i], ring = Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r));
-    const o = clamp((LN.open - ring * 0.08) / 0.84, 0, 1.25);
-    let [x, y] = hexXY(q, r); x += LN.px; y += LN.py;
-    const [fx, fy, s] = fisheye(x, y), sp = 0.3 + 0.7 * o;
-    const X = 233 + fx * sp, Y = 233 + fy * sp, sc = s * o;
-    el.style.transform = `translate3d(${(X - 40).toFixed(1)}px,${(Y - 40).toFixed(1)}px,0) scale(${Math.max(0, sc).toFixed(3)})`;
-    el.style.opacity = clamp(Math.min(1, o) * (s < 0.4 ? s / 0.4 : 1), 0, 1).toFixed(3);
-    el.style.pointerEvents = s < 0.3 ? "none" : "";
-    el._pos = [X, Y, sc];
-    const d = Math.hypot(fx, fy); if (d < bd) { bd = d; best = v; }
-    if (v === "home") { soul.layDirect = LN.open > 0.97; soul.lay = { k: 0.165 * Math.max(0.3, sc), cy: (Y - 233) / 466, cx: (X - 233) / 466 }; }
+    const u = orbWrap(i - LN.rot), a = orbAngle(u) * (1 + (1 - op) * 0.9), aa = Math.abs(a), wb = clamp(1 - Math.abs(u) * 1.7, 0, 1);
+    const fade = clamp((96 - aa) / 26, 0, 1) * op;
+    el.setAttribute("transform", `rotate(${(-a).toFixed(2)} 233 233)`);
+    el.style.opacity = fade.toFixed(3); el.style.pointerEvents = fade < 0.3 ? "none" : "";
+    const m = el.children[1], d = el.children[2];
+    m.style.opacity = ((1 - wb) * (0.66 - clamp((Math.abs(u) - 1) * 0.12, 0, 0.36))).toFixed(3);
+    d.style.opacity = wb.toFixed(3); d.style.fontSize = (22 + 9 * wb).toFixed(1) + "px";
+    const r = a * Math.PI / 180; el._pos = [233 + 188 * Math.sin(r), 233 + 188 * Math.cos(r), 1];
   });
-  const moving = !!(LN.drag || LN.tgt || Math.hypot(LN.vx, LN.vy) > 30), l = curCard._lnl || (curCard._lnl = curCard.querySelector('[data-live="lnl"]'));
-  if (best !== LN.near) { LN.near = best; if (l) l.textContent = appName(best); if (moving) sfx("tick"); }
-  if (moving) LN.lblT = performance.now();
-  if (l) { const show = performance.now() - (LN.lblT || -9e9) < 1100 && best !== "home"; if (show !== LN.lblOn) { LN.lblOn = show; l.style.opacity = show ? "1" : "0"; } }
+  const near = ORB[((Math.round(LN.rot) % ORB.length) + ORB.length) % ORB.length];
+  if (near !== LN.near) {
+    LN.near = near; sfx("tick"); hap("light");
+    const pv = curCard.querySelector('[data-live="opv"]');
+    if (pv) { pv.dataset.app = near; pv.innerHTML = orbPreview(near); pv.classList.remove("swap"); void pv.offsetWidth; pv.classList.add("swap"); }
+  }
+  const moving = LN.drag || Math.abs(LN.vr) > 0.3;
+  if (moving) soul.lookAt(clamp(LN.drag ? 0 : -LN.vr * 0.12, -0.9, 0.9), 0.75, 0.25); else soul.lookAt(0, 0.95, 0.4);
 }
 function openApp(v, el) {
   S.coach = false; hap("light");
-  const origin = el && el._pos ? el._pos.slice(0, 2) : el ? (() => { const b = el.getBoundingClientRect(), sb = screen.getBoundingClientRect(); return [(b.left + b.width / 2 - sb.left) / sb.width * 466, (b.top + b.height / 2 - sb.top) / sb.height * 466]; })() : null;
-  if (v === "home") { go("home", "fade", { exit: "zoom", origin: origin || [233, 233] }); return; }
-  if (v === "cc") { if (S.view !== "home") go("home", "fade", { exit: "zoom", origin: origin || [233, 233] }); ccOpen(); return; }
-  go(v, origin ? "zoom" : "fade", { origin, exit: origin ? "zoom" : undefined });
+  const eyes = [233, 233 + (soul.layS.cy + 0.02 * soul.layS.k) * 466];    // apps breathe out of the eyes
+  if (v === "home") { go("home", "fade", { exit: "zoom", origin: eyes }); return; }
+  if (v === "cc") { if (S.view !== "home") go("home", "fade", { exit: "zoom", origin: eyes }); ccOpen(); return; }
+  go(v, "zoom", { origin: eyes, exit: "zoom" });
 }
 
 /* ================================================================ Today: a snapping stack of widgets */
 const TD = { s: 0, v: 0, tgt: 0, drag: null };
 const WG = ["weather", "reminders", "focus", "claude", "battery", "notifs"], WAPP = { weather: "weather", reminders: "reminders", focus: "focus", claude: "claude", battery: "cc" };
 function miniRing(frac, col, sz = 66, inner = "") {
-  const C = 2 * Math.PI * 27;
-  return `<svg viewBox="0 0 66 66" width="${sz}" height="${sz}" style="flex:none" aria-hidden="true"><circle cx="33" cy="33" r="27" fill="none" stroke="rgba(255,240,200,.14)" stroke-width="7"/><circle cx="33" cy="33" r="27" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - clamp(frac, 0, 1))).toFixed(1)}" transform="rotate(-90 33 33)" style="filter:drop-shadow(0 0 4px ${col})"/>${inner}</svg>`;
+  const C = 2 * Math.PI * 28;
+  return `<svg viewBox="0 0 66 66" width="${sz}" height="${sz}" style="flex:none" aria-hidden="true"><circle cx="33" cy="33" r="28" fill="none" stroke="rgba(255,240,200,.14)" stroke-width="2"/><circle cx="33" cy="33" r="28" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - clamp(frac, 0, 1))).toFixed(1)}" transform="rotate(-90 33 33)" style="filter:drop-shadow(0 0 4px ${col})"/>${inner}</svg>`;
 }
+/* Today says one thing at a time: a rim-font label, a big number or phrase, one line under it. No cards. */
 function widgetHTML(k) {
   const L = T();
   switch (k) {
-    case "weather": { const W = L.wx.days[0]; return `<div class="wg-h"><span>${esc(L.weather)}</span><small>${esc(L.wx.city)}</small></div><div class="wg-row">${wxIcon(W.ic, 66)}<b class="wg-big">${W.t}°</b><span class="wg-sub">${esc(W.c)}<br>↑${W.hi}° ↓${W.lo}°</span></div>`; }
+    case "weather": { const W = L.wx.days[0]; return `<div class="wg-h"><span>${esc(L.weather)}</span><small>${esc(L.wx.city)}</small></div><div class="wg-row">${wxIcon(W.ic, 54)}<b class="wg-big">${W.t}°</b></div><div class="wg-sub" style="text-align:center">${esc(W.c)} · ↑${W.hi}° ↓${W.lo}°</div>`; }
     case "reminders": {
       const next = S.rems.filter(r => !r.done).sort((a, b) => (a.day || 0) - (b.day || 0) || a.time.localeCompare(b.time))[0];
       return `<div class="wg-h"><span>${esc(L.nextRem)}</span><small>${next && next.day ? esc(L.tomorrowW) : esc(L.todayW)}</small></div>` +
-        (next ? `<div class="wg-row"><b class="wg-big" style="font-size:44px">${next.time}</b><span class="wg-t">${esc(remText(next))}</span></div>` : `<div class="wg-t">—</div>`);
+        (next ? `<b class="wg-big">${next.time}</b><span class="wg-t">${esc(remText(next))}</span>` : `<div class="wg-t">—</div>`);
     }
-    case "focus": { const F = S.focus; return `<div class="wg-h"><span>${esc(L.focus)}</span><small>${esc(F.done ? L.focusDone : F.run ? L.focusRun : L.wFocusIdle)}</small></div><div class="wg-row">${miniRing(F.left / F.total, F.done ? "#C9F2E4" : "#FFF0C8")}<b class="wg-big" data-live="wfocus">${mmss(F.left)}</b></div>`; }
-    case "claude": { const P = S.claude.pending; return `<div class="wg-h"><span>Claude</span><small>${esc(L.aiShort[S.ai])}</small></div><div class="wg-row"><i class="pdot" style="background:${P ? "#FFB347" : "#9FC6FF"};color:${P ? "#FFB347" : "#9FC6FF"}"></i><span class="wg-t" style="color:${P ? "var(--amber)" : ""}">${esc(P ? L.cWait : L.cBusy)}</span></div><div class="wg-sub" style="font-family:var(--mono);font-size:18px">${esc(P ? P.cmd : "site · 3 ✓")}</div>`; }
-    case "battery": { const B = S.batt; return `<div class="wg-h"><span>${esc(L.battery)}</span><small>${esc(B.chg ? L.chg : L.battLeft(B.lvl))}</small></div><div class="wg-row">${miniRing(B.lvl / 100, B.chg ? "#C9F2E4" : B.lvl < 20 ? "#FFB347" : "#C9F2E4")}<b class="wg-big" data-live="wbatt">${Math.round(B.lvl)}%</b>${B.chg ? `<span style="width:30px;height:30px;fill:var(--mint)">${GL.bolt}</span>` : ""}</div>`; }
+    case "focus": { const F = S.focus; return `<div class="wg-h"><span>${esc(L.focus)}</span><small>${esc(F.done ? L.focusDone : F.run ? L.focusRun : L.wFocusIdle)}</small></div><div class="wg-row">${miniRing(F.left / F.total, F.done ? "#C9F2E4" : "#FFF0C8", 52)}<b class="wg-big" data-live="wfocus">${mmss(F.left)}</b></div>`; }
+    case "claude": { const P = S.claude.pending; return `<div class="wg-h"><span>Claude</span><small>${esc(L.aiShort[S.ai])}</small></div><div class="wg-row" style="color:${P ? "var(--amber)" : "var(--cream)"}">${lg("claude", 34)}<span class="wg-t" style="font-size:30px">${esc(P ? L.cWait : L.cBusy)}</span></div><div class="wg-sub" style="font:400 14px/1 var(--r);letter-spacing:.04em">${esc(P ? P.cmd : "site · 3 ✓")}</div>`; }
+    case "battery": { const B = S.batt, col = B.chg ? "#C9F2E4" : B.lvl < 20 ? "#FFB347" : "#FFF0C8"; return `<div class="wg-h"><span>${esc(L.battery)}</span><small>${esc(B.chg ? L.chg : L.battLeft(B.lvl))}</small></div><div class="wg-row">${miniRing(B.lvl / 100, col, 52)}<b class="wg-big" data-live="wbatt" style="color:${B.chg ? "var(--mint)" : ""}">${Math.round(B.lvl)}%</b></div>`; }
     case "notifs": {
       const n = S.nh.slice(0, 2);
-      return `<div class="wg-h"><span>${esc(L.nT)}</span><small>${S.nh.length || ""}${S.dnd ? " · ☾" : ""}</small></div>` +
-        (n.length ? n.map(x => `<div class="wg-t" style="font-size:21px"><span style="color:${x.kind === "amber" ? "var(--amber)" : "rgba(255,240,200,.55)"}">${esc(x.who || x.t)}</span> ${esc(x.text)}</div>`).join("") : `<div class="wg-sub">${esc(L.nEmpty)}</div>`);
+      return `<div class="wg-h"><span>${esc(L.nT)}</span><small>${S.nh.length || ""}${S.dnd ? " · " + esc(L.stQuiet) : ""}</small></div>` +
+        (n.length ? n.map(x => `<div class="wg-t" style="font-size:22px;font-weight:440"><span style="font:400 13px/1 var(--r);letter-spacing:.12em;text-transform:uppercase;color:${x.kind === "amber" ? "var(--amber)" : "var(--faint)"}">${esc(x.who || x.t)}</span> ${esc(x.text)}</div>`).join("") : `<div class="wg-t" style="color:var(--dim)">${esc(L.nEmpty)}</div>`);
     }
   }
   return "";
 }
 function todayHTML() {
-  const L = T(), date = new Date().toLocaleDateString(LANG === "ro" ? "ro-RO" : "en-GB", { weekday: "short", day: "numeric", month: "short" }), n = WG.length;
-  return `<div class="lbl" style="top:112px">${L.lblToday} · ${esc(date)}</div>` +
+  const L = T(), date = new Date().toLocaleDateString(LANG === "ro" ? "ro-RO" : "en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(/[.,]/g, ""), n = WG.length;
+  return lbl(`${L.lblToday} · ${date}`) +
     WG.map((k, i) => `<div class="wg ${k === "claude" && S.claude.pending ? "amber" : ""}" data-i="${i}"${WAPP[k] ? ` data-act="open" data-app="${WAPP[k]}" role="button"` : ""} style="opacity:0">${widgetHTML(k)}</div>`).join("") +
-    `<div class="tdots">${WG.map((k, i) => { const a = ((i - (n - 1) / 2) * 5.4) * Math.PI / 180; return `<i style="left:${(233 + 217 * Math.cos(a) - 3.5).toFixed(1)}px;top:${(233 + 217 * Math.sin(a) - 3.5).toFixed(1)}px"></i>`; }).join("")}</div>`;
+    `<div class="tdots">${WG.map((k, i) => { const a = (180 + (i - (n - 1) / 2) * 5.6) * Math.PI / 180; return `<i style="left:${(233 + 214 * Math.cos(a) - 2.5).toFixed(1)}px;top:${(233 + 214 * Math.sin(a) - 3).toFixed(1)}px;transform:rotate(${((i - (n - 1) / 2) * 5.6).toFixed(1)}deg)"></i>`; }).join("")}</div>`;
 }
 function stackFrame(dt) {
   if (S.view !== "today" || !curCard || S.kb) return;
@@ -2826,31 +2802,18 @@ function stackRelease(dy, vy) {
 function stackGo(i) { const t = clamp(i, 0, WG.length - 1); if (t !== TD.tgt) { sfx("tick"); hap("light"); } TD.tgt = t; }
 
 /* ================================================================ Weather (scripted, three days) */
-function wxIcon(k, s) {
-  const rays = [0, 45, 90, 135, 180, 225, 270, 315].map(a => { const r = a * Math.PI / 180; return `<line x1="${(50 + 25 * Math.cos(r)).toFixed(1)}" y1="${(50 + 25 * Math.sin(r)).toFixed(1)}" x2="${(50 + 33 * Math.cos(r)).toFixed(1)}" y2="${(50 + 33 * Math.sin(r)).toFixed(1)}"/>`; }).join("");
-  const sun = `<g class="wx-rays" stroke="#FFD76B" stroke-width="5" stroke-linecap="round">${rays}</g><circle cx="50" cy="50" r="16" fill="#FFD76B"/>`;
-  const cloud = c => `<path class="wx-cloud" d="M27 76h45a15 15 0 0 0 1-30 20 20 0 0 0-38.5 4.5A13 13 0 0 0 27 76z" fill="${c}"/>`;
-  let body;
-  if (k === "sun") body = `<g style="filter:drop-shadow(0 0 6px rgba(255,215,107,.6))">${sun}</g>`;
-  else if (k === "part") body = `<g transform="translate(25 -6) scale(.74)">${sun}</g>${cloud("#F4EEDD")}`;
-  else if (k === "rain") body = `${cloud("#C8D2DD")}<g class="wx-rain" stroke="#9FC6FF" stroke-width="4.5" stroke-linecap="round"><line x1="40" y1="83" x2="37" y2="91"/><line x1="54" y1="83" x2="51" y2="91"/><line x1="68" y1="83" x2="65" y2="91"/></g>`;
-  else body = `<path d="M50 50h26a10 10 0 0 0 .5-20 13 13 0 0 0-25 3 8.5 8.5 0 0 0-1.5 17z" fill="rgba(244,238,221,.45)"/>${cloud("#F4EEDD")}`;
-  return `<svg class="wx" viewBox="0 0 100 100" width="${s}" height="${s}" style="flex:none" aria-hidden="true">${body}</svg>`;
-}
+function wxIcon(k, s) { return `<span class="wx" style="display:inline-grid;color:var(--cream)">${lg({ sun: "sunwx", part: "weather", cloud: "cloud", rain: "rain" }[k] || "cloud", s)}</span>`; }
 function weatherHTML() {
   const L = T(), W = L.wx.days[S.wx.day];
-  return `<div class="wxbody ${S.wx.swap ? "wxin" : ""}"><div class="lbl" style="top:122px">${esc(W.d)} · ${esc(L.wx.city)}</div>
-    <div class="wxmain">${wxIcon(W.ic, 104)}<span class="wxt">${W.t}°</span></div>
+  return `<div class="wxbody ${S.wx.swap ? "wxin" : ""}">${lbl(`${W.d} · ${L.wx.city}`)}
+    <div class="wxmain">${wxIcon(W.ic, 84)}<span class="wxt">${W.t}°</span></div>
     <div class="wxc">${esc(W.c)} · ↑${W.hi}° ↓${W.lo}°</div>
-    <div class="wxh">${W.h.map(h => `<div><small>${h[0]}</small>${wxIcon(h[2], 36)}<b>${h[1]}°</b></div>`).join("")}</div>
-    <div class="wxd">${L.wx.days.map((d, i) => `<i class="${i === S.wx.day ? "on" : ""}"></i>`).join("")}</div></div>`;
+    <div class="wxh">${W.h.map(h => `<div><small>${h[0]}</small>${wxIcon(h[2], 30)}<b>${h[1]}°</b></div>`).join("")}</div>
+    ${rimBot(L.wx.days.map((d, i) => `<tspan class="${i === S.wx.day ? "cream" : ""}" style="${i === S.wx.day ? "" : "opacity:.5"}">${esc(d.d)}</tspan>`).join(" · "), "")}</div>`;
 }
 
 /* ================================================================ Timer: stopwatch + countdown */
-const TG = {
-  play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>', pause: '<svg viewBox="0 0 24 24"><path d="M6 4.5h4.2v15H6zM13.8 4.5H18v15h-4.2z"/></svg>',
-  flag: '<svg viewBox="0 0 24 24"><path d="M5.5 3h2.2v18H5.5zM7.7 4H19l-3 4.5L19 13H7.7z"/></svg>', reset: '<svg viewBox="0 0 24 24"><path d="M12 4.5a7.5 7.5 0 1 1-7.1 5.1l2.1.7A5.3 5.3 0 1 0 12 6.7V10L7 5.6 12 1.2z"/></svg>'
-};
+const TG = { play: lg("play", 28), pause: lg("pause", 28), flag: lg("flag", 28), reset: lg("reset", 28) };
 const swNow = () => { const W = S.tm.sw; return W.acc + (W.run ? (performance.now() - W.t0) / 1000 : 0); };
 const fmtSW = t => [pad2(Math.floor(t / 60) % 100) + ":" + pad2(Math.floor(t % 60)), "." + Math.floor((t * 10) % 10)];
 function timerHTML() {
@@ -2859,11 +2822,11 @@ function timerHTML() {
   if (M.mode === "sw") {
     const t = swNow(), [a, b] = fmtSW(t), n = sw.laps.length;
     const laps = sw.laps.slice(-2).map((x, i, arr) => { const k = n - arr.length + i, prev = k ? sw.laps[k - 1] : 0, [la, lb] = fmtSW(x - prev); return `<div><span>${esc(L.lapN(k + 1))}</span><span>${la}${lb}</span></div>`; }).reverse().join("");
-    return seg + `<div class="tdig" data-live="swd">${a}<small>${b}</small></div><div class="tlaps">${laps}</div>
+    return lbl(L.timer) + seg + `<div class="tdig" data-live="swd">${a}<small>${b}</small></div><div class="tlaps">${laps}</div>
       <div class="tbtns"><span class="tb ${!sw.run && !t ? "dis" : ""}" data-act="sw-lap" role="button" aria-label="lap">${sw.run || !t ? TG.flag : TG.reset}</span><span class="tb ${sw.run ? "stop" : "go"}" data-act="sw-go" role="button" aria-label="start">${sw.run ? TG.pause : TG.play}</span></div>`;
   }
   const C = 2 * Math.PI * 222, frac = cd.left / cd.total;
-  return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(255,179,71,.14)" stroke-width="10"/><circle data-live="cdr" cx="233" cy="233" r="222" fill="none" stroke="${cd.done ? "#C9F2E4" : "#FFB347"}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - frac)).toFixed(1)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px ${cd.done ? "rgba(201,242,228,.7)" : "rgba(255,179,71,.6)"})"/></svg>` + seg +
+  return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(255,240,200,.1)" stroke-width="6"/><circle data-live="cdr" cx="233" cy="233" r="222" fill="none" stroke="${cd.done ? "#C9F2E4" : "#FFF0C8"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - frac)).toFixed(1)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px ${cd.done ? "rgba(201,242,228,.7)" : "rgba(255,240,200,.5)"})"/></svg>` + lbl(L.timer, cd.done ? "mint" : "") + seg +
     `<div class="tdig" data-live="cdd" style="${cd.done ? "color:var(--mint)" : ""}">${mmss(cd.left)}</div>` +
     (cd.done ? `<div class="wxc" style="top:282px;color:var(--mint)">${esc(L.cdDone)}</div>` : cd.run ? "" : `<div class="tpre">${[1, 3, 5, 10].map(m => `<span data-act="cd-pre" data-m="${m}" class="${cd.total === m * 60 ? "on" : ""}">${m}′</span>`).join("")}</div>`) +
     `<div class="tbtns"><span class="tb" data-act="cd-reset" role="button" aria-label="reset">${TG.reset}</span><span class="tb ${cd.run ? "stop" : "go"}" data-act="cd-go" role="button" aria-label="start">${cd.run ? TG.pause : TG.play}</span></div>`;
@@ -2892,21 +2855,21 @@ const soulName = () => S.soul.name || "Soul";
 function soulHTML() {
   const L = T(), m = S.soul.mood, days = Math.max(1, Math.floor((Date.now() - new Date(2026, 8, 24).getTime()) / 864e5) + 1);
   const bars = [[clamp(S.batt.lvl / 100, 0.1, 1), "#C9F2E4"], [clamp(0.55 + S.soul.boops * 0.06 + S.game.best * 0.012, 0, 1), "#FFD76B"], [clamp(0.45 + S.phraseIdx * 0.08 + S.nh.length * 0.04, 0, 1), "#9FC6FF"]];
-  return `<div class="sname" data-act="soul-name" role="button">${esc(soulName())}<i>✎</i></div>
+  return lbl(L.soul) + `<div class="sname" data-act="soul-name" role="button">${esc(soulName())}<i>${esc(L.edit)}</i></div>
     <div class="sborn">${esc(L.born)}<br>${esc(L.together(days))}</div>
-    <div class="smood" data-act="soul-mood" role="button"><i style="background:${MOODC[m]};color:${MOODC[m]}"></i>${esc(L.moodL)} <b style="color:${MOODC[m]};font-weight:500">${esc(L.moods[m])}</b></div>
-    <div class="smet">${L.meters.map((t, i) => `<div><b style="font-weight:500">${esc(t)}</b><span><i style="width:${Math.round(bars[i][0] * 100)}%;background:${bars[i][1]};box-shadow:0 0 8px ${bars[i][1]}"></i></span></div>`).join("")}</div>`;
+    <div class="smood" data-act="soul-mood" role="button"><i style="background:${MOODC[m]};color:${MOODC[m]}"></i>${esc(L.moodL)} <b style="color:${MOODC[m]};font-weight:600;box-shadow:inset 0 -2px 0 ${MOODC[m]}66">${esc(L.moods[m])}</b></div>
+    <div class="smet">${L.meters.map((t, i) => `<div><b style="font-weight:500">${esc(t)}</b><span><i style="width:${Math.round(bars[i][0] * 100)}%;background:${bars[i][1]};box-shadow:0 0 6px ${bars[i][1]}"></i></span></div>`).join("")}</div>`;
 }
 
 /* ================================================================ Games: catch the star (the eyes follow every star) */
-const STAR = '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 5l7.8 16.2 17.7 2.4-12.9 12.4 3.2 17.6L32 45.2 16.2 53.6l3.2-17.6L6.5 23.6l17.7-2.4z" fill="#FFD76B" stroke="#FFF3C4" stroke-width="2.2" stroke-linejoin="round"/></svg>';
+const STAR = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="rgba(255,215,107,.16)" stroke="#FFD76B" stroke-width="1.1" stroke-linejoin="round">${GP.star}</svg>`;
 const GAME_T = 25;
 function gamesHTML() {
   const L = T(), G = S.game, C = 2 * Math.PI * 222;
   if (G.run) return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(159,198,255,.14)" stroke-width="8"/><circle data-live="gring" cx="233" cy="233" r="222" fill="none" stroke="#9FC6FF" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - G.left / GAME_T)).toFixed(1)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px rgba(159,198,255,.6))"/></svg><div class="gscore" data-live="gs">${G.score}</div><div class="gfield"></div>`;
-  if (G.over) return `<div class="lbl">${esc(L.gOver)}</div><div class="gover">${G.score}<span style="font-size:44px;color:#FFD76B"> ★</span></div>
-    <div class="c" style="top:280px;gap:16px"><div class="t3" style="${G.newBest ? "color:var(--mint)" : ""}">${esc(G.newBest ? L.newBest : L.best(G.best))}</div><span class="chip btn" data-act="game-start">${esc(L.again)}</span></div>`;
-  return `<div class="lbl">${esc(L.games)}</div><div class="gtile" data-act="game-start" role="button">${STAR}<b>${esc(L.g1)}</b><small>${esc(L.g1d)}</small><em>${esc(L.play)}</em></div><div class="gbest">${esc(G.best ? L.best(G.best) : L.noBest)}</div>`;
+  if (G.over) return `${lbl(L.gOver)}<div class="gover">${G.score}<span style="font-size:44px;color:#FFD76B"> ★</span></div>
+    <div class="c" style="top:280px;gap:10px"><div class="t3" style="${G.newBest ? "color:var(--mint)" : ""}">${esc(G.newBest ? L.newBest : L.best(G.best))}</div>${wordBtn("game-start", L.again.replace(/^\S+\s/, ""))}</div>`;
+  return `${lbl(L.games)}<div class="gtile" data-act="game-start" role="button">${STAR}<b>${esc(L.g1)}</b><small>${esc(L.g1d)}</small><em>${esc(L.play.replace(/^\S+\s/, ""))}</em></div><div class="gbest">${esc(G.best ? L.best(G.best) : L.noBest)}</div>`;
 }
 function gameStart() {
   Object.assign(S.game, { run: true, over: false, score: 0, left: GAME_T, t: 0, stars: [], next: 0.7, streak: 0, newBest: false });
@@ -2992,10 +2955,6 @@ function ccSlide(p) {
 
 /* ================================================================ status ring, charging, sleep clock */
 const SR = { el: $("#sring"), bat: $("#sr-bat"), batg: $("#sr-batg"), cl: $("#sr-cl"), lvl: -1, chg: null, op: -1, a1: 146 };
-function arcD(a0, a1, r = 223) {
-  const P = a => [233 + r * Math.cos(a * Math.PI / 180), 233 + r * Math.sin(a * Math.PI / 180)], [x0, y0] = P(a0), [x1, y1] = P(a1);
-  return `M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 ${Math.abs(a1 - a0) > 180 ? 1 : 0} ${a1 > a0 ? 1 : 0} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-}
 function statusFrame(t) {
   const v = S.view, hide = !!S.kb || S.chgShow || S.cc || ["focus", "dial", "ring", "voice", "alarmsum"].includes(v) || (v === "timer" && S.tm.mode === "cd") || (v === "games" && S.game.run);
   const op = hide ? 0 : S.sleeping ? 0.5 : ["home", "apps", "today"].includes(v) ? 1 : 0.45;
