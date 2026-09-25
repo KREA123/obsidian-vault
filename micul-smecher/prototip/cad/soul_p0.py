@@ -544,12 +544,12 @@ def build(vname):
                         continue
                     r = (s.fuse(o) if kind == 'fuse' else s.cut(o)).clean()
                     vr = vol(r)
-                    ok = r.isValid() and ((kind == 'fuse' and v0 - 0.5 <= vr <= v0 + vo + 0.5) or
+                    ok = ((kind == 'fuse' and v0 - 0.5 <= vr <= v0 + vo + 0.5) or
                                           (kind == 'cut' and max(0.0, v0 - vo) - 0.5 <= vr <= v0 + 0.5)) and vr > 1.0
                     if not ok:
                         r = (s.fuse(o.fix()) if kind == 'fuse' else s.cut(o.fix())).clean().fix()
                         vr = vol(r)
-                        ok = r.isValid() and vr > 1.0 and ((kind == 'fuse' and v0 - 0.5 <= vr <= v0 + vo + 0.5) or
+                        ok = vr > 1.0 and ((kind == 'fuse' and v0 - 0.5 <= vr <= v0 + vo + 0.5) or
                                                           (kind == 'cut' and max(0.0, v0 - vo) - 0.5 <= vr <= v0 + 0.5))
                     if ok:
                         s, v0 = r, vr
