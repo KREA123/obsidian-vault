@@ -8,7 +8,7 @@
 
 **Pentru Andu. Ghid pas cu pas, fără să fii inginer.** Versiunea: 2026-09-25 (P0-M, rev A).
 
-SOUL-P0 M este prototipul „se poate face acasă” al lui SOUL mărimea **M**. Folosește placa Waveshare **ESP32-S3-Touch-LCD-2.8C**, cu ecran rotund IPS de 2,8″ (480 × 480). Carcasa are aspectul **v6**: aceeași siluetă din față ca `renders/v5/soul_v5_front_00.png`, sticlă neagră mare, nimic altceva pe față, bază plată cu piciorul oval din polimer și fanta difuzorului în cusătura laterală.
+SOUL-P0 M este prototipul „se poate face acasă” al lui SOUL mărimea **M**. Folosește placa Waveshare **ESP32-S3-Touch-LCD-2.8C**, cu ecran rotund IPS de 2,8″ (480 × 480). Carcasa are forma **MĂRGĂRITAR** (v9, `renders/v9/soul_v9_vs_v8.png`), cu CMF-ul v6/v9: sticlă neagră mare, nimic altceva pe față, bază plată cu piciorul oval din polimer și fanta difuzorului în cusătura laterală.
 
 > **Varianta mică (S)**, cu placa AMOLED 1,75″, e oprită la decizia fondatorului. Tot ce era făcut pentru ea (CAD, STL, STEP) e păstrat în [`legacy-S/`](legacy-S/).
 
@@ -20,16 +20,16 @@ SOUL-P0 M este prototipul „se poate face acasă” al lui SOUL mărimea **M**.
 
 ## 0. Ce trebuie să știi înainte
 
-### Mărimea reală: ~112 × 128 × 34 mm, nu 90 × 103
+### Mărimea reală: ~112 × 125 × 32 mm, nu 90 × 101
 
 Estimarea „≈ 90 × 103” pornea de la **panoul gol** de 2,8″, care are ~73 mm. Placa 2.8C de cumpărat are însă sticla lipită din fabrică, cu **diametrul de 95,86 mm** (desenul Waveshare `ESP32-S3-Touch-LCD-2.8C-20241226`). Sticla nu se poate scoate acasă.
 
-Ca sticla să stea în masa plată a feței, cum stă sticla Ø52 la v6, silueta v6 se mărește uniform cu **k = 1,78**. Rezultă:
+Ca sticla să stea în masa plată a feței, cum stă sticla Ø52 la v6, silueta MĂRGĂRITAR (v9) se mărește uniform cu **k = 1,78**. Rezultă:
 
-| | S (v6, 1,75″) | **M-P0 (2.8C)** |
+| | design v9 (la scara v6) | **M-P0 (2.8C)** |
 |---|---|---|
-| Lățime × înălțime | 63 × 72,2 | **112,1 × 127,6** (cu piciorul de 1,2) |
-| Adâncime | 27 | **33,6** (crește cu 24 %, nu cu 78 %: stiva de 9,7 mm + bateria de 6 mm + difuzorul) |
+| Lățime × înălțime | 63 × 70,8 | **112,1 × 125,1** (cu piciorul de 1,2) |
+| Adâncime | 22 | **31,6** (×1,24 în adâncime, nu ×1,78: încap stiva de 9,7 mm și bateria de 8,6 mm) |
 | Sticla vizibilă / lățime | 52 / 63 = 0,825 | 92,9 / 112,1 = **0,83** (la fel ca v6) |
 | Ecran activ | Ø43,8 | **Ø70,64** (tastele de ~6,6 mm) |
 
@@ -57,7 +57,7 @@ Prețurile sunt orientative, din septembrie 2026. Am folosit 1 € ≈ 5,1 lei �
 | # | Ce | Exact ce cauți | De unde (linkuri) | Preț / buc. |
 |---|---|---|---|---|
 | 1 | **Placa** | **Waveshare ESP32-S3-Touch-LCD-2.8C** (varianta **cu touch**, „Touch”). **Nu** ESP32-S3-Touch-LCD-2.8, care e dreptunghiulară, 240×320 | [waveshare.com (oficial)](https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm) ~$30–40 + transport · [AliExpress](https://www.aliexpress.com/item/1005009311521684.html) ~$41–43 · [Amazon](https://www.amazon.com/Waveshare-Capacitive-Development-Dual-core-Processor/dp/B0DMJZPH2R) ~$43 | **≈ 180–200 lei** |
-| 2 | **Baterie LiPo** | **604050**, 3,7 V, **~1500 mAh**, cu PCM (protecție), mufă **MX1.25 2 pini** (sau PH2.0 + adaptor). Plicul: **6 × 40 × 50 mm**, iar CAD-ul lasă loc pentru 6,3 × 40,5 × 50,5 (o celulă 605060 de 2000 mAh nu mai lasă loc difuzorului) | AliExpress: „604050 1500mAh 3.7V MX1.25” sau „604050 lipo” | **≈ 30–45 lei** |
+| 2 | **Baterie LiPo** | **803450** (de pe eMAG), 3,7 V, **1500 mAh**, cu PCM (protecție) și mufă **MX1.25 2 pini** (sau PH2.0 + adaptor). Plicul are **8 × 34 × 50 mm**, iar locașul din CAD **8,6 × 34,5 × 50,5 mm** (cu loc de umflare) | AliExpress: „604050 1500mAh 3.7V MX1.25” sau „604050 lipo” | **≈ 30–45 lei** |
 | 3 | **Difuzor** | „2030 cavity speaker”, **8 Ω, 1 W**, cutie de 20 × 30 × ~5 mm, cu fire | AliExpress: „2030 speaker 8ohm 1W” · eMAG: „difuzor 8 ohm 1W 2030” | **≈ 8–15 lei** |
 | 4 | **Amplificator I2S** | **MAX98357A** (modul de 3 W, clasa D) | [Optimus Digital (Adafruit)](https://www.optimusdigital.ro/ro/audio-amplificatoare-audio/1656-modul-cu-amplificator-adafruit-i2s-de-3-w-in-clasa-d-max98357a.html) · [ArduShop](https://ardushop.ro/en/modules/1549-max98357-i2s-3w-class-d-amplifier-6427854022967.html) | **≈ 20–45 lei** |
 | 5 | **Microfon I2S** | **INMP441** (modul de 12 × 14 × 3 mm) | [eMAG](https://www.emag.ro/modul-microfon-inmp441-omnidirectional-i2s-24-biti-mems-12-x-14-x-3-mm-negru-s9/pd/D83G1QYBM/) · [ArduShop](https://ardushop.ro/ro/home/2092-omnidirectional-microphone-module-i2s-interface-inmp441-mems-high-precision-low-power-ultra-small-volume-for-esp32.html) | **≈ 15–25 lei** |
@@ -374,14 +374,14 @@ Imaginile sunt în `img/`. Planșele tehnice (cote, secțiune, explodat cu list�
 
 Cifrele sunt trecute și pe planșa 2 (secțiunea A-A).
 
-**Rezultate (rev A, 2026-09-25):**
+**Rezultate (rev B, MĂRGĂRITAR, 2026-09-26; coloana Aluminiu e încă de la rev A):**
 
 | | Plastic | Aluminiu |
 |---|---|---|
-| Dimensiuni (L × Î cu picior × A) | 112,2 × 127,6 × 33,7 mm | la fel |
-| Mase (față / spate / bază / șasiu) | 17 / 35 / 9 / 13 g (PLA) | 29 / 62 g Al + 9 / 13 g plastic |
+| Dimensiuni (L × Î cu picior × A) | 112,1 × 125,1 × 31,6 mm | la fel |
+| Mase (față / spate / bază / șasiu) | 15 / 33 / 7 / 13 g (PLA) | 29 / 62 g Al + 9 / 13 g plastic |
 | Perechi verificate | 114 | 114 |
-| Suprapuneri | **niciuna** între componente și carcase. Singura: inelul plăcii de bază intră **0,36 mm** în carcasa din față la colțul de jos al cusăturii. Se rezolvă cu o trecere de hârtie abrazivă pe inel | **niciuna**, în afară de același inel (0,2 mm) |
+| Suprapuneri | **niciuna** între componente și carcase. Singurele: inelul plăcii de bază atinge carcasele în colțurile de jos ale cusăturii (0,15 și 0,45 mm³). Se rezolvă cu o trecere de hârtie abrazivă pe inel | **niciuna**, în afară de același inel (0,2 mm) |
 
 Jocul minim de la fiecare componentă la carcase (plastic, mm):
 
@@ -390,7 +390,7 @@ Jocul minim de la fiecare componentă la carcase (plastic, mm):
 | Sticla Ø95,86 | 0,00 (stă pe buză, intenționat) | 7,3 | 5,5 |
 | Placa (PCB Ø73) | 10,6 | 8,4 | 0,5 (stâlpii cu spumă EVA) |
 | Piesele de pe spatele plăcii (9,7) | 11,9 | 4,7 | stâlpii trec prin ele, pe plăcuțele M2 |
-| Bateria 604050 | 0,9 | 3,2 | 0 (stă pe șine) |
+| Bateria 803450 | 4,4 | 2,0 | 0 (stă pe șine) |
 | Difuzorul 2030 | 17,9 | 2,3 | 0 (în fereastra lui) |
 | Amplificatorul MAX98357A | 9,8 | 2,9 | 0,05 |
 | Microfonul INMP441 | 11,3 | 1,5 | 0 |
@@ -406,8 +406,8 @@ Jocul minim de la fiecare componentă la carcase (plastic, mm):
 - conectorul FPC de 12 pini cu cablul lui (e sub amplificator, sub stratul de spumă).
 
 **Șuruburi** (lungimile maxime calculate):
-- 2 × **M2×16** jos (maxim 16,4);
-- 2 × **M2×8** sus (maxim 8,8);
+- 2 × **M2×16** jos (maxim 16,1);
+- 2 × **M2×8** sus (maxim 10,2; merge și M2×10);
 - 2 × **M2×8 cu cap înecat** la placa de bază.
 
 **Fișiere STEP:** cifrele sunt rotunjite la 7 cifre semnificative (≤ 0,01 µm) de `cad/step_shrink.py`, ca fiecare `.step.gz` să aibă sub 45 MB. Carcasa din față are ~36–40 MB arhivată. Nu există STEP de ansamblu, pentru că ar trece de 45 MB. Ansamblul e în `stl/assembly/` (piesele în poziția montată).
@@ -420,7 +420,7 @@ Jocul minim de la fiecare componentă la carcase (plastic, mm):
 prototip/
   README.md, COMANDA.md
   cad/soul_p0.py          modelul parametric (CadQuery): toate piesele + verificarea + exportul
-  cad/soul_geom.py        silueta v6 (tabelele din render-brief v5 §2), scalată pentru M (K = 1,78, KY = 1,24)
+  cad/soul_geom.py        silueta MĂRGĂRITAR (tabelele din renders/v5/src/alt_geo.py), scalată pentru M (K = 1,78, KY = 1,24)
   cad/render_p0.py        randările (Blender) din STL-urile exportate, cu materialele v6
   cad/blueprints_p0.py    planșele din ../blueprints/final/, proiectate din mesh
   cad/report_m_*.json     rezultatele verificării (coliziuni, jocuri, șuruburi, mase)
