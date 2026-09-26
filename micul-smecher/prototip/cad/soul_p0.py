@@ -70,7 +70,8 @@ BATCONN = (22.0, 18.0)                                                      # MX
 PLUG_DD = 13.0                                                              # mated plug + wires keep-out
 
 # ============================================================================ bought parts inside (board frame)
-BAT = dict(name='LiPo 604050 (6 x 40 x 50, ~1500 mAh, PCM, MX1.25)', W=40.5, L=50.5, T=6.3, bx=0.0, by=-27.0)
+BAT = dict(name='LiPo 803450 (8.0 x 34 x 50, 1500 mAh, eMAG; pocket 8.3 x 34.5 x 50.5 + 0.3 swell)', W=34.5, L=50.5,
+           T=8.6, bx=0.0, by=-27.0)
 SPK = dict(name='speaker 2030 cavity 8 ohm 1 W', a=30.0, b=20.0, t=5.2, bx=-11.0, by=8.5)
 AMP = dict(name='MAX98357A I2S amp breakout (no header pins)', a=18.0, b=20.0, t=2.8, bx=31.0, by=2.0)
 MIC = dict(name='INMP441 I2S mic breakout', a=14.0, b=14.0, t=3.4, bx=-34.0, by=-1.0)
