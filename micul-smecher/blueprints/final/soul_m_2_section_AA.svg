@@ -100,75 +100,74 @@
 <line class="fr2" x1="210" y1="287" x2="210" y2="297" />
 <line class="fr2" x1="0" y1="148.5" x2="10" y2="148.5" />
 <line class="fr2" x1="410" y1="148.5" x2="420" y2="148.5" />
-<path class="o" d="M48.053 256.75 L47.77 252.336 L47.234 228.724 L47.241 226.795 L47.858 226.324 L48.133 226.08 L48.395 226.106 L49.178 226.183 L48.963 228.381 L48.889 229.141 L50.018 229.317 L50.597 229.359 L50.6 230.008 L51.326 252.563 L51.712 256.75 L49.713 256.75 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
-<path class="o" d="M65.287 61.644 L65.068 63.881 L64.998 64.602 L64.736 64.576 L63.953 64.499 L63.643 64.082 L63.154 63.496 L64.322 59.794 L65.579 55.906 L67.817 48.745 L71.737 43.962 L73.12 42.108 L73.253 41.972 L73.165 44.985 L73.13 46.176 L73.1 47.202 L73.092 47.202 L73.099 47.208 L73.099 47.21 L73.079 47.91 L72.487 48.26 L72.024 48.544 L71.753 48.829 L71.603 48.982 L71.378 49.364 L71.101 49.889 L69.675 52.738 L67.412 60.447 L67.028 61.763 L66.509 61.696 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
-<path class="o" d="M69.573 256.4 L69.568 256.57 L69.562 256.75 L68.242 256.75 L66.919 256.75 L66.924 256.57 L66.929 256.4 L68.252 256.4 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
-<path class="o" d="M99.228 178.104 L105.409 244.15 L104.227 244.15 L104.227 243.267 L104.227 241.35 L101.678 241.35 L96.507 192.527 L93.777 126.832 L89.894 90.038 L87.376 76.705 L84.714 67.015 L81.443 58.04 L77.88 50.556 L77.087 48.994 L76.934 48.745 L76.856 48.632 L76.774 48.528 L76.272 48.003 L76.179 47.895 L76.138 47.84 L76.1 47.783 L76.066 47.722 L76.037 47.659 L76.014 47.592 L76.005 47.558 L75.998 47.523 L75.992 47.486 L75.988 47.449 L75.985 47.371 L75.991 47.289 L73.272 41.9 L73.635 41.633 L74.132 41.462 L74.137 41.46 L75.207 41.521 L76.529 41.415 L76.643 41.475 L76.735 41.536 L76.809 41.596 L76.881 41.667 L76.953 41.752 L77.016 41.844 L77.098 41.988 L77.226 42.27 L77.428 42.718 L81.894 50.72 L85.455 58.685 L87.281 63.632 L89.041 69.255 L91.901 81.047 L95.878 110.875 L98.205 140.515 Z" style="fill:url(#hB)" fill-rule="evenodd"/>
-<path class="o" d="M102.233 253.95 L104.227 253.95 L104.227 252.033 L104.227 251.15 L105.765 251.15 L105.596 256.75 L102.093 256.75 Z" style="fill:url(#hB)" fill-rule="evenodd"/>
-<path class="o" d="M55.958 264.097 L55.89 264.087 L55.89 264.087 L55.824 264.07 L55.759 264.047 L55.759 264.047 L55.759 264.047 L55.697 264.017 L55.697 264.017 L55.638 263.982 L55.638 263.982 L55.583 263.941 L55.532 263.895 L55.532 263.895 L55.532 263.895 L55.486 263.844 L55.486 263.844 L55.445 263.789 L55.445 263.789 L55.41 263.73 L55.41 263.73 L55.38 263.668 L55.357 263.603 L55.34 263.537 L55.33 263.469 L55.327 263.4 L55.327 262 L49.733 262 L48.943 260.529 L48.794 260.25 L48.419 258.739 L48.013 257.1 L48.052 257.045 L48.301 256.75 L50.505 256.75 L52.164 256.75 L51.705 255.749 L51.646 255.56 L51.587 255.35 L51.356 253.995 L51.323 253.8 L51.313 253.734 L51.309 253.7 L51.299 253.571 L51.472 252.375 L52.587 252.375 L53.163 252.375 L53.02 253.085 L53.02 253.19 L53.028 253.336 L53.047 253.548 L53.052 253.6 L53.251 254.736 L53.297 255 L53.353 255.215 L53.406 255.404 L53.758 256.4 L61.994 256.4 L72.727 256.4 L72.727 255.175 L72.727 253.95 L101.884 253.95 L101.744 256.75 L105.596 256.75 L105.333 259.465 L104.908 262 L98.937 262 L98.937 263.4 L98.934 263.469 L98.924 263.537 L98.907 263.603 L98.884 263.668 L98.854 263.73 L98.854 263.73 L98.819 263.789 L98.819 263.789 L98.778 263.844 L98.778 263.844 L98.732 263.895 L98.732 263.895 L98.681 263.941 L98.681 263.941 L98.626 263.982 L98.626 263.982 L98.626 263.982 L98.567 264.017 L98.505 264.047 L98.505 264.047 L98.44 264.07 L98.44 264.07 L98.44 264.07 L98.374 264.087 L98.374 264.087 L98.306 264.097 L98.237 264.1 L98.237 264.1 L98.195 264.1 L77.132 264.1 L56.069 264.1 L56.027 264.1 L56.027 264.1 L55.958 264.097 Z" style="fill:url(#hD)" fill-rule="evenodd"/>
-<path class="o2" d="M70.817 209.907 L67.982 238.861 L71.901 239.245 L75.82 239.628 L75.691 240.946 L75.651 241.35 L73.314 241.35 L70.977 241.35 L70.977 241.483 L70.977 241.616 L70.256 241.545 L67.744 241.299 L67.718 241.559 L67.692 241.822 L67.505 241.803 L67.462 241.799 L67.41 241.794 L67.304 241.784 L67.208 241.774 L67.148 241.768 L67.067 241.761 L66.965 241.751 L66.859 241.74 L66.738 241.728 L66.613 241.716 L66.474 241.702 L66.332 241.689 L66.176 241.673 L66.017 241.658 L65.846 241.641 L65.672 241.624 L65.56 241.613 L65.371 241.594 L65.254 241.583 L65.301 241.105 L65.348 240.627 L65.394 240.157 L65.44 239.685 L65.485 239.223 L65.531 238.76 L65.575 238.305 L65.62 237.85 L67.581 217.815 L68.18 211.699 L68.364 209.818 L67.151 209.774 L67.151 209.679 L67.168 209.68 L67.173 209.681 L67.19 209.681 L67.346 209.682 L67.405 209.675 L67.518 209.66 L67.717 209.699 L67.846 209.724 L67.947 208.692 L68.503 208.394 L68.77 205.668 L69.22 201.077 L73.38 158.582 L73.392 158.467 L73.403 158.35 L73.414 158.234 L73.426 158.119 L73.437 158.007 L73.447 157.899 L73.457 157.797 L74.198 150.232 L74.716 150.283 L77.159 150.522 L77.123 150.888 L76.954 152.612 L76.543 152.572 L76.432 152.561 L71.406 203.889 L71.232 205.668 L71.101 207.006 L71.658 206.709 L71.343 209.926 Z" style="fill:url(#hC)" fill-rule="evenodd"/>
-<path class="o2" d="M78.592 114.44 L77.71 114.354 L79.171 99.432 L79.229 98.846 L79.39 97.201 L78.845 97.381 L79.114 94.628 L79.641 94.634 L82.008 70.464 L84.437 70.793 L82.1 94.662 L83.292 94.675 L83.292 95.913 L81.934 96.361 L81.69 98.846 L81.631 99.451 L80.899 106.927 L80.353 112.503 L80.992 112.565 L84.185 112.878 L84.008 114.685 L83.98 114.968 Z" style="fill:url(#hC)" fill-rule="evenodd"/>
-<path class="fb" d="M77.167 150.435 L82.653 150.972 L88.14 151.509 L83.834 195.487 L79.529 239.464 L74.042 238.927 L68.556 238.39 L72.862 194.412 Z"  fill-rule="evenodd"/>
-<path class="f2" d="M83.306 150.597 L82.098 150.478 L74.249 149.71 L77.205 119.521 L77.659 114.876 L78.867 114.995 L86.716 115.763 L86.261 120.408 Z"  fill-rule="evenodd"/>
-<path class="gl" d="M65.101 63.543 L65.172 62.82 L65.243 62.096 L65.253 61.992 L66.168 62.081 L66.472 62.111 L66.462 62.215 L66.391 62.94 L66.321 63.663 L66.25 64.388 L66.032 66.61 L65.439 72.664 L65.224 74.861 L65.103 76.094 L64.034 87.023 L61.973 108.067 L54.521 184.183 L52.374 206.111 L51.894 211.013 L51.154 218.575 L50.365 226.635 L50.234 227.975 L50.203 228.289 L50.172 228.601 L50.142 228.912 L49.228 228.823 L48.923 228.793 L48.953 228.481 L48.984 228.17 L49.014 227.855 L49.146 226.516 L49.935 218.455 L50.675 210.893 L51.155 205.991 L53.302 184.063 L60.754 107.947 L62.814 86.903 L63.884 75.975 L64.005 74.742 L64.22 72.544 L64.813 66.491 L65.03 64.268 Z"  fill-rule="evenodd"/>
-<path class="f2" d="M68.614 93.404 L63.965 140.888 L63.632 144.288 L62.202 158.89 L61.393 167.15 L58.38 197.928 L57.994 201.868 L57.004 211.983 L56.877 213.278 L56.853 213.53 L52.987 213.152 L51.697 213.025 L51.722 212.773 L51.849 211.479 L52.839 201.363 L53.225 197.424 L56.238 166.645 L57.047 158.385 L58.476 143.783 L58.809 140.384 L63.458 92.899 L64.794 79.254 L64.909 78.082 L64.917 77.998 L68.783 78.376 L70.072 78.502 L70.064 78.587 L69.949 79.759 Z"  fill-rule="evenodd"/>
-<path class="f2" d="M70.569 82.591 L73.234 82.852 L73.226 82.932 L73.21 83.092 L72.98 85.447 L68.634 129.836 L63.825 178.955 L62.996 187.423 L61.279 204.961 L60.937 208.451 L60.898 208.849 L60.813 209.717 L60.797 209.876 L58.133 209.615 L57.244 209.528 L57.26 209.369 L57.345 208.502 L57.384 208.103 L57.726 204.614 L59.443 187.075 L60.272 178.607 L65.081 129.488 L69.427 85.099 L69.657 82.744 L69.673 82.584 L69.681 82.504 Z"  fill-rule="evenodd"/>
-<path class="f2" d="M60.161 216.376 L59.513 222.998 L55.159 222.571 L50.804 222.145 L51.453 215.524 L52.68 202.987 L57.034 203.413 L61.388 203.839 Z"  fill-rule="evenodd"/>
-<path class="o3" d="M70.997 105.7 L72.3 92.389 L72.384 91.531 L72.759 87.696 L72.898 86.281 L73.125 83.959 L73.133 83.879 L73.141 83.8 L73.148 83.722 L78.372 84.234 L80.115 84.404 L80.108 84.483 L80.1 84.561 L80.092 84.641 L79.865 86.964 L79.726 88.378 L79.351 92.213 L79.267 93.071 L77.963 106.382 L77.732 108.75 L68.456 203.487 L68.238 205.714 L68.1 207.129 L67.987 208.283 L67.91 209.065 L67.857 209.61 L67.849 209.688 L62.625 209.176 L60.883 209.006 L60.89 208.928 L60.944 208.383 L61.02 207.601 L61.133 206.447 L61.272 205.032 L61.49 202.805 L70.765 108.068 Z"  fill-rule="evenodd"/>
-<path class="f2" d="M104.227 253.95 L87.602 253.95 L70.977 253.95 L70.977 247.65 L70.977 241.35 L87.602 241.35 L104.227 241.35 L104.227 247.65 Z"  fill-rule="evenodd"/>
+<path class="o" d="M82.716 49.73 L82.716 49.73 L82.708 49.751 L82.693 49.78 L82.673 49.815 L82.648 49.856 L82.619 49.903 L82.586 49.953 L82.551 50.007 L82.474 50.122 L82.309 50.375 L81.987 50.9 L81.987 50.9 L81.859 51.134 L81.845 51.158 L81.718 51.412 L81.085 53.166 L80.95 53.541 L79.89 58.467 L79.711 60.061 L79.606 61.004 L79.537 61.615 L79.171 64.87 L78.789 64.817 L77.789 64.782 L77.642 66.286 L77.5 67.74 L76.978 67.689 L76.455 67.638 L75.553 66.433 L75.523 66.397 L75.527 66.353 L75.616 65.431 L76.045 61.095 L76.634 56.759 L77.234 53.868 L78.128 50.977 L79.22 48.665 L80.513 46.93 L82.03 45.774 L82.447 45.58 L82.66 45.499 L82.768 45.461 L82.877 45.427 L82.988 45.394 L83.099 45.364 L83.212 45.336 L83.326 45.311 L83.558 45.267 L83.797 45.231 L83.843 45.231 L84.354 45.231 L84.405 45.231 L84.5 45.231 L84.573 45.231 L84.688 45.231 L84.775 45.231 L84.894 45.231 L85.014 45.231 L85.176 45.231 L85.315 45.231 L85.492 45.231 L85.722 45.231 L85.994 45.231 L86.304 45.231 L86.716 45.231 L87.261 45.231 L87.711 45.231 L88.403 45.231 L88.853 45.231 L88.853 45.236 L88.527 45.259 L88.283 45.285 L88.125 45.313 L88.059 45.331 L88.026 45.344 L88.008 45.352 L87.997 45.359 L87.989 45.365 L87.985 45.369 L87.981 45.373 L87.976 45.381 L87.973 45.389 L87.973 45.397 L87.975 45.406 L87.979 45.415 L87.983 45.421 L87.99 45.429 L87.998 45.437 L88.009 45.446 L88.027 45.459 L88.057 45.476 L88.139 45.515 L88.824 45.747 L88.599 49.726 L83.963 49.726 L82.724 49.726 L82.718 49.722 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
+<path class="o" d="M59.484 230.197 L59.6 230.107 L60.64 229.172 L61.161 229.223 L61.685 229.273 L61.543 230.728 L61.395 232.231 L62.341 232.381 L62.767 232.43 L62.377 236.473 L62.179 238.532 L62.066 239.857 L61.462 246.934 L61.437 247.342 L61.414 247.72 L61.381 248.259 L61.352 248.734 L61.328 249.14 L61.305 249.528 L61.286 249.874 L61.27 250.181 L61.256 250.473 L61.244 250.734 L61.113 255.086 L61.111 256.75 L59.364 256.75 L57.35 256.75 L57.364 255 L57.547 252.375 L57.806 248.875 L58.156 244.5 L59.34 231.752 Z" style="fill:url(#hA)" fill-rule="evenodd"/>
+<path class="o" d="M89.41 49.726 L88.599 49.726 L88.824 45.747 L90.26 46.238 L91.809 46.881 L92.822 47.401 L93.778 47.978 L94.685 48.6 L96.441 50.018 L98.281 51.829 L100.008 53.9 L102.126 56.987 L104.821 61.872 L106.696 66.132 L107.963 69.99 L108.983 74.577 L112.336 145.511 L112.015 224.37 L111.519 229.781 L110.617 235.214 L109.278 240.565 L107.48 245.725 L104.64 245.725 L104.64 243.416 L106.451 238.328 L107.268 235.49 L107.823 232.535 L108.355 226.42 L108.814 144.458 L106.418 83.295 L105.942 77.739 L105.574 75.283 L105.093 72.912 L103.731 68.186 L102.567 65.244 L100.702 61.527 L98.762 58.206 L96.858 55.49 L95.775 54.247 L94.037 52.561 L92.796 51.529 L92.025 50.99 L91.126 50.435 L90.003 49.788 L89.941 49.749 L89.92 49.735 L89.908 49.726 Z" style="fill:url(#hB)" fill-rule="evenodd"/>
+<path class="o" d="M102.439 256.75 L98.356 256.75 L99.1 255.525 L103.13 255.525 Z" style="fill:url(#hB)" fill-rule="evenodd"/>
+<path class="o" d="M63.741 264.1 L63.727 264.1 L63.727 264.1 L63.658 264.097 L63.658 264.097 L63.59 264.087 L63.59 264.087 L63.524 264.07 L63.459 264.047 L63.459 264.047 L63.459 264.047 L63.397 264.017 L63.397 264.017 L63.338 263.982 L63.283 263.941 L63.283 263.941 L63.232 263.895 L63.232 263.895 L63.232 263.895 L63.186 263.844 L63.186 263.844 L63.145 263.789 L63.11 263.73 L63.08 263.668 L63.057 263.603 L63.04 263.537 L63.03 263.469 L63.027 263.4 L63.027 262 L57.035 262 L57.03 260.25 L57.606 256.946 L57.718 256.75 L59.718 256.75 L61.392 256.75 L61.453 254.425 L61.585 252.375 L62.544 252.375 L63.316 252.375 L63.082 253.472 L63.061 253.6 L63.026 254.11 L62.964 255 L62.961 255.185 L62.961 255.395 L62.965 255.542 L63.088 256.4 L67.45 256.4 L73.14 256.4 L73.14 255.962 L73.14 255.525 L98.693 255.525 L97.942 256.75 L102.439 256.75 L99.073 262 L92.973 262 L92.973 263.4 L92.97 263.469 L92.96 263.537 L92.943 263.603 L92.92 263.668 L92.89 263.73 L92.855 263.789 L92.814 263.844 L92.814 263.844 L92.768 263.895 L92.768 263.895 L92.717 263.941 L92.662 263.982 L92.662 263.982 L92.603 264.017 L92.603 264.017 L92.541 264.047 L92.541 264.047 L92.476 264.07 L92.476 264.07 L92.476 264.07 L92.41 264.087 L92.342 264.097 L92.342 264.097 L92.342 264.097 L92.273 264.1 L92.259 264.1 L78 264.1 Z" style="fill:url(#hD)" fill-rule="evenodd"/>
+<path class="o2" d="M91.867 95.208 L92.394 95.211 L94.512 73.579 L96.948 73.844 L94.854 95.228 L96.041 95.236 L96.041 96.867 L94.668 97.123 L94.444 99.419 L94.375 100.117 L92.858 115.618 L93.496 115.68 L96.689 115.993 L96.654 116.354 L96.485 118.083 L91.096 117.555 L90.215 117.469 L91.904 100.21 L91.982 99.419 L92.161 97.59 L91.624 97.69 Z" style="fill:url(#hC)" fill-rule="evenodd"/>
+<path class="o2" d="M85.907 161.465 L85.919 161.349 L85.93 161.234 L85.941 161.122 L85.951 161.014 L85.962 160.912 L86.702 153.347 L87.293 153.405 L89.663 153.637 L89.622 154.054 L89.458 155.727 L89.062 155.688 L88.936 155.676 L84.121 204.852 L83.944 206.666 L83.799 208.142 L84.35 207.902 L84.056 210.91 L83.53 210.896 L81.747 229.103 L80.487 241.976 L84.405 242.36 L88.324 242.743 L88.311 242.877 L88.306 242.925 L83.119 242.925 L77.932 242.925 L81.074 210.829 L80.548 210.815 L80.676 209.505 L81.228 209.265 L81.482 206.666 L81.882 202.577 L85.885 161.697 L85.896 161.582 Z" style="fill:url(#hC)" fill-rule="evenodd"/>
+<path class="fb" d="M85.366 197.527 L89.671 153.55 L97.161 154.283 L104.65 155.017 L100.344 198.994 L96.039 242.971 L88.55 242.238 L81.06 241.505 Z"  fill-rule="evenodd"/>
+<path class="f2" d="M91.371 118.11 L99.22 118.878 L98.766 123.523 L95.81 153.712 L94.602 153.593 L86.753 152.825 L87.208 148.18 L90.164 117.991 Z"  fill-rule="evenodd"/>
+<path class="gl" d="M78.967 65.33 L78.896 66.055 L78.825 66.778 L78.754 67.503 L78.536 69.725 L77.944 75.779 L77.728 77.976 L77.608 79.209 L76.538 90.138 L74.478 111.182 L67.025 187.298 L64.879 209.226 L64.399 214.128 L63.658 221.69 L62.869 229.75 L62.738 231.09 L62.707 231.404 L62.677 231.716 L62.646 232.027 L61.732 231.938 L61.427 231.908 L61.457 231.596 L61.488 231.285 L61.519 230.97 L61.65 229.631 L62.439 221.57 L63.179 214.008 L63.659 209.106 L65.806 187.178 L73.258 111.062 L75.319 90.018 L76.389 79.09 L76.509 77.857 L76.724 75.659 L77.317 69.606 L77.535 67.383 L77.606 66.658 L77.676 65.935 L77.747 65.211 L77.758 65.107 L78.672 65.196 L78.977 65.226 Z"  fill-rule="evenodd"/>
+<path class="f2" d="M77.421 81.113 L81.287 81.491 L82.577 81.617 L82.569 81.702 L82.454 82.874 L81.118 96.519 L76.469 144.003 L76.136 147.403 L74.706 162.005 L73.898 170.265 L70.884 201.043 L70.499 204.983 L69.508 215.098 L69.382 216.393 L69.357 216.645 L65.491 216.267 L64.202 216.14 L64.226 215.888 L64.353 214.594 L65.343 204.478 L65.729 200.539 L68.742 169.76 L69.551 161.5 L70.981 146.898 L71.314 143.499 L75.962 96.014 L77.298 82.369 L77.413 81.197 Z"  fill-rule="evenodd"/>
+<path class="f2" d="M75.5 190.538 L73.783 208.077 L73.441 211.566 L73.402 211.964 L73.317 212.832 L73.302 212.991 L70.638 212.73 L69.749 212.643 L69.764 212.484 L69.849 211.617 L69.888 211.218 L70.23 207.729 L71.947 190.19 L72.776 181.722 L77.585 132.603 L81.931 88.214 L82.161 85.859 L82.177 85.699 L82.185 85.619 L83.074 85.706 L85.738 85.967 L85.73 86.047 L85.714 86.207 L85.484 88.562 L81.138 132.951 L76.329 182.07 Z"  fill-rule="evenodd"/>
+<path class="f2" d="M72.665 219.491 L72.017 226.113 L67.663 225.686 L63.309 225.26 L63.957 218.639 L65.184 206.102 L69.539 206.528 L73.893 206.954 Z"  fill-rule="evenodd"/>
+<path class="o3" d="M80.743 208.829 L80.673 209.541 L80.399 212.335 L80.377 212.569 L80.354 212.803 L75.13 212.291 L73.387 212.121 L73.41 211.887 L73.433 211.653 L73.706 208.859 L73.776 208.147 L73.847 207.423 L73.919 206.682 L77.964 165.376 L85.63 87.074 L85.653 86.837 L90.877 87.349 L92.619 87.519 L92.596 87.756 L84.93 166.058 L80.886 207.364 L80.814 208.105 Z"  fill-rule="evenodd"/>
+<path class="f2" d="M88.015 255.525 L71.39 255.525 L71.39 249.225 L71.39 242.925 L88.015 242.925 L104.64 242.925 L104.64 249.225 L104.64 255.525 Z"  fill-rule="evenodd"/>
 <text class="tx" x="78" y="278" font-size="3" text-anchor="middle" font-weight="bold" >SECTION A-A  (x = 0, seen from +X)</text>
-<line class="t" x1="46.234" y1="264.1" x2="37.634" y2="264.1" />
-<line class="t" x1="46.234" y1="41.415" x2="37.634" y2="41.415" />
-<line class="t" x1="39.234" y1="41.415" x2="39.234" y2="264.1" />
-<path class="ah" d="M39.234 41.415 L39.784 43.715 L38.684 43.715 Z" />
-<path class="ah" d="M39.234 264.1 L38.684 261.8 L39.784 261.8 Z" />
-<text class="td" x="38.334" y="152.757" font-size="2.6" text-anchor="middle" transform="rotate(-90 38.334 152.757)" >127.2</text>
-<line class="t" x1="47.234" y1="228" x2="47.234" y2="273.7" />
-<line class="t" x1="105.765" y1="228" x2="105.765" y2="273.7" />
-<line class="t" x1="47.234" y1="272.1" x2="105.765" y2="272.1" />
-<path class="ah" d="M47.234 272.1 L49.534 271.55 L49.534 272.65 Z" />
-<path class="ah" d="M105.765 272.1 L103.465 272.65 L103.465 271.55 Z" />
-<text class="td" x="76.5" y="271.2" font-size="2.6" text-anchor="middle" >33.4</text>
-<line class="t" x1="127.567" y1="33.182" x2="49.238" y2="241.172" />
-<circle class="ah" cx="49.238" cy="241.172" r="0.55" />
-<circle class="bal" cx="128.765" cy="30" r="3.4" />
-<text class="tx" x="128.765" y="31.15" font-size="3.1" text-anchor="middle" font-weight="bold" >1</text>
-<line class="t" x1="117.959" y1="49.88" x2="57.638" y2="146.065" />
-<circle class="ah" cx="57.638" cy="146.065" r="0.55" />
-<circle class="bal" cx="119.765" cy="47" r="3.4" />
-<text class="tx" x="119.765" y="48.15" font-size="3.1" text-anchor="middle" font-weight="bold" >2</text>
-<line class="t" x1="126.669" y1="66.676" x2="60.339" y2="151.337" />
-<circle class="ah" cx="60.339" cy="151.337" r="0.55" />
-<circle class="bal" cx="128.765" cy="64" r="3.4" />
-<text class="tx" x="128.765" y="65.15" font-size="3.1" text-anchor="middle" font-weight="bold" >3</text>
-<line class="t" x1="117.716" y1="83.713" x2="64.453" y2="154.222" />
-<circle class="ah" cx="64.453" cy="154.222" r="0.55" />
-<circle class="bal" cx="119.765" cy="81" r="3.4" />
-<text class="tx" x="119.765" y="82.15" font-size="3.1" text-anchor="middle" font-weight="bold" >4</text>
-<line class="t" x1="126.84" y1="100.802" x2="72.531" y2="179.829" />
-<circle class="ah" cx="72.531" cy="179.829" r="0.55" />
-<circle class="bal" cx="128.765" cy="98" r="3.4" />
-<text class="tx" x="128.765" y="99.15" font-size="3.1" text-anchor="middle" font-weight="bold" >5</text>
-<line class="t" x1="118.201" y1="118.019" x2="78.348" y2="194.949" />
-<circle class="ah" cx="78.348" cy="194.949" r="0.55" />
-<circle class="bal" cx="119.765" cy="115" r="3.4" />
-<text class="tx" x="119.765" y="116.15" font-size="3.1" text-anchor="middle" font-weight="bold" >6</text>
-<line class="t" x1="126.185" y1="134.213" x2="96.922" y2="159.309" />
-<circle class="ah" cx="96.922" cy="159.309" r="0.55" />
-<circle class="bal" cx="128.765" cy="132" r="3.4" />
-<text class="tx" x="128.765" y="133.15" font-size="3.1" text-anchor="middle" font-weight="bold" >7</text>
-<line class="t" x1="118.519" y1="152.163" x2="76.849" y2="257.919" />
-<circle class="ah" cx="76.849" cy="257.919" r="0.55" />
-<circle class="bal" cx="119.765" cy="149" r="3.4" />
-<text class="tx" x="119.765" y="150.15" font-size="3.1" text-anchor="middle" font-weight="bold" >8</text>
-<line class="t" x1="127.187" y1="169.011" x2="87.602" y2="244.5" />
-<circle class="ah" cx="87.602" cy="244.5" r="0.55" />
-<circle class="bal" cx="128.765" cy="166" r="3.4" />
-<text class="tx" x="128.765" y="167.15" font-size="3.1" text-anchor="middle" font-weight="bold" >9</text>
-<line class="t" x1="117.603" y1="180.376" x2="80.255" y2="135.059" />
-<circle class="ah" cx="80.255" cy="135.059" r="0.55" />
-<circle class="bal" cx="119.765" cy="183" r="3.4" />
-<text class="tx" x="119.765" y="184.15" font-size="3.1" text-anchor="middle" font-weight="bold" >10</text>
+<line class="t" x1="56.03" y1="264.1" x2="47.43" y2="264.1" />
+<line class="t" x1="56.03" y1="45.231" x2="47.43" y2="45.231" />
+<line class="t" x1="49.03" y1="45.231" x2="49.03" y2="264.1" />
+<path class="ah" d="M49.03 45.231 L49.58 47.531 L48.48 47.531 Z" />
+<path class="ah" d="M49.03 264.1 L48.48 261.8 L49.58 261.8 Z" />
+<text class="td" x="48.13" y="154.666" font-size="2.6" text-anchor="middle" transform="rotate(-90 48.13 154.666)" >125.1</text>
+<line class="t" x1="57.03" y1="228" x2="57.03" y2="273.7" />
+<line class="t" x1="112.336" y1="228" x2="112.336" y2="273.7" />
+<line class="t" x1="57.03" y1="272.1" x2="112.336" y2="272.1" />
+<path class="ah" d="M57.03 272.1 L59.33 271.55 L59.33 272.65 Z" />
+<path class="ah" d="M112.336 272.1 L110.036 272.65 L110.036 271.55 Z" />
+<text class="td" x="84.683" y="271.2" font-size="2.6" text-anchor="middle" >31.6</text>
+<line class="t" x1="132.233" y1="31.388" x2="78.751" y2="55.314" />
+<circle class="ah" cx="78.751" cy="55.314" r="0.55" />
+<circle class="bal" cx="135.336" cy="30" r="3.4" />
+<text class="tx" x="135.336" y="31.15" font-size="3.1" text-anchor="middle" font-weight="bold" >1</text>
+<line class="t" x1="124.698" y1="49.979" x2="70.142" y2="149.18" />
+<circle class="ah" cx="70.142" cy="149.18" r="0.55" />
+<circle class="bal" cx="126.336" cy="47" r="3.4" />
+<text class="tx" x="126.336" y="48.15" font-size="3.1" text-anchor="middle" font-weight="bold" >2</text>
+<line class="t" x1="133.404" y1="66.797" x2="72.844" y2="154.452" />
+<circle class="ah" cx="72.844" cy="154.452" r="0.55" />
+<circle class="bal" cx="135.336" cy="64" r="3.4" />
+<text class="tx" x="135.336" y="65.15" font-size="3.1" text-anchor="middle" font-weight="bold" >3</text>
+<line class="t" x1="124.49" y1="83.855" x2="76.957" y2="157.337" />
+<circle class="ah" cx="76.957" cy="157.337" r="0.55" />
+<circle class="bal" cx="126.336" cy="81" r="3.4" />
+<text class="tx" x="126.336" y="82.15" font-size="3.1" text-anchor="middle" font-weight="bold" >4</text>
+<line class="t" x1="131.94" y1="97.84" x2="93.913" y2="96.052" />
+<circle class="ah" cx="93.913" cy="96.052" r="0.55" />
+<circle class="bal" cx="135.336" cy="98" r="3.4" />
+<text class="tx" x="135.336" y="99.15" font-size="3.1" text-anchor="middle" font-weight="bold" >5</text>
+<line class="t" x1="125.068" y1="118.155" x2="92.855" y2="198.261" />
+<circle class="ah" cx="92.855" cy="198.261" r="0.55" />
+<circle class="bal" cx="126.336" cy="115" r="3.4" />
+<text class="tx" x="126.336" y="116.15" font-size="3.1" text-anchor="middle" font-weight="bold" >6</text>
+<line class="t" x1="134.424" y1="135.275" x2="100.756" y2="256.137" />
+<circle class="ah" cx="100.756" cy="256.137" r="0.55" />
+<circle class="bal" cx="135.336" cy="132" r="3.4" />
+<text class="tx" x="135.336" y="133.15" font-size="3.1" text-anchor="middle" font-weight="bold" >7</text>
+<line class="t" x1="124.995" y1="152.124" x2="79.286" y2="258.598" />
+<circle class="ah" cx="79.286" cy="258.598" r="0.55" />
+<circle class="bal" cx="126.336" cy="149" r="3.4" />
+<text class="tx" x="126.336" y="150.15" font-size="3.1" text-anchor="middle" font-weight="bold" >8</text>
+<line class="t" x1="133.607" y1="168.927" x2="88.015" y2="246.075" />
+<circle class="ah" cx="88.015" cy="246.075" r="0.55" />
+<circle class="bal" cx="135.336" cy="166" r="3.4" />
+<text class="tx" x="135.336" y="167.15" font-size="3.1" text-anchor="middle" font-weight="bold" >9</text>
+<line class="t" x1="124.373" y1="180.224" x2="92.987" y2="135.851" />
+<circle class="ah" cx="92.987" cy="135.851" r="0.55" />
+<circle class="bal" cx="126.336" cy="183" r="3.4" />
+<text class="tx" x="126.336" y="184.15" font-size="3.1" text-anchor="middle" font-weight="bold" >10</text>
 <rect class="o2" x="190" y="18" width="110" height="50.4" rx="0" />
 <text class="tx" x="190.8" y="20.6" font-size="1.9" text-anchor="start" font-weight="bold" >internal part</text>
 <line class="o3" x1="242" y1="18" x2="242" y2="68.4" />
@@ -182,88 +181,88 @@
 <line class="o3" x1="190" y1="21.6" x2="300" y2="21.6" />
 <text class="tx" x="190.8" y="24.2" font-size="1.9" text-anchor="start" >lens Ø95.86 (drawing)</text>
 <text class="tx" x="242.8" y="24.2" font-size="1.9" text-anchor="start" >-0.00</text>
-<text class="tx" x="256.8" y="24.2" font-size="1.9" text-anchor="start" >7.25</text>
-<text class="tx" x="270.8" y="24.2" font-size="1.9" text-anchor="start" >13.53</text>
+<text class="tx" x="256.8" y="24.2" font-size="1.9" text-anchor="start" >7.37</text>
+<text class="tx" x="270.8" y="24.2" font-size="1.9" text-anchor="start" >11.65</text>
 <text class="tx" x="284.8" y="24.2" font-size="1.9" text-anchor="start" >5.50</text>
 <line class="o3" x1="190" y1="25.2" x2="300" y2="25.2" />
 <text class="tx" x="190.8" y="27.8" font-size="1.9" text-anchor="start" >LCD cell env. Ø77.6</text>
-<text class="tx" x="242.8" y="27.8" font-size="1.9" text-anchor="start" >7.65</text>
-<text class="tx" x="256.8" y="27.8" font-size="1.9" text-anchor="start" >9.51</text>
-<text class="tx" x="270.8" y="27.8" font-size="1.9" text-anchor="start" >22.31</text>
+<text class="tx" x="242.8" y="27.8" font-size="1.9" text-anchor="start" >7.64</text>
+<text class="tx" x="256.8" y="27.8" font-size="1.9" text-anchor="start" >12.05</text>
+<text class="tx" x="270.8" y="27.8" font-size="1.9" text-anchor="start" >20.72</text>
 <text class="tx" x="284.8" y="27.8" font-size="1.9" text-anchor="start" >2.54</text>
 <line class="o3" x1="190" y1="28.8" x2="300" y2="28.8" />
 <text class="tx" x="190.8" y="31.4" font-size="1.9" text-anchor="start" >PCB Ø73</text>
-<text class="tx" x="242.8" y="31.4" font-size="1.9" text-anchor="start" >10.57</text>
-<text class="tx" x="256.8" y="31.4" font-size="1.9" text-anchor="start" >8.38</text>
-<text class="tx" x="270.8" y="31.4" font-size="1.9" text-anchor="start" >24.57</text>
+<text class="tx" x="242.8" y="31.4" font-size="1.9" text-anchor="start" >10.56</text>
+<text class="tx" x="256.8" y="31.4" font-size="1.9" text-anchor="start" >11.75</text>
+<text class="tx" x="270.8" y="31.4" font-size="1.9" text-anchor="start" >23.04</text>
 <text class="tx" x="284.8" y="31.4" font-size="1.9" text-anchor="start" >0.50</text>
 <line class="o3" x1="190" y1="32.4" x2="300" y2="32.4" />
 <text class="tx" x="190.8" y="35" font-size="1.9" text-anchor="start" >parts to 9.7 (drawing)</text>
-<text class="tx" x="242.8" y="35" font-size="1.9" text-anchor="start" >11.88</text>
-<text class="tx" x="256.8" y="35" font-size="1.9" text-anchor="start" >4.65</text>
-<text class="tx" x="270.8" y="35" font-size="1.9" text-anchor="start" >25.36</text>
-<text class="tx" x="284.8" y="35" font-size="1.9" text-anchor="start" >-1.09</text>
+<text class="tx" x="242.8" y="35" font-size="1.9" text-anchor="start" >11.86</text>
+<text class="tx" x="256.8" y="35" font-size="1.9" text-anchor="start" >7.95</text>
+<text class="tx" x="270.8" y="35" font-size="1.9" text-anchor="start" >23.82</text>
+<text class="tx" x="284.8" y="35" font-size="1.9" text-anchor="start" >-0.96</text>
 <line class="o3" x1="190" y1="36" x2="300" y2="36" />
 <text class="tx" x="190.8" y="38.6" font-size="1.9" text-anchor="start" >BAT plug + wires (U)</text>
-<text class="tx" x="242.8" y="38.6" font-size="1.9" text-anchor="start" >16.27</text>
-<text class="tx" x="256.8" y="38.6" font-size="1.9" text-anchor="start" >3.62</text>
-<text class="tx" x="270.8" y="38.6" font-size="1.9" text-anchor="start" >74.87</text>
+<text class="tx" x="242.8" y="38.6" font-size="1.9" text-anchor="start" >16.42</text>
+<text class="tx" x="256.8" y="38.6" font-size="1.9" text-anchor="start" >5.17</text>
+<text class="tx" x="270.8" y="38.6" font-size="1.9" text-anchor="start" >73.02</text>
 <text class="tx" x="284.8" y="38.6" font-size="1.9" text-anchor="start" >1.50</text>
 <line class="o3" x1="190" y1="39.6" x2="300" y2="39.6" />
 <text class="tx" x="190.8" y="42.2" font-size="1.9" text-anchor="start" >USB-C 90° plug (U)</text>
-<text class="tx" x="242.8" y="42.2" font-size="1.9" text-anchor="start" >1.95</text>
-<text class="tx" x="256.8" y="42.2" font-size="1.9" text-anchor="start" >2.38</text>
-<text class="tx" x="270.8" y="42.2" font-size="1.9" text-anchor="start" >19.97</text>
+<text class="tx" x="242.8" y="42.2" font-size="1.9" text-anchor="start" >0.75</text>
+<text class="tx" x="256.8" y="42.2" font-size="1.9" text-anchor="start" >0.84</text>
+<text class="tx" x="270.8" y="42.2" font-size="1.9" text-anchor="start" >17.94</text>
 <text class="tx" x="284.8" y="42.2" font-size="1.9" text-anchor="start" >-0.00</text>
 <line class="o3" x1="190" y1="43.2" x2="300" y2="43.2" />
 <text class="tx" x="190.8" y="45.8" font-size="1.9" text-anchor="start" >rear USB-C socket (U)</text>
-<text class="tx" x="242.8" y="45.8" font-size="1.9" text-anchor="start" >1.62</text>
+<text class="tx" x="242.8" y="45.8" font-size="1.9" text-anchor="start" >5.44</text>
 <text class="tx" x="256.8" y="45.8" font-size="1.9" text-anchor="start" >-0.00</text>
 <text class="tx" x="270.8" y="45.8" font-size="1.9" text-anchor="start" >-0.00</text>
 <text class="tx" x="284.8" y="45.8" font-size="1.9" text-anchor="start" >-0.00</text>
 <line class="o3" x1="190" y1="46.8" x2="300" y2="46.8" />
 <text class="tx" x="190.8" y="49.4" font-size="1.9" text-anchor="start" >ON/OFF switch (U)</text>
-<text class="tx" x="242.8" y="49.4" font-size="1.9" text-anchor="start" >9.24</text>
-<text class="tx" x="256.8" y="49.4" font-size="1.9" text-anchor="start" >8.98</text>
-<text class="tx" x="270.8" y="49.4" font-size="1.9" text-anchor="start" >48.89</text>
+<text class="tx" x="242.8" y="49.4" font-size="1.9" text-anchor="start" >9.35</text>
+<text class="tx" x="256.8" y="49.4" font-size="1.9" text-anchor="start" >8.92</text>
+<text class="tx" x="270.8" y="49.4" font-size="1.9" text-anchor="start" >47.11</text>
 <text class="tx" x="284.8" y="49.4" font-size="1.9" text-anchor="start" >0.80</text>
 <line class="o3" x1="190" y1="50.4" x2="300" y2="50.4" />
 <text class="tx" x="190.8" y="53" font-size="1.9" text-anchor="start" >BOOT key (U)</text>
-<text class="tx" x="242.8" y="53" font-size="1.9" text-anchor="start" >10.37</text>
-<text class="tx" x="256.8" y="53" font-size="1.9" text-anchor="start" >7.69</text>
-<text class="tx" x="270.8" y="53" font-size="1.9" text-anchor="start" >67.02</text>
+<text class="tx" x="242.8" y="53" font-size="1.9" text-anchor="start" >10.44</text>
+<text class="tx" x="256.8" y="53" font-size="1.9" text-anchor="start" >8.23</text>
+<text class="tx" x="270.8" y="53" font-size="1.9" text-anchor="start" >65.25</text>
 <text class="tx" x="284.8" y="53" font-size="1.9" text-anchor="start" >2.15</text>
 <line class="o3" x1="190" y1="54" x2="300" y2="54" />
 <text class="tx" x="190.8" y="56.6" font-size="1.9" text-anchor="start" >LiPo 604050</text>
-<text class="tx" x="242.8" y="56.6" font-size="1.9" text-anchor="start" >0.66</text>
-<text class="tx" x="256.8" y="56.6" font-size="1.9" text-anchor="start" >3.19</text>
-<text class="tx" x="270.8" y="56.6" font-size="1.9" text-anchor="start" >8.29</text>
+<text class="tx" x="242.8" y="56.6" font-size="1.9" text-anchor="start" >4.37</text>
+<text class="tx" x="256.8" y="56.6" font-size="1.9" text-anchor="start" >1.97</text>
+<text class="tx" x="270.8" y="56.6" font-size="1.9" text-anchor="start" >5.49</text>
 <text class="tx" x="284.8" y="56.6" font-size="1.9" text-anchor="start" >-0.00</text>
 <line class="o3" x1="190" y1="57.6" x2="300" y2="57.6" />
 <text class="tx" x="190.8" y="60.2" font-size="1.9" text-anchor="start" >speaker 2030</text>
-<text class="tx" x="242.8" y="60.2" font-size="1.9" text-anchor="start" >17.75</text>
-<text class="tx" x="256.8" y="60.2" font-size="1.9" text-anchor="start" >2.29</text>
-<text class="tx" x="270.8" y="60.2" font-size="1.9" text-anchor="start" >58.26</text>
+<text class="tx" x="242.8" y="60.2" font-size="1.9" text-anchor="start" >18.50</text>
+<text class="tx" x="256.8" y="60.2" font-size="1.9" text-anchor="start" >3.44</text>
+<text class="tx" x="270.8" y="60.2" font-size="1.9" text-anchor="start" >56.38</text>
 <text class="tx" x="284.8" y="60.2" font-size="1.9" text-anchor="start" >-0.00</text>
 <line class="o3" x1="190" y1="61.2" x2="300" y2="61.2" />
 <text class="tx" x="190.8" y="63.8" font-size="1.9" text-anchor="start" >MAX98357A</text>
-<text class="tx" x="242.8" y="63.8" font-size="1.9" text-anchor="start" >9.83</text>
-<text class="tx" x="256.8" y="63.8" font-size="1.9" text-anchor="start" >3.00</text>
-<text class="tx" x="270.8" y="63.8" font-size="1.9" text-anchor="start" >51.95</text>
-<text class="tx" x="284.8" y="63.8" font-size="1.9" text-anchor="start" >0.05</text>
+<text class="tx" x="242.8" y="63.8" font-size="1.9" text-anchor="start" >9.58</text>
+<text class="tx" x="256.8" y="63.8" font-size="1.9" text-anchor="start" >3.47</text>
+<text class="tx" x="270.8" y="63.8" font-size="1.9" text-anchor="start" >50.15</text>
+<text class="tx" x="284.8" y="63.8" font-size="1.9" text-anchor="start" >0.30</text>
 <line class="o3" x1="190" y1="64.8" x2="300" y2="64.8" />
 <text class="tx" x="190.8" y="67.4" font-size="1.9" text-anchor="start" >INMP441</text>
-<text class="tx" x="242.8" y="67.4" font-size="1.9" text-anchor="start" >11.36</text>
-<text class="tx" x="256.8" y="67.4" font-size="1.9" text-anchor="start" >1.44</text>
-<text class="tx" x="270.8" y="67.4" font-size="1.9" text-anchor="start" >51.70</text>
+<text class="tx" x="242.8" y="67.4" font-size="1.9" text-anchor="start" >10.92</text>
+<text class="tx" x="256.8" y="67.4" font-size="1.9" text-anchor="start" >1.83</text>
+<text class="tx" x="270.8" y="67.4" font-size="1.9" text-anchor="start" >49.95</text>
 <text class="tx" x="284.8" y="67.4" font-size="1.9" text-anchor="start" >-0.00</text>
 <text class="tx" x="190" y="72.4" font-size="1.8" text-anchor="start" >Minimum distance (mm) from each internal part to each printed / machined</text>
 <text class="tx" x="190" y="75.01" font-size="1.8" text-anchor="start" >part, measured on the meshes. &lt;= 0.05 at the lens = intended lip contact;</text>
 <text class="tx" x="190" y="77.62" font-size="1.8" text-anchor="start" >chassis 0.0 = the part rests on its cradle. (U) = unverified size.</text>
 <text class="tx" x="190" y="83.23" font-size="2.6" text-anchor="start" font-weight="bold" >INTERFERENCE CHECK</text>
 <text class="tx" x="190" y="87.43" font-size="1.9" text-anchor="start" >114 pairs checked, 2 overlapping &gt; 0.05 mm3</text>
-<text class="td" x="190" y="90.185" font-size="1.9" text-anchor="start" >  front_shell x base_plate (max penetration mm) = 0.35</text>
-<text class="td" x="190" y="92.94" font-size="1.9" text-anchor="start" >  front_shell x chassis (max penetration mm) = 0.07</text>
+<text class="td" x="190" y="90.185" font-size="1.9" text-anchor="start" >  front_shell x base_plate = 0.15</text>
+<text class="td" x="190" y="92.94" font-size="1.9" text-anchor="start" >  back_shell x base_plate = 0.45</text>
 <text class="tx" x="190" y="98.695" font-size="2.6" text-anchor="start" font-weight="bold" >PARTS</text>
 <text class="tx" x="190" y="102.895" font-size="1.9" text-anchor="start" >1 front shell  2 stock lens  3 LCD  4 PCB  5 chassis (printed)</text>
 <text class="tx" x="190" y="105.65" font-size="1.9" text-anchor="start" >6 LiPo 604050  7 back shell  8 base plate + foot (polymer)</text>
@@ -274,7 +273,7 @@
 <line class="fr2t" x1="240" y1="258" x2="410" y2="258" />
 <line class="fr2t" x1="240" y1="273" x2="410" y2="273" />
 <text class="tx" x="243" y="253.8" font-size="10.5" text-anchor="start" font-weight="bold" letter-spacing="1.2">SOUL</text>
-<text class="td" x="276" y="248.2" font-size="2.3" text-anchor="start" >P0 size M - DIY pilot, v6 look</text>
+<text class="td" x="276" y="248.2" font-size="2.3" text-anchor="start" >P0 size M - DIY pilot, MARGARITAR shape</text>
 <text class="td" x="276" y="252" font-size="2.3" text-anchor="start" >Waveshare ESP32-S3-Touch-LCD-2.8C</text>
 <text class="td" x="276" y="255.8" font-size="2.3" text-anchor="start" >DWG SOUL-P0M-02</text>
 <text class="td" x="241.4" y="261" font-size="1.8" text-anchor="start" >TITLE</text>
@@ -288,7 +287,7 @@
 <text class="td" x="372.4" y="244" font-size="1.8" text-anchor="start" >UNITS</text>
 <text class="tx" x="372.4" y="249.3" font-size="3.3" text-anchor="start" font-weight="bold" >mm</text>
 <text class="td" x="333.4" y="261" font-size="1.8" text-anchor="start" >REV</text>
-<text class="tx" x="333.4" y="266.3" font-size="3.3" text-anchor="start" font-weight="bold" >P0-A</text>
+<text class="tx" x="333.4" y="266.3" font-size="3.3" text-anchor="start" font-weight="bold" >P0-B</text>
 <text class="td" x="372.4" y="261" font-size="1.8" text-anchor="start" >DATE</text>
 <text class="tx" x="372.4" y="266" font-size="3" text-anchor="start" font-weight="bold" >2026-09-25</text>
 <text class="td" x="333.4" y="276" font-size="1.8" text-anchor="start" >SHEET</text>
