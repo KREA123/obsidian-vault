@@ -65,7 +65,7 @@ def site():
         sm = im.resize((size[0] // 2, size[1] // 2), Image.LANCZOS)
         for nm, img in (('soul-m-%s.jpg' % k, full), ('soul-m-%s-sm.jpg' % k, sm)):
             p = os.path.join(SITE, nm)
-            img.save(p, 'JPEG', quality=90, optimize=True, progressive=True)
+            img.save(p, 'JPEG', quality=90, subsampling=0, optimize=True, progressive=True)
             print('wrote', p, img.size, os.path.getsize(p) // 1000, 'kB')
 
 
