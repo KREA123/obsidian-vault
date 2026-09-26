@@ -33,6 +33,7 @@ Ca la v8, adâncimea e adusă la **31,5 mm** comprimând doar spatele, adică pa
 | `soul_v9_typing.png` | Tastatura SoulOS în engleză pe ecran (aceeași textură ca în v8) |
 | `soul_v9_ou_night.png` | Noaptea, în capsula OU, cu ochi chihlimbar |
 | `soul_v9_vs_v8.png` | v8 (HOPA) lângă v9 (MĂRGĂRITAR), din față: aceeași cameră, aceeași scară |
+| `soul_v9_alive.gif` + `.mp4` (720×720, 5 s) | SOUL stă nemișcat și doar ochii clipesc și privesc în jur, în buclă (cadrul din hero) |
 
 ## Ce s-a schimbat față de v8
 - **Corpul** e MĂRGĂRITAR: tabelele de lățime și adâncime din `v5/src/alt_geo.py`, cu masa plată Ø56 pentru sticlă și fața îndoită la R150 spre bărbie. Peste el am pus prelucrările v6:
