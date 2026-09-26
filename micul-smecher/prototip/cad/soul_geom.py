@@ -1,19 +1,14 @@
-"""soul_geom.py -- outline math of SOUL-P0 size M (the DIY pilot of SOUL, v6 look), pure numpy + shapely.
+"""soul_geom.py -- outline math of SOUL-P0 size M (the DIY pilot of SOUL), pure numpy + shapely.
 
-SIZE M: the v6 body (v5 loft cut flat at v5 z = 3, render-brief v5 §2 tables) scaled UNIFORMLY by K in the
-front view (x and z) so the stock Waveshare 2.8C lens (Ø95.86) sits in the flat face table exactly like the
-Ø52 glass of v6, and by KY in depth (depth may differ from the uniform scale).  (The S pilot, 1.75", is in
-../legacy-S/.)  Everything below was first written for S; the M changes are the parameters K, KY, Z_CUT.
-
-The outline is the v5 SOUL loft (render-brief v5 §2 / renders/v5/src/soul_geo.py, tables copied verbatim)
-with four pilot changes:
-  1. FLAT BASE: the loft is cut at v5 z = Z_CUT (no rocker sole, no sole ellipsoid) and the body is stretched
-     in z so the total height is H_TOTAL (75 mm). Base footprint ~ 33 x 25 mm.
-  2. DEEPER BACK: the back half of every section is scaled by K_BACK about the seam (27.1 -> ~29.5 mm deep),
-     room for the Waveshare stack (8.9 mm) + a stock LiPo.
-  3. PLANAR SEAM: the silhouette line y_s is replaced by its best-fit plane y = SEAM_A + SEAM_B * Z (max 0.67 mm
-     change), so the maximum width lies exactly on the parting plane -> no undercut for moulds / 3-axis CNC.
-  4. The v5 below-z-8 widening (DELTA, only needed for the sole Boolean) is removed.
+SHAPE: MĂRGĂRITAR (founder decision 2026-09-26; before it the P0 used the v6 HOPA outline, see git history).
+The outline is the MĂRGĂRITAR section model of renders/v5/src/alt_geo.py (render brief v5 §5, tables copied
+verbatim below), the same shape as the v9 renders (renders/v9/src/marg_geo.py), with the pilot changes:
+  1. FLAT BASE: cut at MĂRGĂRITAR z = Z_CUT (2.4, as v9), closed by the printed base plate + oval foot.
+  2. SCALE: UNIFORM by K in the front view (x and z) so the stock Waveshare 2.8C lens (Ø95.86) sits in the flat
+     face table like the Ø52 glass of the v9 design: visible glass / width = 92.9 / 112.1 = 0.83 (v9: 52 / 63);
+     by KY in depth (as the HOPA P0: 1.24, room for the Waveshare stack + the LiPo).
+  3. PLANAR SEAM: the silhouette line y_s is replaced by its best-fit plane y = SEAM_A + SEAM_B * Z, so the
+     maximum width lies on the parting plane -> no undercut for moulds / 3-axis CNC.
 
 Frame (mm): origin = centre of the flat base, +Z up, the face looks toward -Y, +X = viewer's right.
 """
@@ -23,29 +18,31 @@ import numpy as np
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
-# ---------------------------------------------------------------- v5 tables (render-brief v5 §2.1)
-WZ = [0, 1.2, 2.2, 4, 6.3, 8, 10.5, 14, 18.5, 23, 28, 34, 40.5, 48, 55.5, 60, 63, 66, 69.5, 71.5, 73.2, 74]
-WV = [6.9, 11.9, 14.7, 18.6, 22.5, 24.3, 26.0, 27.7, 28.9, 29.9, 30.6, 31.2, 31.5, 31.2, 30.4, 29.4, 28.3, 26.4,
-      22.8, 19.0, 12.5, 0]
-SZ_ = [1.9, 3, 4.5, 6.3, 8, 10.5, 14, 18.5, 23, 28, 34, 40.5, 48, 55.5, 60, 63, 66, 69.5, 71.5, 73.2, 74]
-YF = [-12.5, -13.2, -13.8, -14.2, -14.4, -14.4, -14.2, -13.7, -13.1, -12.4, -11.5, -10.6, -9.6, -8.5, -7.9, -7.4,
-      -7.0, -5.9, -4.7, -2.8, -1.0]
-YB = [12.0, 12.4, 12.7, 12.8, 12.7, 12.4, 11.8, 11.0, 10.4, 9.9, 9.6, 9.4, 8.7, 7.6, 6.7, 5.8, 4.6, 2.7, 1.3, -0.1,
-      -1.0]
+# ---------------------------------------------------------------- MĂRGĂRITAR tables (alt_geo.py, brief v5 §5)
+H5 = 72.0                         # crown pole (MĂRGĂRITAR z)
+WZ = [0, 4, 8, 18, 30, 39.6, 54, 62, 67, 70, 72]
+WV = [14.0, 21.5, 25.0, 27.5, 30.5, 31.5, 29.25, 25.5, 19.0, 11.0, 0]
+DZ = [0, 6, 12, 30, 40, 55, 62, 68, 72]
+DV = [17, 22, 24, 22, 20.5, 17.5, 16, 12, 0]
 LEAN5 = math.radians(8.0)
-R_TABLE = 26.2
-FADE = 1.5
+T8, C8 = math.tan(LEAN5), math.cos(LEAN5)
+ZC5 = 38.9                        # flat-table centre (glass centre)
+R_TABLE = 28.0                    # flat Ø56 zone (the Ø52 glass sits in it)
+R_BEND = 150.0                    # below the table the face bends at R150 into the chin
+PF, PR, PB = 2.6, 2.4, 2.2        # front / table-roll / back superellipse exponents
+FADE = 4.0
+SEAM_FRAC = 0.36
 
 # ---------------------------------------------------------------- pilot parameters (size M)
-Z_CUT = 3.0                       # v5 height where the flat base is cut (as v6)
-K = float(__import__("os").environ.get("SOUL_K", 1.78))                           # uniform front-view scale (x, z): v6 63 x 71 -> 112.1 x 126.4 (+1.2 foot); smallest k that holds the Ø95.86 lens with the v6 glass/body ratio
-KY = float(__import__("os").environ.get("SOUL_KY", 1.24))                          # depth scale: v6 27.1 -> ~33.6 mm (stack 9.7 + LiPo 6 + speaker)
+Z_CUT = 2.4                       # MĂRGĂRITAR height where the flat base is cut (as v9)
+K = float(__import__("os").environ.get("SOUL_K", 1.78))     # uniform front-view scale (x, z): 63 x 69.6 -> 112.1 x 123.9
+KY = float(__import__("os").environ.get("SOUL_KY", 1.24))   # depth scale
 SZ = K
-H_TOTAL = (74.0 - Z_CUT) * K      # shell height above the flat base plane (the foot adds FOOT_H below)
+H_TOTAL = (H5 - Z_CUT) * K        # shell height above the flat base plane (the foot adds FOOT_H below)
 K_BACK = 1.0                      # extra back-half depth scale about the seam (1.0 = none)
 SEAM_A, SEAM_B = None, None       # parting plane y = A + B*Z, fitted below to the scaled silhouette line
-FOOT_H = 1.2                      # v6 oval foot below the base plane
-FOOT_A, FOOT_B, FOOT_P = 15.0 * K, 7.0 * K, 2.4
+FOOT_H = 1.2                      # oval foot below the base plane (v9: 28 x 13.8)
+FOOT_A, FOOT_B, FOOT_P = 14.0 * K, 6.9 * KY, 2.6
 
 
 def pchip(xk, yk):
@@ -88,46 +85,103 @@ def pchip(xk, yk):
     return f
 
 
+def concave_majorant(f, z0, z1, n=4000, sigma_mm=1.2):
+    """least concave majorant of f on [z0, z1], lightly smoothed (alt_geo.py: removes PCHIP's small waists)"""
+    z = np.linspace(z0, z1, n)
+    v = f(z)
+    hull = []
+    for i in range(n):
+        while len(hull) >= 2:
+            a, b = hull[-2], hull[-1]
+            if (z[b] - z[a]) * (v[i] - v[a]) - (v[b] - v[a]) * (z[i] - z[a]) >= 0:
+                hull.pop()
+            else:
+                break
+        hull.append(i)
+    h = np.interp(z, z[hull], v[hull])
+    k = sigma_mm / (z[1] - z[0])
+    xs = np.arange(-int(4 * k), int(4 * k) + 1)
+    gk = np.exp(-0.5 * (xs / k) ** 2)
+    gk /= gk.sum()
+    hp = np.pad(h, len(xs) // 2, mode='reflect', reflect_type='odd')
+    hs = np.convolve(hp, gk, mode='valid')
+    t = smoothstep(np.minimum(z - z0, z1 - z) / (3 * sigma_mm))
+    hs = h + (hs - h) * t
+    return lambda q: np.interp(np.asarray(q, float), z, hs)
+
+
+def pole_pchip(zk, vk, H, zc0, zc1, z_s_from):
+    """PCHIP in z blended over [zc0, zc1] into a PCHIP in s = sqrt(H - z) (smooth crown pole)"""
+    fz = pchip(zk, vk)
+    zk, vk = np.asarray(zk, float), np.asarray(vk, float)
+    k = zk >= z_s_from
+    fs = pchip(np.sqrt(H - zk[k])[::-1], vk[k][::-1])
+
+    def f(z):
+        z = np.asarray(z, float)
+        a = fz(z)
+        b = fs(np.sqrt(np.clip(H - z, 0.0, None)))
+        return np.maximum(a + (b - a) * smoothstep((z - zc0) / (zc1 - zc0)), 0.0)
+    return f
+
+
 def smoothstep(t):
     t = np.clip(t, 0.0, 1.0)
     return t * t * (3 - 2 * t)
 
 
-def _s_pchip(zk, vk):
-    zk, vk = np.asarray(zk, float), np.asarray(vk, float)
-    k = zk >= 55.0
-    return pchip(np.sqrt(74.0 - zk[k])[::-1], vk[k][::-1])
+_w5 = concave_majorant(pole_pchip(WZ, WV, H5, 60.0, 66.0, 54.0), 0.0, H5)
+_D5 = pole_pchip(DZ, DV, H5, 58.0, 64.0, 55.0)
+Z_BAND = (ZC5 - R_TABLE * C8, ZC5 + R_TABLE * C8)
+_YG = -8.5 + T8 * ZC5 - (Z_BAND[0] ** 2) / (2 * R_BEND)
 
 
-def _blend(fz, fs, z0=58.0, z1=64.0):
-    def f(z):
-        z = np.asarray(z, float)
-        a = fz(z)
-        b = fs(np.sqrt(np.clip(74.0 - z, 0.0, None)))
-        return a + (b - a) * smoothstep((z - z0) / (z1 - z0))
-    return f
+def _plane5(z):
+    return _YG + T8 * (np.asarray(z, float) - ZC5)
 
 
-_w = _blend(pchip(WZ, WV), _s_pchip(WZ, WV))
-_yf = _blend(pchip(SZ_, YF), _s_pchip(SZ_, YF))
-_yb = _blend(pchip(SZ_, YB), _s_pchip(SZ_, YB))
-_sf = (YF[1] - YF[0]) / (SZ_[1] - SZ_[0])
-_sb = (YB[1] - YB[0]) / (SZ_[1] - SZ_[0])
-Z_BAND = (40.5 - R_TABLE * math.cos(LEAN5), 40.5 + R_TABLE * math.cos(LEAN5))
+def _ys_raw5(z):
+    z = np.asarray(z, float)
+    bend = np.where(z < Z_BAND[0], (Z_BAND[0] - z) ** 2 / (2 * R_BEND), 0.0)
+    return _plane5(z) + bend + SEAM_FRAC * _D5(z)
+
+
+def sections5(z):
+    """MĂRGĂRITAR sections (its own frame, unscaled): w, y_f, y_b, y_s, c, p_front"""
+    z = np.atleast_1d(np.asarray(z, float))
+    b0, b1 = Z_BAND
+    D = _D5(z)
+    w = _w5(z)
+    ys = _ys_raw5(z)
+    e = 0.05
+    ys1 = float(_ys_raw5(np.array([b1]))[0])
+    sl = float((_ys_raw5(np.array([b1])) - _ys_raw5(np.array([b1 - e])))[0]) / e
+    ys = np.where(z > b1, ys1 + sl * (z - b1), ys)
+    yf = ys - SEAM_FRAC * D
+    yb = ys + (1 - SEAM_FRAC) * D
+    fd = smoothstep(np.minimum(z - b0, b1 - z) / FADE)
+    c = np.sqrt(np.maximum(R_TABLE ** 2 - ((z - ZC5) / C8) ** 2, 0.0)) * fd
+    c = np.minimum(c, np.maximum(w - 0.8, 0.0))
+    return w, yf, yb, ys, c, PF + (PR - PF) * fd
+
+
+def _dy5():
+    """y shift that centres the cut base section on the origin"""
+    w, yf, yb, ys, c, pf = sections5(np.array([Z_CUT]))
+    return -0.5 * float(yf[0] + yb[0])
+
+
+DY5 = _dy5()
 
 
 def z5(Z):
-    """pilot Z -> v5 z"""
+    """pilot Z -> MĂRGĂRITAR z"""
     return np.asarray(Z, float) / K + Z_CUT
 
 
 def _v5_ys(Z):
-    z = np.minimum(z5(Z), 74.0)
-    yf = np.where(z < SZ_[0], YF[0] + _sf * (z - SZ_[0]), _yf(z))
-    yb = np.where(z < SZ_[0], YB[0] + _sb * (z - SZ_[0]), _yb(z))
-    fd = smoothstep(np.minimum(z - Z_BAND[0], Z_BAND[1] - z) / FADE)
-    yf = yf + fd * (-10.6 + math.tan(LEAN5) * (z - 40.5) - yf)
-    return KY * (yf + 0.36 * (yb - yf))
+    z = np.minimum(z5(Z), H5)
+    return KY * (sections5(z)[3] + DY5)
 
 
 def _fit_seam():
@@ -139,21 +193,16 @@ def _fit_seam():
 
 def sections(Z):
     """Pilot sections at heights Z: half-width w, front y_f, back y_b, seam y_s, table half-width c, front exponent."""
-    z = np.minimum(z5(Z), 74.0)
-    w = K * np.maximum(_w(z), 0.0)
-    yf = np.where(z < SZ_[0], YF[0] + _sf * (z - SZ_[0]), _yf(z))
-    yb = np.where(z < SZ_[0], YB[0] + _sb * (z - SZ_[0]), _yb(z))
-    fd = smoothstep(np.minimum(z - Z_BAND[0], Z_BAND[1] - z) / FADE)
-    plane = -10.6 + math.tan(LEAN5) * (z - 40.5)
-    yf = yf + fd * (plane - yf)
-    c = K * np.sqrt(np.maximum(R_TABLE ** 2 - ((z - 40.5) / math.cos(LEAN5)) ** 2, 0.0)) * fd
-    yf, yb = KY * yf, KY * yb
-    ys5 = yf + 0.36 * (yb - yf)
-    yb = ys5 + (yb - ys5) * K_BACK
+    z = np.minimum(z5(Z), H5)
+    w5, yf5, yb5, ys5, c5, pf = sections5(z)
+    w = K * np.maximum(w5, 0.0)
+    c = K * c5
+    yf, yb = KY * (yf5 + DY5), KY * (yb5 + DY5)
+    ysr = KY * (ys5 + DY5)
+    yb = ysr + (yb - ysr) * K_BACK
     ys = SEAM_A + SEAM_B * np.asarray(Z, float)
     ys = np.clip(ys, yf + 0.05, None)
     yb = np.maximum(yb, ys + 0.05)
-    pf = 2.6 + (2.4 - 2.6) * fd
     return w, yf, yb, ys, c, pf
 
 
@@ -167,7 +216,7 @@ def ring(Z, n_raw=1536):
     w, yf, yb, ys, c, pf = [float(np.ravel(v)[0]) for v in sections(np.array([Z]))]
     nb = n_raw // 2
     t = np.linspace(0.5 * math.pi, 0.0, nb // 2, endpoint=False)
-    back_r = np.stack([w * _spow(np.cos(t), 2 / 2.2), ys + (yb - ys) * _spow(np.sin(t), 2 / 2.2)], 1)
+    back_r = np.stack([w * _spow(np.cos(t), 2 / PB), ys + (yb - ys) * _spow(np.sin(t), 2 / PB)], 1)
     nf = n_raw - nb
     if c > 1e-4:
         nroll = nf // 3
@@ -183,7 +232,7 @@ def ring(Z, n_raw=1536):
         tt = np.linspace(0.0, math.pi, nf, endpoint=False)
         front = np.stack([w * _spow(np.cos(tt), 2 / pf), ys - (ys - yf) * _spow(np.sin(tt), 2 / pf)], 1)
     t3 = np.linspace(math.pi, 0.5 * math.pi, nb - nb // 2, endpoint=False)
-    back_l = np.stack([w * _spow(np.cos(t3), 2 / 2.2), ys + (yb - ys) * _spow(np.sin(t3), 2 / 2.2)], 1)
+    back_l = np.stack([w * _spow(np.cos(t3), 2 / PB), ys + (yb - ys) * _spow(np.sin(t3), 2 / PB)], 1)
     P = np.vstack([back_r, front, back_l])
     # the listed order runs clockwise seen from +Z (back -> +x -> front); flip to CCW for shapely/OCC
     return P[::-1]
@@ -215,7 +264,7 @@ LEAN = math.atan(math.tan(LEAN5) * KY / K)                   # face lean after t
 N_OUT = np.array([0.0, -math.cos(LEAN), math.sin(LEAN)])     # outward face normal
 UP = np.array([0.0, math.sin(LEAN), math.cos(LEAN)])         # in-plane up
 INW = -N_OUT
-G = np.array([0.0, -10.6 * KY, (40.5 - Z_CUT) * K])          # centre of the flat table (glass centre)
+G = np.array([0.0, KY * (float(_plane5(ZC5)) + DY5), (ZC5 - Z_CUT) * K])   # centre of the flat table (glass centre)
 R_TAB = R_TABLE * K                                          # table radius (in x)
 
 

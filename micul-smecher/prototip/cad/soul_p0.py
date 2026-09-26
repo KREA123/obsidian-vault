@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""soul_p0.py -- SOUL-P0 size M: DIY pilot enclosure of SOUL (v6 look) for the stock
+"""soul_p0.py -- SOUL-P0 size M: DIY pilot enclosure of SOUL (MĂRGĂRITAR shape, v6/v9 CMF) for the stock
 Waveshare ESP32-S3-Touch-LCD-2.8C (round 2.8" IPS 480x480, lens Ø95.86, active Ø70.64).
 
 CadQuery 2.x. Builds, checks and exports every part in two material variants:
@@ -78,7 +78,7 @@ PLATE_DD = (10.0, 11.4)                 # chassis plate behind the tallest board
 SINK = PLATE_DD[1] + 0.3 - (COMP_D + 0.3)   # speaker + amp drop through plate windows onto foam: 1.4 mm
 # screws: 4x M2 from the back, through the chassis legs, into the front bosses; 2x M2 from below (base plate)
 SCREWS = [(-35.0, 22.0), (35.0, 22.0), (-40.5, 102.0), (40.5, 102.0)]     # (x, Z) on the parting plane
-BASE_SCREWS = [(-16.0, -9.0), (16.0, -9.0)]                                # (x, y), into front-shell bosses
+BASE_SCREWS = [(-16.0, -5.5), (16.0, -5.5)]                                # (x, y), into front-shell bosses (MĂRGĂRITAR: base 24 deep)
 SLOT = dict(z0=80.0, z1=100.0, w=1.2)   # speaker slot in the +x seam (v6: 12 x 0.6 at S scale)
 MIC_Z = 66.0                            # mic pinhole Ø1.0 in the -x seam
 SOCKET = dict(z=BASE_T + 5.2, w=12.6, h=7.2, L=19.0, mouth_w=9.4, mouth_h=3.6)   # rear USB-C female (UNVERIFIED)
@@ -207,6 +207,13 @@ def ray_exit(p0, d, step=0.02, tmax=60.0):
         else:
             hi = m
     return (lo + hi) / 2
+
+
+def largest(s):
+    """the biggest solid of a Boolean result (MĂRGĂRITAR: the parting plane leaves a 1e-4 mm3 sliver at the crown
+    pole on the back side, which makes every later Boolean on that half invalid)"""
+    sols = s.Solids()
+    return max(sols, key=lambda x: abs(x.Volume())) if len(sols) > 1 else s
 
 
 def hollow(outer, inner):
@@ -474,7 +481,7 @@ def build(vname):
     sub['front'].append(bf.cyl(r_ap, -dg - 3.0, 1.0))
     ch = V['chamfer']
     sub['front'].append(cq.Workplane(bf.plane).workplane(offset=dg - ch).circle(r_ap)
-                        .workplane(offset=ch + 0.01).circle(r_ap + ch + 0.01).loft().val())
+                        .workplane(offset=ch + 1.0).circle(r_ap + ch + 1.0).loft().val())   # runs 1 mm out: no near-tangent face
 
     # ------------------------------------------------ side seam features: speaker slot (+x), mic hole (-x)
     L = SLOT['z1'] - SLOT['z0']
@@ -554,7 +561,12 @@ def build(vname):
                     vo = vol(o)
                     if vo < 1e-6:
                         continue
-                    r = (s.fuse(o) if kind == 'fuse' else s.cut(o)).clean()
+                    if os.environ.get('SOUL_DEBUG'):
+                        print(f'    [{tag}] {kind} #{i} vol {vo:.0f} ({time.time()-t0:.0f}s)', flush=True)
+                    r0 = s.fuse(o) if kind == 'fuse' else s.cut(o)
+                    r = r0.clean()
+                    if not r.isValid() and r0.isValid():
+                        r = r0          # MĂRGĂRITAR back half: clean() of a boss fuse gives an invalid solid
                     vr = vol(r)
                     tv = 0.03 * v0 + 1.0      # OCCT volumes of B-spline solids drift by ~1-2 %; this only catches gross failures
                     ok = ((kind == 'fuse' and v0 - tv <= vr <= v0 + vo + tv) or
@@ -573,8 +585,8 @@ def build(vname):
         return s
     t1 = time.time()
     say(f'  shell {vol(SHELL):.0f} mm3, base plate {vol(base):.0f} mm3')
-    front = finish(OUTER.intersect(FRONT_HALF).cut(INNER), add['front'], sub['front'], 'front')
-    back = finish(OUTER.intersect(BACK_HALF).cut(INNER), add['back'], sub['back'], 'back')
+    front = finish(largest(OUTER.intersect(FRONT_HALF).cut(INNER)), add['front'], sub['front'], 'front')
+    back = finish(largest(OUTER.intersect(BACK_HALF).cut(INNER)), add['back'], sub['back'], 'back')
     base_plate = finish(base, add['base'], sub['base'], 'base')
     say(f'  shells assembled ({time.time()-t1:.0f}s); valid: front {front.isValid()} back {back.isValid()} '
         f'base {base_plate.isValid()}; volumes {vol(front):.0f} / {vol(back):.0f} / {vol(base_plate):.0f}')

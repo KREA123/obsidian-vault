@@ -133,7 +133,7 @@ def title_block(sh, title, sub, scale, sheet, dwg, x0=240, y0=241, w=170, h=46):
         sh.text(x + 1.4, y + 3.0, label, 1.8, 'start', 'td')
         sh.text(x + 1.4, y + 3.2 + vs + 1.8, value, vs, 'start', 'tx', weight='bold' if bold else None)
     sh.text(x0 + 3, y0 + 12.8, 'SOUL', 10.5, 'start', 'tx', weight='bold', extra='letter-spacing="1.2"')
-    sh.text(x0 + 36, y0 + 7.2, 'P0 size M - DIY pilot, v6 look', 2.3, 'start', 'td')
+    sh.text(x0 + 36, y0 + 7.2, 'P0 size M - DIY pilot, MARGARITAR shape', 2.3, 'start', 'td')
     sh.text(x0 + 36, y0 + 11.0, 'Waveshare ESP32-S3-Touch-LCD-2.8C', 2.3, 'start', 'td')
     sh.text(x0 + 36, y0 + 14.8, 'DWG ' + dwg, 2.3, 'start', 'td')
     cell(x0, r1, 'TITLE', title, 3.1)
@@ -142,7 +142,7 @@ def title_block(sh, title, sub, scale, sheet, dwg, x0=240, y0=241, w=170, h=46):
     sh.text(x0 + 1.4, r2 + 11.6, 'projected/sectioned from the exported STL', 2.0, 'start', 'td')
     cell(c1, y0, 'SCALE', scale)
     cell(c2, y0, 'UNITS', 'mm')
-    cell(c1, r1, 'REV', 'P0-A')
+    cell(c1, r1, 'REV', 'P0-B')
     cell(c2, r1, 'DATE', DATE, 3.0)
     cell(c1, r2, 'SHEET', sheet)
     cell(c2, r2, 'SIZE / PROJ.', 'A3')
@@ -287,14 +287,14 @@ def sheet_ga(theme='blue'):
     sh.dim_h(*VBo.p(-bw['base_w'] / 2, 0), *VBo.p(bw['base_w'] / 2, 0), VBo.p(0, -y0)[1] + 8 if False else VBo.p(0, -20)[1] + 4,
              'FLAT BASE %.1f x %.1f' % (bw['base_w'], bw['base_d']))
     sh.text(VBo.p(0, 0)[0], VBo.p(0, 22)[1] - 4, 'BOTTOM', 3.0, 'middle', 'tx', weight='bold')
-    sh.text(VBo.p(0, 0)[0], VBo.p(0, -20)[1] + 9, 'foot %.1f x %.1f (v6 30 x 14 x K), 2x M2 countersunk' % (2 * g.FOOT_A, 2 * g.FOOT_B),
+    sh.text(VBo.p(0, 0)[0], VBo.p(0, -20)[1] + 9, 'foot %.1f x %.1f (v9 28 x 13.8, x K / KY), 2x M2 countersunk' % (2 * g.FOOT_A, 2 * g.FOOT_B),
             1.9, 'middle', 'td')
 
     ms = rs.get('dims', {}).get('mass_g', {})
     notes(sh, 342, 100, [
         'Envelope %.1f x %.1f x %.1f' % (W, H, D),
         '  (W x H incl. foot x D)',
-        'v6 front silhouette x %.2f' % g.K,
+        'MARGARITAR front x %.2f' % g.K,
         '  depth x %.2f' % g.KY,
         'Lens Ø95.86 stock (2.8C)',
         'Split plane y=%.2f+%.4fZ' % (g.SEAM_A, g.SEAM_B),
