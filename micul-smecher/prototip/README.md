@@ -1,5 +1,9 @@
 # SOUL-P0 mărimea M: kitul de prototip făcut acasă
 
+> **MĂRGĂRITAR CAD: în lucru — fișierele de print vin săptămâna viitoare; electronica se poate comanda deja.**
+>
+> Stare (2026-09-26): `cad/soul_geom.py` desenează deja conturul MĂRGĂRITAR (K = 1,78, KY = 1,24 → ~112 × 125 × 30 mm), iar `cad/soul_p0.py` construiește piesele valide (plastic). De rezolvat înainte de export: verificarea de interferență, după mutarea mufei USB-C cu 0,9 mm mai jos și scurtarea limbii carcasei din față deasupra plăcii de bază. STL-urile, STEP-urile, imaginile și planșele din acest folder sunt încă cele HOPA (rev A).
+
 **Pentru Andu. Ghid pas cu pas, fără să fii inginer.** Versiunea: 2026-09-25 (P0-M, rev A).
 
 SOUL-P0 M este prototipul „se poate face acasă” al lui SOUL mărimea **M**. Folosește placa Waveshare **ESP32-S3-Touch-LCD-2.8C**, cu ecran rotund IPS de 2,8″ (480 × 480). Carcasa are aspectul **v6**: aceeași siluetă din față ca `renders/v5/soul_v5_front_00.png`, sticlă neagră mare, nimic altceva pe față, bază plată cu piciorul oval din polimer și fanta difuzorului în cusătura laterală.
