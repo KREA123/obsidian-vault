@@ -65,3 +65,23 @@ python3 compose_v9.py site                   # imaginile site/media/soul-m-*.jpg
 ./render_v9.sh alive                         # opțional: bucla de 5 s
 ```
 Randarea se face în Cycles, pe CPU, cu 4 fire și câte o singură randare pe rând, apoi prin `../v5/src/post.py` (OIDN + AgX).
+
+## Filmul de lansare (animație CGI, nu filmare)
+| Fișier | Ce e |
+|---|---|
+| `film/soul_launch.mp4` | 1920×1080, 24 fps, H.264, ~50 s, fără sunet |
+| `film/soul_launch_vertical.mp4` | 1080×1920, aceeași tăietură pentru telefon (cadrele foto sunt decupate și mărite, deci mai moi) |
+
+Ordinea: căsuța de chat cu cursorul care clipește → „The smartest thing ever made lives in a chat box.” → SOUL Grafit se ridică noaptea din OU și deschide ochii, clipește → orbită scurtă pe umerii de aluminiu → „Hold the glass.” → în mână, ochii reacționează → tastatura rotundă → „Works with the AI you already have.” → lângă un laptop cu chat, ochii se măresc, apoi se bucură → familia de 5 culori → noaptea, ochii se închid → „From €249 · Join the waitlist” → logo SOUL (Glass-O) + „Designed in Romania.”
+
+**Onest:**
+- Mișcările de cameră sunt împingeri sau panoramări lente 2D peste cadre randate.
+- Ridicarea și orbita sunt 7, respectiv 6 cadre-cheie randate (Cycles, 16 spp + OIDN), interpolate cu `ffmpeg minterpolate`. La orbită se văd mici deformări pe margine.
+- Degetul pe sticlă nu e modelat. Reacția se vede doar în ochi.
+
+Regenerare:
+```
+./src/render_film.sh <shot> <tag> <eyes> [--set k=v]   # cadrele-cheie în film/keys
+python3 src/film_assemble.py                          # montajul
+```
+Lista cadrelor-cheie e în `src/film_v9.py`.

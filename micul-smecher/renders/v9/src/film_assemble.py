@@ -219,7 +219,7 @@ def K(name):
 def build(W, H):
     vert = H > W
     rise = interp_seq('rise', [K('f_rise_l%d' % L) for L in (60, 50, 40, 30, 20, 10, 0)], 3.0, 2.6)
-    orbit = interp_seq('orbit', [K('f_orbit_a%d' % a) for a in (64, 60, 56, 52, 48, 44, 40, 36, 32, 28, 24)], 2.75, 4.0)
+    orbit = interp_seq('orbit', [K('f_orbit_a%d' % a) for a in (64, 56, 48, 40, 32, 24)], 1.25, 4.0)
     segs = [
         seg_chat(W, H),
         seg_title(W, H, 'The smartest thing ever made lives in a chat box.'),
