@@ -81,7 +81,8 @@ SCREWS = [(-35.0, 22.0), (35.0, 22.0), (-40.5, 102.0), (40.5, 102.0)]     # (x, 
 BASE_SCREWS = [(-16.0, -5.5), (16.0, -5.5)]                                # (x, y), into front-shell bosses (MĂRGĂRITAR: base 24 deep)
 SLOT = dict(z0=80.0, z1=100.0, w=1.2)   # speaker slot in the +x seam (v6: 12 x 0.6 at S scale)
 MIC_Z = 66.0                            # mic pinhole Ø1.0 in the -x seam
-SOCKET = dict(z=BASE_T + 5.2, w=12.6, h=7.2, L=19.0, mouth_w=9.4, mouth_h=3.6)   # rear USB-C female (UNVERIFIED)
+SOCKET = dict(z=BASE_T + 4.3,   # MĂRGĂRITAR: 0.9 lower, clears the battery corner;
+               w=12.6, h=7.2, L=19.0, mouth_w=9.4, mouth_h=3.6)   # rear USB-C female (UNVERIFIED)
 MAGNETS = [(-24.0, 3.0), (24.0, 3.0)]   # optional Ø6x2 recesses in the base plate top (x, y)
 MAG_D, MAG_H = 6.2, 2.1
 
@@ -448,7 +449,8 @@ def build(vname):
         sub['front'].append(s)
         sub['back'].append(s)
 
-    add['front'].append(TONG_OUT.intersect(SeamFrame.slab(-0.01, V['tongue_h'])).cut(TONG_IN).cut(zslab(-50, BASE_T)))
+    add['front'].append(TONG_OUT.intersect(SeamFrame.slab(-0.01, V['tongue_h'])).cut(TONG_IN)
+                        .cut(zslab(-50, BASE_T + 2.5 + tol)))    # stops above the base-plate rim
     sub['back'].append(INNER.intersect(SeamFrame.slab(-0.05, V['tongue_h'] + tol)).cut(TONG_CLR))
 
     # ------------------------------------------------ 4 screws from the back

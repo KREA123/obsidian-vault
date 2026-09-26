@@ -277,7 +277,7 @@ def sheet_ga(theme='blue'):
         s0 = scr[0]
         sh.leader(VB.p(s0['x'], s0['Z']), (348, 172), '',
                   lines=['4x M2 from the back', 'cbore Ø4.3 x 1.8'], side=1)
-    sh.leader(VB.p(0, 3.0 + 5.2), (348, 188), '', lines=['USB-C socket (charge)', 'Z %.1f' % (3.0 + 5.2)],
+    sh.leader(VB.p(0, 3.0 + 4.3), (348, 188), '', lines=['USB-C socket (charge)', 'Z %.1f' % (3.0 + 4.3)],
               side=1)
     sh.text(VB.p(0, 0)[0], TY, 'BACK', 3.2, 'middle', 'tx', weight='bold')
 
