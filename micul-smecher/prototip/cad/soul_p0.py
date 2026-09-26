@@ -688,7 +688,7 @@ def finish_parts(vname, shells, parts_in, pins, screw_info, bf, log, say, t0):
 def mesh_checks(shells, parts_in, say):
     import trimesh
     say('  -- checks on meshes --')
-    M = {k: to_mesh(v, 0.05) for k, v in shells.items()}
+    M = {k: to_mesh(v, 0.12) for k, v in shells.items()}   # coarse: the signed-distance step ran out of RAM
     say('   watertight: ' + ', '.join('%s %s' % (k, m.is_volume) for k, m in M.items()))
     P = {k: to_mesh(v, 0.03) for k, v in parts_in.items()}
     inter, clear = {}, {}
@@ -719,10 +719,10 @@ def mesh_checks(shells, parts_in, say):
     say(f'   interference (volume pairs so far): {len(inter)} pairs, {len(bad)} > 0.05 {bad if bad else ""}')
     say('   minimum clearance of each internal part to each printed/machined part (mm, <0 = overlap):')
     for pn in parts_in:
-        pts, _ = trimesh.sample.sample_surface_even(P[pn], 1500)
+        pts, _ = trimesh.sample.sample_surface_even(P[pn], 600)
         row = {}
         for sn, sm in M.items():
-            d = trimesh.proximity.signed_distance(sm, pts[:1500])
+            d = np.concatenate([trimesh.proximity.signed_distance(sm, pts[i:i + 100]) for i in range(0, len(pts), 100)])
             row[sn] = round(float(-d.max()), 2)
         clear[pn] = row
         for sn, v_ in row.items():

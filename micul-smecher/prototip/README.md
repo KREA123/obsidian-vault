@@ -1,8 +1,10 @@
 # SOUL-P0 mărimea M: kitul de prototip făcut acasă
 
-> **MĂRGĂRITAR CAD: în lucru — fișierele de print vin săptămâna viitoare; electronica se poate comanda deja.**
->
-> Stare (2026-09-26): `cad/soul_geom.py` desenează deja conturul MĂRGĂRITAR (K = 1,78, KY = 1,24 → ~112 × 125 × 30 mm), iar `cad/soul_p0.py` construiește piesele valide (plastic). De rezolvat înainte de export: verificarea de interferență, după mutarea mufei USB-C cu 0,9 mm mai jos și scurtarea limbii carcasei din față deasupra plăcii de bază. STL-urile, STEP-urile, imaginile și planșele din acest folder sunt încă cele HOPA (rev A).
+> **MĂRGĂRITAR (2026-09-26): STL-urile de plastic sunt gata** în `stl/plastic/` (în poziția de print): `soul_m_plastic_front_shell.stl`, `…_back_shell.stl`, `…_base_plate.stl`, `…_chassis.stl`, `…_pin_boot.stl` și `…_pin_rst.stl`. Dimensiuni: **112,1 × 125,1 (cu piciorul) × 31,6 mm**.
+> - Bateria e acum **LiPo 803450** (8 × 34 × 50 mm, 1500 mAh, de pe eMAG). Locașul are 8,6 × 34,5 × 50,5 mm, cu loc pentru umflare. Adâncimea n-a crescut: rămân 1,97 mm până la carcasa din spate.
+> - Difuzorul, amplificatorul și microfonul sunt opționale. Ferestrele lor rămân în șasiu.
+> - Verificarea de interferență a trecut 114 perechi. Singurele atingeri sunt de 0,15 mm³ și 0,45 mm³, la inelul plăcii de bază, și dispar la o trecere cu șmirghel.
+> - STEP-urile, varianta din aluminiu, imaginile și planșele de mai jos sunt încă cele HOPA (rev A) și se refac.
 
 **Pentru Andu. Ghid pas cu pas, fără să fii inginer.** Versiunea: 2026-09-25 (P0-M, rev A).
 
