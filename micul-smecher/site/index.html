@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SOUL</title>
-<meta name="description" content="SOUL is a palm-sized aluminium stone with a round 2.8″ screen and two living eyes. It breathes, blinks and looks back at you, with no internet. It runs SoulOS and works with Claude. Reserve one of 25 numbered Founders 00.">
+<meta name="description" content="SOUL is a palm-sized aluminium stone with a round 2.8″ screen and two living eyes. It breathes, blinks and looks back at you, with no internet. It runs SoulOS and works with Claude. Join the waitlist.">
 <meta property="og:title" content="SOUL · Your AI, alive.">
 <meta property="og:description" content="The AI labs make the brain. We make the body and the soul.">
 <meta property="og:image" content="media/soul-m-hero.jpg">
@@ -27,14 +27,14 @@ window.SOUL_CONFIG = {
   WAITLIST_ENDPOINT: "",
   CURRENCY: "EUR",
   PRICES: {
-    founders: 349,       // Founders 00, aluminium, 25 numbered units, full price
+    founders: 249,       // SOUL (aluminium), "from" price
     standardFrom: 249    // Standard edition, "from" price, later
   },
   FOUNDERS_RANGE: "001–025",
   FOUNDERS_COUNT: 25,
   SHIP: {                // estimated shipping, shown in Editions + FAQ
     founders: { en: "spring 2027", ro: "primăvara 2027" },           // only after CE radio testing
-    standard: { en: "after Founders 00", ro: "după Founders 00" }
+    standard: { en: "after CE radio testing", ro: "după testele radio CE" }
   },
   CONTACT_EMAIL: "hello@soul.example"
 };
@@ -346,8 +346,7 @@ button,input,select{font:inherit;color:inherit}
 @media (max-width:560px){.charter{grid-template-columns:minmax(0,1fr)}}
 
 /* editions */
-.eds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:920px;gap:clamp(14px,2vw,22px);align-items:stretch}
-@media (max-width:980px){.eds{grid-template-columns:minmax(0,1fr);max-width:560px}}
+.eds{display:grid;grid-template-columns:minmax(0,1fr);max-width:560px;margin-inline:auto;gap:clamp(14px,2vw,22px);align-items:stretch}
 .ed{display:flex;flex-direction:column;gap:18px;padding:clamp(24px,3vw,34px);border-radius:30px;background:var(--card);border:1px solid var(--line)}
 .ed.feature{background:#0C0D10;color:#F3F0E9;border-color:transparent;--muted:#A3A7AF;--line:rgba(255,255,255,.12);--focus:#FFB347;box-shadow:var(--shadow)}
 .ed-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
@@ -444,7 +443,7 @@ select.input option{background:#101114;color:#F6F3EC}
       <a href="#claude" data-i18n="nav.claude">Claude</a>
       <a href="#born" data-i18n="nav.born">Born</a>
       <a href="#design" data-i18n="nav.design">Design</a>
-      <a href="#editions" data-i18n="nav.editions">Editions</a>
+      <a href="#editions" data-i18n="nav.editions">Price</a>
       <a href="#faq" data-i18n="nav.faq">FAQ</a>
     </nav>
     <div class="lang" role="group" aria-label="Language">
@@ -471,10 +470,10 @@ select.input option{background:#101114;color:#F6F3EC}
     <div class="hero-copy">
       <p class="lead" data-i18n="hero.sub">A palm-sized aluminium stone with two living eyes. It breathes, blinks and looks back at you, with no internet at all. <strong>And it works with Claude.</strong></p>
       <div class="cta">
-        <a class="btn btn-primary" href="#reserve" data-edition="founders" data-i18n="hero.cta1">Reserve yours</a>
+        <a class="btn btn-primary" href="#reserve" data-edition="founders" data-i18n="hero.cta1">Join the waitlist</a>
         <a class="btn btn-ghost" href="#alive" data-i18n="hero.cta2">Watch it live</a>
       </div>
-      <p class="hero-meta"><span data-i18n="hero.meta1"><b>Founders 00</b></span><span data-i18n="hero.meta2">25 numbered, <span data-cfg="range">001–025</span></span><span><b data-price="founders">€349</b></span></p>
+      <p class="hero-meta"><span data-i18n="hero.meta1"><b>SOUL</b></span><span data-i18n="hero.meta2">size M · aluminium</span><span><span data-i18n="ed.s.from">From</span> <b data-price="founders">€249</b></span></p>
     </div>
   </div>
 </section>
@@ -696,7 +695,7 @@ select.input option{background:#101114;color:#F6F3EC}
     <article class="cert" aria-labelledby="cert-title">
       <div class="cert-head">
         <div><p class="cert-title" id="cert-title" data-i18n="cert.title">Birth certificate</p>
-        <p class="cert-sub" data-i18n="cert.sub">SOUL · size M · Founders 00</p></div>
+        <p class="cert-sub" data-i18n="cert.sub">SOUL · size M</p></div>
       <svg class="seal" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="sealpath" d="M50 50 m-36 0 a36 36 0 1 1 72 0 a36 36 0 1 1 -72 0"/></defs><circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="50" cy="50" r="27" fill="none" stroke="currentColor" stroke-width="1"/><text font-family="Martian Mono,monospace" font-size="8.6" letter-spacing="1.6" fill="currentColor"><textPath href="#sealpath" data-i18n="cert.seal">SOUL · BUCHAREST · MMXXVI ·</textPath></text><ellipse cx="42" cy="51" rx="4" ry="7" fill="currentColor"/><ellipse cx="58" cy="51" rx="4" ry="7" fill="currentColor"/></svg>
       </div>
       <div class="cert-body">
@@ -818,43 +817,28 @@ select.input option{background:#101114;color:#F6F3EC}
 <section class="sec alt" id="editions" aria-labelledby="ed-title">
   <div class="wrap">
     <div class="sec-head">
-      <p class="eyebrow" data-i18n="ed.eyebrow">Editions</p>
+      <p class="eyebrow" data-i18n="ed.eyebrow">SOUL</p>
       <h2 class="h-l" id="ed-title" data-i18n="ed.h2">Choose your first soul.</h2>
     </div>
     <div class="eds">
       <article class="ed feature" aria-labelledby="ed-f">
-        <div class="ed-top"><span class="tag amber" data-i18n="ed.f.tag">25 numbered · aluminium</span><span class="mono" style="font-size:.84rem;color:var(--muted)">Nº <span data-cfg="range">001–025</span></span></div>
-        <h3 id="ed-f">Founders 00</h3>
-        <p class="desc" data-i18n="ed.f.desc">The first 25 SOULs, in anodised aluminium, each engraved with its own number. Ships only after CE radio testing.</p>
-        <div class="price"><span class="big" data-price="founders">€349</span><span class="small" data-i18n="ed.f.small">One-time. No subscription to be alive. The reservation is fully refundable.</span></div>
+        <div class="ed-top"><span class="tag amber" data-i18n="ed.f.tag">Aluminium · five colours</span></div>
+        <h3 id="ed-f">SOUL</h3>
+        <p class="desc" data-i18n="ed.f.desc">One SOUL, in anodised aluminium, with its charging egg. Ships only after CE radio testing.</p>
+        <div class="price"><span class="small" data-i18n="ed.s.from">From</span><span class="big" data-price="founders">€249</span><span class="small" data-i18n="ed.f.small">One-time. No subscription to be alive. Final price announced before orders open.</span></div>
         <ul>
           <li data-i18n="ed.f.l1">SOUL size M: bead-blasted, anodised aluminium, with a round 2.8″ screen under black glass</li>
           <li data-i18n="ed.f.l2">OU, its charging egg, in the box</li>
           <li data-i18n="ed.f.l3">SoulOS, all 24 reactions offline, and works with Claude</li>
-          <li data-i18n="ed.f.l4">Your founder number engraved, and a birth certificate</li>
+          <li data-i18n="ed.f.l4">No AI, your Claude, your ChatGPT or your own API key, and a birth certificate</li>
         </ul>
         <div class="push">
-          <a class="btn btn-primary btn-block" href="#reserve" data-edition="founders" data-i18n="ed.f.cta">Reserve a number</a>
+          <a class="btn btn-primary btn-block" href="#reserve" data-edition="founders" data-i18n="ed.f.cta">Join the waitlist</a>
           <p class="ship"><span data-i18n="ed.est">Ships after CE radio testing. Estimated:</span> <span data-cfg="shipFounders">spring 2027</span></p>
         </div>
       </article>
-      <article class="ed" aria-labelledby="ed-s">
-        <div class="ed-top"><span class="tag mint" data-i18n="ed.s.tag">Later</span></div>
-        <h3 id="ed-s" data-i18n="ed.s.name">Standard</h3>
-        <p class="desc" data-i18n="ed.s.desc">The same SOUL and the same soul, made in larger numbers, without the founder number.</p>
-        <div class="price"><span class="small" data-i18n="ed.s.from">From</span><span class="big" data-price="standardFrom">€249</span><span class="small" data-i18n="ed.s.small">Final price announced before orders open.</span></div>
-        <ul>
-          <li data-i18n="ed.s.l1">Size M, in aluminium, in the five SOUL colours</li>
-          <li data-i18n="ed.s.l2">SoulOS with its keyboard. No AI, your Claude, your ChatGPT or your own API key</li>
-          <li data-i18n="ed.s.l3">Charges in OU</li>
-        </ul>
-        <div class="push">
-          <a class="btn btn-ghost btn-block" href="#reserve" data-edition="standard" data-i18n="ed.s.cta">Join the waitlist</a>
-          <p class="ship"><span data-i18n="ed.est2">Estimated shipping:</span> <span data-cfg="shipStandard">after Founders 00</span></p>
-        </div>
-      </article>
     </div>
-    <p class="vat" data-i18n="ed.vat">Prices include VAT. Nothing is charged on this page: when reservations open, we email you a secure link. Founders 00 ships only after CE radio testing, and you can cancel for a full refund at any time before it ships.</p>
+    <p class="vat" data-i18n="ed.vat">Prices include VAT. Nothing is charged on this page: we only email you when orders open. SOUL ships only after CE radio testing.</p>
   </div>
 </section>
 
@@ -866,13 +850,13 @@ select.input option{background:#101114;color:#F6F3EC}
       <h2 class="h-l" id="faq-title" data-i18n="faq.h2">Good questions.</h2>
     </div>
     <div class="faq">
-      <details><summary data-i18n="q1">When will it ship?</summary><div class="a" data-i18n="a1">Founders 00 ships only after it passes CE radio testing: estimated <span data-cfg="shipFounders">spring 2027</span>. Standard comes <span data-cfg="shipStandard">after Founders 00</span>. If we're late, you can cancel for a full refund at any time before it ships. After delivery you have the EU 14-day right of withdrawal and a 2-year legal guarantee.</div></details>
-      <details><summary data-i18n="q11">Is it CE certified?</summary><div class="a" data-i18n="a11">Not yet, and that's why Founders 00 waits. SOUL has Bluetooth and Wi-Fi, so it must pass CE radio testing (the EU Radio Equipment Directive) at an accredited lab before anyone can sell it. We won't ship a single unit before that. Your reservation stays fully refundable until it ships.</div></details>
+      <details><summary data-i18n="q1">When will it ship?</summary><div class="a" data-i18n="a1">SOUL ships only after it passes CE radio testing: estimated <span data-cfg="shipFounders">spring 2027</span>. After delivery you have the EU 14-day right of withdrawal and a 2-year legal guarantee.</div></details>
+      <details><summary data-i18n="q11">Is it CE certified?</summary><div class="a" data-i18n="a11">Not yet, and that's why SOUL waits. SOUL has Bluetooth and Wi-Fi, so it must pass CE radio testing (the EU Radio Equipment Directive) at an accredited lab before anyone can sell it. We won't ship a single unit before that.</div></details>
       <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">No. SOUL is alive with no internet and no account, forever. SoulOS, the keyboard, notes, reminders, alarms and focus all work offline. For AI, you connect the Claude or ChatGPT you already have, or your own API key.</div></details>
       <details><summary data-i18n="q3">Which AI does it use?</summary><div class="a" data-i18n="a3">The one you choose, in its AI modes: no AI at all, your Claude, your ChatGPT, or your own Anthropic or OpenAI API key. You switch from its Control Center. Claude and ChatGPT connections are in development. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so the stone can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
       <details><summary data-i18n="q7">What happens to my voice and my data?</summary><div class="a" data-i18n="a7">It listens only while your finger is on the stone. Close the lid of its egg, and the microphone is cut in hardware. With no AI, nothing leaves the stone. With AI, your request goes only to the AI you chose. Our own servers are in the EU. Its memory is a list you can read and delete. No camera, no ads, and we never sell your data.</div></details>
       <details><summary data-i18n="q5">How long does the battery last?</summary><div class="a" data-i18n="a5">SOUL has a small rechargeable lithium battery inside. It charges from the five gold contacts on its bottom: you set it in OU, its egg, and that's it. No cable to plug into the stone. We'll publish measured battery life before we ask for full payment.</div></details>
-      <details><summary data-i18n="q12">What is it made of?</summary><div class="a" data-i18n="a12">A body of aluminium 6061, bead-blasted and anodised, in Silver, Graphite, Midnight, Ember or Champagne. The front is black glass over a round 2.8″ IPS screen, 480 × 480 pixels. The speaker is a fine slit in the side seam. Underneath is a matching polymer plate, because metal blocks radio, with a small flat foot and the charging contacts. Size M, about 90 × 103 × 31 mm. The Founders 00 bodies are CNC-machined from solid aluminium.</div></details>
+      <details><summary data-i18n="q12">What is it made of?</summary><div class="a" data-i18n="a12">A body of aluminium 6061, bead-blasted and anodised, in Silver, Graphite, Midnight, Ember or Champagne. The front is black glass over a round 2.8″ IPS screen, 480 × 480 pixels. The speaker is a fine slit in the side seam. Underneath is a matching polymer plate, because metal blocks radio, with a small flat foot and the charging contacts. Size M, about 90 × 103 × 31 mm. The first bodies are CNC-machined from solid aluminium.</div></details>
       <details><summary data-i18n="q4">Does it need my phone or computer?</summary><div class="a" data-i18n="a4">Not to be alive, and not to type: it has its own keyboard. To reach your Claude or ChatGPT it uses Wi-Fi. To work with Claude Code and Cowork, it pairs over Bluetooth with the Claude desktop app on your Mac or Windows PC.</div></details>
       <details><summary data-i18n="q8">Can I choose its eye colour?</summary><div class="a" data-i18n="a8">You choose the colour of its body, not of its eyes. Each stone is born with its own eye colour and personality, decided by its chip. Every colour has the same features: rarity changes only the colour.</div></details>
       <details><summary data-i18n="q6">Is it a toy?</summary><div class="a" data-i18n="a6">No. SOUL is made for adults and teens 16 and over. It contains small parts and a lithium battery. Keep it away from young children.</div></details>
@@ -899,11 +883,9 @@ select.input option{background:#101114;color:#F6F3EC}
             <input class="input" id="wl-email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com" aria-describedby="wl-msg">
           </div>
           <div class="field">
-            <label for="wl-edition" data-i18n="res.edition">Edition</label>
+            <label for="wl-edition" data-i18n="res.edition">Product</label>
             <select class="input" id="wl-edition" name="edition">
-              <option value="founders" data-i18n="res.o1">Founders 00</option>
-              <option value="standard" data-i18n="res.o2">Standard</option>
-              <option value="unsure" data-i18n="res.o4">Not sure yet</option>
+              <option value="founders" data-i18n="res.o1">SOUL</option>
             </select>
           </div>
         </div>
@@ -911,7 +893,7 @@ select.input option{background:#101114;color:#F6F3EC}
         <label class="consent" for="wl-consent"><input id="wl-consent" name="consent" type="checkbox" required><span data-i18n="res.consent">I agree to receive emails about SOUL and can unsubscribe at any time. Read the <a href="#privacy">Privacy Policy</a>.</span></label>
         <p class="form-msg" id="wl-msg" role="alert"></p>
         <button class="btn btn-primary" type="submit" id="wl-submit" data-i18n="res.submit">Join the list</button>
-        <p class="form-fine" data-i18n="res.fine">Nothing is charged here. A Founders 00 reservation is paid later, through a secure link, and is fully refundable until it ships.</p>
+        <p class="form-fine" data-i18n="res.fine">Nothing is charged here. We only email you when orders open.</p>
       </form>
       <div class="thanks" id="wl-thanks" hidden tabindex="-1">
         <h3 data-i18n="res.th">You're on the list.</h3>
@@ -941,7 +923,7 @@ select.input option{background:#101114;color:#F6F3EC}
       </div>
       <div>
         <h4 data-i18n="f.gpsr">Manufacturer (GPSR)</h4>
-        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SOUL, model <span class="ph">[SL-M]</span> Founders 00, with the OU charging capsule. Not a toy. For ages 16+. Contains a lithium battery.</p>
+        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SOUL, model <span class="ph">[SL-M]</span>, with the OU charging capsule. Not a toy. For ages 16+. Contains a lithium battery.</p>
       </div>
     </div>
     <p class="tm" data-i18n="f.tm">Claude is a trademark of Anthropic. SOUL is independent and not affiliated with or endorsed by Anthropic. 'Works with Claude' uses the Hardware Buddy developer API of the Claude desktop apps. ChatGPT is a trademark of OpenAI; SOUL is not affiliated with OpenAI.</p>
@@ -964,14 +946,14 @@ const store = {
 /* ------------------------------------------------------------------ i18n */
 const RO = {
   "skip": "Sari la conținut",
-  "nav.what": "Ce este", "nav.alive": "Viu", "nav.claude": "Claude", "nav.born": "Născut", "nav.editions": "Ediții", "nav.faq": "Întrebări", "nav.reserve": "Rezervă",
+  "nav.what": "Ce este", "nav.alive": "Viu", "nav.claude": "Claude", "nav.born": "Născut", "nav.editions": "Preț", "nav.faq": "Întrebări", "nav.reserve": "Rezervă",
   "hero.eyebrow": "Orice AI merită un suflet.",
   "hero.h1": "AI-ul tău, <span class=\"glow\">viu.</span>",
   "hero.aria": "Ochii vii ai lui SOUL. Apasă Enter ca să-l atingi, apasă de două ori repede ca să râdă.",
   "hero.hint": "Atinge-l. Atinge-l de două ori și râde. Lasă-l în pace și ațipește.",
   "hero.sub": "O piatră de aluminiu cât palma, cu doi ochi vii. Respiră, clipește și se uită înapoi la tine, fără pic de internet. <strong>Și lucrează cu Claude.</strong>",
-  "hero.cta1": "Rezervă-l", "hero.cta2": "Vezi-l în acțiune",
-  "hero.meta1": "<b>Founders 00</b>", "hero.meta2": "25 numerotate, <span data-cfg=\"range\">001–025</span>",
+  "hero.cta1": "Intră pe listă", "hero.cta2": "Vezi-l în acțiune",
+  "hero.meta1": "<b>SOUL</b>", "hero.meta2": "mărimea M · aluminiu",
   "soul.brain": "Laboratoarele de AI fac creierul.", "soul.body": "Noi facem corpul și sufletul.", "soul.name": "În română, acolo unde s-a născut, numele lui e <em>suflet</em>. AI-ul tău are deja un creier. Sufletul i-l dai tu.",
   "three.eyebrow": "Trei lucruri, o singură piatră",
   "three.h2": "Azi vă prezentăm trei lucruri.",
@@ -1033,7 +1015,7 @@ const RO = {
   "born.note": "Raritatea schimbă doar culoarea. Fiecare SOUL are aceleași 24 de reacții și aceleași funcții.",
   "cert.title": "Certificat de naștere",
   "cert.name": "Nume", "cert.arche": "Arhetip", "cert.eyes": "Ochi", "cert.born": "Născut", "cert.chip": "ID cip",
-  "cert.sub": "SOUL · mărimea M · Founders 00",
+  "cert.sub": "SOUL · mărimea M",
   "cert.hatch": "Mai naște unul",
   "cert.seal": "SOUL · BUCUREȘTI · MMXXVI ·",
   "cert.sample": "Certificat exemplu. Al tău se emite în clipa în care se naște.",
@@ -1075,22 +1057,22 @@ const RO = {
   "ch7t": "Servere în UE.", "ch7p": "Serverele noastre pentru voce și memorie sunt în Uniunea Europeană.",
   "ch8t": "Nu devine niciodată o cărămidă.", "ch8p": "E viu fără cloud. Dacă firma noastră dispare vreodată, publicăm firmware-ul.",
   "ch9t": "Pentru 16+. Nu e o jucărie.", "ch9p": "Gândit pentru adulți și adolescenți mari.",
-  "ed.eyebrow": "Ediții",
+  "ed.eyebrow": "SOUL",
   "ed.h2": "Alege-ți primul suflet.",
-  "ed.f.tag": "25 numerotate · aluminiu",
-  "ed.f.desc": "Primele 25 de SOUL, din aluminiu anodizat, fiecare gravat cu numărul lui. Se livrează doar după testele radio CE.",
-  "ed.f.small": "O singură plată. Fără abonament ca să fie viu. Rezervarea e rambursabilă integral.",
+  "ed.f.tag": "Aluminiu · cinci culori",
+  "ed.f.desc": "Un SOUL din aluminiu anodizat, cu oul lui de încărcare. Se livrează doar după testele radio CE.",
+  "ed.f.small": "O singură plată. Fără abonament ca să fie viu. Prețul final îl anunțăm înainte de comenzi.",
   "ed.f.l1": "SOUL mărimea M: aluminiu sablat și anodizat, cu ecran rotund de 2,8″ sub sticlă neagră",
   "ed.f.l2": "OU, oul lui de încărcare, în cutie",
   "ed.f.l3": "SoulOS, toate cele 24 de reacții offline și merge cu Claude",
-  "ed.f.l4": "Numărul tău de fondator gravat și un certificat de naștere",
-  "ed.f.cta": "Rezervă un număr",
+  "ed.f.l4": "Fără AI, cu Claude-ul tău, ChatGPT-ul tău sau cheia ta API, plus certificatul de naștere",
+  "ed.f.cta": "Intră pe listă",
   "ed.est": "Se livrează după testele radio CE. Estimat:", "ed.est2": "Livrare estimată:",
-  "ed.vat": "Prețurile includ TVA. Pe această pagină nu se plătește nimic: când se deschid rezervările, îți trimitem pe email un link securizat. Founders 00 se livrează doar după testele radio CE și poți anula oricând înainte de livrare, cu banii înapoi integral.",
+  "ed.vat": "Prețurile includ TVA. Pe această pagină nu se plătește nimic: îți scriem doar când se deschid comenzile. SOUL se livrează doar după testele radio CE.",
   "faq.eyebrow": "Întrebări",
   "faq.h2": "Întrebări bune.",
   "q1": "Când se livrează?",
-  "a1": "Founders 00 se livrează doar după ce trece testele radio CE: estimat <span data-cfg=\"shipFounders\">primăvara 2027</span>. Standard vine <span data-cfg=\"shipStandard\">după Founders 00</span>. Dacă întârziem, poți anula oricând înainte de livrare și primești toți banii înapoi. După livrare ai dreptul UE de retragere în 14 zile și garanția legală de 2 ani.",
+  "a1": "SOUL se livrează doar după ce trece testele radio CE: estimat <span data-cfg=\"shipFounders\">primăvara 2027</span>. După livrare ai dreptul UE de retragere în 14 zile și garanția legală de 2 ani.",
   "q2": "Am nevoie de abonament?",
   "a2": "Nu. SOUL e viu fără internet și fără cont, pentru totdeauna. SoulOS, tastatura, notițele, mementourile, alarmele și focusul merg toate offline. Pentru AI îți conectezi Claude-ul sau ChatGPT-ul pe care îl ai deja, ori propria cheie API.",
   "q3": "Ce AI folosește?",
@@ -1112,17 +1094,17 @@ const RO = {
   "res.eyebrow": "Rezervă",
   "res.h2": "Fii acolo când deschide ochii.",
   "res.lead": "Lasă-ne emailul. Îți scriem când se deschid rezervările, înaintea tuturor.",
-  "res.email": "Email", "res.edition": "Ediția",
-  "res.o1": "Founders 00", "res.o2": "Standard", "res.o4": "Încă nu știu",
+  "res.email": "Email", "res.edition": "Produs",
+  "res.o1": "SOUL",
   "res.consent": "Sunt de acord să primesc emailuri despre SOUL și mă pot dezabona oricând. Citește <a href=\"#privacy\">Politica de confidențialitate</a>.",
   "res.submit": "Intră pe listă",
-  "res.fine": "Aici nu se plătește nimic. Rezervarea Founders 00 se plătește mai târziu, printr-un link securizat, și e rambursabilă integral până la livrare.",
+  "res.fine": "Aici nu se plătește nimic. Îți scriem doar când se deschid comenzile.",
   "res.th": "Ești pe listă.",
   "res.tp": "Îți scriem înaintea tuturor. SOUL-ul tău se naște în curând.",
   "f.privacy": "Politica de confidențialitate", "f.terms": "Termeni de vânzare", "f.cookies": "Cookie-uri",
   "f.seller": "Vânzător", "f.addr": "Adresă:", "f.contact": "Contact:", "f.cui": "CUI:", "f.reg": "Nr. Reg. Com.:", "f.anpc": "ANPC · SAL",
   "f.gpsr": "Producător (GPSR)",
-  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelul <span class=\"ph\">[SL-M]</span> Founders 00, cu capsula de încărcare OU. Nu e o jucărie. Pentru 16+. Conține o baterie cu litiu.",
+  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelul <span class=\"ph\">[SL-M]</span>, cu capsula de încărcare OU. Nu e o jucărie. Pentru 16+. Conține o baterie cu litiu.",
   "f.tm": "Claude este o marcă comercială a Anthropic. SOUL este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude. ChatGPT este o marcă comercială a OpenAI; SOUL nu este afiliat cu OpenAI.",
   "f.made": "© 2026 SOUL. Proiectat în București.",
   "nav.os": "SoulOS",
@@ -1190,9 +1172,9 @@ const RO = {
   "ed.s.l3": "Se încarcă în OU",
   "ed.s.cta": "Intră pe lista de așteptare",
   "q11": "Are certificare CE?",
-  "a11": "Încă nu, și de asta Founders 00 așteaptă. SOUL are Bluetooth și Wi-Fi, deci trebuie să treacă testele radio CE (Directiva UE privind echipamentele radio) într-un laborator acreditat înainte să-l poată vinde cineva. Nu livrăm nicio bucată înainte de asta. Rezervarea ta rămâne rambursabilă integral până la livrare.",
+  "a11": "Încă nu, și de asta SOUL așteaptă. SOUL are Bluetooth și Wi-Fi, deci trebuie să treacă testele radio CE (Directiva UE privind echipamentele radio) într-un laborator acreditat înainte să-l poată vinde cineva. Nu livrăm nicio bucată înainte de asta.",
   "q12": "Din ce e făcut?",
-  "a12": "Un corp din aluminiu 6061, sablat și anodizat, în Argint, Grafit, Albastru noapte, Jar sau Șampanie. Fața e sticlă neagră peste un ecran rotund IPS de 2,8″, cu 480 × 480 pixeli. Difuzorul e o fantă fină în cusătura laterală. Dedesubt e o placă din polimer în aceeași culoare, pentru că metalul blochează semnalul radio, cu un picior mic și plat și contactele de încărcare. Mărimea M, cam 90 × 103 × 31 mm. Corpurile Founders 00 sunt frezate CNC din aluminiu masiv.",
+  "a12": "Un corp din aluminiu 6061, sablat și anodizat, în Argint, Grafit, Albastru noapte, Jar sau Șampanie. Fața e sticlă neagră peste un ecran rotund IPS de 2,8″, cu 480 × 480 pixeli. Difuzorul e o fantă fină în cusătura laterală. Dedesubt e o placă din polimer în aceeași culoare, pentru că metalul blochează semnalul radio, cu un picior mic și plat și contactele de încărcare. Mărimea M, cam 90 × 103 × 31 mm. Primele corpuri sunt frezate CNC din aluminiu masiv.",
   "f.os": "Încearcă SoulOS"
 };
 const DYN = {
