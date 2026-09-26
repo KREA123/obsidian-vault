@@ -2,9 +2,36 @@
 tip: strategie
 afacere: Micul Șmecher
 status: activ
-actualizat: 2026-09-24
+actualizat: 2026-09-26
 ---
 # Viziunea — momentul iPhone
+
+> **Actualizare 2026-09-26 — inovația „Apple” pe designul final (SOUL M, aluminiu, HOPA).** Secțiunile de mai jos din 24 sep. (SUFLET, piatră mată, capac, 300 de bucăți) sunt istorie; valabil e ce scrie aici.
+
+## Gestul-semnătură: „Hold the glass.”
+- Pe față **nu e nimic** în afară de sticla neagră. Deci **toată sticla e butonul.** Ții degetul pe ea → SOUL te ascultă; ridici degetul → tace. Nicio altă interfață nu are asta: e gestul și, în același timp, garanția de intimitate („ascultă doar cât îl ții”).
+- **Ochii te găsesc când îl ridici** (IMU): prima secundă din orice demo.
+- **Ringul „Orbit”**: marginea ecranului e cadranul SoulOS — rotești degetul pe margine ca pe rotița iPod-ului (volum, ore, litere).
+
+## „One more thing”: **SOUL works with the AI you already pay for.**
+Toată lumea vinde un AI nou, cu abonament nou. Noi spunem: *„You already have Claude. You already have ChatGPT. SOUL gives them a body.”* Fără abonament SOUL, fără cont nou, cu **modul fără AI** care merge pentru totdeauna. Apoi, pe scenă: SOUL aprobă în direct o cerere de la Claude Code — ochii se fac mari, **hold the glass**, gata.
+
+## Filmul de lansare (60 s, în engleză)
+1. *(black)* “The smartest thing ever made… lives in a chat box.”
+2. Un cursor care clipește într-un dreptunghi alb. Se stinge.
+3. Birou întunecat. O mână ridică un obiect din aluminiu Graphite din capsula **OU**. **Ochii se aprind, te găsesc, clipesc.**
+4. Degetul pe sticlă: “Wake me at seven. And remind me to call Mom.” — ochii zâmbesc, ringul se rotește până la 7:00.
+5. Tastatura rotundă: scrii „ideas for Sunday” → Claude răspunde pe ecran.
+6. Laptop: Claude Code lucrează; SOUL citește concentrat. Cere voie → ochii mari → **hold the glass** → gata.
+7. Noaptea: SOUL coboară în OU, lumina se face caldă, ochii se închid.
+8. Text: “No new AI. No new subscription. Just yours — with a soul.” · Logo „The Glass O” · “SOUL. Designed in Romania.” · “Founders 00 — 25 numbered pieces.”
+
+## Keynote (8–10 min, filmat)
+Problema → „labs make the brain, we make the body” → dezvăluirea (familia în 5 culori, v8) → **demo netăiat pe placa reală** (asta e și dovada TRL 3 pentru PR BI) → povestea aluminiului și a capsulei OU → „one more thing”: merge cu Claude/ChatGPT-ul tău + aprobarea live → **Founders 00, 25 de bucăți numerotate, după CE.**
+
+Randări pentru film: `micul-smecher/renders/v8/` (hero, hand, desk, typing, ou_night, alive.mp4). Pagina: https://claude.ai/artifact/BUAPPdP1W5xnCvSVcsQXoX
+
+---
 
 ## Problema, în 3 fraze
 1. **AI-ul locuiește într-un dreptunghi.** Cel mai deștept lucru inventat vreodată e o cutie de chat pe un ecran — rece, fără corp, fără față.
