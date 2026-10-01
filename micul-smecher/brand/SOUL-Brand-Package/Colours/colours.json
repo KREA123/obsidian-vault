@@ -1,0 +1,177 @@
+{
+  "name": "SOUL brand colours",
+  "version": "1.0",
+  "note": "sRGB is the master. CMYK values are approximate starting points; proof before print.",
+  "colours": [
+    {
+      "name": "Glass",
+      "hex": "#0B0B0C",
+      "rgb": [
+        11,
+        11,
+        12
+      ],
+      "cmyk": [
+        60,
+        50,
+        50,
+        100
+      ],
+      "role": "The face and the O",
+      "group": "core"
+    },
+    {
+      "name": "Eye Cream",
+      "hex": "#FFF0C8",
+      "rgb": [
+        255,
+        240,
+        200
+      ],
+      "cmyk": [
+        0,
+        5,
+        25,
+        0
+      ],
+      "role": "The eyes and light",
+      "group": "core"
+    },
+    {
+      "name": "Ink",
+      "hex": "#16181D",
+      "rgb": [
+        22,
+        24,
+        29
+      ],
+      "cmyk": [
+        75,
+        65,
+        55,
+        80
+      ],
+      "role": "Letters on light grounds",
+      "group": "core"
+    },
+    {
+      "name": "Paper",
+      "hex": "#FAF8F3",
+      "rgb": [
+        250,
+        248,
+        243
+      ],
+      "cmyk": [
+        1,
+        1,
+        4,
+        0
+      ],
+      "role": "Light ground",
+      "group": "core"
+    },
+    {
+      "name": "Warm White",
+      "hex": "#F6F3EC",
+      "rgb": [
+        246,
+        243,
+        236
+      ],
+      "cmyk": [
+        2,
+        3,
+        7,
+        0
+      ],
+      "role": "Letters on dark grounds",
+      "group": "core"
+    },
+    {
+      "name": "Silver",
+      "hex": "#CBCDCF",
+      "rgb": [
+        203,
+        205,
+        207
+      ],
+      "cmyk": [
+        20,
+        14,
+        14,
+        0
+      ],
+      "role": "Aluminium finish; bezel ring",
+      "group": "aluminium"
+    },
+    {
+      "name": "Graphite",
+      "hex": "#55575B",
+      "rgb": [
+        85,
+        87,
+        91
+      ],
+      "cmyk": [
+        60,
+        50,
+        45,
+        30
+      ],
+      "role": "Aluminium finish",
+      "group": "aluminium"
+    },
+    {
+      "name": "Midnight",
+      "hex": "#26324C",
+      "rgb": [
+        38,
+        50,
+        76
+      ],
+      "cmyk": [
+        95,
+        80,
+        40,
+        35
+      ],
+      "role": "Aluminium finish",
+      "group": "aluminium"
+    },
+    {
+      "name": "Ember",
+      "hex": "#D2622C",
+      "rgb": [
+        210,
+        98,
+        44
+      ],
+      "cmyk": [
+        5,
+        72,
+        95,
+        0
+      ],
+      "role": "Aluminium finish; accent",
+      "group": "aluminium"
+    },
+    {
+      "name": "Champagne",
+      "hex": "#D8C3A2",
+      "rgb": [
+        216,
+        195,
+        162
+      ],
+      "cmyk": [
+        15,
+        22,
+        38,
+        0
+      ],
+      "role": "Aluminium finish",
+      "group": "aluminium"
+    }
+  ]
+}

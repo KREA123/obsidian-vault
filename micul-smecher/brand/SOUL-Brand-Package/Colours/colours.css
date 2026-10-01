@@ -1,0 +1,13 @@
+/* SOUL brand colours v1.0 (sRGB master; CMYK approximate, proof before print) */
+:root {
+  --soul-glass: #0B0B0C; /* rgb(11, 11, 12) · cmyk(60 50 50 100) · The face and the O */
+  --soul-eye-cream: #FFF0C8; /* rgb(255, 240, 200) · cmyk(0 5 25 0) · The eyes and light */
+  --soul-ink: #16181D; /* rgb(22, 24, 29) · cmyk(75 65 55 80) · Letters on light grounds */
+  --soul-paper: #FAF8F3; /* rgb(250, 248, 243) · cmyk(1 1 4 0) · Light ground */
+  --soul-warm-white: #F6F3EC; /* rgb(246, 243, 236) · cmyk(2 3 7 0) · Letters on dark grounds */
+  --soul-silver: #CBCDCF; /* rgb(203, 205, 207) · cmyk(20 14 14 0) · Aluminium finish; bezel ring */
+  --soul-graphite: #55575B; /* rgb(85, 87, 91) · cmyk(60 50 45 30) · Aluminium finish */
+  --soul-midnight: #26324C; /* rgb(38, 50, 76) · cmyk(95 80 40 35) · Aluminium finish */
+  --soul-ember: #D2622C; /* rgb(210, 98, 44) · cmyk(5 72 95 0) · Aluminium finish; accent */
+  --soul-champagne: #D8C3A2; /* rgb(216, 195, 162) · cmyk(15 22 38 0) · Aluminium finish */
+}
