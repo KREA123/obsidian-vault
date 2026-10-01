@@ -1,46 +1,51 @@
 #!/usr/bin/env python3
-"""SOUL trailer soundtrack: voice-over (Piper TTS) + original synthesized music + synthesized SFX.
+"""SOUL trailer soundtrack (v2): Kokoro voice-over + licensed music bed + synthesized trailer layer and SFX.
 
-Everything here is generated, so nothing needs a licence: the music and SFX are numpy synthesis,
-and the voice is Piper TTS with the en_US-lessac-high voice (rhasspy/piper-voices).
-The cue times mirror the timeline in soul_trailer.html (T_END = 49 s). Scene cuts sit on
-half-second boundaries, which are exactly the beats at 120 BPM, so every cut lands on a beat.
+- Voice: Kokoro-82M (hexgrad/Kokoro-82M, Apache-2.0), voice am_michael, speed 0.9.
+- Music bed: "Sci-Fi Score" by Arulo, Mixkit (Mixkit Stock Music Free License: commercial use, no
+  attribution required). See MUSIC-LICENSE.md. The mp3 is downloaded at build time and not committed
+  (the licence forbids redistributing it as a standalone file).
+- Trailer layer (braams, impacts, sub drops, risers, reversed cymbals) and UI SFX are synthesized here.
+- Mix: music ducked under the voice, loudnorm to -14 LUFS / -2 dBTP, AAC 192k into both mp4s.
 
-usage: python3 audio.py            → builds the mix and muxes it into both mp4s
-env:   AUDIO_TMP (scratch dir), PIPER_VOICE (path to .onnx)
+The cue times mirror soul_trailer.html (T_END = 49 s).
+usage: python3 audio.py      env: AUDIO_TMP (scratch dir)
 """
-import os, json, wave, subprocess, pathlib, re
+import os, json, wave, subprocess, pathlib, re, urllib.request
 import numpy as np
-from scipy.signal import butter, sosfilt, fftconvolve, resample_poly
+from scipy.signal import butter, sosfilt, fftconvolve, resample_poly, iirnotch, filtfilt
 
 HERE = pathlib.Path(__file__).resolve().parent
 TMP = pathlib.Path(os.environ.get('AUDIO_TMP', '/tmp/soul_audio')); TMP.mkdir(parents=True, exist_ok=True)
-VOICE = os.environ.get('PIPER_VOICE', str(TMP / 'en_US-lessac-high.onnx'))
 SR = 48000
 T_END = 49.0
 N = int(SR * T_END)
-BPM = 120; BEAT = 60 / BPM; BAR = 4 * BEAT
 rng = np.random.default_rng(7)
 
+MUSIC_URL = 'https://assets.mixkit.co/music/464/464.mp3'   # "Sci-Fi Score" by Arulo (Mixkit), key ≈ A, ~137 BPM
+# music edit: (video start, track start, video end). Quiet intro under Intro/Problem, the drive kicks in
+# exactly on the Use-case cut (13.5 s), a half-second stop-down before the reveal, then the drop at 42.0 s
+# lands on a phrase downbeat of the track (44.70 s), and everything stops on the final hit at 46.5 s.
+MUSIC_EDIT = [(0.0, 0.5, 41.5), (42.0, 44.70, 46.5)]
+
+KOKORO_VOICE, KOKORO_SPEED = 'am_michael', 0.9
 # ───────────────────────── voice-over cues (start s, text, max length s) ─────────────────────────
 VO = [
-    (1.05,  "Meet Soul.", 3.0),
-    (5.75,  "Every day, you talk to AI...", 2.4),
-    (8.25,  "in a chat box.", 1.5),
-    (10.15, "AI has a brain.", 1.7),
-    (11.95, "Now it has a soul.", 1.6),
-    (14.05, "It lives on your desk.", 3.0),
-    (19.80, "It looks back.", 1.6),
-    (21.85, "Hold the glass. It listens.", 2.6),
-    (24.85, "Type.", .75), (25.63, "Talk.", .75), (26.41, "Remember.", 1.0),
-    (27.65, "Claude asks.", 1.5), (29.30, "You approve.", 1.5),
-    (31.15, "Works with the AI you already have.", 2.7),
-    (34.25, "Five colours. One soul.", 2.6),
-    (37.40, "Sleeps in its egg.", 2.0),
-    (39.75, "Soul.", 1.6),
-    (42.55, "Your AI, with a soul.", 2.0),
-    (44.75, "From two hundred forty-nine euros.", 2.0),
-    (46.95, "Join the waitlist.", 1.4),
+    (1.30,  "Meet Soul.", 3.2),
+    (5.80,  "Every day, you talk to AI...", 2.4),
+    (8.30,  "In a chat box.", 1.6),
+    (10.20, "AI has a brain.", 1.75),
+    (12.00, "Now, it has a soul.", 1.5),
+    (14.10, "It lives on your desk.", 3.2),
+    (21.90, "Hold the glass.", 2.4),
+    (24.85, "Type. Talk. Remember.", 2.6),
+    (27.70, "Claude asks.", 1.55),
+    (29.30, "You approve.", 1.6),
+    (31.20, "Works with the AI you already have.", 2.7),
+    (37.45, "Sleeps in its egg.", 2.0),
+    (42.45, "Soul.", 1.5),
+    (44.70, "From two hundred forty-nine euros.", 2.25),
+    (47.00, "Join the waitlist.", 1.2),
 ]
 
 # ───────────────────────── helpers ─────────────────────────
@@ -80,91 +85,80 @@ def reverb(x, wet=.3):
     return x + wet * y
 def db(x): return 10 ** (x / 20)
 
-# ───────────────────────── music ─────────────────────────
-# D major, I–V–vi–IV (one chord per 2 s bar), add9 colours for warmth
-CHORDS = [  # (bass midi, pad voicing, arp tones)
-    (38, [62, 66, 69, 76], [62, 66, 69, 74, 76, 81]),   # D add9
-    (33, [61, 64, 69, 71], [61, 64, 69, 73, 76, 81]),   # A add9 (sus-ish)
-    (35, [62, 66, 71, 73], [59, 62, 66, 71, 74, 78]),   # Bm add9
-    (31, [62, 67, 71, 69], [59, 62, 67, 71, 74, 79]),   # G add9
-]
-def chord_at(t): return CHORDS[int(t // BAR) % 4]
+# ───────────────────────── music bed (licensed track, edited) ─────────────────────────
+def load_track():
+    mp3 = TMP / 'music_464.mp3'
+    if not mp3.exists():
+        req = urllib.request.Request(MUSIC_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        mp3.write_bytes(urllib.request.urlopen(req).read())
+    b = subprocess.run(['ffmpeg', '-loglevel', 'error', '-i', str(mp3), '-ac', '2', '-ar', str(SR), '-f', 'f32le', '-'],
+                       capture_output=True, check=True).stdout
+    return np.frombuffer(b, np.float32).reshape(-1, 2).astype(np.float64)
 
-def automation(points):
-    """piecewise-linear automation curve over the whole timeline: [(t, v), ...]"""
-    ts, vs = zip(*points); return np.interp(np.arange(N) / SR, ts, vs)
+def make_bed():
+    tr = load_track(); bed = np.zeros((N, 2)); fade = int(.012 * SR)
+    b, a = iirnotch(14048, 30, SR); tr = filtfilt(b, a, tr, axis=0)      # tame a steady 14 kHz whine in the source
+    for v0, s0, v1 in MUSIC_EDIT:
+        seg = tr[t2i(s0):t2i(s0) + t2i(v1 - v0)].copy()
+        seg[:fade] *= np.linspace(0, 1, fade)[:, None]; seg[-fade:] *= np.linspace(1, 0, fade)[:, None]
+        add(bed, seg, v0)
+    # dynamics automation: fade in, sit lower under the dark night shot, filter-close into the stop-down
+    g = np.interp(np.arange(N) / SR, [0, 1.2, 13.4, 13.5, 36.9, 37.1, 39.4, 41.5, 42.0, 49],
+                  [0, .6, .6, 1, 1, .7, .7, .9, 1, 1])
+    bed *= g[:, None]
+    i0, i1 = t2i(37.0), t2i(41.5)          # low-pass sweep closing over the night shot + build
+    dark = lp(bed[i0:i1], 900, 2); w = np.linspace(0, 1, i1 - i0)[:, None] ** .7
+    bed[i0:i1] = bed[i0:i1] * (1 - w) + dark * w
+    # last hit at 46.5: cut the bed with a short ring-out
+    j = t2i(46.5); bed[j:] = 0
+    return bed
 
-def make_music():
-    pad_b = np.zeros((N, 2)); pad_d = np.zeros((N, 2)); arp = np.zeros((N, 2)); bass = np.zeros(N)
-    kick = np.zeros(N); clap = np.zeros((N, 2)); hat = np.zeros((N, 2))
-    nbars = int(np.ceil(T_END / BAR))
-    for b in range(nbars):
-        t0 = b * BAR; bassm, voic, tones = CHORDS[b % 4]
-        d = BAR + .9
-        for k, m in enumerate(voic):
-            for c, det in enumerate([-.11, .09]):
-                f = mtof(m) * 2 ** (det / 12)
-                x = (saw(f, d, rng.random()) + saw(f * 2 ** (.05 / 12), d, rng.random()) * .7) * env_adsr(int(d * SR), .5, .9)
-                v = x * .05
-                add(pad_b[:, c], lp(v, 2600), t0); add(pad_d[:, c], lp(v, 700), t0)
-        # plucky arp: 16ths, up pattern through the chord tones
-        for s in range(16):
-            ts = t0 + s * BEAT / 4; m = tones[[0, 2, 4, 1, 3, 5, 2, 4][s % 8]]
-            f = mtof(m); t = tt(.5); e = np.exp(-t / .13)
-            x = (np.sin(2 * np.pi * f * t) + .35 * np.sin(4 * np.pi * f * t) * np.exp(-t / .05) + .12 * np.sin(6 * np.pi * f * t)) * e
-            x[:int(.002 * SR)] *= np.linspace(0, 1, int(.002 * SR))
-            add(arp, st(x * (.11 if s % 4 == 0 else .075), pan=.35 * np.sin(s * 1.3)), ts)
-        # bass: pulsing 8ths on the root
-        for s in range(8):
-            ts = t0 + s * BEAT / 2; f = mtof(bassm + 12); t = tt(.26)
-            x = (np.sin(2 * np.pi * f * t) + .25 * np.sin(4 * np.pi * f * t)) * np.exp(-t / .16) * env_adsr(len(t), .006, .04)
-            add(bass, np.tanh(1.6 * x) * .22, ts)
-        # drums
-        for q in range(4):
-            tb = t0 + q * BEAT
-            if q in (0, 2) or (q == 3 and b % 2):      # kick 1, 3 (+ 4& on odd bars)
-                tk = tb + (BEAT / 2 if q == 3 else 0); t = tt(.45)
-                fr = 46 + 95 * np.exp(-t / .035); ph = 2 * np.pi * np.cumsum(fr) / SR
-                x = np.sin(ph) * np.exp(-t / .28) + .3 * np.exp(-t / .004) * rng.standard_normal(len(t)) * .3
-                add(kick, x * .55, tk)
-            if q in (1, 3):                              # soft clap 2, 4
-                t = tt(.3); nz = rng.standard_normal(len(t))
-                e = sum(np.exp(-np.clip(t - o, 0, None) / .012) * (t >= o) for o in (0, .011, .022)) * .6 + np.exp(-t / .12) * .5
-                x = bp(nz * e, 900, 2600) * .22
-                add(clap, st(x, .1), tb)
-            for h in (0, 1):                             # 8th hats, accent on the off-beat
-                t = tt(.08); x = hp(rng.standard_normal(len(t)), 7000) * np.exp(-t / (.025 if h == 0 else .04))
-                add(hat, st(x * (.035 if h == 0 else .06), .3 if h else -.3), tb + h * BEAT / 2)
-    # sidechain from the kick
-    sc = np.ones(N)
-    kick_hits = np.nonzero(np.diff((np.abs(kick) > .2).astype(int)) == 1)[0]
-    for k in kick_hits:
-        t = tt(.35); g = 1 - .45 * np.exp(-t / .1); j = min(N, k + len(t)); sc[k:j] = np.minimum(sc[k:j], g[:j - k])
+# ───────────────────────── trailer layer (synthesized) ─────────────────────────
+A1 = 55.0
+def braam(d=3.2, gain=.5, root=A1):
+    t = tt(d); n = len(t); x = np.zeros(n)
+    for f, a in [(root, 1), (root * 2, .8), (root * 3, .45), (root * 4, .3), (root * 1.5 * 2, .35)]:
+        for det in (-.12, 0, .1):
+            ff = f * 2 ** (det / 12); x += a * (2 * ((t * ff + rng.random()) % 1) - 1)
+    fc = 180 + 2200 * np.exp(-t / .35) * (1 - np.exp(-t / .03))
+    x = varlp(x / 6, fc)
+    x = np.tanh(2.2 * x) * np.exp(-t / 1.3) * np.minimum(1, t / .015)
+    sub = np.sin(2 * np.pi * root / 2 * t) * np.exp(-t / 1.6) * .6
+    y = st((x + sub) * gain, 0); y[:, 1] = np.roll(y[:, 1], 90)
+    return reverb(y, .45)
+def impact(gain=.6, low=42, crack=.35):
+    t = tt(2.4); fr = low + 70 * np.exp(-t / .05); ph = 2 * np.pi * np.cumsum(fr) / SR
+    body = np.sin(ph) * np.exp(-t / .45)
+    nz = bp(rng.standard_normal(len(t)), 300, 5000) * np.exp(-t / .07) * crack
+    tail = lp(rng.standard_normal(len(t)), 1200) * np.exp(-t / .6) * .12
+    return reverb(st(np.tanh(1.5 * (body + nz + tail)) * gain, 0), .55)
+def tom(gain=.35, f0=95):
+    t = tt(.9); fr = f0 * (1 + .5 * np.exp(-t / .03)); ph = 2 * np.pi * np.cumsum(fr) / SR
+    x = np.sin(ph) * np.exp(-t / .22) + .3 * bp(rng.standard_normal(len(t)), 200, 1500) * np.exp(-t / .04)
+    return reverb(st(np.tanh(1.3 * x) * gain, 0), .4)
+def subdrop(d=1.4, gain=.55):
+    t = tt(d); f = 30 + 55 * np.exp(-t / .35); ph = 2 * np.pi * np.cumsum(f) / SR
+    return st(np.sin(ph) * np.exp(-t / .7) * gain, 0)
+def revcym(d=1.3, gain=.35):
+    n = int(d * SR); t = np.arange(n) / n
+    x = hp(rng.standard_normal(n), 4000, 2) * (np.exp(4 * t) - 1) / (np.e ** 4 - 1)
+    x[-int(.004 * SR):] *= np.linspace(1, 0, int(.004 * SR))
+    return np.stack([x, np.roll(x, 60)], 1) * gain
 
-    # arrangement (automation), cuts on beats
-    A = lambda p: automation(p)
-    pad_bright = A([(0, 0), (1.5, .55), (5.4, .6), (5.5, 0), (11.9, 0), (12.0, .6), (37, .6), (37.1, 0), (39.5, 0), (41.8, .55), (42, 1.0), (46.5, .9), (49, 0)])
-    pad_dark   = A([(0, .2), (1.2, .45), (5.5, 1.0), (11.9, 1.0), (12.0, .35), (37, .35), (37.1, 1.0), (39.5, 1.0), (41.8, .5), (42, .4), (46.5, 1.1), (48.2, .8), (49, 0)])
-    arp_g      = A([(0, 0), (2.5, .5), (5.4, .55), (5.5, 0), (12.0, 0), (12.05, .75), (13.5, 1), (37, 1), (37.05, .35), (39.5, .45), (41.85, .9), (41.86, 0), (42.0, 0), (42.05, 1.0), (46.5, .8), (47.5, 0), (49, 0)])
-    bass_g     = A([(0, 0), (13.45, 0), (13.5, 1), (37, 1), (37.05, 0), (42, 0), (42.01, 1), (46.5, 1), (46.51, 0), (49, 0)])
-    drum_g     = A([(0, 0), (13.45, 0), (13.5, 1), (37, 1), (37.01, 0), (42, 0), (42.01, 1), (46.5, 1), (46.51, 0), (49, 0)])
-    hat_g      = A([(0, 0), (12.0, 0), (12.01, .6), (13.5, 1), (39.5, 1), (39.51, 0), (42, 0), (42.01, 1), (46.5, 1), (46.51, 0), (49, 0)])
-    m = pad_b * pad_bright[:, None] * sc[:, None] + pad_d * pad_dark[:, None] * sc[:, None] * 1.1
-    m = reverb(m, .35)
-    a = arp * arp_g[:, None]
-    # ping-pong 3/16 delay on the arp
-    dl = t2i(BEAT * .75); y = a.copy()
-    for k in range(1, 5):
-        sh = np.zeros_like(a); sh[dl * k:] = a[:-dl * k] * (.38 ** k)
-        y += sh[:, ::-1] if k % 2 else sh
-    m += reverb(lp(y, 5200), .25)
-    m += st(bass * bass_g * sc, 0)
-    m += st(kick * drum_g, 0) + (clap * drum_g[:, None]) + reverb(hat * hat_g[:, None], .1)
-    # final resolve: sustained D major chord with a slow swell, under the end card
-    t = tt(3.4); ch = sum(np.sin(2 * np.pi * mtof(mm) * t + rng.random() * 6) for mm in (50, 57, 62, 66, 69, 74))
-    ch = ch * env_adsr(len(t), .4, 2.4) * .045
-    add(m, reverb(st(lp(ch, 3000), 0), .5), 46.5)
-    return m
+def make_trailer_layer():
+    s = np.zeros((N, 2))
+    add(s, impact(.2, 48, .15), 0.15)                     # card opens
+    add(s, impact(.28, 45, .2), 5.5)                      # Problem
+    add(s, swell(1.5, .55), 10.5); add(s, revcym(1.2, .3), 10.75)
+    add(s, impact(.5), 11.95)                             # "Now it has a soul"
+    add(s, revcym(1.0, .4), 12.5); add(s, braam(3.0, .75), 13.5); add(s, impact(.8), 13.5)   # drive kicks in
+    for tc in (17.5, 21.5, 24.5, 27.5, 31.0, 34.0):       # taiko-style accents on the cuts
+        add(s, tom(.38, 92), tc); add(s, tom(.25, 70), tc + .11)
+    add(s, impact(.4, 40, .15), 37.0)                     # night
+    add(s, riser(2.4, .42), 39.55); add(s, revcym(1.6, .45), 40.4)
+    add(s, braam(3.6, 1.0), 42.0); add(s, impact(1.1, 38, .5), 42.0); add(s, subdrop(1.6, .7), 42.0)   # DROP / reveal
+    add(s, braam(3.0, 1.0, A1), 46.5); add(s, impact(1.1, 36, .55), 46.5); add(s, subdrop(1.8, .7), 46.5) # ending hit
+    return s
 
 # ───────────────────────── sfx ─────────────────────────
 def whoosh(d=.55, lo=300, hi=5000, gain=.5, pan=(-.6, .6)):
@@ -213,79 +207,62 @@ def boom(gain=.55):
 
 def make_sfx():
     s = np.zeros((N, 2))
-    # whooshes on the cuts (peak lands on the cut)
-    for tc, g in [(0.05, .35), (5.5, .4), (10.0, .25), (13.5, .55), (17.1, .4), (17.5, .4), (19.35, .5), (21.5, .4),
-                  (24.5, .4), (27.5, .4), (31.0, .4), (34.05, .3), (37.0, .3), (39.5, .4), (46.5, .35), (9.45, .3)]:
+    for tc, g in [(5.5, .3), (10.0, .22), (13.5, .4), (17.1, .3), (17.5, .3), (19.35, .4), (21.5, .3),
+                  (24.5, .3), (27.5, .3), (31.0, .3), (34.05, .25), (37.0, .25), (39.5, .3), (9.45, .25)]:
         add(s, whoosh(gain=g, pan=(-.5, .5) if int(tc * 2) % 2 else (.5, -.5)), tc - .3)
-    for i in range(5):  # family sliding in
-        add(s, whoosh(.4, 600, 6000, .16, (.8, -.2)), 34.1 + i * .11 - .05)
-    # typewriter clicks
+    for i in range(5): add(s, whoosh(.4, 600, 6000, .14, (.8, -.2)), 34.1 + i * .11 - .05)
     l1 = 'Every day, you talk to AI…'
-    for k in range(1, len(l1) + 1): add(s, click(.12 if l1[k - 1] == ' ' else .2), 5.5 + (k + 3) / 15)
+    for k in range(1, len(l1) + 1): add(s, click(.1 if l1[k - 1] == ' ' else .17), 5.5 + (k + 3) / 15)
     l2 = '…in a chat box.'
-    for k in range(1, len(l2) + 1): add(s, click(.12 if l2[k - 1] == ' ' else .2), 8.25 + k / 15)
-    # pops (pitched to the D-major pentatonic so they sit in the music)
-    pent = [74, 76, 78, 81, 83, 86, 88, 90, 93]
-    for i in range(0, 12, 2): add(s, pop(pent[3 + i // 2], .1, (i - 6) / 8), .3 + i * .06 + .12)
-    for i in range(5): add(s, pop(pent[2 + i], .16, (i - 2) / 3), 5.5 + 1.2 + i * .13 + .1)
-    add(s, pop(86, .2), 10 + .75 + .12)
-    add(s, pop(90, .22), 10 + 2.95 + .12)
-    for i in range(3): add(s, pop(93 + i * 2, .12, (i - 1) / 2), 13.0 + i * .08 + .1)
-    for i in range(3): add(s, pop(pent[4 + i], .2), 24.5 + .5 + i * .78 + .1)
-    for i in range(3): add(s, pop(93 + i * 2, .12, (i - 1) / 2), 22.85 + .15 + i * .1 + .1)
-    add(s, pop(93, .2), 27.5 + 1.75 + .2 + .1)
-    for i in range(4): add(s, pop(pent[3 + i], .24, (i - 1.5) / 2), 31 + .8 + i * .2 + .12)
-    add(s, pop(86, .22), 41.85 + 3.35 + .12)
-    # "soul" turns amber: a little sparkle; low swell into "Now it has a soul"
-    add(s, shimmer(1.6, .05, (93, 98, 102)), 12.75)
-    add(s, swell(1.05, .45), 10.9)
-    # blinks
-    for tb in [19.55 + .72, 19.55 + 1.6, 19.55 + 1.82, 27.5 + 1.32, 41.85 + 1.78, 41.85 + 3.97, 46.5 + 1.63]: add(s, tick(.1), tb)
-    # taps
-    for tp in [22.85, 29.25, 45.95]: add(s, tap(.3), tp - .02)
-    # build → reveal
-    add(s, riser(2.3, .3), 39.55)
-    add(s, boom(.5), 41.98)
-    add(s, shimmer(3.2, .08), 42.15)
-    add(s, shimmer(2.2, .04, (86, 90, 93, 98)), 46.75)
+    for k in range(1, len(l2) + 1): add(s, click(.1 if l2[k - 1] == ' ' else .17), 8.25 + k / 15)
+    pent = [81, 84, 86, 88, 91, 93, 96, 98, 100]          # A minor pentatonic, to sit in the track's key
+    for i in range(0, 12, 2): add(s, pop(pent[i // 2], .08, (i - 6) / 8), .3 + i * .06 + .12)
+    for i in range(5): add(s, pop(pent[i], .13, (i - 2) / 3), 5.5 + 1.2 + i * .13 + .1)
+    add(s, pop(86, .16), 10 + .75 + .12)
+    add(s, pop(93, .18), 10 + 2.95 + .12)
+    for i in range(3): add(s, pop(pent[5 + i], .1, (i - 1) / 2), 13.0 + i * .08 + .1)
+    for i in range(3): add(s, pop(pent[2 + i], .16), 24.5 + .5 + i * .78 + .1)
+    for i in range(3): add(s, pop(pent[5 + i], .1, (i - 1) / 2), 22.85 + .15 + i * .1 + .1)
+    add(s, pop(93, .16), 27.5 + 1.75 + .2 + .1)
+    for i in range(4): add(s, pop(pent[2 + i], .2, (i - 1.5) / 2), 31 + .8 + i * .2 + .12)
+    add(s, pop(88, .18), 41.85 + 3.35 + .12)
+    add(s, shimmer(1.6, .05, (93, 100, 105)), 12.75)
+    for tb in [19.55 + .72, 19.55 + 1.6, 19.55 + 1.82, 27.5 + 1.32, 41.85 + 1.78, 41.85 + 3.97, 46.5 + 1.63]: add(s, tick(.09), tb)
+    for tp in [22.85, 29.25, 45.95]: add(s, tap(.26), tp - .02)
+    add(s, shimmer(3.2, .07, (81, 88, 93, 100, 105)), 42.15)
+    add(s, shimmer(2.2, .04, (81, 88, 93, 100)), 46.75)
     return s
 
-# ───────────────────────── voice-over ─────────────────────────
-def read_wav(p):
-    with wave.open(str(p)) as w:
-        sr = w.getframerate(); x = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float64) / 32768
-    return x, sr
-def trim(x, thr=.01):
+# ───────────────────────── voice-over (Kokoro) ─────────────────────────
+def trim(x, thr=.008):
     idx = np.nonzero(np.abs(x) > thr)[0]
     if len(idx) == 0: return x
-    a = max(0, idx[0] - int(.01 * SR)); b = min(len(x), idx[-1] + int(.06 * SR)); return x[a:b]
+    a = max(0, idx[0] - int(.01 * SR)); b = min(len(x), idx[-1] + int(.08 * SR)); return x[a:b]
 def make_vo():
-    from piper import PiperVoice, SynthesisConfig
-    voice = PiperVoice.load(VOICE)
+    from kokoro import KPipeline
+    pipe = KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')
     bus = np.zeros(N); report = []
     for i, (t0, text, mx) in enumerate(VO):
-        ls = 1.06
+        sp = KOKORO_SPEED
         for attempt in range(6):
-            p = TMP / f'vo_{i:02d}.wav'
-            with wave.open(str(p), 'wb') as w:
-                voice.synthesize_wav(text, w, syn_config=SynthesisConfig(length_scale=ls, noise_scale=.55, noise_w_scale=.7))
-            x, sr = read_wav(p)
-            x = trim(resample_poly(x, SR // 50, sr // 50) if sr != SR else x)
-            if len(x) / SR <= mx or ls < .8: break
-            ls *= .93
+            x = np.concatenate([np.asarray(a, dtype=np.float64) for _, _, a in pipe(text, voice=KOKORO_VOICE, speed=sp)])
+            x = trim(resample_poly(x, 2, 1))           # 24 kHz → 48 kHz
+            if len(x) / SR <= mx or sp > 1.15: break
+            sp *= 1.05
         x = x / (np.abs(x).max() + 1e-9) * .7
         x[:int(.004 * SR)] *= np.linspace(0, 1, int(.004 * SR))
-        add(bus, x, t0); report.append((t0, text, round(len(x) / SR, 2), mx, round(ls, 3)))
+        add(bus, x, t0); report.append((t0, text, round(len(x) / SR, 2), mx, round(sp, 3)))
     raw = TMP / 'vo_raw.wav'; write_wav(raw, st(bus, 0) * np.sqrt(2))
-    # voice chain: high-pass, warmth/presence EQ, gentle compression, a touch of room
     out = TMP / 'vo_fx.wav'
+    # voice chain: low cut 80 Hz, presence +2 dB @ 4 kHz, a little low-mid cleanup, compression, subtle room
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(raw), '-af',
-                    'highpass=f=85,equalizer=f=220:t=q:w=1:g=1.5,equalizer=f=450:t=q:w=1.2:g=-2,'
-                    'equalizer=f=3800:t=q:w=1.4:g=2.5,equalizer=f=9000:t=q:w=1:g=1.5,'
-                    'acompressor=threshold=-20dB:ratio=3:attack=8:release=120:makeup=2,'
-                    'aecho=0.85:0.6:38|67:0.12|0.08', '-ar', str(SR), str(out)], check=True)
+                    'highpass=f=80:poles=2,equalizer=f=120:t=q:w=1:g=1.5,equalizer=f=350:t=q:w=1.2:g=-2,'
+                    'equalizer=f=4000:t=q:w=1.2:g=2,equalizer=f=10000:t=q:w=1:g=1,'
+                    'acompressor=threshold=-22dB:ratio=3.5:attack=6:release=140:makeup=2.5,'
+                    'aecho=0.85:0.55:32|58:0.10|0.06', '-ar', str(SR), str(out)], check=True)
     vo, _ = read_wav_st(out)
-    return vo[:N] if len(vo) >= N else np.pad(vo, ((0, N - len(vo)), (0, 0))), report
+    vo = vo[:N] if len(vo) >= N else np.pad(vo, ((0, N - len(vo)), (0, 0)))
+    return vo, report
 
 def write_wav(p, x):
     x = np.clip(x, -1, 1); y = (x * 32767).astype(np.int16)
@@ -293,28 +270,39 @@ def write_wav(p, x):
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(y.tobytes())
 def read_wav_st(p):
     with wave.open(str(p)) as w:
-        ch = w.getnchannels(); sr = w.getframerate(); x = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float64) / 32768
-    return x.reshape(-1, ch), sr
+        ch = w.getnchannels(); x = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float64) / 32768
+        return x.reshape(-1, ch), w.getframerate()
+
+def asr_check(path):
+    """ASR round-trip on the voice stem (faster-whisper) to confirm the lines are intelligible."""
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
+        print('faster-whisper not installed; skipping ASR check'); return
+    m = WhisperModel('base.en', device='cpu', compute_type='int8')
+    segs, _ = m.transcribe(str(path), beam_size=5, word_timestamps=False, vad_filter=False)
+    for sg in segs: print(f'ASR {sg.start:6.2f}-{sg.end:6.2f}  {sg.text.strip()}')
 
 # ───────────────────────── mix ─────────────────────────
 def main():
     vo, report = make_vo()
-    for r in report: print('VO %6.2fs  %-40s %.2fs (max %.1f, ls %.3f)' % r)
-    music = make_music(); sfx = make_sfx()
-    # duck the music under the voice (~-8 dB), smooth attack/release
+    for r in report: print('VO %6.2fs  %-40s %.2fs (max %.1f, speed %.3f)' % r)
+    bed = make_bed(); trailer = make_trailer_layer(); sfx = make_sfx()
+    # ducking gain from the voice (~-7 dB), smooth attack/release
     e = np.abs(vo).max(1); k = int(.03 * SR)
     e = np.convolve(e, np.ones(k) / k, 'same'); on = (e > .02).astype(float)
-    g = np.ones(N); cur = 1.0; att = 1 - np.exp(-1 / (.06 * SR)); rel = 1 - np.exp(-1 / (.35 * SR))
-    tgt = 1 - (1 - db(-8)) * on
+    g = np.ones(N); cur = 1.0; att = 1 - np.exp(-1 / (.05 * SR)); rel = 1 - np.exp(-1 / (.30 * SR))
+    tgt = 1 - (1 - db(-7)) * on
     for i in range(N):
         cur += (tgt[i] - cur) * (att if tgt[i] < cur else rel); g[i] = cur
-    mix = music * db(-3) * g[:, None] + sfx * db(-4) + vo * db(0)
-    # fade the very end with the picture
-    fe = np.ones(N); i0 = t2i(48.2); fe[i0:] = np.linspace(1, 0, N - i0) ** 1.5; mix *= fe[:, None]
+    music = bed * db(-2) + trailer * db(-1)
+    # the bed ducks under the voice; the trailer hits only partly, so the drops keep their punch
+    mix = bed * db(-2) * g[:, None] + trailer * db(-1) * np.sqrt(g)[:, None] + sfx * db(-6) + vo * db(1.5)
+    fe = np.ones(N); i0 = t2i(48.0); fe[i0:] = np.linspace(1, 0, N - i0) ** 1.5; mix *= fe[:, None]
     mix *= .9 / np.abs(mix).max()
     pre = TMP / 'mix_pre.wav'; write_wav(pre, mix)
     for name, x in (('music', music), ('sfx', sfx), ('vo', vo)): write_wav(TMP / f'stem_{name}.wav', x / (np.abs(x).max() + 1e-9) * .9)
-    # loudness: two-pass EBU R128 to -14 LUFS integrated, -2 dBTP
+    asr_check(TMP / 'stem_vo.wav')
     r = subprocess.run(['ffmpeg', '-hide_banner', '-i', str(pre), '-af', 'loudnorm=I=-14:TP=-2:LRA=11:print_format=json', '-f', 'null', '-'],
                        capture_output=True, text=True)
     m = json.loads(re.search(r'\{[^{}]*"input_i"[^{}]*\}', r.stderr).group(0))
@@ -322,6 +310,7 @@ def main():
     af = (f"loudnorm=I=-14:TP=-2:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
           f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(pre), '-af', af, '-ar', str(SR), str(final)], check=True)
+    if os.environ.get('NO_MUX'): return
     for v in ('soul_trailer.mp4', 'soul_trailer_vertical.mp4'):
         src = HERE / v; tmp = TMP / ('mux_' + v)
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(src), '-i', str(final), '-map', '0:v:0', '-map', '1:a:0',

@@ -42,11 +42,6 @@ canvas.lo{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
   background:#fff;border-radius:999px;font-weight:500;color:#0E0E10;
   box-shadow:0 14px 34px rgba(80,40,20,.16),0 0 0 1px rgba(14,14,16,.06)}
 .glyph{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex:none}
-.tab{position:absolute;top:0;display:flex;align-items:center;justify-content:center;border-radius:14px;
-  background:#fff;font-weight:500;color:#0E0E10;overflow:hidden}
-.tab span{position:relative;z-index:2}
-#ind{position:absolute;top:0;border-radius:14px;background:#0E0E10;z-index:1;
-  box-shadow:6px 0 18px rgba(255,181,71,.65),inset -3px 0 0 #FFB547}
 .line{position:absolute;left:0;top:0;background:rgba(14,14,16,.28)}
 .hnd{position:absolute;left:0;top:0;width:9px;height:9px;border:1.5px solid rgba(14,14,16,.55);background:#fff}
 .rip{position:absolute;left:0;top:0;border-radius:50%;border:3px solid rgba(255,240,200,.95)}
@@ -67,8 +62,6 @@ canvas.lo{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
     <canvas id="cbg" class="lo"></canvas>
     <div id="scenes" class="a"></div>
   </div>
-  <div id="bar" class="a"></div>
-  <canvas id="ruler" class="a"></canvas>
   <div id="cgi" class="a lbl"></div>
   <div id="fade" class="a" style="background:#000;opacity:0;pointer-events:none"></div>
 </div>
@@ -78,16 +71,13 @@ canvas.lo{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 const Q = new URLSearchParams(location.search);
 const V = Q.get('v') === '1';
 const LAYOUTS = {
-  h: { W:1920, H:1080, card:{x:140,y:64,w:1640,h:800,r:34}, bar:{x:140,y:890,w:1640,h:62,gap:18,fs:22},
-       ruler:{x:140,y:982,w:1640,h:26}, logo:{y:22,h:26}, cgi:{x:1780,y:1036,fs:14} },
-  v: { W:1080, H:1920, card:{x:48,y:128,w:984,h:1480,r:42}, bar:{x:48,y:1640,w:984,h:74,gap:12,fs:25},
-       ruler:{x:48,y:1744,w:984,h:30}, logo:{y:52,h:38}, cgi:{x:1032,y:1850,fs:18} },
+  h: { W:1920, H:1080, card:{x:100,y:64,w:1720,h:956,r:36}, logo:{y:22,h:26}, cgi:{x:1820,y:1048,fs:14} },
+  v: { W:1080, H:1920, card:{x:44,y:126,w:992,h:1738,r:44}, logo:{y:50,h:38}, cgi:{x:1036,y:1892,fs:18} },
 };
 const L = V ? LAYOUTS.v : LAYOUTS.h;
 const W = L.W, H = L.H, cw = L.card.w, ch = L.card.h, cx = cw/2, cy = ch/2;
 const pick = (h, v) => V ? v : h;
 const T_END = 49;
-const CHAPTERS = [['Intro',0],['Problem',5.5],['Use case',13.5],['Call to action',39.5]];
 
 /* ───────────────────────── palette ───────────────────────── */
 const C = { ink:'#0E0E10', cream:'#F2EEE7', eye:'#FFF0C8', amber:'#FFB547', amberDeep:'#EE8F1F' };
@@ -193,9 +183,6 @@ const R9 = '../renders/v9/soul_v9_', MED = '../site/media/';
 const IMG = {
   hero:   {src:R9+'hero.png',     w:1600, h:1200, f:[795,585]},
   hand:   {src:R9+'hand.png',     w:1600, h:1200, f:[805,580]},
-  desk:   {src:R9+'desk.png',     w:1600, h:1200, f:[812,620]},
-  typing: {src:R9+'typing.png',   w:1600, h:1200, f:[795,557]},
-  side:   {src:R9+'side.png',     w:1600, h:1200, f:[830,490]},
   family: {src:R9+'family.png',   w:2000, h:1125, f:[1000,560]},
   night:  {src:R9+'ou_night.png', w:1600, h:1200, f:[776,616]},
 };
@@ -504,15 +491,15 @@ scene(13.5, 17.55, root => {
   const items = [
     () => imgCard(root, IMG.hero, cwid, chei, 900),
     () => { const f = face(root, cd); circCrop(f.glass, SCREEN('today'), cd); return f.el; },
-    () => imgCard(root, IMG.desk, cwid, chei, 1000),
+    () => imgCard(root, IMG.family, cwid, chei, 420, [1004, 560]),
     () => { const f = face(root, cd); circCrop(f.glass, POSTER('boop'), cd); return f.el; },
     () => imgCard(root, IMG.hand, chei, cwid, 700),
     () => { const f = face(root, cd); circCrop(f.glass, SCREEN('launcher'), cd); return f.el; },
     () => imgCard(root, IMG.family, cwid*1.3, chei, 1500),
     () => { const f = face(root, cd); circCrop(f.glass, SCREEN('claude'), cd); return f.el; },
-    () => imgCard(root, IMG.typing, cwid, chei, 900),
+    () => { const f = face(root, cd); circCrop(f.glass, SCREEN('alarm'), cd); return f.el; },
     () => { const f = face(root, cd); circCrop(f.glass, POSTER('claude_buddy'), cd); return f.el; },
-    () => imgCard(root, IMG.side, chei, cwid, 650),
+    () => imgCard(root, IMG.family, chei, cwid, 380, [626, 580]),
     () => { const f = face(root, cd); circCrop(f.glass, SCREEN('keyboard'), cd); return f.el; },
     () => imgCard(root, IMG.night, cwid, chei, 900),
   ];
@@ -534,24 +521,24 @@ scene(13.5, 17.55, root => {
   });
 });
 
-/* 4b ─ desk render, push in on the device */
+/* 4b ─ hero render, push in on the glass (match-cuts into the live eyes) */
 scene(17.5, 19.6, root => {
-  const s = {}; s.ph = new Photo(root, IMG.desk);
+  const s = {}; s.ph = new Photo(root, IMG.hero);
   s.cap = mk('div', 'a pill', root, `font-size:${pick(26, 30)}px;padding:14px 26px`, `<span class="glyph" style="width:14px;height:14px;background:${C.amber};box-shadow:0 0 10px ${C.amber}"></span>Always on. Never in the way.`);
   return s;
 }, (lt, s) => {
   const zin = eo(seg(lt, 0, .6)), push = ci(seg(lt, 1.6, 2.1));
   const z = lerp(1.25, 1.0, zin) * lerp(1, 1.12, lt/2) * lerp(1, 5.5, push);
-  s.ph.set(z, lerp(800, 812, push), lerp(640, 628, push));
+  s.ph.set(z * pick(1.1, 1.0), lerp(830, 795, push), lerp(600, 585, push));
   s.ph.el.style.opacity = 1;
   s.ph.el.style.filter = push > .05 ? `blur(${push*10}px)` : 'none';
   const cp = eo(seg(lt, .35, .8));
-  P(s.cap, pick(cw*.5, cw*.5), pick(ch*.86, ch*.84) + (1 - cp)*40, { o: cp * (1 - push*2), b: (1 - cp)*8 });
+  P(s.cap, cw*.5, pick(ch*.92, ch*.90) + (1 - cp)*40, { o: cp * (1 - push*2), b: (1 - cp)*8 });
 });
 
 /* 4c ─ live eyes: blink, look around */
 scene(19.55, 21.55, root => {
-  const s = {}; s.f = eyesCanvas(root, pick(420, 600));
+  const s = {}; s.f = eyesCanvas(root, pick(500, 620));
   s.cap = words(root, 'It looks back.', null, `font-size:${pick(64, 72)}px`);
   return s;
 }, (lt, s) => {
@@ -833,10 +820,8 @@ scene(46.5, T_END + .1, root => {
   P(s.d, cx, cy + pick(105, 115) + (1 - dp)*16, { o: dp });
 });
 
-/* ───────────────────────── chrome: frame, chapter bar, ruler ───────────────────────── */
-const stage = document.getElementById('stage'), card = document.getElementById('card'), bar = document.getElementById('bar');
-const ruler = document.getElementById('ruler'), cgi = document.getElementById('cgi');
-let tabs = [], ind;
+/* ───────────────────────── chrome: frame + card ───────────────────────── */
+const stage = document.getElementById('stage'), card = document.getElementById('card'), cgi = document.getElementById('cgi');
 function setup(){
   stage.style.width = W + 'px'; stage.style.height = H + 'px';
   fbg.width = Math.round(W/8); fbg.height = Math.round(H/8);
@@ -847,43 +832,11 @@ function setup(){
   const lw = L.logo.h * 489.04/144.35;
   const wm = wordmark(tl, lw, true); wm.style.position = 'relative';
   tl.style.transform = `translate(${W/2 - lw/2}px,${L.logo.y}px)`;
-  bar.style.cssText += `;left:${L.bar.x}px;top:${L.bar.y}px;width:${L.bar.w}px;height:${L.bar.h}px`;
-  const tw = (L.bar.w - 3*L.bar.gap)/4;
-  ind = mk('div', null, bar); ind.id = 'ind'; ind.style.width = tw + 'px'; ind.style.height = L.bar.h + 'px';
-  tabs = CHAPTERS.map(([n], i) => { const e = mk('div', 'tab', bar, `left:${i*(tw + L.bar.gap)}px;width:${tw}px;height:${L.bar.h}px;font-size:${L.bar.fs}px`);
-    const sp = mk('span', null, e, null, n); return { e, sp, x: i*(tw + L.bar.gap), w: tw }; });
-  ruler.width = L.ruler.w; ruler.height = L.ruler.h;
-  ruler.style.transform = `translate(${L.ruler.x}px,${L.ruler.y}px)`;
   cgi.style.cssText += `;font-size:${L.cgi.fs}px;color:rgba(255,236,214,.55);transform:translate(${L.cgi.x}px,${L.cgi.y}px) translate(-100%,-50%)`;
   cgi.textContent = 'Product images: concept renders (CGI)';
   const fade = document.getElementById('fade'); fade.style.width = W + 'px'; fade.style.height = H + 'px';
   SCENES.forEach(sc => { sc.root = mk('div', 'root', scenesEl, `width:${cw}px;height:${ch}px`); sc.st = sc.build(sc.root); sc.root.style.display = 'none'; });
 }
-function drawRuler(t){
-  const x = ruler.getContext('2d'), w = ruler.width, h = ruler.height, n = Math.floor(w/11);
-  x.clearRect(0, 0, w, h);
-  const prog = t / T_END;
-  for (let i = 0; i <= n; i++){
-    const u = i/n, done = u <= prog, major = i % 10 === 0;
-    x.fillStyle = done ? 'rgba(255,244,230,.95)' : 'rgba(255,236,214,.35)';
-    const th = major ? h*.75 : h*.42;
-    x.fillRect(Math.round(u*(w - 2)), h - th, 2, th);
-  }
-  const px = prog*(w - 4);
-  x.fillStyle = C.amber; x.shadowColor = C.amber; x.shadowBlur = 8; x.fillRect(px, 0, 3, h); x.shadowBlur = 0;
-}
-function chapterAt(t){ let c = 0; CHAPTERS.forEach(([, a], i) => { if (t >= a) c = i; }); return c; }
-function drawBar(t){
-  const c = chapterAt(t), prev = Math.max(0, c - 1), p = eo(seg(t, CHAPTERS[c][1], CHAPTERS[c][1] + .55));
-  const x = c === 0 ? tabs[0].x : lerp(tabs[prev].x, tabs[c].x, p);
-  ind.style.transform = `translateX(${x}px)`;
-  tabs.forEach(tb => { const ov = clamp((Math.min(x + tb.w, tb.x + tb.w) - Math.max(x, tb.x)) / tb.w);
-    tb.sp.style.color = ov > .5 ? C.cream : C.ink; tb.sp.style.opacity = ov > .5 ? 1 : .8; });
-  // intro: bar slides up
-  const bin = eo(seg(t, .2, .9));
-  bar.style.transform = `translate(${L.bar.x}px,${L.bar.y + (1 - bin)*40}px)`; bar.style.left = '0'; bar.style.top = '0'; bar.style.opacity = bin;
-}
-
 /* ───────────────────────── render(t) ───────────────────────── */
 window.render = function(t){
   drawFrameBg(t);
@@ -900,7 +853,6 @@ window.render = function(t){
     sc.root.style.transform = `scale(${s})`; CUR_S = s;
     sc.upd(lt, sc.st, t);
   }
-  drawBar(t); drawRuler(t);
   document.getElementById('fade').style.opacity = ci(seg(t, 48.2, T_END));
   return true;
 };

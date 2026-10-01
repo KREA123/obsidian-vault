@@ -33,7 +33,7 @@ def worker(lay, frames, outdir):
         b, pg = open_page(p, lay)
         for f in frames:
             pg.evaluate('t => render(t)', f / FPS)
-            pg.screenshot(path=str(outdir / f'f{f:05d}.png'), type='png')
+            pg.screenshot(path=str(outdir / f'f{f:05d}.jpg'), type='jpeg', quality=95)
         b.close()
 
 
@@ -55,13 +55,13 @@ def video(lay):
     n = int(round(T * FPS))
     outdir = FR / lay
     outdir.mkdir(parents=True, exist_ok=True)
-    todo = [f for f in range(n) if not (outdir / f'f{f:05d}.png').exists()]
+    todo = [f for f in range(n) if not (outdir / f'f{f:05d}.jpg').exists()]
     W = int(os.environ.get('WORKERS', 4))
     procs = [Process(target=worker, args=(lay, todo[i::W], outdir)) for i in range(W)]
     [pr.start() for pr in procs]
     [pr.join() for pr in procs]
     out = HERE / ('soul_trailer.mp4' if lay == 'h' else 'soul_trailer_vertical.mp4')
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', str(outdir / 'f%05d.png'),
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', str(outdir / 'f%05d.jpg'),
                     '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-tune', 'animation', '-pix_fmt', 'yuv420p',
                     '-movflags', '+faststart', '-r', str(FPS), str(out)], check=True)
     print('wrote', out, out.stat().st_size // 1024, 'KB')
