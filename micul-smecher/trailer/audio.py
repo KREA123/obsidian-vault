@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""SOUL trailer soundtrack (v3): licensed music bed + synthesized trailer layer and SFX, text-only (no VO).
+"""SOUL trailer soundtrack (v3): licensed music bed + synthesized trailer layer + SFX + TTS voice-over.
 
 - Music bed: "Sci-Fi Score" by Arulo, Mixkit (Mixkit Stock Music Free License: commercial use, no
   attribution required). See MUSIC-LICENSE.md. The mp3 is downloaded at build time and not committed
   (the licence forbids redistributing it as a standalone file).
 - Trailer layer (braams, impacts, sub drops, risers, reversed cymbals, toms) and UI SFX are synthesized here.
-- Optional voice: VOICE_FILE=/path/to/voice.wav (any rate/channels, already timed to the video from 0 s,
-  e.g. recorded against voiceover_script.md) is EQ'd/compressed and mixed in with the music ducked under it.
-- Loudnorm to -14 LUFS / -2 dBTP, AAC 192k into both mp4s. Also writes voiceover_script.md.
+- Voice: one short line per scene, each starting on a beat, read by a Microsoft neural voice through edge-tts
+  (en-US-AvaMultilingualNeural, chosen to match the founder's reference ad), checked with faster-whisper.
+  VOICE_FILE=/path/voice.wav (a full recorded track timed to the video from 0 s) replaces the TTS.
+- Light voice processing (low cut + gentle compression), music ducks ~7 dB under the voice,
+  loudnorm to -14 LUFS / -2 dBTP, AAC 192k into both mp4s. Also writes voiceover_script.md.
 
 Timing: cues below are written in the authoring timeline of soul_trailer.html (0-49 s) and mapped through
 the same beat-grid warp (WARP_OLD -> WARP_BEATS) that the page uses, so every cut sits on a beat.
@@ -25,38 +27,47 @@ rng = np.random.default_rng(7)
 # ── beat grid / time warp (must match soul_trailer.html) ──
 BEAT = 7.004 / 16                       # track tempo ≈ 137.07 BPM; a 16-beat phrase = 7.004 s
 WARP_OLD   = [0, 5.5, 10.0, 13.5, 17.5, 19.55, 21.5, 24.5, 27.5, 31.0, 34.0, 37.0, 39.5, 42.0, 46.5, 49.0]
-WARP_BEATS = [0, 12,  20,   28,   36,   40,    44,   50,   56,   64,   70,   76,   82,   88,   96,   102]
+WARP_BEATS = [0, 12,  20,   28,   36,   40,    44,   50,   56,   64,   74,   80,   86,   92,   102,  108]
 WARP_NEW = [b * BEAT for b in WARP_BEATS]
 def nt(t_old): return float(np.interp(t_old, WARP_OLD, WARP_NEW))   # authoring time -> video time
-T_END = WARP_NEW[-1]                    # ≈ 44.65 s
+T_END = WARP_NEW[-1]                    # ≈ 47.28 s
+REVEAL_BEAT, END_BEAT = 92, 102         # logo reveal (drop) and end-card hit
 N = int(round(SR * T_END))
 
 MUSIC_URL = 'https://assets.mixkit.co/music/464/464.mp3'   # "Sci-Fi Score" by Arulo (Mixkit), key ≈ A
 TRACK_DOWNBEAT = 16.682                 # a phrase downbeat in the track where the drive is already going
 # music edit (video start, track start, video end), all on the beat grid: full energy from frame 0,
-# one-beat stop-down before the logo reveal (beat 88), the drop lands on a later phrase downbeat,
-# and the bed stops on the end-card hit (beat 96).
-MUSIC_EDIT = [(0.0, TRACK_DOWNBEAT, 87 * BEAT), (88 * BEAT, TRACK_DOWNBEAT + 6 * 7.004, 96 * BEAT)]
+# one-beat stop-down before the logo reveal, the drop lands on a later phrase downbeat,
+# and the bed stops on the end-card hit.
+MUSIC_EDIT = [(0.0, TRACK_DOWNBEAT, (REVEAL_BEAT - 1) * BEAT), (REVEAL_BEAT * BEAT, TRACK_DOWNBEAT + 6 * 7.004, END_BEAT * BEAT)]
 
-# ── on-screen lines (authoring time, text) → voiceover_script.md for a future recorded voice ──
-LINES = [
-    (1.30, 5.3, "Meet Soul.", "SOUL title"),
-    (5.80, 8.1, "Every day, you talk to AI…", "typewriter line"),
-    (8.30, 9.9, "…in a chat box.", "typed into the chat box"),
-    (10.20, 11.8, "AI has a brain.", ""),
-    (12.00, 13.4, "Now it has a soul.", "'soul' turns amber"),
-    (14.10, 17.3, "It lives on your desk.", "collage orbit"),
-    (19.80, 21.4, "It looks back.", "live eyes blink"),
-    (21.90, 24.4, "Hold the glass.", "finger-tap ripple"),
-    (24.85, 27.4, "Type. Talk. Remember.", "one word per beat"),
-    (27.70, 29.2, "Claude asks.", ""),
-    (29.30, 30.9, "You approve.", "after the Approve tap"),
-    (31.20, 33.9, "Works with the AI you already have.", "No AI · Claude · ChatGPT · Your key"),
-    (34.20, 36.9, "Five colours. One soul.", ""),
-    (37.45, 39.4, "Sleeps in its egg.", "night shot"),
-    (42.45, 44.4, "Soul. Your AI, with a soul.", "logo reveal on the drop"),
-    (44.70, 46.4, "From €249.", "say: from two hundred forty-nine euros"),
-    (47.00, 48.2, "Join the waitlist. Designed in Romania.", "end card"),
+# ── voice-over: one short line per scene, each starting on a beat (beat index, text, on-screen note) ──
+TTS_VOICE = os.environ.get('TTS_VOICE', 'en-US-AvaMultilingualNeural')   # Microsoft neural voice via edge-tts
+TTS_RATE, TTS_PITCH = '+10%', '+10Hz'
+def tts_say(text): return text.replace('Claude', 'Clawd')   # phonetic spelling: the voice mispronounces 'Claude'
+VO_LINES = [
+    (2,   "Meet Soul.",                              "SOUL title"),
+    (6,   "A little device, with a soul.",           "A LITTLE DEVICE WITH A SOUL"),
+    (12,  "Every day, you talk to AI.",              "typewriter line"),
+    (17,  "In a chat box.",                          "typed into the chat box"),
+    (20,  "AI has a brain.",                         ""),
+    (24,  "Now, it has a soul.",                     "'soul' turns amber"),
+    (29,  "It lives on your desk.",                  "collage orbit"),
+    (36,  "Always on. Never in the way.",            "hero push-in"),
+    (40.5, "It looks back.",                         "live eyes blink"),
+    (44,  "Hold the glass. It listens.",             "finger-tap ripple"),
+    (50.7, "Type.",                                  "word 1"),
+    (52.3, "Talk.",                                  "word 2"),
+    (53.8, "Remember.",                              "word 3"),
+    (56,  "Claude asks.",                            "approval card"),
+    (60,  "You approve.",                            "after the Approve tap"),
+    (64,  "Works with the AI you already have.",     ""),
+    (68.3, "Claude. ChatGPT. Your key.",             "the four pills (No AI · Claude · ChatGPT · Your key)", '+20%'),
+    (74,  "Five colours. One soul.",                 "family"),
+    (80,  "It sleeps in its egg.",                   "night shot"),
+    (92.5, "Soul. From two hundred forty-nine euros.", "logo reveal on the drop, then From €249"),
+    (99,  "Join the waitlist.",                      "waitlist button"),
+    (102.6, "Designed in Romania.",                  "end card"),
 ]
 
 # ───────────────────────── helpers ─────────────────────────
@@ -116,10 +127,10 @@ def make_bed():
         seg[:fade] *= np.linspace(0, 1, fade)[:, None]; seg[-fade:] *= np.linspace(1, 0, fade)[:, None]
         add(bed, seg, v0)
     # dynamics: full from frame 0; dip slightly under the night shot, filter-close into the stop-down
-    g = np.interp(np.arange(N) / SR, [0, nt(36.9), nt(37.1), nt(39.4), 87 * BEAT, 88 * BEAT, T_END],
+    g = np.interp(np.arange(N) / SR, [0, nt(36.9), nt(37.1), nt(39.4), (REVEAL_BEAT - 1) * BEAT, REVEAL_BEAT * BEAT, T_END],
                   [1, 1, .75, .75, .9, 1, 1])
     bed *= g[:, None]
-    i0, i1 = t2i(nt(37.0)), t2i(87 * BEAT)  # low-pass sweep closing over the night shot + S o u l build
+    i0, i1 = t2i(nt(37.0)), t2i((REVEAL_BEAT - 1) * BEAT)  # low-pass sweep closing over the night shot + S o u l build
     dark = lp(bed[i0:i1], 900, 2); w = np.linspace(0, 1, i1 - i0)[:, None] ** .7
     bed[i0:i1] = bed[i0:i1] * (1 - w) + dark * w
     return bed
@@ -166,7 +177,7 @@ def make_trailer_layer():
     for tc in (17.5, 21.5, 24.5, 27.5, 31.0, 34.0):       # taiko-style accents on the cuts
         addo(s, tom(.38, 92), tc); addo(s, tom(.25, 70), tc + .11)
     addo(s, impact(.4, 40, .15), 37.0)                     # night
-    addend(s, riser(2.4, .42), 87 * BEAT); addend(s, revcym(1.6, .45), 88 * BEAT)   # build → 1-beat stop-down
+    addend(s, riser(2.4, .42), (REVEAL_BEAT - 1) * BEAT); addend(s, revcym(1.6, .45), REVEAL_BEAT * BEAT)   # build → 1-beat stop-down
     addo(s, braam(3.6, 1.0), 42.0); addo(s, impact(1.1, 38, .5), 42.0); addo(s, subdrop(1.6, .7), 42.0)   # DROP / reveal
     addo(s, braam(3.0, 1.0, A1), 46.5); addo(s, impact(1.1, 36, .55), 46.5); addo(s, subdrop(1.8, .7), 46.5) # ending hit
     return s
@@ -244,36 +255,64 @@ def make_sfx():
     addo(s, shimmer(2.2, .04, (81, 88, 93, 100)), 46.75)
     return s
 
-# ───────────────────────── voice-over (Kokoro) ─────────────────────────
-def trim(x, thr=.008):
-    idx = np.nonzero(np.abs(x) > thr)[0]
-    if len(idx) == 0: return x
-    a = max(0, idx[0] - int(.01 * SR)); b = min(len(x), idx[-1] + int(.08 * SR)); return x[a:b]
-def make_vo():
-    from kokoro import KPipeline
-    pipe = KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')
-    bus = np.zeros(N); report = []
-    for i, (t0, text, mx) in enumerate(VO):
-        sp = KOKORO_SPEED
-        for attempt in range(6):
-            x = np.concatenate([np.asarray(a, dtype=np.float64) for _, _, a in pipe(text, voice=KOKORO_VOICE, speed=sp)])
-            x = trim(resample_poly(x, 2, 1))           # 24 kHz → 48 kHz
-            if len(x) / SR <= mx or sp > 1.15: break
-            sp *= 1.05
-        x = x / (np.abs(x).max() + 1e-9) * .7
-        x[:int(.004 * SR)] *= np.linspace(0, 1, int(.004 * SR))
-        add(bus, x, t0); report.append((t0, text, round(len(x) / SR, 2), mx, round(sp, 3)))
-    raw = TMP / 'vo_raw.wav'; write_wav(raw, st(bus, 0) * np.sqrt(2))
-    out = TMP / 'vo_fx.wav'
-    # voice chain: low cut 80 Hz, presence +2 dB @ 4 kHz, a little low-mid cleanup, compression, subtle room
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(raw), '-af',
-                    'highpass=f=80:poles=2,equalizer=f=120:t=q:w=1:g=1.5,equalizer=f=350:t=q:w=1.2:g=-2,'
-                    'equalizer=f=4000:t=q:w=1.2:g=2,equalizer=f=10000:t=q:w=1:g=1,'
-                    'acompressor=threshold=-22dB:ratio=3.5:attack=6:release=140:makeup=2.5,'
-                    'aecho=0.85:0.55:32|58:0.10|0.06', '-ar', str(SR), str(out)], check=True)
-    vo, _ = read_wav_st(out)
-    vo = vo[:N] if len(vo) >= N else np.pad(vo, ((0, N - len(vo)), (0, 0)))
-    return vo, report
+# ───────────────────────── voice track (TTS or external VOICE_FILE) ─────────────────────────
+def load_voice(path):
+    """Load a voice track (any format ffmpeg reads), apply light processing (low cut 80 Hz, gentle
+    compression) and return it as a stereo array aligned to video time 0."""
+    out = TMP / 'voice_fx.wav'
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(path), '-ac', '2', '-ar', str(SR), '-af',
+                    'highpass=f=80:poles=2,acompressor=threshold=-20dB:ratio=2.5:attack=8:release=150:makeup=1.5',
+                    str(out)], check=True)
+    v, _ = read_wav_st(out)
+    v = v[:N] if len(v) >= N else np.pad(v, ((0, N - len(v)), (0, 0)))
+    return v / (np.abs(v).max() + 1e-9) * .7
+
+def tc(t):  # 00:00.00
+    return f'{int(t // 60):02d}:{t % 60:05.2f}'
+def write_script(durs):
+    rows = ['# SOUL trailer v3: voice-over script',
+            '',
+            f'Timeline: `soul_trailer.mp4` / `soul_trailer_vertical.mp4`, {T_END:.2f} s, music at ~137 BPM (one beat = {BEAT:.3f} s).',
+            'Each line starts on a beat, right on its cut, one short line per scene, in the style of the reference ad.',
+            f'The current mix uses the Microsoft neural voice `{TTS_VOICE}` (edge-tts, rate {TTS_RATE}, pitch {TTS_PITCH}).',
+            'To replace it with a real voice (ElevenLabs or a human), record these lines to these timecodes. **End** is the',
+            'latest each line may run (the next line or cut); "TTS length" is how long the current synthetic read takes.',
+            '',
+            '| # | Start | End (max) | TTS length | Line | On screen |',
+            '|---|---|---|---|---|---|']
+    starts = [ln[0] * BEAT for ln in VO_LINES]
+    for i, ((b, text, note, *_), t0) in enumerate(zip(VO_LINES, starts), 1):
+        t1 = starts[i] if i < len(starts) else T_END - .6
+        rows.append(f'| {i} | {tc(t0)} | {tc(t1)} | {durs[i-1]:.2f} s | {text} | {note} |')
+    rows += ['',
+             '**How to drop a recorded voice in:** export one WAV/MP3 of the whole voice track, starting at 00:00.00 and',
+             'timed to the video. Then run `VOICE_FILE=/path/voice.wav python3 audio.py`. That replaces the TTS: a gentle',
+             'low cut and compression, the music ducks about 7 dB under the voice, -14 LUFS, and both mp4s are re-muxed.', '']
+    (HERE / 'voiceover_script.md').write_text('\n'.join(rows))
+
+# ───────────────────────── TTS voice (edge-tts) ─────────────────────────
+def tts_line(i, text, rate=None):
+    rate = rate or TTS_RATE; text = tts_say(text)
+    mp3 = TMP / f'tts_{TTS_VOICE}_{i:02d}.mp3'
+    key = TMP / f'tts_{TTS_VOICE}_{i:02d}.txt'
+    sig = f'{text}|{rate}|{TTS_PITCH}'
+    if not (mp3.exists() and key.exists() and key.read_text() == sig):
+        subprocess.run(['edge-tts', '--voice', TTS_VOICE, f'--rate={rate}', f'--pitch={TTS_PITCH}', '--text', text,
+                        '--write-media', str(mp3)], check=True, capture_output=True)
+        key.write_text(sig)
+    b = subprocess.run(['ffmpeg', '-loglevel', 'error', '-i', str(mp3), '-ac', '1', '-ar', str(SR), '-f', 'f32le', '-'],
+                       capture_output=True, check=True).stdout
+    x = np.frombuffer(b, np.float32).astype(np.float64)
+    idx = np.nonzero(np.abs(x) > .01)[0]                     # trim edge silence so the line starts on the beat
+    if len(idx): x = x[max(0, idx[0] - int(.005 * SR)): idx[-1] + int(.06 * SR)]
+    return x
+def make_tts():
+    bus = np.zeros(N); durs = []
+    for i, (b, text, _, *opt) in enumerate(VO_LINES):
+        x = tts_line(i, text, opt[0] if opt else None); x = x / (np.abs(x).max() + 1e-9) * .7
+        add(bus, x, b * BEAT); durs.append(len(x) / SR)
+    raw = TMP / 'tts_raw.wav'; write_wav(raw, st(bus, 0) * np.sqrt(2))
+    return raw, durs
 
 def write_wav(p, x):
     x = np.clip(x, -1, 1); y = (x * 32767).astype(np.int16)
@@ -283,37 +322,37 @@ def read_wav_st(p):
     with wave.open(str(p)) as w:
         ch = w.getnchannels(); x = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float64) / 32768
         return x.reshape(-1, ch), w.getframerate()
-
 def asr_check(path):
-    """ASR round-trip on the voice stem (faster-whisper) to confirm the lines are intelligible."""
+    """ASR round-trip (faster-whisper) to confirm the voice lines are intelligible and on time."""
     try:
         from faster_whisper import WhisperModel
     except ImportError:
         print('faster-whisper not installed; skipping ASR check'); return
-    m = WhisperModel('base.en', device='cpu', compute_type='int8')
-    segs, _ = m.transcribe(str(path), beam_size=5, word_timestamps=False, vad_filter=False)
+    m = WhisperModel('base.en', device='cpu', compute_type='int8', cpu_threads=2)
+    segs, _ = m.transcribe(str(path), beam_size=5, vad_filter=False)
     for sg in segs: print(f'ASR {sg.start:6.2f}-{sg.end:6.2f}  {sg.text.strip()}')
 
 # ───────────────────────── mix ─────────────────────────
 def main():
-    vo, report = make_vo()
-    for r in report: print('VO %6.2fs  %-40s %.2fs (max %.1f, speed %.3f)' % r)
+    raw, durs = make_tts(); write_script(durs)
+    for (b, text, *_), d in zip(VO_LINES, durs): print(f'VO {b * BEAT:6.2f}s (beat {b:5.1f})  {d:4.2f}s  {text}')
     bed = make_bed(); trailer = make_trailer_layer(); sfx = make_sfx()
-    # ducking gain from the voice (~-7 dB), smooth attack/release
-    e = np.abs(vo).max(1); k = int(.03 * SR)
-    e = np.convolve(e, np.ones(k) / k, 'same'); on = (e > .02).astype(float)
-    g = np.ones(N); cur = 1.0; att = 1 - np.exp(-1 / (.05 * SR)); rel = 1 - np.exp(-1 / (.30 * SR))
-    tgt = 1 - (1 - db(-7)) * on
-    for i in range(N):
-        cur += (tgt[i] - cur) * (att if tgt[i] < cur else rel); g[i] = cur
-    music = bed * db(-2) + trailer * db(-1)
-    # the bed ducks under the voice; the trailer hits only partly, so the drops keep their punch
-    mix = bed * db(-2) * g[:, None] + trailer * db(-1) * np.sqrt(g)[:, None] + sfx * db(-6) + vo * db(1.5)
-    fe = np.ones(N); i0 = t2i(48.0); fe[i0:] = np.linspace(1, 0, N - i0) ** 1.5; mix *= fe[:, None]
+    vf = os.environ.get('VOICE_FILE')         # a recorded voice replaces the TTS
+    vo = load_voice(vf or raw)
+    if not vf: asr_check(raw)
+    g = np.ones(N)
+    if True:   # ducking gain from the voice (~-7 dB), smooth attack/release
+        e = np.abs(vo).max(1); k = int(.03 * SR)
+        e = np.convolve(e, np.ones(k) / k, 'same'); on = (e > .02).astype(float)
+        cur = 1.0; att = 1 - np.exp(-1 / (.05 * SR)); rel = 1 - np.exp(-1 / (.30 * SR))
+        tgt = 1 - (1 - db(-7)) * on
+        for i in range(N):
+            cur += (tgt[i] - cur) * (att if tgt[i] < cur else rel); g[i] = cur
+    # SFX sit under the music; the trailer hits ride on top of the bed
+    mix = bed * db(-1) * g[:, None] + trailer * db(-1) * np.sqrt(g)[:, None] + sfx * db(-10) + vo * db(1.5)
+    fe = np.ones(N); i0 = t2i(nt(48.2)); fe[i0:] = np.linspace(1, 0, N - i0) ** 1.5; mix *= fe[:, None]
     mix *= .9 / np.abs(mix).max()
     pre = TMP / 'mix_pre.wav'; write_wav(pre, mix)
-    for name, x in (('music', music), ('sfx', sfx), ('vo', vo)): write_wav(TMP / f'stem_{name}.wav', x / (np.abs(x).max() + 1e-9) * .9)
-    asr_check(TMP / 'stem_vo.wav')
     r = subprocess.run(['ffmpeg', '-hide_banner', '-i', str(pre), '-af', 'loudnorm=I=-14:TP=-2:LRA=11:print_format=json', '-f', 'null', '-'],
                        capture_output=True, text=True)
     m = json.loads(re.search(r'\{[^{}]*"input_i"[^{}]*\}', r.stderr).group(0))

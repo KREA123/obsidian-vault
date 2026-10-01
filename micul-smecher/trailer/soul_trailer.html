@@ -84,9 +84,9 @@ const T_END = 49;              // authoring timeline (scenes below are written i
    same table to place SFX and hits. */
 const BEAT = 7.004 / 16;
 const WARP_OLD   = [0, 5.5, 10.0, 13.5, 17.5, 19.55, 21.5, 24.5, 27.5, 31.0, 34.0, 37.0, 39.5, 42.0, 46.5, 49.0];
-const WARP_BEATS = [0, 12,  20,   28,   36,   40,    44,   50,   56,   64,   70,   76,   82,   88,   96,   102];
+const WARP_BEATS = [0, 12,  20,   28,   36,   40,    44,   50,   56,   64,   74,   80,   86,   92,   102,  108];
 const WARP_NEW = WARP_BEATS.map(b => b * BEAT);
-const T_OUT = WARP_NEW[WARP_NEW.length - 1];   // final video length (≈44.65 s)
+const T_OUT = WARP_NEW[WARP_NEW.length - 1];   // final video length (≈47.28 s)
 function warp(tn){ // final-video time → authoring time
   for (let i = 1; i < WARP_NEW.length; i++) if (tn <= WARP_NEW[i] || i === WARP_NEW.length - 1)
     return WARP_OLD[i-1] + (WARP_OLD[i] - WARP_OLD[i-1]) * (tn - WARP_NEW[i-1]) / (WARP_NEW[i] - WARP_NEW[i-1]);
@@ -394,7 +394,7 @@ scene(0, 5.55, root => {
   s.sub = mk('div', 'a lbl', root, `font-size:${pick(26, 30)}px;color:rgba(14,14,16,.6);letter-spacing:.32em`, 'A LITTLE DEVICE WITH A SOUL');
   return s;
 }, (lt, s) => {
-  const rise = eo(seg(lt, .15, 1.6)), out = ci(seg(lt, 5.05, 5.55));
+  const rise = lerp(.35, 1, eo(seg(lt, 0, 1.1))), out = ci(seg(lt, 5.05, 5.55));
   const z = lerp(1.0, 1.08, lt/5.5) + out*.7;
   const hz = z * pick(.74, .80);
   s.hero.set(hz, 795, 585 - pick(85, 60)/(s.hero.S || 1) - (1 - rise)*320);
@@ -855,8 +855,8 @@ window.render = function(tn){
   const t = Math.min(T_END, warp(tn));
   drawFrameBg(t);
   drawCardBg(t);
-  const cin = eo(seg(t, 0, .8));
-  card.style.transform = `scale(${lerp(.93, 1, cin)})`; card.style.opacity = clamp(cin*1.5);
+  const cin = eo(seg(t, 0, .5));   // no dead air: the card is there from frame 0 and settles with a small punch
+  card.style.transform = `scale(${lerp(1.035, 1, cin)})`; card.style.opacity = 1;
   for (const sc of SCENES){
     const on = t >= sc.a && t < sc.b;
     sc.root.style.display = on ? '' : 'none';
