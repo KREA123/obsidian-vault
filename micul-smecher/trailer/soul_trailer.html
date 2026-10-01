@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SOUL Trailer</title>
+<!--
+  SOUL — motion-graphics product trailer.
+  Deterministic: everything is a pure function of time t (seconds). No wall clock.
+  render(t) draws one frame. Layout: ?v=1 → vertical 1080x1920, else 1920x1080.
+  Recorded frame-by-frame by render.py (Playwright) and encoded with ffmpeg.
+  Open in a browser with ?play=1 to preview in real time.
+  All product images are concept renders (CGI).
+-->
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;font-family:'DM Sans',system-ui,sans-serif;color:#0E0E10}
+canvas.lo{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+#card{position:absolute;overflow:hidden;background:#FBF6F0;isolation:isolate;
+  box-shadow:0 40px 90px rgba(18,4,14,.55),0 0 0 1.5px rgba(255,236,214,.35)}
+.root{position:absolute;left:0;top:0;transform-origin:50% 50%}
+.a{position:absolute;left:0;top:0}
+.d{font-family:'Bricolage Grotesque',sans-serif;font-weight:600;letter-spacing:-.03em;line-height:1.04;white-space:nowrap;text-align:center}
+.w{display:inline-block}
+.cur{display:inline-block;width:.055em;height:.92em;background:#0E0E10;vertical-align:-.1em;margin-left:.05em;border-radius:3px}
+.ghost{color:transparent}
+.typed{position:absolute;left:0;top:0;white-space:nowrap}
+.ph{position:absolute;left:0;top:0;transform-origin:0 0;max-width:none}
+.imgc{position:absolute;left:0;top:0;background-repeat:no-repeat;border-radius:22px;
+  box-shadow:0 18px 40px rgba(70,35,20,.22),0 0 0 1px rgba(255,255,255,.6) inset}
+.circ{border-radius:50%;background-repeat:no-repeat}
+.ring{position:absolute;left:0;top:0;border-radius:50%;
+  background:radial-gradient(circle at 32% 26%,#ffffff 0%,#ecebe8 28%,#bdbbb8 62%,#8f8d8a 82%,#d9d7d4 100%);
+  box-shadow:0 30px 70px rgba(70,30,15,.30),0 6px 14px rgba(70,30,15,.18)}
+.ring>.glass{position:absolute;border-radius:50%;overflow:hidden;background:#070708;
+  box-shadow:0 0 0 3px #26262a,0 0 0 5px rgba(255,255,255,.55)}
+.ring>.glass>*{position:absolute;left:0;top:0;width:100%;height:100%}
+.ring>.glass:after{content:'';position:absolute;inset:0;border-radius:50%;
+  background:linear-gradient(140deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,0) 38%)}
+.pill{position:absolute;left:0;top:0;display:flex;align-items:center;gap:.5em;white-space:nowrap;
+  background:#fff;border-radius:999px;font-weight:500;color:#0E0E10;
+  box-shadow:0 14px 34px rgba(80,40,20,.16),0 0 0 1px rgba(14,14,16,.06)}
+.glyph{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex:none}
+.tab{position:absolute;top:0;display:flex;align-items:center;justify-content:center;border-radius:14px;
+  background:#fff;font-weight:500;color:#0E0E10;overflow:hidden}
+.tab span{position:relative;z-index:2}
+#ind{position:absolute;top:0;border-radius:14px;background:#0E0E10;z-index:1;
+  box-shadow:6px 0 18px rgba(255,181,71,.65),inset -3px 0 0 #FFB547}
+.line{position:absolute;left:0;top:0;background:rgba(14,14,16,.28)}
+.hnd{position:absolute;left:0;top:0;width:9px;height:9px;border:1.5px solid rgba(14,14,16,.55);background:#fff}
+.rip{position:absolute;left:0;top:0;border-radius:50%;border:3px solid rgba(255,240,200,.95)}
+.tapdot{position:absolute;left:0;top:0;border-radius:50%;background:rgba(255,255,255,.75);
+  box-shadow:0 0 0 2px rgba(255,255,255,.9),0 8px 20px rgba(0,0,0,.25)}
+.bubble{position:absolute;left:0;top:0;background:#fff;border-radius:28px;
+  box-shadow:0 24px 60px rgba(80,40,20,.20),0 0 0 1px rgba(14,14,16,.05)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-weight:600}
+.lbl{font-family:'DM Sans';font-weight:500;white-space:nowrap;text-align:center}
+.ico{position:absolute;left:0;top:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="fbg" class="lo"></canvas>
+  <div id="toplogo" class="a"></div>
+  <div id="card">
+    <canvas id="cbg" class="lo"></canvas>
+    <div id="scenes" class="a"></div>
+  </div>
+  <div id="bar" class="a"></div>
+  <canvas id="ruler" class="a"></canvas>
+  <div id="cgi" class="a lbl"></div>
+  <div id="fade" class="a" style="background:#000;opacity:0;pointer-events:none"></div>
+</div>
+<script>
+'use strict';
+/* ───────────────────────── layout (data) ───────────────────────── */
+const Q = new URLSearchParams(location.search);
+const V = Q.get('v') === '1';
+const LAYOUTS = {
+  h: { W:1920, H:1080, card:{x:140,y:64,w:1640,h:800,r:34}, bar:{x:140,y:890,w:1640,h:62,gap:18,fs:22},
+       ruler:{x:140,y:982,w:1640,h:26}, logo:{y:22,h:26}, cgi:{x:1780,y:1036,fs:14} },
+  v: { W:1080, H:1920, card:{x:48,y:128,w:984,h:1480,r:42}, bar:{x:48,y:1640,w:984,h:74,gap:12,fs:25},
+       ruler:{x:48,y:1744,w:984,h:30}, logo:{y:52,h:38}, cgi:{x:1032,y:1850,fs:18} },
+};
+const L = V ? LAYOUTS.v : LAYOUTS.h;
+const W = L.W, H = L.H, cw = L.card.w, ch = L.card.h, cx = cw/2, cy = ch/2;
+const pick = (h, v) => V ? v : h;
+const T_END = 49;
+const CHAPTERS = [['Intro',0],['Problem',5.5],['Use case',13.5],['Call to action',39.5]];
+
+/* ───────────────────────── palette ───────────────────────── */
+const C = { ink:'#0E0E10', cream:'#F2EEE7', eye:'#FFF0C8', amber:'#FFB547', amberDeep:'#EE8F1F' };
+
+/* ───────────────────────── math / easing ───────────────────────── */
+const clamp = (x,a=0,b=1) => Math.min(b, Math.max(a, x));
+const lerp = (a,b,p) => a + (b-a)*p;
+const seg = (t,a,b) => clamp((t-a)/(b-a));
+const eo = p => p>=1 ? 1 : 1 - Math.pow(2, -10*p);            // expo out
+const co = p => 1 - Math.pow(1-p, 3);                          // cubic out
+const ci = p => p*p*p;                                         // cubic in
+const eio = p => p<.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;   // cubic in-out
+const bo = p => { const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(p-1,3) + c1*Math.pow(p-1,2); }; // back out
+const pulse = (t,a,b) => seg(t,a,a+(b-a)/2) - seg(t,a+(b-a)/2,b);  // 0→1→0
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed>>>15, 1|seed);
+  t = t + Math.imul(t ^ t>>>7, 61|t) ^ t; return ((t ^ t>>>14) >>> 0) / 4294967296; }; }
+
+/* ───────────────────────── DOM helpers ───────────────────────── */
+function mk(tag, cls, parent, css, html){
+  const e = document.createElement(tag); if (cls) e.className = cls;
+  if (css) e.style.cssText = css; if (html != null) e.innerHTML = html;
+  (parent || document.body).appendChild(e); return e;
+}
+// place element so that its anchor (ax,ay) sits at (x,y); scale/rotate about the anchor
+function P(el, x, y, o = {}){
+  const s = o.s ?? 1, sx = o.sx ?? s, sy = o.sy ?? s, r = o.r ?? 0, ax = o.ax ?? .5, ay = o.ay ?? .5;
+  el.style.transformOrigin = `${ax*100}% ${ay*100}%`;
+  el.style.transform = `translate(${x}px,${y}px) translate(${-ax*100}%,${-ay*100}%) rotate(${r}deg) scale(${sx},${sy})`;
+  el.style.opacity = o.o ?? 1;
+  const b = o.b ?? 0; el.style.filter = b > .15 ? `blur(${b.toFixed(2)}px)` : 'none';
+  if (o.z != null) el.style.zIndex = o.z;
+}
+function show(el, on){ el.style.display = on ? '' : 'none'; }
+// words → inline-block spans. '\n' = line break. Returns {el, ws}
+function words(parent, text, cls, css){
+  const el = mk('div', cls || 'a d', parent, css);
+  const ws = [];
+  text.split('\n').forEach((line, li) => {
+    if (li) el.appendChild(document.createElement('br'));
+    line.split(' ').forEach((w, wi) => {
+      if (wi) el.appendChild(document.createTextNode(' '));
+      ws.push(mk('span', 'w', el, null, w));
+    });
+  });
+  return { el, ws };
+}
+// blur-in of a single word, p 0..1 (and negative-going for out)
+function fw(span, p, dy = .35){
+  span.style.opacity = clamp(p*1.3);
+  span.style.filter = p < .98 ? `blur(${((1-p)*16).toFixed(1)}px)` : 'none';
+  span.style.transform = `translateY(${((1-p)*dy).toFixed(3)}em) scale(${(.92+.08*p).toFixed(3)})`;
+}
+// typewriter: ghost holds the full width so text grows left→right without re-centering
+function typer(parent, text, css){
+  const el = mk('div', 'a d', parent, css);
+  mk('span', 'ghost', el, null, text);
+  const ty = mk('span', 'typed', el);
+  return { el, set(n, t, curOn = true){
+    n = Math.floor(n);
+    const blink = (n < text.length && n > 0) || (Math.floor(t*2.2) % 2 === 0);
+    ty.innerHTML = text.slice(0, n).replace(/&/g,'&amp;') + (curOn ? `<span class="cur" style="opacity:${blink?1:0}"></span>` : '');
+  }};
+}
+const ICONS = {
+  chat:'<path d="M5 6h22a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H14l-6 5v-5H5a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3z"/>',
+  spark:'<path d="M16 3v8M16 21v8M3 16h8M21 16h8M7 7l5 5M20 20l5 5M25 7l-5 5M12 20l-5 5"/>',
+  dots:'<circle cx="8" cy="16" r="2.4"/><circle cx="16" cy="16" r="2.4"/><circle cx="24" cy="16" r="2.4"/>',
+  cursor:'<path d="M7 4l18 10-8 2-3 8z"/>',
+  brain:'<path d="M12 5a5 5 0 0 0-5 5 5 5 0 0 0-2 9 5 5 0 0 0 7 6h1V5zM20 5a5 5 0 0 1 5 5 5 5 0 0 1 2 9 5 5 0 0 1-7 6h-1V5z"/>',
+  bolt:'<path d="M18 3L7 18h8l-2 11 12-16h-8z"/>',
+  heart:'<path d="M16 27S4 19.5 4 11.5A6 6 0 0 1 16 9a6 6 0 0 1 12 2.5C28 19.5 16 27 16 27z"/>',
+  kbd:'<rect x="3" y="8" width="26" height="16" rx="3"/><path d="M8 13h1M13 13h1M18 13h1M23 13h1M10 19h12"/>',
+  mic:'<rect x="12" y="3" width="8" height="15" rx="4"/><path d="M7 14a9 9 0 0 0 18 0M16 23v6M11 29h10"/>',
+  mem:'<path d="M9 4h14v24l-7-5-7 5z"/>',
+  check:'<path d="M6 17l6 6L26 9"/>',
+  key:'<circle cx="11" cy="16" r="6"/><path d="M17 16h12M25 16v5M29 16v4"/>',
+  slash:'<circle cx="16" cy="16" r="11"/><path d="M8 8l16 16"/>',
+  star:'<path d="M16 3v26M3 16h26M7 7l18 18M25 7L7 25"/>',
+  moon:'<path d="M24 20A11 11 0 0 1 12 6a11 11 0 1 0 12 14z"/>',
+  hex:'<path d="M16 4l10 6v12l-10 6-10-6V10z"/><circle cx="16" cy="16" r="4"/>',
+};
+function icon(parent, name, size, color = C.ink, fill = 'none', sw = 2.4){
+  return mk('div', 'ico', parent, `width:${size}px;height:${size}px`,
+    `<svg viewBox="0 0 32 32" width="${size}" height="${size}" fill="${fill}" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`);
+}
+const WM_PATH = 'M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z M408.8 200V68H437.6V175.2H490V200Z';
+// Glass-O wordmark (from brand/logo/svg/soul-wordmark*.svg); eyes in their own group so they can blink
+function wordmark(parent, width, dark){
+  const h = width * 144.35 / 489.04;
+  const el = mk('div', 'a', parent, `width:${width}px;height:${h}px`,
+    `<svg viewBox="2.96 61.82 489.04 144.35" width="${width}" height="${h}">
+      <path fill="${dark ? '#F6F3EC' : '#16181D'}" d="${WM_PATH}"/>
+      ${dark ? '<circle cx="190.2" cy="134" r="70.18" fill="#CBCDCF"/><circle cx="190.2" cy="134" r="64.21" fill="#0B0B0C"/>'
+             : '<circle cx="190.2" cy="134" r="70.18" fill="#0B0B0C"/>'}
+      <g class="eyes" style="transform-origin:190px 128px;transform-box:view-box"><path fill="#FFF0C8" d="${dark
+        ? 'M180.82 125.78A12.84 21.83 0 1 1 160.14 121.91ZM220.26 121.91A12.84 21.83 0 1 1 199.58 125.78Z'
+        : 'M179.94 125.01A14.04 23.86 0 1 1 157.34 120.78ZM223.06 120.78A14.04 23.86 0 1 1 200.46 125.01Z'}"/></g></svg>`);
+  el.eyes = el.querySelector('.eyes'); el.h = h; return el;
+}
+
+/* ───────────────────────── assets ───────────────────────── */
+const R9 = '../renders/v9/soul_v9_', MED = '../site/media/';
+const IMG = {
+  hero:   {src:R9+'hero.png',     w:1600, h:1200, f:[795,585]},
+  hand:   {src:R9+'hand.png',     w:1600, h:1200, f:[805,580]},
+  desk:   {src:R9+'desk.png',     w:1600, h:1200, f:[812,620]},
+  typing: {src:R9+'typing.png',   w:1600, h:1200, f:[795,557]},
+  side:   {src:R9+'side.png',     w:1600, h:1200, f:[830,490]},
+  family: {src:R9+'family.png',   w:2000, h:1125, f:[1000,560]},
+  night:  {src:R9+'ou_night.png', w:1600, h:1200, f:[776,616]},
+};
+const SCREEN = n => ({src:MED+`os-${n}.jpg`, w:628, h:719, c:[314.5,330.5], r:245});
+const POSTER = n => ({src:MED+`posters/${n}.jpg`, w:540, h:540, c:[270,270], r:196});
+
+// image card (rounded rect, cover crop around focus, `span` = visible image px across)
+function imgCard(parent, im, w, h, span, focus){
+  const k = w / span, f = focus || im.f;
+  return mk('div', 'imgc', parent, `width:${w}px;height:${h}px;background-image:url(${im.src});
+    background-size:${im.w*k}px ${im.h*k}px;background-position:${w/2 - f[0]*k}px ${h/2 - f[1]*k}px`);
+}
+// circular crop of a round screen
+function circCrop(parent, sc, d){
+  const k = d / (2*sc.r);
+  return mk('div', 'circ', parent, `background-image:url(${sc.src});background-size:${sc.w*k}px ${sc.h*k}px;
+    background-position:${-(sc.c[0]-sc.r)*k}px ${-(sc.c[1]-sc.r)*k}px`);
+}
+// device face: aluminium ring + black glass; returns {el, glass}
+function face(parent, d){
+  const rd = d * 1.17, el = mk('div', 'ring', parent, `width:${rd}px;height:${rd}px`);
+  const glass = mk('div', 'glass', el, `width:${d}px;height:${d}px;left:${(rd-d)/2}px;top:${(rd-d)/2}px`);
+  return { el, glass };
+}
+// full-bleed photo with ken-burns: view centre (vx,vy) in image px, zoom z (1 = cover)
+class Photo {
+  constructor(parent, im, w = cw, h = ch, free = false){ this.im = im; this.w = w; this.h = h; this.free = free;
+    this.el = mk('img', 'ph', parent, `width:${im.w}px;height:${im.h}px`); this.el.src = im.src; }
+  set(z, vx, vy){
+    const im = this.im, S = Math.max(this.w/im.w, this.h/im.h) * z;
+    let l = this.w/2 - vx*S, t = this.h/2 - vy*S;
+    if (!this.free){ l = Math.min(0, Math.max(this.w - im.w*S, l)); t = Math.min(0, Math.max(this.h - im.h*S, t)); }
+    this.S = S; this.l = l; this.t = t;
+    this.el.style.transform = `translate(${l}px,${t}px) scale(${S})`;
+  }
+  map(x, y){ return [this.l + x*this.S, this.t + y*this.S]; }
+}
+// tap ripple: fingertip press + 3 expanding glow rings
+function ripple(parent, color){
+  const g = mk('div', 'a', parent);
+  const rings = [0,1,2].map(() => mk('div', 'rip', g, color ? `border-color:${color}` : ''));
+  const dot = mk('div', 'tapdot', g);
+  return { g, set(lt, x, y, size){ // lt = seconds since tap
+    show(g, lt > -.35 && lt < 1.3);
+    const press = seg(lt, -.35, 0), lift = seg(lt, .05, .35);
+    dot.style.width = dot.style.height = size*.34 + 'px';
+    P(dot, x, y, { s: lerp(1.5, .9, eo(press)) * lerp(1, 1.3, lift), o: eo(press) * (1 - lift) });
+    rings.forEach((r, i) => { const p = seg(lt, i*.12, .9 + i*.12);
+      r.style.width = r.style.height = size + 'px';
+      P(r, x, y, { s: lerp(.25, 1.6, eo(p)), o: (p > 0 ? 1 : 0) * (1 - p) }); });
+  }};
+}
+
+/* ───────────────────────── SOUL eyes (canvas) ───────────────────────── */
+// st: lx,ly (-1..1 look), blink 0..1, wide 0..1, happy 0..1, blush 0..1
+function drawEyes(cv, st){
+  const D = cv.width, ctx = cv.getContext('2d'), R = D/2;
+  ctx.clearRect(0, 0, D, D);
+  const g = ctx.createRadialGradient(R*.7, R*.6, R*.05, R, R, R);
+  g.addColorStop(0, '#1c1b1f'); g.addColorStop(1, '#050506');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(R, R, R, 0, 7); ctx.fill();
+  const lx = (st.lx||0)*R*.15, ly = (st.ly||0)*R*.10, b = st.blink||0, w = st.wide||0, hp = st.happy||0;
+  for (const side of [-1, 1]){
+    const ex = R + side*R*.307 + lx, ey = R + R*.043 + ly;
+    const rx = R*.2*(1 + .2*w), ry = R*.34*(1 + .1*w)*(1 - .9*b);
+    if (hp < 1){
+      ctx.save(); ctx.globalAlpha = 1 - hp;
+      // lid cut: line sloping down toward the nose (from the logo), lifts when eyes go wide
+      const k = ry / (R*.34), lift = w*R*.16;
+      const ix = -side*R*.161, iy = -R*.171*k - lift, ox = side*R*.161, oy = -R*.231*k - lift;
+      const yAt = dx => iy + (oy - iy) * (dx - ix) / (ox - ix);
+      ctx.beginPath(); ctx.moveTo(ex - R*.5, ey + yAt(-R*.5)); ctx.lineTo(ex + R*.5, ey + yAt(R*.5));
+      ctx.lineTo(ex + R*.5, ey + R); ctx.lineTo(ex - R*.5, ey + R); ctx.closePath(); ctx.clip();
+      ctx.shadowColor = 'rgba(255,226,160,.6)'; ctx.shadowBlur = R*.14;
+      ctx.fillStyle = C.eye; ctx.beginPath(); ctx.ellipse(ex, ey, rx, Math.max(ry, R*.02), 0, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+    if (hp > 0){
+      ctx.save(); ctx.globalAlpha = hp; ctx.strokeStyle = C.eye; ctx.lineWidth = R*.085; ctx.lineCap = 'round';
+      ctx.shadowColor = 'rgba(255,226,160,.6)'; ctx.shadowBlur = R*.12;
+      ctx.beginPath(); ctx.arc(ex, ey + R*.06, R*.15, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+      ctx.shadowBlur = 0; ctx.fillStyle = `rgba(236,110,104,${.6*(st.blush||0)})`;
+      ctx.beginPath(); ctx.ellipse(ex + side*R*.05, ey + R*.2, R*.1, R*.05, 0, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+function eyesCanvas(parent, d){ const f = face(parent, d); const cv = mk('canvas', null, f.glass); cv.width = cv.height = d; f.cv = cv; return f; }
+
+/* ───────────────────────── backgrounds (low-res canvas = cheap blur) ───────────────────────── */
+const fbg = document.getElementById('fbg'), cbg = document.getElementById('cbg');
+function drawFrameBg(t){
+  const w = fbg.width, h = fbg.height, x = fbg.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#0E0A0E'); g.addColorStop(.28, '#2A0F25'); g.addColorStop(.58, '#6A2045');
+  g.addColorStop(.82, '#D1604A'); g.addColorStop(1, '#FFB073');
+  x.filter = 'none'; x.fillStyle = g; x.fillRect(0, 0, w, h);
+  const blob = (bx, by, r, c) => { const rg = x.createRadialGradient(bx, by, 0, bx, by, r);
+    rg.addColorStop(0, c); rg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = rg; x.fillRect(0, 0, w, h); };
+  blob(w*(.5 + .25*Math.sin(t*.35)), h*1.02, w*.55, 'rgba(255,190,110,.55)');
+  blob(w*(.08 + .05*Math.sin(t*.5+1)), h*.62, w*.35, 'rgba(178,52,120,.45)');
+  blob(w*(.92 + .05*Math.cos(t*.43)), h*.55, w*.35, 'rgba(200,70,110,.40)');
+  blob(w*.5, -h*.1, w*.5, 'rgba(0,0,0,.5)');
+}
+function drawCardBg(t){
+  const w = cbg.width, h = cbg.height, x = cbg.getContext('2d');
+  x.filter = 'none';
+  const g = x.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#FFFDFB'); g.addColorStop(.55, '#FBF4EE'); g.addColorStop(1, '#F7E7DE');
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  const blob = (bx, by, r, c) => { const rg = x.createRadialGradient(bx, by, 0, bx, by, r);
+    rg.addColorStop(0, c); rg.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = rg; x.fillRect(0, 0, w, h); };
+  blob(w*(.86 + .04*Math.sin(t*.4)), h*(.12 + .04*Math.cos(t*.3)), w*.45, 'rgba(255,210,170,.55)');
+  blob(w*(.10 + .04*Math.cos(t*.37)), h*(.30 + .05*Math.sin(t*.33)), w*.40, 'rgba(236,214,238,.55)');
+  // wavy glow at the bottom
+  x.filter = `blur(${Math.round(w/90)}px)`;
+  const cols = [['rgba(255,186,120,.62)','rgba(246,178,200,.55)','rgba(255,206,150,.6)'],
+                ['rgba(240,190,230,.45)','rgba(255,196,140,.5)','rgba(255,170,150,.45)'],
+                ['rgba(255,214,170,.55)','rgba(252,190,206,.45)','rgba(255,182,110,.55)']];
+  for (let i = 0; i < 3; i++){
+    const base = h*(pick(.80, .84) + .045*i);
+    x.beginPath(); x.moveTo(0, h);
+    for (let xx = 0; xx <= w; xx += 3){
+      const u = xx / w;
+      x.lineTo(xx, base + Math.sin(u*Math.PI*2*1.4 + t*.9 + i*2.1)*h*.045 + Math.sin(u*Math.PI*2*3.3 - t*1.3 + i)*h*.022);
+    }
+    x.lineTo(w, h); x.closePath();
+    const lg = x.createLinearGradient(0, 0, w, 0);
+    const c = cols[i]; const sh = (Math.sin(t*.3 + i) + 1)/2;
+    lg.addColorStop(0, c[0]); lg.addColorStop(clamp(.35 + .2*sh), c[1]); lg.addColorStop(1, c[2]);
+    x.fillStyle = lg; x.fill();
+  }
+  x.filter = 'none';
+}
+// warm clouds (CTA)
+function drawClouds(cv, t){
+  const w = cv.width, h = cv.height, x = cv.getContext('2d');
+  x.filter = 'none';
+  const g = x.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#F3C9AE'); g.addColorStop(.45, '#FBE2CF'); g.addColorStop(1, '#FFF4E8');
+  x.fillStyle = g; x.fillRect(0, 0, w, h);
+  const sun = x.createRadialGradient(w*.68, h*.28, 0, w*.68, h*.28, w*.45);
+  sun.addColorStop(0, 'rgba(255,200,120,.75)'); sun.addColorStop(1, 'rgba(255,200,120,0)');
+  x.fillStyle = sun; x.fillRect(0, 0, w, h);
+  x.filter = `blur(${Math.max(1, Math.round(w/130))}px)`;
+  const r = rng(7);
+  for (let i = 0; i < 46; i++){
+    const yy = h*(.25 + .9*r()), sc = .5 + yy/h, spd = 4 + 10*sc;
+    let xx = ((r()*1.4 - .2)*w + t*spd*w/400) % (w*1.4); if (xx > w*1.2) xx -= w*1.4;
+    const rad = w*(.05 + .07*r())*sc;
+    for (let j = 0; j < 5; j++){
+      const px = xx + (j - 2)*rad*.6, py = yy - Math.sin(j/4*Math.PI)*rad*.45, rr = rad*(.6 + .4*Math.sin(j/4*Math.PI));
+      const cg = x.createRadialGradient(px, py - rr*.3, rr*.1, px, py, rr);
+      cg.addColorStop(0, 'rgba(255,253,250,.95)'); cg.addColorStop(.6, 'rgba(255,240,230,.75)'); cg.addColorStop(1, 'rgba(244,200,180,0)');
+      x.fillStyle = cg; x.beginPath(); x.arc(px, py, rr, 0, 7); x.fill();
+    }
+  }
+  x.filter = 'none';
+}
+
+/* ───────────────────────── scenes ───────────────────────── */
+const scenesEl = document.getElementById('scenes');
+let CUR_S = 1; // current scene-root scale, for mapping screen rects back to card space
+function loc(x, y){ const sr = scenesEl.getBoundingClientRect(); return [cx + (x - sr.left - cx)/CUR_S, cy + (y - sr.top - cy)/CUR_S]; }
+const SCENES = [];
+// a/b = visible window (s). build(root) → state; upd(lt, st, t)
+function scene(a, b, build, upd, opts = {}){ SCENES.push({ a, b, build, upd, opts }); }
+
+/* 1 ─ INTRO: hero rises, floating soft shapes, S O U L spread */
+scene(0, 5.55, root => {
+  const s = {};
+  s.hero = new Photo(root, IMG.hero, cw, ch, true);
+  s.hero.el.style.webkitMaskImage = s.hero.el.style.maskImage = 'radial-gradient(ellipse 38% 44% at 50% 50%, #000 58%, transparent 100%)';
+  const r = rng(11);
+  s.shapes = [];
+  const kinds = ['sphereA','sphereC','egg','pill','eyes','sphereP','sphereA','egg','sphereC','pill','eyes','sphereA'];
+  kinds.forEach((k, i) => {
+    const sz = (k === 'pill' ? 70 : k === 'egg' ? 64 : 34 + 46*r()) * pick(1, 1.15);
+    let bg = '';
+    if (k === 'sphereA') bg = 'radial-gradient(circle at 35% 30%,#fff3dc,#ffc472 45%,#e9822e 100%)';
+    if (k === 'sphereC') bg = 'radial-gradient(circle at 35% 30%,#ffffff,#f4e9de 50%,#d8c2b0 100%)';
+    if (k === 'sphereP') bg = 'radial-gradient(circle at 35% 30%,#ffe2ea,#f2a6b9 50%,#b85a7e 100%)';
+    if (k === 'egg')     bg = 'radial-gradient(ellipse at 38% 30%,#ffffff,#efe6dc 55%,#c9b6a5 100%)';
+    if (k === 'pill')    bg = 'linear-gradient(160deg,#fff7ec,#ffcf96 60%,#f39a45)';
+    if (k === 'eyes')    bg = 'radial-gradient(circle at 35% 30%,#3a383d,#0e0e10 60%)';
+    const wv = k === 'pill' ? sz*1.9 : sz, hv = k === 'egg' ? sz*1.25 : sz;
+    const e = mk('div', 'a', root, `width:${wv}px;height:${hv}px;background:${bg};border-radius:${k==='egg'?'50% 50% 50% 50% / 58% 58% 42% 42%':k==='pill'?'999px':'50%'};
+      box-shadow:0 ${sz*.25}px ${sz*.5}px rgba(120,60,30,.18)`);
+    if (k === 'eyes') e.innerHTML = `<div style="position:absolute;left:24%;top:30%;width:17%;height:34%;border-radius:50%;background:${C.eye};box-shadow:0 0 6px ${C.eye}"></div><div style="position:absolute;right:24%;top:30%;width:17%;height:34%;border-radius:50%;background:${C.eye};box-shadow:0 0 6px ${C.eye}"></div>`;
+    // ring positions around the product, avoid the centre
+    const ang = (i / kinds.length) * Math.PI*2 + r()*.4, rad = .78 + .35*r();
+    s.shapes.push({ e, ang, rad, rot: r()*360, depth: r(), ph: r()*6 });
+  });
+  s.title = mk('div', 'a d', root, `font-size:${pick(190, 168)}px;font-weight:700;letter-spacing:0`);
+  s.letters = 'SOUL'.split('').map(ch => mk('span', 'w', s.title, null, ch));
+  s.sub = mk('div', 'a lbl', root, `font-size:${pick(26, 30)}px;color:rgba(14,14,16,.6);letter-spacing:.32em`, 'A LITTLE DEVICE WITH A SOUL');
+  return s;
+}, (lt, s) => {
+  const rise = eo(seg(lt, .15, 1.6)), out = ci(seg(lt, 5.05, 5.55));
+  const z = lerp(1.0, 1.08, lt/5.5) + out*.7;
+  const hz = z * pick(.74, .80);
+  s.hero.set(hz, 795, 585 - pick(85, 60)/(s.hero.S || 1) - (1 - rise)*320);
+  s.hero.el.style.opacity = rise * (1 - out);
+  s.hero.el.style.filter = rise < .97 ? `blur(${(1-rise)*22}px)` : 'none';
+  const ecx = cx, ecy = cy + pick(30, 40);
+  s.shapes.forEach((sh, i) => {
+    const p = bo(seg(lt, .3 + i*.06, .9 + i*.06));
+    const a = sh.ang + lt*.12*(sh.depth > .5 ? 1 : -1);
+    const rx = pick(cw*.36, cw*.42) * sh.rad, ry = pick(ch*.42, ch*.33) * sh.rad;
+    const x = ecx + Math.cos(a)*rx*(1 + out*.8), y = ecy + Math.sin(a)*ry*(1 + out*.8) + Math.sin(lt*1.3 + sh.ph)*10;
+    const blur = sh.depth > .78 ? 5 : 0;
+    P(sh.e, x, y, { s: clamp(p, 0, 1.2) * (.7 + .6*sh.depth) * (1 + out*.6), r: sh.rot + lt*25*(sh.depth - .5), o: clamp(p)*(1 - out), b: blur + out*10, z: sh.depth > .5 ? 5 : 1 });
+  });
+  // S O U L: letters drop in, then spread
+  const sp = eo(seg(lt, 1.5, 2.8));
+  s.title.style.letterSpacing = lerp(-.04, .32, sp) + 'em';
+  s.letters.forEach((l, i) => fw(l, eo(seg(lt, 1.0 + i*.09, 1.7 + i*.09)), .5));
+  P(s.title, cx + lerp(0, .16, sp)*pick(190,168)*.5, pick(ch*.16, ch*.15), { o: 1 - out, b: out*14, s: 1 + out*.3, z: 8 });
+  P(s.sub, cx, pick(ch*.93, ch*.88), { o: eo(seg(lt, 2.4, 3.2)) * (1 - out), b: (1 - eo(seg(lt, 2.4, 3.2)))*10, z: 8 });
+  s.sub.style.letterSpacing = lerp(.6, .32, eo(seg(lt, 2.4, 3.4))) + 'em';
+});
+
+/* 2 ─ PROBLEM: typewriter + chat box that shrinks away */
+scene(5.5, 10.05, root => {
+  const s = {};
+  const fs = pick(76, 74);
+  s.l1 = typer(root, V ? 'Every day,' : 'Every day, you talk to AI…', `font-size:${fs}px`);
+  s.l1b = V ? typer(root, 'you talk to AI…', `font-size:${fs}px`) : null;
+  s.icons = ['chat','spark','dots','cursor','bolt'].map(n => icon(root, n, pick(40, 46)));
+  s.box = mk('div', 'a', root, `width:${pick(980, 860)}px;height:${pick(150, 150)}px;background:#fff;border-radius:30px;
+    box-shadow:0 30px 70px rgba(80,40,20,.18),0 0 0 1px rgba(14,14,16,.07)`);
+  s.boxT = typer(s.box, '…in a chat box.', `font-size:${pick(64, 60)}px;left:40px;top:58%;transform:translateY(-50%)`);
+  s.boxT.el.style.textAlign = 'left';
+  s.send = mk('div', 'a', s.box, `right:26px;left:auto;top:50%;margin-top:-34px;width:68px;height:68px;border-radius:50%;background:${C.ink};
+    display:flex;align-items:center;justify-content:center`, `<svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 26V7M7 15l9-9 9 9"/></svg>`);
+  s.ph = mk('div', 'a lbl', s.box, `left:44px;top:18px;font-size:20px;color:rgba(14,14,16,.38);text-align:left`, 'Ask anything');
+  return s;
+}, (lt, s) => {
+  const cps = 15;
+  const up = eio(seg(lt, 2.35, 2.85));
+  const shrink = seg(lt, 3.75, 4.4);
+  const y1 = lerp(cy, pick(ch*.30, ch*.27), up);
+  if (V){
+    s.l1.set(lt*cps - 3, lt, lt*cps - 3 < 10);
+    s.l1b.set((lt - .85)*cps, lt, lt*cps - 3 >= 10 && up < .5);
+    P(s.l1.el, cx, y1 - 46, { o: 1 - .5*up - .5*eo(shrink), b: eo(shrink)*8 });
+    P(s.l1b.el, cx, y1 + 46, { o: (1 - .5*up - .5*eo(shrink)) * (lt > .7 ? 1 : 0), b: eo(shrink)*8 });
+  } else {
+    s.l1.set(lt*cps - 3, lt, up < .5);
+    P(s.l1.el, cx, y1, { o: 1 - .5*up - .5*eo(shrink), b: eo(shrink)*8 });
+  }
+  // little icons pop around the words
+  const ipos = V ? [[-.36,-.18],[.38,-.14],[-.30,.16],[.36,.17],[0,-.26]] : [[-.36,-.15],[.37,-.13],[-.30,.15],[.33,.16],[.02,-.2]];
+  s.icons.forEach((ic, i) => {
+    const p = seg(lt, 1.2 + i*.13, 1.7 + i*.13), q = seg(lt, 2.3, 2.6);
+    P(ic, cx + ipos[i][0]*cw, cy + ipos[i][1]*ch + (1 - eo(p))*20, { s: bo(p)*(1 - q), o: clamp(p*3)*(1 - q), r: (1 - eo(p))*-30 });
+  });
+  // chat box
+  const bin = eo(seg(lt, 2.5, 3.0));
+  s.boxT.set((lt - 2.75)*cps, lt);
+  const sh = ci(shrink);
+  P(s.box, cx, lerp(ch*.62, pick(ch*.56, ch*.52), bin), { s: lerp(.85, 1, bin) * (1 - .92*sh), sx: lerp(.85,1,bin) * (1 - .92*sh), o: bin * (1 - sh), b: sh*6 });
+});
+
+/* 3 ─ AI has a brain. / Now it has a soul. */
+scene(10.0, 13.55, root => {
+  const s = {}, fs = pick(110, 104);
+  s.a = words(root, V ? 'AI has\na brain.' : 'AI has a brain.', null, `font-size:${fs}px`);
+  s.b = words(root, V ? 'Now it has\na soul.' : 'Now it has a soul.', null, `font-size:${fs}px`);
+  s.brain = icon(root, 'brain', pick(58, 64), C.ink);
+  s.eyes = mk('div', 'a', root, `width:${pick(78,88)}px;height:${pick(78,88)}px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a383d,#0e0e10 60%);box-shadow:0 10px 24px rgba(0,0,0,.25)`,
+    `<div style="position:absolute;left:23%;top:28%;width:18%;height:36%;border-radius:50%;background:${C.eye};box-shadow:0 0 8px ${C.eye}"></div><div style="position:absolute;right:23%;top:28%;width:18%;height:36%;border-radius:50%;background:${C.eye};box-shadow:0 0 8px ${C.eye}"></div>`);
+  s.hearts = [0,1,2].map(() => icon(root, 'heart', 30, C.amberDeep, C.amber, 2));
+  return s;
+}, (lt, s) => {
+  s.a.ws.forEach((w, i) => fw(w, eo(seg(lt, .1 + i*.14, .6 + i*.14)) - eo(seg(lt, 1.55 + i*.05, 1.85 + i*.05))));
+  P(s.a.el, cx, cy, { o: lt < 1.95 ? 1 : 0 });
+  s.b.ws.forEach((w, i) => fw(w, eo(seg(lt, 1.9 + i*.13, 2.35 + i*.13))));
+  P(s.b.el, cx, cy, { o: lt >= 1.85 ? 1 - ci(seg(lt, 3.3, 3.55)) : 0, b: seg(lt, 3.3, 3.55)*14 });
+  const soul = s.b.ws[s.b.ws.length - 1];
+  const cc = eio(seg(lt, 2.75, 3.05));
+  // ink → amber with glow
+  const rr = Math.round(lerp(14, 0xEE, cc)), gg = Math.round(lerp(14, 0x96, cc)), bb = Math.round(lerp(16, 0x2A, cc));
+  soul.style.color = `rgb(${rr},${gg},${bb})`;
+  soul.style.textShadow = cc > 0 ? `0 0 ${30*cc}px rgba(255,181,71,${.75*cc})` : 'none';
+  // pop icons
+  const bpop = bo(seg(lt, .75, 1.15)) * (1 - seg(lt, 1.5, 1.7));
+  const ar = s.a.ws[3].getBoundingClientRect();
+  const [bx, by] = loc(ar.right, ar.top);
+  P(s.brain, bx + 30, by - 10, { s: bpop, o: clamp(bpop*2), r: -12 + 12*bpop });
+  const so = soul.getBoundingClientRect();
+  const [ex, ey] = loc((so.left + so.right)/2, so.top);
+  const ep = bo(seg(lt, 2.95, 3.3));
+  P(s.eyes, ex, ey - 20, { s: ep * (1 - seg(lt, 3.35, 3.55)), o: clamp(ep*2) });
+  s.hearts.forEach((h, i) => {
+    const p = seg(lt, 3.0 + i*.08, 3.5 + i*.08);
+    P(h, ex + (i - 1)*90, ey - 30 - eo(p)*70, { s: bo(clamp(p*2)) * (1 - p*.3), o: (p > 0 ? 1 : 0)*(1 - ci(p)), r: (i - 1)*18 });
+  });
+});
+
+/* 4a ─ USE CASE: collage orbit around "It lives on your desk." */
+scene(13.5, 17.55, root => {
+  const s = {};
+  s.txt = words(root, V ? 'It lives on\nyour desk.' : 'It lives on your desk.', null, `font-size:${pick(78, 88)}px;z-index:150`);
+  const cwid = pick(250, 230), chei = pick(190, 175), cd = pick(170, 160);
+  const items = [
+    () => imgCard(root, IMG.hero, cwid, chei, 900),
+    () => { const f = face(root, cd); circCrop(f.glass, SCREEN('today'), cd); return f.el; },
+    () => imgCard(root, IMG.desk, cwid, chei, 1000),
+    () => { const f = face(root, cd); circCrop(f.glass, POSTER('boop'), cd); return f.el; },
+    () => imgCard(root, IMG.hand, chei, cwid, 700),
+    () => { const f = face(root, cd); circCrop(f.glass, SCREEN('launcher'), cd); return f.el; },
+    () => imgCard(root, IMG.family, cwid*1.3, chei, 1500),
+    () => { const f = face(root, cd); circCrop(f.glass, SCREEN('claude'), cd); return f.el; },
+    () => imgCard(root, IMG.typing, cwid, chei, 900),
+    () => { const f = face(root, cd); circCrop(f.glass, POSTER('claude_buddy'), cd); return f.el; },
+    () => imgCard(root, IMG.side, chei, cwid, 650),
+    () => { const f = face(root, cd); circCrop(f.glass, SCREEN('keyboard'), cd); return f.el; },
+    () => imgCard(root, IMG.night, cwid, chei, 900),
+  ];
+  const r = rng(5);
+  s.items = items.map(fn => ({ e: fn(), rot: (r() - .5)*14, ph: r()*6 }));
+  return s;
+}, (lt, s) => {
+  s.txt.ws.forEach((w, i) => fw(w, eo(seg(lt, .45 + i*.11, .95 + i*.11))));
+  const out = ci(seg(lt, 3.6, 4.05));
+  P(s.txt.el, cx, cy, { s: 1 + out*.15, o: 1 - out, b: out*12 });
+  const n = s.items.length, rx = pick(cw*.41, cw*.37), ry = pick(ch*.36, ch*.37);
+  s.items.forEach((it, i) => {
+    const a = i/n*Math.PI*2 + lt*.32 - .4;
+    const fin = eo(seg(lt, .0 + i*.035, .95 + i*.035));
+    const f = 1 + 1.6*(1 - fin) + 2.2*out;
+    const dz = (Math.sin(a) + 1)/2;
+    const x = cx + Math.cos(a)*rx*f, y = cy + Math.sin(a)*ry*f + Math.sin(lt*1.4 + it.ph)*6;
+    P(it.e, x, y, { s: (.74 + .3*dz) * lerp(.6, 1, fin), r: it.rot + (1 - fin)*30, o: clamp(fin*2) * (1 - out), z: Math.round(dz*100), b: (1 - dz) > .85 ? 2 : 0 });
+  });
+});
+
+/* 4b ─ desk render, push in on the device */
+scene(17.5, 19.6, root => {
+  const s = {}; s.ph = new Photo(root, IMG.desk);
+  s.cap = mk('div', 'a pill', root, `font-size:${pick(26, 30)}px;padding:14px 26px`, `<span class="glyph" style="width:14px;height:14px;background:${C.amber};box-shadow:0 0 10px ${C.amber}"></span>Always on. Never in the way.`);
+  return s;
+}, (lt, s) => {
+  const zin = eo(seg(lt, 0, .6)), push = ci(seg(lt, 1.6, 2.1));
+  const z = lerp(1.25, 1.0, zin) * lerp(1, 1.12, lt/2) * lerp(1, 5.5, push);
+  s.ph.set(z, lerp(800, 812, push), lerp(640, 628, push));
+  s.ph.el.style.opacity = 1;
+  s.ph.el.style.filter = push > .05 ? `blur(${push*10}px)` : 'none';
+  const cp = eo(seg(lt, .35, .8));
+  P(s.cap, pick(cw*.5, cw*.5), pick(ch*.86, ch*.84) + (1 - cp)*40, { o: cp * (1 - push*2), b: (1 - cp)*8 });
+});
+
+/* 4c ─ live eyes: blink, look around */
+scene(19.55, 21.55, root => {
+  const s = {}; s.f = eyesCanvas(root, pick(420, 600));
+  s.cap = words(root, 'It looks back.', null, `font-size:${pick(64, 72)}px`);
+  return s;
+}, (lt, s) => {
+  const zin = eo(seg(lt, 0, .5));
+  const look = lt < .45 ? 0 : lt < .9 ? -eo(seg(lt, .45, .6)) : lt < 1.35 ? lerp(-1, 1, eo(seg(lt, .9, 1.05))) : lerp(1, 0, eo(seg(lt, 1.35, 1.5)));
+  const blink = pulse(lt, .62, .82) + pulse(lt, 1.52, 1.68) + pulse(lt, 1.74, 1.9);
+  drawEyes(s.f.cv, { lx: look, ly: look ? .15 : 0, blink });
+  const out = ci(seg(lt, 1.85, 2.0));
+  P(s.f.el, cx, pick(cy - 50, ch*.42), { s: lerp(2.4, 1, zin) * (1 - out*.1), o: 1 - out });
+  s.cap.ws.forEach((w, i) => fw(w, eo(seg(lt, .5 + i*.12, .95 + i*.12))));
+  P(s.cap.el, cx, pick(ch*.86, ch*.80), { o: 1 - out });
+});
+
+/* 4d ─ Hold the glass. (hand render + finger-tap ripple) */
+scene(21.5, 24.55, root => {
+  const s = {}; s.ph = new Photo(root, IMG.hand);
+  s.glow = mk('div', 'a', root, `width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,240,200,.65),rgba(255,240,200,0) 65%)`);
+  s.rip = ripple(root);
+  s.txt = words(root, V ? 'Hold\nthe glass.' : 'Hold the glass.', null, `font-size:${pick(96, 104)}px;text-align:${pick('left','center')}`);
+  s.hearts = [0,1,2].map(i => icon(root, 'heart', 34, C.amberDeep, C.amber, 2));
+  return s;
+}, (lt, s) => {
+  const zin = eo(seg(lt, 0, .7));
+  s.ph.set(pick(lerp(1.45, 1.25, zin), lerp(1.3, 1.0, zin)) * lerp(1, 1.06, lt/3), pick(560, 805), pick(560, 560));
+  const [gx, gy] = s.ph.map(805, 575);
+  const tap = 1.35;
+  s.rip.set(lt - tap, gx, gy, pick(220, 260));
+  P(s.glow, gx, gy, { s: 1 + eo(seg(lt, tap, tap + .6)), o: pulse(lt, tap - .05, tap + .9) });
+  s.hearts.forEach((h, i) => { const p = seg(lt, tap + .15 + i*.1, tap + .95 + i*.1);
+    P(h, gx + (i - 1)*80 + Math.sin(p*6 + i)*10, gy - 120 - eo(p)*110, { s: bo(clamp(p*2.5)), o: (p > 0 ? 1 : 0)*(1 - ci(p)), r: (i - 1)*15 }); });
+  s.txt.ws.forEach((w, i) => fw(w, eo(seg(lt, .3 + i*.12, .8 + i*.12))));
+  const out = ci(seg(lt, 2.85, 3.05));
+  P(s.txt.el, pick(cw*.06, cx), pick(cy, ch*.105), { ax: pick(0, .5), o: 1 - out });
+});
+
+/* 4e ─ Type. Talk. Remember. (SoulOS screens) */
+scene(24.5, 27.55, root => {
+  const s = {}, d = pick(560, 640);
+  s.f = face(root, d);
+  s.scr = [circCrop(s.f.glass, SCREEN('keyboard'), d), circCrop(s.f.glass, POSTER('ai_talk'), d), circCrop(s.f.glass, SCREEN('claude'), d)];
+  s.ws = ['Type.', 'Talk.', 'Remember.'].map(t => words(root, t, null, `font-size:${pick(104, 96)}px;text-align:left`));
+  s.ic = ['kbd', 'mic', 'mem'].map(n => icon(root, n, pick(56, 54)));
+  return s;
+}, (lt, s) => {
+  const zin = eo(seg(lt, 0, .6)), out = ci(seg(lt, 2.8, 3.05));
+  P(s.f.el, pick(cw*.70, cx), pick(cy, ch*.33) + (1 - zin)*120, { s: lerp(.8, 1, zin) * (1 + lt*.015), o: zin * (1 - out), r: (1 - zin)*-8 });
+  const k = lt < 1.15 ? 0 : lt < 1.95 ? 1 : 2;
+  s.scr.forEach((e, i) => { const on = i === 0 ? 1 - seg(lt, 1.1, 1.25) : i === 1 ? seg(lt, 1.1, 1.25) - seg(lt, 1.9, 2.05) : seg(lt, 1.9, 2.05);
+    e.style.opacity = on; e.style.transform = `scale(${1 + (1 - on)*.06})`; });
+  s.ws.forEach((w, i) => {
+    const p = eo(seg(lt, .35 + i*.78, .8 + i*.78));
+    w.ws.forEach(x => fw(x, p));
+    const active = i === k;
+    w.el.style.color = active ? C.ink : 'rgba(14,14,16,.28)';
+    const y = pick(cy + (i - 1)*130, ch*.66 + i*120);
+    P(w.el, pick(cw*.08, cw*.10), y, { ax: 0, o: 1 - out });
+    const ip = bo(seg(lt, .5 + i*.78, .85 + i*.78));
+    P(s.ic[i], pick(cw*.08, cw*.10) + w.el.offsetWidth + 50, y - 6, { s: ip, o: clamp(ip*2)*(active ? 1 : .35)*(1 - out), r: (1 - ip)*40 });
+  });
+});
+
+/* 4f ─ Claude asks. You approve. (eyes wide → happy) */
+scene(27.5, 31.05, root => {
+  const s = {};
+  s.h1 = words(root, 'Claude asks.', null, `font-size:${pick(84, 84)}px`);
+  s.h2 = words(root, 'You approve.', null, `font-size:${pick(84, 84)}px;color:${C.amberDeep}`);
+  s.f = eyesCanvas(root, pick(400, 470));
+  s.bub = mk('div', 'bubble', root, `width:${pick(560, 760)}px;padding:${pick('34px 38px','38px 44px')}`);
+  s.bub.innerHTML = `<div class="lbl" style="text-align:left;font-size:${pick(18,22)}px;letter-spacing:.2em;color:${C.amberDeep};font-weight:700">YOUR CLAUDE · ASKS</div>
+    <div class="d" style="text-align:left;font-size:${pick(40,48)}px;margin:14px 0 26px;white-space:normal">Send today’s notes to Ana?</div>
+    <div style="display:flex;gap:16px"><span class="btn" style="padding:16px 30px;font-size:${pick(24,28)}px;background:#F2EEE7">Not now</span>
+    <span class="btn appr" style="padding:16px 34px;font-size:${pick(24,28)}px;background:${C.ink};color:${C.cream}">Approve</span></div>`;
+  s.appr = s.bub.querySelector('.appr');
+  s.rip = ripple(root, 'rgba(255,181,71,.9)');
+  s.check = icon(root, 'check', 44, C.ink, 'none', 3.6);
+  return s;
+}, (lt, s) => {
+  const out = ci(seg(lt, 3.3, 3.55));
+  const tap = 1.75;
+  s.h1.ws.forEach((w, i) => fw(w, eo(seg(lt, .1 + i*.12, .55 + i*.12))));
+  s.h2.ws.forEach((w, i) => fw(w, eo(seg(lt, tap + .1 + i*.12, tap + .55 + i*.12))));
+  const fx = pick(cw*.27, cx), fy = pick(ch*.55, ch*.43);
+  const bx = pick(cw*.68, cx), by = pick(ch*.56, ch*.76);
+  if (V){
+    P(s.h1.el, cx, ch*.10, { o: 1 - out }); P(s.h2.el, cx, ch*.17, { o: 1 - out });
+  } else {
+    P(s.h1.el, cw*.36, ch*.14, { o: 1 - out }); P(s.h2.el, cw*.68, ch*.14, { o: 1 - out });
+  }
+  const zin = eo(seg(lt, 0, .5));
+  P(s.f.el, fx, fy, { s: lerp(.7, 1, zin) * (1 + .04*pulse(lt, tap, tap + .4)), o: zin*(1 - out) });
+  const bin = eo(seg(lt, .55, 1.0));
+  P(s.bub, bx, by + (1 - bin)*50, { s: lerp(.92, 1, bin), o: bin*(1 - out), b: (1 - bin)*8 });
+  // eyes: look at the bubble → wide when it asks → happy after approve
+  const wide = eo(seg(lt, .75, 1.0)) * (1 - eo(seg(lt, tap + .1, tap + .3)));
+  const happy = eo(seg(lt, tap + .15, tap + .4));
+  const look = V ? 0 : eo(seg(lt, .4, .7)) * (1 - happy);
+  drawEyes(s.f.cv, { lx: look*.9, ly: V ? eo(seg(lt, .4, .7))*(1 - happy)*.8 : .1*look, wide, happy, blush: happy, blink: pulse(lt, 1.25, 1.4) });
+  // tap the Approve button
+  const ar = s.appr.getBoundingClientRect();
+  const [ax, ay] = loc(ar.left + ar.width/2, ar.top + ar.height/2);
+  s.rip.set(lt - tap, ax, ay, 150);
+  s.appr.style.transform = `scale(${1 - .08*pulse(lt, tap - .1, tap + .2)})`;
+  s.appr.style.background = lt > tap ? C.amberDeep : C.ink;
+  const cp = bo(seg(lt, tap + .2, tap + .55));
+  P(s.check, ax + pick(120, 140), ay, { s: cp, o: clamp(cp*2)*(1 - out) });
+});
+
+/* 5 ─ Works with the AI you already have */
+scene(31.0, 34.05, root => {
+  const s = {};
+  s.h = words(root, 'Works with the AI\nyou already have.', null, `font-size:${pick(92, 86)}px`);
+  const defs = [
+    ['No AI', '#ECE6DE', 'slash', 'rgba(14,14,16,.55)', 'none'],
+    ['Claude', '#FFE2B8', 'star', C.amberDeep, 'none'],
+    ['ChatGPT', C.ink, 'hex', '#fff', 'none'],
+    ['Your key', '#F2EEE7', 'key', C.ink, 'none'],
+  ];
+  s.pills = defs.map(([t, bg, ic, col, fill]) => {
+    const fs = pick(40, 44), g = fs*1.25;
+    const p = mk('div', 'pill', root, `font-size:${fs}px;padding:${fs*.42}px ${fs*.75}px ${fs*.42}px ${fs*.42}px`);
+    const gl = mk('span', 'glyph', p, `width:${g}px;height:${g}px;background:${bg}`);
+    gl.innerHTML = `<svg viewBox="0 0 32 32" width="${g*.62}" height="${g*.62}" fill="${fill}" stroke="${col}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[ic]}</svg>`;
+    mk('span', null, p, null, t);
+    return p;
+  });
+  s.sub = mk('div', 'a lbl', root, `font-size:${pick(28, 32)}px;color:rgba(14,14,16,.55)`, 'Switch any time. Your data stays yours.');
+  return s;
+}, (lt, s) => {
+  const out = ci(seg(lt, 2.8, 3.05));
+  s.h.ws.forEach((w, i) => fw(w, eo(seg(lt, .05 + i*.07, .5 + i*.07))));
+  P(s.h.el, cx, pick(ch*.30, ch*.28), { o: 1 - out, b: out*10 });
+  const pos = V ? [[-.25, .50], [.25, .50], [-.25, .62], [.25, .62]] : [[-.345, .64], [-.12, .64], [.12, .64], [.345, .64]];
+  s.pills.forEach((p, i) => {
+    const q = bo(seg(lt, .8 + i*.2, 1.2 + i*.2));
+    const fl = Math.sin(lt*2 + i)*4;
+    P(p, cx + pos[i][0]*cw, pos[i][1]*ch + fl, { s: q*(1 - out*.2), o: clamp(q*3)*(1 - out), r: (1 - clamp(q))*(i % 2 ? 10 : -10) });
+  });
+  const sp = eo(seg(lt, 1.9, 2.3));
+  P(s.sub, cx, pick(ch*.82, ch*.76) + (1 - sp)*20, { o: sp*(1 - out) });
+});
+
+/* 6a ─ Family: five colours slide in */
+scene(34.0, 37.05, root => {
+  const s = {};
+  s.bg = mk('div', 'a', root, `width:${cw}px;height:${ch}px;background:linear-gradient(180deg,#DCCDC0 0%,#E6DCD2 45%,#F2ECE6 75%,#EAE3DC 100%)`);
+  s.h = words(root, V ? 'Five colours.\nOne soul.' : 'Five colours. One soul.', null, `font-size:${pick(84, 88)}px`);
+  const X = [[134,430],[478,778],[847,1152],[1220,1520],[1571,1864]];
+  const names = ['Graphite', 'Ember', 'Silver', 'Midnight', 'Champagne'];
+  const k = pick(.78, .78);
+  s.dev = X.map(([a, b], i) => {
+    const x0 = a - 34, x1 = b + 34, y0 = 330, y1 = 800, w = (x1 - x0)*k, h = (y1 - y0)*k;
+    const e = mk('div', 'a', root, `width:${w}px;height:${h}px;background-image:url(${IMG.family.src});background-size:${2000*k}px ${1125*k}px;
+      background-position:${-x0*k}px ${-y0*k}px;-webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 70%,transparent 100%);mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 70%,transparent 100%)`);
+    const l = mk('div', 'a lbl', root, `font-size:${pick(24, 28)}px;color:rgba(14,14,16,.7)`, names[i]);
+    return { e, l, h };
+  });
+  return s;
+}, (lt, s) => {
+  const out = ci(seg(lt, 2.85, 3.05));
+  s.bg.style.opacity = 1 - out;
+  s.h.ws.forEach((w, i) => fw(w, eo(seg(lt, .2 + i*.1, .65 + i*.1))));
+  P(s.h.el, cx, pick(ch*.15, ch*.12), { o: 1 - out });
+  s.dev.forEach((d, i) => {
+    const p = eo(seg(lt, .1 + i*.11, .85 + i*.11));
+    let x, y;
+    if (V){ const row = i < 3 ? 0 : 1; x = row ? cx + (i - 3.5)*310 : cx + (i - 1)*300; y = row ? ch*.70 : ch*.40; }
+    else { x = cx + (i - 2)*305; y = ch*.55; }
+    x += (1 - p)*cw*1.1 + Math.sin(lt*1.2 + i)*3;
+    P(d.e, x, y + Math.sin(lt*1.6 + i*1.3)*5, { s: 1 + lt*.01, o: clamp(p*2)*(1 - out), r: (1 - p)*12 });
+    const lp = eo(seg(lt, .7 + i*.08, 1.1 + i*.08));
+    P(d.l, x, y + d.h*.5 + 10, { o: lp*(1 - out) });
+  });
+});
+
+/* 6b ─ OU night: Sleeps in its egg. */
+scene(37.0, 39.6, root => {
+  const s = {};
+  s.bk = mk('div', 'a', root, `width:${cw}px;height:${ch}px;background:#050404`);
+  s.ph = new Photo(root, IMG.night);
+  s.txt = words(root, V ? 'Sleeps in its egg.' : 'Sleeps in\nits egg.', null, `font-size:${pick(100, 84)}px;color:${C.cream};text-align:${pick('left','center')}`);
+  s.sub = mk('div', 'a lbl', root, `font-size:${pick(26, 30)}px;color:rgba(242,238,231,.6);letter-spacing:.04em;line-height:1.45;text-align:${pick('left','center')}`, V ? 'Charges in OU, its capsule. Night light included.' : 'Charges in OU, its capsule.<br>Night light included.');
+  s.z = [0,1,2].map(i => mk('div', 'a d', root, `font-size:${34 - i*6}px;color:${C.amber};font-weight:700`, 'z'));
+  return s;
+}, (lt, s) => {
+  const fin = eo(seg(lt, 0, .5)), out = ci(seg(lt, 2.35, 2.6));
+  s.bk.style.opacity = fin;
+  s.ph.set(lerp(1.0, 1.12, lt/2.6) * pick(1, 1), 776, pick(560, 616));
+  s.ph.el.style.opacity = fin * (1 - out);
+  s.txt.ws.forEach((w, i) => fw(w, eo(seg(lt, .35 + i*.12, .8 + i*.12))));
+  P(s.txt.el, pick(cw*.06, cx), pick(ch*.44, ch*.80), { ax: pick(0, .5), o: 1 - out });
+  const sp = eo(seg(lt, 1.0, 1.4));
+  P(s.sub, pick(cw*.06, cx), pick(ch*.66, ch*.86), { ax: pick(0, .5), o: sp*(1 - out) });
+  const [gx, gy] = s.ph.map(840, 450);
+  s.z.forEach((z, i) => { const p = ((lt - .6 - i*.35) / 1.4); const q = clamp(p);
+    P(z, gx + i*34 + Math.sin(q*5)*8, gy - 60 - q*120 - i*30, { o: (p > 0 && p < 1 ? Math.sin(q*Math.PI) : 0)*(1 - out) }); });
+});
+
+/* 7a ─ CTA: S o u l letters spread with guide lines */
+scene(39.5, 42.1, root => {
+  const s = {}, fs = pick(300, 250);
+  s.fs = fs;
+  s.L = 'Soul'.split('').map(c => mk('div', 'a d', root, `font-size:${fs}px;font-weight:600;letter-spacing:0;line-height:1`, c));
+  s.vl = []; s.hl = []; s.hd = [];
+  for (let i = 0; i < 8; i++) s.vl.push(mk('div', 'line', root, `width:1.5px;height:${ch}px`));
+  for (let i = 0; i < 2; i++) s.hl.push(mk('div', 'line', root, `height:1.5px;width:${cw}px`));
+  for (let i = 0; i < 8; i++) s.hd.push(mk('div', 'hnd', root));
+  s.wm = null;
+  return s;
+}, (lt, s) => {
+  if (!s.w) s.w = s.L.map(l => l.offsetWidth);
+  const tot = s.w.reduce((a, b) => a + b, 0);
+  const sp = eio(seg(lt, .45, 1.35)), out = ci(seg(lt, 2.2, 2.6));
+  const spread = pick([-250, -70, 70, 250], [-150, -45, 45, 150]);
+  let x0 = cx - tot/2;
+  const base = cy + s.fs*.36, xh = base - s.fs*.52;
+  const lin = eo(seg(lt, .25, .9));
+  s.L.forEach((l, i) => {
+    const c = x0 + s.w[i]/2 + spread[i]*sp; x0 += s.w[i];
+    const p = eo(seg(lt, i*.06, .45 + i*.06));
+    P(l, c, cy, { o: p*(1 - out), b: (1 - p)*16 + out*20, s: 1 + out*.4, sy: (1 + out*.4) });
+    // guide lines at the left/right edge of each glyph
+    [c - s.w[i]/2, c + s.w[i]/2].forEach((gx, j) => {
+      const k = i*2 + j;
+      P(s.vl[k], gx, cy, { sy: lin, o: .9*(1 - out) });
+      P(s.hd[k], gx, base, { s: eo(seg(lt, .6 + k*.03, .9 + k*.03)), o: (1 - out) });
+    });
+  });
+  P(s.hl[0], cx, base, { sx: lin, o: 1 - out }); P(s.hl[1], cx, xh, { sx: lin, o: .7*(1 - out) });
+});
+
+/* 7b/c ─ logo reveal on warm clouds → price + waitlist */
+scene(41.85, 46.95, root => {
+  const s = {};
+  s.cv = mk('canvas', 'lo', root, `width:${cw}px;height:${ch}px`); s.cv.width = Math.round(cw/4); s.cv.height = Math.round(ch/4);
+  s.flash = mk('div', 'a', root, `width:${cw}px;height:${ch}px;background:#FFFAF3`);
+  s.wm = wordmark(root, pick(640, 600), false);
+  s.tag = mk('div', 'a lbl', root, `font-size:${pick(32, 36)}px;color:rgba(14,14,16,.7)`, 'Your AI, with a soul.');
+  s.price = words(root, 'From €249', null, `font-size:${pick(104, 108)}px`);
+  s.cta = mk('div', 'a pill', root, `font-size:${pick(38, 42)}px;padding:22px 40px;background:${C.ink};color:${C.cream};font-weight:600`,
+    `Join the waitlist <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="${C.amber}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16h20M18 8l8 8-8 8"/></svg>`);
+  s.rip = ripple(root, 'rgba(255,181,71,.95)');
+  return s;
+}, (lt, s, t) => {
+  drawClouds(s.cv, t);
+  const cin = seg(lt, .0, .55);
+  s.flash.style.opacity = 1 - eo(cin);
+  s.cv.style.transform = `scale(${lerp(1.15, 1.0, eo(cin)) + lt*.01})`;
+  const wp = eo(seg(lt, .3, 1.15));
+  const mv = eio(seg(lt, 2.65, 3.15));
+  const wy = lerp(cy - pick(20, 40), pick(ch*.27, ch*.30), mv);
+  P(s.wm, cx, wy, { s: lerp(1.18, 1, wp) * lerp(1, .78, mv), o: clamp(wp*1.4), b: (1 - wp)*24 });
+  s.wm.eyes.style.transform = `scaleY(${1 - .9*(pulse(lt, 1.7, 1.86) + pulse(lt, 3.9, 4.05))})`;
+  const tp = eo(seg(lt, 1.1, 1.5));
+  P(s.tag, cx, cy + pick(115, 125) + (1 - tp)*20, { o: tp*(1 - seg(lt, 2.55, 2.75)) });
+  s.price.ws.forEach((w, i) => fw(w, eo(seg(lt, 2.85 + i*.12, 3.3 + i*.12))));
+  P(s.price.el, cx, pick(ch*.54, ch*.52));
+  const cp = bo(seg(lt, 3.35, 3.75));
+  const ctaY = pick(ch*.75, ch*.68), tap = 4.1;
+  P(s.cta, cx, ctaY, { s: cp * (1 - .07*pulse(lt, tap - .1, tap + .2)), o: clamp(cp*3) });
+  s.rip.set(lt - tap, cx + pick(150, 160), ctaY, 170);
+});
+
+/* 7d ─ dark end card */
+scene(46.5, T_END + .1, root => {
+  const s = {};
+  s.bk = mk('div', 'a', root, `width:${cw}px;height:${ch}px;background:radial-gradient(ellipse 70% 60% at 50% 45%,#1C1716 0%,#0E0E10 70%)`);
+  s.wm = wordmark(root, pick(560, 560), true);
+  s.d = mk('div', 'a lbl', root, `font-size:${pick(30, 34)}px;color:rgba(242,238,231,.62);letter-spacing:.04em`, 'Designed in Romania.');
+  s.glow = mk('div', 'a', root, `width:700px;height:300px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,181,71,.18),rgba(255,181,71,0) 70%)`);
+  return s;
+}, (lt, s) => {
+  const fin = eo(seg(lt, 0, .45));
+  s.bk.style.opacity = fin;
+  const wp = eo(seg(lt, .25, 1.0));
+  P(s.glow, cx, cy - 10, { o: wp });
+  P(s.wm, cx, cy - 30, { s: lerp(1.1, 1, wp) * (1 + lt*.008), o: wp, b: (1 - wp)*18 });
+  s.wm.eyes.style.transform = `scaleY(${1 - .9*pulse(lt, 1.55, 1.72)})`;
+  const dp = eo(seg(lt, .8, 1.3));
+  P(s.d, cx, cy + pick(105, 115) + (1 - dp)*16, { o: dp });
+});
+
+/* ───────────────────────── chrome: frame, chapter bar, ruler ───────────────────────── */
+const stage = document.getElementById('stage'), card = document.getElementById('card'), bar = document.getElementById('bar');
+const ruler = document.getElementById('ruler'), cgi = document.getElementById('cgi');
+let tabs = [], ind;
+function setup(){
+  stage.style.width = W + 'px'; stage.style.height = H + 'px';
+  fbg.width = Math.round(W/8); fbg.height = Math.round(H/8);
+  Object.assign(card.style, { left: L.card.x+'px', top: L.card.y+'px', width: cw+'px', height: ch+'px', borderRadius: L.card.r+'px' });
+  cbg.width = Math.round(cw/4); cbg.height = Math.round(ch/4);
+  scenesEl.style.width = cw + 'px'; scenesEl.style.height = ch + 'px';
+  const tl = document.getElementById('toplogo');
+  const lw = L.logo.h * 489.04/144.35;
+  const wm = wordmark(tl, lw, true); wm.style.position = 'relative';
+  tl.style.transform = `translate(${W/2 - lw/2}px,${L.logo.y}px)`;
+  bar.style.cssText += `;left:${L.bar.x}px;top:${L.bar.y}px;width:${L.bar.w}px;height:${L.bar.h}px`;
+  const tw = (L.bar.w - 3*L.bar.gap)/4;
+  ind = mk('div', null, bar); ind.id = 'ind'; ind.style.width = tw + 'px'; ind.style.height = L.bar.h + 'px';
+  tabs = CHAPTERS.map(([n], i) => { const e = mk('div', 'tab', bar, `left:${i*(tw + L.bar.gap)}px;width:${tw}px;height:${L.bar.h}px;font-size:${L.bar.fs}px`);
+    const sp = mk('span', null, e, null, n); return { e, sp, x: i*(tw + L.bar.gap), w: tw }; });
+  ruler.width = L.ruler.w; ruler.height = L.ruler.h;
+  ruler.style.transform = `translate(${L.ruler.x}px,${L.ruler.y}px)`;
+  cgi.style.cssText += `;font-size:${L.cgi.fs}px;color:rgba(255,236,214,.55);transform:translate(${L.cgi.x}px,${L.cgi.y}px) translate(-100%,-50%)`;
+  cgi.textContent = 'Product images: concept renders (CGI)';
+  const fade = document.getElementById('fade'); fade.style.width = W + 'px'; fade.style.height = H + 'px';
+  SCENES.forEach(sc => { sc.root = mk('div', 'root', scenesEl, `width:${cw}px;height:${ch}px`); sc.st = sc.build(sc.root); sc.root.style.display = 'none'; });
+}
+function drawRuler(t){
+  const x = ruler.getContext('2d'), w = ruler.width, h = ruler.height, n = Math.floor(w/11);
+  x.clearRect(0, 0, w, h);
+  const prog = t / T_END;
+  for (let i = 0; i <= n; i++){
+    const u = i/n, done = u <= prog, major = i % 10 === 0;
+    x.fillStyle = done ? 'rgba(255,244,230,.95)' : 'rgba(255,236,214,.35)';
+    const th = major ? h*.75 : h*.42;
+    x.fillRect(Math.round(u*(w - 2)), h - th, 2, th);
+  }
+  const px = prog*(w - 4);
+  x.fillStyle = C.amber; x.shadowColor = C.amber; x.shadowBlur = 8; x.fillRect(px, 0, 3, h); x.shadowBlur = 0;
+}
+function chapterAt(t){ let c = 0; CHAPTERS.forEach(([, a], i) => { if (t >= a) c = i; }); return c; }
+function drawBar(t){
+  const c = chapterAt(t), prev = Math.max(0, c - 1), p = eo(seg(t, CHAPTERS[c][1], CHAPTERS[c][1] + .55));
+  const x = c === 0 ? tabs[0].x : lerp(tabs[prev].x, tabs[c].x, p);
+  ind.style.transform = `translateX(${x}px)`;
+  tabs.forEach(tb => { const ov = clamp((Math.min(x + tb.w, tb.x + tb.w) - Math.max(x, tb.x)) / tb.w);
+    tb.sp.style.color = ov > .5 ? C.cream : C.ink; tb.sp.style.opacity = ov > .5 ? 1 : .8; });
+  // intro: bar slides up
+  const bin = eo(seg(t, .2, .9));
+  bar.style.transform = `translate(${L.bar.x}px,${L.bar.y + (1 - bin)*40}px)`; bar.style.left = '0'; bar.style.top = '0'; bar.style.opacity = bin;
+}
+
+/* ───────────────────────── render(t) ───────────────────────── */
+window.render = function(t){
+  drawFrameBg(t);
+  drawCardBg(t);
+  const cin = eo(seg(t, 0, .8));
+  card.style.transform = `scale(${lerp(.93, 1, cin)})`; card.style.opacity = clamp(cin*1.5);
+  for (const sc of SCENES){
+    const on = t >= sc.a && t < sc.b;
+    sc.root.style.display = on ? '' : 'none';
+    if (!on) continue;
+    const lt = t - sc.a, dur = sc.b - sc.a;
+    // constant subtle push-in + a small punch on each cut
+    const s = 1 + .028*(1 - eo(seg(lt, 0, .45))) + .018*(lt/dur);
+    sc.root.style.transform = `scale(${s})`; CUR_S = s;
+    sc.upd(lt, sc.st, t);
+  }
+  drawBar(t); drawRuler(t);
+  document.getElementById('fade').style.opacity = ci(seg(t, 48.2, T_END));
+  return true;
+};
+window.T_END = T_END; window.LAYOUT = { W, H };
+
+/* ───────────────────────── boot ───────────────────────── */
+window.READY = false;
+(async () => {
+  setup();
+  await document.fonts.load("600 80px 'Bricolage Grotesque'"); await document.fonts.load("500 30px 'DM Sans'"); await document.fonts.ready;
+  const srcs = new Set();
+  document.querySelectorAll('img').forEach(i => srcs.add(i.src));
+  document.querySelectorAll('div').forEach(d => { const m = /url\("?([^")]+)"?\)/.exec(d.style.backgroundImage || ''); if (m) srcs.add(m[1]); });
+  await Promise.all([...srcs].map(s => { const im = new Image(); im.src = s; return im.decode().catch(() => console.warn('img fail', s)); }));
+  render(0);
+  window.READY = true;
+  if (Q.get('play')){ const t0 = performance.now(); const loop = () => { render(((performance.now() - t0)/1000) % T_END); requestAnimationFrame(loop); }; loop(); }
+  else if (Q.get('t')) render(parseFloat(Q.get('t')));
+})();
+</script>
+</body>
+</html>
