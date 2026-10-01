@@ -77,7 +77,20 @@ const LAYOUTS = {
 const L = V ? LAYOUTS.v : LAYOUTS.h;
 const W = L.W, H = L.H, cw = L.card.w, ch = L.card.h, cx = cw/2, cy = ch/2;
 const pick = (h, v) => V ? v : h;
-const T_END = 49;
+const T_END = 49;              // authoring timeline (scenes below are written in these seconds)
+/* Beat-grid re-cut (v3): the music bed runs at ~137 BPM (beat = 7.004 s / 16). The authoring timeline is
+   time-warped piecewise-linearly so every scene cut lands on a beat of the edited track. WARP_OLD are
+   authoring-time cut points, WARP_BEATS the beat each one lands on in the final video. audio.py uses the
+   same table to place SFX and hits. */
+const BEAT = 7.004 / 16;
+const WARP_OLD   = [0, 5.5, 10.0, 13.5, 17.5, 19.55, 21.5, 24.5, 27.5, 31.0, 34.0, 37.0, 39.5, 42.0, 46.5, 49.0];
+const WARP_BEATS = [0, 12,  20,   28,   36,   40,    44,   50,   56,   64,   70,   76,   82,   88,   96,   102];
+const WARP_NEW = WARP_BEATS.map(b => b * BEAT);
+const T_OUT = WARP_NEW[WARP_NEW.length - 1];   // final video length (≈44.65 s)
+function warp(tn){ // final-video time → authoring time
+  for (let i = 1; i < WARP_NEW.length; i++) if (tn <= WARP_NEW[i] || i === WARP_NEW.length - 1)
+    return WARP_OLD[i-1] + (WARP_OLD[i] - WARP_OLD[i-1]) * (tn - WARP_NEW[i-1]) / (WARP_NEW[i] - WARP_NEW[i-1]);
+}
 
 /* ───────────────────────── palette ───────────────────────── */
 const C = { ink:'#0E0E10', cream:'#F2EEE7', eye:'#FFF0C8', amber:'#FFB547', amberDeep:'#EE8F1F' };
@@ -838,7 +851,8 @@ function setup(){
   SCENES.forEach(sc => { sc.root = mk('div', 'root', scenesEl, `width:${cw}px;height:${ch}px`); sc.st = sc.build(sc.root); sc.root.style.display = 'none'; });
 }
 /* ───────────────────────── render(t) ───────────────────────── */
-window.render = function(t){
+window.render = function(tn){
+  const t = Math.min(T_END, warp(tn));
   drawFrameBg(t);
   drawCardBg(t);
   const cin = eo(seg(t, 0, .8));
@@ -856,7 +870,7 @@ window.render = function(t){
   document.getElementById('fade').style.opacity = ci(seg(t, 48.2, T_END));
   return true;
 };
-window.T_END = T_END; window.LAYOUT = { W, H };
+window.T_END = T_OUT; window.WARP = { BEAT, WARP_OLD, WARP_BEATS }; window.LAYOUT = { W, H };
 
 /* ───────────────────────── boot ───────────────────────── */
 window.READY = false;
@@ -869,7 +883,7 @@ window.READY = false;
   await Promise.all([...srcs].map(s => { const im = new Image(); im.src = s; return im.decode().catch(() => console.warn('img fail', s)); }));
   render(0);
   window.READY = true;
-  if (Q.get('play')){ const t0 = performance.now(); const loop = () => { render(((performance.now() - t0)/1000) % T_END); requestAnimationFrame(loop); }; loop(); }
+  if (Q.get('play')){ const t0 = performance.now(); const loop = () => { render(((performance.now() - t0)/1000) % T_OUT); requestAnimationFrame(loop); }; loop(); }
   else if (Q.get('t')) render(parseFloat(Q.get('t')));
 })();
 </script>

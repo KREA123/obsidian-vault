@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""SOUL trailer soundtrack (v2): Kokoro voice-over + licensed music bed + synthesized trailer layer and SFX.
+"""SOUL trailer soundtrack (v3): licensed music bed + synthesized trailer layer and SFX, text-only (no VO).
 
-- Voice: Kokoro-82M (hexgrad/Kokoro-82M, Apache-2.0), voice am_michael, speed 0.9.
 - Music bed: "Sci-Fi Score" by Arulo, Mixkit (Mixkit Stock Music Free License: commercial use, no
   attribution required). See MUSIC-LICENSE.md. The mp3 is downloaded at build time and not committed
   (the licence forbids redistributing it as a standalone file).
-- Trailer layer (braams, impacts, sub drops, risers, reversed cymbals) and UI SFX are synthesized here.
-- Mix: music ducked under the voice, loudnorm to -14 LUFS / -2 dBTP, AAC 192k into both mp4s.
+- Trailer layer (braams, impacts, sub drops, risers, reversed cymbals, toms) and UI SFX are synthesized here.
+- Optional voice: VOICE_FILE=/path/to/voice.wav (any rate/channels, already timed to the video from 0 s,
+  e.g. recorded against voiceover_script.md) is EQ'd/compressed and mixed in with the music ducked under it.
+- Loudnorm to -14 LUFS / -2 dBTP, AAC 192k into both mp4s. Also writes voiceover_script.md.
 
-The cue times mirror soul_trailer.html (T_END = 49 s).
-usage: python3 audio.py      env: AUDIO_TMP (scratch dir)
+Timing: cues below are written in the authoring timeline of soul_trailer.html (0-49 s) and mapped through
+the same beat-grid warp (WARP_OLD -> WARP_BEATS) that the page uses, so every cut sits on a beat.
+usage: python3 audio.py      env: AUDIO_TMP (scratch dir), VOICE_FILE (optional), NO_MUX (skip muxing)
 """
 import os, json, wave, subprocess, pathlib, re, urllib.request
 import numpy as np
@@ -18,34 +20,43 @@ from scipy.signal import butter, sosfilt, fftconvolve, resample_poly, iirnotch, 
 HERE = pathlib.Path(__file__).resolve().parent
 TMP = pathlib.Path(os.environ.get('AUDIO_TMP', '/tmp/soul_audio')); TMP.mkdir(parents=True, exist_ok=True)
 SR = 48000
-T_END = 49.0
-N = int(SR * T_END)
 rng = np.random.default_rng(7)
 
-MUSIC_URL = 'https://assets.mixkit.co/music/464/464.mp3'   # "Sci-Fi Score" by Arulo (Mixkit), key ≈ A, ~137 BPM
-# music edit: (video start, track start, video end). Quiet intro under Intro/Problem, the drive kicks in
-# exactly on the Use-case cut (13.5 s), a half-second stop-down before the reveal, then the drop at 42.0 s
-# lands on a phrase downbeat of the track (44.70 s), and everything stops on the final hit at 46.5 s.
-MUSIC_EDIT = [(0.0, 0.5, 41.5), (42.0, 44.70, 46.5)]
+# ── beat grid / time warp (must match soul_trailer.html) ──
+BEAT = 7.004 / 16                       # track tempo ≈ 137.07 BPM; a 16-beat phrase = 7.004 s
+WARP_OLD   = [0, 5.5, 10.0, 13.5, 17.5, 19.55, 21.5, 24.5, 27.5, 31.0, 34.0, 37.0, 39.5, 42.0, 46.5, 49.0]
+WARP_BEATS = [0, 12,  20,   28,   36,   40,    44,   50,   56,   64,   70,   76,   82,   88,   96,   102]
+WARP_NEW = [b * BEAT for b in WARP_BEATS]
+def nt(t_old): return float(np.interp(t_old, WARP_OLD, WARP_NEW))   # authoring time -> video time
+T_END = WARP_NEW[-1]                    # ≈ 44.65 s
+N = int(round(SR * T_END))
 
-KOKORO_VOICE, KOKORO_SPEED = 'am_michael', 0.9
-# ───────────────────────── voice-over cues (start s, text, max length s) ─────────────────────────
-VO = [
-    (1.30,  "Meet Soul.", 3.2),
-    (5.80,  "Every day, you talk to AI...", 2.4),
-    (8.30,  "In a chat box.", 1.6),
-    (10.20, "AI has a brain.", 1.75),
-    (12.00, "Now, it has a soul.", 1.5),
-    (14.10, "It lives on your desk.", 3.2),
-    (21.90, "Hold the glass.", 2.4),
-    (24.85, "Type. Talk. Remember.", 2.6),
-    (27.70, "Claude asks.", 1.55),
-    (29.30, "You approve.", 1.6),
-    (31.20, "Works with the AI you already have.", 2.7),
-    (37.45, "Sleeps in its egg.", 2.0),
-    (42.45, "Soul.", 1.5),
-    (44.70, "From two hundred forty-nine euros.", 2.25),
-    (47.00, "Join the waitlist.", 1.2),
+MUSIC_URL = 'https://assets.mixkit.co/music/464/464.mp3'   # "Sci-Fi Score" by Arulo (Mixkit), key ≈ A
+TRACK_DOWNBEAT = 16.682                 # a phrase downbeat in the track where the drive is already going
+# music edit (video start, track start, video end), all on the beat grid: full energy from frame 0,
+# one-beat stop-down before the logo reveal (beat 88), the drop lands on a later phrase downbeat,
+# and the bed stops on the end-card hit (beat 96).
+MUSIC_EDIT = [(0.0, TRACK_DOWNBEAT, 87 * BEAT), (88 * BEAT, TRACK_DOWNBEAT + 6 * 7.004, 96 * BEAT)]
+
+# ── on-screen lines (authoring time, text) → voiceover_script.md for a future recorded voice ──
+LINES = [
+    (1.30, 5.3, "Meet Soul.", "SOUL title"),
+    (5.80, 8.1, "Every day, you talk to AI…", "typewriter line"),
+    (8.30, 9.9, "…in a chat box.", "typed into the chat box"),
+    (10.20, 11.8, "AI has a brain.", ""),
+    (12.00, 13.4, "Now it has a soul.", "'soul' turns amber"),
+    (14.10, 17.3, "It lives on your desk.", "collage orbit"),
+    (19.80, 21.4, "It looks back.", "live eyes blink"),
+    (21.90, 24.4, "Hold the glass.", "finger-tap ripple"),
+    (24.85, 27.4, "Type. Talk. Remember.", "one word per beat"),
+    (27.70, 29.2, "Claude asks.", ""),
+    (29.30, 30.9, "You approve.", "after the Approve tap"),
+    (31.20, 33.9, "Works with the AI you already have.", "No AI · Claude · ChatGPT · Your key"),
+    (34.20, 36.9, "Five colours. One soul.", ""),
+    (37.45, 39.4, "Sleeps in its egg.", "night shot"),
+    (42.45, 44.4, "Soul. Your AI, with a soul.", "logo reveal on the drop"),
+    (44.70, 46.4, "From €249.", "say: from two hundred forty-nine euros"),
+    (47.00, 48.2, "Join the waitlist. Designed in Romania.", "end card"),
 ]
 
 # ───────────────────────── helpers ─────────────────────────
@@ -84,6 +95,8 @@ def reverb(x, wet=.3):
     y = np.stack([fftconvolve(x[:, c], IR[:, c])[:len(x)] for c in range(2)], 1)
     return x + wet * y
 def db(x): return 10 ** (x / 20)
+def addo(bus, x, t_old): add(bus, x, nt(t_old))   # place at an authoring-timeline time
+def addend(bus, x, t_new_end): add(bus, x, t_new_end - len(x) / SR)   # place so it ends exactly at a video time
 
 # ───────────────────────── music bed (licensed track, edited) ─────────────────────────
 def load_track():
@@ -96,21 +109,19 @@ def load_track():
     return np.frombuffer(b, np.float32).reshape(-1, 2).astype(np.float64)
 
 def make_bed():
-    tr = load_track(); bed = np.zeros((N, 2)); fade = int(.012 * SR)
+    tr = load_track(); bed = np.zeros((N, 2)); fade = int(.004 * SR)
     b, a = iirnotch(14048, 30, SR); tr = filtfilt(b, a, tr, axis=0)      # tame a steady 14 kHz whine in the source
     for v0, s0, v1 in MUSIC_EDIT:
         seg = tr[t2i(s0):t2i(s0) + t2i(v1 - v0)].copy()
         seg[:fade] *= np.linspace(0, 1, fade)[:, None]; seg[-fade:] *= np.linspace(1, 0, fade)[:, None]
         add(bed, seg, v0)
-    # dynamics automation: fade in, sit lower under the dark night shot, filter-close into the stop-down
-    g = np.interp(np.arange(N) / SR, [0, 1.2, 13.4, 13.5, 36.9, 37.1, 39.4, 41.5, 42.0, 49],
-                  [0, .6, .6, 1, 1, .7, .7, .9, 1, 1])
+    # dynamics: full from frame 0; dip slightly under the night shot, filter-close into the stop-down
+    g = np.interp(np.arange(N) / SR, [0, nt(36.9), nt(37.1), nt(39.4), 87 * BEAT, 88 * BEAT, T_END],
+                  [1, 1, .75, .75, .9, 1, 1])
     bed *= g[:, None]
-    i0, i1 = t2i(37.0), t2i(41.5)          # low-pass sweep closing over the night shot + build
+    i0, i1 = t2i(nt(37.0)), t2i(87 * BEAT)  # low-pass sweep closing over the night shot + S o u l build
     dark = lp(bed[i0:i1], 900, 2); w = np.linspace(0, 1, i1 - i0)[:, None] ** .7
     bed[i0:i1] = bed[i0:i1] * (1 - w) + dark * w
-    # last hit at 46.5: cut the bed with a short ring-out
-    j = t2i(46.5); bed[j:] = 0
     return bed
 
 # ───────────────────────── trailer layer (synthesized) ─────────────────────────
@@ -147,17 +158,17 @@ def revcym(d=1.3, gain=.35):
 
 def make_trailer_layer():
     s = np.zeros((N, 2))
-    add(s, impact(.2, 48, .15), 0.15)                     # card opens
-    add(s, impact(.28, 45, .2), 5.5)                      # Problem
-    add(s, swell(1.5, .55), 10.5); add(s, revcym(1.2, .3), 10.75)
-    add(s, impact(.5), 11.95)                             # "Now it has a soul"
-    add(s, revcym(1.0, .4), 12.5); add(s, braam(3.0, .75), 13.5); add(s, impact(.8), 13.5)   # drive kicks in
+    addo(s, impact(.55, 44, .3), 0.0); addo(s, braam(2.6, .55), 0.0)   # frame 0: downbeat hit
+    addo(s, impact(.4, 45, .25), 5.5)                      # Problem
+    addend(s, swell(1.5, .55), nt(11.95)); addend(s, revcym(1.2, .3), nt(11.95))
+    addo(s, impact(.5), 11.95)                             # "Now it has a soul"
+    addend(s, revcym(1.0, .4), nt(13.5)); addo(s, braam(3.0, .75), 13.5); addo(s, impact(.8), 13.5)   # drive kicks in
     for tc in (17.5, 21.5, 24.5, 27.5, 31.0, 34.0):       # taiko-style accents on the cuts
-        add(s, tom(.38, 92), tc); add(s, tom(.25, 70), tc + .11)
-    add(s, impact(.4, 40, .15), 37.0)                     # night
-    add(s, riser(2.4, .42), 39.55); add(s, revcym(1.6, .45), 40.4)
-    add(s, braam(3.6, 1.0), 42.0); add(s, impact(1.1, 38, .5), 42.0); add(s, subdrop(1.6, .7), 42.0)   # DROP / reveal
-    add(s, braam(3.0, 1.0, A1), 46.5); add(s, impact(1.1, 36, .55), 46.5); add(s, subdrop(1.8, .7), 46.5) # ending hit
+        addo(s, tom(.38, 92), tc); addo(s, tom(.25, 70), tc + .11)
+    addo(s, impact(.4, 40, .15), 37.0)                     # night
+    addend(s, riser(2.4, .42), 87 * BEAT); addend(s, revcym(1.6, .45), 88 * BEAT)   # build → 1-beat stop-down
+    addo(s, braam(3.6, 1.0), 42.0); addo(s, impact(1.1, 38, .5), 42.0); addo(s, subdrop(1.6, .7), 42.0)   # DROP / reveal
+    addo(s, braam(3.0, 1.0, A1), 46.5); addo(s, impact(1.1, 36, .55), 46.5); addo(s, subdrop(1.8, .7), 46.5) # ending hit
     return s
 
 # ───────────────────────── sfx ─────────────────────────
@@ -209,28 +220,28 @@ def make_sfx():
     s = np.zeros((N, 2))
     for tc, g in [(5.5, .3), (10.0, .22), (13.5, .4), (17.1, .3), (17.5, .3), (19.35, .4), (21.5, .3),
                   (24.5, .3), (27.5, .3), (31.0, .3), (34.05, .25), (37.0, .25), (39.5, .3), (9.45, .25)]:
-        add(s, whoosh(gain=g, pan=(-.5, .5) if int(tc * 2) % 2 else (.5, -.5)), tc - .3)
-    for i in range(5): add(s, whoosh(.4, 600, 6000, .14, (.8, -.2)), 34.1 + i * .11 - .05)
+        addo(s, whoosh(gain=g, pan=(-.5, .5) if int(tc * 2) % 2 else (.5, -.5)), tc - .3)
+    for i in range(5): addo(s, whoosh(.4, 600, 6000, .14, (.8, -.2)), 34.1 + i * .11 - .05)
     l1 = 'Every day, you talk to AI…'
-    for k in range(1, len(l1) + 1): add(s, click(.1 if l1[k - 1] == ' ' else .17), 5.5 + (k + 3) / 15)
+    for k in range(1, len(l1) + 1): addo(s, click(.1 if l1[k - 1] == ' ' else .17), 5.5 + (k + 3) / 15)
     l2 = '…in a chat box.'
-    for k in range(1, len(l2) + 1): add(s, click(.1 if l2[k - 1] == ' ' else .17), 8.25 + k / 15)
+    for k in range(1, len(l2) + 1): addo(s, click(.1 if l2[k - 1] == ' ' else .17), 8.25 + k / 15)
     pent = [81, 84, 86, 88, 91, 93, 96, 98, 100]          # A minor pentatonic, to sit in the track's key
-    for i in range(0, 12, 2): add(s, pop(pent[i // 2], .08, (i - 6) / 8), .3 + i * .06 + .12)
-    for i in range(5): add(s, pop(pent[i], .13, (i - 2) / 3), 5.5 + 1.2 + i * .13 + .1)
-    add(s, pop(86, .16), 10 + .75 + .12)
-    add(s, pop(93, .18), 10 + 2.95 + .12)
-    for i in range(3): add(s, pop(pent[5 + i], .1, (i - 1) / 2), 13.0 + i * .08 + .1)
-    for i in range(3): add(s, pop(pent[2 + i], .16), 24.5 + .5 + i * .78 + .1)
-    for i in range(3): add(s, pop(pent[5 + i], .1, (i - 1) / 2), 22.85 + .15 + i * .1 + .1)
-    add(s, pop(93, .16), 27.5 + 1.75 + .2 + .1)
-    for i in range(4): add(s, pop(pent[2 + i], .2, (i - 1.5) / 2), 31 + .8 + i * .2 + .12)
-    add(s, pop(88, .18), 41.85 + 3.35 + .12)
-    add(s, shimmer(1.6, .05, (93, 100, 105)), 12.75)
-    for tb in [19.55 + .72, 19.55 + 1.6, 19.55 + 1.82, 27.5 + 1.32, 41.85 + 1.78, 41.85 + 3.97, 46.5 + 1.63]: add(s, tick(.09), tb)
-    for tp in [22.85, 29.25, 45.95]: add(s, tap(.26), tp - .02)
-    add(s, shimmer(3.2, .07, (81, 88, 93, 100, 105)), 42.15)
-    add(s, shimmer(2.2, .04, (81, 88, 93, 100)), 46.75)
+    for i in range(0, 12, 2): addo(s, pop(pent[i // 2], .08, (i - 6) / 8), .3 + i * .06 + .12)
+    for i in range(5): addo(s, pop(pent[i], .13, (i - 2) / 3), 5.5 + 1.2 + i * .13 + .1)
+    addo(s, pop(86, .16), 10 + .75 + .12)
+    addo(s, pop(93, .18), 10 + 2.95 + .12)
+    for i in range(3): addo(s, pop(pent[5 + i], .1, (i - 1) / 2), 13.0 + i * .08 + .1)
+    for i in range(3): addo(s, pop(pent[2 + i], .16), 24.5 + .5 + i * .78 + .1)
+    for i in range(3): addo(s, pop(pent[5 + i], .1, (i - 1) / 2), 22.85 + .15 + i * .1 + .1)
+    addo(s, pop(93, .16), 27.5 + 1.75 + .2 + .1)
+    for i in range(4): addo(s, pop(pent[2 + i], .2, (i - 1.5) / 2), 31 + .8 + i * .2 + .12)
+    addo(s, pop(88, .18), 41.85 + 3.35 + .12)
+    addo(s, shimmer(1.6, .05, (93, 100, 105)), 12.75)
+    for tb in [19.55 + .72, 19.55 + 1.6, 19.55 + 1.82, 27.5 + 1.32, 41.85 + 1.78, 41.85 + 3.97, 46.5 + 1.63]: addo(s, tick(.09), tb)
+    for tp in [22.85, 29.25, 45.95]: addo(s, tap(.26), tp - .02)
+    addo(s, shimmer(3.2, .07, (81, 88, 93, 100, 105)), 42.15)
+    addo(s, shimmer(2.2, .04, (81, 88, 93, 100)), 46.75)
     return s
 
 # ───────────────────────── voice-over (Kokoro) ─────────────────────────
