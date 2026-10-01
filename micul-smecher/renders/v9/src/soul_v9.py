@@ -217,6 +217,33 @@ def shot_ou_check():
     return sc
 
 
+# ==========================================================================================
+# founder review (2026-10-01): no mug in desk / typing (its handle read as broken / floating), and the side view
+# shows the screen dark (edge-on, the eyes read as a ghost on the glass edge).
+_mug7 = mug
+
+
+def mug(loc_mm, yaw):
+    if TUNE.get('mug', 0) > 0:
+        return _mug7(loc_mm, yaw)
+    return new_par('mug_par')                # an empty: desk / typing keep their framing, no prop
+
+
+def screen_off(par):
+    g = SOULS[par.name]['glass']
+    p = next(n for n in g.active_material.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+    set_in(p, 'Emission Strength', 0.0)
+
+
+def shot_side9():
+    sc = shot_side6()
+    if TUNE.get('side_eyes', 0) <= 0:
+        for k in list(SOULS):
+            screen_off(bpy.data.objects[k])
+    return sc
+
+
+SHOTS['side'] = (_v8(shot_side9), 1600, 1200, 96)
 SHOTS['ou_check'] = (shot_ou_check, 1000, 800, 64)
 SHOTS['front'] = (_v8(_wrap(shot_front8, _post_generic)), 1600, 1600, 96)
 
