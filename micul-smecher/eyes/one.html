@@ -57,6 +57,15 @@ h1 span{color:var(--cream)}
 .notes ul{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px;line-height:1.55}
 .notes li+li{margin-top:4px}
 .notes b{color:var(--text);font-weight:500}
+.rx{width:min(100%,640px);display:flex;flex-direction:column;gap:10px}
+.rx h2{font:500 11px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.rb{font:500 12.5px/1.15 var(--display);color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 8px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;gap:6px;align-items:center;min-width:0}
+.rb small{font:400 9.5px/1 var(--mono);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.rb:hover{border-color:#4c4b52}
+.rb:focus-visible{outline:2px solid var(--cream);outline-offset:2px}
+.rb[aria-pressed="true"]{background:var(--cream);color:#16130e;border-color:var(--cream)}
+.rb[aria-pressed="true"] small{color:#5a5040}
 @media (prefers-reduced-motion: reduce){.chip{transition:none}}
 </style>
 </head>
@@ -64,24 +73,17 @@ h1 span{color:var(--cream)}
 <div class="wrap">
   <header>
     <h1>SOUL <span>signature eyes</span></h1>
-    <div class="tag">v2 · for approval</div>
+    <div class="tag">v2.1 · 31 expressions</div>
   </header>
 
-  <div class="stage" id="stage" aria-label="SOUL's eyes, animated, inside the round glass screen" role="img">
-    <canvas id="cv"></canvas>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="SOUL's eyes, animated, inside the round glass screen" role="img"></canvas>
   </div>
 
   <div class="controls">
-    <div class="chips" role="group" aria-label="Expression">
-      <button class="chip" id="b-loop" data-x="loop" aria-pressed="true">15 s loop</button>
-      <button class="chip" id="b-idle" data-x="neutral" aria-pressed="false">Idle</button>
-      <button class="chip" id="b-happy" data-x="happy" aria-pressed="false">Happy</button>
-      <button class="chip" id="b-surprised" data-x="surprised" aria-pressed="false">Surprised</button>
-      <button class="chip" id="b-smirk" data-x="smirk" aria-pressed="false">Șmecher</button>
-      <button class="chip" id="b-love" data-x="love" aria-pressed="false">Love</button>
-      <button class="chip" id="b-sleepy" data-x="sleepy" aria-pressed="false">Sleepy</button>
-    </div>
-    <div class="chips">
+    <div class="chips" role="group" aria-label="Playback">
+      <button class="chip" id="b-loop" aria-pressed="true">15 s loop</button>
+      <button class="chip" id="b-random" aria-pressed="false">Random mood</button>
       <button class="chip toggle" id="b-hetero" aria-pressed="true">Heterochromia</button>
     </div>
     <div class="timeline" id="timeline">
@@ -89,6 +91,11 @@ h1 span{color:var(--cream)}
       <div class="cap"><span id="capL">0.0 s</span><span>hover the glass and it looks at you · tap for a smile</span></div>
     </div>
   </div>
+
+  <section class="rx" aria-label="Expressions">
+    <h2><span>Moods hold · reactions play once</span><span id="now">now: idle</span></h2>
+    <div class="grid" id="grid"></div>
+  </section>
 
   <section class="strip" aria-label="Colourways">
     <h2>Same design, six colourways · tap one to wear it</h2>
@@ -109,386 +116,83 @@ h1 span{color:var(--cream)}
       <h2>Ours</h2>
       <ul>
         <li><b>The pebble glint.</b> A crisp cream pebble on every pupil, the same shape as SOUL itself. It reads as black glass catching the light and works as a mark even at 40 px.</li>
-        <li><b>Șmecher attitude.</b> A side-eye with one eye squinting under a tilted lid while the other stays wide open. It's the brand's personality as an expression.</li>
-        <li><b>AE timing everywhere.</b> Every move has anticipation, overshoot and settle (squash before the surprise pop, pupils that shrink before hearts burst), plus little idle hops.</li>
-        <li><b>Warm cream hero.</b> The hero whites are SOUL cream instead of neon, with saturated pupils, so it looks premium and stays on brand. The neon colourways become the rarer pulls.</li>
+        <li><b>Șmecher attitude.</b> A side-eye with one eye squinting under a tilted lid while the other stays wide open.</li>
+        <li><b>AE timing everywhere.</b> Every move has anticipation, overshoot and settle, and the second eye always lags a little.</li>
+        <li><b>Warm cream hero.</b> The hero whites are SOUL cream with saturated pupils. The neon colourways become the rarer pulls.</li>
       </ul>
     </div>
   </section>
 </div>
 
+<script src="eyes.js"></script>
 <script>
-/* SOUL signature eyes — v2 (flat graphic). Vector only, no blur.
-   Deterministic: the rig advances only through update(dt); the video export
-   steps it at exactly 1/60 s. */
 (function(){
 'use strict';
-const TAU=Math.PI*2, PI=Math.PI;
-const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
-const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
-const inQuad=t=>t*t, outBack=(t,s=2.2)=>1+(s+1)*Math.pow(t-1,3)+s*Math.pow(t-1,2);
-function mix32(x){x>>>=0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return (x^(x>>>16))>>>0}
-const h01=i=>mix32(i*2654435761+12345)/4294967296;
-function rng(seed){let a=seed>>>0||1;return()=>{a=(a+0x6d2b79f5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
-
-/* ---------- the design: one spec, many colourways (JSON the firmware can read later) */
-const DESIGN={
-  id:"soul-signature-v2",
-  eye:{rx:.163, ry:.2, spacing:.19, y:.005, egg:.09, lean:.13},   // fractions of the screen diameter
-  pupil:{rx:.42, ry:.5, inset:.16, travel:.5},                      // fractions of the eye radii
-  glint:{x:.34, y:-.46, rx:.3, ry:.2, rot:-.55, color:"#FFF6E2"},    // the pebble glint, on the pupil
-  closed:.024,                                                      // closed-eye sliver thickness
-  love:"#FF2E63"
-};
+const E=window.SoulEyes;
 const COLOURWAYS=[
-  {key:'original', name:'Original', white:'#FFF0C8', pL:'#2440FF', pR:'#FF5A1F', rarity:'Common'},
-  {key:'mint',     name:'Spearmint', white:'#3DFFC8', pL:'#FF1F8F', pR:'#6A2BFF', rarity:'Uncommon'},
-  {key:'lemon',    name:'Lemon Pop', white:'#F0FF2E', pL:'#7A2BFF', pR:'#FF2E5B', rarity:'Rare'},
-  {key:'lilac',    name:'Lilac Cat', white:'#C79BFF', pL:'#FFEE2E', pR:'#FFEE2E', slit:true, rarity:'Epic'},
-  {key:'coral',    name:'Coral',     white:'#FF6B6B', pL:'#14E6FF', pR:'#1B2BFF', rarity:'Rare'},
-  {key:'pool',     name:'Pool Party',white:'#2BD9FF', pL:'#FFE14A', pR:'#FF3FA4', rarity:'Legendary'},
+  {id:'original',name:'Original',rarity:'Common',white:'#FFF0C8',pupil:{L:'#2440FF',R:'#FF5A1F'}},
+  {id:'spearmint',name:'Spearmint',rarity:'Uncommon',white:'#3DFFC8',pupil:{L:'#FF1F8F',R:'#6A2BFF'}},
+  {id:'lemon-pop',name:'Lemon Pop',rarity:'Rare',white:'#F0FF2E',pupil:{L:'#7A2BFF',R:'#FF2E5B'}},
+  {id:'lilac-cat',name:'Lilac Cat',rarity:'Epic',white:'#C79BFF',pupil:{type:'slit',L:'#FFEE2E',R:'#FFEE2E'}},
+  {id:'coral',name:'Coral',rarity:'Rare',white:'#FF6B6B',pupil:{L:'#14E6FF',R:'#1B2BFF'}},
+  {id:'pool-party',name:'Pool Party',rarity:'Legendary',white:'#2BD9FF',pupil:{L:'#FFE14A',R:'#FF3FA4'}},
 ];
-
-/* ---------- springs */
-class Spring{constructor(v,k,z){this.x=v;this.t=v;this.v=0;this.k=k;this.z=z}
-  step(dt){const c=2*Math.sqrt(this.k)*this.z;this.v+=(-this.k*(this.x-this.t)-c*this.v)*dt;this.x+=this.v*dt}}
-
-const BASE={scale:1,sx:1,sy:1,bob:0,shift:0,lidL:0,lidR:0,tiltL:.06,tiltR:.06,smileL:0,smileR:0,pupil:1,pupilH:1,heart:0,hearts:0,zzz:0,slitW:1,scaleR:1};
-const EXPR={
-  neutral:{},
-  happy:{smileL:.8,smileR:.8,lidL:0,lidR:0,tiltL:0,tiltR:0,scale:1.05,bob:.012,pupil:0},
-  surprised:{lidL:0,lidR:0,tiltL:0,tiltR:0,scale:1.12,sy:1.07,pupil:.42,bob:-.02,slitW:2.6},
-  sleepy:{lidL:.56,lidR:.6,tiltL:-.12,tiltR:-.12,scale:.97,bob:.022,zzz:1,pupil:.95},
-  love:{heart:1,pupil:0,lidL:0,lidR:0,tiltL:0,tiltR:0,hearts:1,scale:1.03},
-  smirk:{lidL:.3,lidR:0,tiltL:.3,tiltR:0,smileL:.36,smileR:0,shift:.03,scaleR:1.06,pupil:.9},
-};
-const GAZE={neutral:[0,0],happy:[0,-.3],surprised:[0,0],sleepy:[0,.45],love:[0,0],smirk:[.82,.04]};
-// anticipation: a short opposite move before the real one (AE style)
-const ANTIC={
-  happy:{d:.09,set:{sy:.88,bob:.012,scale:.98}},
-  surprised:{d:.1,set:{sy:.86,scale:.94,bob:.014,pupil:.8}},
-  love:{d:.12,set:{pupil:0,scale:.96}},
-  smirk:{d:.1,set:{shift:-.012},gaze:[-.35,0]},
-};
-const KICK={happy:{bob:-.5,sy:2.4},surprised:{scale:3,sy:2.2},love:{heart:5},smirk:{shift:.4},sleepy:{}};
-
-/* the 15 s performance */
-const LOOP=15;
-const SCRIPT=[
-  {t:0,   expr:'neutral', look:[0,0]},
-  {t:.55, look:[-.75,-.1]},
-  {t:1.15,look:[.7,.2], blink:1},
-  {t:1.9, look:[.05,-.05]},
-  {t:2.25,hop:1},
-  {t:2.6, blink:2},
-  {t:3.1, expr:'happy'},
-  {t:4.7, expr:'neutral'},
-  {t:4.85,look:[-.5,.35]},
-  {t:5.35,look:[0,0]},
-  {t:5.6, expr:'surprised'},
-  {t:7.0, expr:'neutral', blink:1},
-  {t:7.45,expr:'smirk'},
-  {t:8.7, blink:1},
-  {t:9.35,expr:'neutral'},
-  {t:9.6, expr:'love'},
-  {t:11.45,expr:'neutral', blink:1},
-  {t:11.8,expr:'sleepy'},
-  {t:12.9,blink:1, slow:3},
-  {t:14.2,expr:'neutral', look:[0,0]},
-  {t:14.35,blink:2},
-];
-const SEGMENTS=[['Idle',0,3.1],['Happy',3.1,4.7],['Look',4.7,5.6],['Surprised',5.6,7.0],['Șmecher',7.0,9.4],['Love',9.4,11.6],['Sleepy',11.6,14.2],['',14.2,15]];
-
-class Rig{
-  constructor(seed,live){
-    this.r=rng(seed||7); this.seed=seed||7; this.t=0; this.lt=0; this.mode=live?'live':'loop';
-    this.expr='neutral'; this.exprT=0; this.pending=null;
-    this.s={};
-    const kz=k=>k==='heart'?[260,.32]:/^(lid|tilt|smile)/.test(k)?[420,.62]:/^(scale|sx|sy|scaleR)$/.test(k)?[300,.36]:k==='bob'?[220,.4]:/^pupil/.test(k)?[420,.5]:k==='shift'?[260,.5]:[200,.7];
-    for(const k in BASE){const [kk,z]=kz(k);this.s[k]=new Spring(BASE[k],kk,z)}
-    // pupils: the left one leads, the right one follows ~45 ms later and a bit looser
-    this.pL=[new Spring(0,900,.52),new Spring(0,900,.52)];
-    this.pR=[new Spring(0,760,.46),new Spring(0,760,.46)];
-    this.eyeG=[new Spring(0,140,.75),new Spring(0,140,.75)];   // the whole eyes follow slowly
-    this.gq=[]; this.gazeT=[0,0]; this.base=[0,0]; this.look=null;
-    this.blinkAt=-10; this.blinkN=1; this.blinkSlow=1;
-    this.nextMicro=.4; this.nextGlance=1.5; this.glanceUntil=-1; this.nextBlink=1.8; this.nextHop=4;
-  }
-  apply(set){for(const k in set) if(this.s[k]) this.s[k].t=set[k]}
-  set(name){
-    if(!EXPR[name]) name='neutral';
-    const same=name===this.expr;
-    this.expr=name; this.exprT=0;
-    const go=()=>{
-      this.apply(Object.assign({},BASE,EXPR[name]));
-      if(!same&&KICK[name]) for(const k in KICK[name]) this.s[k].v+=KICK[name][k];
-      this.base=(GAZE[name]||[0,0]).slice();
-      this.pending=null;
-    };
-    const a=!same&&ANTIC[name];
-    if(a){ this.apply(a.set); if(a.gaze) this.base=a.gaze.slice(); this.pending={at:this.t+a.d,fn:go}; }
-    else go();
-    if(!same&&name==='surprised') this.blink(1);
-  }
-  hop(){this.s.bob.v-=.55;this.s.sy.v+=2.2;this.s.sx.v-=1.2}
-  blink(n,slow){this.blinkAt=this.t;this.blinkN=n||1;this.blinkSlow=slow||1}
-  closed(){ // 0 open .. 1 closed, slightly negative on reopen = overshoot stretch
-    const k=this.blinkSlow,c=.08*k,h=.04*k,o=.17*k,q0=this.t-this.blinkAt;
-    const one=q=>q<0?0:q<c?inQuad(q/c):q<c+h?1:q<c+h+o?1-outBack((q-c-h)/o,1.8):0;
-    let v=one(q0); if(this.blinkN>1){const v2=one(q0-(c+h+o*.7)); v=Math.abs(v2)>Math.abs(v)?v2:v} return v;
-  }
-  update(dt){const n=Math.max(1,Math.ceil(dt/(1/240)));for(let i=0;i<n;i++)this.step(dt/n)}
-  step(dt){
-    const prev=this.lt; this.t+=dt; this.exprT+=dt;
-    if(this.pending&&this.t>=this.pending.at) this.pending.fn();
-    if(this.mode==='loop'){
-      this.lt=(this.lt+dt)%LOOP;
-      const wrapped=this.lt<prev;
-      for(const e of SCRIPT){
-        const hit=wrapped?(e.t>prev||e.t<=this.lt):(e.t>prev&&e.t<=this.lt);
-        if(!hit) continue;
-        if(e.expr) this.set(e.expr);
-        if(e.look) this.base=e.look.slice();
-        if(e.blink) this.blink(e.blink,e.slow);
-        if(e.hop) this.hop();
-      }
-      const slot=Math.floor(this.lt/.55);
-      const quiet=this.lt>14.1||this.lt<.3||this.expr==='sleepy'||this.expr==='love'||this.expr==='smirk';
-      const m=quiet?[0,0]:[(h01(slot*2+1)-.5)*.16,(h01(slot*2+2)-.5)*.1];
-      this.gazeT=this.look?this.look.slice():[this.base[0]+m[0],this.base[1]+m[1]];
-    } else {
-      const r=this.r;
-      if(this.look) this.gazeT=this.look.slice();
-      else{
-        const calm=this.expr==='sleepy'||this.expr==='love';
-        if(this.t>this.nextGlance&&!calm&&this.expr!=='smirk'){this.gazeT=[this.base[0]+(r()*2-1)*.8,this.base[1]+(r()*2-1)*.5];this.glanceUntil=this.t+.6+r()*1.3;this.nextGlance=this.t+2+r()*3.5;if(r()<.3)this.blink(1)}
-        else if(this.glanceUntil>0&&this.t>this.glanceUntil){this.gazeT=this.base.slice();this.glanceUntil=-1}
-        else if(this.t>this.nextMicro){const g=this.glanceUntil>0?this.gazeT:this.base;this.gazeT=[g[0]+(r()*2-1)*.09,g[1]+(r()*2-1)*.06];this.nextMicro=this.t+.3+r()*1.1}
-        else if(this.glanceUntil<0&&Math.hypot(this.gazeT[0]-this.base[0],this.gazeT[1]-this.base[1])>.25) this.gazeT=this.base.slice();
-      }
-      if(this.t>this.nextBlink){
-        if(this.s.smileL.x<.4&&this.s.heart.x<.5) this.blink(r()<.22?2:1,this.expr==='sleepy'?3:1);
-        this.nextBlink=this.t+(this.expr==='sleepy'?4.5:2)+r()*3.8;
-      }
-      if(this.t>this.nextHop){ if(this.expr==='neutral'&&r()<.6) this.hop(); this.nextHop=this.t+3.5+r()*5; }
-    }
-    // gaze: left pupil now, right pupil 45 ms later
-    this.gq.push([this.t,this.gazeT[0],this.gazeT[1]]);
-    while(this.gq.length>2&&this.gq[1][0]<=this.t-.045) this.gq.shift();
-    const late=this.gq[0];
-    this.pL[0].t=this.gazeT[0];this.pL[1].t=this.gazeT[1];this.pR[0].t=late[1];this.pR[1].t=late[2];
-    this.eyeG[0].t=this.gazeT[0];this.eyeG[1].t=this.gazeT[1];
-    for(let i=0;i<2;i++){this.pL[i].step(dt);this.pR[i].step(dt);this.eyeG[i].step(dt)}
-    for(const k in this.s) this.s[k].step(dt);
-  }
-}
-
-/* ---------- drawing (flat: fills only, no shadows, no blur) */
-function drawGlass(ctx,cx,cy,D,bezel){
-  const R=D/2;
-  if(bezel!==false){
-    const bw=D*.03;
-    const g=ctx.createLinearGradient(cx-R,cy-R-bw,cx+R,cy+R+bw);
-    g.addColorStop(0,'#EEEDEA');g.addColorStop(.3,'#9E9DA0');g.addColorStop(.56,'#DAD9D6');g.addColorStop(1,'#6B6A6E');
-    ctx.beginPath();ctx.arc(cx,cy,R+bw,0,TAU);ctx.fillStyle=g;ctx.fill();
-    ctx.beginPath();ctx.arc(cx,cy,R+bw*.2,0,TAU);ctx.fillStyle='#161618';ctx.fill();
-  }
-  ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.fillStyle='#000';ctx.fill();
-}
-function drawSheen(ctx,cx,cy,D){
-  const R=D/2;ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.clip();
-  const g=ctx.createLinearGradient(cx-R,cy-R,cx+R*.3,cy+R*.3);
-  g.addColorStop(0,'rgba(255,255,255,.085)');g.addColorStop(.55,'rgba(255,255,255,.01)');g.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.beginPath();ctx.ellipse(cx-R*.22,cy-R*.36,R*.92,R*.55,-.55,0,TAU);ctx.fillStyle=g;ctx.fill();
-  ctx.lineWidth=Math.max(1,D*.004);ctx.strokeStyle='rgba(255,255,255,.09)';
-  ctx.beginPath();ctx.arc(cx,cy,R-ctx.lineWidth*1.5,PI*1.08,PI*1.48);ctx.stroke();ctx.restore();
-}
-function heartPath(ctx,x,y,s,rot){
-  ctx.beginPath();const c=Math.cos(rot||0),sn=Math.sin(rot||0);
-  for(let i=0;i<=72;i++){const a=i/72*TAU,si=Math.sin(a);const hx=16*si*si*si/16.5*s,hy=(-(13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))+2.5)/15*s;
-    const px=x+hx*c-hy*sn,py=y+hx*sn+hy*c;i?ctx.lineTo(px,py):ctx.moveTo(px,py)}
-  ctx.closePath();
-}
-function pebble(ctx,x,y,rx,ry,rot){ // superellipse n=2.6: SOUL's own silhouette
-  ctx.beginPath();const c=Math.cos(rot),s=Math.sin(rot);
-  for(let i=0;i<40;i++){const a=i/40*TAU,ca=Math.cos(a),sa=Math.sin(a);
-    const ux=Math.sign(ca)*Math.pow(Math.abs(ca),2/2.6)*rx,uy=Math.sign(sa)*Math.pow(Math.abs(sa),2/2.6)*ry;
-    const px=x+ux*c-uy*s,py=y+ux*s+uy*c;i?ctx.lineTo(px,py):ctx.moveTo(px,py)}
-  ctx.closePath();
-}
-
-function eyeFrame(rig,side,cx,cy,D){
-  const s=rig.s,E=DESIGN.eye;
-  const ex0=rig.eyeG[0].x, ey0=rig.eyeG[1].x;
-  const b=rig.closed();
-  const breath=Math.sin(rig.t*TAU/3.6+side*.4);
-  const par=1-.07*ex0*side;   // the far eye is a touch smaller
-  const k=s.scale.x*par*(side>0?s.scaleR.x:1);
-  const rx=E.rx*D*k*s.sx.x*(1+.06*Math.max(0,b))*(1+.006*breath);
-  const ry=E.ry*D*k*s.sy.x*(1-.12*b)*(1+.012*breath);
-  const x=cx+(side*E.spacing+ex0*.028+s.shift.x)*D;
-  const y=cy+(E.y+ey0*.022+s.bob.x+.016*Math.max(0,b)+.002*breath)*D;
-  return {x,y,rx,ry,b,side};
-}
-
-function silhouette(rig,g,D){
-  const s=rig.s,E=DESIGN.eye,side=g.side,L=side<0;
-  const {rx,ry,b}=g;
-  const lean=-side*E.lean;            // tops lean outward
-  const cl=Math.cos(lean),sl=Math.sin(lean);
-  const lid0=clamp(L?s.lidL.x:s.lidR.x,0,.97), tilt=L?s.tiltL.x:s.tiltR.x;
-  const bb=clamp(b,0,1);
-  const lid=lid0+(1-lid0)*bb;          // the blink drops the lid all the way
-  const kTilt=Math.tan(tilt)*-side*(1-bb);
-  const thick=DESIGN.closed*D;
-  const bow=.1*ry*Math.min(1,lid0*4)*(1-bb);
-  const lidY=x=>-ry+lid*(2*ry-thick)+kTilt*x+bow*(1-Math.min(1,(x/rx)*(x/rx)));
-  const smile=clamp(L?s.smileL.x:s.smileR.x,0,1);
-  const cutCy=ry*(2.2-1.78*smile),cutA=rx*1.42,cutB=ry*1.1;
-  const pts=[],N=120;
-  for(let i=0;i<N;i++){
-    const a=i/N*TAU,sa=Math.sin(a);
-    let ux=Math.cos(a)*rx*(1-E.egg*Math.max(0,-sa)), uy=sa*ry;     // egg: narrower top
-    let x=ux*cl-uy*sl, y=ux*sl+uy*cl;
-    if(lid>.003) y=Math.max(y,lidY(x));
-    if(smile>.003){const q=1-(x/cutA)*(x/cutA); if(q>0) y=Math.min(y,cutCy-cutB*Math.sqrt(q))}
-    pts.push([x,y]);
-  }
-  return pts;
-}
-
-function drawEye(ctx,rig,pal,side,cx,cy,D,hetero){
-  const s=rig.s,P=DESIGN.pupil,g=eyeFrame(rig,side,cx,cy,D);
-  const pts=silhouette(rig,g,D);
-  ctx.save(); ctx.translate(g.x,g.y);
-  const body=new Path2D(); pts.forEach(([x,y],i)=>i?body.lineTo(x,y):body.moveTo(x,y)); body.closePath();
-  ctx.fillStyle=pal.white; ctx.fill(body);
-  ctx.save(); ctx.clip(body);
-  // pupil
-  const G=side<0?rig.pL:rig.pR;
-  const gx=G[0].x,gy=G[1].x;
-  const pc=hetero?(side<0?pal.pL:pal.pR):pal.pL;
-  const ps=Math.max(0,s.pupil.x);
-  const px=(-side*P.inset+gx*P.travel)*g.rx, py=(gy*P.travel*.78+.04)*g.ry;
-  const prx=P.rx*g.rx*ps, pry=P.ry*g.ry*ps*s.pupilH.x/(s.sy.x||1)*.98;
-  if(ps>.01){
-    ctx.fillStyle=pc; ctx.beginPath();
-    if(pal.slit){const w=clamp(.42*s.slitW.x,.3,1.05);ctx.ellipse(px,py,prx*w,pry*1.08,0,0,TAU)}
-    else ctx.ellipse(px,py,prx,pry,0,0,TAU);
-    ctx.fill();
-    // the pebble glint: crisp, flat, SOUL-shaped
-    const gl=DESIGN.glint, gs=Math.min(prx,pry)*(pal.slit?.7:1);
-    ctx.fillStyle=gl.color;
-    pebble(ctx,px+gl.x*prx*(pal.slit?.4:1),py+gl.y*pry,gl.rx*gs,gl.ry*gs,gl.rot); ctx.fill();
-  }
-  // love: hearts burst in where the pupils were
-  const hv=s.heart.x;
-  if(hv>.01){
-    const beat=1+.09*Math.pow(Math.max(0,Math.sin(rig.t*TAU*1.3)),8);
-    const hs=Math.max(0,hv)*g.rx*.56*beat;
-    heartPath(ctx,px*.5,py*.5-g.ry*.04,hs,side*.1); ctx.fillStyle=DESIGN.love; ctx.fill();
-    ctx.fillStyle=DESIGN.glint.color; pebble(ctx,px*.5-hs*.38,py*.5-g.ry*.04-hs*.34,hs*.17,hs*.11,-.6); ctx.fill();
-  }
-  ctx.restore();
-  ctx.restore();
-  return g;
-}
-
-function render(ctx,rig,pal,cx,cy,D,opt){
-  opt=opt||{};
-  const hetero=opt.hetero!==false;
-  drawGlass(ctx,cx,cy,D,opt.bezel);
-  ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,D/2,0,TAU); ctx.clip();
-  drawEye(ctx,rig,pal,-1,cx,cy,D,hetero); drawEye(ctx,rig,pal,1,cx,cy,D,hetero);
-  const s=rig.s;
-  // little flat hearts
-  const hh=s.hearts.x;
-  if(hh>.02) for(let i=0;i<3;i++){
-    const per=1.9,p=((rig.t+i*.63)%per)/per;
-    const x=cx+[-.08,.12,.02][i]*D+Math.sin(rig.t*2.4+i)*.012*D, y=cy+(.3-.42*p)*D;
-    const pop=p<.18?outBack(p/.18,2.4):1-smooth((p-.75)/.25);
-    if(pop<=.01) continue;
-    heartPath(ctx,x,y,D*.034*pop*clamp(hh,0,1),Math.sin(rig.t*3+i)*.25); ctx.fillStyle=DESIGN.love; ctx.fill();
-  }
-  // z z (flat, in the white colour)
-  const zz=s.zzz.x;
-  if(zz>.05){
-    ctx.save(); ctx.strokeStyle=pal.white; ctx.lineWidth=D*.013; ctx.lineJoin='round'; ctx.lineCap='round';
-    for(let i=0;i<2;i++){
-      const p=(rig.t*.36+i*.5)%1, x=cx+(.3+p*.05)*D, y=cy-(.25+p*.1)*D, z=D*(.05-i*.016)*(.65+.35*p);
-      ctx.globalAlpha=Math.sin(p*PI)*clamp(zz,0,1);
-      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+z,y); ctx.lineTo(x,y+z); ctx.lineTo(x+z,y+z); ctx.stroke();
-    }
-    ctx.restore();
-  }
-  ctx.restore();
-  if(opt.sheen!==false) drawSheen(ctx,cx,cy,D);
-}
-
-/* ---------- page */
-const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
-let rig=new Rig(7), pal=COLOURWAYS[0], hetero=true;
+const cv=document.getElementById('cv');
 const capture=/capture/.test(location.hash);
-function size(){const dpr=Math.min(2,window.devicePixelRatio||1);const w=stage.clientWidth;cv.width=Math.round(w*dpr);cv.height=Math.round(w*dpr)}
-function frame(){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#0b0b0c';ctx.fillRect(0,0,cv.width,cv.height);render(ctx,rig,pal,cv.width/2,cv.height/2,cv.width*.9,{hetero})}
-
+if(capture){
+  let eyes=null;
+  window.SOUL={
+    setup(px){cv.style.width=px+'px';cv.style.height=px+'px';cv.width=px;cv.height=px;eyes=E.createEyes(cv,COLOURWAYS[0],{manual:true,mode:'loop',fit:.86,background:'#0b0b0c',seed:7})},
+    step(n,dt){for(let i=0;i<n;i++)eyes.step(dt)},
+    draw(){eyes.draw()},
+    png(){return cv.toDataURL('image/png')},
+    react(name){eyes.setMode('live');eyes.setExpression(name)}
+  };
+  return;
+}
+const now=document.getElementById('now');
+const eyes=E.createEyes(cv,COLOURWAYS[0],{mode:'loop',fit:.9,seed:7,onChange:n=>{const x=E.EXPRESSIONS.find(e=>e.name===n);now.textContent='now: '+(x?x.label.toLowerCase():n)}});
 // timeline
 const track=document.getElementById('track'),head=document.createElement('div');head.className='head';
-const segEls=SEGMENTS.map(([n,a,b])=>{const d=document.createElement('div');d.className='seg';d.style.width=((b-a)/LOOP*100)+'%';d.textContent=n;track.appendChild(d);return d});
+const segEls=E.SEGMENTS.map(([n,a,b])=>{const d=document.createElement('div');d.className='seg';d.style.width=((b-a)/E.LOOP*100)+'%';d.textContent=n;track.appendChild(d);return d});
 track.appendChild(head);
 const capL=document.getElementById('capL'),tl=document.getElementById('timeline');
-function ui(){
-  const on=rig.mode==='loop';
-  tl.style.opacity=on?1:.45; head.style.left=(rig.lt/LOOP*100)+'%';
-  SEGMENTS.forEach(([n,a,b],i)=>segEls[i].classList.toggle('on',on&&rig.lt>=a&&rig.lt<b));
-  capL.textContent=on?rig.lt.toFixed(1)+' s':'live';
+const bLoop=document.getElementById('b-loop'),bRand=document.getElementById('b-random');
+// expressions grid
+const grid=document.getElementById('grid'),btns=[];
+for(const x of E.EXPRESSIONS){
+  const b=document.createElement('button');b.className='rb';b.id='x-'+x.name;b.setAttribute('aria-pressed','false');
+  b.innerHTML='<span></span><small></small>';b.firstChild.textContent=x.label;b.lastChild.textContent=x.kind==='mood'?'mood':'once';
+  b.addEventListener('click',()=>{
+    eyes.setRandomMood(false);bRand.setAttribute('aria-pressed','false');
+    if(eyes.mode==='loop'){eyes.setMode('live');bLoop.setAttribute('aria-pressed','false')}
+    eyes.setExpression(x.name);
+    btns.forEach(o=>o.setAttribute('aria-pressed',String(o===b&&x.kind==='mood')));
+  });
+  grid.appendChild(b);btns.push(b);
 }
-const chips=[...document.querySelectorAll('.chip[data-x]')];
-chips.forEach(b=>b.addEventListener('click',()=>{
-  chips.forEach(c=>c.setAttribute('aria-pressed',String(c===b)));
-  const x=b.dataset.x;
-  if(x==='loop'){rig.mode='loop';rig.lt=LOOP-.3;rig.set('neutral')}
-  else{rig.mode='live';rig.set(x);rig.gazeT=(GAZE[x]||[0,0]).slice()}
-}));
+bLoop.addEventListener('click',()=>{eyes.setRandomMood(false);bRand.setAttribute('aria-pressed','false');eyes.setMode('loop');bLoop.setAttribute('aria-pressed','true');btns.forEach(o=>o.setAttribute('aria-pressed','false'))});
+bRand.addEventListener('click',()=>{const on=bRand.getAttribute('aria-pressed')!=='true';if(on&&eyes.mode==='loop'){eyes.setMode('live');bLoop.setAttribute('aria-pressed','false')}eyes.setRandomMood(on);bRand.setAttribute('aria-pressed',String(on));btns.forEach(o=>o.setAttribute('aria-pressed','false'))});
 const hb=document.getElementById('b-hetero');
-hb.addEventListener('click',()=>{hetero=!hetero;hb.setAttribute('aria-pressed',String(hetero));rig.blink(1)});
-stage.addEventListener('pointermove',e=>{const r=stage.getBoundingClientRect();rig.look=[clamp(((e.clientX-r.left)/r.width-.5)*2.6,-1,1),clamp(((e.clientY-r.top)/r.height-.5)*2.6,-1,1)]});
-stage.addEventListener('pointerleave',()=>{rig.look=null});
-stage.addEventListener('pointerdown',()=>{if(rig.mode==='loop')return;const prev=rig.expr;rig.set('happy');clearTimeout(rig._tap);rig._tap=setTimeout(()=>rig.set(prev==='happy'?'neutral':prev),1300)});
-
-// colourway strip: the same design, each with its own little life
-const vars=document.getElementById('vars'), mini=[];
+hb.addEventListener('click',()=>{const v=hb.getAttribute('aria-pressed')!=='true';eyes.setHetero(v);eyes.blink(1);hb.setAttribute('aria-pressed',String(v))});
+(function ui(){
+  const on=eyes.mode==='loop';
+  tl.style.opacity=on?1:.45;head.style.left=(eyes.loopTime/E.LOOP*100)+'%';
+  E.SEGMENTS.forEach(([n,a,b],i)=>segEls[i].classList.toggle('on',on&&eyes.loopTime>=a&&eyes.loopTime<b));
+  capL.textContent=on?eyes.loopTime.toFixed(1)+' s':'live';
+  requestAnimationFrame(ui);
+})();
+// colourways: the same design, each with its own little life
+const vars=document.getElementById('vars');
 COLOURWAYS.forEach((c,i)=>{
-  const b=document.createElement('button');b.className='var';b.id='v-'+c.key;b.setAttribute('aria-pressed',String(i===0));
+  const b=document.createElement('button');b.className='var';b.id='v-'+c.id;b.setAttribute('aria-pressed',String(i===0));
   const m=document.createElement('canvas');b.appendChild(m);
   const n=document.createElement('span');n.textContent=c.name;b.appendChild(n);
   const r=document.createElement('small');r.textContent=c.rarity;b.appendChild(r);
-  b.addEventListener('click',()=>{
-    [...vars.children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
-    rig.blink(1); setTimeout(()=>{pal=c},110);   // swap while the eyes are shut
-  });
   vars.appendChild(b);
-  mini.push({c,cv:m,ctx:m.getContext('2d'),rig:new Rig(101+i*17,true)});
+  E.createEyes(m,c,{fit:.88,interactive:false,seed:101+i*17});
+  b.addEventListener('click',()=>{[...vars.children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));eyes.setDesign(c)});
 });
-function sizeMini(){const dpr=Math.min(2,window.devicePixelRatio||1);for(const m of mini){const w=m.cv.clientWidth||100;m.cv.width=Math.round(w*dpr);m.cv.height=Math.round(w*dpr)}}
-function drawMini(dt){for(const m of mini){m.rig.update(dt);const c=m.ctx,W=m.cv.width;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W,W);render(c,m.rig,m.c,W/2,W/2,W*.88,{hetero:true})}}
-
-if(capture){
-  window.SOUL={
-    setup(px){stage.style.width=px+'px';cv.width=px;cv.height=px;rig=new Rig(7);pal=COLOURWAYS[0];hetero=true},
-    step(n,dt){for(let i=0;i<n;i++)rig.update(dt)},
-    draw(bg,scale){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=bg||'#0b0b0c';ctx.fillRect(0,0,cv.width,cv.height);render(ctx,rig,pal,cv.width/2,cv.height/2,cv.width*(scale||.86),{hetero})},
-    png(){return cv.toDataURL('image/png')},
-    strip(px){const W=px*6,c=document.createElement('canvas');c.width=W;c.height=px;const x=c.getContext('2d');x.fillStyle='#0b0b0c';x.fillRect(0,0,W,px);
-      COLOURWAYS.forEach((p,i)=>{const r=new Rig(101+i*17,true);for(let k=0;k<120;k++)r.update(1/60);render(x,r,p,px*i+px/2,px/2,px*.86,{hetero:true})});return c.toDataURL('image/png')}
-  };
-} else {
-  size(); sizeMini();
-  window.addEventListener('resize',()=>{size();sizeMini()});
-  let last=performance.now();
-  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  (function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;const d=reduce?dt*.5:dt;rig.update(d);frame();drawMini(d);ui();requestAnimationFrame(loop)})(last);
-}
 })();
 </script>
 </body>
