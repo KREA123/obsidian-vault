@@ -30,3 +30,8 @@ are not derived from FrequencyWords (CC-BY-SA) or any other corpus; see `tools/w
 
 ## Libraries (fetched by PlatformIO, not vendored)
 GFX Library for Arduino (BSD), SensorLib (MIT), ArduinoJson (MIT), Unity (MIT).
+
+## ricmoo/QRCode (MIT) — `lib/Suflet/src/QrEncode.{h,c}`
+Vendored with three small changes: the header name (ESP-IDF ships its own `qrcode.h`), compiled as C++ (no C `bool` typedef), `#pragma mark` lines turned into comments and an always-false unsigned `< 0` test removed (warning-free with -Wall -Wextra).
+https://github.com/ricmoo/QRCode — MIT License, Copyright (c) 2017 Richard Moore (full text at the top of the files).
+Used for the pairing QR and the setup Wi-Fi QR on the round screen.

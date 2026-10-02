@@ -498,6 +498,9 @@ static uint32_t parseStamp(const char* s) {
   if (!s) return 0;
   int Y, M, D, h, m, sec = 0;
   if (sscanf(s, "%d-%d-%dT%d:%d:%d", &Y, &M, &D, &h, &m, &sec) < 5) return 0;
+  if (Y < 2020 || Y > 2100 || M < 1 || M > 12 || D < 1 || D > 31 || h < 0 || h > 23 || m < 0 || m > 59 || sec < 0 ||
+      sec > 59)
+    return 0;
   // timegm without the GNU extension: days from civil
   const int y = Y - (M <= 2), era = (y >= 0 ? y : y - 399) / 400;
   const unsigned yoe = (unsigned)(y - era * 400);
@@ -853,6 +856,10 @@ std::string cleanLabel(const std::string& text) {
   }
   return out;
 }
+
+std::string cleanText(const char* s, size_t maxCp) { return cleanStr(s, maxCp); }
+bool parseHhmm(const char* s, int& h, int& m) { return timeOk(s, h, m); }
+uint32_t parseLocalStamp(const char* s) { return parseStamp(s); }
 
 static std::string t12(const std::string& hhmm, bool ro) {
   if (ro) return hhmm;

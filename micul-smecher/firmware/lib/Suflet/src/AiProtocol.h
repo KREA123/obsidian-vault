@@ -50,6 +50,8 @@ struct AiAction {
   uint8_t days = 0;        // alarm repeat as a weekday mask (bit 0 = Monday), 0 = once
   uint16_t minutes = 0;    // timer / focus
   bool tomorrow = false;   // reminder
+  uint32_t when = 0;       // reminder at an absolute local time (SOUL Cloud pushes); 0 = hour/minute/tomorrow
+  uint32_t seconds = 0;    // timer in seconds (SOUL Cloud pushes); 0 = minutes
   std::string text;        // reminder / note text, alarm label
 };
 
@@ -129,6 +131,12 @@ bool localAct(const std::string& text, uint32_t localNow, bool ro, AiReply& out)
 // "No AI" (or AI failed): localAct, else keep the text as a note.
 AiReply localReply(const std::string& text, uint32_t localNow, bool ro, bool noAiMode);
 std::string cleanLabel(const std::string& text);
+// web cleanStr(): control characters -> spaces, collapsed whitespace, cut at maxCp code points
+std::string cleanText(const char* s, size_t maxCp);
+// "HH:MM" (24 h) -> true + hour/minute
+bool parseHhmm(const char* s, int& h, int& m);
+// "YYYY-MM-DDTHH:MM[:SS]" local wall time -> local epoch seconds (0 = unreadable)
+uint32_t parseLocalStamp(const char* s);
 
 // Masked secret for the screen: "sk-ant-…a1B2".
 std::string maskKey(const std::string& k);
