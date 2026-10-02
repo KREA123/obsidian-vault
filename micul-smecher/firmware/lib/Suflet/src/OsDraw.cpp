@@ -613,13 +613,8 @@ void Os::drawTimer(Canvas& cv) {
     // progress on the rim (cream arc, from the top, clockwise)
     const float frac = timerTotal_ > 0 ? timerLeft_ / timerTotal_ : 0;
     if (frac > 0.002f) {
-      static Path p;
-      if (p.reserve(1024)) {
-        p.clear();
-        const float a0 = -1.5707963f;
-        p.strokeArc(g_.cx(), g_.cy(), g_.s(226), a0, a0 + 6.2831853f * frac, g_.s(6));
-        face_.raster().fill(cv, p, kCream, 0.85f * fade_);
-      }
+      const float a0 = -1.5707963f;
+      face_.raster().ring(cv, g_.cx(), g_.cy(), g_.s(226), g_.s(6), kCream, 0.85f * fade_, a0, a0 + 6.2831853f * frac);
     }
   } else {
     textAt(cv, fonts::small(), 233, 316, R ? "minute · 25 = focus" : "minutes · 25 = focus", kCream, kFaint);

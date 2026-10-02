@@ -111,18 +111,28 @@ class Path {
   friend class Raster;
 };
 
+// 8-bit coverage over a bounding box, stored as spans: for each row,
+// [lo, hi) is where coverage may be non-zero (canvas x) and [f0, f1) a run
+// known to be fully covered (255). Only the edge pixels [lo, f0) and
+// [f1, hi) are stored in `data`; the solid run is never written or read
+// per pixel, which is what makes big flat eyes cheap.
 struct Mask {
+  struct Row {
+    int16_t lo = 0, hi = 0, f0 = 0, f1 = 0;
+  };
   int x0 = 0, y0 = 0, w = 0, h = 0;  // bounding box in canvas pixels
   uint8_t* data = nullptr;
-  int cap = 0;
+  Row* rows = nullptr;
+  int cap = 0, rowCap = 0;
   bool empty() const { return w <= 0 || h <= 0; }
   uint8_t at(int x, int y) const {
-    x -= x0;
-    y -= y0;
-    if ((unsigned)x >= (unsigned)w || (unsigned)y >= (unsigned)h) return 0;
-    return data[y * w + x];
+    if ((unsigned)(x - x0) >= (unsigned)w || (unsigned)(y - y0) >= (unsigned)h) return 0;
+    const Row& r = rows[y - y0];
+    if (x < r.lo || x >= r.hi) return 0;
+    if (x >= r.f0 && x < r.f1) return 255;
+    return data[(y - y0) * w + (x - x0)];
   }
-  bool reserve(int bytes);
+  bool reserve(int bytes, int nRows = 0);
 };
 
 struct Paint {
@@ -169,6 +179,11 @@ class Raster {
     fill(cv, p, Paint::solid(c), alpha, clip, rule);
   }
   Mask& scratch() { return scratch_; }
+  // A ring (or an arc from a0 to a1 clockwise, radians, round caps) of
+  // radius r and width w, drawn analytically over each row's two short
+  // annulus spans only: cheap even when it circles the whole glass.
+  void ring(Canvas& cv, float cx, float cy, float r, float w, Rgb c, float alpha, float a0 = 0,
+            float a1 = 6.2831853f);
   // An anti-aliased circular clip applied to every composite (the glass disc).
   void setDiscClip(float cx, float cy, float r) {
     disc_ = true;

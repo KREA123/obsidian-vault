@@ -248,10 +248,18 @@ void Canvas::drawTextArc(const Font& f, float cx, float cy, float r, float a, co
     const float gcx = adv * 0.5f, gcy = -mid;
     // where that point lands on screen: on the circle of radius r
     const float ox = cx + cosf(ang) * r, oy = cy + sinf(ang) * r;
-    // screen = O + R * (glyph - gc); inverse: glyph = gc + R^T (screen - O)
-    const float hx = fabsf(g->w * 0.5f) + fabsf(gcx) + 2, hy = fabsf(g->h * 0.5f) + fabsf(gcy) + (float)f.ascent + 2;
-    const float ext = sqrtf(hx * hx + hy * hy);
-    Rect box = clip(Rect{(int)floorf(ox - ext), (int)floorf(oy - ext), (int)ceilf(ox + ext), (int)ceilf(oy + ext)});
+    // screen = O + R * (glyph - gc); inverse: glyph = gc + R^T (screen - O).
+    // The box is the rotated bitmap's bounding box (+1 px for the filter).
+    float bx0 = 1e9f, by0 = 1e9f, bx1 = -1e9f, by1 = -1e9f;
+    for (int k = 0; k < 4; ++k) {
+      const float vx = (k & 1 ? g->x + g->w : g->x) - gcx, vy = (k & 2 ? g->y + g->h : g->y) - gcy;
+      const float sx = ox + cr * vx - sr * vy, sy = oy + sr * vx + cr * vy;
+      if (sx < bx0) bx0 = sx;
+      if (sx > bx1) bx1 = sx;
+      if (sy < by0) by0 = sy;
+      if (sy > by1) by1 = sy;
+    }
+    Rect box = clip(Rect{(int)floorf(bx0) - 1, (int)floorf(by0) - 1, (int)ceilf(bx1) + 1, (int)ceilf(by1) + 1});
     if (box.empty()) continue;
     bool any = false;
     for (int py = box.y0; py < box.y1; ++py) {

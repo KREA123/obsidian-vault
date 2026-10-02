@@ -140,6 +140,7 @@ void Path::stroke(const float* xy, int n, float width, bool closedPath) {
   if (n < 1 || width <= 0) return;
   const float hw = width * 0.5f;
   const int segs = closedPath ? n : n - 1;
+  // one quad per segment
   for (int i = 0; i < segs; ++i) {
     const float x0 = xy[2 * i], y0 = xy[2 * i + 1];
     const int j = (i + 1) % n;
@@ -154,15 +155,52 @@ void Path::stroke(const float* xy, int n, float width, bool closedPath) {
     lineTo(x0 - nx, y0 - ny);
     flushContour();
   }
-  // round joins and caps; the disc gets fewer sides than a big circle
-  const int sides = segmentsFor(hw);
-  for (int i = 0; i < n; ++i) {
+  // round joins: fill only the wedge on the outer side of each turn (a
+  // triangle for gentle turns, a small fan for sharp ones) instead of a disc
+  auto dir = [&](int i, int j, float& ux, float& uy) {
+    ux = xy[2 * j] - xy[2 * i];
+    uy = xy[2 * j + 1] - xy[2 * i + 1];
+    const float l = sqrtf(ux * ux + uy * uy);
+    if (l < 1e-4f) return false;
+    ux /= l;
+    uy /= l;
+    return true;
+  };
+  const int first = closedPath ? 0 : 1, last = closedPath ? n : n - 1;
+  for (int i = first; i < last; ++i) {
+    const int ip = (i + n - 1) % n, in = (i + 1) % n;
+    float ax, ay, bx, by;
+    if (!dir(ip, i, ax, ay) || !dir(i, in, bx, by)) continue;
+    const float cross = ax * by - ay * bx, dot = ax * bx + ay * by;
+    const float ang = atan2f(fabsf(cross), dot);
+    if (ang < 0.02f) continue;
+    // the outer side of the turn (y-down screen coordinates)
+    const float s = cross > 0 ? -1.0f : 1.0f;
+    const float px = xy[2 * i], py = xy[2 * i + 1];
+    const float a0 = atan2f(s * ax, -s * ay);  // angle of the outer normal before the turn
+    const int k = ang < 0.6f ? 1 : (int)ceilf(ang / 0.35f);
     flushContour();
-    for (int k = 0; k < sides; ++k) {
-      const float a = (float)k / sides * 2 * kPi;
-      lineTo(xy[2 * i] + cosf(a) * hw, xy[2 * i + 1] + sinf(a) * hw);
+    lineTo(px, py);
+    const float sweep = cross > 0 ? ang : -ang;  // y-down: cross > 0 turns clockwise
+    for (int q = 0; q <= k; ++q) {
+      const float t = a0 + sweep * q / k;
+      lineTo(px + cosf(t) * hw, py + sinf(t) * hw);
     }
     flushContour();
+  }
+  // round caps at the open ends
+  if (!closedPath) {
+    const int sides = segmentsFor(hw);
+    const int ends[2] = {0, n - 1};
+    for (int e = 0; e < (n > 1 ? 2 : 1); ++e) {
+      const int i = ends[e];
+      flushContour();
+      for (int q = 0; q < sides; ++q) {
+        const float a = (float)q / sides * 2 * kPi;
+        lineTo(xy[2 * i] + cosf(a) * hw, xy[2 * i + 1] + sinf(a) * hw);
+      }
+      flushContour();
+    }
   }
 }
 
@@ -200,12 +238,19 @@ void Path::strokeRoundRect(float x, float y, float w, float h, float r, float wi
 
 // ------------------------------------------------------------------ Mask ---
 
-bool Mask::reserve(int bytes) {
-  if (bytes <= cap) return true;
-  uint8_t* nd = (uint8_t*)realloc(data, bytes);
-  if (!nd) return false;
-  data = nd;
-  cap = bytes;
+bool Mask::reserve(int bytes, int nRows) {
+  if (bytes > cap) {
+    uint8_t* nd = (uint8_t*)realloc(data, bytes);
+    if (!nd) return false;
+    data = nd;
+    cap = bytes;
+  }
+  if (nRows > rowCap) {
+    Row* nr = (Row*)realloc(rows, sizeof(Row) * nRows);
+    if (!nr) return false;
+    rows = nr;
+    rowCap = nRows;
+  }
   return true;
 }
 
@@ -249,7 +294,7 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
   if (y1 > H_) y1 = H_;
   if (x1 <= x0 || y1 <= y0) return;
   const int w = x1 - x0, h = y1 - y0;
-  if (!m.reserve(w * h)) return;
+  if (!m.reserve(w * h, h)) return;
   m.x0 = x0;
   m.y0 = y0;
   m.w = w;
@@ -264,7 +309,10 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
 
   for (int row = 0; row < h; ++row) {
     const int y = y0 + row;
-    bool any = false;
+    int lo = w, hi = 0;          // touched pixel range (mask-local)
+    int fullLo = 0, fullHi = w;  // pixels fully inside on every sub-scanline
+    bool single = true;          // every sub-scanline was one span (then the interior is solid)
+    int subs = 0;
     for (int s = 0; s < kSub; ++s) {
       const float sy = y + (s + 0.5f) / kSub;
       while (next < n && E[order_[next]].y0 <= sy) active_[nActive++] = order_[next++];
@@ -282,7 +330,10 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
         }
         ++i;
       }
-      if (nc < 2) continue;
+      if (nc < 2) {
+        single = false;
+        continue;
+      }
       // insertion sort: crossings are few and nearly sorted row to row
       for (int i = 1; i < nc; ++i) {
         const Cross c = cross_[i];
@@ -293,7 +344,7 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
         }
         cross_[j + 1] = c;
       }
-      int wind = 0;
+      int wind = 0, spans = 0;
       float start = 0;
       for (int i = 0; i < nc; ++i) {
         const bool was = nonzero ? wind != 0 : (wind & 1);
@@ -308,7 +359,9 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
           if (xb <= xa) continue;
           const int fa = (int)(xa * 256.0f), fb = (int)(xb * 256.0f);
           const int ia = fa >> 8, ib = fb >> 8;
-          any = true;
+          ++spans;
+          if (ia < lo) lo = ia;
+          if (ib + 1 > hi) hi = ib + 1;
           if (ia == ib) {
             acc_[ia] += (int16_t)((fb - fa) >> 2);
           } else {
@@ -317,24 +370,55 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
             run_[ib] -= 64;
             acc_[ib] += (int16_t)((fb & 255) >> 2);
           }
+          // the whole pixels this span covers: [ia + (fa & 255 ? 1 : 0), ib)
+          const int c0 = ia + ((fa & 255) ? 1 : 0), c1 = ib;
+          if (c0 > fullLo) fullLo = c0;
+          if (c1 < fullHi) fullHi = c1;
         }
       }
+      if (spans != 1) single = false;
+      ++subs;
     }
-    uint8_t* out = m.data + row * w;
-    if (!any) {
-      memset(out, 0, w);
+    Mask::Row& R = m.rows[row];
+    if (hi > w) hi = w;
+    if (lo >= hi) {
+      R.lo = R.hi = R.f0 = R.f1 = (int16_t)(x0);
       continue;
     }
+    // a solid interior: only when every sub-scanline was exactly one span
+    int f0 = hi, f1 = hi;
+    if (single && subs == kSub && fullHi > fullLo) {
+      f0 = fullLo;
+      f1 = fullHi;
+    }
+    uint8_t* out = m.data + row * w;
     int r = 0;
-    for (int x = 0; x < w; ++x) {
+    for (int x = lo; x < f0; ++x) {
       r += run_[x];
-      int v = r + acc_[x];
+      const int v = r + acc_[x];
       out[x] = (uint8_t)(v > 255 ? 255 : (v < 0 ? 0 : v));
       run_[x] = 0;
       acc_[x] = 0;
     }
-    run_[w] = run_[w + 1] = 0;
-    acc_[w] = acc_[w + 1] = 0;
+    if (f1 > f0) {
+      // nothing was accumulated strictly inside a single-span interior: the
+      // running sum at f1 is the sum at f0 plus the deltas in between (none)
+      for (int x = f0; x < f1; ++x) r += run_[x];
+      for (int x = f0; x < f1; ++x) run_[x] = acc_[x] = 0;
+    }
+    for (int x = f1 > f0 ? f1 : f0; x < hi; ++x) {
+      r += run_[x];
+      const int v = r + acc_[x];
+      out[x] = (uint8_t)(v > 255 ? 255 : (v < 0 ? 0 : v));
+      run_[x] = 0;
+      acc_[x] = 0;
+    }
+    run_[hi] = acc_[hi] = 0;
+    if (hi + 1 <= w + 1) run_[hi + 1] = acc_[hi + 1] = 0;
+    R.lo = (int16_t)(x0 + lo);
+    R.hi = (int16_t)(x0 + hi);
+    R.f0 = (int16_t)(x0 + f0);
+    R.f1 = (int16_t)(x0 + (f1 > f0 ? f1 : f0));
   }
 }
 
@@ -353,6 +437,14 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
   if (y0 < cr.y0) y0 = cr.y0;
   if (x1 > cr.x1) x1 = cr.x1;
   if (y1 > cr.y1) y1 = cr.y1;
+  if (disc_) {  // rows and columns outside the disc never draw
+    const int dy0 = (int)floorf(dcy_ - dr_), dy1 = (int)ceilf(dcy_ + dr_);
+    const int dx0 = (int)floorf(dcx_ - dr_), dx1 = (int)ceilf(dcx_ + dr_);
+    if (y0 < dy0) y0 = dy0;
+    if (y1 > dy1) y1 = dy1;
+    if (x0 < dx0) x0 = dx0;
+    if (x1 > dx1) x1 = dx1;
+  }
   if (x1 <= x0 || y1 <= y0) return;
   const uint32_t ga = (uint32_t)(alpha >= 1 ? 256 : alpha * 256.0f);  // 0..256
   uint16_t* fb = cv.data();
@@ -369,18 +461,26 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
     const float l2 = gdx * gdx + gdy * gdy;
     gk = l2 > 1e-6f ? 63.0f / l2 : 0;
   }
-  if (disc_) {  // rows and columns outside the disc never draw
-    const int dy0 = (int)floorf(dcy_ - dr_), dy1 = (int)ceilf(dcy_ + dr_);
-    const int dx0 = (int)floorf(dcx_ - dr_), dx1 = (int)ceilf(dcx_ + dr_);
-    if (y0 < dy0) y0 = dy0;
-    if (y1 > dy1) y1 = dy1;
-    if (x0 < dx0) x0 = dx0;
-    if (x1 > dx1) x1 = dx1;
-    if (x1 <= x0 || y1 <= y0) return;
-  }
-  int minX = x1, maxX = x0, minY = y1, maxY = y0;
+  const float gstep = gdx * gk;
+  const uint32_t fullA32 = (255u * ga) >> 8;  // coverage 255 with the global alpha
+  const uint32_t fullA = (fullA32 * 33) >> 8;
+  int minX = x1, maxX = x0 - 1, minY = y1, maxY = y0 - 1;
   for (int y = y0; y < y1; ++y) {
-    // the disc: the inside span of this row, with a 1 px soft edge
+    const Mask::Row& sr = sm.rows[y - sm.y0];
+    int lo = sr.lo > x0 ? sr.lo : x0, hi = sr.hi < x1 ? sr.hi : x1;
+    int f0 = sr.f0, f1 = sr.f1;
+    const uint8_t* srow = sm.data + (y - sm.y0) * sm.w - sm.x0;
+    const Mask::Row* crw = nullptr;
+    const uint8_t* crow = nullptr;
+    if (clip) {
+      crw = &clip->rows[y - clip->y0];
+      if (crw->lo > lo) lo = crw->lo;
+      if (crw->hi < hi) hi = crw->hi;
+      if (crw->f0 > f0) f0 = crw->f0;  // solid where both are solid
+      if (crw->f1 < f1) f1 = crw->f1;
+      crow = clip->data + (y - clip->y0) * clip->w - clip->x0;
+    }
+    // the disc: this row's inside span; 1 px soft edge
     float dl = -1e9f, dr = 1e9f;
     if (disc_) {
       const float dy = y + 0.5f - dcy_, q = dr_ * dr_ - dy * dy;
@@ -388,51 +488,152 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
       const float half = sqrtf(q);
       dl = dcx_ - half;
       dr = dcx_ + half;
+      const int il = (int)ceilf(dl + 0.5f), ir = (int)floorf(dr - 0.5f);
+      if (il > f0) f0 = il;
+      if (ir < f1) f1 = ir;
+      const int l2 = (int)floorf(dl - 0.5f), r2 = (int)ceilf(dr + 0.5f);
+      if (l2 > lo) lo = l2;
+      if (r2 < hi) hi = r2;
     }
-    const uint8_t* srow = sm.data + (y - sm.y0) * sm.w - sm.x0;
-    const uint8_t* crow = clip ? clip->data + (y - clip->y0) * clip->w - clip->x0 : nullptr;
+    if (hi <= lo) continue;
+    if (f0 < lo) f0 = lo;
+    if (f0 > hi) f0 = hi;  // never read past the row's coverage
+    if (f1 > hi) f1 = hi;
+    if (f1 < f0) f1 = f0;
     uint16_t* drow = fb + y * W;
-    float gt = 0;
-    if (!solid) gt = ((x0 + 0.5f - paint.x0) * gdx + (y + 0.5f - paint.y0) * gdy) * gk;
-    const float gstep = gdx * gk;
     bool rowAny = false;
-    for (int x = x0; x < x1; ++x, gt += gstep) {
-      uint32_t a = srow[x];
-      if (!a) continue;
+    // edge pixels (and anything not provably solid): the general path
+    auto px = [&](int x) {
+      uint32_t a = (x >= sr.f0 && x < sr.f1) ? 255u : srow[x];
+      if (!a) return;
       if (crow) {
-        a = (a * crow[x] + 128) >> 8;
-        if (!a) continue;
+        const uint32_t c = (x >= crw->f0 && x < crw->f1) ? 255u : crow[x];
+        a = (a * c + 128) >> 8;
+        if (!a) return;
       }
       a = (a * ga) >> 8;
       if (disc_) {
         const float xc = x + 0.5f;
         if (xc < dl + 0.5f || xc > dr - 0.5f) {
-          float k = xc < dl + 0.5f ? xc - dl + 0.5f : dr - xc + 0.5f;
-          if (k <= 0) continue;
+          const float k = xc < dl + 0.5f ? xc - dl + 0.5f : dr - xc + 0.5f;
+          if (k <= 0) return;
           if (k < 1) a = (uint32_t)(a * k);
         }
       }
       uint16_t c = fg;
       if (!solid) {
-        int gi = (int)gt;
-        gi = gi < 0 ? 0 : (gi > 63 ? 63 : gi);
-        c = lut[gi];
+        int gi = (int)(((x + 0.5f - paint.x0) * gdx + (y + 0.5f - paint.y0) * gdy) * gk);
+        c = lut[gi < 0 ? 0 : (gi > 63 ? 63 : gi)];
       }
       const uint32_t a32 = (a * 33) >> 8;  // 0..255 -> 0..32
-      if (a32 >= 32) {
-        drow[x] = c;
-      } else if (a32) {
+      if (a32 >= 32) drow[x] = c;
+      else if (a32) {
         drow[x] = blend565(drow[x], c, a32);
         ++pixelsBlended;
       } else {
-        continue;
+        return;
       }
       ++pixelsCovered;
       rowAny = true;
       if (x < minX) minX = x;
       if (x > maxX) maxX = x;
+    };
+    for (int x = lo; x < f0; ++x) px(x);
+    if (f1 > f0) {  // the solid run: no mask reads, no per-pixel tests
+      rowAny = true;
+      if (f0 < minX) minX = f0;
+      if (f1 - 1 > maxX) maxX = f1 - 1;
+      pixelsCovered += (uint32_t)(f1 - f0);
+      if (solid && fullA >= 32) {
+        uint16_t* d = drow + f0;
+        int k = f1 - f0;
+        if (k > 1 && ((uintptr_t)d & 2)) {
+          *d++ = fg;
+          --k;
+        }
+        uint32_t* d32 = (uint32_t*)d;
+        const uint32_t two = (uint32_t)fg | ((uint32_t)fg << 16);
+        for (int i = 0; i < (k >> 1); ++i) d32[i] = two;
+        if (k & 1) d[k - 1] = fg;
+      } else if (solid) {
+        for (int x = f0; x < f1; ++x) drow[x] = blend565(drow[x], fg, fullA);
+      } else {
+        float gt = ((f0 + 0.5f - paint.x0) * gdx + (y + 0.5f - paint.y0) * gdy) * gk;
+        for (int x = f0; x < f1; ++x, gt += gstep) {
+          int gi = (int)gt;
+          const uint16_t c = lut[gi < 0 ? 0 : (gi > 63 ? 63 : gi)];
+          drow[x] = fullA >= 32 ? c : blend565(drow[x], c, fullA);
+        }
+      }
     }
+    for (int x = f1 > f0 ? f1 : f0; x < hi; ++x) px(x);
     if (rowAny) {
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX >= minX && maxY >= minY) cv.markDirty(Rect{minX, minY, maxX + 1, maxY + 1});
+}
+
+void Raster::ring(Canvas& cv, float cx, float cy, float r, float w, Rgb c, float alpha, float a0, float a1) {
+  if (alpha <= 0.004f || w <= 0 || r <= 0) return;
+  const float hw = w * 0.5f;
+  const bool full = a1 - a0 >= 6.2831f;
+  float span = a1 - a0;
+  if (span < 0) span = 0;
+  const float e0x = cx + cosf(a0) * r, e0y = cy + sinf(a0) * r;
+  const float e1x = cx + cosf(a1) * r, e1y = cy + sinf(a1) * r;
+  const Rect& cr = cv.clipRect();
+  const float ro = r + hw + 1.0f, ri = r - hw - 1.0f;
+  int y0 = (int)floorf(cy - ro), y1 = (int)ceilf(cy + ro);
+  if (y0 < cr.y0) y0 = cr.y0;
+  if (y1 > cr.y1) y1 = cr.y1;
+  const uint16_t fg = c.to565();
+  const uint32_t ga = (uint32_t)(alpha >= 1 ? 256 : alpha * 256.0f);
+  uint16_t* fb = cv.data();
+  const int W = cv.width();
+  int minX = cr.x1, maxX = cr.x0 - 1, minY = y1, maxY = y0 - 1;
+  for (int y = y0; y < y1; ++y) {
+    const float dy = y + 0.5f - cy;
+    if (fabsf(dy) >= ro) continue;
+    const float xo = sqrtf(ro * ro - dy * dy);
+    const float xi = (ri > 0 && fabsf(dy) < ri) ? sqrtf(ri * ri - dy * dy) : 0;
+    // two spans (left and right of the hole), or one through the middle
+    float sx[2][2] = {{cx - xo, cx - xi}, {cx + xi, cx + xo}};
+    const int nspan = xi > 0 ? 2 : 1;
+    if (nspan == 1) sx[0][1] = cx + xo;
+    uint16_t* drow = fb + y * W;
+    bool any = false;
+    for (int k = 0; k < nspan; ++k) {
+      int xa = (int)floorf(sx[k][0]), xb = (int)ceilf(sx[k][1]);
+      if (xa < cr.x0) xa = cr.x0;
+      if (xb > cr.x1) xb = cr.x1;
+      for (int x = xa; x < xb; ++x) {
+        const float dx = x + 0.5f - cx;
+        const float d = sqrtf(dx * dx + dy * dy);
+        float cov = hw + 0.5f - fabsf(d - r);
+        if (!full) {
+          float ang = atan2f(dy, dx) - a0;
+          while (ang < 0) ang += 6.2831853f;
+          while (ang >= 6.2831853f) ang -= 6.2831853f;
+          if (ang > span) {  // outside the arc: only the round caps
+            const float d0 = sqrtf((x + 0.5f - e0x) * (x + 0.5f - e0x) + (y + 0.5f - e0y) * (y + 0.5f - e0y));
+            const float d1 = sqrtf((x + 0.5f - e1x) * (x + 0.5f - e1x) + (y + 0.5f - e1y) * (y + 0.5f - e1y));
+            cov = hw + 0.5f - (d0 < d1 ? d0 : d1);
+          }
+        }
+        if (cov <= 0) continue;
+        if (cov > 1) cov = 1;
+        const uint32_t a = ((uint32_t)(cov * 255.0f) * ga) >> 8;
+        const uint32_t a32 = (a * 33) >> 8;
+        if (!a32) continue;
+        drow[x] = a32 >= 32 ? fg : blend565(drow[x], fg, a32);
+        any = true;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+      }
+    }
+    if (any) {
       if (y < minY) minY = y;
       if (y > maxY) maxY = y;
     }

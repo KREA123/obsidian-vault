@@ -6,7 +6,8 @@ Rect FrameComposer::compose(Os& os, bool fullRedraw) {
   Canvas& cv = *cv_;
   Rect repair = os.takeDirty();
   repair.add(prevEyes_);
-  if (full_ || fullRedraw) repair = Rect{0, 0, cv.width(), cv.height()};
+  const bool ringRefresh = os.face().ringRefreshDue();
+  if (full_ || fullRedraw || ringRefresh) repair = Rect{0, 0, cv.width(), cv.height()};
   full_ = false;
   repair = cv.clip(repair);
   if (!repair.empty()) {
@@ -15,8 +16,11 @@ Rect FrameComposer::compose(Os& os, bool fullRedraw) {
     cv.clearClip();
   }
   cv.resetDirty();
-  os.face().render(cv);
+  os.face().renderEyes(cv);
   const Rect eyes = cv.dirty();
+  // the rim rings: a fresh look on refresh frames (the whole glass was
+  // repaired), else the last look again, only where we just repaired
+  os.face().renderRings(cv, &repair, ringRefresh);
   Rect changed = repair;
   changed.add(eyes);
   prevEyes_ = eyes;

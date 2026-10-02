@@ -782,6 +782,12 @@ void loop() {
   // pacing: 30 fps when something moves, 24 calm, 10-15 dozing, 4 with the screen off.
   // The idle task runs WFI between frames (the CPU sleeps; the panel keeps scanning).
   float fps = os.fpsHint(*brain);
+  // adaptive cap: if frames cost more than expected, lower the rate instead of
+  // running flat out (the loop stays under ~60 % of a core: cool and frugal)
+  static float avgMs = 8;
+  avgMs += ((endUs - frameStartUs) / 1000.0f - avgMs) * 0.05f;
+  const float capFps = 1000.0f / (avgMs * 1.6f);
+  if (fps > capFps) fps = capFps < 12 ? 12 : capFps;
   if (!displayOn) fps = 4;
   const int64_t frameUs = (int64_t)(1e6f / (fps < 1 ? 1 : fps));
   const int64_t spent = esp_timer_get_time() - frameStartUs;

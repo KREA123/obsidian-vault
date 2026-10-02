@@ -11,7 +11,7 @@ static inline float approach(float v, float t, float rate, float dt) { return v 
 bool SoulFace::begin(int w, int h) {
   W_ = w;
   H_ = h;
-  return ren_.begin(w, h) && ring_.reserve(2048);
+  return ren_.begin(w, h);
 }
 
 void SoulFace::setSeed(uint32_t seed) { rig_ = EyeRig(seed); }
@@ -155,7 +155,15 @@ bool SoulFace::ringsActive() const {
   return fListen_ > 0.01f || fAlert_ > 0.01f || fThink_ > 0.01f || fFlash_ > 0.01f || progress_ > 0.005f;
 }
 
-void SoulFace::render(Canvas& cv) {
+bool SoulFace::ringRefreshDue() const {
+  const bool now = ringsActive();
+  if (!now && !look_.any()) return false;
+  if (now != look_.any()) return true;  // a ring appears or the last one goes away
+  if (fabsf(progress_ - look_.progress) > 0.004f) return true;  // the approve arc: every frame
+  return t_ - look_.t >= 1.0f / 12.0f;
+}
+
+void SoulFace::renderEyes(Canvas& cv) {
   const float S = (float)(W_ < H_ ? W_ : H_);
   const float D = S * lay_[0];
   const float cx = W_ * 0.5f + lay_[1] * S, cy = H_ * 0.5f + lay_[2] * S;
@@ -163,32 +171,48 @@ void SoulFace::render(Canvas& cv) {
   o.hetero = hetero;
   o.alpha = dim;
   if (D > 2) ren_.render(cv, rig_, kDesigns[design_], cx, cy, D, o);
-  if (!ringsActive()) return;
+}
+
+void SoulFace::renderRings(Canvas& cv, const Rect* repair, bool refresh) {
+  if (refresh) {
+    look_.listen = fListen_;
+    look_.alert = fAlert_;
+    look_.think = fThink_;
+    look_.flash = fFlash_;
+    look_.progress = progress_;
+    look_.t = t_;
+    look_.level = rig_.level();
+    look_.flashCol = flashCol_;
+  }
+  if (!look_.any()) return;
+  if (!refresh && repair) {
+    if (repair->empty()) return;
+    cv.setClip(*repair);
+  }
   // one light at a time on the rim (no glow on the device: flat rings)
+  const float S = (float)(W_ < H_ ? W_ : H_);
   Raster& ras = ren_.raster();
-  Path& p = ring_;
-  const float R = S * 0.5f, t = t_;
+  const float R = S * 0.5f, t = look_.t;
   auto ring = [&](Rgb c, float a, float w, float a0 = 0, float a1 = 6.2831853f) {
     if (a <= 0.01f) return;
-    p.clear();
-    p.strokeArc(R, R, 0.47f * S - w * 0.5f, a0, a1, w);
-    ras.fill(cv, p, c, a > 1 ? 1 : a);
+    ras.ring(cv, R, R, 0.47f * S - w * 0.5f, w, c, a > 1 ? 1 : a, a0, a1);
   };
-  const float lv = rig_.level();
-  if (fListen_ > 0.01f) ring(Rgb::hex(0x9FC6FF), (0.3f + 0.3f * (0.5f + 0.5f * sinf(t * 3)) + 0.35f * lv) * fListen_, 0.01f * S + 0.02f * S * lv);
-  if (fAlert_ > 0.01f) {
+  const float lv = look_.level;
+  if (look_.listen > 0.01f) ring(Rgb::hex(0x9FC6FF), (0.3f + 0.3f * (0.5f + 0.5f * sinf(t * 3)) + 0.35f * lv) * look_.listen, 0.01f * S + 0.02f * S * lv);
+  if (look_.alert > 0.01f) {
     const float pz = 0.5f + 0.5f * sinf(t * 5);
-    ring(Rgb::hex(0xFFB347), (0.3f + 0.45f * pz) * fAlert_, 0.012f * S + 0.008f * S * pz);
+    ring(Rgb::hex(0xFFB347), (0.3f + 0.45f * pz) * look_.alert, 0.012f * S + 0.008f * S * pz);
   }
-  if (fThink_ > 0.01f) {
+  if (look_.think > 0.01f) {
     const float a = t * 2.4f - 1.5707963f;
-    ring(Rgb::hex(0xFFB347), 0.85f * fThink_, 0.012f * S, a, a + 0.9f);
+    ring(Rgb::hex(0xFFB347), 0.85f * look_.think, 0.012f * S, a, a + 0.9f);
   }
-  if (fFlash_ > 0.01f) ring(flashCol_, 0.55f * fFlash_, 0.012f * S);
-  if (progress_ > 0.005f) {
+  if (look_.flash > 0.01f) ring(look_.flashCol, 0.55f * look_.flash, 0.012f * S);
+  if (look_.progress > 0.005f) {
     const float a0 = -1.5707963f;
-    ring(Rgb::hex(0xC9F2E4), 0.95f, 0.028f * S, a0, a0 + 6.2831853f * (progress_ < 0.999f ? progress_ : 0.999f));
+    ring(Rgb::hex(0xC9F2E4), 0.95f, 0.028f * S, a0, a0 + 6.2831853f * (look_.progress < 0.999f ? look_.progress : 0.999f));
   }
+  cv.clearClip();
 }
 
 }  // namespace suflet

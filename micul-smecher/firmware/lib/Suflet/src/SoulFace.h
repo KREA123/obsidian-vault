@@ -50,8 +50,18 @@ class SoulFace {
 
   void update(float dt, const FaceInputs& in);
   // Draws the eyes and the rim rings; marks the canvas dirty where it drew.
-  void render(Canvas& cv);
-  bool ringsActive() const;  // a ring is lit: the whole rim is redrawn
+  void render(Canvas& cv) {
+    renderEyes(cv);
+    renderRings(cv, nullptr, false);
+  }
+  void renderEyes(Canvas& cv);
+  // The rim rings change at most 12 times a second (or every frame while
+  // the approve arc fills). refresh = draw the current look everywhere (the
+  // caller repaired the whole glass); otherwise redraw the last look inside
+  // `repair` only (nullptr = everywhere), so the moving eyes don't erase it.
+  void renderRings(Canvas& cv, const Rect* repair, bool refresh);
+  bool ringRefreshDue() const;
+  bool ringsActive() const;  // a ring is lit now
   Raster& raster() { return ren_.raster(); }
   const eyes::EyeRig& rig() const { return rig_; }
   eyes::EyeRig& rig() { return rig_; }
@@ -71,7 +81,11 @@ class SoulFace {
   bool lastAlert_ = false;
   float lay_[3] = {1, 0, 0}, layV_[3] = {0, 0, 0}, layT_[3] = {1, 0, 0};
   float fListen_ = 0, fAlert_ = 0, fThink_ = 0, fFlash_ = 0, progress_ = 0;
-  Path ring_;
+  struct RingLook {
+    float listen = 0, alert = 0, think = 0, flash = 0, progress = 0, t = 0, level = 0;
+    Rgb flashCol;
+    bool any() const { return listen > 0.01f || alert > 0.01f || think > 0.01f || flash > 0.01f || progress > 0.005f; }
+  } look_;  // what was last drawn
   Rgb flashCol_ = Rgb::hex(0xC9F2E4);
   float flashLeft_ = 0, t_ = 0, waitT_ = 0, talkNext_ = 0;
   Mode mode_ = Mode::Awake;
