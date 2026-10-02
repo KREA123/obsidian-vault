@@ -518,7 +518,7 @@
       if (av > 0.01) {
         const k = Math.max(0, av), beat = rig.altType === 'heart' ? 1 + 0.09 * Math.pow(Math.max(0, Math.sin(t * TAU * 1.3)), 8) : 1;
         const col = rig.altType === 'heart' ? '#FF2E63' : rig.altType === 'star' ? '#FFD23A' : pc;
-        const ar = P.rx * g.rx * 1.05 * k * beat, ary = P.ry * g.ry * 0.95 * k * beat;
+        const ar = 0.42 * g.rx * 1.05 * k * beat, ary = 0.5 * g.ry * 0.95 * k * beat;
         const ax = px * 0.5, ay = py * 0.5 - g.ry * 0.03;
         const inf = drawPupilShape(ctx, d, rig.altType, ax, ay, ar, ary, col, t, side, rig);
         if (!inf.none && d.glint) { ctx.fillStyle = d.glint.color || '#FFF6E2'; superPath(ctx, ax - ar * 0.4, ay - ary * 0.45, ar * 0.17, ar * 0.11, -0.6, 2.6); ctx.fill(); }

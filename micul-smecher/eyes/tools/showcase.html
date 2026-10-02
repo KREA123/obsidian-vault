@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>SOUL eyes showcase (render)</title>
+<style>html,body{margin:0;background:#0d0d0e}canvas{display:block}</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script src="../eyes.js"></script>
+<script src="../designs.js"></script>
+<script>
+/* Deterministic 1920x1080 showcase: call SHOW.next() once per frame (60 fps).
+   0-9.6 s: a field of SOULs idling; 9.6-10.6 s: zoom into the centre disc;
+   10.6-21 s: hero close-ups, each pair pops in and performs one reaction. */
+(function(){
+const E=SoulEyes, ALL=SOUL_DESIGNS.designs, by=id=>ALL.find(d=>d.id===id);
+const c=document.getElementById('c'), x=c.getContext('2d'), W=1920, H=1080, FPS=60, DT=1/FPS;
+const RAR=Object.fromEntries(E.RARITIES.map(r=>[r.key,r]));
+function rnd(seed){let a=seed;return()=>{a=(a+0x6d2b79f5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
+// ---- the field: packed discs, centre one is the hero
+const r=rnd(42), discs=[{x:W/2,y:H/2,R:205,d:by('original')}];
+const pool=ALL.filter(d=>d.id!=='original');
+let pi=0;
+for(let tries=0;tries<6000&&discs.length<62;tries++){
+  const R=55+Math.pow(r(),1.6)*120, px=-120+r()*(W+240), py=-100+r()*(H+200);
+  if(discs.every(o=>Math.hypot(o.x-px,o.y-py)>o.R+R+26)) discs.push({x:px,y:py,R,d:pool[(pi++*37)%pool.length]});
+}
+const POOL=['happy','wink','surprised','smirk','love','thinking','suspicious','shy','excited','laugh','confused','smug','sleepy'];
+discs.forEach((o,i)=>{o.rig=new E.Rig(1000+i*7,'live');o.rig.randomMood=i>0;o.rig.moodPool=POOL;o.rig.moodEvery=[2.5,6];o.rig.nextRandom=.8+(i%9)*.5;o.n=E.normalizeDesign(o.d)});
+// ---- hero sequence
+const HERO=[['original','smirk'],['altita','love'],['night-over-sibiu','wink'],['aurora-borealis','excited'],['midas-touch','shocked'],['genesis','approve']];
+const T_FIELD=8.8, T_ZOOM=1.0, T0=T_FIELD+T_ZOOM, SEG=1.85;
+const hero={rig:new E.Rig(77,'live'),i:-1};
+let f=0;
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function text(s,px,py,size,weight,color,align,font){x.font=`${weight} ${size}px ${font||'Helvetica, Arial, sans-serif'}`;x.fillStyle=color;x.textAlign=align||'left';x.fillText(s,px,py)}
+function bg(){x.setTransform(1,0,0,1,0,0);x.fillStyle='#0d0d0e';x.fillRect(0,0,W,H);
+  const g=x.createRadialGradient(W/2,H/2,200,W/2,H/2,1100);g.addColorStop(0,'rgba(40,40,46,.35)');g.addColorStop(1,'rgba(0,0,0,.6)');x.fillStyle=g;x.fillRect(0,0,W,H)}
+window.SHOW={frames:Math.round((T0+SEG*HERO.length+.6)*FPS),next(){
+  const t=f/FPS; f++;
+  bg();
+  if(t<T0){
+    for(const o of discs) o.rig.update(DT);
+    const zt=t<T_FIELD?0:ease((t-T_FIELD)/T_ZOOM);
+    const drift=1+.07*(Math.min(t,T_FIELD)/T_FIELD);
+    const target=470/205;  // centre disc grows to the hero size
+    const s=drift*(1-zt)+target*zt;
+    x.setTransform(s,0,0,s,W/2-W/2*s,H/2-H/2*s);
+    for(const o of discs){ // far ones first: smaller discs dim a little
+      const sx=W/2+(o.x-W/2)*s, sy=H/2+(o.y-H/2)*s; if(sx<-o.R*s-20||sx>W+o.R*s+20||sy<-o.R*s-20||sy>H+o.R*s+20) continue;
+      x.globalAlpha=o===discs[0]?1:1-zt;
+      E.render(x,o.rig,o.n,o.x,o.y,o.R*2,{});
+    }
+    x.globalAlpha=1;x.setTransform(1,0,0,1,0,0);
+    // title
+    const a=Math.min(1,Math.max(0,(t-1)/.6))*(1-Math.min(1,Math.max(0,(t-T_FIELD+.6)/.5)));
+    if(a>0){x.globalAlpha=a;x.fillStyle='rgba(13,13,14,.78)';x.fillRect(70,H-250,820,180);
+      text('SOUL · eye collection',100,H-195,22,'500','#9a98a0','left','Menlo, monospace');
+      text(ALL.length+' pairs. One is yours.',100,H-120,64,'800','#F1EFE9');x.globalAlpha=1}
+    return;
+  }
+  // hero close-ups
+  const q=t-T0, i=Math.min(HERO.length-1,Math.floor(q/SEG)), lq=q-i*SEG;
+  const hr=hero.rig;
+  if(i!==hero.i){hero.i=i;hero.d=E.normalizeDesign(by(HERO[i][0]));
+    if(i===0){hr.setExpression('neutral')} else {hr.setExpression('neutral');hr.reaction=null;hr._snap({scale:0,hearts:0,bang:0,check:0,spark:0,shake:0,bounce:0,alt:0,pupil:1});hr.react('hello')}
+    hero.did=false}
+  if(!hero.did&&lq>(i===0?.15:1.0)){hero.did=true;hr.react(HERO[i][1],1.6)}
+  hr.update(DT);
+  const zoomIn=ease(Math.min(1,q/0.9)), cx=W/2+(330)*zoomIn, D=940;
+  E.render(x,hr,hero.d,cx,H/2,D,{});
+  // label
+  const d=hero.d, la=Math.min(1,lq/.35)*(1-Math.max(0,(lq-SEG+.25)/.25));
+  if(la>0&&zoomIn>.5){x.globalAlpha=la*zoomIn;const slide=(1-Math.min(1,lq/.35))*30;
+    text(d.num+'  ·  1 in '+Math.round(1/d.odds).toLocaleString('en')+' SOULs',140,430+slide,24,'500','#9a98a0','left','Menlo, monospace');
+    text(d.name,136,520+slide,d.name.length>14?72:88,'800','#F1EFE9');
+    const rc=RAR[d.rarity];x.strokeStyle=rc.color;x.lineWidth=2;x.beginPath();x.roundRect(140,570+slide,rc.name.length*17+44,46,23);x.stroke();
+    text(rc.name.toUpperCase(),162,601+slide,20,'500',rc.color,'left','Menlo, monospace');
+    text(E.EXPRESSIONS.find(e=>e.name===HERO[i][1]).label.toLowerCase(),140,680+slide,26,'400','#6f6d75','left','Menlo, monospace');
+    x.globalAlpha=1}
+  const end=SHOW.frames/FPS, fo=Math.max(0,(t-(end-.55))/.55);
+  if(fo>0){x.fillStyle='rgba(13,13,14,'+Math.min(1,fo)+')';x.fillRect(0,0,W,H)}
+},png(){return c.toDataURL('image/png')}};
+})();
+</script></body></html>
