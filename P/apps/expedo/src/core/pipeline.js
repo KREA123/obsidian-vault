@@ -1,14 +1,14 @@
 import { PDFDocument } from 'pdf-lib';
 import * as db from '../db.js';
 import { request } from '../lib/http.js';
-import { getCourier } from '../couriers/index.js';
-import { getInvoicer } from '../invoicing/index.js';
+import { couriers, getCourier } from '../couriers/index.js';
+import { invoicers, getInvoicer } from '../invoicing/index.js';
 import mockCourier from '../couriers/mock.js';
 import mockInvoicer from '../invoicing/mock.js';
 import { FINAL_STATUSES, TrackingStatus, TRACKING_LABELS } from '../couriers/contract.js';
 import { ProcessingError, toProcessingError } from './errors.js';
 import { withDefaults } from './settings.js';
-import { planOrder, buildShipment, buildInvoice } from './build.js';
+import { planOrder, buildShipment, buildInvoice, bucharestDate } from './build.js';
 import { getShopify } from '../shopify/index.js';
 
 export const ORDER_STATUS = {
@@ -34,16 +34,26 @@ export function isTestMode(store) {
   return store.demo || storeSettings(store).mode !== 'live';
 }
 
-export function providerContext(store, kind, providerId) {
-  const test = isTestMode(store);
-  const registry = kind === 'courier' ? getCourier : getInvoicer;
-  const realAdapter = registry(providerId);
+function providerCtx(store, providerId, integration, test) {
+  return {
+    // The test providers never get the real credentials or settings (e.g. a real invoice series).
+    credentials: test ? {} : integration.credentials,
+    settings: test ? {} : integration.settings,
+    http: request,
+    cache: db.storeCache(store.id),
+    log: (message, data) => db.logEvent(store.id, null, 'info', providerId, message, data),
+  };
+}
+
+const registryFor = (kind) => (id) => (Object.hasOwn(kind === 'courier' ? couriers : invoicers, id) ? (kind === 'courier' ? getCourier : getInvoicer)(id) : undefined);
+
+function realProvider(store, kind, providerId) {
+  const realAdapter = registryFor(kind)(providerId);
   if (!realAdapter) {
     throw new ProcessingError({ code: 'PROVIDER_UNKNOWN', message: `Integrarea „${providerId}” nu există.`, hint: 'Alege alta în Setări.' });
   }
-  const adapter = test ? (kind === 'courier' ? mockCourier : mockInvoicer) : realAdapter;
   const integration = db.getIntegration(store.id, kind, providerId);
-  if (!test && (!integration || !integration.enabled)) {
+  if (!integration || !integration.enabled) {
     throw new ProcessingError({
       code: 'PROVIDER_NOT_CONFIGURED',
       message: `${realAdapter.name} nu e configurat.`,
@@ -51,33 +61,50 @@ export function providerContext(store, kind, providerId) {
       provider: providerId,
     });
   }
-  return {
-    adapter,
-    realAdapter,
-    test,
-    ctx: {
-      credentials: test ? {} : integration.credentials,
-      settings: test ? (integration?.settings || {}) : integration.settings,
-      http: request,
-      cache: db.storeCache(store.id),
-      log: (message, data) => db.logEvent(store.id, null, 'info', providerId, message, data),
-    },
-  };
+  return { adapter: realAdapter, realAdapter, test: false, ctx: providerCtx(store, providerId, integration, false) };
+}
+
+function testProvider(store, kind, providerId) {
+  const adapter = kind === 'courier' ? mockCourier : mockInvoicer;
+  return { adapter, realAdapter: registryFor(kind)(providerId) || adapter, test: true, ctx: providerCtx(store, providerId, null, true) };
+}
+
+/** Provider used to CREATE something now: the test one in test mode, the real one on live. */
+export function providerContext(store, kind, providerId) {
+  if (!registryFor(kind)(providerId)) {
+    throw new ProcessingError({ code: 'PROVIDER_UNKNOWN', message: `Integrarea „${providerId}” nu există.`, hint: 'Alege alta în Setări.' });
+  }
+  return isTestMode(store) ? testProvider(store, kind, providerId) : realProvider(store, kind, providerId);
+}
+
+/**
+ * Provider for an AWB / invoice that already exists: always the one that created it, whatever the
+ * store's current mode (a test AWB stays with the test courier after going live, a real AWB keeps
+ * being tracked and printed by the real courier while the store is back in test mode).
+ */
+export function existingProviderContext(store, kind, providerId, wasTest) {
+  return wasTest ? testProvider(store, kind, providerId) : realProvider(store, kind, providerId);
 }
 
 /** Recomputes the order's display status from what has been done to it. */
 export function deriveStatus(order, { blocking, hold } = {}) {
-  const d = order.data;
-  if (d.cancelledAt && !order.awb) return 'cancelled';
-  if (order.tracking_status === TrackingStatus.DELIVERED) return 'delivered';
-  if (order.tracking_status === TrackingStatus.RETURNED || order.tracking_status === TrackingStatus.RETURNING) return 'returned';
-  if (order.tracking_status === TrackingStatus.CANCELLED && !order.awb) return 'cancelled';
-  if (order.awb && order.tracking_status && ![TrackingStatus.CREATED, TrackingStatus.UNKNOWN].includes(order.tracking_status)) return 'in_transit';
-  if (order.awb && !order.last_error) return 'shipped';
-  if (order.last_error || blocking) return 'needs_attention';
-  if (d.fulfillmentStatus === 'FULFILLED') return 'shipped';
-  if (hold) return 'on_hold';
-  return 'ready';
+  const d = order.data || {};
+  const t = order.tracking_status;
+  if (!order.awb) {
+    if (d.cancelledAt) return 'cancelled';
+    // Fulfilled outside Expedo (manually in Shopify): nothing left to do here.
+    if (d.fulfillmentStatus === 'FULFILLED') return 'shipped';
+    if (order.last_error || blocking) return 'needs_attention';
+    if (hold) return 'on_hold';
+    return 'ready';
+  }
+  if (t === TrackingStatus.DELIVERED) return 'delivered';
+  if (t === TrackingStatus.RETURNED || t === TrackingStatus.RETURNING) return 'returned';
+  // Has an AWB but something needs a decision: cancelled in Shopify (cancel the AWB?), AWB cancelled
+  // at the courier (make a new one?), or a later step failed (invoice, Shopify fulfillment).
+  if (d.cancelledAt || t === TrackingStatus.CANCELLED || order.last_error) return 'needs_attention';
+  if (t && ![TrackingStatus.CREATED, TrackingStatus.UNKNOWN].includes(t)) return 'in_transit';
+  return 'shipped';
 }
 
 /** Validates an order and stores issues + status. Returns the plan. */
@@ -105,6 +132,10 @@ export function importOrder(store, normalized, { source = 'sync' } = {}) {
     db.logEvent(store.id, order.id, order.awb ? 'warning' : 'info', 'import', order.awb
       ? `Comanda a fost anulată în Shopify, dar are AWB ${order.awb}. Anulează AWB-ul dacă nu a plecat coletul.`
       : 'Comanda a fost anulată în Shopify.');
+  }
+  if (existing?.awb && existing.data?.codAmount !== normalized.codAmount && Math.abs((normalized.codAmount || 0) - (existing.cod_amount || 0)) >= 0.01) {
+    db.logEvent(store.id, order.id, 'warning', 'cod', `Suma de încasat din Shopify s-a schimbat după AWB: acum ${Number(normalized.codAmount || 0).toFixed(2)} lei, `
+      + `dar AWB-ul ${existing.awb} are ramburs ${Number(existing.cod_amount || 0).toFixed(2)} lei. Dacă trebuie corectat, anulează AWB-ul și generează altul.`);
   }
   const { plan, skipTag } = validateOrder(store, order.id);
 

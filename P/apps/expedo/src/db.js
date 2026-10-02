@@ -102,7 +102,6 @@ export function openDb(file = config.dbFile) {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS jobs_due ON jobs(status, run_at);
-    CREATE UNIQUE INDEX IF NOT EXISTS jobs_key ON jobs(key) WHERE status IN ('pending', 'running') AND key IS NOT NULL;
 
     CREATE TABLE IF NOT EXISTS cache (
       store_id INTEGER NOT NULL,
@@ -117,7 +116,24 @@ export function openDb(file = config.dbFile) {
       at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+  migrate();
   return db;
+}
+
+/** Additive migrations for databases created by older versions. */
+function migrate() {
+  const cols = new Set(db.prepare('PRAGMA table_info(orders)').all().map((c) => c.name));
+  // test_mode is about the AWB; the invoice has its own flag (an order can have a test invoice and a real AWB).
+  if (!cols.has('invoice_test')) {
+    db.exec('ALTER TABLE orders ADD COLUMN invoice_test INTEGER NOT NULL DEFAULT 0');
+    db.exec('UPDATE orders SET invoice_test = test_mode WHERE invoice_number IS NOT NULL');
+  }
+  // Cross-process claim on an order while it is being processed (see claimOrder).
+  if (!cols.has('processing_at')) db.exec('ALTER TABLE orders ADD COLUMN processing_at TEXT');
+  // One *pending* job per key. A running job must not block a new one: a webhook that arrives while
+  // the same order is being synced has to trigger another sync, or the update is lost.
+  db.exec(`DROP INDEX IF EXISTS jobs_key;
+    CREATE UNIQUE INDEX IF NOT EXISTS jobs_key_pending ON jobs(key) WHERE status = 'pending' AND key IS NOT NULL;`);
 }
 
 export const getDb = () => db;
@@ -178,7 +194,7 @@ export function markIntegrationVerified(storeId, kind, provider) {
 
 export function hydrateOrder(row) {
   if (!row) return row;
-  return { ...row, test_mode: !!row.test_mode, data: j(row.data, {}), issues: j(row.issues, []), last_error: j(row.last_error, null), overrides: j(row.overrides, {}) };
+  return { ...row, test_mode: !!row.test_mode, invoice_test: !!row.invoice_test, data: j(row.data, {}), issues: j(row.issues, []), last_error: j(row.last_error, null), overrides: j(row.overrides, {}) };
 }
 export function getOrder(id) {
   return hydrateOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
@@ -189,7 +205,7 @@ export function getOrderByShopifyId(storeId, shopifyId) {
 
 const ORDER_COLUMNS = new Set(['status', 'payment_method', 'total', 'cod_amount', 'courier', 'service', 'awb', 'awb_at', 'shipping_cost',
   'tracking_status', 'tracking_text', 'tracking_at', 'invoice_provider', 'invoice_series', 'invoice_number', 'invoice_url', 'invoice_at',
-  'fulfillment_id', 'fulfilled_at', 'cod_collected_at', 'paid_marked_at', 'issues', 'last_error', 'overrides', 'test_mode', 'data', 'name']);
+  'fulfillment_id', 'fulfilled_at', 'cod_collected_at', 'paid_marked_at', 'issues', 'last_error', 'overrides', 'test_mode', 'invoice_test', 'data', 'name']);
 
 export function updateOrder(id, fields) {
   const sets = [];
@@ -214,6 +230,30 @@ export function upsertOrder(storeId, order) {
       updated_at = datetime('now')`)
     .run(storeId, order.shopifyId, order.name, JSON.stringify(order), order.createdAt, order.paymentMethod, order.total, order.codAmount);
   return getOrderByShopifyId(storeId, order.shopifyId);
+}
+
+/**
+ * Claims an order for processing, atomically in the database, so two processes (or a crashed
+ * run and a retry) never work on it at once. Returns:
+ *   'ok'      — claimed
+ *   'busy'    — claimed by someone else less than `leaseMs` ago
+ *   'stale'   — a previous claim was never released (crash mid-processing); NOT claimed
+ *   'taken_over' — same, but `takeOver` was set: claimed
+ */
+export function claimOrder(id, { leaseMs = 10 * 60_000, takeOver = false } = {}) {
+  const now = new Date();
+  const r = db.prepare('UPDATE orders SET processing_at = ? WHERE id = ? AND processing_at IS NULL').run(now.toISOString(), id);
+  if (r.changes === 1) return 'ok';
+  const row = db.prepare('SELECT processing_at FROM orders WHERE id = ?').get(id);
+  if (!row) return 'busy';
+  if (!row.processing_at) return claimOrder(id, { leaseMs, takeOver });
+  if (now - new Date(row.processing_at) < leaseMs) return 'busy';
+  if (!takeOver) return 'stale';
+  const t = db.prepare('UPDATE orders SET processing_at = ? WHERE id = ? AND processing_at = ?').run(now.toISOString(), id, row.processing_at);
+  return t.changes === 1 ? 'taken_over' : 'busy';
+}
+export function releaseOrder(id) {
+  db.prepare('UPDATE orders SET processing_at = NULL WHERE id = ?').run(id);
 }
 
 export function logEvent(storeId, orderId, level, step, message, data) {
