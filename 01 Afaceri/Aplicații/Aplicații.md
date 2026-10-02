@@ -14,6 +14,7 @@ Al treilea activ al lui Andu (spus pe 2026-09-23): **posibilitatea de a dezvolta
 
 ## În lucru (spus de Andu, 2026-09-23)
 - **[[Expandly]]** — aplicație Shopify publică de upsell (11 elemente, Gratuit + Pro 14,99 $/lună), live pe Render, aproape gata de „Submit for review”; lucrul e pe pauză din 23.09. **Prioritatea nr. 1 dintre aplicații** — vezi [[Roadmap 1 milion €]] S1–S5. Detalii (ce face, pe ce platformă, pentru cine) de completat de Andu.
+- **[[Expedo]]** — procesare comenzi Shopify (AWB, facturi, ramburs), mai bun decât xConnector. Construit pe 02.10.2026 (Claude Code); integrările încă netestate pe conturi reale. Întâi pe MundiShop (Cargus + SmartBill).
 - **Aplicația MundiShop** — mundishop.ro ca aplicație mobilă. Android întâi (Expo / React Native, Storefront API, Checkout Kit, `ro.mundishop.app`), iOS după ce se vede că oamenii o instalează. Dezvoltarea e în Claude Code. Rol: **retenție** — notificări push gratuite către clienții existenți. Prin filtru (24.09): azi ~60 de clienți și 0 reveniți → valoare mică acum; se reia în Q1 2027, după clienții din Q4. Numele fără „LEGO”; LEGO® doar ca adjectiv în descriere.
 - Cum intră în roadmap: „o să vedem ce și cum” (Andu). Se trec prin [[Scopul — 1 milion €#Filtrul — prin care trece orice idee|filtru]] când sunt aproape de lansare.
 

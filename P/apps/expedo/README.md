@@ -7,7 +7,7 @@ Expedo preia comenzile din Shopify și face restul: verifică adresa, generează
 | Problema la xConnector | Ce face Expedo |
 |---|---|
 | AWB-urile Cargus dau erori, fără să spună de ce | Adresa e verificată **înainte** de curier (județ, localitate, sector, telefon, cod poștal). Localitatea e căutată în nomenclatorul curierului; dacă nu se potrivește, vezi „Ai vrut: X, Y, Z?” și o corectezi într-un clic. |
-| Facturarea FGO dă „hashtagul nu a fost găsit” | Hash-ul FGO e calculat exact după documentația lor, cu teste automate. |
+| Facturarea FGO dă „hashtagul nu a fost găsit” | Hash-ul FGO e calculat exact după documentația lor (v7.0, martie 2026), cu teste automate. Cererile se trimit ca JSON, cum cere acum FGO. |
 | Erori tehnice, în engleză sau JSON | Fiecare eroare are un mesaj scurt în română + ce să faci. Detaliile tehnice stau ascunse sub „Detalii tehnice”. |
 | Erori temporare (curier căzut) = comandă blocată | Se reîncearcă singur după 1, 5, 15, 60, 180 de minute. |
 | Risc de AWB sau factură dublă | O comandă nu primește niciodată două AWB-uri sau două facturi (blocare pe comandă + verificare în baza de date). |
