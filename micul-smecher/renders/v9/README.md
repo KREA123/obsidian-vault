@@ -85,3 +85,9 @@ Regenerare:
 python3 src/film_assemble.py                          # montajul
 ```
 Lista cadrelor-cheie e în `src/film_v9.py`.
+
+## Decupaje pentru trailer (v4, 2026-10-02)
+`src/render_cut.sh` randează, câte una pe rând, decupaje **transparente** (fără fundal, fără podea) pentru trailerul v4: `cut_front` (Argint din față, ecran negru), `cut_l` / `cut_r` (3/4 stânga / dreapta), `cut_c_<culoare>` (cele 5 culori, 3/4) și `cut_ou` (capsula OU deschisă, cu SOUL în ea).
+- Studioul (fundalul, cartoanele, steagurile) rămâne în scenă pentru reflexii, dar e ascuns pentru camera (`film_transparent`); umbra de contact se compune în trailer.
+- Ecranul e negru: ochii și ecranele SoulOS se desenează live în trailer, peste sticlă. Lângă fiecare randare, `<shot>_glass.json` dă conturul sticlei proiectat din camera de randare (cercul ecranului și marginea sticlei).
+- `src/post_cut.py`: denoise OIDN, AgX pe culoarea ne-premultiplicată (fără margini întunecate sau albe), decupat la conturul alfa + 24 px, WebP cu alfa în `trailer/assets/`.

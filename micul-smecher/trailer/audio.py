@@ -246,7 +246,7 @@ def make_sfx():
     add(s, tap(.26), b(44) + .78)                                      # finger on the glass
     add(s, pop(pent[4], .14), b(57) + .05)                             # approval card
     add(s, tap(.24), b(60) + .3); add(s, pop(pent[6], .16), b(60) + .42)   # Approve
-    for i, dt in enumerate((0, .6, 1.68, 2.3)): add(s, pop(pent[2 + i], .2, (i - 1.5) / 2), b(68.3) + dt + .02)   # AI pills
+    for i, dt in enumerate((0, .6, 1.6, 2.0)): add(s, pop(pent[2 + i], .2, (i - 1.5) / 2), b(68.3) + dt + .02)   # AI pills
     for k in range(5): add(s, pop(pent[1 + k], .12, (k - 2) / 3), b(74) + .05 + k * .1 + .45)   # the five land
     add(s, shimmer(3.2, .07, (81, 88, 93, 100, 105)), b(92) + .05)    # logo reveal on the drop
     add(s, pop(88, .16), b(99) + .05); add(s, tap(.26), b(99) + .63)   # waitlist button + press

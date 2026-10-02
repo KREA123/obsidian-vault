@@ -18,7 +18,7 @@ html,body{background:#FAF8F3;overflow:hidden}
 .scene{position:absolute;left:0;top:0;transform-origin:50% 50%;will-change:transform,filter}
 .a{position:absolute;left:0;top:0;transform-origin:0 0}
 .txt{position:absolute;left:0;top:0;font-family:'Bricolage Grotesque',sans-serif;font-weight:650;color:var(--ink);
-  letter-spacing:-.035em;line-height:1.02;white-space:nowrap;font-variation-settings:"opsz" 96}
+  letter-spacing:-.028em;line-height:1.02;white-space:nowrap;font-variation-settings:"opsz" 96}
 .txt .ln{display:block}
 .txt .w{display:inline-block;will-change:transform,filter,opacity}
 .prod{position:absolute;left:0;top:0;transform-origin:0 0}
@@ -153,9 +153,9 @@ class Scene {
 }
 // standard transitions: whip out (fast slide + blur) and the matching whip in
 const whipOut = (t, t1, dx = -1, dy = 0, d = .2) => { const q = ei(seg(t, t1 - d, d)); return { x: dx * q * 260, y: dy * q * 260, b: q * 26, o: 1 - q }; };
-const whipIn = (t, t0, dx = 1, dy = 0, d = .34) => { const q = 1 - eo(seg(t, t0, d)); return { x: dx * q * 220, y: dy * q * 220, b: q * 22, o: 1 - q * .6 }; };
+const whipIn = (t, t0, dx = 1, dy = 0, d = .34) => { const q = 1 - eo(seg(t, t0, d)); return { x: dx * q * 220, y: dy * q * 220, b: q * 22, o: t < t0 ? 0 : 1 - q * .6 }; };
 const zoomOut = (t, t1, d = .22) => { const q = ei(seg(t, t1 - d, d)); return { s: 1 + .28 * q, b: q * 24, o: 1 - q }; };
-const zoomIn = (t, t0, d = .4) => { const q = 1 - eo(seg(t, t0, d)); return { s: 1 - .1 * q, b: q * 18, o: 1 - q * .8 }; };
+const zoomIn = (t, t0, d = .4) => { const q = 1 - eo(seg(t, t0, d)); return { s: 1 - .1 * q, b: q * 18, o: t < t0 ? 0 : 1 - q * .8 }; };
 const comb = (...xs) => xs.reduce((a, c) => ({ x: (a.x ?? 0) + (c.x ?? 0), y: (a.y ?? 0) + (c.y ?? 0), s: (a.s ?? 1) * (c.s ?? 1),
   b: (a.b ?? 0) + (c.b ?? 0), o: (a.o ?? 1) * (c.o ?? 1) }), {});
 
@@ -201,15 +201,15 @@ const bg = document.getElementById('bg'), bctx = bg.getContext('2d');
 bg.width = V ? 216 : 384; bg.height = V ? 384 : 216;
 const BLOBS = [   // fx, fy (fraction of the frame), r (fraction of the long side), colour, drift phase
   [.08, 1.02, .42, [255, 214, 186], 0], [.92, 1.04, .40, [226, 218, 247], 1.7], [.55, 1.10, .30, [255, 232, 178], 3.1],
-  [.96, .08, .26, [255, 226, 206], 4.2], [.02, .12, .22, [232, 226, 248], 5.3]];
+  [.98, .04, .24, [255, 226, 206], 4.2, .5], [.0, .06, .2, [232, 226, 248], 5.3, .5]];
 function drawBg(t, night) {
   const w = bg.width, h = bg.height, n = clamp(night), R = Math.max(w, h);
   const g = bctx.createLinearGradient(0, 0, 0, h);
   g.addColorStop(0, mixc('#FBF9F5', '#120D16', n)); g.addColorStop(1, mixc('#FCF5EE', '#1B1016', n));
   bctx.globalCompositeOperation = 'source-over'; bctx.fillStyle = g; bctx.fillRect(0, 0, w, h);
-  for (const [bx, by, br, c, ph] of BLOBS) {
+  for (const [bx, by, br, c, ph, ka = 1] of BLOBS) {
     const x = (bx + .035 * Math.sin(t * .23 + ph)) * w, y = (by + .03 * Math.cos(t * .19 + ph * 1.3)) * h, r = br * R * (1 + .06 * Math.sin(t * .3 + ph));
-    const k = 1 - n * .85, gr = bctx.createRadialGradient(x, y, 0, x, y, r);
+    const k = (1 - n * .85) * ka, gr = bctx.createRadialGradient(x, y, 0, x, y, r);
     gr.addColorStop(0, `rgba(${c},${.85 * k})`); gr.addColorStop(.55, `rgba(${c},${.35 * k})`); gr.addColorStop(1, `rgba(${c},0)`);
     bctx.fillStyle = gr; bctx.fillRect(0, 0, w, h);
   }
@@ -285,7 +285,7 @@ function drawFace(ctx, S, f, cx, cy, t) {
 }
 // the face state at time t from a spec of keyframe tracks (deterministic: no springs, no randomness)
 function faceAt(t, sp) {
-  const blink = (sp.blinks || []).reduce((m, tb) => { const q = (t - tb) / .17; return Math.max(m, q >= 0 && q < 1 ? (q < .45 ? q / .45 : 1 - (q - .45) / .55) : 0); }, 0);
+  const blink = (sp.blinks || []).reduce((m, tb) => { const q = (t - tb) / .2; return Math.max(m, q >= 0 && q < 1 ? (q < .45 ? q / .45 : 1 - (q - .45) / .55) : 0); }, 0);
   const g = sp.gaze ? trk(t, sp.gaze, .22) : [0, 0];
   const sc = sp.scale ? trk(t, sp.scale, .25, ez) : 1;
   const open = (sp.open ? trk(t, sp.open, .35, ez) : 1) * (1 - blink);
@@ -437,7 +437,7 @@ function build() {
     sc.th2 = new Text(e, L('It\nlistens.', 'It listens.'), { size: L(112, 112) });
     sc.finger = mk('div', 'ripple', e, `width:150px;height:150px;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,.85) 55%,rgba(255,255,255,.25) 80%,rgba(255,255,255,0));box-shadow:0 0 30px rgba(159,198,255,.6)`);
     sc.rings = [0, 1, 2].map(() => mk('div', 'ripple', e, `width:200px;height:200px;border:3px solid rgba(159,198,255,.9)`));
-    sc.words = ['*Type.*', '*Talk.*', '*Remember.*'].map(w => new Text(e, w, { size: L(150, 132), ax: L(0, .5), align: L('left', 'center') }));
+    sc.words = ['*Type.*', '*Talk.*', '*Remember.*'].map(w => new Text(e, w, { size: L(130, 132), ax: L(0, .5), align: L('left', 'center') }));
   }
   /* ---------- S9 Claude asks / you approve (b56 - b64) ---------- */
   { const sc = new Scene(8, { pre: .35, post: .1, drift: .035 }), e = sc.el; S[8] = sc;
@@ -462,7 +462,7 @@ function build() {
   /* ---------- S10 works with your AI (b64 - b74) ---------- */
   { const sc = new Scene(9, { pre: .1, post: .1, drift: .03 }), e = sc.el; S[9] = sc;
     sc.t = new Text(e, L('Works with the AI\nyou already have.', 'Works with\nthe AI you\nalready have.'), { size: L(120, 116) });
-    const ps = L(60, 52);
+    const ps = L(60, 60);
     sc.pills = [pill(e, 'Claude', ps, '#E8890C'), pill(e, 'ChatGPT', ps, '#16181D'), pill(e, 'Your key', ps, '#9FC6FF'), pill(e, 'No AI', ps, '#C9CDD2')];
     sc.p = new Prod('soul_front', e, { N: 768 });
     // the collage: real SoulOS screens as floating glass discs (with their silver bezel) around the line
@@ -531,7 +531,7 @@ SCN_RENDER(0, function (t) {
   const rise = ez(seg(t, .28, 1.05));
   const hx = lerp(L(960, 540), L(1395, 540), p2), hy = lerp(L(1040, 1500), L(1035, 1820), p2), hh = lerp(L(700, 820), L(790, 960), p2);
   this.hero.face = faceAt(t, { bright: [[0, 0], [VO.meet + .05, 1, .45]], open: [[0, .06], [VO.meet + .05, 1, .45]],
-    blinks: [1.75, 1.97, 3.9], gaze: [[0, [0, .1]], [2.05, [-.75, -.05]], [2.75, [.75, -.05]], [3.35, [0, 0]], [4.3, L([-.7, .05], [0, -.7])]],
+    blinks: [1.75, 2.05, 3.9], gaze: [[0, [0, .1]], [2.05, [-.75, -.05]], [2.75, [.75, -.05]], [3.35, [0, 0]], [4.3, L([-.7, .05], [0, -.7])]],
     scale: [[0, 1], [VO.meet + .05, 1.06, .2], [VO.meet + .3, 1, .4]] });
   this.hero.place(t, { x: hx, y: hy + (1 - rise) * L(760, 900), h: hh, r: (1 - rise) * 4, lift: 8 + 8 * Math.sin(t * 1.4), shadow: rise });
   // side souls fly in from the edges
@@ -571,7 +571,7 @@ SCN_RENDER(3, function (t) {
   const p = seg(t, this.t0, this.t1 - this.t0);
   P(this.floor, 0, 0, { ax: 0, ay: 0 });
   this.p.face = faceAt(t, { gaze: [[0, [0, 0]], [b(29), L([-.85, .05], [0, -.8])], [b(31), [0, 0]], [b(33), [.7, -.2]], [b(34.5), [0, .1]]],
-    blinks: [b(30.5), b(32.6), b(32.85), b(35)], scale: [[0, 1], [b(31), 1.05, .2], [b(31.6), 1, .3]] });
+    blinks: [b(30.5), b(32.6), b(32.6) + .3, b(35)], scale: [[0, 1], [b(31), 1.05, .2], [b(31.6), 1, .3]] });
   this.p.place(t, { x: L(1300, 540) - p * 30, y: L(985, 1720), h: L(800, 900), lift: 4 + 4 * Math.sin(t * 1.3) });
   this.t.set(t, VO.desk - .03, this.t1 - .2, L(150, 540) + p * 14, L(470, 500));
 });
@@ -580,9 +580,9 @@ SCN_RENDER(4, function (t) {
   const T5 = CUT[4], T6 = CUT[5], T7 = CUT[6], T8 = CUT[7];
   this.cam(t, comb(zoomIn(t, T5, .45), whipOut(t, this.t1, -1)));
   // camera: one continuous move on the glass centre (anchor 'glass'), pushing in at each beat-cut
-  const KX = L([[0, 960], [T6 - .12, 1215, .5], [T7 - .12, 960, .5], [T8 - .14, 1250, .5]], [[0, 540], [T6 - .12, 540, .5], [T7 - .12, 540, .5], [T8 - .14, 540, .5]]);
-  const KY = L([[0, 470], [T6 - .12, 545, .5], [T7 - .12, 540, .5], [T8 - .14, 540, .5]], [[0, 960], [T6 - .12, 1060, .5], [T7 - .12, 990, .5], [T8 - .14, 1130, .5]]);
-  const KH = L([[0, 600], [T6 - .12, 1150, .5], [T7 - .12, 1070, .5], [T8 - .14, 1150, .5]], [[0, 760], [T6 - .12, 1250, .5], [T7 - .12, 1330, .5], [T8 - .14, 1240, .5]]);
+  const KX = L([[0, 960], [T6 - .12, 1215, .5], [T7 - .12, 960, .5], [T8 - .14, 1300, .5]], [[0, 540], [T6 - .12, 540, .5], [T7 - .12, 540, .5], [T8 - .14, 540, .5]]);
+  const KY = L([[0, 470], [T6 - .12, 545, .5], [T7 - .12, 540, .5], [T8 - .14, 540, .5]], [[0, 960], [T6 - .12, 1060, .5], [T7 - .12, 960, .5], [T8 - .14, 1190, .5]]);
+  const KH = L([[0, 600], [T6 - .12, 1150, .5], [T7 - .12, 1070, .5], [T8 - .14, 1100, .5]], [[0, 760], [T6 - .12, 1250, .5], [T7 - .12, 1200, .5], [T8 - .14, 1240, .5]]);
   const gx = trk(t, KX, .5, ez) + 6 * nz(t * .7), gy = trk(t, KY, .5, ez) + 5 * nz(t * .6, 1), gh = trk(t, KH, .5, ez) * (1 + .012 * (t - T5));
   const o = { x: gx, y: gy, h: gh, anchor: 'glass', r: .6 * nz(t * .5, 3) };
   // halo behind (Always on)
@@ -592,7 +592,7 @@ SCN_RENDER(4, function (t) {
   const touch = b(45.2);
   this.p.face = faceAt(t, {
     gaze: [[0, [0, 0]], [T5 + .3, [-.8, 0]], [b(37.8), [.8, 0]], [T6 - .1, [-.9, .2]], [b(41.6), [.85, -.3]], [b(42.4), [0, 0], .16], [T7 + .1, [0, .2]], [touch + .15, [0, -.35]]],
-    blinks: [b(37.2), b(39.5), b(43.1), b(43.35), touch + .9],
+    blinks: [b(37.2), b(39.5), b(43.0), b(43.0) + .3, touch + .9],
     scale: [[0, 1], [b(42.4), 1.08, .14], [b(43.2), 1.02, .5], [T7, 1], [touch + .15, 1.05, .3]],
     listen: [[0, 0], [touch + .1, 1, .35], [T8 - .3, 0, .3]], color: [[0, PAL.cream]] });
   // UI in the glass: Type (keyboard), Talk, Remember (reminders) -- the glass becomes the screen
@@ -606,7 +606,7 @@ SCN_RENDER(4, function (t) {
   this.p.place(t, o);
   // touch + ripples (Hold the glass)
   const [fxp, fyp, gr] = this.p.glassPt(o, .04, .56), fq = seg(t, touch, .15), fo = env(t, touch, .12, touch + .85, .25);
-  P(this.finger, fxp, fyp, { s: (gr / 520) * (1.3 - .3 * eo(fq)), o: fo * .9 });
+  P(this.finger, fxp, fyp, { s: (gr / 330) * (1.3 - .3 * eo(fq)), o: fo * .92 });
   this.rings.forEach((r, i) => { const q = seg(t, touch + .1 + i * .28, 1.1);
     const d = gr * 2 * (.1 + .38 * eo(q)); r.style.width = r.style.height = d + 'px'; r._w = r._h = d;
     P(r, fxp, fyp, { o: q > 0 && q < 1 ? (1 - q) * .9 : 0 }); });
@@ -616,7 +616,7 @@ SCN_RENDER(4, function (t) {
   this.tl.set(t, VO.looks - .03, T7 - .3, L(150, 540), L(540, 330));
   this.th1.set(t, VO.hold - .03, T8 - .3, L(260, 540), L(540, 300));
   this.th2.set(t, VO.hold + 1.17, T8 - .3, L(1650, 540), L(540, 1720));
-  const wy = L([370, 545, 720], [210, 360, 510]);
+  const wy = L([370, 545, 720], [175, 315, 455]);
   this.words.forEach((w, i) => w.set(t, [VO.type, VO.talk, VO.remember][i] - .03, this.t1 - .26, L(150, 540), wy[i],
     { accP: i === 2 ? 1 - seg(t, this.t1 + 5, .1) : clamp(1 - seg(t, [VO.talk, VO.remember][i] - .05, .2)) }));
 });
@@ -653,7 +653,7 @@ SCN_RENDER(9, function (t) {
     P(d.el, d.x + dx * (1 - eo(q)) * .25 + dx * cOut * .5 + 10 * nz(t * .8, i) * d.depth, d.y + dy * (1 - eo(q)) * .25 + dy * cOut * .5 + 12 * nz(t * .7, i + 3) * d.depth,
       { s: (.7 + .3 * e) * (1 + .03 * Math.sin(t + i)), r: d.r + (1 - eo(q)) * 8, o: clamp(q * 3) * (1 - cOut), b: (1 - d.depth) * 5 + (1 - eo(q)) * 10 + cOut * 14 }); });
   // pills pop on the words (Claude / ChatGPT / Your key), then No AI
-  const pt = [VO.claude, VO.claude + .6, VO.claude + 1.68, VO.claude + 2.3];
+  const pt = [VO.claude, VO.claude + .6, VO.claude + 1.6, VO.claude + 2.0];
   if (!this.pos) {   // a centred row (h) / a 2 x 2 grid (v), from the measured pill widths
     const ws = this.pills.map(el => el.offsetWidth), gap = 34;
     if (!V) { let x = 960 - (ws.reduce((a, c) => a + c, 0) + gap * 3) / 2; this.pos = ws.map(w => { const p = [x + w / 2, 400]; x += w + gap; return p; }); }
@@ -664,17 +664,17 @@ SCN_RENDER(9, function (t) {
   this.pills.forEach((el, i) => { const q = seg(t, pt[i] - .04, .5), e = bo(q, 1.8);
     if (t > pt[i]) look = [clamp((pos[i][0] - L(960, 540)) / L(600, 300), -1, 1), -.8];
     P(el, pos[i][0], pos[i][1] + 8 * Math.sin(t * 1.6 + i) - (1 - eo(q)) * 40, { s: .5 + .5 * e, r: [-3, 2, -2, 3][i], o: clamp(q * 3), b: (1 - eo(q)) * 10 }); });
-  const pq = ez(seg(t, VO.claude - .3, .6));
+  const pq = ez(seg(t, VO.claude - .12, .6));
   this.p.face = faceAt(t, { gaze: [[0, [0, -.6]], ...pt.map((x, i) => [x + .02, [clamp((pos[i][0] - L(960, 540)) / L(600, 300), -1, 1), -.85], .18]), [pt[3] + .8, [0, 0]]],
     blinks: [pt[1] + .3, pt[3] + .9], happy: [[0, 0], [pt[3] + .7, 1], [pt[3] + 1.6, 0]] });
-  this.p.place(t, { x: L(960, 540), y: L(1015, 1560) + (1 - pq) * 300, h: L(470, 640), o: pq, lift: 6 + 6 * Math.sin(t * 1.5), shadow: pq });
+  this.p.place(t, { x: L(960, 540), y: L(1015, 1560) + (1 - pq) * L(600, 800), h: L(470, 640), o: t < VO.claude - .12 ? 0 : 1, lift: 6 + 6 * Math.sin(t * 1.5), shadow: pq });
 });
 /* ---------- S11 ---------- */
 SCN_RENDER(10, function (t) {
   this.cam(t, whipIn(t, this.t0, -1));
   P(this.floor, 0, 0, { ax: 0, ay: 0 });
   this.t.set(t, VO.five - .03, this.t1 - .2, L(960, 540), L(190, 330));
-  const X = L(i => 960 + (i - 2) * 345, i => [200, 540, 880, 370, 710][i]), Y = L(() => 965, i => i < 3 ? 1320 : 1760), Hh = L(420, 400);
+  const X = L(i => 960 + (i - 2) * 352, i => [195, 540, 885, 368, 712][i]), Y = L(() => 965, i => i < 3 ? 1320 : 1760), Hh = L(400, 360);
   const sync = VO.five + 1.0;   // 'One soul': all five blink together
   this.ps.forEach((p, i) => { const t0 = this.t0 + .05 + [2, 1, 0, 3, 4][i] * .1, q = seg(t, t0, .7), e = bo(q, 1.3), dx = (i - 2);
     p.face = faceAt(t, { open: [[0, 1]], scale: [[0, .9], [t0 + .45, 1.06, .15], [t0 + .65, 1, .3]], gaze: [[0, [-dx * .3, .2]], [sync, [0, 0], .18], [b(77.8), [-.8, -.1]], [b(78.8), [.2, 0]]],
@@ -686,7 +686,7 @@ SCN_RENDER(10, function (t) {
 });
 /* ---------- S12 ---------- */
 SCN_RENDER(11, function (t) {
-  const fade = ei(seg(t, b(90.5), b(91) - b(90.5)));        // down to the stop-down beat, then the drop
+  const fade = eio(seg(t, b(90.2), b(91) - b(90.2)));        // down to the stop-down beat, then the drop
   this.cam(t, { o: 1 - fade });
   const q = ez(seg(t, this.t0 + .02, 1.0));
   this.p.face = faceAt(t, { color: [[0, PAL.amber]], bright: [[0, .9], [b(88), .7, 1]], lid: [[0, .3], [b(82), .38, .8]],
@@ -698,7 +698,7 @@ SCN_RENDER(11, function (t) {
 SCN_RENDER(12, function (t) {
   this.cam(t, comb(zoomOut(t, this.t1, .22)));
   const t0 = this.t0, flash = 1 - eo(seg(t, t0, .5));
-  setT(this.flash, 'none', flash * .9);
+  setT(this.flash, 'none', flash * .7);
   P(this.floor, 0, 0, { ax: 0, ay: 0 });
   const rise = ez(seg(t, t0 + .02, .9)), tap = VO.wait + .65;
   this.p.face = faceAt(t, { open: [[0, .1], [t0 + .2, 1, .2]], gaze: [[0, [0, 0]], [VO.price + .4, L([-.8, -.1], [0, .7])], [VO.wait + .1, L([-.6, .5], [0, .9])], [tap + .4, [0, 0]]],

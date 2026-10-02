@@ -1,9 +1,18 @@
+#!/usr/bin/env python3
+"""capture_ui.py -- renders the real SoulOS screens (os/index.html, English UI) crisp at 3x for the trailer:
+the #screen element of the live simulator in a given state, masked to its circle, saved as assets/ui_<name>.webp.
+Google Fonts are fetched through the proxy (CA bundle) and served to the page by a route, so the UI fonts are right.
+    python3 capture_ui.py [state ...]
+"""
 import re
+import os
 import sys, numpy as np
 from PIL import Image
 from playwright.sync_api import sync_playwright
-P='file:///home/user/obsidian-vault/micul-smecher/os/index.html'
-OUT='ui/'
+HERE = os.path.dirname(os.path.abspath(__file__))
+P = 'file://' + os.path.abspath(os.path.join(HERE, '..', 'os', 'index.html'))
+OUT = os.path.join(HERE, 'assets') + '/'
+TMP = '/tmp/soul_ui_raw.png'
 STATES = {
  'home':   "go('home','none')",
  'alarms': "go('alarms','none')",
@@ -41,11 +50,11 @@ with sync_playwright() as p:
     for k in order:
         pg.evaluate('window.showPill0=window.showPill0||showPill; hidePill(); S.nh=[];' + ('showPill=window.showPill0;' if k=='approved' else 'showPill=()=>{};')); pg.evaluate(STATES[k]); pg.wait_for_timeout(1800)
         el=pg.query_selector('#screen')
-        el.screenshot(path=OUT+k+'_raw.png')
-        im=np.asarray(Image.open(OUT+k+'_raw.png').convert('RGB')).astype(np.float32)
+        el.screenshot(path=TMP)
+        im=np.asarray(Image.open(TMP).convert('RGB')).astype(np.float32)
         h,w,_=im.shape; yy,xx=np.mgrid[0:h,0:w]; r=min(h,w)/2
         d=np.hypot(xx-(w-1)/2,yy-(h-1)/2)
         a=np.clip(r-d,0,1)
-        Image.fromarray(np.dstack([im,a*255]).astype(np.uint8),'RGBA').save(OUT+k+'.png')
+        Image.fromarray(np.dstack([im,a*255]).astype(np.uint8),'RGBA').save(OUT+'ui_'+k+'.webp','WEBP',quality=94,alpha_quality=100,method=6)
         print(k, w, h)
     b.close()
