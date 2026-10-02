@@ -810,7 +810,12 @@ for (const l of ["ro", "en"]) {
   for (const k in B) if (!/^(d2|kbPh2|kbChips2|dict2|dx3)$/.test(k)) A[k] = B[k];
 }
 
-/* ================================================================ eye renderer (port of Face.cpp, from the site) */
+/* ================================================================ the eyes: SOUL eyes engine (eyes/eyes.js v2.1, inlined above)
+   The eyes are the OS's main UI. Every state is said by the eyes first, then by words:
+   listening → "listening" · thinking → "thinking" · Claude at work → "working" (reading scan) · Claude needs you → "shocked", then
+   wide eyes looking at you · done → "approve" · error → "confused" · notification → a glance to the rim where it arrives.
+   The OS only adds a layout (scale k, offset cx/cy) so the same eyes can fill the face or sit small above a card,
+   and the rim rings (one light per state: ice = listening, amber = needs you, mint = done). */
 const TAU = Math.PI * 2;
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -818,257 +823,82 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 const approach = (v, t, rate, dt) => v + (t - v) * (1 - Math.exp(-rate * dt));
 const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-const PAL = { blush: hex("#FF7A9A"), heart: hex("#FF6B8A"), mint: hex("#C9F2E4"), ice: hex("#9FC6FF"), gold: hex("#FFD76B"), amber: hex("#FFB347"), cream: hex("#FFF0C8") };
-function hash01(i) { i = i >>> 0; i ^= i >>> 16; i = Math.imul(i, 0x7feb352d); i ^= i >>> 15; i = Math.imul(i, 0x846ca68b); i ^= i >>> 16; return (i & 0xFFFFFF) / 16777216; }
-function ellipsePts(cx, cy, rx, ry, n) { const a = []; for (let i = 0; i < n; i++) { const t = i / n * TAU; a.push([cx + Math.cos(t) * rx, cy + Math.sin(t) * ry]); } return a; }
-function clipHalf(pts, fn) {
-  const out = [], n = pts.length;
-  for (let i = 0; i < n; i++) {
-    const a = pts[i], b = pts[(i + 1) % n], fa = fn(a), fb = fn(b);
-    if (fa >= 0) out.push(a);
-    if ((fa >= 0) !== (fb >= 0)) { const t = fa / (fa - fb); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
-  }
-  return out;
-}
-function poly(ctx, pts) { if (pts.length < 3) return; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); ctx.fill(); }
-function glow(ctx, c, a, r) { ctx.shadowColor = rgba(c, a); ctx.shadowBlur = r; }
-function noGlow(ctx) { ctx.shadowBlur = 0; ctx.shadowColor = "transparent"; }
-function heartPath(ctx, x, y, s) { ctx.beginPath(); ctx.moveTo(x, y + s * 0.36); ctx.bezierCurveTo(x - s * 0.62, y - s * 0.02, x - s * 0.36, y - s * 0.56, x, y - s * 0.2); ctx.bezierCurveTo(x + s * 0.36, y - s * 0.56, x + s * 0.62, y - s * 0.02, x, y + s * 0.36); ctx.closePath(); }
-function starPath(ctx, x, y, r, rot) { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = rot - Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.closePath(); }
-function drawZ(ctx, x, y, s) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s, y); ctx.lineTo(x, y + s); ctx.lineTo(x + s, y + s); ctx.stroke(); }
-
-function drawEye(ctx, f, e, side, S, cx0, cy0, col) {
-  const par = 1 - 0.07 * f.gx * side;
-  const ex = cx0 + (side * f.spacing + f.gx * 0.055 + e.dx) * S;
-  const ey = cy0 + (f.cy + f.gy * 0.06 + e.dy) * S;
-  const rx = f.eyeW * e.scale * e.sx * par * S;
-  const ry0 = f.eyeH * e.scale * e.sy * par * S;
-  const squint = 1 - 0.85 * Math.max(f.happy, f.styleAmt);
-  const ry = ry0 * Math.max(0, e.open) * squint;
-  const B = f.bright, G = S * 0.075 * f.glow;
-  const wN = (1 - f.happy) * (1 - f.styleAmt);
-  ctx.lineCap = "round"; ctx.lineJoin = "round";
-  if (wN > 0.01 && ry > 0.6) {
-    const k = Math.tan(e.lidTilt) * (-side);
-    const yTop = ey + (-1 + 2 * e.lidTop) * ry, yBot = ey + (1 - 2 * e.lidBot) * ry;
-    const lid = p => p[1] - (yTop + k * (p[0] - ex));
-    const bot = p => yBot - p[1];
-    let pts = clipHalf(ellipsePts(ex, ey, rx, ry, 72), lid);
-    if (e.lidBot > 0.001) pts = clipHalf(pts, bot);
-    ctx.globalAlpha = wN * B; ctx.fillStyle = rgba(col, 1); glow(ctx, col, 0.62, G);
-    poly(ctx, pts); noGlow(ctx);
-    const hx = ex + rx * 0.22, hy = ey - ry * 0.12, hrx = rx * 0.34, hry = ry * 0.46;
-    if (hry > 0.8) {
-      let h = clipHalf(ellipsePts(hx, hy, hrx, hry, 40), lid);
-      if (e.lidBot > 0.001) h = clipHalf(h, bot);
-      ctx.globalAlpha = 0.45 * wN * B; ctx.fillStyle = "#fff"; poly(ctx, h);
-    }
-  }
-  const th = 0.042 * S;
-  ctx.strokeStyle = rgba(col, 1);
-  if (f.happy > 0.01) {
-    ctx.globalAlpha = f.happy * (1 - f.styleAmt) * B; ctx.lineWidth = th; glow(ctx, col, 0.6, G);
-    ctx.beginPath(); ctx.arc(ex, ey + ry0 * 0.45, rx, Math.PI + 0.35, TAU - 0.35); ctx.stroke(); noGlow(ctx);
-  }
-  if (f.styleAmt > 0.01) {
-    ctx.globalAlpha = f.styleAmt * B; glow(ctx, col, 0.6, G);
-    switch (f.style) {
-      case "closed": ctx.lineWidth = th * 0.85; ctx.beginPath(); ctx.arc(ex, ey - ry0 * 0.25, rx * 0.95, 0.35, Math.PI - 0.35); ctx.stroke(); break;
-      case "squeeze": { const s = -side, tipX = ex + s * rx * 0.55, backX = ex - s * rx * 0.7; ctx.lineWidth = th; ctx.beginPath(); ctx.moveTo(backX, ey - ry0 * 0.45); ctx.lineTo(tipX, ey); ctx.lineTo(backX, ey + ry0 * 0.45); ctx.stroke(); break; }
-      case "heart": { const pulse = 1 + 0.08 * Math.sin(f.ot * TAU * 2); glow(ctx, PAL.heart, 0.6, G); ctx.fillStyle = rgba(PAL.heart, 1); heartPath(ctx, ex, ey, rx * 2.1 * pulse); ctx.fill(); break; }
-      case "star": glow(ctx, PAL.gold, 0.6, G); ctx.fillStyle = rgba(PAL.gold, 1); starPath(ctx, ex, ey, rx * 1.3, f.spin * side); ctx.fill(); break;
-      case "spiral": noGlow(ctx); ctx.lineWidth = th * 0.7; for (let i = 0; i < 3; i++) { const a0 = f.spin * side + i * 2.1; ctx.beginPath(); ctx.arc(ex, ey, rx * (0.32 + 0.3 * i), a0, a0 + 3.9); ctx.stroke(); } break;
-    }
-    noGlow(ctx);
-  }
-  if (f.blush > 0.01) {
-    ctx.globalAlpha = 0.55 * f.blush * B; ctx.fillStyle = rgba(PAL.blush, 1); glow(ctx, PAL.blush, 0.4, S * 0.04);
-    ctx.beginPath(); ctx.ellipse(ex + side * rx * 0.25, ey + f.eyeH * S * 1.02, rx * 0.85, f.eyeH * S * 0.24, 0, 0, TAU); ctx.fill(); noGlow(ctx);
-  }
-}
-
-/* The OS adds one thing to Face: a layout (scale k + vertical offset cy)
-   so the same eyes can be the whole home screen or a small header on a card. */
-function drawFace(ctx, S, f, lay) {
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalAlpha = 1; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S);
-  if (f.bright <= 0.01) return;
-  const Sk = S * lay.k, cx = S / 2 + (lay.cx || 0) * S, cy = S / 2 + lay.cy * S, col = f.color, t = f.ot, B = f.bright;
-  drawEye(ctx, f, f.L, -1, Sk, cx, cy, col);
-  drawEye(ctx, f, f.R, 1, Sk, cx, cy, col);
-  const th = 0.018 * Sk;
-  ctx.lineCap = "round"; ctx.lineJoin = "round";
-  if (f.zzz > 0.01) {
-    const drift = (t * 0.25) % 1, a = (0.55 + 0.45 * Math.sin(t * 2)) * f.zzz * B;
-    ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = th; ctx.globalAlpha = a; glow(ctx, col, 0.5, Sk * 0.03);
-    drawZ(ctx, cx + 0.25 * Sk, cy - (0.21 + 0.04 * drift) * Sk, 0.065 * Sk);
-    ctx.lineWidth = th * 0.8; ctx.globalAlpha = a * 0.8;
-    drawZ(ctx, cx + 0.34 * Sk, cy - (0.31 + 0.04 * drift) * Sk, 0.045 * Sk); noGlow(ctx);
-  }
-  if (f.hearts >= 0) {
-    for (let i = 0; i < 3; i++) {
-      const p = f.hearts / 1.4 - i * 0.22; if (p <= 0 || p >= 1) continue;
-      const x = cx + (hash01(i + 11) - 0.5) * 0.36 * Sk, y = cy + (0.26 - 0.55 * p) * Sk;
-      ctx.globalAlpha = (p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8) * B;
-      ctx.fillStyle = rgba(PAL.heart, 1); glow(ctx, PAL.heart, 0.5, Sk * 0.03);
-      heartPath(ctx, x, y, (0.05 + 0.02 * hash01(i + 3)) * Sk); ctx.fill(); noGlow(ctx);
-    }
-  }
-  if (f.orbit > 0.01) {
-    for (let i = 0; i < 3; i++) {
-      const ang = t * 3.2 + i * 2.094;
-      ctx.globalAlpha = 0.9 * f.orbit * B; ctx.fillStyle = rgba(PAL.gold, 1);
-      starPath(ctx, cx + Math.cos(ang) * 0.13 * Sk, cy - 0.31 * Sk + Math.sin(ang) * 0.035 * Sk, 0.026 * Sk, t * 4); ctx.fill();
-    }
-  }
-  if (f.think > 0.01) {
-    ctx.fillStyle = rgba(col, 1);
-    for (let i = 0; i < 3; i++) {
-      const b = Math.max(0, Math.sin(t * 6 - i * 0.9));
-      ctx.globalAlpha = (0.5 + 0.5 * b) * f.think * B;
-      ctx.beginPath(); ctx.arc(cx + (-0.06 + 0.06 * i) * Sk, cy + (0.27 - 0.012 * b) * Sk, 0.018 * Sk, 0, TAU); ctx.fill();
-    }
-  }
-  /* full-screen rings (edge of the round display) */
-  const R = S / 2;
-  if (f.listen > 0.01) {
-    const pulse = 0.5 + 0.5 * Math.sin(t * 3), thick = 0.010 * S + 0.022 * S * f.level;
-    ctx.globalAlpha = (0.25 + 0.35 * pulse + 0.4 * f.level) * f.listen * B; ctx.strokeStyle = rgba(PAL.ice, 1); ctx.lineWidth = thick;
-    glow(ctx, PAL.ice, 0.5, S * 0.04); ctx.beginPath(); ctx.arc(R, R, 0.47 * S - thick * 0.5, 0, TAU); ctx.stroke(); noGlow(ctx);
-  }
-  if (f.alert > 0.01) {
-    const pulse = 0.5 + 0.5 * Math.sin(t * 5), thick = 0.012 * S + 0.008 * S * pulse;
-    ctx.globalAlpha = (0.3 + 0.45 * pulse) * f.alert * B; ctx.strokeStyle = rgba(PAL.amber, 1); ctx.lineWidth = thick;
-    glow(ctx, PAL.amber, 0.6, S * 0.045); ctx.beginPath(); ctx.arc(R, R, 0.47 * S - thick * 0.5, 0, TAU); ctx.stroke(); noGlow(ctx);
-  }
-  if (f.progress > 0.005) {
-    const a0 = -Math.PI / 2, c = f.progCol || PAL.mint;
-    ctx.globalAlpha = 0.95 * B; ctx.strokeStyle = rgba(c, 1); ctx.lineWidth = 0.028 * S;
-    glow(ctx, c, 0.6, S * 0.04);
-    ctx.beginPath(); ctx.arc(R, R, 0.445 * S, a0, a0 + TAU * Math.min(0.999, f.progress)); ctx.stroke(); noGlow(ctx);
-  }
-  ctx.globalAlpha = 1;
-}
-
-/* ================================================================ soul (a trimmed Brain for the OS) */
-const DUR = { wakeup: 1.9, boop: 1.7, laugh: 1.5, happy: 2.0, love: 2.2, dizzy: 2.4, star: 2.4, wake: 1.0, nope: 1.2, shy: 2.0, intro: 2.2 };
+const PAL = { mint: hex("#C9F2E4"), ice: hex("#9FC6FF"), gold: hex("#FFD76B"), amber: hex("#FFB347"), cream: hex("#FFF0C8"), rose: hex("#FF8FAB") };
+const EYES = window.SoulEyes, DESIGNS = (window.SOUL_DESIGNS && window.SOUL_DESIGNS.designs) || [];
+/* birth: each SOUL is born with one of the 120 eye designs, rolled from its chip id (the eFuse MAC on the device; simulated here) */
+const newChip = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+const chipFmt = c => String(c).match(/.{2}/g).join(":");
+const BIRTH = { chip: null, roll: null };
+function birthFrom(chip) { BIRTH.chip = chip; BIRTH.roll = EYES.rollFromChipId(DESIGNS, chip); return BIRTH.roll; }
+try { const c = localStorage.getItem("soulos-chip"); if (c && /^[0-9A-F]{12}$/.test(c)) birthFrom(c); } catch (e) {}
+if (!BIRTH.roll) birthFrom(newChip());
+const rarityOf = k => EYES.RARITIES.find(r => r.key === k) || EYES.RARITIES[0];
+/* the OS's old reaction words → the engine's expressions ([name, hold seconds]) */
+const RX = { boop: ["happy", 1.3], happy: ["happy", 1.6], laugh: ["laugh"], love: ["love", 2.2], dizzy: ["startled"], star: ["excited", 2.2], wake: ["surprised", 0.8],
+  wakeup: ["wake"], intro: ["hello"], nope: ["confused", 1.4], shy: ["shy", 1.6], deny: ["suspicious", 1.5], error: ["confused", 2.6] };
+/* OS states → held moods */
+const MOOD_OF = { idle: "neutral", sleep: "sleepy", listen: "listening", think: "thinking", speak: "neutral", focus: "neutral", busy: "working", wait: "surprised", error: "confused", charge: "charging", low: "hungry" };
 class Soul {
-  constructor(cv) {
+  constructor(cv, design) {
     this.cv = cv; this.ctx = cv.getContext("2d"); this.S = 0; this.t = 0;
-    this.g = { x: 0, y: 0, vx: 0, vy: 0 }; this.sq = { x: 0, v: 0 };
-    this.openS = 1; this.scaleS = 1; this.brightS = 0;
-    this.nextBlink = 1.6; this.blinkAt = -9; this.dbl = false; this.nextGlance = 1; this.glance = [0, 0];
-    this.rx = null; this.st = "idle"; this.alert = false; this.prog = 0; this.progCol = PAL.mint; this.look = null;
-    this.level = 0; this.lvlT = 0; this.lvlNext = 0; this.dim = 1;
-    this.tint = PAL.cream; this.flashCol = PAL.mint; this.flashUntil = -1;
-    this.lay = { k: 1, cy: 0, cx: 0 }; this.layS = { k: 1, cy: 0, cx: 0 }; this.layV = { k: 0, cy: 0, cx: 0 }; this.layDirect = false; this.follow = null;
-    const p = this.p = { eyeW: 0.12, eyeH: 0.19, spacing: 0.19, lidTilt: 0.16, lidTop: 0.19 };
-    const eye = () => ({ open: 1, scale: 1, sx: 1, sy: 1, lidTop: p.lidTop, lidTilt: p.lidTilt, lidBot: 0, dx: 0, dy: 0 });
-    this.f = { L: eye(), R: eye(), gx: 0, gy: 0, spacing: p.spacing, eyeW: p.eyeW, eyeH: p.eyeH, cy: 0.02, bright: 0, glow: 1, color: hex("#FFF0C8"),
-      style: "normal", styleAmt: 0, happy: 0, blush: 0, zzz: 0, hearts: -1, orbit: 0, listen: 0, alert: 0, progress: 0, think: 0, level: 0, ot: 0, spin: 0 };
+    this.design = EYES.normalizeDesign(design);
+    this.rig = new EYES.Rig(EYES.hashStr(this.design.id || "soul") ^ 0x5eed, "live");
+    this.st = "idle"; this.alert = false; this.prog = 0; this.progCol = PAL.mint; this.look = null; this.follow = null;
+    this.tint = PAL.cream; this.flashCol = PAL.mint; this.flashUntil = -1; this.dim = 1; this.levelExt = null; this.nextTalk = 0;
+    this.lay = { k: 1, cy: 0, cx: 0 }; this.layS = { k: 1, cy: 0, cx: 0 }; this.layV = { k: 0, cy: 0, cx: 0 }; this.layDirect = false;
+    this.f = { listen: 0, alert: 0, think: 0, flash: 0 };
   }
+  setDesign(d, instant) { const nd = EYES.normalizeDesign(d); if (instant || RM) { this.design = nd; return; } this.rig.blink(1); setTimeout(() => { this.design = nd; }, 110); }
+  get expression() { return this.rig.reaction ? this.rig.reaction.name : this.rig.mood; }
+  get mood() { return this.rig.mood; }
   react(n, d) {
-    this.rx = { n, t0: this.t, d: d || DUR[n] || 1.5 };
-    if (RM) return;
-    if (n === "boop") this.sq.v += 7;
-    if (n === "laugh") this.sq.v += 4;
-    if (n === "happy") this.sq.v += 3;
-    if (n === "wake" || n === "intro") { this.blinkAt = this.t + (n === "intro" ? 1.3 : 0.15); this.dbl = true; }
-    if (n === "intro") { this.brightS = 0; this.openS = 0.05; }
-    if (n === "wakeup") { this.openS = 0.06; this.blinkAt = this.t + 0.8; this.dbl = true; this.sq.v += 3; }
+    const m = RX[n] || [n, d], name = m[0], hold = d || m[1];
+    if (EYES.REACTIONS[name]) this.rig.react(name);
+    else if (EYES.MOODS[name]) this.rig.react(name, hold || 1.8);
   }
+  hide() { this.rig.reaction = null; this.rig._snap({ scale: 0 }); }
   lookAt(x, y, d) { this.look = { x, y, until: this.t + d }; }
   flash(col, d = 1.4) { this.flashCol = col; this.flashUntil = this.t + d; }
   update(dt) {
-    const t = (this.t += dt), f = this.f, p = this.p, R = RM ? 400 : 1;
-    let happy = 0, blush = 0, style = "normal", lid = p.lidTop, tilt = p.lidTilt, open = 1, bright = 1, scale = 1, dy = 0,
-      zzz = 0, think = 0, listen = 0, orbit = 0, hearts = -1, gaze = null, voice = false, bAmp = 0.02, bPer = 4, blinkLen = 0.17;
-    switch (this.st) {
-      case "sleep": style = "closed"; zzz = 1; bright = 0.55; gaze = [0, 0.25]; bAmp = 0.03; bPer = 5.5; break;
-      case "listen": listen = 1; voice = true; gaze = [0, -0.25]; scale = 1.04; break;
-      case "think": think = 1; gaze = [0.45, -0.55]; break;
-      case "speak": voice = true; scale = 1 + 0.07 * this.level; gaze = [0, 0.1]; break;
-      case "focus": lid = 0.36; gaze = [0, 0.85]; bPer = 6; blinkLen = 0.3; break;
-      case "busy": think = 1; lid = 0.3; gaze = RM ? [0, 0.4] : [-0.6 + 1.2 * ((t * 0.5) % 1), 0.45]; break;
-    }
-    const r = this.rx;
-    if (r) {
-      const v = t - r.t0;
-      if (v > r.d) this.rx = null;
-      else switch (r.n) {
-        case "intro": bright = Math.min(1, v / 0.7); if (v < 0.75) open = 0.05; if (v < 1.2) gaze = [-0.55, 0.42]; break;
-        case "boop": happy = 1; blush = 1; hearts = RM ? -1 : v; break;
-        case "happy": happy = 1; blush = 0.45; break;
-        case "laugh": style = "squeeze"; blush = 0.6; dy = RM ? 0 : -0.022 * Math.abs(Math.sin(v * 15)) * Math.max(0, 1 - v / r.d); break;
-        case "love": style = "heart"; blush = 0.4; break;
-        case "dizzy": style = "spiral"; orbit = 1; break;
-        case "star": style = "star"; break;
-        case "shy": blush = 1; lid = 0.36; gaze = [0.6, 0.6]; break;
-        case "nope": gaze = [0.75 * Math.sin(v * 18) * Math.max(0, 1 - v / 1.1), 0.12]; tilt = -0.2; lid = 0.3; break;
-        case "wake": scale = 1.07 - 0.07 * Math.min(1, v / 0.6); gaze = [0, 0]; break;
-        case "wakeup": { const e = Math.min(1, v / 0.6); open = 0.06 + 0.94 * (1 - Math.pow(1 - e, 3)); if (v < 0.5) lid = 0.34;
-          scale = 1 + 0.07 * Math.sin(Math.min(1, v / 0.9) * Math.PI); gaze = v < 0.75 ? [0, 0.15] : v < 1.1 ? [-0.75, -0.1] : v < 1.45 ? [0.75, -0.1] : [0, 0]; break; }
-      }
-    }
-    if (t > this.lvlNext) { this.lvlT = Math.pow(Math.random(), 1.4); this.lvlNext = t + rnd(0.07, 0.16); }
-    this.level = RM ? (voice ? 0.5 : 0) : approach(this.level, voice ? this.lvlT : 0, 18, dt);
-
-    let tx = 0, ty = 0;
+    const t = (this.t += dt), rig = this.rig;
+    const mood = MOOD_OF[this.st] || (EYES.MOODS[this.st] ? this.st : "neutral");
+    if (rig.reaction) rig.reaction.back = mood;                 // a reaction plays once, then lands on the state's mood
+    else if (rig.mood !== mood) rig.setExpression(mood);
     const lk = this.look && t < this.look.until ? this.look : null;
-    if (lk && !(r && ["nope", "intro", "shy"].includes(r.n))) { tx = lk.x; ty = lk.y; }
-    else if (gaze) { tx = gaze[0]; ty = gaze[1]; }
-    else if (this.follow && performance.now() - this.follow.t < 2200) { tx = this.follow.x; ty = this.follow.y; }
-    else if (!RM) {
-      if (t > this.nextGlance) {
-        const onCard = this.lay.k < 0.9;
-        this.glance = onCard ? (Math.random() < 0.75 ? [rnd(-0.5, 0.5), rnd(0.35, 0.8)] : [rnd(-0.7, 0.7), rnd(-0.3, 0.2)])
-          : (Math.random() < 0.7 ? [rnd(-0.85, 0.85), rnd(-0.55, 0.45)] : [0, 0]);
-        this.nextGlance = t + rnd(0.9, 2.6);
-        if (Math.random() < 0.3 && t - this.blinkAt > 0.5) this.blinkAt = t + 0.03;
-      }
-      tx = this.glance[0]; ty = this.glance[1];
-    }
-    if (RM) { this.g.x = tx; this.g.y = ty; }
-    else {
-      const K = 120, C = 11;
-      this.g.vx += (K * (tx - this.g.x) - C * this.g.vx) * dt; this.g.x += this.g.vx * dt;
-      this.g.vy += (K * (ty - this.g.y) - C * this.g.vy) * dt; this.g.y += this.g.vy * dt;
-    }
-    let bl = 0;
-    if (!RM) {
-      if (t >= this.nextBlink && this.st !== "sleep") { this.blinkAt = t; this.dbl = Math.random() < 0.22; this.nextBlink = t + rnd(2.2, 6); }
-      const q = (t - this.blinkAt) / blinkLen;
-      if (q >= 0 && q < 1) bl = q < 0.45 ? q / 0.45 : 1 - (q - 0.45) / 0.55;
-      else if (q >= 1 && this.dbl) { this.dbl = false; this.blinkAt = t + 0.08; }
-    }
-    if (!RM) { this.sq.v += (-260 * this.sq.x - 10 * this.sq.v) * dt; this.sq.x += this.sq.v * dt; } else this.sq.x = 0;
-    const br = RM ? 1 : 1 + bAmp * Math.sin(t * TAU / bPer);
-    this.openS = approach(this.openS, open, 12 * R, dt);
-    this.scaleS = approach(this.scaleS, scale, 10 * R, dt);
-    this.brightS = r && r.n === "intro" ? bright : approach(this.brightS, bright, 4 * R, dt);
-    /* the face's size/position is a spring (slight overshoot), or follows directly while a finger/launcher drives it */
+    const fl = !lk && this.follow && performance.now() - this.follow.t < 2200 ? this.follow : null;
+    const g = lk || fl;
+    rig.look = g ? [clamp(g.x, -1, 1), clamp(g.y, -1, 1)] : null;
+    if (this.st === "speak" && !RM && t > this.nextTalk) { rig.hop(); this.nextTalk = t + rnd(0.24, 0.5); }   // talking: little bobs, like a voice
+    rig.levelExt = this.levelExt;
+    rig.update(dt);
     for (const q of ["k", "cy", "cx"]) {
       const tg = this.lay[q] || 0;
       if (RM || this.layDirect) { this.layS[q] = tg; this.layV[q] = 0; }
-      else { const K = 160, C = 2 * Math.sqrt(K) * 0.8; this.layV[q] += (K * (tg - this.layS[q]) - C * this.layV[q]) * dt; this.layS[q] += this.layV[q] * dt; }
+      else { const K = 260, C = 2 * Math.sqrt(K) * 0.78; this.layV[q] += (K * (tg - this.layS[q]) - C * this.layV[q]) * dt; this.layS[q] += this.layV[q] * dt; }
     }
-    const sx = 1 + 0.14 * this.sq.x, sy = 1 - 0.14 * this.sq.x;
-    for (const e of [f.L, f.R]) {
-      e.lidTop = approach(e.lidTop, lid, 9 * R, dt); e.lidTilt = approach(e.lidTilt, tilt, 9 * R, dt);
-      e.scale = br * this.scaleS; e.sx = sx; e.sy = sy; e.open = this.openS * (1 - bl); e.dy = dy;
-    }
-    f.gx = this.g.x; f.gy = this.g.y; f.bright = this.brightS * this.dim;
-    const tc = t < this.flashUntil ? this.flashCol : this.tint; f.color = f.color.map((c, i) => RM ? tc[i] : approach(c, tc[i], 6, dt));
-    f.happy = approach(f.happy, happy, 12 * R, dt);
-    f.blush = approach(f.blush, blush, 6 * R, dt);
-    if (style !== f.style) { if (f.styleAmt > 0.02) f.styleAmt = approach(f.styleAmt, 0, 16 * R, dt); else f.style = style; }
-    else f.styleAmt = approach(f.styleAmt, style === "normal" ? 0 : 1, 10 * R, dt);
-    f.zzz = approach(f.zzz, zzz, 3 * R, dt); f.think = approach(f.think, think, 8 * R, dt);
-    f.alert = approach(f.alert, this.alert ? 1 : 0, 8 * R, dt); f.listen = approach(f.listen, listen, 8 * R, dt);
-    f.orbit = approach(f.orbit, orbit, 8 * R, dt); f.progress = this.prog; f.progCol = this.progCol; f.hearts = hearts; f.level = this.level;
-    f.ot = RM ? 0.3 : t; f.spin = RM ? 0 : f.spin + dt * 6;
+    const f = this.f, R = RM ? 400 : 1;
+    f.listen = approach(f.listen, this.st === "listen" ? 1 : 0, 10 * R, dt);
+    f.alert = approach(f.alert, this.alert ? 1 : 0, 10 * R, dt);
+    f.think = approach(f.think, this.st === "think" ? 1 : 0, 8 * R, dt);
+    f.flash = approach(f.flash, t < this.flashUntil ? 1 : 0, 9 * R, dt);
   }
-  draw() { if (this.S) drawFace(this.ctx, this.S, this.f, this.layS); }
+  draw() {
+    const S = this.S, ctx = this.ctx; if (!S) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S);
+    const L = this.layS, D = S * L.k, cx = S / 2 + (L.cx || 0) * S, cy = S / 2 + L.cy * S;
+    if (D > 2) { ctx.save(); EYES.render(ctx, this.rig, this.design, cx, cy, D, { glass: false, sheen: false }); ctx.restore(); }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const B = this.dim; if (B < 0.995) { ctx.globalAlpha = 1 - B; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S); ctx.globalAlpha = 1; }
+    /* the rim: one light at a time */
+    const R = S / 2, t = this.t, f = this.f, ring = (c, a, w, a0 = 0, a1 = TAU, blur = 0.04) => {
+      ctx.globalAlpha = a; ctx.strokeStyle = rgba(c, 1); ctx.lineWidth = w; ctx.lineCap = "round"; ctx.shadowColor = rgba(c, 0.6); ctx.shadowBlur = S * blur;
+      ctx.beginPath(); ctx.arc(R, R, 0.47 * S - w * 0.5, a0, a1); ctx.stroke(); ctx.shadowBlur = 0; ctx.globalAlpha = 1; };
+    if (f.listen > 0.01) { const p = 0.5 + 0.5 * Math.sin(t * 3), lv = this.rig.level; ring(PAL.ice, (0.3 + 0.3 * p + 0.35 * lv) * f.listen * B, 0.01 * S + 0.02 * S * lv); }
+    if (f.alert > 0.01) { const p = 0.5 + 0.5 * Math.sin(t * 5); ring(PAL.amber, (0.3 + 0.45 * p) * f.alert * B, 0.012 * S + 0.008 * S * p); }
+    if (f.think > 0.01) { const a = (RM ? 0 : t * 2.4) - Math.PI / 2; ring(PAL.amber, 0.85 * f.think * B, 0.012 * S, a, a + 0.9); }
+    if (f.flash > 0.01) ring(this.flashCol, 0.55 * f.flash * B, 0.012 * S);
+    if (this.prog > 0.005) { const a0 = -Math.PI / 2; ring(this.progCol || PAL.mint, 0.95 * B, 0.028 * S, a0, a0 + TAU * Math.min(0.999, this.prog)); }
+  }
 }
 
 /* ================================================================ OS state */
