@@ -348,10 +348,11 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
     if (clip->x0 + clip->w < x1) x1 = clip->x0 + clip->w;
     if (clip->y0 + clip->h < y1) y1 = clip->y0 + clip->h;
   }
-  if (x0 < 0) x0 = 0;
-  if (y0 < 0) y0 = 0;
-  if (x1 > cv.width()) x1 = cv.width();
-  if (y1 > cv.height()) y1 = cv.height();
+  const Rect& cr = cv.clipRect();
+  if (x0 < cr.x0) x0 = cr.x0;
+  if (y0 < cr.y0) y0 = cr.y0;
+  if (x1 > cr.x1) x1 = cr.x1;
+  if (y1 > cr.y1) y1 = cr.y1;
   if (x1 <= x0 || y1 <= y0) return;
   const uint32_t ga = (uint32_t)(alpha >= 1 ? 256 : alpha * 256.0f);  // 0..256
   uint16_t* fb = cv.data();

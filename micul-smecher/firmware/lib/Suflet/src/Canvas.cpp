@@ -206,4 +206,77 @@ int Canvas::drawText(const Font& f, float x, int y, const char* s, Rgb c, float 
   return width;
 }
 
+float Canvas::arcTextSpan(const Font& f, float r, const char* s, float tracking) {
+  if (!s || r <= 1) return 0;
+  int n = 0;
+  for (const char* p = s; *p;) {
+    utf8::next(p);
+    ++n;
+  }
+  return (measureText(f, s) + tracking * (n > 0 ? n - 1 : 0)) / r;
+}
+
+void Canvas::drawTextArc(const Font& f, float cx, float cy, float r, float a, const char* s, Rgb c, float alpha,
+                         bool bottom, float tracking) {
+  if (!s || alpha <= 0.004f || r <= 1) return;
+  const float span = arcTextSpan(f, r, s, tracking);
+  // pen position along the arc (px from the start of the run)
+  float pen = 0;
+  const float mid = (f.ascent - f.descent) * 0.5f;  // baseline offset so the text's middle sits on r
+  Rect touched;
+  const uint16_t solid = c.to565();
+  const char* p = s;
+  while (*p) {
+    const uint32_t cp = utf8::next(p);
+    const Glyph* g = f.find(cp);
+    if (!g) continue;
+    const float adv = g->adv16 / 16.0f;
+    const float along = pen + adv * 0.5f;
+    pen += adv + tracking;
+    if (!g->w || !g->h) continue;
+    // angle of the glyph centre, and the glyph's "up" direction
+    float ang, rot;
+    if (!bottom) {
+      ang = a - span * 0.5f + along / r;
+      rot = ang + 1.5707963f;  // tangent: text runs clockwise, up = outwards
+    } else {
+      ang = a + span * 0.5f - along / r;
+      rot = ang - 1.5707963f;  // runs counter-clockwise, up = inwards
+    }
+    const float cr = cosf(rot), sr = sinf(rot);
+    // the glyph box centre (in glyph space: pen at x = 0 .. adv, baseline y = 0)
+    const float gcx = adv * 0.5f, gcy = -mid;
+    // where that point lands on screen: on the circle of radius r
+    const float ox = cx + cosf(ang) * r, oy = cy + sinf(ang) * r;
+    // screen = O + R * (glyph - gc); inverse: glyph = gc + R^T (screen - O)
+    const float hx = fabsf(g->w * 0.5f) + fabsf(gcx) + 2, hy = fabsf(g->h * 0.5f) + fabsf(gcy) + (float)f.ascent + 2;
+    const float ext = sqrtf(hx * hx + hy * hy);
+    Rect box = clip(Rect{(int)floorf(ox - ext), (int)floorf(oy - ext), (int)ceilf(ox + ext), (int)ceilf(oy + ext)});
+    if (box.empty()) continue;
+    bool any = false;
+    for (int py = box.y0; py < box.y1; ++py) {
+      for (int px = box.x0; px < box.x1; ++px) {
+        const float sx = px + 0.5f - ox, sy = py + 0.5f - oy;
+        const float gx = gcx + cr * sx + sr * sy - g->x - 0.5f;
+        const float gy = gcy - sr * sx + cr * sy - g->y - 0.5f;
+        if (gx <= -1 || gy <= -1 || gx >= g->w || gy >= g->h) continue;
+        const int ix = (int)floorf(gx), iy = (int)floorf(gy);
+        const float fx = gx - ix, fy = gy - iy;
+        auto at = [&](int x, int y) -> float {
+          return (x < 0 || y < 0 || x >= g->w || y >= g->h) ? 0.0f : (float)f.cov(*g, x, y);
+        };
+        const float v = (at(ix, iy) * (1 - fx) + at(ix + 1, iy) * fx) * (1 - fy) +
+                        (at(ix, iy + 1) * (1 - fx) + at(ix + 1, iy + 1) * fx) * fy;
+        if (v < 0.25f) continue;
+        any = true;
+        const float k = v * (1.0f / 15.0f) * alpha;
+        if (k >= 0.999f) buf_[py * w_ + px] = solid;
+        else blend(px, py, c, k);
+      }
+    }
+    if (any) touched.add(box);
+  }
+  markDirty(touched);
+}
+
 }  // namespace suflet

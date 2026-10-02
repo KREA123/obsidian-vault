@@ -33,7 +33,7 @@ inline float clampf(float v, float a, float b) { return v < a ? a : (v > b ? b :
 
 class Canvas {
  public:
-  Canvas(int w, int h, uint16_t* buf) : w_(w), h_(h), buf_(buf) {}
+  Canvas(int w, int h, uint16_t* buf) : w_(w), h_(h), buf_(buf), clip_{0, 0, w, h} {}
 
   int width() const { return w_; }
   int height() const { return h_; }
@@ -42,6 +42,11 @@ class Canvas {
   uint16_t at(int x, int y) const { return buf_[y * w_ + x]; }
 
   void fill(Rgb c) {
+    if (clip_.x0 > 0 || clip_.y0 > 0 || clip_.x1 < w_ || clip_.y1 < h_) {
+      fillRect(clip_, c);
+      markDirty(clip_);
+      return;
+    }
     const uint16_t v = c.to565();
     for (int i = 0; i < w_ * h_; ++i) buf_[i] = v;
     markDirty(Rect{0, 0, w_, h_});
@@ -59,13 +64,24 @@ class Canvas {
   const Rect& dirty() const { return dirty_; }
   void resetDirty() { dirty_ = Rect{}; }
   void markDirty(const Rect& r) { dirty_.add(clip(r)); }
+  // Everything drawn is limited to the clip rectangle (the whole canvas by
+  // default). The frame loop uses it to repair the UI under the moving eyes.
   Rect clip(Rect r) const {
+    if (r.x0 < clip_.x0) r.x0 = clip_.x0;
+    if (r.y0 < clip_.y0) r.y0 = clip_.y0;
+    if (r.x1 > clip_.x1) r.x1 = clip_.x1;
+    if (r.y1 > clip_.y1) r.y1 = clip_.y1;
+    return r;
+  }
+  void setClip(Rect r) {
     if (r.x0 < 0) r.x0 = 0;
     if (r.y0 < 0) r.y0 = 0;
     if (r.x1 > w_) r.x1 = w_;
     if (r.y1 > h_) r.y1 = h_;
-    return r;
+    clip_ = r;
   }
+  void clearClip() { clip_ = Rect{0, 0, w_, h_}; }
+  const Rect& clipRect() const { return clip_; }
 
   inline void blend(int x, int y, Rgb c, float a) {
     uint16_t& px = buf_[y * w_ + x];
@@ -143,6 +159,13 @@ class Canvas {
                Align align = Align::Left, const Rgb* accent = nullptr, int nBytes = -1);
   // Width in pixels of the first nBytes of s (-1 = the whole string).
   static int measureText(const Font& f, const char* s, int nBytes = -1);
+  // Text along a circle (the rim). The run is centred on angle `a` (radians,
+  // 0 = right, +pi/2 = down) at radius r, measured to the text's middle.
+  // bottom = false: reads clockwise over the top; true: reads left to right
+  // along the bottom, upright for the viewer. `tracking` adds px per glyph.
+  void drawTextArc(const Font& f, float cx, float cy, float r, float a, const char* s, Rgb c, float alpha = 1,
+                   bool bottom = false, float tracking = 0);
+  static float arcTextSpan(const Font& f, float r, const char* s, float tracking = 0);  // radians
 
   // ---- SDF helpers (public so the face renderer can combine them) ------
   static float sdEllipse(float px, float py, float cx, float cy, float rx, float ry);
@@ -156,6 +179,7 @@ class Canvas {
   int w_, h_;
   uint16_t* buf_;
   Rect dirty_;
+  Rect clip_;
 };
 
 }  // namespace suflet
