@@ -247,4 +247,127 @@ SHOTS['side'] = (_v8(shot_side9), 1600, 1200, 96)
 SHOTS['ou_check'] = (shot_ou_check, 1000, 800, 64)
 SHOTS['front'] = (_v8(_wrap(shot_front8, _post_generic)), 1600, 1600, 96)
 
+
+# ==========================================================================================
+# trailer v4 cut-outs (2026-10-02): transparent renders of the product for compositing in HTML.
+#   film_transparent, the studio (sweep, cards, flags) kept for the reflections but hidden from camera rays, no DOF,
+#   screen BLACK (the eyes / UI are drawn live in the trailer on top of the glass). Next to each render's EXR the
+#   <stem>_glass.json gives the glass outline projected into the image (normalised 0..1, y down): the active
+#   screen circle (r 21.88 mm v6 = 31.26 mm at M) and the glass edge (r 26), 96 points each, plus the eyes-up
+#   direction, so the trailer can map a canvas exactly onto the glass. post_cut.py turns the EXR into an RGBA PNG.
+#     blender -b --factory-startup --python soul_v9.py -- --shot cut_front --tmp DIR
+CUT_KEEP = ('soul_', 'ou_')
+
+
+def _cut_finish(sc, pars, W, H, glass_pars):
+    """After a shot is built + scaled: transparent film, hide everything but the product from the camera,
+    no DOF, black screens, and the projected glass outlines."""
+    import json
+    from bpy_extras.object_utils import world_to_camera_view
+    sc.render.film_transparent = True
+    try:
+        sc.cycles.film_transparent_glass = False
+    except Exception:
+        pass
+
+    def top(ob):
+        while ob.parent is not None:
+            ob = ob.parent
+        return ob
+    keep = set(p.name for p in pars)
+    for ob in bpy.data.objects:
+        if ob.type != 'MESH' and ob.type != 'CURVE':
+            continue
+        if top(ob).name in keep:
+            continue
+        ob.visible_camera = False          # sweep / cards / flags: still seen in reflections and as light
+    cam = sc.camera
+    cam.data.dof.use_dof = False
+    cam.data.sensor_fit = 'VERTICAL' if H >= W else 'HORIZONTAL'
+    cam.data.sensor_height = cam.data.sensor_width = 36.0
+    sc.render.resolution_x, sc.render.resolution_y = W, H
+    sc.render.resolution_percentage = 100
+    for par in glass_pars:
+        screen_off(par)
+    bpy.context.view_layer.update()
+    out = {}
+    for par in glass_pars:
+        g = SOULS[par.name]['glass']
+        Mw = g.matrix_world
+        rec = {}
+        for key, r in (('screen', 21.88), ('glass', 26.0)):
+            pts = []
+            for i in range(96):
+                a = 2 * math.pi * i / 96
+                q = world_to_camera_view(sc, cam, Mw @ Vector((r * MM * math.cos(a), r * MM * math.sin(a), 0.15 * MM)))
+                pts.append((round(q.x, 6), round(1 - q.y, 6)))
+            rec[key] = pts
+        for key, v in (('c', (0, 0)), ('ux', (21.88, 0)), ('uy', (0, 21.88))):
+            q = world_to_camera_view(sc, cam, Mw @ Vector((v[0] * MM, v[1] * MM, 0.15 * MM)))
+            rec[key] = (round(q.x, 6), round(1 - q.y, 6))
+        out[par.name] = rec
+    base = os.path.join(ARGS.tmp, ARGS.shot + ('_preview' if ARGS.preview else '') + (('_' + ARGS.tag) if ARGS.tag else ''))
+    json.dump(dict(w=W, h=H, souls=out), open(base + '_glass.json', 'w'), indent=0)
+    print('  v9 cut: glass outline ->', base + '_glass.json')
+    return sc
+
+
+def _cut_soul(cw, az, el, W, H, fov_mm, yaw=0.0, lens=135.0):
+    """One SOUL of colour `cw`, seen from azimuth az / elevation el, framed so `fov_mm` (true size, vertical for
+    a portrait frame) fills the frame."""
+    sc = reset()
+    T = Vector((0, -2 * MM, 35.5 * MM))
+    TUNE.setdefault('mcard', 0.16)
+    day_studio(T)
+    s = build_soul('cut', cw, eyes='soul_front')
+    pose_soul(s, (0, 0, 0), yaw=yaw)
+    D = fov_mm * lens / 36.0 / K                      # pre-scale distance: the post-scale FOV is fov_mm
+    cam = cam_aed(T, az, el, D, lens, 16.0, focus=eye_point(s))
+    black_glass(cam, T, [s], glint=False)       # the glass sheen is drawn in the trailer, over the live eyes
+    metalise(cam, T, [s])
+    chamfer_kick(s, cam, TUNE.get('kick_ang', 128.0 if az <= 0 else 52.0), power=TUNE.get('kick', 1.2))
+    scale_scene(K)
+    return _cut_finish(sc, [s], W, H, [s])
+
+
+def shot_cut_ou():
+    """The OU capsule, lid open, a Silver SOUL standing in it (screen black), 3/4 from the left."""
+    sc = reset()
+    T = Vector((0, 0, 40 * MM))
+    TUNE.setdefault('mcard', 0.16)
+    day_studio(T)
+    s = build_soul('ou', 'silver', eyes='soul_front')
+    ou = build_ou('cut', 'perla', lid_open=True, night=False, soul=s)
+    ou.location = V((0, 0, 0.5))
+    ou.rotation_euler = (0, 0, R(TUNE.get('ou_yaw', 0.0)))
+    bpy.context.view_layer.update()
+    level_eyes(s)
+    lens = 100.0
+    D = TUNE.get('ou_fov', 150.0) * lens / 36.0 / K
+    cam = cam_aed(T, TUNE.get('ou_az', -24.0), TUNE.get('ou_el', 14.0), D, lens, 16.0, focus=eye_point(s))
+    black_glass(cam, T, [s], glint=False)
+    metalise(cam, T, [s])
+    scale_scene(K)
+    return _cut_finish(sc, [ou], 1800, 1800, [s])
+
+
+_CW_ALL = ('silver', 'graphite', 'midnight', 'ember', 'champagne')
+SHOTS['cut_front'] = (lambda: _cut_soul('silver', 0.0, TUNE.get('front_el', 5.0), 2200, 2400, 112.0, lens=200.0),
+                      2200, 2400, 96)
+SHOTS['cut_l'] = (lambda: _cut_soul('silver', -32.0, 8.0, 1800, 2000, 118.0), 1800, 2000, 96)
+SHOTS['cut_r'] = (lambda: _cut_soul('silver', 32.0, 8.0, 1800, 2000, 118.0), 1800, 2000, 96)
+for _cw in _CW_ALL:
+    SHOTS['cut_c_' + _cw] = ((lambda c=_cw: _cut_soul(c, -22.0, 7.0, 1400, 1600, 116.0)), 1400, 1600, 96)
+SHOTS['cut_ou'] = (shot_cut_ou, 1800, 1800, 128)
+
+
+def _setup_compositor_rgba(sc, base):
+    fo = _setup_compositor5(sc, base)
+    fo.format.color_mode = 'RGBA'
+    return fo
+
+
+_setup_compositor5 = setup_compositor
+setup_compositor = _setup_compositor_rgba
+
 main()

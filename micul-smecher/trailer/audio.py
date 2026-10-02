@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SOUL trailer soundtrack (v3): licensed music bed + synthesized trailer layer + SFX + TTS voice-over.
+"""SOUL trailer soundtrack (v4: same music edit, hits and voice as v3; SFX re-timed to the v4 picture): licensed music bed + synthesized trailer layer + SFX + TTS voice-over.
 
 - Music bed: "Sci-Fi Score" by Arulo, Mixkit (Mixkit Stock Music Free License: commercial use, no
   attribution required). See MUSIC-LICENSE.md. The mp3 is downloaded at build time and not committed
@@ -46,28 +46,28 @@ TTS_VOICE = os.environ.get('TTS_VOICE', 'en-US-AvaMultilingualNeural')   # Micro
 TTS_RATE, TTS_PITCH = '+10%', '+10Hz'
 def tts_say(text): return text.replace('Claude', 'Clawd')   # phonetic spelling: the voice mispronounces 'Claude'
 VO_LINES = [
-    (2,   "Meet Soul.",                              "SOUL title"),
-    (6,   "A little device, with a soul.",           "A LITTLE DEVICE WITH A SOUL"),
-    (12,  "Every day, you talk to AI.",              "typewriter line"),
-    (17,  "In a chat box.",                          "typed into the chat box"),
+    (2,   "Meet Soul.",                              "hero rises in front of the SOUL wordmark, the eyes open"),
+    (6,   "A little device, with a soul.",           "tagline, hero glides right"),
+    (12,  "Every day, you talk to AI.",              "headline"),
+    (17,  "In a chat box.",                          "typed into a chat box that then shrinks away"),
     (20,  "AI has a brain.",                         ""),
-    (24,  "Now, it has a soul.",                     "'soul' turns amber"),
-    (29,  "It lives on your desk.",                  "collage orbit"),
-    (36,  "Always on. Never in the way.",            "hero push-in"),
-    (40.5, "It looks back.",                         "live eyes blink"),
-    (44,  "Hold the glass. It listens.",             "finger-tap ripple"),
-    (50.7, "Type.",                                  "word 1"),
-    (52.3, "Talk.",                                  "word 2"),
-    (53.8, "Remember.",                              "word 3"),
-    (56,  "Claude asks.",                            "approval card"),
-    (60,  "You approve.",                            "after the Approve tap"),
+    (24,  "Now, it has a soul.",                     "'soul' turns amber on the hit"),
+    (29,  "It lives on your desk.",                  "3/4 SOUL on the desk, eyes look around"),
+    (36,  "Always on. Never in the way.",            "hero with a soft halo, words left and right"),
+    (40.5, "It looks back.",                         "push-in on the glass, the eyes look at the camera"),
+    (44,  "Hold the glass. It listens.",             "touch on the glass, ripples, listening ring"),
+    (50.7, "Type.",                                  "keyboard UI in the glass"),
+    (52.3, "Talk.",                                  "talk UI"),
+    (53.8, "Remember.",                              "reminders UI"),
+    (56,  "Claude asks.",                            "Claude approval card + the Claude screen in the glass"),
+    (60,  "You approve.",                            "Approve tapped, the face goes happy"),
     (64,  "Works with the AI you already have.",     ""),
-    (68.3, "Claude. ChatGPT. Your key.",             "the four pills (No AI · Claude · ChatGPT · Your key)", '+20%'),
-    (74,  "Five colours. One soul.",                 "family"),
-    (80,  "It sleeps in its egg.",                   "night shot"),
-    (92.5, "Soul. From two hundred forty-nine euros.", "logo reveal on the drop, then From €249"),
-    (99,  "Join the waitlist.",                      "waitlist button"),
-    (102.6, "Designed in Romania.",                  "end card"),
+    (68.3, "Claude. ChatGPT. Your key.",             "pills pop on each word, then No AI", '+20%'),
+    (74,  "Five colours. One soul.",                 "the five colours fly in and line up"),
+    (80,  "It sleeps in its egg.",                   "the egg at night, the eyes close"),
+    (92.5, "Soul. From two hundred forty-nine euros.", "wordmark on the drop, then From €249"),
+    (99,  "Join the waitlist.",                      "waitlist button, pressed"),
+    (102.6, "Designed in Romania.",                  "stacked logo end card"),
 ]
 
 # ───────────────────────── helpers ─────────────────────────
@@ -228,31 +228,29 @@ def boom(gain=.55):
     return reverb(st(np.sin(ph) * np.exp(-t / .5) * gain, 0), .3)
 
 def make_sfx():
-    s = np.zeros((N, 2))
-    for tc, g in [(5.5, .3), (10.0, .22), (13.5, .4), (17.1, .3), (17.5, .3), (19.35, .4), (21.5, .3),
-                  (24.5, .3), (27.5, .3), (31.0, .3), (34.05, .25), (37.0, .25), (39.5, .3), (9.45, .25)]:
-        addo(s, whoosh(gain=g, pan=(-.5, .5) if int(tc * 2) % 2 else (.5, -.5)), tc - .3)
-    for i in range(5): addo(s, whoosh(.4, 600, 6000, .14, (.8, -.2)), 34.1 + i * .11 - .05)
-    l1 = 'Every day, you talk to AI…'
-    for k in range(1, len(l1) + 1): addo(s, click(.1 if l1[k - 1] == ' ' else .17), 5.5 + (k + 3) / 15)
-    l2 = '…in a chat box.'
-    for k in range(1, len(l2) + 1): addo(s, click(.1 if l2[k - 1] == ' ' else .17), 8.25 + k / 15)
+    """v4: every UI / motion event of soul_trailer.html (v4), in video seconds (b(n) = beat n)."""
+    s = np.zeros((N, 2)); b = lambda n: n * BEAT
+    # whooshes on the cuts / camera moves (pan alternates)
+    for i, (tc, g) in enumerate([(.3, .22), (b(6) - .2, .2), (b(12) - .15, .32), (b(20) - .1, .2), (b(28) - .2, .3),
+                                 (b(36) - .15, .26), (b(40) - .12, .26), (b(44) - .12, .26), (b(50) - .14, .26),
+                                 (b(56) - .12, .32), (b(64) - .2, .26), (b(74) - .15, .32), (b(80) - .3, .2), (b(102) - .2, .26)]):
+        add(s, whoosh(gain=g, pan=(-.5, .5) if i % 2 else (.5, -.5)), tc - .25)
+    for i in range(2): add(s, whoosh(.45, 600, 6000, .16, (-.8, .2) if i == 0 else (.8, -.2)), .55 + i * .14 - .1)   # side souls fly in
     pent = [81, 84, 86, 88, 91, 93, 96, 98, 100]          # A minor pentatonic, to sit in the track's key
-    for i in range(0, 12, 2): addo(s, pop(pent[i // 2], .08, (i - 6) / 8), .3 + i * .06 + .12)
-    for i in range(5): addo(s, pop(pent[i], .13, (i - 2) / 3), 5.5 + 1.2 + i * .13 + .1)
-    addo(s, pop(86, .16), 10 + .75 + .12)
-    addo(s, pop(93, .18), 10 + 2.95 + .12)
-    for i in range(3): addo(s, pop(pent[5 + i], .1, (i - 1) / 2), 13.0 + i * .08 + .1)
-    for i in range(3): addo(s, pop(pent[2 + i], .16), 24.5 + .5 + i * .78 + .1)
-    for i in range(3): addo(s, pop(pent[5 + i], .1, (i - 1) / 2), 22.85 + .15 + i * .1 + .1)
-    addo(s, pop(93, .16), 27.5 + 1.75 + .2 + .1)
-    for i in range(4): addo(s, pop(pent[2 + i], .2, (i - 1.5) / 2), 31 + .8 + i * .2 + .12)
-    addo(s, pop(88, .18), 41.85 + 3.35 + .12)
-    addo(s, shimmer(1.6, .05, (93, 100, 105)), 12.75)
-    for tb in [19.55 + .72, 19.55 + 1.6, 19.55 + 1.82, 27.5 + 1.32, 41.85 + 1.78, 41.85 + 3.97, 46.5 + 1.63]: addo(s, tick(.09), tb)
-    for tp in [22.85, 29.25, 45.95]: addo(s, tap(.26), tp - .02)
-    addo(s, shimmer(3.2, .07, (81, 88, 93, 100, 105)), 42.15)
-    addo(s, shimmer(2.2, .04, (81, 88, 93, 100)), 46.75)
+    add(s, shimmer(1.6, .05, (93, 100, 105)), b(2) + .05)             # the eyes open ('Meet Soul')
+    for i, tc in enumerate((1.25, 1.47)): add(s, pop(pent[3 + i], .12, (-.4, .4)[i]), tc + .08)   # pills
+    l2 = 'In a chat box.'                                              # typing into the chat box
+    for k in range(len(l2)): add(s, click(.1 if l2[k] == ' ' else .17), b(17) + k * .62 / len(l2))
+    add(s, shimmer(1.4, .05, (93, 100, 105)), b(24.46))                # 'soul' turns amber
+    for tc in (b(50.7) - .12, b(52.3) - .1, b(53.8) - .1): add(s, tick(.1), tc)   # UI swaps in the glass
+    add(s, tap(.26), b(44) + .78)                                      # finger on the glass
+    add(s, pop(pent[4], .14), b(57) + .05)                             # approval card
+    add(s, tap(.24), b(60) + .3); add(s, pop(pent[6], .16), b(60) + .42)   # Approve
+    for i, dt in enumerate((0, .6, 1.68, 2.3)): add(s, pop(pent[2 + i], .2, (i - 1.5) / 2), b(68.3) + dt + .02)   # AI pills
+    for k in range(5): add(s, pop(pent[1 + k], .12, (k - 2) / 3), b(74) + .05 + k * .1 + .45)   # the five land
+    add(s, shimmer(3.2, .07, (81, 88, 93, 100, 105)), b(92) + .05)    # logo reveal on the drop
+    add(s, pop(88, .16), b(99) + .05); add(s, tap(.26), b(99) + .63)   # waitlist button + press
+    add(s, shimmer(2.2, .04, (81, 88, 93, 100)), b(102) + .1)         # end card
     return s
 
 # ───────────────────────── voice track (TTS or external VOICE_FILE) ─────────────────────────
@@ -270,7 +268,7 @@ def load_voice(path):
 def tc(t):  # 00:00.00
     return f'{int(t // 60):02d}:{t % 60:05.2f}'
 def write_script(durs):
-    rows = ['# SOUL trailer v3: voice-over script',
+    rows = ['# SOUL trailer v4: voice-over script',
             '',
             f'Timeline: `soul_trailer.mp4` / `soul_trailer_vertical.mp4`, {T_END:.2f} s, music at ~137 BPM (one beat = {BEAT:.3f} s).',
             'Each line starts on a beat, right on its cut, one short line per scene, in the style of the reference ad.',
