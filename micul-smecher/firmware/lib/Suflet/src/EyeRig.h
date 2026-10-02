@@ -70,6 +70,11 @@ class EyeRig {
     s_[ch].v = 0;
   }
 
+  // The mood a playing reaction falls back to (web SoulOS: rig.reaction.back).
+  void setBack(int moodExpr) {
+    if (reaction_ && moodExpr >= 0 && moodExpr < kMoodCount) reactBack_ = moodExpr;
+  }
+
   void update(float dt);  // substeps at 240 Hz, like eyes.js update()
 
   // ---- state for the renderer -------------------------------------------
