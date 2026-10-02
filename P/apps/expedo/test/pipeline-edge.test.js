@@ -228,7 +228,9 @@ test('DB claim: an interrupted run blocks automatic re-processing; a manual run 
 });
 
 test('processOrder refuses an order of another store', async () => {
-  const other = db.upsertStore({ shop: 'other.myshopify.com', accessToken: 't' });
+  let other = db.upsertStore({ shop: 'other.myshopify.com', accessToken: 't' });
+  db.saveStoreSettings(other.id, db.getStore(store.id).settings);
+  other = db.getStore(other.id);
   const o = add();
   const r = await P.processOrder(other, o.id, { force: true });
   assert.equal(r.ok, false);

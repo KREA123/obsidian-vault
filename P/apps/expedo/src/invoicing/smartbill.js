@@ -365,6 +365,41 @@ async function listSeries(ctx) {
   return (body?.list || []).filter((x) => !x.type || x.type === 'f').map((x) => ({ id: x.name, name: x.name, nextNumber: x.nextNumber }));
 }
 
+/** nextNumber of an invoice series, or undefined when the series isn't listed. */
+async function nextNumber(ctx, seriesName) {
+  const hit = (await listSeries(ctx)).find((x) => x.name === seriesName);
+  return hit?.nextNumber == null ? undefined : Number(hit.nextNumber);
+}
+
+// Failures after which the invoice may or may not exist. 4xx/errorText answers and 429 are definite (nothing issued).
+const AMBIGUOUS = new Set(['PROVIDER_TIMEOUT', 'PROVIDER_UNREACHABLE', 'PROVIDER_DOWN', 'UNEXPECTED']);
+
+async function resolveAmbiguous(ctx, invoice, seriesName, before, err) {
+  let after;
+  try { after = await nextNumber(ctx, seriesName); } catch { /* SmartBill still unreachable: stay cautious */ }
+  if (before !== undefined && after === before) {
+    // The series counter did not move: no invoice was issued, so retrying cannot create a duplicate.
+    return new ProcessingError({
+      code: err?.code || 'PROVIDER_DOWN',
+      message: `${err?.message || 'SmartBill nu a răspuns.'} Factura pentru comanda ${invoice.reference} nu a fost emisă.`,
+      hint: 'Am verificat numerotarea seriei în SmartBill: nu s-a emis nimic. Poți reîncerca fără risc de dublură.',
+      retryable: true,
+      provider: PROVIDER,
+      details: err?.details,
+    });
+  }
+  const candidate = before !== undefined && after === before + 1 ? ` (probabil ${seriesName} ${before})` : '';
+  ctx.log?.('SmartBill: rezultat necunoscut la emitere', { reference: invoice.reference, before, after, error: err?.message });
+  return new ProcessingError({
+    code: 'INVOICE_STATUS_UNKNOWN',
+    message: `SmartBill nu a confirmat emiterea; factura pentru comanda ${invoice.reference} poate fi emisă totuși${candidate}.`,
+    hint: 'Verifică în SmartBill Cloud dacă factura există înainte să încerci din nou, ca să nu emiți două facturi.',
+    retryable: false,
+    provider: PROVIDER,
+    details: { error: err?.message, code: err?.code, nextNumberBefore: before, nextNumberAfter: after, providerDetails: err?.details },
+  });
+}
+
 // ───────────────────────────── adapter ─────────────────────────────
 
 export default {
@@ -439,22 +474,14 @@ export default {
       });
     }
     const json = await invoicePayload(ctx, invoice);
+    // nextNumber before the call: the only way to tell afterwards whether an unanswered create issued an invoice.
+    const before = await nextNumber(ctx, json.seriesName);
     let body;
     try {
       body = await call(ctx, 'POST', '/invoice/v2', { json });
     } catch (err) {
-      // SmartBill V1 has no idempotency key: after a timeout the invoice may exist. Never auto-retry blindly.
-      if (err?.code === 'PROVIDER_TIMEOUT') {
-        throw new ProcessingError({
-          code: 'INVOICE_STATUS_UNKNOWN',
-          message: `SmartBill nu a răspuns la timp; factura pentru comanda ${invoice.reference} poate fi emisă totuși.`,
-          hint: 'Verifică în SmartBill Cloud dacă factura există înainte să încerci din nou, ca să nu emiți două facturi.',
-          retryable: false,
-          provider: PROVIDER,
-          details: err.details,
-        });
-      }
-      throw err;
+      if (!AMBIGUOUS.has(err?.code) && err instanceof ProcessingError) throw err;
+      throw await resolveAmbiguous(ctx, invoice, json.seriesName, before, err);
     }
     if (!body?.number) {
       throw new ProcessingError({
@@ -528,6 +555,10 @@ export default {
   },
 
   async registerPayment(ctx, { series, number, amount, date, method }) {
+    if (amount != null && !(Number(amount) > 0)) {
+      ctx.log?.('SmartBill: încasare cu suma 0 ignorată', { series, number, amount });
+      return { skipped: true };
+    }
     const type = method === 'card' ? 'Card'
       : method === 'transfer' ? 'Ordin plata'
       : method === 'cod' || !method ? (ctx.settings?.codPaymentType || 'Ramburs')
@@ -539,8 +570,23 @@ export default {
       useInvoiceDetails: true, // client taken from the invoice (avoids "CIF client difera")
       invoicesList: [{ seriesName: series, number: String(number) }],
     };
-    if (amount != null) json.value = round(amount, 2);
-    if (date) json.issueDate = String(date).slice(0, 10);
-    await call(ctx, 'POST', '/payment', { json });
+    let value = amount == null ? null : round(amount, 2);
+    // Payments carry no idempotency key: cap at what is still unpaid so a repeated call can't collect twice.
+    const st = await call(ctx, 'GET', '/invoice/paymentstatus', { query: { cif: cif(ctx), seriesname: series, number: String(number) } });
+    const unpaid = st?.unpaidAmount == null ? NaN : round(Number(st.unpaidAmount), 2);
+    if (Number.isFinite(unpaid)) {
+      if (unpaid <= 0) return { alreadyPaid: true };
+      if (value == null || value > unpaid) value = unpaid;
+    }
+    if (value != null) json.value = value;
+    if (date) json.issueDate = bucharestDay(date);
+    try {
+      await call(ctx, 'POST', '/payment', { json });
+    } catch (err) {
+      // Repeated delivery webhook / manual collection already done: nothing left to collect — idempotent no-op.
+      if (err?.code === 'INVOICE_ALREADY_PAID') return { alreadyPaid: true };
+      throw err;
+    }
+    return {};
   },
 };

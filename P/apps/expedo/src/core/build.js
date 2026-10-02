@@ -14,6 +14,20 @@ export function bucharestDate(d = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
+/** UTC ISO instant of 00:00 Europe/Bucharest on the Bucharest day of `d` (DST-aware). */
+export function bucharestDayStart(d = new Date()) {
+  const [y, m, day] = bucharestDate(d).split('-').map(Number);
+  const wanted = Date.UTC(y, m - 1, day);
+  const wall = (t) => {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Bucharest', hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
+      .formatToParts(new Date(t)).map((x) => [x.type, Number(x.value)]));
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  };
+  let t = wanted;
+  for (let i = 0; i < 3; i++) t -= wall(t) - wanted;
+  return new Date(t).toISOString();
+}
+
 /** Effective shipping address: Shopify address with the merchant's manual fixes on top. */
 export function effectiveAddress(order, overrides = {}) {
   return { ...(order.shippingAddress || order.billingAddress || {}), ...(overrides.address || {}) };

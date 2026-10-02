@@ -227,7 +227,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .sidebar { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; padding: 10px 16px; gap: 10px; min-width: 0; }
   #nav { flex-direction: row; overflow-x: auto; max-width: 100%; min-width: 0; }
   .page-head h1 { width: 100%; }
-  .sidebar-foot { display: none; }
+  /* Keep the store switch and logout reachable on phones. */
+  .sidebar-foot { margin-top: 0; margin-left: auto; flex-direction: row; align-items: center; padding: 0; }
+  #store-name { display: none; }
   #view { padding: 16px; }
   .banner { padding: 10px 16px; }
   .cols, .settings-layout, .grid2, .grid3 { grid-template-columns: 1fr; }

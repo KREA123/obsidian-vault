@@ -62,6 +62,7 @@ const router = (overrides = {}) => (c) => {
   if (path === 'nomenclator/localitati') return { body: LOCALITIES_CJ };
   if (path === 'factura/emitere') return { body: EMITERE_OK };
   if (path === 'factura/incasare') return { body: { Success: true, Message: '', Incasare: { Numar: '1', Serie: 'CH' } } };
+  if (path === 'factura/getstatus') return { body: { Success: true, Factura: { Numar: c.json.Numar, Serie: c.json.Serie, Valoare: '239.97', ValoareAchitata: '0' } } };
   throw new Error(`unexpected ${path}`);
 };
 
@@ -339,14 +340,15 @@ test('stornoInvoice → factura/stornare; hash over the ORIGINAL number', async 
 
 test('registerPayment → factura/incasare with NumarFactura hash and FGO date format', async () => {
   const { ctx, calls } = ctxWith(router());
-  await fgo.registerPayment(ctx, { series: 'MIDA', number: '001', amount: 239.97, date: '2026-10-05', method: 'cod' });
-  const body = calls[0].json;
-  assert.equal(calls[0].url.pathname, '/v1/factura/incasare');
+  await fgo.registerPayment(ctx, { series: 'MIDA', number: '001', amount: 239.97, date: '2025-10-05', method: 'cod' });
+  assert.equal(calls[0].url.pathname, '/v1/factura/getstatus'); // what is still unpaid, so a repeat can't collect twice
+  const inc = calls.find((c) => c.url.pathname === '/v1/factura/incasare');
+  const body = inc.json;
   assert.equal(body.NumarFactura, '001');
   assert.equal(body.SerieFactura, 'MIDA');
   assert.equal(body.TipIncasare, 'Banca');
   assert.equal(body.SumaIncasata, 239.97);
-  assert.equal(body.DataIncasare, '2026-10-05 00:00:00');
+  assert.equal(body.DataIncasare, '2025-10-05 00:00:00'); // a past plain date: start of that day
   assert.equal(body.Hash, sha1Upper(CUI + KEY + '001'));
 });
 
@@ -385,4 +387,131 @@ test('adapter fields are in Romanian and include PlatformaUrl and test mode', ()
   const keys = fgo.settingsFields.map((f) => f.key);
   for (const k of ['series', 'platformUrl', 'vatPayer', 'testMode']) assert.ok(keys.includes(k), k);
   assert.deepEqual(fgo.credentialFields.map((f) => f.key), ['cui', 'privateKey']);
+});
+
+// ── live-checked responses (test/fixtures/invoicing/live-responses.json) ──
+
+import { readFileSync } from 'node:fs';
+const LIVE = JSON.parse(readFileSync(new URL('./fixtures/invoicing/live-responses.json', import.meta.url), 'utf8')).fgo;
+
+test('live: production "not authorized for API use" and test-env "Codul unic nu exista" → AUTH_FAILED, not retryable', async () => {
+  for (const k of ['prodUnknownCui', 'testUnknownCui']) {
+    const { ctx } = ctxWith(() => ({ status: LIVE[k].status, body: LIVE[k].body }));
+    await assert.rejects(fgo.testConnection(ctx), (err) => err.code === 'AUTH_FAILED' && err.retryable === false, k);
+    await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'AUTH_FAILED' && err.retryable === false, k);
+  }
+});
+
+test('live: test-env getstatus answers bad credentials with HTTP 500 + .NET stack → AUTH_FAILED, stack never shown', async () => {
+  const { ctx } = ctxWith(() => ({ status: LIVE.testGetstatusUnknownCui500.status, body: LIVE.testGetstatusUnknownCui500.body }), { testMode: true });
+  await assert.rejects(fgo.testConnection(ctx), (err) => err.code === 'AUTH_FAILED');
+  const other = ctxWith(() => ({ status: 500, body: { Success: false, Message: 'System.Exception: Seria XYZ nu exista.\r\n   at Fgo.PublicApi.Controllers.FacturaController.<Print>d__9.MoveNext()' } }));
+  await assert.rejects(fgo.getPdf(other.ctx, { series: 'XYZ', number: '001' }), (err) => {
+    assert.equal(err.message, 'FGO: Seria XYZ nu exista.');
+    return true;
+  });
+});
+
+test('testConnection: valid credentials whose probe getstatus fails with HTTP 500 about the invoice → accepted', async () => {
+  const { ctx } = ctxWith(() => ({ status: 500, body: { Success: false, Message: 'System.Exception: Factura nu a fost gasita.\r\n   at Fgo.PublicApi...' } }));
+  const res = await fgo.testConnection(ctx);
+  assert.equal(res.ok, true);
+});
+
+test('live: FGO generic 500 "Ne pare rau, a intervenit o eroare" → retryable PROVIDER_DOWN; testConnection does not claim success', async () => {
+  const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ status: 500, body: LIVE.prodGeneric500.body }) }));
+  await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'PROVIDER_DOWN' && err.retryable === true);
+  const t = ctxWith(() => ({ status: 500, body: LIVE.prodGeneric500.body }));
+  await assert.rejects(fgo.testConnection(t.ctx), (err) => err.code === 'PROVIDER_DOWN');
+});
+
+test('live: auth rejection that does not mention the hash still triggers the one diacritics-free retry', async () => {
+  let n = 0;
+  const { ctx, calls } = ctxWith(router({ 'factura/emitere': () => (++n === 1 ? { body: LIVE.prodUnknownCui.body } : { body: EMITERE_OK }) }));
+  const inv = b2c();
+  inv.client.name = 'Ștefan Țăranu';
+  const res = await fgo.createInvoice(ctx, inv);
+  assert.equal(res.number, '001');
+  const both = calls.filter((c) => c.url.pathname === '/v1/factura/emitere');
+  assert.equal(both.length, 2);
+  assert.equal(both[1].json.Hash, sha1Upper(CUI + KEY + 'Stefan Taranu'));
+  // genuinely bad credentials: exactly one extra attempt, then AUTH_FAILED
+  const bad = ctxWith(router({ 'factura/emitere': () => ({ body: LIVE.prodUnknownCui.body }) }));
+  await assert.rejects(fgo.createInvoice(bad.ctx, inv), (err) => err.code === 'AUTH_FAILED');
+  assert.equal(bad.calls.filter((c) => c.url.pathname === '/v1/factura/emitere').length, 2);
+});
+
+test('live nomenclator: county map equals GET /nomenclator/judet; Bucuresti localities are Sector-N', async () => {
+  for (const { Cod, Nume } of LIVE.judet.body.List) {
+    const { ctx, calls } = ctxWith(router({ 'nomenclator/localitati': () => ({ body: { Success: true, List: [] } }) }));
+    const inv = b2c();
+    inv.client = { ...inv.client, county: 'x', countyCode: Cod, city: 'Sector 2', zip: '' };
+    await fgo.createInvoice(ctx, inv);
+    assert.equal(emitere(calls).json.Client.Judet, Nume, Cod);
+    if (Cod === 'B') assert.ok(LIVE.localitiesB.body.List.some((l) => l.Nume === emitere(calls).json.Client.Localitate));
+  }
+});
+
+test('live nomenclator: spaced locality names ("Pipera Voluntari") are matched and sent exactly', async () => {
+  const { ctx, calls } = ctxWith(router({ 'nomenclator/localitati': () => ({ body: LIVE.localitiesIFExcerpt.body }) }));
+  const inv = b2c();
+  inv.client = { ...inv.client, county: 'Ilfov', countyCode: 'IF', city: 'Pipera-Voluntari' };
+  await fgo.createInvoice(ctx, inv);
+  assert.equal(emitere(calls).json.Client.Localitate, 'Pipera Voluntari');
+  inv.client.city = 'Popești Leordeni';
+  await fgo.createInvoice(ctx, inv);
+  assert.equal(emitere(calls.slice(-1)).json.Client.Localitate, 'Popesti-Leordeni');
+});
+
+// ── adversarial review fixes ──
+
+test('card încasare at emitere = sum of the PretTotal values sent (FGO\'s own total), not the raw order total', async () => {
+  const { ctx, calls } = ctxWith(router(), { registerCardPayments: true });
+  const inv = { ...b2c(), paid: true, paymentMethod: 'card', total: 999 };
+  await fgo.createInvoice(ctx, inv);
+  const sent = emitere(calls).json.Continut.reduce((s, l) => s + l.PretTotal, 0);
+  const inc = calls.find((c) => c.url.pathname === '/v1/factura/incasare');
+  assert.equal(inc.json.SumaIncasata, Math.round(sent * 100) / 100);
+  assert.equal(calls.filter((c) => c.url.pathname === '/v1/factura/getstatus').length, 0); // fresh invoice: no pre-check
+});
+
+test('registerPayment: already fully paid → no second încasare; missing amount → what is still unpaid; 0 → nothing', async () => {
+  const paid = ctxWith(router({ 'factura/getstatus': () => ({ body: { Success: true, Factura: { Valoare: '239.97', ValoareAchitata: '239.97' } } }) }));
+  assert.deepEqual(await fgo.registerPayment(paid.ctx, { series: 'MIDA', number: '001', amount: 239.97, method: 'cod' }), { alreadyPaid: true });
+  assert.equal(paid.calls.filter((c) => c.url.pathname === '/v1/factura/incasare').length, 0);
+
+  const partial = ctxWith(router({ 'factura/getstatus': () => ({ body: { Success: true, Factura: { Valoare: '239.97', ValoareAchitata: '100' } } }) }));
+  await fgo.registerPayment(partial.ctx, { series: 'MIDA', number: '001', method: 'cod' });
+  assert.equal(partial.calls.find((c) => c.url.pathname === '/v1/factura/incasare').json.SumaIncasata, 139.97);
+  assert.deepEqual(partial.sleeps, [1100]);
+
+  const zero = ctxWith(() => { throw new Error('no call expected'); });
+  assert.deepEqual(await fgo.registerPayment(zero.ctx, { series: 'MIDA', number: '001', amount: 0, method: 'cod' }), { skipped: true });
+});
+
+test('registerPayment: DataIncasare is Bucharest local time, never UTC', async () => {
+  const { ctx, calls } = ctxWith(router());
+  await fgo.registerPayment(ctx, { series: 'MIDA', number: '001', amount: 10, date: '2026-07-01T22:30:15.000Z', method: 'cod' });
+  assert.equal(calls.find((c) => c.url.pathname === '/v1/factura/incasare').json.DataIncasare, '2026-07-02 01:30:15'); // EEST, UTC+3
+});
+
+test('duplicate IdExtern rejected without the existing invoice → INVOICE_DUPLICATE (never retried into a second invoice)', async () => {
+  const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ body: { Success: false, Message: 'Exista deja o factura emisa pentru IdExtern #1024.' } }) }));
+  await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'INVOICE_DUPLICATE' && err.retryable === false);
+});
+
+test('IdExtern uses idempotencyKey ("#1024-2" after a storno), falling back to the order reference', async () => {
+  const a = ctxWith(router());
+  await fgo.createInvoice(a.ctx, { ...b2c(), idempotencyKey: '#1024-2' });
+  assert.equal(emitere(a.calls).json.IdExtern, '#1024-2');
+  assert.equal(emitere(a.calls).json.VerificareDuplicat, true);
+  const b = ctxWith(router());
+  await fgo.createInvoice(b.ctx, b2c());
+  assert.equal(emitere(b.calls).json.IdExtern, '#1024');
+});
+
+test('client CUI rejected ("Codul unic al clientului...") → CLIENT_VAT_CODE_INVALID, not an auth error', async () => {
+  const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ body: { Success: false, Message: 'Codul unic al clientului RO123 nu este valid (ANAF).' } }) }));
+  const inv = { ...b2c(), client: { ...b2c().client, name: 'ACME SRL', isCompany: true, vatCode: 'RO123' } };
+  await assert.rejects(fgo.createInvoice(ctx, inv), (err) => err.code === 'CLIENT_VAT_CODE_INVALID' && err.field === 'client.vatCode');
 });

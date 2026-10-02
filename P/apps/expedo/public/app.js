@@ -17,6 +17,8 @@ function html(strings, ...vals) {
   });
   return raw(out);
 }
+/** Only http(s) links from providers end up in href (never javascript:). */
+const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '');
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const lei = (n) => `${Number(n || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lei`;
@@ -60,7 +62,8 @@ const state = { meta: null, me: null, selected: new Set(), lastList: [] };
 const storeId = () => { try { return localStorage.getItem('expedo.store') || ''; } catch { return ''; } };
 
 async function authHeaders() {
-  const h = {};
+  // Custom header on every request: the server refuses cookie-authenticated writes without it (CSRF).
+  const h = { 'X-Expedo-Request': '1' };
   if (window.__EMBEDDED__ && window.shopify?.idToken) h.Authorization = `Bearer ${await window.shopify.idToken()}`;
   if (storeId()) h['X-Store-Id'] = storeId();
   return h;
@@ -228,7 +231,8 @@ async function viewOrders() {
   const status = q.get('status') || 'open';
   const search = q.get('q') || '';
   const page = Number(q.get('page') || 1);
-  const data = await api(`/orders?status=${status}&q=${encodeURIComponent(search)}&page=${page}`);
+  const ids = q.get('ids') || '';
+  const data = await api(`/orders?status=${encodeURIComponent(status)}&q=${encodeURIComponent(search)}&page=${page}${ids ? `&ids=${encodeURIComponent(ids)}` : ''}`);
   state.lastList = data.orders;
   for (const id of [...state.selected]) if (!data.orders.some((o) => o.id === id)) state.selected.delete(id);
   const c = data.counts;
@@ -244,6 +248,7 @@ async function viewOrders() {
     <div class="toolbar">
       <input type="search" id="search" placeholder="Caută: comandă, AWB, client, telefon…" value="${search}">
       <span class="muted small">${data.total} comenzi</span>
+      ${ids ? html`<a class="btn small" href="#/orders?status=${status}">Doar comenzile procesate acum ${icon('x')}</a>` : ''}
     </div>
     <div class="table-wrap">
       ${data.orders.length ? html`<table>
@@ -265,9 +270,9 @@ async function viewOrders() {
         : html`<div class="empty">Nicio comandă aici.</div>`}
     </div>
     ${pages > 1 ? html`<div class="form-actions">
-      ${page > 1 ? html`<a class="btn small" href="#/orders?status=${status}&q=${encodeURIComponent(search)}&page=${page - 1}">← Înapoi</a>` : ''}
+      ${page > 1 ? html`<a class="btn small" href="#/orders?status=${status}&q=${encodeURIComponent(search)}${ids ? `&ids=${ids}` : ''}&page=${page - 1}">← Înapoi</a>` : ''}
       <span class="muted small">Pagina ${page} din ${pages}</span>
-      ${page < pages ? html`<a class="btn small" href="#/orders?status=${status}&q=${encodeURIComponent(search)}&page=${page + 1}">Înainte →</a>` : ''}</div>` : ''}
+      ${page < pages ? html`<a class="btn small" href="#/orders?status=${status}&q=${encodeURIComponent(search)}${ids ? `&ids=${ids}` : ''}&page=${page + 1}">Înainte →</a>` : ''}</div>` : ''}
     <div class="bulkbar" id="bulkbar" hidden>
       <span class="count" id="bulk-count"></span>
       <button class="btn primary" data-bulk="all">${icon('truck')} Generează AWB + factură</button>
@@ -335,10 +340,12 @@ async function bulk(action, btn) {
       toast(`Gata: ${r.ok} comenzi procesate.`, 'ok');
     }
     const done = r.results.filter((x) => x.ok && x.awb).map((x) => x.id);
-    state.selected = new Set(done);
-    // Jump to the shipped orders with them still selected, so "Etichete" is one click away.
-    if (done.length && steps.includes('awb')) location.hash = '#/orders?status=shipped';
-    else route();
+    // Show exactly the orders just processed, still selected, so "Etichete" is one click away
+    // (they are not necessarily on the first page of "Expediate").
+    if (done.length && steps.includes('awb')) {
+      state.selected = new Set(done);
+      location.hash = `#/orders?status=all&ids=${done.join(',')}`;
+    } else route();
     refreshChrome();
   } catch (err) {
     toast(err.message, 'bad');
@@ -368,7 +375,7 @@ $('#drawer').addEventListener('click', (e) => { if (e.target.matches('[data-clos
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#drawer').hidden) closeDrawer(); });
 
 function openOrder(id) {
-  state.backHash = location.hash.startsWith('#/orders/') ? state.backHash : location.hash || '#/orders';
+  state.backHash = /^#\/orders\/\d+/.test(location.hash) ? state.backHash : location.hash || '#/orders';
   history.replaceState(null, '', `#/orders/${id}`);
   renderOrder(id);
 }
@@ -376,9 +383,13 @@ function openOrder(id) {
 async function renderOrder(id) {
   const panel = $('#drawer .drawer-panel');
   $('#drawer').hidden = false;
-  if (!panel.innerHTML) panel.innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+  // Another order's details must never stay on screen (or keep its buttons) while this one loads.
+  if (state.drawerId !== id || !panel.innerHTML) panel.innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+  state.drawerId = id;
+  const token = (state.drawerToken = (state.drawerToken || 0) + 1);
   let data;
-  try { data = await api(`/orders/${id}`); } catch (err) { panel.innerHTML = html`<div class="error-box">${err.message}</div>`; return; }
+  try { data = await api(`/orders/${id}`); } catch (err) { if (token === state.drawerToken) panel.innerHTML = html`<div class="error-box">${err.message}</div>`; return; }
+  if (token !== state.drawerToken) return; // a newer render (other order or refresh) won
   const { order: o, plan, events } = data;
   const d = o.data;
   const a = { ...(d.shippingAddress || {}), ...(o.overrides.address || {}) };
@@ -386,10 +397,11 @@ async function renderOrder(id) {
   if (o.lastError) errors.push({ level: 'error', message: o.lastError.message, hint: o.lastError.hint, details: o.lastError.details });
   for (const i of o.issues) if (!errors.some((e) => e.message === i.message)) errors.push(i);
   const canProcess = !o.awb && !o.cancelled;
+  const hasTestData = (o.testMode && o.awb) || (o.invoiceTest && o.invoice);
 
   panel.innerHTML = html`
     <div class="drawer-head">
-      <h1>${o.name}</h1> ${statusBadge(o)} ${o.testMode && o.awb ? html`<span class="pill test">probă</span>` : ''}
+      <h1>${o.name}</h1> ${statusBadge(o)} ${(o.testMode && o.awb) || (o.invoiceTest && o.invoice) ? html`<span class="pill test">probă</span>` : ''}
       <div class="spacer"></div>
       <button class="btn small" data-close>${icon('x')}</button>
     </div>
@@ -402,7 +414,8 @@ async function renderOrder(id) {
       ${!canProcess && !o.invoice && o.awb ? html`<button class="btn" data-act="invoice">${icon('file')} Emite factura</button>` : ''}
       ${o.awb ? html`<button class="btn" data-act="label">${icon('print')} Eticheta AWB</button>` : ''}
       ${o.invoice ? html`<button class="btn" data-act="invoice-pdf">${icon('file')} Factura PDF</button>` : ''}
-      ${o.awb && !o.fulfilledAt && !o.testMode ? html`<button class="btn" data-act="fulfill">Marchează expediată în Shopify</button>` : ''}
+      ${o.awb && !o.fulfilledAt && !o.testMode && !o.cancelled && !state.me.testMode ? html`<button class="btn" data-act="fulfill">Marchează expediată în Shopify</button>` : ''}
+      ${hasTestData && !state.me.testMode ? html`<button class="btn" data-act="reset-test" title="AWB-ul / factura de probă se șterg; comanda se poate procesa real.">Șterge datele de probă</button>` : ''}
       ${o.awb ? html`<button class="btn danger" data-act="cancel-awb">Anulează AWB</button>` : ''}
       ${o.invoice ? html`<button class="btn danger" data-act="storno">Stornează factura</button>` : ''}
       ${!o.awb ? html`<button class="btn" data-act="hold">${o.overrides.hold ? 'Scoate din așteptare' : 'Pune în așteptare'}</button>` : ''}
@@ -412,11 +425,11 @@ async function renderOrder(id) {
     <div class="card">
       <h2>Livrare</h2>
       <dl class="kv">
-        ${o.awb ? html`<dt>AWB</dt><dd><span class="mono">${o.awb}</span> · ${courierName(o.courier)} ${o.trackingUrl ? html`· <a href="${o.trackingUrl}" target="_blank" rel="noopener">urmărește</a>` : ''}<div class="muted small">${o.trackingText || ''}</div></dd>` : ''}
-        <dt>Plată</dt><dd>${payPill(o)} ${o.paymentMethod === 'cod' ? html`ramburs <strong>${lei(o.awb ? o.codAmount : plan.cod)}</strong>${o.codCollectedAt ? html` · <span class="badge ok">încasat ${fmtDay(o.codCollectedAt)}</span>` : ''}` : d.financialStatus === 'PAID' ? 'plătită online' : esc(d.financialStatus)}</dd>
+        ${o.awb ? html`<dt>AWB</dt><dd><span class="mono">${o.awb}</span> · ${courierName(o.courier)} ${safeUrl(o.trackingUrl) ? html`· <a href="${safeUrl(o.trackingUrl)}" target="_blank" rel="noopener">urmărește</a>` : ''}<div class="muted small">${o.trackingText || ''}</div></dd>` : ''}
+        <dt>Plată</dt><dd>${payPill(o)} ${o.paymentMethod === 'cod' ? html`ramburs <strong>${lei(o.awb ? o.codAmount : plan.cod)}</strong>${o.codCollectedAt ? html` · <span class="badge ok">încasat ${fmtDay(o.codCollectedAt)}</span>` : ''}` : d.financialStatus === 'PAID' ? 'plătită online' : d.financialStatus}</dd>
         <dt>Metodă</dt><dd>${d.shippingMethod || '—'}${plan.lockerId ? html` · locker <span class="mono">${plan.lockerId}</span>` : ''}</dd>
         ${plan.matchedRules.length ? html`<dt>Reguli aplicate</dt><dd>${plan.matchedRules.join(', ')}</dd>` : ''}
-        ${o.invoice ? html`<dt>Factură</dt><dd>${o.invoice} ${o.invoiceUrl ? html`· <a href="${o.invoiceUrl}" target="_blank" rel="noopener">deschide</a>` : ''}</dd>` : ''}
+        ${o.invoice ? html`<dt>Factură</dt><dd>${o.invoice} ${safeUrl(o.invoiceUrl) ? html`· <a href="${safeUrl(o.invoiceUrl)}" target="_blank" rel="noopener">deschide</a>` : ''}</dd>` : ''}
       </dl>
       ${canProcess ? html`
       <form id="plan-form" style="margin-top:14px">
@@ -480,15 +493,18 @@ async function renderOrder(id) {
     if (act === 'invoice-pdf') return openPdf(`/orders/${id}/invoice.pdf`);
     if (act === 'cancel-awb' && !confirm(`Anulezi AWB-ul ${o.awb}? Dacă e marcată expediată în Shopify, se anulează și acolo.`)) return;
     if (act === 'storno' && !confirm(`Stornezi factura ${o.invoice}? Se emite o factură de stornare.`)) return;
+    if (act === 'reset-test' && !confirm('Ștergi AWB-ul și factura de probă ale comenzii? Apoi o poți procesa real.')) return;
     run(btn, async () => {
       if (act === 'process' || act === 'invoice' || act === 'fulfill') {
         const steps = { process: ['awb', 'invoice', 'fulfill'], invoice: ['invoice'], fulfill: ['fulfill'] }[act];
-        const r = (await api('/orders/process', { method: 'POST', body: { ids: [id], steps } })).results[0];
+        // From the order page the merchant decides explicitly: held orders are processed too.
+        const r = (await api('/orders/process', { method: 'POST', body: { ids: [id], steps, force: true } })).results[0];
         if (!r.ok) { toast(r.error?.message || 'Nu a mers.', 'bad'); return after(); }
         return after(r.awb ? `AWB ${r.awb}${r.invoice ? ` · factura ${r.invoice}` : ''}` : 'Gata.');
       }
       if (act === 'cancel-awb') { await api(`/orders/${id}/cancel-awb`, { method: 'POST' }); return after('AWB anulat.'); }
       if (act === 'storno') { await api(`/orders/${id}/storno-invoice`, { method: 'POST' }); return after('Factura a fost stornată.'); }
+      if (act === 'reset-test') { await api(`/orders/${id}/reset-test`, { method: 'POST' }); return after('Datele de probă au fost șterse.'); }
       if (act === 'hold') { await api(`/orders/${id}`, { method: 'PATCH', body: { hold: o.overrides.hold ? null : true } }); return after(); }
       if (act === 'refresh') { await api(`/orders/${id}/refresh`, { method: 'POST' }); return after('Reîncărcat.'); }
     });
@@ -498,16 +514,19 @@ async function renderOrder(id) {
     e.preventDefault();
     const f = new FormData(e.target);
     const body = Object.fromEntries(['courier', 'parcels', 'weightKg', 'cod', 'notes', 'lockerId'].map((k) => [k, f.get(k) === '' ? null : ['parcels', 'weightKg', 'cod'].includes(k) ? Number(f.get(k)) : f.get(k)]));
-    body.openPackage = f.get('openPackage') === 'on';
-    body.skipInvoice = f.get('skipInvoice') === 'on' ? true : null;
-    await api(`/orders/${id}`, { method: 'PATCH', body });
+    // Unchanged checkboxes are not saved as overrides, so rules keep applying to them.
+    const openPackage = f.get('openPackage') === 'on';
+    const skipInvoice = f.get('skipInvoice') === 'on';
+    if (openPackage !== !!plan.openPackage || o.overrides.openPackage != null) body.openPackage = openPackage;
+    if (skipInvoice !== !!plan.skipInvoice || o.overrides.skipInvoice != null) body.skipInvoice = skipInvoice;
+    try { await api(`/orders/${id}`, { method: 'PATCH', body }); } catch (err) { return toast(err.message, 'bad'); }
     after('Salvat.');
   });
   $('#addr-form', panel)?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
     const [firstName, ...rest] = f.name.trim().split(/\s+/);
-    await api(`/orders/${id}`, { method: 'PATCH', body: { address: { ...f, firstName, lastName: rest.join(' '), provinceCode: '' } } });
+    try { await api(`/orders/${id}`, { method: 'PATCH', body: { address: { ...f, firstName, lastName: rest.join(' '), provinceCode: '' } } }); } catch (err) { return toast(err.message, 'bad'); }
     after('Adresa a fost salvată și verificată din nou.');
   });
   $('#addr-reset', panel)?.addEventListener('click', async () => {
@@ -551,10 +570,15 @@ async function viewSettings(section = 'general') {
     </div>`;
   const el = $('#section');
   const save = async (patch, msg = 'Setările au fost salvate.') => {
-    const r = await api('/settings', { method: 'PUT', body: { settings: patch } });
-    toast(msg, 'ok');
-    refreshChrome();
-    return r.settings;
+    try {
+      const r = await api('/settings', { method: 'PUT', body: { settings: patch } });
+      toast(msg, 'ok');
+      refreshChrome();
+      return r.settings;
+    } catch (err) {
+      toast(`${err.message}${err.info?.hint ? ` ${err.info.hint}` : ''}`, 'bad');
+      return null;
+    }
   };
   ({ general: sectionGeneral, couriers: sectionProviders, invoicing: sectionProviders, automation: sectionAutomation, rules: sectionRules, packaging: sectionPackaging }[section] || sectionGeneral)(el, settings, integrations, save, section);
 }
@@ -585,7 +609,7 @@ function sectionGeneral(el, s, integrations, save) {
     </div>`;
   $$('input[name=mode]', el).forEach((r) => r.addEventListener('change', async () => {
     if (r.value === 'live' && !confirm('Treci pe LIVE? De acum se generează AWB-uri și facturi reale.')) { r.checked = false; $('input[value=test]', el).checked = true; return; }
-    await save({ mode: r.value }, r.value === 'live' ? 'Ești pe live.' : 'Ești în modul de probă.');
+    await save({ mode: r.value }, r.value === 'live' ? 'Ești pe live. Comenzile procesate în probă au butonul „Șterge datele de probă”.' : 'Ești în modul de probă.');
     viewSettings('general');
   }));
   $('#f', el).addEventListener('submit', (e) => {
@@ -601,7 +625,7 @@ function fieldInput(f, value, isSecret, isSet) {
   if (f.type === 'checkbox') return html`<label class="check"><input type="checkbox" name="${name}" ${v === true || v === 'true' ? 'checked' : ''}> <span>${f.label}${f.help ? html`<br><span class="muted small">${f.help}</span>` : ''}</span></label>`;
   const control = f.type === 'select'
     ? html`<select name="${name}">${(f.options || []).map((o) => html`<option value="${o.value}" ${String(v) === String(o.value) ? 'selected' : ''}>${o.label}</option>`)}</select>`
-    : html`<input type="${f.type === 'password' ? 'password' : f.type === 'number' ? 'number' : 'text'}" name="${name}" value="${isSecret ? '' : v}" ${isSecret && isSet ? 'placeholder="•••••• salvat — lasă gol ca să nu schimbi"' : ''} autocomplete="off">`;
+    : html`<input type="${f.type === 'password' ? 'password' : f.type === 'number' ? 'number' : 'text'}" name="${name}" value="${isSecret ? '' : v}" placeholder="${isSecret && isSet ? '•••••• salvat — lasă gol ca să nu schimbi' : ''}" autocomplete="off">`;
   return html`<label class="field">${f.label}${f.required ? ' *' : ''} ${control}${f.help ? html`<span class="help">${f.help}</span>` : ''}</label>`;
 }
 
@@ -705,7 +729,7 @@ function sectionProviders(el, s, integrations, save, section) {
     $('#invf', el)?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const f = new FormData(e.target);
-      Object.assign(s, await save({ invoicing: { ...s.invoicing, when: f.get('when'), defaultVatRate: Number(f.get('defaultVatRate')), includeShipping: f.has('includeShipping'), provider: f.has('none') ? '' : s.invoicing.provider || open } }));
+      Object.assign(s, await save({ invoicing: { ...s.invoicing, when: f.get('when'), defaultVatRate: f.get('defaultVatRate') === '' ? s.invoicing.defaultVatRate : Number(f.get('defaultVatRate')), includeShipping: f.has('includeShipping'), provider: f.has('none') ? '' : s.invoicing.provider || open } }));
       viewSettings(section);
     });
   };

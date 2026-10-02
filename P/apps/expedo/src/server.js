@@ -10,8 +10,9 @@ import { invoicers, getInvoicer } from './invoicing/index.js';
 import { RULE_FIELDS, RULE_OPS, RULE_ACTIONS } from './core/rules.js';
 import { COUNTIES } from './core/address.js';
 import { TRACKING_LABELS } from './couriers/contract.js';
-import { planOrder } from './core/build.js';
-import { DEFAULTS } from './core/settings.js';
+import { planOrder, bucharestDate, bucharestDayStart } from './core/build.js';
+import { DEFAULTS, sanitizeSettings, mergeSettings } from './core/settings.js';
+import { safeEqual } from './lib/crypto.js';
 import { request } from './lib/http.js';
 import { toProcessingError } from './core/errors.js';
 import { getShopify } from './shopify/index.js';
@@ -27,7 +28,7 @@ export function createApp() {
 
   // ---------- Shopify webhooks (raw body for HMAC) ----------
   app.post('/webhooks/shopify', express.raw({ type: '*/*', limit: '5mb' }), (req, res) => {
-    if (!auth.verifyWebhookHmac(req.body, req.get('X-Shopify-Hmac-Sha256'))) return res.status(401).send('invalid hmac');
+    if (!Buffer.isBuffer(req.body) || !auth.verifyWebhookHmac(req.body, req.get('X-Shopify-Hmac-Sha256'))) return res.status(401).send('invalid hmac');
     res.status(200).send('ok'); // answer fast; Shopify retries on slow responses
     if (!db.firstSeenWebhook(req.get('X-Shopify-Webhook-Id'))) return;
     try {
@@ -39,11 +40,14 @@ export function createApp() {
 
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: false }));
+  // Express 5 leaves req.body undefined when there is no body; handlers read fields from it.
+  app.use((req, res, next) => { req.body ??= {}; next(); });
 
   // Allow being framed by the Shopify admin only.
   app.use((req, res, next) => {
     const shop = auth.isValidShop(req.query.shop) ? req.query.shop : '';
     res.setHeader('Content-Security-Policy', `frame-ancestors https://admin.shopify.com${shop ? ` https://${shop}` : ''};`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     next();
   });
 
@@ -75,7 +79,7 @@ export function createApp() {
 
   // ---------- Standalone login ----------
   app.post('/login', (req, res) => {
-    if (!config.adminPassword || req.body.password !== config.adminPassword) return res.redirect('/?login=fail');
+    if (!config.adminPassword || !safeEqual(String(req.body.password ?? ''), config.adminPassword)) return res.redirect('/?login=fail');
     const cookie = auth.signSession({ admin: true, exp: Date.now() + 14 * 86400_000 });
     res.setHeader('Set-Cookie', `expedo_session=${cookie}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${14 * 86400}${config.appUrl.startsWith('https') ? '; Secure' : ''}`);
     res.redirect('/');
@@ -120,25 +124,31 @@ export function createApp() {
   });
 
   api.get('/orders', (req, res) => {
-    const { status = 'all', q = '', page = '1', courier = '', payment = '' } = req.query;
+    const status = qstr(req.query.status) || 'all';
+    const q = qstr(req.query.q).trim();
+    const courier = qstr(req.query.courier);
+    const payment = qstr(req.query.payment);
+    const page = Math.max(1, Number.parseInt(qstr(req.query.page), 10) || 1);
+    const ids = idList(req.query.ids);
     const where = ['store_id = ?'];
     const args = [req.store.id];
     if (status === 'open') where.push(`status IN ('ready', 'needs_attention', 'on_hold', 'new')`);
     else if (status !== 'all') { where.push('status = ?'); args.push(status); }
     if (courier) { where.push('courier = ?'); args.push(courier); }
     if (payment) { where.push('payment_method = ?'); args.push(payment); }
+    if (ids.length) { where.push(`id IN (${ids.map(() => '?').join(',')})`); args.push(...ids); }
     if (q) {
-      where.push(`(name LIKE ? OR awb LIKE ? OR invoice_number LIKE ? OR data LIKE ?)`);
-      const like = `%${q}%`;
+      where.push(`(name LIKE ? ESCAPE '\\' OR awb LIKE ? ESCAPE '\\' OR invoice_number LIKE ? ESCAPE '\\' OR data LIKE ? ESCAPE '\\')`);
+      const like = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
       args.push(like, like, like, like);
     }
     const limit = 50;
-    const offset = (Math.max(1, Number(page)) - 1) * limit;
+    const offset = (page - 1) * limit;
     const d = db.getDb();
     const rows = d.prepare(`SELECT * FROM orders WHERE ${where.join(' AND ')} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...args, limit, offset).map(db.hydrateOrder);
     const total = d.prepare(`SELECT COUNT(*) c FROM orders WHERE ${where.join(' AND ')}`).get(...args).c;
     const counts = Object.fromEntries(d.prepare('SELECT status, COUNT(*) c FROM orders WHERE store_id = ? GROUP BY status').all(req.store.id).map((r) => [r.status, r.c]));
-    res.json({ orders: rows.map(orderSummary), total, page: Number(page), pageSize: limit, counts });
+    res.json({ orders: rows.map(orderSummary), total, page, pageSize: limit, counts });
   });
 
   api.get('/orders/:id', (req, res) => {
@@ -157,12 +167,11 @@ export function createApp() {
   api.patch('/orders/:id', (req, res) => {
     const order = ownOrder(req, res);
     if (!order) return;
-    const allowed = ['address', 'courier', 'service', 'parcels', 'weightKg', 'cod', 'notes', 'hold', 'openPackage', 'lockerId', 'skipInvoice'];
     const overrides = { ...order.overrides };
-    for (const k of allowed) {
-      if (!(k in req.body)) continue;
-      const v = req.body[k];
-      if (v === '' || v === null) delete overrides[k];
+    let patch;
+    try { patch = cleanOrderPatch(req.body); } catch (err) { return res.status(400).json({ error: { code: 'INVALID', message: err.message } }); }
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null) delete overrides[k];
       else overrides[k] = k === 'address' ? { ...(overrides.address || {}), ...v } : v;
     }
     db.updateOrder(order.id, { overrides });
@@ -172,13 +181,17 @@ export function createApp() {
   });
 
   api.post('/orders/process', async (req, res) => {
-    const ids = (req.body.ids || []).map(Number).filter(Boolean);
-    const steps = req.body.steps || ['awb', 'invoice', 'fulfill'];
+    const ids = idList(req.body.ids);
+    const steps = Array.isArray(req.body.steps) ? req.body.steps.filter((s) => ['awb', 'invoice', 'fulfill'].includes(s)) : ['awb', 'invoice', 'fulfill'];
+    if (!steps.length) return res.status(400).json({ error: { code: 'INVALID', message: 'Pași necunoscuți.' } });
+    // Held orders (tag, rule, manual hold) are processed only when asked for explicitly (from the order page),
+    // not when they happen to be in a bulk selection.
+    const force = req.body.force === true;
     const results = [];
     for (const id of ids) {
       const order = db.getOrder(id);
       if (!order || order.store_id !== req.store.id) continue;
-      const r = await P.processOrder(req.store, id, { steps, force: true }).catch((err) => ({ ok: false, error: toProcessingError(err).toJSON() }));
+      const r = await P.processOrder(req.store, id, { steps, force }).catch((err) => ({ ok: false, error: toProcessingError(err).toJSON() }));
       results.push({ id, name: order.name, ...r });
     }
     res.json({ results, ok: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length });
@@ -198,6 +211,14 @@ export function createApp() {
     res.json({ ok: true });
   }));
 
+  // After going live: drop the test AWB / invoice so the order can be processed for real.
+  api.post('/orders/:id/reset-test', wrap(async (req, res) => {
+    const order = ownOrder(req, res);
+    if (!order) return;
+    await P.resetTestData(req.store, order.id);
+    res.json({ ok: true });
+  }));
+
   api.post('/orders/:id/refresh', wrap(async (req, res) => {
     const order = ownOrder(req, res);
     if (!order) return;
@@ -208,10 +229,10 @@ export function createApp() {
   }));
 
   api.get('/labels.pdf', wrap(async (req, res) => {
-    const ids = String(req.query.ids || '').split(',').map(Number).filter(Boolean);
-    const { pdf } = await P.mergedLabels(req.store, ids, req.query.format);
+    const ids = idList(req.query.ids);
+    const { pdf } = await P.mergedLabels(req.store, ids, qstr(req.query.format));
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="etichete-${new Date().toISOString().slice(0, 10)}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="etichete-${bucharestDate()}.pdf"`);
     res.send(pdf);
   }));
 
@@ -220,13 +241,13 @@ export function createApp() {
     if (!order) return;
     const pdf = await P.invoicePdf(req.store, order.id);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="factura-${order.invoice_series}-${order.invoice_number}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="factura-${`${order.invoice_series}-${order.invoice_number}`.replace(/[^\w.-]+/g, '_')}.pdf"`);
     res.send(pdf);
   }));
 
   // Picking list: what to take off the shelves for the selected orders.
   api.get('/picking', (req, res) => {
-    const ids = String(req.query.ids || '').split(',').map(Number).filter(Boolean);
+    const ids = idList(req.query.ids);
     const items = new Map();
     const names = [];
     for (const id of ids) {
@@ -241,24 +262,27 @@ export function createApp() {
         items.set(key, cur);
       }
     }
-    res.json({ orders: names, items: [...items.values()].sort((a, b) => a.sku.localeCompare(b.sku)) });
+    res.json({ orders: names, items: [...items.values()].sort((a, b) => String(a.sku || a.title).localeCompare(String(b.sku || b.title))) });
   });
 
   api.get('/stats', (req, res) => {
     const d = db.getDb();
     const s = req.store.id;
     const one = (sql, ...a) => d.prepare(sql).get(s, ...a);
+    // "Today" is the merchant's day (Europe/Bucharest), not the UTC one; timestamps are stored as UTC ISO strings.
+    const today = bucharestDayStart();
+    const days30 = new Date(Date.now() - 30 * 86400_000).toISOString();
     res.json({
-      today: one(`SELECT COUNT(*) c, COALESCE(SUM(total),0) v FROM orders WHERE store_id = ? AND date(created_at) = date('now')`),
-      awbToday: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND date(awb_at) = date('now')`).c,
+      today: one(`SELECT COUNT(*) c, COALESCE(SUM(total),0) v FROM orders WHERE store_id = ? AND created_at >= ?`, today),
+      awbToday: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND awb_at >= ?`, today).c,
       toProcess: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = 'ready'`).c,
       attention: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = 'needs_attention'`).c,
       inTransit: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status IN ('shipped', 'in_transit')`).c,
       codPending: one(`SELECT COUNT(*) c, COALESCE(SUM(cod_amount),0) v FROM orders WHERE store_id = ? AND cod_amount > 0 AND awb IS NOT NULL AND cod_collected_at IS NULL AND status NOT IN ('returned', 'cancelled')`),
-      codCollected30: one(`SELECT COUNT(*) c, COALESCE(SUM(cod_amount),0) v FROM orders WHERE store_id = ? AND cod_collected_at >= datetime('now', '-30 days')`),
-      delivered30: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = 'delivered' AND awb_at >= datetime('now', '-30 days')`).c,
-      returned30: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = 'returned' AND awb_at >= datetime('now', '-30 days')`).c,
-      shippingCost30: one(`SELECT COALESCE(SUM(shipping_cost),0) v FROM orders WHERE store_id = ? AND awb_at >= datetime('now', '-30 days')`).v,
+      codCollected30: one(`SELECT COUNT(*) c, COALESCE(SUM(cod_amount),0) v FROM orders WHERE store_id = ? AND cod_collected_at >= ?`, days30),
+      delivered30: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = 'delivered' AND awb_at >= ?`, days30).c,
+      returned30: one(`SELECT COUNT(*) c FROM orders WHERE store_id = ? AND status = 'returned' AND awb_at >= ?`, days30).c,
+      shippingCost30: one(`SELECT COALESCE(SUM(shipping_cost),0) v FROM orders WHERE store_id = ? AND awb_at >= ?`, days30).v,
       byCourier: d.prepare(`SELECT courier, COUNT(*) c, SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) delivered, SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) returned
         FROM orders WHERE store_id = ? AND awb IS NOT NULL GROUP BY courier`).all(s),
     });
@@ -268,9 +292,9 @@ export function createApp() {
   api.get('/cod.csv', (req, res) => {
     const rows = db.getDb().prepare(`SELECT name, courier, awb, cod_amount, awb_at, cod_collected_at, status, invoice_series, invoice_number
       FROM orders WHERE store_id = ? AND cod_amount > 0 AND awb IS NOT NULL ORDER BY awb_at DESC`).all(req.store.id);
-    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const day = (iso) => (iso ? bucharestDate(new Date(iso)) : '');
     const csv = ['Comanda,Curier,AWB,Ramburs,Data AWB,Incasat la,Status,Factura']
-      .concat(rows.map((r) => [r.name, r.courier, r.awb, r.cod_amount.toFixed(2), r.awb_at?.slice(0, 10), r.cod_collected_at?.slice(0, 10) || '', P.ORDER_STATUS[r.status], [r.invoice_series, r.invoice_number].filter(Boolean).join(' ')].map(esc).join(',')))
+      .concat(rows.map((r) => [r.name, r.courier, r.awb, r.cod_amount.toFixed(2), day(r.awb_at), day(r.cod_collected_at), P.ORDER_STATUS[r.status], [r.invoice_series, r.invoice_number].filter(Boolean).join(' ')].map(csvCell).join(',')))
       .join('\n');
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="ramburs.csv"');
@@ -284,7 +308,8 @@ export function createApp() {
   });
 
   api.post('/sync', wrap(async (req, res) => {
-    const r = req.store.demo ? { imported: 0 } : await handlers.sync_store(req.store, { days: Number(req.body.days || 14) });
+    const days = Math.min(60, Math.max(1, Number.parseInt(req.body.days, 10) || 14));
+    const r = req.store.demo ? { imported: 0 } : await handlers.sync_store(req.store, { days });
     res.json(r);
   }));
 
@@ -294,7 +319,8 @@ export function createApp() {
 
   api.get('/settings', (req, res) => res.json({ settings: P.storeSettings(req.store) }));
   api.put('/settings', (req, res) => {
-    const next = { ...req.store.settings, ...req.body.settings };
+    let next;
+    try { next = mergeSettings(req.store.settings, sanitizeSettings(req.body.settings)); } catch (err) { return res.status(400).json({ error: toProcessingError(err).toJSON() }); }
     if (next.mode === 'live' && req.store.demo) return res.status(400).json({ error: { message: 'Magazinul demo rămâne mereu în modul de probă.' } });
     db.saveStoreSettings(req.store.id, next);
     db.logEvent(req.store.id, null, 'info', 'settings', 'Setările au fost salvate.');
@@ -316,7 +342,9 @@ export function createApp() {
   api.put('/integrations/:kind/:provider', (req, res) => {
     const { kind, provider } = req.params;
     if (!integrationAdapter(kind, provider)) return res.status(404).json({ error: { message: 'Integrare necunoscută.' } });
-    const i = db.saveIntegration(req.store.id, kind, provider, { credentials: req.body.credentials, settings: req.body.settings, enabled: req.body.enabled !== false });
+    const plain = (o) => Object.fromEntries(Object.entries(o && typeof o === 'object' && !Array.isArray(o) ? o : {})
+      .filter(([, v]) => v == null || ['string', 'number', 'boolean'].includes(typeof v)));
+    const i = db.saveIntegration(req.store.id, kind, provider, { credentials: plain(req.body.credentials), settings: plain(req.body.settings), enabled: req.body.enabled !== false });
     db.logEvent(req.store.id, null, 'info', 'settings', `Integrarea ${integrationAdapter(kind, provider).name} a fost salvată.`);
     res.json({ ok: true, enabled: i.enabled });
   });
@@ -348,6 +376,10 @@ export function createApp() {
 
   // Errors from handlers → Romanian message + hint for the UI.
   app.use((err, req, res, next) => {
+    // Body-parser errors (bad JSON, too large) are the client's fault, not ours.
+    if (err?.type && err.status >= 400 && err.status < 500) {
+      return res.status(err.status).json({ error: { code: 'BAD_REQUEST', message: 'Cererea nu e validă.' } });
+    }
     const e = toProcessingError(err);
     if (e.code === 'UNEXPECTED') console.error(err);
     res.status(e.code === 'UNEXPECTED' ? 500 : 400).json({ error: e.toJSON() });
@@ -359,13 +391,57 @@ export function createApp() {
 // ---------- helpers ----------
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
+/** Express 5 query values can be strings or arrays (?a=1&a=2); handlers want one string. */
+const qstr = (v) => String((Array.isArray(v) ? v[0] : v) ?? '');
+const idList = (v) => (Array.isArray(v) ? v : String(v ?? '').split(',')).map((x) => Number(x)).filter((n) => Number.isInteger(n) && n > 0).slice(0, 500);
+
+/** CSV cell; a leading = + - @ would make Excel run the value as a formula (CSV injection). */
+export function csvCell(v) {
+  let s = String(v ?? '');
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+const ADDRESS_KEYS = ['name', 'firstName', 'lastName', 'company', 'address1', 'address2', 'city', 'province', 'provinceCode', 'zip', 'phone', 'countryCode'];
+const NUMBER_LIMITS = { parcels: [1, 99, true], weightKg: [0.01, 1000], cod: [0, 1_000_000] };
+
+/** Validates a manual edit of an order. null / '' = remove the override. Throws with a Romanian message. */
+export function cleanOrderPatch(body) {
+  const out = {};
+  for (const k of ['address', 'courier', 'service', 'parcels', 'weightKg', 'cod', 'notes', 'hold', 'openPackage', 'lockerId', 'skipInvoice']) {
+    if (!Object.hasOwn(body, k)) continue;
+    const v = body[k];
+    if (v === '' || v === null) { out[k] = null; continue; }
+    if (k === 'address') {
+      if (typeof v !== 'object' || Array.isArray(v)) throw new Error('Adresa nu e validă.');
+      out.address = Object.fromEntries(ADDRESS_KEYS.filter((a) => Object.hasOwn(v, a)).map((a) => [a, String(v[a] ?? '').slice(0, 300)]));
+    } else if (k in NUMBER_LIMITS) {
+      const [min, max, int] = NUMBER_LIMITS[k];
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < min || n > max || (int && !Number.isInteger(n))) throw new Error(`Valoare greșită pentru ${k}: ${v}.`);
+      out[k] = n;
+    } else if (['hold', 'openPackage', 'skipInvoice'].includes(k)) {
+      if (typeof v !== 'boolean') throw new Error(`Valoare greșită pentru ${k}.`);
+      out[k] = v;
+    } else if (k === 'courier') {
+      if (v === 'mock' || !Object.hasOwn(couriers, v)) throw new Error(`Curier necunoscut: ${v}.`);
+      out[k] = v;
+    } else {
+      out[k] = String(v).slice(0, 500);
+    }
+  }
+  return out;
+}
+
 function parseCookies(req) {
   return Object.fromEntries(String(req.headers.cookie || '').split(';').map((c) => c.trim().split('=')).filter((p) => p[0]).map(([k, ...v]) => [k, decodeURIComponent(v.join('='))]));
 }
 
 function integrationAdapter(kind, provider) {
   if (provider === 'mock') return null;
-  return kind === 'courier' ? getCourier(provider) : kind === 'invoicing' ? getInvoicer(provider) : null;
+  if (kind === 'courier') return Object.hasOwn(couriers, provider) ? getCourier(provider) : null;
+  if (kind === 'invoicing') return Object.hasOwn(invoicers, provider) ? getInvoicer(provider) : null;
+  return null;
 }
 
 function publicStore(s) {
@@ -391,7 +467,7 @@ function orderSummary(o) {
     courier: o.courier, awb: o.awb, awbAt: o.awb_at, trackingStatus: o.tracking_status, trackingText: o.tracking_text,
     invoice: o.invoice_number ? `${o.invoice_series} ${o.invoice_number}` : null, invoiceUrl: o.invoice_url,
     fulfilledAt: o.fulfilled_at, codCollectedAt: o.cod_collected_at, issues: o.issues, lastError: o.last_error,
-    testMode: o.test_mode, hold: !!o.overrides?.hold, tags: d.tags, cancelled: !!d.cancelledAt,
+    testMode: o.test_mode, invoiceTest: o.invoice_test, hold: !!o.overrides?.hold, tags: d.tags, cancelled: !!d.cancelledAt,
   };
 }
 
@@ -415,9 +491,15 @@ async function resolveStore(req, res, next) {
     const session = auth.readSession(parseCookies(req).expedo_session);
     const autoDemo = config.demo && !config.adminPassword;
     if (!session?.admin && !autoDemo) return res.status(401).json({ error: { code: 'LOGIN_REQUIRED', message: 'Autentifică-te.' } });
+    // Cookie auth: a cross-site form or image can carry the cookie, but cannot set a custom header
+    // (that needs a CORS preflight we never allow). So every write must come from our own fetch().
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.get('X-Expedo-Request') !== '1') {
+      return res.status(403).json({ error: { code: 'CSRF', message: 'Cerere respinsă. Reîncarcă pagina.' } });
+    }
     req.session = session || { admin: true };
-    const wanted = Number(req.get('X-Store-Id') || req.query.storeId);
-    const stores = db.listStores();
+    const wanted = Number(req.get('X-Store-Id') || qstr(req.query.storeId));
+    // Open demo mode (no password) only ever exposes the demo store, never a real one in the same database.
+    const stores = db.listStores().filter((st) => session?.admin || st.demo);
     req.store = stores.find((s) => s.id === wanted) || stores.find((s) => !s.demo) || stores[0];
     if (!req.store) return res.status(404).json({ error: { code: 'NO_STORE', message: 'Niciun magazin conectat. Instalează aplicația din Shopify.' } });
     next();
@@ -438,13 +520,17 @@ async function onInstalled(shop, token) {
   }
   store = db.getStore(store.id);
   db.logEvent(store.id, null, 'success', 'install', 'Aplicația a fost conectată la magazin.');
-  P.enqueue(store.id, 'sync_store', { days: 14 }, { key: `sync:${store.id}` });
+  // Own key: the periodic 3-day re-sync (key sync:<id>) may already be pending and must not swallow this one.
+  P.enqueue(store.id, 'sync_store', { days: 14 }, { key: `initial_sync:${store.id}` });
   return store;
 }
 
 function handleWebhook(topic, shop, payload) {
   const store = db.getStoreByShop(shop);
   if (!store) return;
+  // The HMAC covers the body, not the headers: the shop named in the body must match the header.
+  const bodyShop = payload?.myshopify_domain || payload?.shop_domain;
+  if (bodyShop && bodyShop !== shop) return;
   switch (topic) {
     case 'orders/create':
     case 'orders/updated':
@@ -456,11 +542,16 @@ function handleWebhook(topic, shop, payload) {
       db.getDb().prepare(`UPDATE stores SET uninstalled_at = datetime('now'), access_token = NULL WHERE id = ?`).run(store.id);
       break;
     case 'shop/redact':
+      // events / jobs / cache have no foreign key to stores; they hold customer data too.
+      for (const t of ['events', 'jobs', 'cache']) db.getDb().prepare(`DELETE FROM ${t} WHERE store_id = ?`).run(store.id);
       db.getDb().prepare('DELETE FROM stores WHERE id = ?').run(store.id);
       break;
     case 'customers/redact':
       for (const id of payload.orders_to_redact || []) {
-        db.getDb().prepare('DELETE FROM orders WHERE store_id = ? AND shopify_id = ?').run(store.id, `gid://shopify/Order/${id}`);
+        const o = db.getOrderByShopifyId(store.id, `gid://shopify/Order/${id}`);
+        if (!o) continue;
+        db.getDb().prepare('DELETE FROM events WHERE order_id = ?').run(o.id);
+        db.getDb().prepare('DELETE FROM orders WHERE id = ?').run(o.id);
       }
       break;
     default:

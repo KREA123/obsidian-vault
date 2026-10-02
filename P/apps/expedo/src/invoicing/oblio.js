@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { ProcessingError, authError } from '../core/errors.js';
+import { bucharestDay } from './ro-time.js';
 
 // Oblio REST API — https://www.oblio.eu/api, official PHP client github.com/OblioSoftware/OblioApi and the official
 // WooCommerce plugin github.com/OblioSoftware/woocommerce-oblio (field choices below mirror that plugin).
@@ -14,6 +15,16 @@ import { ProcessingError, authError } from '../core/errors.js';
 //    empty when the shop doesn't charge VAT.
 //  - Storno: POST /api/docs/invoice with referenceDocument {type:'Factura', seriesName, number, refund:1}.
 //  - Rate limits: 30 document requests / 100 s, 30 other requests / 10 s.
+//  - Product "save" defaults to 1 = "salveaza pretul de lista": every order would overwrite the Oblio list price with
+//    the (discounted) Shopify price, so we send save: 0.
+//
+// Live-checked 2026-10-02 with invalid credentials (test/fixtures/invoicing/live-responses.json):
+//  - POST /authorize/token with an unknown client_id/secret → HTTP 400 {error:"invalid_client", error_description:
+//    "The client credentials are invalid"} (same for a JSON body). → AUTH_FAILED.
+//  - Authenticated endpoints with a bad Bearer → HTTP 401 {status:401, statusMessage:"The access token provided is
+//    invalid"}; without Authorization → 401 {status:401, statusMessage:"Authorization header not detected"}.
+//  - An unknown /api/... path answers HTTP 200 with an HTML "Pagina inexistenta" page — never treat 200 as success
+//    unless the body is Oblio JSON.
 
 const PROVIDER = 'Oblio';
 const BASE = 'https://www.oblio.eu/api';
@@ -74,7 +85,11 @@ async function token(ctx) {
     body: new URLSearchParams({ client_id: email, client_secret: secret, grant_type: 'client_credentials' }).toString(),
     mapError: (status, body) => (status === 400 || status === 401 || status === 403 ? authError(PROVIDER, body) : undefined),
   });
-  const accessToken = res.body?.access_token;
+  if (!res.body || typeof res.body !== 'object') {
+    // HTML maintenance/error page with HTTP 200: not a credentials problem.
+    throw new ProcessingError({ code: 'PROVIDER_DOWN', message: 'Oblio a trimis un răspuns neașteptat la autentificare.', hint: 'Reîncercăm automat în câteva minute.', retryable: true, provider: PROVIDER, details: String(res.body ?? '').slice(0, 300) });
+  }
+  const accessToken = res.body.access_token;
   if (!accessToken) throw authError(PROVIDER, res.body);
   const ttl = Math.max(60, Number(res.body.expires_in) || 3600);
   const entry = { accessToken, expiresAt: Date.now() + (ttl - 60) * 1000 }; // refresh a minute early
@@ -129,6 +144,10 @@ async function call(ctx, method, path, { query, json } = {}, retried = false) {
       },
     });
     const body = res.body;
+    if (typeof body === 'string' || Buffer.isBuffer(body)) {
+      // e.g. HTTP 200 "Pagina inexistenta" HTML for an unknown path or a maintenance page.
+      throw new ProcessingError({ code: 'PROVIDER_DOWN', message: 'Oblio a trimis un răspuns neașteptat (nu JSON).', hint: 'Reîncercăm automat în câteva minute.', retryable: true, provider: PROVIDER, details: String(body).slice(0, 300) });
+    }
     if (body && typeof body === 'object' && body.status && Number(body.status) !== 200) {
       throw mapOblioError(Number(body.status), body) || mapOblioError(400, body);
     }
@@ -145,7 +164,7 @@ async function call(ctx, method, path, { query, json } = {}, retried = false) {
 // ───────────────────────────── payload ─────────────────────────────
 
 function bucharestCity(c) {
-  const m = fold(c.city).match(/sector(?:ul)?\s*([1-6])\b/i);
+  const m = fold(c.city).match(/sector(?:ul)?\s*([1-6])\b/i) || fold(c.address).match(/sector(?:ul)?\s*([1-6])\b/i);
   const z = String(c.zip ?? '').trim().match(/^0([1-6])\d{4}$/);
   const s = m ? m[1] : z ? z[1] : null;
   return s ? `SECTOR ${s}` : clean(c.city);
@@ -159,7 +178,7 @@ function clientPayload(c) {
     cif: isCompany ? noSpaces(c.vatCode).toUpperCase() : '',
     name: clean(c.name),
     address: clean(c.address),
-    state: clean(c.county),
+    state: isBucharest(c) ? 'Bucuresti' : clean(c.county),
     city: isBucharest(c) ? bucharestCity(c) : clean(c.city),
     country: clean(c.country) || 'Romania',
     email: clean(c.email),
@@ -194,6 +213,7 @@ function invoicePayload(ctx, invoice) {
       vatIncluded: 1,
       quantity: negative ? -Math.abs(Number(l.quantity)) : Number(l.quantity),
       productType: l.isShipping ? 'Serviciu' : 'Marfa',
+      save: 0, // never overwrite the Oblio list price with this order's (possibly discounted) price
     };
     if (vatPayer) {
       // Oblio picks the account's VAT rate by percentage when vatName is empty (as the official plugin does);
@@ -216,7 +236,8 @@ function invoicePayload(ctx, invoice) {
     currency,
     products,
     useStock: management ? 1 : 0,
-    sendEmail: (invoice.sendEmail ?? s.sendEmail) ? 1 : 0,
+    // Without a client e-mail Oblio has nowhere to send it; don't fail the invoice over it.
+    sendEmail: (invoice.sendEmail ?? s.sendEmail) && clean(invoice.client?.email) ? 1 : 0,
     idempotencyKey: idempotencyKey('expedo', invoice.idempotencyKey || invoice.reference),
   };
   if (invoice.dueDate) body.dueDate = invoice.dueDate;
@@ -333,11 +354,21 @@ export default {
     if (!link) {
       throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', message: `Oblio nu a trimis linkul PDF pentru factura ${series} ${number}.`, hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: body });
     }
-    // VERIFY: the show_file link serves the PDF directly (it does in the plugin's "download" action).
+    // VERIFY: the show_file link serves the PDF directly (it does in the plugin's "download" action). Live 2026-10-02:
+    // a stale/invalid show_file link (the docs' sample) answers 301 → /account/ → the HTML login page, so an HTML
+    // answer means the link isn't usable without an Oblio session — retrying won't help.
     const res = await ctx.http(PROVIDER, link, { method: 'GET', responseType: 'buffer', headers: { Accept: 'application/pdf, */*' } });
     const buf = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.body ?? '');
     if (buf.subarray(0, 4).toString('latin1') !== '%PDF') {
-      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', message: `Linkul Oblio pentru factura ${series} ${number} nu a întors un PDF.`, hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: { link, start: buf.toString('utf8').slice(0, 200) } });
+      const html = /^\s*<(!doctype|html)/i.test(buf.subarray(0, 100).toString('utf8'));
+      throw new ProcessingError({
+        code: 'INVOICE_PDF_UNAVAILABLE',
+        message: `Linkul Oblio pentru factura ${series} ${number} nu a întors un PDF.`,
+        hint: html ? 'Oblio a cerut autentificare pentru link. Descarcă factura direct din Oblio.' : 'Reîncearcă peste câteva minute.',
+        retryable: !html,
+        provider: PROVIDER,
+        details: { link, start: buf.toString('utf8').slice(0, 200) },
+      });
     }
     return buf;
   },
@@ -363,13 +394,21 @@ export default {
     return { series: body?.data?.seriesName || series, number: String(body?.data?.number ?? ''), url: body?.data?.link || undefined };
   },
 
-  async registerPayment(ctx, { series, number, amount, date, method, reference }) {
-    const collect = {
-      type: COLLECT_TYPE[method] || 'Ramburs',
-      documentNumber: clean(reference) || `${series}${number}`,
-    };
+  async registerPayment(ctx, { series, number, amount, date, method, reference, idempotencyKey: key }) {
+    if (amount != null && !(Number(amount) > 0)) {
+      ctx.log?.('Oblio: încasare cu suma 0 ignorată', { series, number, amount });
+      return { skipped: true };
+    }
+    const documentNumber = clean(reference) || clean(key) || `${series}${number}`;
+    // Collects have no idempotency key: look at the invoice's collects first so a repeated call (webhook
+    // redelivery, manual retry) can't record the same money twice.
+    const existing = await call(ctx, 'GET', '/docs/invoice', { query: { cif: cif(ctx), seriesName: series, number: String(number) } });
+    const dupKeys = new Set([documentNumber, clean(key)].filter(Boolean));
+    if ((existing?.data?.collects || []).some((x) => dupKeys.has(clean(x.number)))) return { alreadyPaid: true };
+    const collect = { type: COLLECT_TYPE[method] || 'Ramburs', documentNumber };
     if (amount != null) collect.value = round(amount, 2);
-    if (date) collect.issueDate = String(date).slice(0, 10);
+    if (date) collect.issueDate = bucharestDay(date);
     await call(ctx, 'PUT', '/docs/invoice/collect', { json: { cif: cif(ctx), seriesName: series, number: String(number), collect } });
+    return {};
   },
 };

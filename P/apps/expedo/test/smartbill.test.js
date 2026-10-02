@@ -260,16 +260,60 @@ test('unknown field (json_mapping_error, no errorText) is reported as an integra
   await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'PROVIDER_REJECTED' && /zzz/.test(err.message));
 });
 
-test('timeout on create is NOT retryable (no idempotency key in SmartBill)', async () => {
+/** /series answers with a counter that the test can advance (as SmartBill does when an invoice is issued). */
+const seriesCounter = (start = 8) => {
+  const state = { next: start };
+  return { state, handler: () => ({ body: { errorText: '', list: [{ name: 'EXP', nextNumber: state.next, type: 'f' }] } }) };
+};
+
+test('timeout on create after which the series counter moved → INVOICE_STATUS_UNKNOWN, not retryable', async () => {
+  const counter = seriesCounter(8);
   const { ctx } = ctxWith(router({
-    'POST /invoice/v2': () => new ProcessingError({ code: 'PROVIDER_TIMEOUT', message: 'timeout', retryable: true, provider: 'SmartBill' }),
+    'GET /series': counter.handler,
+    'POST /invoice/v2': () => {
+      counter.state.next = 9; // SmartBill issued the invoice, but the answer never arrived
+      return new ProcessingError({ code: 'PROVIDER_TIMEOUT', message: 'timeout', retryable: true, provider: 'SmartBill' });
+    },
   }));
   await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
     assert.equal(err.code, 'INVOICE_STATUS_UNKNOWN');
     assert.equal(err.retryable, false);
     assert.match(err.hint, /Verifică în SmartBill/);
+    assert.match(err.message, /probabil EXP 8/);
     return true;
   });
+});
+
+test('timeout on create with the series counter unchanged → nothing was issued, retryable', async () => {
+  const counter = seriesCounter(8);
+  const { ctx, calls } = ctxWith(router({
+    'GET /series': counter.handler,
+    'POST /invoice/v2': () => new ProcessingError({ code: 'PROVIDER_TIMEOUT', message: 'SmartBill nu a răspuns în 30 secunde.', retryable: true, provider: 'SmartBill' }),
+  }));
+  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
+    assert.equal(err.code, 'PROVIDER_TIMEOUT');
+    assert.equal(err.retryable, true);
+    assert.match(err.message, /nu a fost emisă/);
+    return true;
+  });
+  const series = calls.filter((c) => c.url.pathname.endsWith('/series'));
+  assert.equal(series.length, 2); // before and after the create
+  assert.ok(calls.indexOf(series[0]) < calls.indexOf(invoiceCall(calls)));
+});
+
+test('HTTP 500 on create and SmartBill still down for the check → INVOICE_STATUS_UNKNOWN', async () => {
+  let n = 0;
+  const { ctx } = ctxWith(router({
+    'GET /series': () => (++n === 1 ? { body: { errorText: '', list: [{ name: 'EXP', nextNumber: 8, type: 'f' }] } } : { status: 503, body: '<html>503</html>' }),
+    'POST /invoice/v2': () => ({ status: 500, body: '<html>Internal Server Error</html>' }),
+  }));
+  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'INVOICE_STATUS_UNKNOWN' && err.retryable === false);
+});
+
+test('definite rejection on create (errorText) is not second-guessed: no extra /series check', async () => {
+  const { ctx, calls } = ctxWith(router({ 'POST /invoice/v2': () => ({ status: 400, body: { errorText: 'Seria nu a fost gasita! Folositi o serie creata in contul de cloud.' } }) }));
+  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'INVOICE_SERIES_NOT_FOUND');
+  assert.equal(calls.filter((c) => c.url.pathname.endsWith('/series')).length, 1);
 });
 
 test('getPdf returns a Buffer; uses query params and Accept: application/octet-stream', async () => {
@@ -316,8 +360,8 @@ test('storno of an already reversed invoice → clear error', async () => {
 test('registerPayment for delivered COD: Ramburs linked to the invoice', async () => {
   const { ctx, calls } = ctxWith(() => ({ body: { errorText: '' } }));
   await smartbill.registerPayment(ctx, { series: 'EXP', number: '0007', amount: 185.47, date: '2026-10-05', method: 'cod' });
-  assert.equal(calls[0].url.pathname, '/SBORO/api/payment');
-  assert.deepEqual(calls[0].json, {
+  const pay = calls.find((c) => c.url.pathname === '/SBORO/api/payment');
+  assert.deepEqual(pay.json, {
     companyVatCode: 'RO12345678', type: 'Ramburs', isCash: false, useInvoiceDetails: true,
     invoicesList: [{ seriesName: 'EXP', number: '0007' }], value: 185.47, issueDate: '2026-10-05',
   });
@@ -346,4 +390,99 @@ test('testConnection for a non-VAT-payer company', async () => {
 test('listSeries maps the series list', async () => {
   const { ctx } = ctxWith(router());
   assert.deepEqual((await smartbill.listSeries(ctx)).map((s) => s.id), ['EXP', 'TST']);
+});
+
+// ── live-checked responses (test/fixtures/invoicing/live-responses.json) ──
+
+import { readFileSync } from 'node:fs';
+const LIVE = JSON.parse(readFileSync(new URL('./fixtures/invoicing/live-responses.json', import.meta.url), 'utf8')).smartbill;
+
+test('live 401 body (bad e-mail/token) → AUTH_FAILED, not retryable, on testConnection and before any invoice POST', async () => {
+  const { ctx, calls } = ctxWith(() => ({ status: LIVE.auth401.status, body: LIVE.auth401.body }));
+  await assert.rejects(smartbill.testConnection(ctx), (err) => err.code === 'AUTH_FAILED' && err.retryable === false && /Setări → Integrări/.test(err.hint));
+  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'AUTH_FAILED' && err.retryable === false);
+  assert.equal(invoiceCall(calls), undefined);
+});
+
+test('live 401 body arriving with HTTP 200 would still be AUTH_FAILED (errorText is the source of truth)', async () => {
+  const { ctx } = ctxWith(() => ({ status: 200, body: LIVE.auth401.body }));
+  await assert.rejects(smartbill.listSeries(ctx), (err) => err.code === 'AUTH_FAILED');
+});
+
+test('live invalid_request_error without param (404/406/415) names the code, not a bogus field', async () => {
+  for (const k of ['unknownPath404', 'acceptPdf406', 'formBody415']) {
+    const { ctx } = ctxWith(router({ 'POST /invoice/v2': () => ({ status: LIVE[k].status, body: LIVE[k].body }) }));
+    await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
+      assert.equal(err.code, 'PROVIDER_REJECTED');
+      assert.equal(err.retryable, false);
+      assert.doesNotMatch(err.message, /câmp/);
+      assert.match(err.message, new RegExp(`${LIVE[k].body.errors[0].code}, HTTP ${LIVE[k].status}`));
+      return true;
+    });
+  }
+  const { ctx } = ctxWith(router({ 'POST /invoice/v2': () => ({ status: 400, body: LIVE.unknownField400.body }) }));
+  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => /câmp: fooBar/.test(err.message));
+});
+
+// ── adversarial review fixes ──
+
+test('card payment value = sum of rounded line totals (what SmartBill totals), not the raw order total', async () => {
+  const { ctx, calls } = ctxWith(router());
+  const inv = { ...b2bPaid(), lines: [{ name: 'Carte', quantity: 3, unitPrice: 33.3333, vatRate: 11, unit: 'buc' }, { name: 'Pix', quantity: 1, unitPrice: 0.995, vatRate: 21, unit: 'buc' }], total: 101 };
+  await smartbill.createInvoice(ctx, inv);
+  assert.equal(invoiceCall(calls).json.payment.value, 101); // 100.00 + 1.00 (0.995 → 1.00), not round(100.9949)
+});
+
+test('currency outside the SmartBill enum → clear Romanian error, no invoice call', async () => {
+  const { ctx, calls } = ctxWith(router());
+  await assert.rejects(smartbill.createInvoice(ctx, { ...b2c(), currency: 'BGN' }), (err) => err.code === 'INVOICE_CURRENCY_INVALID');
+  assert.equal(invoiceCall(calls), undefined);
+  await smartbill.createInvoice(ctx, { ...b2c(), currency: 'eur' });
+  const body = invoiceCall(calls).json;
+  assert.equal(body.currency, 'EUR');
+  assert.ok(body.products.every((p) => p.currency === 'EUR'));
+});
+
+test('București: county sent as "Bucuresti" and sector read from the street address when city/zip lack it', async () => {
+  const { ctx, calls } = ctxWith(router());
+  const inv = b2c();
+  inv.client = { ...inv.client, city: 'București', county: 'Municipiul București', countyCode: 'B', zip: '', address: 'Bd. Unirii 10, Sectorul 3' };
+  await smartbill.createInvoice(ctx, inv);
+  const client = invoiceCall(calls).json.client;
+  assert.equal(client.county, 'Bucuresti');
+  assert.equal(client.city, 'Sector 3');
+});
+
+test('VAT-rate cache is per SmartBill account: another e-mail on the same CIF reads /tax again', async () => {
+  const { ctx, calls } = ctxWith(router());
+  await smartbill.createInvoice(ctx, b2c());
+  await smartbill.createInvoice({ ...ctx, credentials: { email: 'alt@firma.ro', token: 'xyz' } }, b2c());
+  assert.equal(calls.filter((c) => c.url.pathname.endsWith('/tax')).length, 2);
+});
+
+test('registerPayment: a UTC timestamp becomes the Bucharest calendar day', async () => {
+  const { ctx, calls } = ctxWith(() => ({ body: { errorText: '' } }));
+  await smartbill.registerPayment(ctx, { series: 'EXP', number: '0007', amount: 10, date: '2026-10-01T22:30:00.000Z', method: 'cod' });
+  assert.equal(calls.find((c) => c.method === 'POST').json.issueDate, '2026-10-02');
+});
+
+test('registerPayment: amount 0 → no call; already fully paid invoice → idempotent no-op', async () => {
+  const zero = ctxWith(() => { throw new Error('no call expected'); });
+  assert.deepEqual(await smartbill.registerPayment(zero.ctx, { series: 'EXP', number: '0007', amount: 0, method: 'cod' }), { skipped: true });
+  const paid = ctxWith((c) => (c.method === 'POST' ? { status: 400, body: { errorText: 'Factura este incasata sau stornata in totalitate.' } } : { body: { errorText: '' } }));
+  assert.deepEqual(await smartbill.registerPayment(paid.ctx, { series: 'EXP', number: '0007', amount: 10, method: 'cod' }), { alreadyPaid: true });
+});
+
+test('registerPayment: checks /invoice/paymentstatus first — fully paid → no call; partly paid → only the rest', async () => {
+  const status = (unpaidAmount) => (c) => (c.url.pathname.endsWith('/paymentstatus')
+    ? { body: { errorText: '', invoiceTotalAmount: 185.47, paidAmount: round2(185.47 - unpaidAmount), unpaidAmount, paid: unpaidAmount === 0 } }
+    : { body: { errorText: '' } });
+  const round2 = (n) => Math.round(n * 100) / 100;
+  const paid = ctxWith(status(0));
+  assert.deepEqual(await smartbill.registerPayment(paid.ctx, { series: 'EXP', number: '0007', amount: 185.47, method: 'cod' }), { alreadyPaid: true });
+  assert.equal(paid.calls.filter((c) => c.method === 'POST').length, 0);
+  assert.equal(paid.calls[0].url.searchParams.get('number'), '0007'); // leading zeros kept
+  const part = ctxWith(status(85.47));
+  await smartbill.registerPayment(part.ctx, { series: 'EXP', number: '0007', amount: 185.47, method: 'cod' });
+  assert.equal(part.calls.find((c) => c.method === 'POST').json.value, 85.47);
 });

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { ProcessingError } from '../core/errors.js';
+import { bucharestDateTime } from './ro-time.js';
 
 // FGO API — official docs: https://api.fgo.ro/v1/testing.html ("FGO API Documentation v7.0", updated 2026-03-25)
 // and the PDF "Metode API - integrare FGO v7.1" (https://testapp.fgo.ro/publicws/files/specificatii-api-latest.pdf).
@@ -7,8 +8,9 @@ import { ProcessingError } from '../core/errors.js';
 // Verified against those sources:
 //  - Production https://api.fgo.ro/v1, test https://api-testuat.fgo.ro/v1 (separate accounts, no sync).
 //  - Bodies are RAW JSON (Content-Type: application/json) with nested Client{} / Continut[] — the v7.0 docs say
-//    application/x-www-form-urlencoded is NOT supported anymore (a form POST to api.fgo.ro now gets HTTP 409).
-//    The older PDF still shows Client[Denumire] form keys; those are the same fields, nested.
+//    application/x-www-form-urlencoded is NOT supported (live 2026-10-02: a form POST is still parsed for the
+//    top-level CodUnic, but nested Client/Continut can't be sent that way). The older PDF shows Client[Denumire]
+//    form keys; those are the same fields, nested.
 //  - Hash = UPPERCASE hex SHA-1 of:
 //      emitere:                               CodUnic + CheiePrivata + Client.Denumire
 //      print/anulare/stornare/getstatus/awb:  CodUnic + CheiePrivata + Numar  (the number exactly as emitere
@@ -20,12 +22,24 @@ import { ProcessingError } from '../core/errors.js';
 //    normalized ONCE (NFC, no control/zero-width chars, single spaces, ≤255 chars) and that exact string is both
 //    hashed and sent. Credentials are stripped of whitespace/invisible chars: FGO support's own fix for hash errors
 //    is "retype CIF and key, don't copy-paste".
-//  - Errors come as HTTP 200 {Success:false, Message}. Rate limit: 1 request/second for invoice calls.
+//  - Errors come as HTTP 200 {Success:false, Message} — but some come as HTTP 500 with the same shape, e.g. the test
+//    environment's getstatus answers bad credentials with 500 {Success:false, Message:"System.Exception: Codul unic
+//    nu exista sau nu este asociat.\r\n   at Fgo.PublicApi..."} and malformed requests get 500 "Ne pare rau, a
+//    intervenit o eroare". Rate limit: 1 request/second for invoice calls.
+//  - Live 2026-10-02 (invalid credentials, test/fixtures/invoicing/live-responses.json): an unknown/unauthorized
+//    CodUnic gets "Combinatia utilizator/companie nu este autorizata pentru utilizare API. Verificati starea acestuia
+//    in Setari -> Utilizatori [<CodUnic>]." on production and "Codul unic nu exista sau nu este asociat." on
+//    api-testuat. No documented message mentions the hash: FGO identifies the API user by CodUnic + Hash, so a wrong
+//    hash most likely reads like the "not authorized" one — the diacritics retry therefore keys off any auth rejection.
 //  - VerificareDuplicat=true + IdExtern = order reference → FGO doesn't issue a second invoice for the same order.
-//  - Judet/Localitate must match FGO's nomenclature: ASCII names ("Bucuresti", "Bistrita-Nasaud"),
-//    localities hyphenated ("Baia-Mare", "Sector-3").
-//  - factura/incasare is only available on FGO Premium/Enterprise; TipIncasare nomenclature is
-//    Banca / Retur Casa / Bon / Chitanta (there is no "Ramburs").
+//  - Judet/Localitate must match FGO's nomenclature: ASCII names ("Bucuresti", "Bistrita-Nasaud", "Satu Mare"),
+//    localities mostly hyphenated ("Baia-Mare", "Sector-3") with a few spaced exceptions ("Pipera Voluntari",
+//    "Bistrita Bargaului Fabrici"). Live-checked: GET /nomenclator/judet (public, no auth) matches COUNTIES below
+//    exactly (42 entries); /nomenclator/localitati?judet=B lists Bucuresti + Sector-1..Sector-6 and accepts the county
+//    code or name; without judet it answers {Success:false, Message:"Este necesar sa transmiteti parametrul judet..."}.
+//  - factura/incasare is only available on FGO Premium/Enterprise; TipIncasare nomenclature (GET /nomenclator/
+//    tipincasare, public) is Banca / Retur Casa / Bon / Chitanta on production (api-testuat also lists Voucher and
+//    Plata Speciala); there is no "Ramburs".
 
 const PROVIDER = 'FGO';
 const PROD = 'https://api.fgo.ro/v1';
@@ -106,15 +120,29 @@ function fgoAuthError(details) {
 
 // ───────────────────────────── errors ─────────────────────────────
 
-const AUTH_RE = /autorizat|codul unic nu exista|nu este asociat|hash|cheie|cheia/i;
+// Observed live: "...nu este autorizata pentru utilizare API..." (prod) and "Codul unic nu exista sau nu este
+// asociat." (test env). hash/semnatura/cheia privata are kept for wordings we haven't seen.
+const AUTH_RE = /utilizare api|codul unic nu exista|nu este asociat|\bhash\b|semnatur|chei[ae] privat/i;
 
-function mapFgoError(body, op) {
-  const msg = clean(body?.Message) || 'eroare necunoscută';
+/** FGO's Message without the .NET exception prefix and stack trace it sometimes includes. */
+function fgoMessage(body) {
+  let msg = String(body?.Message ?? '');
+  msg = msg.split(/\r?\n\s*at\s|\r?\n---/)[0];
+  msg = msg.replace(/^\s*System\.[\w.]*Exception:\s*/, '');
+  return clean(msg);
+}
+
+function mapFgoError(body, op, status = 200) {
+  const msg = fgoMessage(body) || 'eroare necunoscută';
   const m = fold(msg);
   const mk = (p) => new ProcessingError({ retryable: false, provider: PROVIDER, details: body, ...p });
   if (AUTH_RE.test(m)) return fgoAuthError(body);
   if (/timpul maxim/i.test(m)) {
     return mk({ code: 'PROVIDER_TIMEOUT', message: 'FGO nu a reușit să emită factura în timp util.', hint: 'Reîncercăm automat; FGO verifică duplicatele după numărul comenzii.', retryable: true });
+  }
+  if (op === 'emitere' && /\bdeja\b.*\bemis|duplicat|idextern/i.test(m)) {
+    // VerificareDuplicat found an invoice for this IdExtern but didn't return it (when it does, we use it).
+    return mk({ code: 'INVOICE_DUPLICATE', message: `FGO: ${msg}`, hint: 'FGO are deja o factură pentru această comandă. Caut-o în FGO după numărul comenzii; nu emite alta.' });
   }
   if (/seri/i.test(m)) {
     return mk({ code: 'INVOICE_SERIES_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Verifică seria în Setări → Facturare; trebuie să existe în FGO → Setări → Serii documente, cu registrul definit.', field: 'settings.series' });
@@ -125,7 +153,7 @@ function mapFgoError(body, op) {
   if (/localitat/i.test(m)) {
     return mk({ code: 'ADDRESS_CITY_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Corectează localitatea clientului în comandă (trebuie să existe în nomenclatorul FGO pentru județul ales).', field: 'client.city' });
   }
-  if (/\b(cod ?unic|cui|cif|cod fiscal)\b/i.test(m)) {
+  if (/\b(cod(ul)? ?unic|cui|cif|cod(ul)? fiscal)\b/i.test(m)) {
     return mk({ code: 'CLIENT_VAT_CODE_INVALID', message: `FGO: ${msg}`, hint: 'CUI-ul firmei client nu e valid. Corectează-l în comandă sau emite factura pe persoană fizică.', field: 'client.vatCode' });
   }
   if (/tva/i.test(m)) {
@@ -140,6 +168,10 @@ function mapFgoError(body, op) {
   if (/nu (a fost gasita|exista)|inexistent/i.test(m) && op !== 'emitere') {
     return mk({ code: 'INVOICE_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Verifică seria și numărul facturii în FGO.' });
   }
+  if (status >= 500) {
+    // e.g. 500 "Ne pare rau, a intervenit o eroare". On emitere a retry is safe: VerificareDuplicat + IdExtern.
+    return mk({ code: 'PROVIDER_DOWN', message: `FGO are o problemă la server: ${msg}`, hint: 'Reîncercăm automat în câteva minute.', retryable: true });
+  }
   return mk({ code: 'PROVIDER_REJECTED', message: `FGO a refuzat cererea: ${msg}`, hint: 'Verifică datele comenzii și setările de facturare, apoi încearcă din nou.' });
 }
 
@@ -151,13 +183,21 @@ async function post(ctx, path, payload, hashSuffix, { op, allowFailureBody } = {
     method: 'POST',
     json,
     timeoutMs: 30000,
-    mapError: (status, body) => (body && typeof body === 'object' && body.Success === false ? mapFgoError(body, op) : undefined),
+    mapError: (status, body) => {
+      if (!body || typeof body !== 'object' || body.Success !== false) return undefined;
+      // A Success:false body is FGO's answer whatever the HTTP status (getstatus answers some with 500).
+      if (allowFailureBody?.(body)) return Object.assign(new Error('fgo-failure-body'), { fgoBody: body });
+      return mapFgoError(body, op, status);
+    },
+  }).catch((err) => {
+    if (err?.fgoBody) return { status: 200, body: err.fgoBody };
+    throw err;
   });
   const body = res.body;
   if (!body || typeof body !== 'object') {
     throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'FGO a trimis un răspuns neașteptat.', hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: body });
   }
-  if (body.Success !== true && !(allowFailureBody && allowFailureBody(body))) throw mapFgoError(body, op);
+  if (body.Success !== true && !(allowFailureBody && allowFailureBody(body))) throw mapFgoError(body, op, res.status);
   return body;
 }
 
@@ -271,29 +311,46 @@ async function buildEmitere(ctx, invoice, clientName) {
   return body;
 }
 
-function invoiceDateTime(date) {
-  const d = date ? String(date) : new Date().toISOString();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return `${d} 00:00:00`;
-  const m = d.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/);
-  return m ? `${m[1]} ${m[2]}` : d.slice(0, 19);
-}
-
 function paymentType(ctx, method) {
-  // VERIFY: TipIncasare values may differ per FGO account; the public nomenclature lists Banca / Retur Casa / Bon / Chitanta.
+  // Live-checked: GET /nomenclator/tipincasare is public (no CodUnic) and lists Banca / Retur Casa / Bon / Chitanta on
+  // production — environment-wide, not per account. "Banca" is the right default; the settings allow an override.
   if (method === 'card') return ctx.settings?.cardPaymentType || 'Banca';
   if (method === 'cod' || !method) return ctx.settings?.codPaymentType || 'Banca';
   return 'Banca';
 }
 
-async function incasare(ctx, { series, number, amount, date, method }) {
+async function invoiceStatus(ctx, series, num) {
+  const body = await post(ctx, 'factura/getstatus', { Numar: num, Serie: series }, num, { op: 'getstatus' });
+  const f = body.Factura || {};
+  return { total: Number(f.Valoare), paid: Number(f.ValoareAchitata), raw: body };
+}
+
+async function incasare(ctx, { series, number, amount, date, method }, { fresh = false } = {}) {
   const num = String(number);
+  let value = amount == null ? null : round(amount, 2);
+  if (value != null && !(value > 0)) {
+    ctx.log?.('FGO: încasare cu suma 0 ignorată', { series, number: num, amount });
+    return { skipped: true };
+  }
+  if (!fresh) {
+    // No external id on încasări: check what is still unpaid so a repeated call can't collect twice.
+    const st = await invoiceStatus(ctx, series, num);
+    const due = round(st.total - (st.paid || 0), 2);
+    if (Number.isFinite(due) && due <= 0) return { alreadyPaid: true };
+    if (value == null || (Number.isFinite(due) && value > due)) value = due;
+    await sleep(ctx, MIN_INTERVAL_MS); // FGO: max 1 invoice/payment request per second
+  }
+  if (value == null || !Number.isFinite(value)) {
+    throw new ProcessingError({ code: 'PAYMENT_AMOUNT_MISSING', message: `Nu știm ce sumă să înregistrăm pe factura FGO ${series} ${num}.`, hint: 'Înregistrează încasarea manual în FGO.', provider: PROVIDER });
+  }
   await post(ctx, 'factura/incasare', {
     NumarFactura: num,
     SerieFactura: series,
     TipIncasare: paymentType(ctx, method),
-    SumaIncasata: round(amount, 2),
-    DataIncasare: invoiceDateTime(date),
+    SumaIncasata: value,
+    DataIncasare: bucharestDateTime(date),
   }, num, { op: 'incasare' });
+  return {};
 }
 
 export default {
@@ -330,13 +387,16 @@ export default {
     platformUrl(ctx);
     // FGO has no "whoami" call. getstatus for a non-existent number authenticates first, then fails on the
     // invoice — so an auth error means bad credentials and any other error means they were accepted.
-    // VERIFY: exact wording of FGO's "invoice not found" vs. "hash invalid" messages.
+    // Auth wording is live-checked (see header; test env answers it with HTTP 500). VERIFY: the wording FGO uses for
+    // "invoice 0 not found" with VALID credentials — only a real account can show it.
     const series = clean(ctx.settings?.series) || 'X';
     const body = await post(ctx, 'factura/getstatus', { Numar: '0', Serie: series }, '0', {
       op: 'test',
-      allowFailureBody: (b) => !AUTH_RE.test(fold(b.Message || '')),
+      // Any specific complaint about the probe invoice means the credentials passed; FGO's generic
+      // "a intervenit o eroare" proves nothing.
+      allowFailureBody: (b) => Boolean(fgoMessage(b)) && !AUTH_RE.test(fold(fgoMessage(b))) && !/a intervenit o eroare/i.test(fold(fgoMessage(b))),
     });
-    if (body.Success === false && /seri/i.test(fold(body.Message || '')) && !/factura/i.test(fold(body.Message || ''))) {
+    if (body.Success === false && /seri/i.test(fold(fgoMessage(body))) && !/factura/i.test(fold(fgoMessage(body)))) {
       throw mapFgoError(body, 'test');
     }
     return {
@@ -363,9 +423,11 @@ export default {
     } catch (err) {
       // Defensive: if FGO's side hashes a different byte form of a name with diacritics, the call fails before any
       // invoice exists, so one retry with the diacritic-free name is safe (the same string is hashed and sent).
+      // FGO's live auth rejections never mention the hash (see header), so any auth rejection of a non-ASCII name
+      // gets the one retry; with genuinely bad credentials it costs one extra request and fails the same way.
       // VERIFY: remove once FGO confirms UTF-8 hashing on their side.
       const ascii = fgoClientName(fold(name));
-      if (err?.code === 'AUTH_FAILED' && /hash/i.test(String(err?.details?.Message || '')) && ascii !== name) {
+      if (err?.code === 'AUTH_FAILED' && ascii !== name) {
         ctx.log?.('FGO: semnătura respinsă pentru un nume cu diacritice; reîncerc fără diacritice', { reference: invoice.reference });
         await sleep(ctx, MIN_INTERVAL_MS);
         name = ascii;
@@ -383,7 +445,9 @@ export default {
     if (invoice.paid && ctx.settings?.registerCardPayments && !result.duplicate) {
       try {
         await sleep(ctx, MIN_INTERVAL_MS); // FGO: max 1 invoice/payment request per second
-        await incasare(ctx, { series: result.series, number: result.number, amount: invoice.total, date: invoice.issueDate, method: invoice.paymentMethod });
+        // Amount = sum of the PretTotal values FGO received, i.e. exactly the invoice total FGO computes.
+        const amount = round(payload.Continut.reduce((sum, l) => sum + Math.sign(l.NrProduse) * l.PretTotal, 0), 2);
+        await incasare(ctx, { series: result.series, number: result.number, amount, date: invoice.issueDate, method: invoice.paymentMethod }, { fresh: true });
       } catch (err) {
         // The invoice exists; a failed "încasare" must not make the pipeline issue it again.
         ctx.log?.('FGO: factura a fost emisă, dar încasarea nu a putut fi înregistrată', { reference: invoice.reference, error: err?.message });
@@ -422,14 +486,11 @@ export default {
   },
 
   async registerPayment(ctx, p) {
-    await incasare(ctx, p);
+    return incasare(ctx, p);
   },
 
   /** Total and paid amount of an invoice (factura/getstatus). */
   async getInvoiceStatus(ctx, { series, number }) {
-    const num = String(number);
-    const body = await post(ctx, 'factura/getstatus', { Numar: num, Serie: series }, num, { op: 'getstatus' });
-    const f = body.Factura || {};
-    return { total: Number(f.Valoare), paid: Number(f.ValoareAchitata), raw: body };
+    return invoiceStatus(ctx, series, String(number));
   },
 };

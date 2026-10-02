@@ -161,7 +161,7 @@ test('createInvoice B2C: VAT-inclusive prices, Marfa vs Serviciu, idempotency ke
   const [tshirt, ship] = body.products;
   assert.deepEqual(tshirt, {
     name: 'Tricou negru (M)', code: 'TR-M', description: '', price: 59.99, measuringUnit: 'buc', currency: 'RON',
-    vatIncluded: 1, quantity: 2, productType: 'Marfa', vatName: '', vatPercentage: 21,
+    vatIncluded: 1, quantity: 2, productType: 'Marfa', save: 0, vatName: '', vatPercentage: 21,
   });
   assert.equal(ship.productType, 'Serviciu');
   assert.equal(ship.price, 19.99);
@@ -285,7 +285,8 @@ test('stornoInvoice → POST /docs/invoice with referenceDocument refund', async
 test('registerPayment for COD → PUT /docs/invoice/collect with Ramburs', async () => {
   const { ctx, calls } = ctxWith(() => ({ body: { status: 200, data: {} } }));
   await oblio.registerPayment(ctx, { series: 'FCT', number: '0053', amount: 139.97, date: '2026-10-05', method: 'cod', reference: '#1024' });
-  const c = nonToken(calls)[0];
+  assert.equal(nonToken(calls)[0].url.pathname, '/api/docs/invoice'); // existing collects checked first
+  const c = nonToken(calls)[1];
   assert.equal(c.method, 'PUT');
   assert.equal(c.url.pathname, '/api/docs/invoice/collect');
   assert.deepEqual(c.json, {
@@ -318,4 +319,105 @@ test('adapter fields', () => {
   assert.deepEqual(oblio.credentialFields.map((f) => f.key), ['email', 'secret']);
   const keys = oblio.settingsFields.map((f) => f.key);
   for (const k of ['cif', 'series', 'vatPayer', 'sendEmail', 'useStock', 'management', 'language']) assert.ok(keys.includes(k), k);
+});
+
+// ── live-checked responses (test/fixtures/invoicing/live-responses.json) ──
+
+import { readFileSync } from 'node:fs';
+const LIVE = JSON.parse(readFileSync(new URL('./fixtures/invoicing/live-responses.json', import.meta.url), 'utf8')).oblio;
+
+/** ctx whose token endpoint answers with `tokenOut` and API calls with `handler`. */
+function rawCtx(tokenOut, handler, credentials = { email: 'nu-exista@example.invalid', secret: 'x' }) {
+  const { http, calls } = fakeHttp((c, all) => (isToken(c) ? tokenOut(c) : handler(c, all)));
+  return { ctx: { credentials, settings: { cif: 'RO37311090', series: 'FCT' }, http, cache: fakeCache(), log: () => {} }, calls };
+}
+
+test('live: token 400 invalid_client → AUTH_FAILED, not retryable, no API call', async () => {
+  const { ctx, calls } = rawCtx(() => ({ status: 400, body: LIVE.tokenBadClient.body }), () => { throw new Error('no API call expected'); });
+  await assert.rejects(oblio.testConnection(ctx), (err) => err.code === 'AUTH_FAILED' && err.retryable === false && err.provider === 'Oblio');
+  await assert.rejects(oblio.createInvoice(ctx, b2c()), (err) => err.code === 'AUTH_FAILED');
+  assert.equal(nonToken(calls).length, 0);
+});
+
+test('live: 401 "access token provided is invalid" twice (even after a fresh token) → AUTH_FAILED', async () => {
+  const { ctx, calls } = ctxWith(() => ({ status: 401, body: LIVE.invalidToken.body }));
+  await assert.rejects(oblio.createInvoice(ctx, b2c()), (err) => err.code === 'AUTH_FAILED' && err.retryable === false);
+  assert.equal(calls.filter(isToken).length, 2); // refreshed once, then gave up
+  assert.equal(nonToken(calls).length, 2);
+});
+
+test('live: unknown path answers HTTP 200 HTML → retryable error, never "success without number"', async () => {
+  const { ctx } = ctxWith(() => ({ status: 200, body: LIVE.unknownPath.bodyStart }));
+  await assert.rejects(oblio.getPdf(ctx, { series: 'FCT', number: '0053' }), (err) => err.code === 'PROVIDER_DOWN' && err.retryable === true);
+  const t = rawCtx(() => ({ status: 200, body: '<html>maintenance</html>' }), () => ({ body: {} }));
+  await assert.rejects(oblio.testConnection(t.ctx), (err) => err.code === 'PROVIDER_DOWN' && err.retryable === true);
+});
+
+// ── adversarial review fixes ──
+
+test('token cache: two Oblio accounts sharing one cache never share a token', async () => {
+  const cache = fakeCache();
+  const seen = [];
+  const handler = (c) => { seen.push(c.headers.Authorization); return router()(c); };
+  const tokens = { 'a@x.ro': 'tokA', 'b@x.ro': 'tokB' };
+  const mk = (email) => {
+    const { http } = fakeHttp((c) => (isToken(c) ? { body: { access_token: tokens[new URLSearchParams(c.body).get('client_id')], expires_in: '3600' } } : handler(c)));
+    return { credentials: { email, secret: `secret-${email}` }, settings: { cif: 'RO37311090', series: 'FCT' }, http, cache, log: () => {} };
+  };
+  await oblio.createInvoice(mk('a@x.ro'), b2c());
+  await oblio.createInvoice(mk('b@x.ro'), b2c());
+  await oblio.createInvoice(mk('a@x.ro'), b2c());
+  assert.deepEqual(seen, ['Bearer tokA', 'Bearer tokB', 'Bearer tokA']);
+});
+
+test('idempotencyKey: "#1024-2" after a storno is used (sanitized); falls back to the order reference', async () => {
+  const a = ctxWith(router());
+  await oblio.createInvoice(a.ctx, { ...b2c(), idempotencyKey: '#1024-2' });
+  assert.equal(invoiceCall(a.calls).json.idempotencyKey, 'expedo-1024-2');
+  const b = ctxWith(router());
+  await oblio.createInvoice(b.ctx, b2c());
+  assert.equal(invoiceCall(b.calls).json.idempotencyKey, 'expedo-1024');
+});
+
+test('timeout on create stays retryable and the retry carries the same idempotencyKey (Oblio dedupes)', async () => {
+  let n = 0;
+  const { ctx, calls } = ctxWith(router({
+    'POST /docs/invoice': () => (++n === 1 ? new ProcessingError({ code: 'PROVIDER_TIMEOUT', message: 't', retryable: true, provider: 'Oblio' }) : { body: INVOICE_OK }),
+  }));
+  const inv = { ...b2c(), idempotencyKey: '#1024' };
+  await assert.rejects(oblio.createInvoice(ctx, inv), (err) => err.retryable === true);
+  await oblio.createInvoice(ctx, inv);
+  const posts = calls.filter((c) => c.method === 'POST' && c.url.pathname === '/api/docs/invoice');
+  assert.equal(posts[0].json.idempotencyKey, posts[1].json.idempotencyKey);
+});
+
+test('București: state "Bucuresti" and SECTOR from the street address; e-mail flag only with a client e-mail', async () => {
+  const { ctx, calls } = ctxWith(router(), { sendEmail: true });
+  const inv = b2c();
+  inv.client = { ...inv.client, city: 'București', county: 'Municipiul București', countyCode: 'B', zip: '', address: 'Str. X 1, sector 4', email: '' };
+  await oblio.createInvoice(ctx, inv);
+  const body = invoiceCall(calls).json;
+  assert.equal(body.client.state, 'Bucuresti');
+  assert.equal(body.client.city, 'SECTOR 4');
+  assert.equal(body.sendEmail, 0);
+});
+
+test('registerPayment: repeated call with the same document number → no second collect; 0 → nothing; UTC → Bucharest day', async () => {
+  const dup = ctxWith((c) => (c.method === 'GET' ? { body: { status: 200, data: { collects: [{ type: 'Ramburs', number: '#1024', value: 139.97 }] } } } : { body: { status: 200, data: {} } }));
+  assert.deepEqual(await oblio.registerPayment(dup.ctx, { series: 'FCT', number: '0053', amount: 139.97, method: 'cod', reference: '#1024' }), { alreadyPaid: true });
+  assert.equal(nonToken(dup.calls).filter((c) => c.method === 'PUT').length, 0);
+
+  const zero = ctxWith(() => { throw new Error('no call expected'); });
+  assert.deepEqual(await oblio.registerPayment(zero.ctx, { series: 'FCT', number: '0053', amount: 0, method: 'cod', reference: '#1024' }), { skipped: true });
+
+  const tz = ctxWith(() => ({ body: { status: 200, data: { collects: [] } } }));
+  await oblio.registerPayment(tz.ctx, { series: 'FCT', number: '0053', amount: 5, date: '2026-10-01T21:15:00Z', method: 'cod', reference: 'AWB1' });
+  assert.equal(nonToken(tz.calls).find((c) => c.method === 'PUT').json.collect.issueDate, '2026-10-02');
+});
+
+test('getPdf: show_file link answering with the HTML login page (seen live for a stale link) → not retryable', async () => {
+  const { ctx } = ctxWith((c) => (c.url.hostname === 'www.oblio.eu' && c.url.pathname === '/api/docs/invoice'
+    ? { body: { status: 200, data: { link: 'https://www.oblio.eu/utils/show_file/?ic=1&id=2&it=old' } } }
+    : { body: Buffer.from('<!DOCTYPE html><html><title>Login</title>') }));
+  await assert.rejects(oblio.getPdf(ctx, { series: 'FCT', number: '0053' }), (err) => err.code === 'INVOICE_PDF_UNAVAILABLE' && err.retryable === false && /direct din Oblio/.test(err.hint));
 });
