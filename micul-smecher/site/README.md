@@ -127,3 +127,13 @@ Pagina se poate previzualiza și ca artifact pe claude.ai: are tokenuri de culoa
 - [ ] Dacă adaugi analytics: banner de consimțământ pentru cookie-uri.
 - [ ] Test pe iPhone (Safari) și Android (Chrome): atingere, dublă atingere, ținut apăsat în demo, clipuri, comutator RO/EN, formular.
 - [ ] Rulează din nou capturile Playwright și verifică să nu apară scroll orizontal și erori în consolă.
+
+## v2 (octombrie 2026): „șmecher”
+
+- **Hero:** SOUL-ul (cut-out din `trailer/assets/soul_front`) e litera O din wordmark-ul uriaș; la scroll se rotește și crește, literele se depărtează.
+- **Ochii noi (v2, aprobați)** vin din `eyes/eyes.js` + `eyes/designs.js` (copiate din `../eyes/`; recopiază-le când colecția se schimbă). Fiecare randare are un `<canvas>` pus exact pe sticla neagră: poziția sticlei e în constanta `GLASS` din script (generată de `media/v2/glass-map.json`). Ochii urmăresc cursorul/degetul și reacționează la atingere, hover și scroll.
+- **Randări fără ochii vechi:** `media/v2/*.webp` (hand, desk, family, night: ochii vechi șterși și sticla refăcută; front și col-* sunt cut-out-uri transparente).
+- **Născut cu unul din 120 de ochi:** rola „naște-l pe al tău” folosește `SoulEyes.rollRandom` (aceleași șanse ca firmware-ul), tabel de rarități și grila colecției.
+- Formularul trimite acum `{email, colour, edition: "soul-m", consent, lang, ts, source: "landing-v2"}`. Prețul e în `SOUL_CONFIG.PRICES.from`, livrarea în `SOUL_CONFIG.SHIP`.
+- Sunetele sunt oprite implicit (butonul „sound” din meniu).
+- Versiunea veche a paginii (cu ochii vechi și clipurile mp4) e în istoricul git.
