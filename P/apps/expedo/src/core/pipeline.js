@@ -11,6 +11,7 @@ import { ProcessingError, toProcessingError } from './errors.js';
 import { withDefaults } from './settings.js';
 import { planOrder, buildShipment, buildInvoice, bucharestDate } from './build.js';
 import { getShopify } from '../shopify/index.js';
+import { customerHistory, openOrdersOfCustomer } from './customers.js';
 
 export const ORDER_STATUS = {
   new: 'Nouă',
@@ -112,7 +113,7 @@ export function deriveStatus(order, { blocking, hold } = {}) {
 export function validateOrder(store, orderId) {
   const order = db.getOrder(orderId);
   const settings = storeSettings(store);
-  const plan = planOrder(order.data, settings, order.overrides);
+  const plan = planOrder(order.data, settings, order.overrides, { history: customerHistory(store, order) });
   const skipTag = (order.data.tags || []).some((t) => settings.automation.skipTags.map((s) => s.toLowerCase()).includes(t.toLowerCase()));
   const staleValidationError = order.last_error?.step === 'validate' && !plan.blocking;
   const updated = db.updateOrder(orderId, {
@@ -259,7 +260,8 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
         const { adapter, ctx, realAdapter } = providerContext(store, 'invoicing', invoicer);
         const invoice = buildInvoice(order.data, plan, settings);
         // After a storno the order is invoiced again; FGO/Oblio would reject the same key as a duplicate.
-        const previous = db.getDb().prepare(`SELECT COUNT(*) c FROM events WHERE order_id = ? AND step = 'invoice' AND level = 'success' AND message LIKE 'Factura % emisă%'`).get(orderId).c;
+        // Event messages are encrypted, so they are matched here rather than in SQL.
+        const previous = db.orderEvents(orderId).filter((e) => e.step === 'invoice' && e.level === 'success' && /^Factura .* emisă/.test(e.message)).length;
         invoice.idempotencyKey = invoiceIdempotencyKey(store, order.name, previous ? previous + 1 : 0);
         if (invoice.mismatch) {
           db.logEvent(store.id, orderId, 'warning', 'invoice', `Totalul facturii diferă de totalul din Shopify cu ${invoice.mismatch.toFixed(2)} lei (card cadou, comandă editată, rotunjiri?). Verifică factura.`);
@@ -496,6 +498,8 @@ export async function trackStore(store) {
       if (r.status === TrackingStatus.DELIVERED) await onDelivered(store, updated);
       if ((r.status === TrackingStatus.RETURNED || r.status === TrackingStatus.RETURNING) && order.tracking_status !== TrackingStatus.RETURNING) {
         db.logEvent(store.id, order.id, 'warning', 'tracking', 'Coletul se întoarce. Când ajunge, verifică produsele și stornează factura din pagina comenzii.');
+        // The customer's other open orders now show "refused before" (and rules on it apply).
+        for (const id of openOrdersOfCustomer(store, updated)) validateOrder(store, id);
       }
       if (r.status === TrackingStatus.CANCELLED) {
         db.logEvent(store.id, order.id, 'warning', 'tracking', 'Curierul raportează AWB-ul ca anulat. Apasă „Anulează AWB” ca să poți genera altul.');

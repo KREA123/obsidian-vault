@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { processOrder, trackStore, importOrder, enqueue } from './core/pipeline.js';
 import { getShopify } from './shopify/index.js';
 import { ProcessingError, toProcessingError } from './core/errors.js';
+import { applyRetention, pruneAccessLog } from './core/privacy.js';
 
 // Background jobs stored in SQLite, so nothing is lost on restart.
 // Backoff for retryable failures: 1, 5, 15, 60, 180 minutes.
@@ -27,6 +28,12 @@ export const handlers = {
   },
   async track_store(store) {
     return trackStore(store);
+  },
+  // Daily: customer data of old finished orders (store setting "Păstrează datele clienților"), access log > 1 year.
+  async privacy_cleanup(store) {
+    const r = applyRetention(store);
+    pruneAccessLog();
+    return r;
   },
 };
 
@@ -78,6 +85,7 @@ export function schedulePeriodic() {
   for (const store of db.listStores()) {
     enqueue(store.id, 'track_store', {}, { key: `track:${store.id}`, runAt: new Date(now + config.trackingIntervalMinutes * 60_000).toISOString(), maxAttempts: 1 });
     if (!store.demo) enqueue(store.id, 'sync_store', { days: 3 }, { key: `sync:${store.id}`, runAt: new Date(now + 15 * 60_000).toISOString(), maxAttempts: 2 });
+    enqueue(store.id, 'privacy_cleanup', {}, { key: `privacy:${store.id}`, runAt: new Date(now + 24 * 3600_000).toISOString(), maxAttempts: 2 });
   }
 }
 

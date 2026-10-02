@@ -2,7 +2,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { config } from './config.js';
-import { encrypt, decrypt } from './lib/crypto.js';
+import { encrypt, decrypt, sealJson, openJson, sealText, openText, isSealed } from './lib/crypto.js';
+import { orderIdentity } from './core/identity.js';
 
 let db;
 
@@ -42,7 +43,7 @@ export function openDb(file = config.dbFile) {
       store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
       shopify_id TEXT NOT NULL,
       name TEXT NOT NULL,
-      data TEXT NOT NULL,                     -- normalized order (src/shopify/mapper.js)
+      data TEXT NOT NULL,                     -- normalized order (src/shopify/mapper.js), encrypted
       status TEXT NOT NULL DEFAULT 'new',     -- see ORDER_STATUS in core/pipeline.js
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -66,9 +67,9 @@ export function openDb(file = config.dbFile) {
       fulfilled_at TEXT,
       cod_collected_at TEXT,
       paid_marked_at TEXT,
-      issues TEXT NOT NULL DEFAULT '[]',      -- validation issues
-      last_error TEXT,                        -- ProcessingError JSON
-      overrides TEXT NOT NULL DEFAULT '{}',   -- manual edits (address fixes, parcels, courier...)
+      issues TEXT NOT NULL DEFAULT '[]',      -- validation issues, encrypted (can quote the phone)
+      last_error TEXT,                        -- ProcessingError JSON, encrypted (provider answers)
+      overrides TEXT NOT NULL DEFAULT '{}',   -- manual edits (address fixes, parcels, courier...), encrypted
       test_mode INTEGER NOT NULL DEFAULT 0,   -- AWB/invoice were made by the test providers
       UNIQUE (store_id, shopify_id)
     );
@@ -82,8 +83,8 @@ export function openDb(file = config.dbFile) {
       at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       level TEXT NOT NULL DEFAULT 'info',     -- info | success | warning | error
       step TEXT,                              -- validate | awb | invoice | fulfill | tracking | ...
-      message TEXT NOT NULL,
-      data TEXT
+      message TEXT NOT NULL,                  -- encrypted (errors can quote an address or phone)
+      data TEXT                               -- encrypted
     );
     CREATE INDEX IF NOT EXISTS events_order ON events(order_id, id);
     CREATE INDEX IF NOT EXISTS events_store ON events(store_id, id DESC);
@@ -115,6 +116,20 @@ export function openDb(file = config.dbFile) {
       id TEXT PRIMARY KEY,
       at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Who looked at or exported customer data (Shopify protected customer data). No customer data here.
+    CREATE TABLE IF NOT EXISTS access_log (
+      id INTEGER PRIMARY KEY,
+      store_id INTEGER NOT NULL,
+      at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      actor TEXT NOT NULL,                    -- 'shopify-session <user id>' | 'admin' | 'shopify' (GDPR webhooks)
+      action TEXT NOT NULL,                   -- see ACCESS_ACTIONS in core/privacy.js
+      order_id INTEGER,
+      order_name TEXT,                        -- kept when the order is deleted (shop/redact deletes this too)
+      detail TEXT
+    );
+    CREATE INDEX IF NOT EXISTS access_store ON access_log(store_id, id DESC);
+    CREATE INDEX IF NOT EXISTS access_at ON access_log(at);
   `);
   migrate();
   return db;
@@ -134,7 +149,52 @@ function migrate() {
   // the same order is being synced has to trigger another sync, or the update is lost.
   db.exec(`DROP INDEX IF EXISTS jobs_key;
     CREATE UNIQUE INDEX IF NOT EXISTS jobs_key_pending ON jobs(key) WHERE status = 'pending' AND key IS NOT NULL;`);
+  // Keyed hashes of the customer (core/identity.js): search and refusal history without plaintext.
+  for (const c of ['phone_hash', 'email_hash', 'search_terms']) if (!cols.has(c)) db.exec(`ALTER TABLE orders ADD COLUMN ${c} TEXT`);
+  // When the order reached a final state (retention counts from here) and when its customer data was removed.
+  if (!cols.has('finished_at')) {
+    db.exec('ALTER TABLE orders ADD COLUMN finished_at TEXT');
+    db.exec(`UPDATE orders SET finished_at = strftime('%Y-%m-%dT%H:%M:%fZ', COALESCE(tracking_at, updated_at)) WHERE ${FINISHED_SQL}`);
+  }
+  if (!cols.has('redacted_at')) db.exec('ALTER TABLE orders ADD COLUMN redacted_at TEXT');
+  db.exec(`CREATE INDEX IF NOT EXISTS orders_phone ON orders(store_id, phone_hash);
+    CREATE INDEX IF NOT EXISTS orders_email ON orders(store_id, email_hash);
+    CREATE INDEX IF NOT EXISTS orders_finished ON orders(store_id, finished_at);`);
+  encryptPlaintextRows();
 }
+
+/**
+ * One-time migration: rows written before customer data was encrypted are re-saved encrypted,
+ * with their search hashes. Safe to run on every start: sealed rows are skipped.
+ */
+function encryptPlaintextRows() {
+  const orders = db.prepare(`SELECT id, store_id, data, overrides, issues, last_error FROM orders WHERE data NOT LIKE 'enc1:%'`).all();
+  const events = db.prepare(`SELECT id, message, data FROM events WHERE message NOT LIKE 'enc1:%'`).all();
+  const cache = db.prepare(`SELECT store_id, key, value FROM cache WHERE value NOT LIKE 'enc1:%'`).all();
+  if (!orders.length && !events.length && !cache.length) return;
+  db.exec('BEGIN');
+  try {
+    const upOrder = db.prepare(`UPDATE orders SET data = ?, overrides = ?, issues = ?, last_error = ?, phone_hash = ?, email_hash = ?, search_terms = ? WHERE id = ?`);
+    for (const o of orders) {
+      const data = openJson(o.data, {});
+      const overrides = openJson(o.overrides, {});
+      const id = orderIdentity(o.store_id, data, overrides);
+      upOrder.run(sealJson(data), sealJson(overrides), sealJson(openJson(o.issues, [])), o.last_error ? sealJson(openJson(o.last_error, null)) : null,
+        id.phoneHash, id.emailHash, id.searchTerms, o.id);
+    }
+    const upEvent = db.prepare('UPDATE events SET message = ?, data = ? WHERE id = ?');
+    for (const e of events) upEvent.run(sealText(e.message), isSealed(e.data) || e.data == null ? e.data : sealText(e.data), e.id);
+    const upCache = db.prepare('UPDATE cache SET value = ? WHERE store_id = ? AND key = ?');
+    for (const c of cache) upCache.run(sealText(c.value), c.store_id, c.key);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+
+/** Nothing left to do for the order: delivered, returned, cancelled, or fulfilled outside Expedo (no AWB). */
+export const FINISHED_SQL = `(status IN ('delivered', 'returned', 'cancelled') OR (status = 'shipped' AND awb IS NULL))`;
 
 export const getDb = () => db;
 
@@ -194,7 +254,13 @@ export function markIntegrationVerified(storeId, kind, provider) {
 
 export function hydrateOrder(row) {
   if (!row) return row;
-  return { ...row, test_mode: !!row.test_mode, invoice_test: !!row.invoice_test, data: j(row.data, {}), issues: j(row.issues, []), last_error: j(row.last_error, null), overrides: j(row.overrides, {}) };
+  const { phone_hash, email_hash, search_terms, ...rest } = row;
+  return {
+    ...rest, test_mode: !!row.test_mode, invoice_test: !!row.invoice_test,
+    data: openJson(row.data, {}), issues: openJson(row.issues, []), last_error: openJson(row.last_error, null), overrides: openJson(row.overrides, {}),
+    // Hashes stay out of everything sent to the browser; customer history reads them from the row.
+    customerKeys: { phone: phone_hash, email: email_hash },
+  };
 }
 export function getOrder(id) {
   return hydrateOrder(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
@@ -207,29 +273,52 @@ const ORDER_COLUMNS = new Set(['status', 'payment_method', 'total', 'cod_amount'
   'tracking_status', 'tracking_text', 'tracking_at', 'invoice_provider', 'invoice_series', 'invoice_number', 'invoice_url', 'invoice_at',
   'fulfillment_id', 'fulfilled_at', 'cod_collected_at', 'paid_marked_at', 'issues', 'last_error', 'overrides', 'test_mode', 'invoice_test', 'data', 'name']);
 
+// Columns with customer data: encrypted on write, decrypted by hydrateOrder.
+const SEALED_COLUMNS = new Set(['data', 'overrides', 'issues', 'last_error']);
+
 export function updateOrder(id, fields) {
   const sets = [];
   const vals = [];
   for (const [k, v] of Object.entries(fields)) {
     if (!ORDER_COLUMNS.has(k)) throw new Error(`Unknown order column ${k}`);
     sets.push(`${k} = ?`);
-    vals.push(v !== null && typeof v === 'object' ? JSON.stringify(v) : typeof v === 'boolean' ? Number(v) : v);
+    if (SEALED_COLUMNS.has(k)) vals.push(v == null ? (k === 'last_error' ? null : sealJson(k === 'issues' ? [] : {})) : sealJson(v));
+    else vals.push(v !== null && typeof v === 'object' ? JSON.stringify(v) : typeof v === 'boolean' ? Number(v) : v);
   }
   if (!sets.length) return getOrder(id);
   db.prepare(`UPDATE orders SET ${sets.join(', ')}, updated_at = datetime('now') WHERE id = ?`).run(...vals, id);
+  if ('data' in fields || 'overrides' in fields) refreshIdentity(id);
+  if ('status' in fields || 'awb' in fields) markFinished(id);
   return getOrder(id);
+}
+
+/** Recomputes the customer hashes (search + history) from the order's data and manual fixes. */
+function refreshIdentity(id) {
+  const row = db.prepare('SELECT store_id, data, overrides, redacted_at FROM orders WHERE id = ?').get(id);
+  if (!row) return;
+  const k = row.redacted_at ? {} : orderIdentity(row.store_id, openJson(row.data, {}), openJson(row.overrides, {}));
+  db.prepare('UPDATE orders SET phone_hash = ?, email_hash = ?, search_terms = ? WHERE id = ?').run(k.phoneHash ?? null, k.emailHash ?? null, k.searchTerms ?? null, id);
+}
+
+/** finished_at = when the order reached a final state; cleared if it leaves it (e.g. AWB cancelled). */
+function markFinished(id) {
+  db.prepare(`UPDATE orders SET finished_at = CASE WHEN ${FINISHED_SQL} THEN COALESCE(finished_at, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) ELSE NULL END WHERE id = ?`).run(id);
 }
 
 /** Inserts or refreshes an order coming from Shopify. Never overwrites our own processing columns. */
 export function upsertOrder(storeId, order) {
+  // A redacted order that Shopify sends again (orders/updated) has its customer data back: the
+  // retention job removes it again once the retention period has passed.
   db.prepare(`INSERT INTO orders (store_id, shopify_id, name, data, created_at, payment_method, total, cod_amount)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(store_id, shopify_id) DO UPDATE SET name = excluded.name, data = excluded.data,
       payment_method = excluded.payment_method, total = excluded.total,
       cod_amount = CASE WHEN orders.awb IS NULL THEN excluded.cod_amount ELSE orders.cod_amount END,
-      updated_at = datetime('now')`)
-    .run(storeId, order.shopifyId, order.name, JSON.stringify(order), order.createdAt, order.paymentMethod, order.total, order.codAmount);
-  return getOrderByShopifyId(storeId, order.shopifyId);
+      redacted_at = NULL, updated_at = datetime('now')`)
+    .run(storeId, order.shopifyId, order.name, sealJson(order), order.createdAt, order.paymentMethod, order.total, order.codAmount);
+  const { id } = db.prepare('SELECT id FROM orders WHERE store_id = ? AND shopify_id = ?').get(storeId, order.shopifyId);
+  refreshIdentity(id);
+  return getOrder(id);
 }
 
 /**
@@ -258,10 +347,40 @@ export function releaseOrder(id) {
 
 export function logEvent(storeId, orderId, level, step, message, data) {
   db.prepare('INSERT INTO events (store_id, order_id, level, step, message, data) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(storeId, orderId ?? null, level, step ?? null, message, data === undefined ? null : JSON.stringify(data));
+    .run(storeId, orderId ?? null, level, step ?? null, sealText(String(message)), data === undefined ? null : sealJson(data));
 }
+const hydrateEvent = (e) => ({ ...e, message: openText(e.message), data: openJson(e.data, null) });
 export function orderEvents(orderId) {
-  return db.prepare('SELECT * FROM events WHERE order_id = ? ORDER BY id').all(orderId).map((e) => ({ ...e, data: j(e.data, null) }));
+  return db.prepare('SELECT * FROM events WHERE order_id = ? ORDER BY id').all(orderId).map(hydrateEvent);
+}
+/** Latest events of a store (Activitate), with the order name. */
+export function storeEvents(storeId, limit = 200) {
+  return db.prepare(`SELECT e.*, o.name order_name FROM events e LEFT JOIN orders o ON o.id = e.order_id
+    WHERE e.store_id = ? ORDER BY e.id DESC LIMIT ?`).all(storeId, limit).map(hydrateEvent);
+}
+
+// ---------- access log ----------
+/**
+ * Records that someone saw or exported customer data. Opening the same order again within a few
+ * minutes (the panel reloads after every action) is one visit, not ten.
+ */
+export function logAccess(storeId, { actor, action, orderId = null, orderName = null, detail = null }) {
+  if (action === 'order_view' && orderId) {
+    const recent = db.prepare(`SELECT 1 FROM access_log WHERE store_id = ? AND order_id = ? AND actor = ? AND action = 'order_view'
+      AND at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-5 minutes')`).get(storeId, orderId, actor);
+    if (recent) return;
+  }
+  db.prepare('INSERT INTO access_log (store_id, actor, action, order_id, order_name, detail) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(storeId, String(actor).slice(0, 120), action, orderId, orderName, detail == null ? null : String(detail).slice(0, 500));
+}
+export function listAccess(storeId, { action = '', order = '', limit = 100, offset = 0 } = {}) {
+  const where = ['store_id = ?'];
+  const args = [storeId];
+  if (action) { where.push('action = ?'); args.push(action); }
+  if (order) { where.push(`order_name LIKE ? ESCAPE '\\'`); args.push(`%${order.replace(/[\\%_]/g, (c) => `\\${c}`)}%`); }
+  const rows = db.prepare(`SELECT * FROM access_log WHERE ${where.join(' AND ')} ORDER BY id DESC LIMIT ? OFFSET ?`).all(...args, limit, offset);
+  const total = db.prepare(`SELECT COUNT(*) c FROM access_log WHERE ${where.join(' AND ')}`).get(...args).c;
+  return { rows, total };
 }
 
 /** Synchronous per-store cache handed to adapters as ctx.cache. */
@@ -274,12 +393,13 @@ export function storeCache(storeId) {
         db.prepare('DELETE FROM cache WHERE store_id = ? AND key = ?').run(storeId, key);
         return undefined;
       }
-      return j(row.value, undefined);
+      return openJson(row.value, undefined);
     },
+    // Encrypted too: the test courier keeps the shipments it "made" (recipient included) for its labels.
     set(key, value, ttlSeconds = 3600) {
       db.prepare(`INSERT INTO cache (store_id, key, value, expires_at) VALUES (?, ?, ?, ?)
         ON CONFLICT(store_id, key) DO UPDATE SET value = excluded.value, expires_at = excluded.expires_at`)
-        .run(storeId, key, JSON.stringify(value), Date.now() + ttlSeconds * 1000);
+        .run(storeId, key, sealText(JSON.stringify(value ?? null)), Date.now() + ttlSeconds * 1000);
     },
     delete(key) {
       db.prepare('DELETE FROM cache WHERE store_id = ? AND key = ?').run(storeId, key);

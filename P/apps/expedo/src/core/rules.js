@@ -16,6 +16,7 @@ export const RULE_FIELDS = {
   sku: { label: 'SKU în comandă', type: 'text' },
   itemCount: { label: 'Număr produse', type: 'number' },
   isCompany: { label: 'Client firmă', type: 'select', options: [['true', 'Da'], ['false', 'Nu']] },
+  refusedBefore: { label: 'Colete refuzate înainte', type: 'number' },
 };
 
 export const RULE_OPS = {
@@ -38,8 +39,8 @@ export const RULE_ACTIONS = {
   notes: 'Observații pe AWB',
 };
 
-/** Values a rule can test, computed from the normalized order. */
-export function ruleFacts(order, normalizedAddress) {
+/** Values a rule can test, computed from the normalized order (+ the customer's history, core/customers.js). */
+export function ruleFacts(order, normalizedAddress, history) {
   return {
     shippingMethod: order.shippingMethod || '',
     paymentMethod: order.paymentMethod,
@@ -51,6 +52,7 @@ export function ruleFacts(order, normalizedAddress) {
     sku: order.lines.map((l) => l.sku).join(', '),
     itemCount: order.lines.reduce((s, l) => s + l.quantity, 0),
     isCompany: String(!!order.company),
+    refusedBefore: history?.returned ?? 0,
   };
 }
 

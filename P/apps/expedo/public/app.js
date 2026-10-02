@@ -46,6 +46,7 @@ const ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
   clip: '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
 };
 const icon = (name) => raw(`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`);
 
@@ -96,6 +97,21 @@ async function openPdf(path) {
     if (win) win.location = url; else location.href = url;
   } catch (err) {
     win?.close();
+    toast(err.message, 'bad');
+  }
+}
+
+/** Downloads a file from the API (CSV export, customer data) with the auth headers. */
+async function download(path, filename) {
+  try {
+    const res = await fetch(`/api${path}`, { headers: await authHeaders() });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error?.message || 'Nu am putut descărca fișierul.');
+    }
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(await res.blob()), download: filename });
+    a.click();
+  } catch (err) {
     toast(err.message, 'bad');
   }
 }
@@ -184,11 +200,8 @@ async function viewDashboard() {
     </div>`;
   $$('[data-open]').forEach((tr) => tr.addEventListener('click', () => openOrder(Number(tr.dataset.open))));
   $('#btn-track').onclick = trackNow;
-  $('#btn-cod').onclick = async () => {
-    const res = await fetch('/api/cod.csv', { headers: await authHeaders() });
-    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(await res.blob()), download: 'ramburs.csv' });
-    a.click();
-  };
+  $('#btn-cod').onclick = () => download('/cod.csv', 'ramburs.csv');
+  bindDataDownloads($('#view'));
 }
 
 async function trackNow() {
@@ -203,9 +216,21 @@ function eventList(events, withOrder) {
     <li class="${e.level}">
       <div>${withOrder && e.order_name ? html`<a href="#/orders/${e.order_id}">${e.order_name}</a> · ` : ''}${e.message}</div>
       ${e.data?.hint ? html`<div class="hint">${e.data.hint}</div>` : ''}
+      ${e.step === 'gdpr' && e.data?.orderIds?.length ? html`<button class="btn small" data-export="${e.data.orderIds.join(',')}">${icon('download')} Descarcă datele clientului</button>` : ''}
       <div class="when">${fmtDate(e.at)}</div>
     </li>`)}</ul>`;
 }
+
+/** "Descarcă datele" buttons (GDPR data request): a JSON file with everything Expedo holds. */
+function bindDataDownloads(root) {
+  $$('[data-export]', root).forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    download(`/customer-export?ids=${b.dataset.export}`, 'date-client.json');
+  }));
+}
+
+/** Small badge: the customer refused parcels before (core/customers.js). */
+const refusedBadge = (n) => (n ? html`<span class="badge warn plain" title="Clientul a refuzat ${n === 1 ? 'un colet' : `${n} colete`} înainte">${n === 1 ? 'a refuzat 1 colet' : `a refuzat ${n} colete`}</span>` : '');
 
 function issueLines(o, max = 3) {
   const list = [];
@@ -246,7 +271,7 @@ async function viewOrders() {
     </div>
     <nav class="tabs">${TABS.map(([k, label]) => html`<a href="#/orders?status=${k}" class="${status === k ? 'active' : ''}">${label}<span class="count ${k === 'needs_attention' && c.needs_attention ? 'bad' : ''}">${count(k)}</span></a>`)}</nav>
     <div class="toolbar">
-      <input type="search" id="search" placeholder="Caută: comandă, AWB, client, telefon…" value="${search}">
+      <input type="search" id="search" placeholder="Caută: comandă, AWB, factură, nume, telefon, e-mail…" title="Numele și telefonul se caută întregi (ex. „Popescu”, „0745123456”)" value="${search}">
       <span class="muted small">${data.total} comenzi</span>
       ${ids ? html`<a class="btn small" href="#/orders?status=${status}">Doar comenzile procesate acum ${icon('x')}</a>` : ''}
     </div>
@@ -260,7 +285,7 @@ async function viewOrders() {
           <tr data-id="${o.id}" class="${state.selected.has(o.id) ? 'selected' : ''}">
             <td class="check"><input type="checkbox" data-check="${o.id}" ${state.selected.has(o.id) ? 'checked' : ''} aria-label="Selectează ${o.name}"></td>
             <td><div class="order-name">${o.name} ${o.testMode && o.awb ? html`<span class="pill test">probă</span>` : ''}</div><div class="faint small nowrap">${fmtDate(o.createdAt)}</div></td>
-            <td><div>${o.company || o.customer}</div><div class="muted small">${[o.city, o.county].filter(Boolean).join(', ')} · ${o.items} buc.</div>${issueLines(o, 2)}</td>
+            <td><div>${o.redactedAt ? html`<span class="faint">Date șterse</span>` : o.company || o.customer} ${refusedBadge(o.refusedBefore)}</div><div class="muted small">${[o.city, o.county].filter(Boolean).join(', ')}${o.city || o.county ? ' · ' : ''}${o.items} buc.</div>${issueLines(o, 2)}</td>
             <td class="num"><div class="nowrap">${lei(o.total)}</div><div>${payPill(o)}</div></td>
             <td class="hide-sm">${o.awb ? html`<div>${courierName(o.courier)}</div><div class="mono">${o.awb}</div>${o.trackingText ? html`<div class="faint small">${o.trackingText}</div>` : ''}`
               : html`<span class="faint small">${o.courier ? `→ ${courierName(o.courier)}` : '—'}</span><div class="faint small">${o.shippingMethod || ''}</div>`}</td>
@@ -390,7 +415,7 @@ async function renderOrder(id) {
   let data;
   try { data = await api(`/orders/${id}`); } catch (err) { if (token === state.drawerToken) panel.innerHTML = html`<div class="error-box">${err.message}</div>`; return; }
   if (token !== state.drawerToken) return; // a newer render (other order or refresh) won
-  const { order: o, plan, events } = data;
+  const { order: o, plan, events, customer } = data;
   const d = o.data;
   const a = { ...(d.shippingAddress || {}), ...(o.overrides.address || {}) };
   const errors = [];
@@ -449,6 +474,7 @@ async function renderOrder(id) {
       </form>` : ''}
     </div>
 
+    ${o.redactedAt ? html`<div class="card"><h2>Datele clientului au fost șterse</h2><p class="muted small" style="margin:0">Pe ${fmtDay(o.redactedAt)}, după zilele de păstrare din Setări → Date clienți (sau la cererea clientului). Au rămas numărul comenzii, sumele, produsele, AWB-ul și factura.</p></div>` : html`
     <div class="card">
       <h2>Adresa de livrare ${o.overrides.address ? html`<span class="badge warn plain">modificată manual</span>` : ''}</h2>
       ${canProcess ? html`
@@ -469,6 +495,13 @@ async function renderOrder(id) {
           <span class="muted small">Modificarea rămâne aici; nu schimbă comanda în Shopify.</span></div>
       </form>` : html`<dl class="kv"><dt>Destinatar</dt><dd>${plan.address.name}${plan.address.company ? ` (${plan.address.company})` : ''}</dd><dt>Telefon</dt><dd>${plan.address.phone}</dd><dt>Adresă</dt><dd>${plan.address.street}, ${plan.address.city}${plan.address.sector ? `, Sector ${plan.address.sector}` : ''}, ${plan.address.county} ${plan.address.zip}</dd></dl>`}
     </div>
+    ${customer?.orders.length ? html`<div class="card">
+      <h2>Istoricul clientului ${customer.returned ? html`<span class="badge warn plain">a refuzat ${customer.returned === 1 ? '1 colet' : `${customer.returned} colete`}</span>` : ''}</h2>
+      <p class="muted small" style="margin-top:-6px">Alte comenzi cu același telefon sau e-mail: <strong>${customer.delivered}</strong> livrate, <strong>${customer.returned}</strong> refuzate sau returnate.</p>
+      <table class="lines"><tbody>${customer.orders.map((h) => html`<tr data-open="${h.id}" class="clickable">
+        <td><a href="#/orders/${h.id}">${h.name}</a></td><td class="muted small nowrap">${fmtDay(h.createdAt)}</td>
+        <td>${h.refused ? html`<span class="badge warn">Refuzat${h.cod ? ' (ramburs)' : ''}</span>` : statusBadge({ status: h.status })}</td></tr>`)}</tbody></table>
+    </div>` : ''}`}
 
     <div class="card">
       <h2>Produse</h2>
@@ -484,6 +517,7 @@ async function renderOrder(id) {
     <div class="card"><h2>Istoric</h2>${eventList([...events].reverse(), false)}</div>`;
 
   $$('[data-close]', panel).forEach((b) => b.addEventListener('click', closeDrawer));
+  $$('tr[data-open]', panel).forEach((tr) => tr.addEventListener('click', (e) => { e.preventDefault(); openOrder(Number(tr.dataset.open)); }));
   const after = async (msg) => { if (msg) toast(msg, 'ok'); await renderOrder(id); refreshList(); refreshChrome(); };
   const run = async (btn, fn) => { busy(btn, true); try { await fn(); } catch (err) { toast(err.message, 'bad'); await renderOrder(id); } };
 
@@ -550,14 +584,53 @@ async function refreshList() {
 }
 
 // ---------- activity ----------
+const actorLabel = (a) => (a === 'admin' ? 'Administrator' : a === 'shopify' ? 'Shopify (cerere GDPR)' : String(a).replace(/^shopify-session /, 'Utilizator Shopify #'));
+
 async function viewActivity() {
   setActiveNav('activity');
-  const { events } = await api('/events');
-  $('#view').innerHTML = html`<div class="page-head"><h1>Activitate</h1></div><div class="card">${eventList(events, true)}</div>`;
+  const q = hashQuery();
+  const tab = q.get('tab') === 'access' ? 'access' : 'events';
+  const head = html`<div class="page-head"><h1>Activitate</h1></div>
+    <nav class="tabs"><a href="#/activity" class="${tab === 'events' ? 'active' : ''}">Ce s-a întâmplat</a><a href="#/activity?tab=access" class="${tab === 'access' ? 'active' : ''}">${icon('shield')} Acces la date</a></nav>`;
+  if (tab === 'events') {
+    const { events } = await api('/events');
+    $('#view').innerHTML = html`${head}<div class="card">${eventList(events, true)}</div>`;
+    bindDataDownloads($('#view'));
+    return;
+  }
+  const action = q.get('action') || '';
+  const order = q.get('order') || '';
+  const page = Number(q.get('page') || 1);
+  const data = await api(`/access-log?action=${encodeURIComponent(action)}&order=${encodeURIComponent(order)}&page=${page}`);
+  const pages = Math.ceil(data.total / data.pageSize);
+  const link = (p) => `#/activity?tab=access&action=${encodeURIComponent(action)}&order=${encodeURIComponent(order)}&page=${p}`;
+  $('#view').innerHTML = html`${head}
+    <div class="toolbar">
+      <select id="acc-action" aria-label="Acțiune"><option value="">Toate acțiunile</option>${Object.entries(state.meta.accessActions).map(([k, l]) => html`<option value="${k}" ${action === k ? 'selected' : ''}>${l}</option>`)}</select>
+      <input type="search" id="acc-order" placeholder="Comanda (ex. #1101)" value="${order}">
+      <span class="muted small">${data.total} înregistrări · se păstrează ${data.keepDays} de zile</span>
+    </div>
+    <div class="table-wrap">
+      ${data.entries.length ? html`<table class="static"><thead><tr><th>Când</th><th>Cine</th><th>Ce</th><th>Comanda</th><th class="hide-sm">Detalii</th></tr></thead><tbody>
+        ${data.entries.map((e) => html`<tr>
+          <td class="nowrap small">${fmtDate(e.at)}</td><td class="small">${actorLabel(e.actor)}</td><td class="small">${state.meta.accessActions[e.action] || e.action}</td>
+          <td>${e.order_id ? html`<a href="#/orders/${e.order_id}">${e.order_name}</a>` : e.order_name || html`<span class="faint">—</span>`}
+            ${e.action === 'data_request' && e.order_id ? html`<div><button class="btn small" data-export="${e.order_id}">${icon('download')} Descarcă datele</button></div>` : ''}</td>
+          <td class="hide-sm faint small">${e.detail || ''}</td></tr>`)}
+      </tbody></table>` : html`<div class="empty">Nicio înregistrare.</div>`}
+    </div>
+    ${pages > 1 ? html`<div class="form-actions">${page > 1 ? html`<a class="btn small" href="${link(page - 1)}">← Înapoi</a>` : ''}<span class="muted small">Pagina ${page} din ${pages}</span>${page < pages ? html`<a class="btn small" href="${link(page + 1)}">Înainte →</a>` : ''}</div>` : ''}
+    <p class="muted small">Aici apare cine a deschis o comandă sau a descărcat etichete, facturi, lista de picking, exportul de ramburs sau datele unui client. Cererile clienților venite prin Shopify apar tot aici.</p>`;
+  bindDataDownloads($('#view'));
+  const go = () => { location.hash = `#/activity?tab=access&action=${encodeURIComponent($('#acc-action').value)}&order=${encodeURIComponent($('#acc-order').value.trim())}`; };
+  $('#acc-action').addEventListener('change', go);
+  let t;
+  $('#acc-order').addEventListener('input', () => { clearTimeout(t); t = setTimeout(go, 400); });
+  if (order) { const i = $('#acc-order'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
 }
 
 // ---------- settings ----------
-const SECTIONS = [['general', 'General'], ['couriers', 'Curieri'], ['invoicing', 'Facturare'], ['automation', 'Automatizări'], ['rules', 'Reguli'], ['packaging', 'Colete']];
+const SECTIONS = [['general', 'General'], ['couriers', 'Curieri'], ['invoicing', 'Facturare'], ['automation', 'Automatizări'], ['rules', 'Reguli'], ['packaging', 'Colete'], ['privacy', 'Date clienți']];
 
 async function viewSettings(section = 'general') {
   setActiveNav('settings');
@@ -580,7 +653,7 @@ async function viewSettings(section = 'general') {
       return null;
     }
   };
-  ({ general: sectionGeneral, couriers: sectionProviders, invoicing: sectionProviders, automation: sectionAutomation, rules: sectionRules, packaging: sectionPackaging }[section] || sectionGeneral)(el, settings, integrations, save, section);
+  ({ general: sectionGeneral, couriers: sectionProviders, invoicing: sectionProviders, automation: sectionAutomation, rules: sectionRules, packaging: sectionPackaging, privacy: sectionPrivacy }[section] || sectionGeneral)(el, settings, integrations, save, section);
 }
 
 function sectionGeneral(el, s, integrations, save) {
@@ -780,6 +853,36 @@ function sectionPackaging(el, s, integrations, save) {
     e.preventDefault();
     const f = new FormData(e.target);
     save({ packaging: { defaultWeightKg: Number(f.get('defaultWeightKg')), minWeightKg: Number(f.get('minWeightKg')), parcels: Number(f.get('parcels')), contents: f.get('contents'), openPackage: f.has('openPackage') }, courier: { ...s.courier, labelFormat: f.get('labelFormat') } });
+  });
+}
+
+function sectionPrivacy(el, s, integrations, save) {
+  const days = s.privacy.retentionDays;
+  const label = (d) => ({ 90: '90 de zile (3 luni)', 180: '180 de zile (6 luni)', 365: '365 de zile (1 an)', 730: '730 de zile (2 ani)' }[d] || `${d} de zile`);
+  el.innerHTML = html`<div class="card">
+    <h2>Păstrează datele clienților</h2>
+    <form id="f">
+      <label class="field" style="max-width:340px">După ce comanda e livrată, returnată sau anulată
+        <select name="retentionDays">${[90, 180, 365, 730].map((d) => html`<option value="${d}" ${days === d ? 'selected' : ''}>${label(d)}</option>`)}</select>
+        <span class="help">Apoi ștergem numele, adresa, telefonul și e-mailul clientului din comandă. Rămân numărul comenzii, sumele, produsele, AWB-ul și factura, pentru contabilitate și verificarea rambursului.</span></label>
+      <ul class="muted small" style="margin:12px 0 0;padding-left:18px">
+        <li>Comenzile încă în lucru nu se ating.</li>
+        <li>Istoricul de refuzuri al clienților ține tot atât.</li>
+        <li>Ștergerea rulează o dată pe zi.</li>
+      </ul>
+      <div class="form-actions"><button class="btn primary">Salvează</button></div>
+    </form></div>
+    <div class="card"><h2>Cum sunt protejate datele</h2>
+      <ul class="muted" style="margin:0;padding-left:18px">
+        <li>Numele, adresele, telefoanele și e-mailurile clienților sunt criptate în baza de date.</li>
+        <li>Fiecare deschidere de comandă și fiecare export se notează în <a href="#/activity?tab=access">Activitate → Acces la date</a>.</li>
+        <li>Când un client cere prin Shopify datele lui sau ștergerea lor, cererea apare în Activitate și se rezolvă de aici.</li>
+      </ul>
+      <p class="small" style="margin:12px 0 0"><a href="/confidentialitate" target="_blank" rel="noopener">Politica de confidențialitate</a> · <a href="/termeni" target="_blank" rel="noopener">Termeni și acordul de prelucrare a datelor</a></p>
+    </div>`;
+  $('#f', el).addEventListener('submit', (e) => {
+    e.preventDefault();
+    save({ privacy: { retentionDays: Number(new FormData(e.target).get('retentionDays')) } });
   });
 }
 

@@ -80,7 +80,7 @@ test('CSRF: cookie-authenticated writes need the X-Expedo-Request header', async
 test('orders list: filters, search, bad page values, LIKE wildcards', async () => {
   const all = await call('/api/orders?status=all', { headers: demoH() });
   assert.equal(all.status, 200);
-  assert.equal(all.data.total, 19);
+  assert.equal(all.data.total, 21);
   assert.ok(all.data.orders.every((o) => o.name !== '#ALT1'), 'no orders of another store');
   const bad = await call('/api/orders?page=abc&status=all', { headers: demoH() });
   assert.equal(bad.status, 200);
@@ -90,6 +90,13 @@ test('orders list: filters, search, bad page values, LIKE wildcards', async () =
   assert.equal((await call('/api/orders?status=all&q=%25', { headers: demoH() })).data.total, 0, '% is literal');
   const found = await call(`/api/orders?status=all&q=${encodeURIComponent('Popescu')}`, { headers: demoH() });
   assert.ok(found.data.total >= 1);
+  // Refusal history: badge count in the list, history in the order page.
+  const matei = (await call(`/api/orders?status=all&q=${encodeURIComponent('Florin Matei')}`, { headers: demoH() })).data.orders;
+  assert.deepEqual(matei.map((o) => [o.name, o.refusedBefore]).sort(), [['#1090', 0], ['#1095', 1], ['#1111', 1]]);
+  const detail = (await call(`/api/orders/${demoOrder('#1111')}`, { headers: demoH() })).data;
+  assert.deepEqual([detail.customer.returned, detail.customer.delivered], [1, 1]);
+  assert.deepEqual(detail.customer.orders.map((o) => [o.name, o.refused]), [['#1095', false], ['#1090', true]]);
+  assert.ok(detail.order.issues.some((i) => i.code === 'CUSTOMER_REFUSED_BEFORE'));
   const ids = [demoOrder('#1101'), demoOrder('#1102')];
   const byIds = await call(`/api/orders?status=all&ids=${ids.join(',')}`, { headers: demoH() });
   assert.deepEqual(byIds.data.orders.map((o) => o.id).sort(), ids.sort());

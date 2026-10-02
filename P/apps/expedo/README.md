@@ -14,7 +14,15 @@ Expedo preia comenzile din Shopify și face restul: verifică adresa, generează
 | Facturi de test pe comenzi reale | **Modul de probă**: tot fluxul rulează pe comenzi reale, dar cu curier și facturare de test; Shopify nu se atinge. |
 | Un singur curier pe magazin | **Reguli**: easybox → Sameday, peste 5 kg → 2 colete, ramburs peste 1.500 lei → în așteptare etc. |
 
-În plus: etichete pentru mai multe comenzi într-un singur PDF (A6 sau A4), listă de picking, export ramburs (CSV) pentru verificarea plăților de la curieri, istoric complet pe fiecare comandă, panou cu ce e de făcut azi.
+În plus: etichete pentru mai multe comenzi într-un singur PDF (A6 sau A4), listă de picking, export ramburs (CSV) pentru verificarea plăților de la curieri, istoric complet pe fiecare comandă, panou cu ce e de făcut azi, și **istoricul de refuzuri**: dacă un client a mai refuzat un colet cu ramburs, comanda lui nouă arată „Clientul a refuzat 2 colete înainte (din 5)” înainte de AWB (și se poate face o regulă „Colete refuzate înainte > 0 → în așteptare”).
+
+## Datele clienților
+
+- Numele, adresele, telefoanele și e-mailurile sunt **criptate** în baza de date (AES-256-GCM, cheie din `APP_SECRET`). Căutarea după nume / telefon / e-mail merge prin coduri (HMAC), doar pe potrivire exactă; comanda, AWB-ul și factura se caută ca înainte. Bazele vechi se criptează singure la prima pornire.
+- **Setări → Date clienți**: câte zile se păstrează datele clienților după livrare / retur / anulare (90, 180, 365, 730; implicit 180). Zilnic se șterg; rămân nr. comenzii, sumele, AWB-ul și factura. Comenzile în lucru nu se ating.
+- **Activitate → Acces la date**: cine a deschis o comandă sau a descărcat etichete, facturi, picking, export ramburs, date client (păstrat un an).
+- Cererile GDPR din Shopify (date client, ștergere client, ștergere magazin) sunt tratate automat; cererea de date apare în Activitate cu buton de descărcare.
+- Pagini publice: `/confidentialitate`, `/termeni` (cu acordul de prelucrare a datelor), în engleză `/privacy`, `/terms`. Procedura pentru incidente și răspunsurile la chestionarul Shopify: [`docs/securitate.md`](docs/securitate.md).
 
 ## Integrări
 
@@ -30,7 +38,7 @@ npm install
 npm run demo        # http://localhost:3000
 ```
 
-Pornește cu un magazin demo cu 19 comenzi românești, inclusiv unele „problemă” (fără telefon, fără județ, firmă cu CUI, easybox, comandă anulată).
+Pornește cu un magazin demo cu 21 de comenzi românești, inclusiv unele „problemă” (fără telefon, fără județ, firmă cu CUI, easybox, comandă anulată) și un client care a mai refuzat un colet cu ramburs.
 
 ## Teste
 
@@ -41,9 +49,9 @@ npm test
 ## Instalare pe un magazin real
 
 1. **Aplicație Shopify:** în Dev Dashboard (dev.shopify.com) creezi aplicația „Expedo”. Completezi `client_id` și adresele în `shopify.app.toml`, apoi `shopify app deploy`.
-   - Aplicația citește nume, adrese și telefoane din comenzi, deci are nevoie de acces la **protected customer data** (nivelul 2: nume, adresă, telefon, e-mail). Se cere din Partner Dashboard → API access.
+   - Aplicația citește nume, adrese și telefoane din comenzi, deci are nevoie de acces la **protected customer data** (nivelul 2: nume, adresă, telefon, e-mail). Se cere din Partner Dashboard → API access; răspunsurile la chestionar sunt în `docs/securitate.md`. La „Privacy policy URL” pui `https://<server>/privacy` (sau `/confidentialitate`).
 2. **Server:** `render.yaml` e gata pentru Render. **Atenție:** baza de date e SQLite, deci are nevoie de disc persistent (planul Starter + disc, ~7 $/lună). Pe planul gratuit datele se pierd la fiecare repornire.
-3. **Variabile:** vezi `.env.example`. `APP_SECRET` criptează parolele curierilor și token-urile Shopify; nu se mai schimbă după pornire.
+3. **Variabile:** vezi `.env.example`. `APP_SECRET` criptează datele clienților, parolele curierilor și token-urile Shopify; nu se mai schimbă după pornire. `PUBLISHER_DETAILS` (CUI, sediu) apare pe paginile de confidențialitate și termeni.
 4. Instalezi aplicația pe magazin → se deschide în adminul Shopify → **Setări → Curieri** și **Facturare**: datele de conectare + „Testează conexiunea”.
 5. Rulezi câteva zile în **modul de probă**, apoi **Setări → General → Live**.
 

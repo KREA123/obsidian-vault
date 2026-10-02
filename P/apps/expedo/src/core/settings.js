@@ -37,6 +37,9 @@ export const DEFAULTS = {
     openPackage: false,
     parcels: 1,
   },
+  privacy: {
+    retentionDays: 180,        // customer data of finished orders is removed this many days after delivery / return / cancel
+  },
   rules: [],
 };
 
@@ -53,7 +56,8 @@ export function withDefaults(settings = {}) {
   return out;
 }
 
-const ENUMS = { mode: ['test', 'live'], 'invoicing.when': ['on_awb', 'manual'], 'courier.labelFormat': ['A4', 'A6'] };
+export const RETENTION_DAYS = [90, 180, 365, 730];
+const ENUMS = { mode: ['test', 'live'], 'invoicing.when': ['on_awb', 'manual'], 'courier.labelFormat': ['A4', 'A6'], 'privacy.retentionDays': RETENTION_DAYS };
 const NUMBER_RANGES = {
   'invoicing.defaultVatRate': [0, 100], 'automation.delayMinutes': [0, 7 * 24 * 60],
   'packaging.defaultWeightKg': [0, 1000], 'packaging.minWeightKg': [0, 1000], 'packaging.parcels': [1, 99],
@@ -64,8 +68,9 @@ const invalid = (what) => new ProcessingError({ code: 'SETTINGS_INVALID', messag
 /** Coerces one value to the type of its default (forms send strings, JSON sends anything). */
 function coerce(path, value, def) {
   if (ENUMS[path]) {
-    if (!ENUMS[path].includes(value)) throw invalid(path);
-    return value;
+    const v = typeof def === 'number' && value !== '' && value != null ? Number(value) : value;
+    if (!ENUMS[path].includes(v)) throw invalid(path);
+    return v;
   }
   if (typeof def === 'boolean') {
     if (typeof value === 'boolean') return value;

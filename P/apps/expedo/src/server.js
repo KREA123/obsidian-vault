@@ -19,6 +19,10 @@ import { getShopify } from './shopify/index.js';
 import * as auth from './shopify/auth.js';
 import { startWorker, handlers } from './worker.js';
 import { seedDemo, advanceDemo } from './demo/seed.js';
+import { searchHashes } from './core/identity.js';
+import { customerHistory } from './core/customers.js';
+import * as privacy from './core/privacy.js';
+import { legalPage } from './legal.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -90,6 +94,10 @@ export function createApp() {
   });
 
   app.get('/healthz', (req, res) => res.json({ ok: true }));
+  // Public pages (no login): linked from the app listing, the app footer and Settings.
+  for (const [path, page, lang] of [['/confidentialitate', 'privacy', 'ro'], ['/privacy', 'privacy', 'en'], ['/termeni', 'terms', 'ro'], ['/terms', 'terms', 'en']]) {
+    app.get(path, (req, res) => res.type('html').send(legalPage(page, lang)));
+  }
   app.use(express.static(join(__dirname, '..', 'public'), { index: false }));
   const indexHtml = readFileSync(join(__dirname, '..', 'public', 'index.html'), 'utf8')
     .replaceAll('%SHOPIFY_API_KEY%', config.shopify.apiKey)
@@ -120,6 +128,7 @@ export function createApp() {
       tracking: TRACKING_LABELS,
       counties: COUNTIES,
       defaults: DEFAULTS,
+      accessActions: privacy.ACCESS_ACTIONS,
     });
   });
 
@@ -138,9 +147,16 @@ export function createApp() {
     if (payment) { where.push('payment_method = ?'); args.push(payment); }
     if (ids.length) { where.push(`id IN (${ids.map(() => '?').join(',')})`); args.push(...ids); }
     if (q) {
-      where.push(`(name LIKE ? ESCAPE '\\' OR awb LIKE ? ESCAPE '\\' OR invoice_number LIKE ? ESCAPE '\\' OR data LIKE ? ESCAPE '\\')`);
+      // Order number, AWB and invoice are plain columns. Customer data is encrypted: a phone, an e-mail or
+      // whole name words are found through their keyed hashes (core/identity.js), exact matches only.
       const like = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-      args.push(like, like, like, like);
+      const terms = [`name LIKE ? ESCAPE '\\'`, `awb LIKE ? ESCAPE '\\'`, `invoice_number LIKE ? ESCAPE '\\'`];
+      args.push(like, like, like);
+      const { any, words } = searchHashes(req.store.id, q);
+      const has = `(' ' || COALESCE(search_terms, '') || ' ') LIKE ?`;
+      for (const h of any) { terms.push(has); args.push(`% ${h} %`); }
+      if (words.length) { terms.push(`(${words.map(() => has).join(' AND ')})`); args.push(...words.map((h) => `% ${h} %`)); }
+      where.push(`(${terms.join(' OR ')})`);
     }
     const limit = 50;
     const offset = (page - 1) * limit;
@@ -148,17 +164,22 @@ export function createApp() {
     const rows = d.prepare(`SELECT * FROM orders WHERE ${where.join(' AND ')} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...args, limit, offset).map(db.hydrateOrder);
     const total = d.prepare(`SELECT COUNT(*) c FROM orders WHERE ${where.join(' AND ')}`).get(...args).c;
     const counts = Object.fromEntries(d.prepare('SELECT status, COUNT(*) c FROM orders WHERE store_id = ? GROUP BY status').all(req.store.id).map((r) => [r.status, r.c]));
-    res.json({ orders: rows.map(orderSummary), total, page, pageSize: limit, counts });
+    // Small badge for customers who refused parcels before (one indexed lookup per row).
+    const orders = rows.map((o) => ({ ...orderSummary(o), refusedBefore: o.redacted_at ? 0 : customerHistory(req.store, o, { limit: 0 }).returned }));
+    res.json({ orders, total, page, pageSize: limit, counts });
   });
 
   api.get('/orders/:id', (req, res) => {
     const order = ownOrder(req, res);
     if (!order) return;
-    const plan = planOrder(order.data, P.storeSettings(req.store), order.overrides);
+    const history = customerHistory(req.store, order);
+    const plan = planOrder(order.data, P.storeSettings(req.store), order.overrides, { history });
     const courier = getCourier(order.courier);
+    db.logAccess(req.store.id, { actor: req.actor, action: 'order_view', orderId: order.id, orderName: order.name });
     res.json({
       order: { ...orderSummary(order), data: order.data, overrides: order.overrides, trackingUrl: order.awb && courier?.trackingUrl ? courier.trackingUrl(order.awb) : null },
       plan: { courier: plan.courier, service: plan.service, parcels: plan.parcels, weightKg: plan.weightKg, cod: plan.cod, openPackage: plan.openPackage, lockerId: plan.lockerId, matchedRules: plan.matchedRules, address: plan.address, skipInvoice: plan.skipInvoice, hold: plan.hold },
+      customer: { returned: history.returned, refusedCod: history.refusedCod, delivered: history.delivered, orders: history.orders },
       events: db.orderEvents(order.id),
     });
   });
@@ -231,6 +252,10 @@ export function createApp() {
   api.get('/labels.pdf', wrap(async (req, res) => {
     const ids = idList(req.query.ids);
     const { pdf } = await P.mergedLabels(req.store, ids, qstr(req.query.format));
+    for (const id of ids) {
+      const o = db.getOrder(id);
+      if (o?.store_id === req.store.id && o.awb) db.logAccess(req.store.id, { actor: req.actor, action: 'labels', orderId: o.id, orderName: o.name, detail: `AWB ${o.awb}` });
+    }
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="etichete-${bucharestDate()}.pdf"`);
     res.send(pdf);
@@ -240,6 +265,7 @@ export function createApp() {
     const order = ownOrder(req, res);
     if (!order) return;
     const pdf = await P.invoicePdf(req.store, order.id);
+    db.logAccess(req.store.id, { actor: req.actor, action: 'invoice_pdf', orderId: order.id, orderName: order.name });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="factura-${`${order.invoice_series}-${order.invoice_number}`.replace(/[^\w.-]+/g, '_')}.pdf"`);
     res.send(pdf);
@@ -254,6 +280,7 @@ export function createApp() {
       const o = db.getOrder(id);
       if (!o || o.store_id !== req.store.id) continue;
       names.push(o.name);
+      db.logAccess(req.store.id, { actor: req.actor, action: 'picking', orderId: o.id, orderName: o.name });
       for (const l of o.data.lines) {
         const key = l.sku || l.title;
         const cur = items.get(key) || { sku: l.sku, title: l.variantTitle ? `${l.title} - ${l.variantTitle}` : l.title, quantity: 0, orders: [] };
@@ -296,15 +323,35 @@ export function createApp() {
     const csv = ['Comanda,Curier,AWB,Ramburs,Data AWB,Incasat la,Status,Factura']
       .concat(rows.map((r) => [r.name, r.courier, r.awb, r.cod_amount.toFixed(2), day(r.awb_at), day(r.cod_collected_at), P.ORDER_STATUS[r.status], [r.invoice_series, r.invoice_number].filter(Boolean).join(' ')].map(csvCell).join(',')))
       .join('\n');
+    db.logAccess(req.store.id, { actor: req.actor, action: 'cod_export', detail: `${rows.length} rânduri` });
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="ramburs.csv"');
     res.send('﻿' + csv);
   });
 
   api.get('/events', (req, res) => {
-    const rows = db.getDb().prepare(`SELECT e.*, o.name order_name FROM events e LEFT JOIN orders o ON o.id = e.order_id
-      WHERE e.store_id = ? ORDER BY e.id DESC LIMIT 200`).all(req.store.id);
-    res.json({ events: rows.map((e) => ({ ...e, data: e.data ? JSON.parse(e.data) : null })) });
+    res.json({ events: db.storeEvents(req.store.id, 200) });
+  });
+
+  // Who saw or exported customer data (Activitate → Acces la date).
+  api.get('/access-log', (req, res) => {
+    const action = qstr(req.query.action);
+    const page = Math.max(1, Number.parseInt(qstr(req.query.page), 10) || 1);
+    const limit = 100;
+    const { rows, total } = db.listAccess(req.store.id, {
+      action: Object.hasOwn(privacy.ACCESS_ACTIONS, action) ? action : '', order: qstr(req.query.order).trim().slice(0, 50), limit, offset: (page - 1) * limit,
+    });
+    res.json({ entries: rows, total, page, pageSize: limit, keepDays: privacy.ACCESS_LOG_DAYS });
+  });
+
+  // Everything we hold about the given orders, for a customer's data request (logged).
+  api.get('/customer-export', (req, res) => {
+    const orders = idList(req.query.ids).map((id) => db.getOrder(id)).filter((o) => o?.store_id === req.store.id);
+    if (!orders.length) return res.status(404).json({ error: { message: 'Comanda nu există.' } });
+    for (const o of orders) db.logAccess(req.store.id, { actor: req.actor, action: 'customer_export', orderId: o.id, orderName: o.name });
+    const data = privacy.customerExport(req.store, orders.map((o) => o.id));
+    res.setHeader('Content-Disposition', `attachment; filename="date-client-${bucharestDate()}.json"`);
+    res.json(data);
   });
 
   api.post('/sync', wrap(async (req, res) => {
@@ -468,6 +515,7 @@ function orderSummary(o) {
     invoice: o.invoice_number ? `${o.invoice_series} ${o.invoice_number}` : null, invoiceUrl: o.invoice_url,
     fulfilledAt: o.fulfilled_at, codCollectedAt: o.cod_collected_at, issues: o.issues, lastError: o.last_error,
     testMode: o.test_mode, invoiceTest: o.invoice_test, hold: !!o.overrides?.hold, tags: d.tags, cancelled: !!d.cancelledAt,
+    redactedAt: o.redacted_at || null,
   };
 }
 
@@ -486,6 +534,8 @@ async function resolveStore(req, res, next) {
       }
       req.store = store;
       req.embedded = true;
+      // The Shopify staff member (session token `sub`), for the access log.
+      req.actor = `shopify-session ${v.payload.sub || '?'}`;
       return next();
     }
     const session = auth.readSession(parseCookies(req).expedo_session);
@@ -497,6 +547,7 @@ async function resolveStore(req, res, next) {
       return res.status(403).json({ error: { code: 'CSRF', message: 'Cerere respinsă. Reîncarcă pagina.' } });
     }
     req.session = session || { admin: true };
+    req.actor = 'admin';
     const wanted = Number(req.get('X-Store-Id') || qstr(req.query.storeId));
     // Open demo mode (no password) only ever exposes the demo store, never a real one in the same database.
     const stores = db.listStores().filter((st) => session?.admin || st.demo);
@@ -541,21 +592,18 @@ function handleWebhook(topic, shop, payload) {
     case 'app/uninstalled':
       db.getDb().prepare(`UPDATE stores SET uninstalled_at = datetime('now'), access_token = NULL WHERE id = ?`).run(store.id);
       break;
+    // GDPR (mandatory compliance webhooks): core/privacy.js
     case 'shop/redact':
-      // events / jobs / cache have no foreign key to stores; they hold customer data too.
-      for (const t of ['events', 'jobs', 'cache']) db.getDb().prepare(`DELETE FROM ${t} WHERE store_id = ?`).run(store.id);
-      db.getDb().prepare('DELETE FROM stores WHERE id = ?').run(store.id);
+      privacy.handleShopRedact(store);
       break;
     case 'customers/redact':
-      for (const id of payload.orders_to_redact || []) {
-        const o = db.getOrderByShopifyId(store.id, `gid://shopify/Order/${id}`);
-        if (!o) continue;
-        db.getDb().prepare('DELETE FROM events WHERE order_id = ?').run(o.id);
-        db.getDb().prepare('DELETE FROM orders WHERE id = ?').run(o.id);
-      }
+      privacy.handleCustomerRedact(store, payload);
+      break;
+    case 'customers/data_request':
+      privacy.handleDataRequest(store, payload);
       break;
     default:
-      break; // customers/data_request: we only hold order data already visible in Shopify
+      break;
   }
 }
 

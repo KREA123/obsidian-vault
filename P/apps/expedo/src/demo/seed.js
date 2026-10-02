@@ -95,11 +95,17 @@ export function seedDemo() {
       { id: 'r1', name: 'Easybox → Sameday', enabled: true, conditions: [{ field: 'shippingMethod', op: 'contains', value: 'easybox, locker' }], actions: { courier: 'sameday' } },
       { id: 'r2', name: 'Colete mari → 2 colete', enabled: true, conditions: [{ field: 'weightKg', op: 'gt', value: '5' }], actions: { parcels: 2 } },
       { id: 'r3', name: 'Comenzi mari plătite ramburs → verificare', enabled: true, conditions: [{ field: 'paymentMethod', op: 'equals', value: 'cod' }, { field: 'total', op: 'gt', value: '1500' }], actions: { hold: true } },
+      { id: 'r4', name: 'Clienți care au refuzat colete → verificare', enabled: false, conditions: [{ field: 'paymentMethod', op: 'equals', value: 'cod' }, { field: 'refusedBefore', op: 'gt', value: '0' }], actions: { hold: true } },
     ],
   });
   store = db.getStore(store.id);
 
   const P = PEOPLE;
+  // Florin Matei refused a ramburs parcel last month and got the next one: his new order (#1111)
+  // shows "Clientul a refuzat 1 colet înainte (din 2)" before anyone makes the AWB.
+  seedPast(store, makeOrder(1090, { person: P[7], items: [[3, 1]], createdAt: daysAgo(45, 2) }), 'returned');
+  seedPast(store, makeOrder(1095, { person: { ...P[7], phone: '+40 763 444 555' }, items: [[2, 1]], createdAt: daysAgo(20, 5) }), 'delivered');
+
   const orders = [
     makeOrder(1101, { person: P[0], items: [[0, 1]], createdAt: daysAgo(6, 3) }),
     makeOrder(1102, { person: P[1], items: [[1, 1], [2, 1]], payment: 'card', createdAt: daysAgo(6, 1) }),
@@ -123,6 +129,28 @@ export function seedDemo() {
   ];
   for (const o of orders) importOrder(store, o, { source: 'demo' });
   return { store, created: true };
+}
+
+/** An older, finished order: shipped with a test AWB, then delivered or refused and returned. */
+function seedPast(store, normalized, outcome) {
+  const order = importOrder(store, { ...normalized, fulfillmentStatus: 'FULFILLED' }, { source: 'demo' });
+  const day = (n) => new Date(Date.parse(normalized.createdAt) + n * 86400_000).toISOString();
+  const awb = `TEST${normalized.name.slice(1)}0042`;
+  const returned = outcome === 'returned';
+  db.updateOrder(order.id, {
+    awb, awb_at: day(0.1), courier: 'cargus', shipping_cost: 18.5, test_mode: true, fulfilled_at: day(0.1), cod_amount: normalized.codAmount,
+    tracking_status: outcome, tracking_text: returned ? 'Returnat la expeditor (refuzat de destinatar)' : 'Livrat', tracking_at: day(returned ? 6 : 2),
+    cod_collected_at: returned ? null : day(2), status: outcome,
+  });
+  // Finished when the courier said so, not now (the retention period counts from here).
+  db.getDb().prepare('UPDATE orders SET finished_at = tracking_at WHERE id = ?').run(order.id);
+  db.logEvent(store.id, order.id, 'success', 'awb', `AWB ${awb} generat la Cargus (probă).`);
+  if (returned) {
+    db.logEvent(store.id, order.id, 'warning', 'tracking', 'În retur: destinatarul a refuzat coletul.');
+    db.logEvent(store.id, order.id, 'warning', 'tracking', 'Returnat la expeditor.');
+  } else {
+    db.logEvent(store.id, order.id, 'success', 'cod', `Ramburs de ${normalized.codAmount.toFixed(2)} lei încasat de curier (probă).`);
+  }
 }
 
 /** Processes the oldest demo orders so the dashboard shows every stage on first open. */
