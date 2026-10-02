@@ -400,6 +400,8 @@ async function resolvePickupPointId(ctx) {
   });
 }
 
+// Docs pass AWB lists as a JSON array in the query (barCodes=[804419419,804418863]).
+// VERIFY: AwbDocuments/AwbTrace batch format against the live API (official plugins pass the same JSON list).
 const encodeBarcodes = (awbs) => encodeURIComponent(`[${awbs.map((a) => (/^\d+$/.test(a) ? a : JSON.stringify(a))).join(',')}]`);
 
 // ---------------------------------------------------------------------------------------------

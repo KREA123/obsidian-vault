@@ -15,7 +15,7 @@
 //   async getPdf(ctx, { series, number }) -> Buffer
 //   async cancelInvoice(ctx, { series, number }) -> void      // anulare (if allowed) — never deletes
 //   async stornoInvoice(ctx, { series, number }) -> { series, number }   // optional: factură de stornare
-//   async registerPayment(ctx, { series, number, amount, date, method }) -> void  // optional: încasare (ramburs livrat)
+//   async registerPayment(ctx, { series, number, amount, date, method, reference }) -> void  // optional: încasare (ramburs livrat)
 //
 //   // optional
 //   async listSeries(ctx) -> [{ id, name }]
@@ -51,6 +51,7 @@
 //   paymentMethod: 'card'|'cod'|'transfer'|'other',
 //   mentions?: string,                  // e.g. 'Comanda #1024'
 //   sendEmail?: boolean,
+//   idempotencyKey: string,             // '#1024', or '#1024-2' when re-invoicing after a storno; use for provider duplicate checks
 // }
 //
 // Prices are sent VAT-inclusive (prețuri cu TVA inclus) — that's how Shopify stores sell to

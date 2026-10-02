@@ -107,7 +107,7 @@ async function login(ctx) {
   const res = await ctx.http(PROVIDER, `${BASE}/login`, {
     method: 'POST',
     body: new URLSearchParams({ username, password }),
-    mapError: (status, body) => (status >= 400 && status < 500 ? authError(PROVIDER, body) : undefined),
+    mapError: (status, body) => ([400, 401, 403, 422].includes(status) ? authError(PROVIDER, body) : undefined),
   });
   const token = res.body?.data?.token;
   if (res.body?.status !== 'success' || !token) throw authError(PROVIDER, res.body);

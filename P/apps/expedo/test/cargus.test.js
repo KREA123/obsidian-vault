@@ -495,5 +495,6 @@ describe('ro-helpers', () => {
     assert.equal(classifyStatusText('Colet nelivrat'), TrackingStatus.FAILED_ATTEMPT);
     assert.equal(classifyStatusText('Coletul a fost livrat cu succes'), TrackingStatus.DELIVERED);
     assert.equal(classifyStatusText('Retur livrat la expeditor'), TrackingStatus.RETURNED);
+    assert.equal(classifyStatusText('Ramburs returnat expeditorului'), TrackingStatus.DELIVERED);
   });
 });

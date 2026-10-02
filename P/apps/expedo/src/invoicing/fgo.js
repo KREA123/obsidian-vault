@@ -125,7 +125,7 @@ function mapFgoError(body, op) {
   if (/localitat/i.test(m)) {
     return mk({ code: 'ADDRESS_CITY_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Corectează localitatea clientului în comandă (trebuie să existe în nomenclatorul FGO pentru județul ales).', field: 'client.city' });
   }
-  if (/cod ?unic|cui|cif|cod fiscal/i.test(m)) {
+  if (/\b(cod ?unic|cui|cif|cod fiscal)\b/i.test(m)) {
     return mk({ code: 'CLIENT_VAT_CODE_INVALID', message: `FGO: ${msg}`, hint: 'CUI-ul firmei client nu e valid. Corectează-l în comandă sau emite factura pe persoană fizică.', field: 'client.vatCode' });
   }
   if (/tva/i.test(m)) {

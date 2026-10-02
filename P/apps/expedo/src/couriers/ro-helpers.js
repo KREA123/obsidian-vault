@@ -246,6 +246,8 @@ export function normalizePhoneRO(phone) {
 export function classifyStatusText(text) {
   const t = normalizeText(text);
   if (!t) return TrackingStatus.UNKNOWN;
+  // COD money paid out to the merchant happens after delivery ("Ramburs returnat expeditorului" is NOT a parcel return).
+  if (/\bramburs (transferat|returnat|platit|achitat|virat|incasat)/.test(t)) return TrackingStatus.DELIVERED;
   if (/\b(anulat|anulata|anulare|sters|stearsa|deleted|cancel+ed)\b/.test(t)) return TrackingStatus.CANCELLED;
   if (/(returnat[a]? (la|catre) expeditor|predat[a]? expeditorului|livrat[a]? (la |catre )?expeditor|retur livrat|returned to sender)/.test(t)) return TrackingStatus.RETURNED;
   if (/(refuz|retur|return)/.test(t)) return TrackingStatus.RETURNING;

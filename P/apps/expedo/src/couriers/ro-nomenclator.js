@@ -226,7 +226,7 @@ export function bufferToJson(buf) {
 export function roLocalToIso(s) {
   const m = String(s ?? '').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
   if (!m) return undefined;
-  const [, y, mo, d, h, mi, se = '0'] = m.map((x) => (x === undefined ? x : x));
+  const [, y, mo, d, h, mi, se = '0'] = m;
   const asUtc = Date.UTC(+y, +mo - 1, +d, +h, +mi, +se);
   const offsetMin = tzOffsetMinutes(asUtc, 'Europe/Bucharest');
   return new Date(asUtc - offsetMin * 60_000).toISOString();

@@ -187,6 +187,9 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
       try {
         const { adapter, ctx, realAdapter } = providerContext(store, 'invoicing', invoicer);
         const invoice = buildInvoice(order.data, plan, settings);
+        // After a storno the order is invoiced again; FGO/Oblio would reject the same key as a duplicate.
+        const previous = db.getDb().prepare(`SELECT COUNT(*) c FROM events WHERE order_id = ? AND step = 'invoice' AND level = 'success' AND message LIKE 'Factura % emisă%'`).get(orderId).c;
+        invoice.idempotencyKey = previous ? `${order.name}-${previous + 1}` : order.name;
         if (invoice.mismatch && settings.invoicing.includeShipping) {
           db.logEvent(store.id, orderId, 'warning', 'invoice', `Totalul facturii diferă de totalul din Shopify cu ${invoice.mismatch.toFixed(2)} lei (card cadou, rotunjiri?). Verifică factura.`);
         }
@@ -361,7 +364,7 @@ async function onDelivered(store, order) {
           ? { adapter: mockInvoicer, ctx: {} }
           : providerContext(store, 'invoicing', order.invoice_provider);
         if (adapter.registerPayment) {
-          await adapter.registerPayment(ctx, { series: order.invoice_series, number: order.invoice_number, amount: order.cod_amount, date: new Date().toISOString().slice(0, 10), method: 'cod' });
+          await adapter.registerPayment(ctx, { series: order.invoice_series, number: order.invoice_number, amount: order.cod_amount, date: new Date().toISOString().slice(0, 10), method: 'cod', reference: order.awb || order.name });
           db.logEvent(store.id, order.id, 'success', 'invoice', `Încasarea a fost înregistrată pe factura ${order.invoice_series} ${order.invoice_number}.`);
         }
       } catch (err) {
