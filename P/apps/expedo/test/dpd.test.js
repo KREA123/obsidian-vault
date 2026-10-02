@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import dpd, { mapDpdOperation, parseCsv, compactSites, buildShipmentRequest, parseDpdDate, parcelsKey } from '../src/couriers/dpd.js';
+import { ro } from './helpers-i18n.js';
 
 function fakeCtx({ routes, settings = {}, credentials = { userName: 'api_shop', password: 'pw' } }) {
   const calls = [];
@@ -130,7 +131,7 @@ test('ambiguous village: ZIP decides, otherwise ADDRESS_CITY_NOT_FOUND listing c
   await assert.rejects(dpd.createShipment(ctx, shipment({ recipient: recipientWith({ city: 'Valea Mare', county: 'Vâlcea', zip: '' }) })), (e) => {
     assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
     assert.equal(e.field, 'shippingAddress.city');
-    assert.equal(e.hint.split('?')[0], 'Ai vrut: VALEA MARE (BUDESTI), VALEA MARE (STEFANESTI, JUD)');
+    assert.equal(ro(e).hint.split('?')[0], 'Ai vrut: VALEA MARE (BUDESTI), VALEA MARE (STEFANESTI, JUD)');
     return true;
   });
 });
@@ -139,8 +140,8 @@ test('unknown locality → ADDRESS_CITY_NOT_FOUND with up to 3 suggestions', asy
   const { ctx } = fakeCtx({ routes: { '/location/site/csv/:id': sitesRoute, '/shipment': shipmentOk } });
   await assert.rejects(dpd.createShipment(ctx, shipment({ recipient: recipientWith({ city: 'Floreshti' }) })), (e) => {
     assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
-    assert.match(e.hint, /^Ai vrut: FLORESTI/);
-    assert.ok(e.hint.replace(/\?.*$/, '').split(', ').length <= 3);
+    assert.match(ro(e).hint, /^Ai vrut: FLORESTI/);
+    assert.ok(ro(e).hint.replace(/\?.*$/, '').split(', ').length <= 3);
     return true;
   });
 });
@@ -165,7 +166,7 @@ test('API errors are mapped: address, auth, generic', async () => {
   await assert.rejects(dpd.createShipment(withError({ code: 120, message: 'Invalid site', component: 'recipient.address.siteId' }), shipment()), (e) => e.code === 'ADDRESS_CITY_NOT_FOUND' && e.field === 'shippingAddress.city');
   await assert.rejects(dpd.createShipment(withError({ code: 100, message: 'Invalid phone', component: 'recipient.phone1.number' }), shipment()), (e) => e.code === 'ADDRESS_PHONE_INVALID');
   await assert.rejects(dpd.createShipment(withError({ code: 410, message: 'COD not allowed' }), shipment()), (e) => e.code === 'COD_INVALID' && e.details.error.code === 410);
-  await assert.rejects(dpd.createShipment(withError({ code: 1, message: 'Something else' }), shipment()), (e) => e.code === 'COURIER_REJECTED' && e.message === 'DPD a refuzat cererea.');
+  await assert.rejects(dpd.createShipment(withError({ code: 1, message: 'Something else' }), shipment()), (e) => e.code === 'COURIER_REJECTED' && ro(e).message === 'DPD a refuzat cererea.');
 
   const { ctx } = fakeCtx({ routes: { '/client/contract': () => ({ body: { error: { code: 1, message: 'Invalid username or password', id: 'e1' } } }) } });
   await assert.rejects(dpd.testConnection(ctx), (e) => e.code === 'AUTH_FAILED');
@@ -175,7 +176,7 @@ test('testConnection lists contract clients in Romanian', async () => {
   const { ctx } = fakeCtx({ routes: { '/client/contract': () => ({ body: { clients: [{ clientId: 111, clientName: 'Magazin SRL', objectName: 'Depozit Cluj' }] } }) } });
   const r = await dpd.testConnection(ctx);
   assert.equal(r.ok, true);
-  assert.match(r.message, /^Conectat la DPD\. Un punct de ridicare în contract: 111 \(Depozit Cluj\)\.$/);
+  assert.match(ro(r).message, /^Conectat la DPD\. Un punct de ridicare în contract: 111 \(Depozit Cluj\)\.$/);
 });
 
 test('getLabel prints all parcels of the shipment and returns a Buffer', async () => {
@@ -338,7 +339,7 @@ test('documented success: contract clients and services', async () => {
   const { ctx } = fakeCtx({ routes: { '/client/contract': () => ({ body: DOC.contractClients.body }), '/services': () => ({ body: DOC.services.body }) } });
   const conn = await dpd.testConnection(ctx);
   assert.equal(conn.ok, true);
-  assert.match(conn.message, /77001234000 \(Depozit Test\)/);
+  assert.match(ro(conn).message, /77001234000 \(Depozit Test\)/);
   assert.deepEqual(await dpd.listPickupPoints(ctx), [{ id: '77001234000', name: 'Depozit Test', address: 'mun. CLUJ-NAPOCA [400001] str. TEST No 1' }]);
   assert.deepEqual(await dpd.listServices(ctx), [{ id: '2505', name: 'DPD STANDARD' }, { id: '2412', name: 'PALLET ONE RO' }]);
 });

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fgo, { fgoHash, fgoCodUnic, fgoKey, fgoClientName } from '../src/invoicing/fgo.js';
 import { ProcessingError, authError } from '../src/core/errors.js';
+import { ro } from './helpers-i18n.js';
 
 // ── fakes ──────────────────────────────────────────────────────────────────
 
@@ -238,8 +239,8 @@ test('Success:false with HTTP 200 is an error; series message → series hint', 
   await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => {
     assert.ok(err instanceof ProcessingError);
     assert.equal(err.code, 'INVOICE_SERIES_NOT_FOUND');
-    assert.match(err.message, /Seria MIDA/);
-    assert.match(err.hint, /Setări → Facturare/);
+    assert.match(ro(err).message, /Seria MIDA/);
+    assert.match(ro(err).hint, /Setări → Facturare/);
     assert.deepEqual(err.details, body);
     return true;
   });
@@ -248,13 +249,13 @@ test('Success:false with HTTP 200 is an error; series message → series hint', 
 test('unauthorized API user → AUTH_FAILED with FGO-specific hint', async () => {
   const body = { Success: false, Message: 'Combinatia utilizator/companie nu este autorizata pentru utilizare API. Verificati starea acestuia in Setari -> Utilizatori [1].' };
   const { ctx } = ctxWith(() => ({ body }));
-  await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'AUTH_FAILED' && /fără „RO”/.test(err.hint));
+  await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'AUTH_FAILED' && /fără „RO”/.test(ro(err).hint));
 });
 
 test('generic Success:false message is passed through in Romanian', async () => {
   const body = { Success: false, Message: 'Cantitatea trebuie sa fie diferita de 0.' };
   const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ body }) }));
-  await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'PROVIDER_REJECTED' && /FGO a refuzat cererea: Cantitatea/.test(err.message));
+  await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'PROVIDER_REJECTED' && /FGO a refuzat cererea: Cantitatea/.test(ro(err).message));
 });
 
 test('emitere timeout message from FGO is retryable', async () => {
@@ -374,7 +375,7 @@ test('testConnection: credentials accepted when FGO only complains about the pro
   const { ctx, calls } = ctxWith(() => ({ body: { Success: false, Message: 'Factura nu a fost gasita.' } }));
   const res = await fgo.testConnection(ctx);
   assert.equal(res.ok, true);
-  assert.match(res.message, /acceptate/);
+  assert.match(ro(res).message, /acceptate/);
   assert.equal(calls[0].json.Hash, sha1Upper(CUI + KEY + '0'));
 });
 
@@ -407,7 +408,7 @@ test('live: test-env getstatus answers bad credentials with HTTP 500 + .NET stac
   await assert.rejects(fgo.testConnection(ctx), (err) => err.code === 'AUTH_FAILED');
   const other = ctxWith(() => ({ status: 500, body: { Success: false, Message: 'System.Exception: Seria XYZ nu exista.\r\n   at Fgo.PublicApi.Controllers.FacturaController.<Print>d__9.MoveNext()' } }));
   await assert.rejects(fgo.getPdf(other.ctx, { series: 'XYZ', number: '001' }), (err) => {
-    assert.equal(err.message, 'FGO: Seria XYZ nu exista.');
+    assert.equal(ro(err).message, 'FGO: Seria XYZ nu exista.');
     return true;
   });
 });

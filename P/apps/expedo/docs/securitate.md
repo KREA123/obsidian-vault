@@ -1,6 +1,6 @@
 # Securitate și protecția datelor — Expedo
 
-Publicat de **ARTEMIS DIGITAL SRL** · contact: office@krea.ro · actualizat: 2 octombrie 2026
+Publicat de **ARTEMIS DIGITAL SRL** · contact: office@krea.ro · actualizat: 2 octombrie 2026 · English: [`security.md`](security.md)
 
 Documentul are trei părți: ce date ținem și cum le protejăm (pe scurt), procedura pentru incidente și răspunsurile la chestionarul Shopify „Protected customer data”. Paginile publice care spun același lucru comercianților și clienților: `/confidentialitate` (`/privacy`) și `/termeni` (`/terms`, cu acordul de prelucrare a datelor).
 
@@ -13,7 +13,7 @@ Documentul are trei părți: ce date ținem și cum le protejăm (pe scurt), pro
 | `orders.issues`, `orders.last_error` | probleme de validare (pot cita telefonul), erori de la curieri | criptat |
 | `orders.phone_hash`, `email_hash`, `search_terms` | coduri pentru căutare și istoricul de refuzuri | HMAC cu cheie, pe magazin; nu se pot inversa fără `APP_SECRET` |
 | `orders` (restul coloanelor) | numărul comenzii (#1024), sume, curier, AWB, factură, statusuri, date | în clar — nu sunt date ale clientului |
-| `events.message`, `events.data` | istoricul comenzii (mesajele de eroare pot cita adresa) | criptat |
+| `events.message`, `events.params`, `events.data` | istoricul comenzii: cheia mesajului (`events.key`, în clar, ex. `events.awbCreated`) și parametrii lui (pot cita adresa sau telefonul); rândurile vechi au textul întreg | criptat (cheia mesajului nu conține date) |
 | `cache` | nomenclatoare curieri; la curierul de probă, coletele „create” (cu destinatar) | criptat |
 | `stores.access_token`, `integrations.credentials` | token Shopify, parolele curierilor și ale facturării | criptat (existent dinainte) |
 | `access_log` | cine a văzut / exportat date: ID utilizator Shopify sau „admin”, acțiune, nr. comandă | fără date ale clienților |

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import { TrackingStatus } from '../src/couriers/contract.js';
 import sameday, { mapSamedayStatus, mapAwbError, toForm, tokenTtl, tokenKey, PROD_URL, SANDBOX_URL } from '../src/couriers/sameday.js';
+import { ro } from './helpers-i18n.js';
 
 // ---- fakes ---------------------------------------------------------------------------------
 
@@ -158,12 +159,12 @@ describe('sameday auth', () => {
 
   test('bad credentials → AUTH_FAILED; testConnection message in Romanian with pickup points', async () => {
     const bad = makeCtx(baseRoutes([{ method: 'POST', url: '/api/authenticate', reply: { status: 400, body: { code: 400, message: 'Bad credentials' } } }]));
-    await assert.rejects(sameday.testConnection(bad.ctx), (e) => e.code === 'AUTH_FAILED' && /Conectarea la Sameday a eșuat/.test(e.message));
+    await assert.rejects(sameday.testConnection(bad.ctx), (e) => e.code === 'AUTH_FAILED' && /Conectarea la Sameday a eșuat/.test(ro(e).message));
 
     const { ctx } = makeCtx(baseRoutes(), { settings: { sandbox: true } });
     const r = await sameday.testConnection(ctx);
     assert.equal(r.ok, true);
-    assert.equal(r.message, 'Conectat la Sameday (mod test). Am găsit 1 punct de ridicare.');
+    assert.equal(ro(r).message, 'Conectat la Sameday (mod test). Am găsit 1 punct de ridicare.');
   });
 
   test('tokenTtl parses "Y-m-d H:i" and never overshoots', () => {
@@ -198,8 +199,8 @@ describe('sameday locality resolution', () => {
     await assert.rejects(sameday.createShipment(ctx, shipment({ recipient: { county: 'București', countyCode: 'B', city: 'București', zip: '' } })), (e) => {
       assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
       assert.equal(e.field, 'shippingAddress.city');
-      assert.match(e.message, /București, Sameday cere sectorul/);
-      assert.match(e.hint, /^Ai vrut: Sectorul 1, Sectorul 2, Sectorul 3\? Adaugă sectorul/);
+      assert.match(ro(e).message, /București, Sameday cere sectorul/);
+      assert.match(ro(e).hint, /^Ai vrut: Sectorul 1, Sectorul 2, Sectorul 3\? Adaugă sectorul/);
       return true;
     });
     assert.equal(awbForm(calls), undefined);
@@ -216,8 +217,8 @@ describe('sameday locality resolution', () => {
     const { ctx } = makeCtx(baseRoutes());
     await assert.rejects(sameday.createShipment(ctx, shipment({ recipient: { county: 'Alba', countyCode: 'AB', city: 'Florești', zip: '' } })), (e) => {
       assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
-      assert.match(e.message, /„Florești” apare de mai multe ori în nomenclatorul Sameday pentru județul Alba/);
-      assert.match(e.hint, /^Ai vrut: Floresti \(cod 517176\), Floresti \(cod 515511\), Floresti \(cod 517596\)\?/);
+      assert.match(ro(e).message, /„Florești” apare de mai multe ori în nomenclatorul Sameday pentru județul Alba/);
+      assert.match(ro(e).hint, /^Ai vrut: Floresti \(cod 517176\), Floresti \(cod 515511\), Floresti \(cod 517596\)\?/);
       return true;
     });
     assert.equal((await formFor({ county: 'Alba', countyCode: 'AB', city: 'Floresti', zip: '517684' })).get('awbRecipient[city]'), '653');
@@ -226,8 +227,8 @@ describe('sameday locality resolution', () => {
   test('not found → names locality + county, ≤ 3 suggestions', async () => {
     const { ctx } = makeCtx(baseRoutes());
     await assert.rejects(sameday.createShipment(ctx, shipment({ recipient: { county: 'Ilfov', countyCode: 'IF', city: 'Voluntarii Noi', zip: '' } })), (e) => {
-      assert.match(e.message, /„Voluntarii Noi” nu există în nomenclatorul Sameday pentru județul Ilfov/);
-      assert.match(e.hint, /^Ai vrut: Voluntari/);
+      assert.match(ro(e).message, /„Voluntarii Noi” nu există în nomenclatorul Sameday pentru județul Ilfov/);
+      assert.match(ro(e).hint, /^Ai vrut: Voluntari/);
       assert.ok(e.details.options.length <= 3);
       return true;
     });
@@ -292,7 +293,7 @@ describe('sameday createShipment', () => {
   test('open package on a service without OPCG → clear Romanian error before calling Sameday', async () => {
     const { ctx, calls } = makeCtx(baseRoutes(), { settings: { service: 'LN' } });
     await assert.rejects(sameday.createShipment(ctx, shipment({ openPackage: true })),
-      (e) => e.code === 'OPEN_PACKAGE_UNAVAILABLE' && /nu permite deschiderea coletului/.test(e.message));
+      (e) => e.code === 'OPEN_PACKAGE_UNAVAILABLE' && /nu permite deschiderea coletului/.test(ro(e).message));
     assert.equal(awbForm(calls), undefined);
   });
 
@@ -318,8 +319,8 @@ describe('sameday createShipment', () => {
     const { ctx, calls } = makeCtx(baseRoutes(), { settings: { pickupPointId: '4455', service: '6H' } });
     await assert.rejects(sameday.createShipment(ctx, shipment()), (e) => {
       assert.equal(e.code, 'CONFIG_SERVICE_INVALID');
-      assert.match(e.message, /6H/);
-      assert.match(e.hint, /24H \(24\)/);
+      assert.match(ro(e).message, /6H/);
+      assert.match(ro(e).hint, /24H \(24\)/);
       return true;
     });
     assert.equal(awbForm(calls), undefined);
@@ -354,7 +355,7 @@ describe('sameday error mapping', () => {
         assert.equal(e.code, code);
         assert.equal(e.field, field);
         assert.equal(e.provider, 'sameday');
-        assert.ok(!/[{}[\]]/.test(e.message), `no JSON in message: ${e.message}`);
+        assert.ok(!/[{}[\]]/.test(ro(e).message), `no JSON in message: ${ro(e).message}`);
         assert.deepEqual(e.details, body);
         return true;
       });
@@ -363,8 +364,8 @@ describe('sameday error mapping', () => {
 
   test('phone error message is Romanian and quotes the courier text in the hint', () => {
     const e = mapAwbError(form({ awbRecipient: { children: { phoneNumber: { errors: ['Invalid phone number.'] } } } }), shipment(), 400);
-    assert.equal(e.message, 'Sameday nu acceptă numărul de telefon „0722 123 456”.');
-    assert.match(e.hint, /Sameday spune: „Invalid phone number\.”/);
+    assert.equal(ro(e).message, 'Sameday nu acceptă numărul de telefon „0722 123 456”.');
+    assert.match(ro(e).hint, /Sameday spune: „Invalid phone number\.”/);
   });
 });
 
@@ -392,7 +393,7 @@ describe('sameday label / cancel / track', () => {
     const gone = makeCtx(baseRoutes([{ method: 'DELETE', url: '/api/awb/', reply: { status: 404, body: { code: 404, message: 'Not found' } } }]));
     await sameday.cancelShipment(gone.ctx, 'A1');
     const late = makeCtx(baseRoutes([{ method: 'DELETE', url: '/api/awb/', reply: { status: 400, body: { code: 400, message: 'Awb cannot be deleted' } } }]));
-    await assert.rejects(sameday.cancelShipment(late.ctx, 'A1'), (e) => e.code === 'CANCEL_REFUSED' && /Awb cannot be deleted/.test(e.hint));
+    await assert.rejects(sameday.cancelShipment(late.ctx, 'A1'), (e) => e.code === 'CANCEL_REFUSED' && /Awb cannot be deleted/.test(ro(e).hint));
   });
 
   test('track: one call per AWB, 404 omitted, status mapped', async () => {
@@ -455,7 +456,7 @@ describe('sameday: live error shapes and hardening', () => {
     for (const settings of [{}, { sandbox: true }]) {
       const sample = LIVE.authenticateBadCredentials;
       const { ctx } = makeCtx(baseRoutes([{ method: 'POST', url: '/api/authenticate', reply: { status: sample.status, body: sample.body } }]), { settings });
-      await assert.rejects(sameday.testConnection(ctx), (e) => e.code === 'AUTH_FAILED' && !e.retryable && /Sameday/.test(e.message));
+      await assert.rejects(sameday.testConnection(ctx), (e) => e.code === 'AUTH_FAILED' && !e.retryable && /Sameday/.test(ro(e).message));
     }
   });
 
@@ -542,7 +543,7 @@ describe('sameday: official SDK success bodies', () => {
     assert.equal(pp.headers['X-AUTH-TOKEN'], 'foo');
     const conn = await sameday.testConnection(ctx);
     assert.equal(conn.ok, true);
-    assert.match(conn.message, /2 puncte de ridicare/);
+    assert.match(ro(conn).message, /2 puncte de ridicare/);
   });
 
   test('services: ids, codes, OPCG optional tax recognised', async () => {

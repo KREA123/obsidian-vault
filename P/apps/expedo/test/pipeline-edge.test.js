@@ -8,6 +8,7 @@ import { TrackingStatus } from '../src/couriers/contract.js';
 import { ProcessingError } from '../src/core/errors.js';
 import { runDueJobs, recoverJobs } from '../src/worker.js';
 import { PDFDocument } from 'pdf-lib';
+import { ro, roEvent } from './helpers-i18n.js';
 
 // Edge cases of the processing pipeline: test mode vs live, status machine, idempotency,
 // job dedupe. A fake "real" courier + invoicer stand in for live providers.
@@ -209,7 +210,7 @@ test('a courier timeout is not retried automatically (the AWB may exist)', async
   assert.equal(r.error.retryable, false);
   const jobs = db.getDb().prepare(`SELECT COUNT(*) c FROM jobs WHERE key = ?`).get(`process:${o.id}`).c;
   assert.equal(jobs, 0);
-  assert.match(r.error.hint, /verific/i);
+  assert.match(ro(r.error).hint, /verific/i);
 });
 
 test('DB claim: an interrupted run blocks automatic re-processing; a manual run takes over', async () => {
@@ -249,7 +250,7 @@ test('COD amount changed in Shopify after the AWB → warning, AWB amount kept',
   P.importOrder(store, { ...db.getOrder(o.id).data, codAmount: 100, outstanding: 100, total: 100 });
   const after = db.getOrder(o.id);
   assert.equal(after.cod_amount, 125);
-  assert.ok(db.orderEvents(o.id).some((e) => e.level === 'warning' && /ramburs/i.test(e.message)));
+  assert.ok(db.orderEvents(o.id).some((e) => e.level === 'warning' && /ramburs/i.test(roEvent(e).message)));
 });
 
 test('delivery of a real AWB in test mode does not register the payment on a real invoice', async () => {
@@ -323,7 +324,7 @@ test('a storno retried after a timeout ("already reversed") counts as done', asy
   } finally { stornoBehaviour = null; }
   const after = db.getOrder(o.id);
   assert.equal(after.invoice_number, null);
-  assert.ok(db.orderEvents(o.id).some((e) => e.level === 'warning' && /deja stornat/i.test(e.message)));
+  assert.ok(db.orderEvents(o.id).some((e) => e.level === 'warning' && /deja stornat/i.test(roEvent(e).message)));
   // Other errors still fail.
   await P.processOrder(store, o.id, { steps: ['invoice'], force: true });
   stornoBehaviour = () => { throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'nu' }); };
@@ -343,8 +344,8 @@ test('registerPayment reporting alreadyPaid / skipped is logged as info, not as 
       await P.processOrder(store, o.id, { force: true });
       await P.trackStore(store);
       const ev = db.orderEvents(o.id).filter((e) => e.step === 'invoice');
-      assert.ok(!ev.some((e) => /^Încasarea a fost înregistrată/.test(e.message)), JSON.stringify(ev));
-      assert.ok(ev.some((e) => e.level === 'info' && re.test(e.message)), JSON.stringify(ev.map((e) => e.message)));
+      assert.ok(!ev.some((e) => /^Încasarea a fost înregistrată/.test(roEvent(e).message)), JSON.stringify(ev));
+      assert.ok(ev.some((e) => e.level === 'info' && re.test(roEvent(e).message)), JSON.stringify(ev.map((e) => roEvent(e).message)));
     }
   } finally {
     paymentResult = undefined;

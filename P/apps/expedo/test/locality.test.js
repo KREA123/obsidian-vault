@@ -5,6 +5,7 @@ import {
   matchLocality, findLocality, cleanCityName, detectSector, cityVariants, stripPrefix, normalizeText,
   compactKey, normCounty, isBucharest, matchCounty, localityError, localityKeys,
 } from '../src/couriers/locality.js';
+import { ro } from './helpers-i18n.js';
 
 // Real FAN nomenclator rows (GET https://api.fancourier.ro/reports/localities is public), see fixture.
 const FAN = JSON.parse(readFileSync(new URL('./fixtures/couriers/fancourier.json', import.meta.url), 'utf8'));
@@ -90,7 +91,7 @@ describe('matchLocality', () => {
     assert.deepEqual(r.ambiguous.map((c) => c.id), [278, 312, 592, 653]);
     const e = localityError({ provider: 'cargus', providerName: 'Cargus', city: 'Florești', county: 'Alba', result: r });
     assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
-    assert.match(e.hint, /^Ai vrut: Floresti \(cod 517176\), Floresti \(cod 515511\), Floresti \(cod 517596\)\?/);
+    assert.match(ro(e).hint, /^Ai vrut: Floresti \(cod 517176\), Floresti \(cod 515511\), Floresti \(cod 517596\)\?/);
   });
 
   test('same-named villages told apart by the commune typed (parent), labelled by commune', () => {
@@ -101,7 +102,7 @@ describe('matchLocality', () => {
     assert.equal(matchLocality({ city: 'Valea Mare, com. Ștefănești', county: 'Vâlcea' }, cands).match.id, 2);
     const r = matchLocality({ city: 'Valea Mare', county: 'Vâlcea' }, cands);
     const e = localityError({ provider: 'dpd', providerName: 'DPD', city: 'Valea Mare', county: 'Vâlcea', result: r });
-    assert.equal(e.hint.split('?')[0], 'Ai vrut: VALEA MARE (BUDESTI), VALEA MARE (STEFANESTI)');
+    assert.equal(ro(e).hint.split('?')[0], 'Ai vrut: VALEA MARE (BUDESTI), VALEA MARE (STEFANESTI)');
   });
 
   test('București: one locality, or a sector-split nomenclator (Sameday)', () => {
@@ -113,8 +114,8 @@ describe('matchLocality', () => {
     const r = matchLocality({ city: 'București', county: 'București', countyCode: 'B' }, sectors);
     assert.equal(r.ambiguous.length, 6);
     const e = localityError({ provider: 'sameday', providerName: 'Sameday', city: 'București', county: 'București', result: r });
-    assert.match(e.message, /București, Sameday cere sectorul/);
-    assert.match(e.hint, /^Ai vrut: Sectorul 1, Sectorul 2, Sectorul 3\? Adaugă sectorul/);
+    assert.match(ro(e).message, /București, Sameday cere sectorul/);
+    assert.match(ro(e).hint, /^Ai vrut: Sectorul 1, Sectorul 2, Sectorul 3\? Adaugă sectorul/);
   });
 
   test('unique postal code when the name is a neighbourhood', () => {
@@ -147,8 +148,8 @@ describe('findLocality on the real FAN nomenclator (live sample)', () => {
     assert.deepEqual(fan({ city: 'Lunca', county: 'Buzău' }), ['Lunca (C.A. Rosetti)', 'Buzau']);
     assert.throws(() => fan({ city: 'Alun', county: 'Hunedoara' }), (e) => {
       assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
-      assert.match(e.message, /„Alun” apare de mai multe ori în nomenclatorul FAN Courier pentru județul Hunedoara/);
-      assert.equal(e.hint.split('?')[0], 'Ai vrut: Alun (Bosorod), Alun (Bunila)');
+      assert.match(ro(e).message, /„Alun” apare de mai multe ori în nomenclatorul FAN Courier pentru județul Hunedoara/);
+      assert.equal(ro(e).hint.split('?')[0], 'Ai vrut: Alun (Bosorod), Alun (Bunila)');
       return true;
     });
   });
@@ -175,7 +176,7 @@ describe('findLocality on the real FAN nomenclator (live sample)', () => {
   test('county unknown to the nomenclator: nationwide, unique names only, county in the suggestion', () => {
     assert.deepEqual(fan({ city: 'Deva', county: 'Atlantida' }), ['Deva', 'Hunedoara']);
     assert.throws(() => fan({ city: 'Florești', county: 'Atlantida' }), (e) => {
-      assert.equal(e.hint.split('?')[0], 'Ai vrut: Floresti (jud. Cluj), Floresti (jud. Prahova)');
+      assert.equal(ro(e).hint.split('?')[0], 'Ai vrut: Floresti (jud. Cluj), Floresti (jud. Prahova)');
       return true;
     });
   });

@@ -25,6 +25,7 @@ import { writeFileSync } from 'node:fs';
 import { request } from '../src/lib/http.js';
 import { couriers } from '../src/couriers/index.js';
 import { isPdf } from '../src/couriers/util.js';
+import { t } from '../src/i18n/index.js';
 import { resolveFanLocality } from '../src/couriers/fancourier.js';
 import { resolveLocality as resolveCargus } from '../src/couriers/cargus.js';
 import { resolveLocality as resolveSameday } from '../src/couriers/sameday.js';
@@ -170,7 +171,7 @@ const ADDRESSES = [
 console.log(`== ${adapter.name}: sandbox run (${flag('--create') ? 'WITH one test shipment' : opt('--awb') ? `existing AWB ${opt('--awb')}` : 'read-only'})`);
 
 const conn = await step('testConnection', () => adapter.testConnection(ctx));
-if (conn) check('testConnection', conn.ok === true, conn.message);
+if (conn) check('testConnection', conn.ok === true, t('en', conn.message));
 
 if (adapter.listPickupPoints) {
   const pts = await step('listPickupPoints', () => adapter.listPickupPoints(ctx));

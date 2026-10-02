@@ -43,8 +43,9 @@ function pluralCategory(locale, count) {
 export function formatMoney(locale, n, currency = 'RON') {
   const v = Number(n || 0).toLocaleString(intlTag(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const cur = String(currency || 'RON').toUpperCase();
-  if (locale === 'ro') return cur === 'RON' ? `${v} lei` : `${v} ${cur}`;
-  return `${cur} ${v}`;
+  // Non-breaking space: an amount never wraps between the number and the currency.
+  if (locale === 'ro') return cur === 'RON' ? `${v}\u00a0lei` : `${v}\u00a0${cur}`;
+  return `${cur}\u00a0${v}`;
 }
 
 export function formatNumber(locale, n, digits) {

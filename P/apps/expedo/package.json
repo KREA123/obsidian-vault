@@ -2,7 +2,7 @@
   "name": "expedo",
   "version": "0.1.0",
   "private": true,
-  "description": "Procesare comenzi Shopify: AWB, facturi, urmărire colete, ramburs.",
+  "description": "Shopify order processing for Romania: shipping labels (AWB), invoices, parcel tracking, cash on delivery.",
   "type": "module",
   "engines": {
     "node": ">=22.5"

@@ -901,7 +901,7 @@ export default {
     app: { title: 'Expedo — comenzi' },
     nav: {
       dashboard: 'Panou', orders: 'Comenzi', activity: 'Activitate', settings: 'Setări',
-      store: 'Magazin', logout: 'Ieși din cont', privacy: 'Confidențialitate', terms: 'Termeni', main: 'Meniu principal',
+      store: 'Magazin', logout: 'Ieși din cont', privacy: 'Confidențialitate', terms: 'Termeni',
     },
     legal: { privacyUrl: '/confidentialitate', termsUrl: '/termeni' },
     banner: {
@@ -909,7 +909,7 @@ export default {
       text: 'AWB-urile și facturile sunt de test, nu se trimite nimic la curieri sau la facturare, iar Shopify nu se modifică.',
       goLive: 'Treci pe live',
     },
-    common: { save: 'Salvează', close: 'Închide', working: 'Se lucrează…', yes: 'Da', no: 'Nu', none: '—', remove: 'Șterge' },
+    common: { save: 'Salvează', close: 'Închide', working: 'Se lucrează…', yes: 'Da', no: 'Nu', remove: 'Șterge' },
     errors: {
       http: 'Eroare {status}',
       pdf: 'Nu am putut genera PDF-ul.',

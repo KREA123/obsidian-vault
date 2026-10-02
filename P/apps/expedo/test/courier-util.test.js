@@ -5,6 +5,7 @@ import {
   normalizePhoneRO, toIntlPhone, classifyStatusText, roLocalToIso, courierDateToIso, splitStreet, money,
   accountKey, assertRonCod, looksLikeHtml, parseDimensions,
 } from '../src/couriers/util.js';
+import { ro } from './helpers-i18n.js';
 
 test('phones', () => {
   assert.equal(normalizePhoneRO('+40 (722) 123-456'), '0722123456');
@@ -56,7 +57,7 @@ test('accountKey: stable, different per account / secret / environment, never th
 
 test('assertRonCod refuses COD in another currency, ignores prepaid', () => {
   assert.throws(() => assertRonCod({ cod: 49.9, currency: 'EUR' }, { provider: 'cargus', providerName: 'Cargus' }),
-    (e) => e.code === 'COD_CURRENCY_UNSUPPORTED' && e.field === 'cod' && !e.retryable && /EUR/.test(e.message));
+    (e) => e.code === 'COD_CURRENCY_UNSUPPORTED' && e.field === 'cod' && !e.retryable && /EUR/.test(ro(e).message));
   assertRonCod({ cod: 0, currency: 'EUR' }, { provider: 'cargus', providerName: 'Cargus' });
   assertRonCod({ cod: 10, currency: 'ron' }, { provider: 'cargus', providerName: 'Cargus' });
   assertRonCod({ cod: 10 }, { provider: 'cargus', providerName: 'Cargus' });

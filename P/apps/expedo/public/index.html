@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ro">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Expedo — comenzi</title>
+  <title>Expedo — orders</title>
   <script>
     // Inside the Shopify admin, App Bridge must be the first script on the page.
     (function () {
@@ -29,22 +29,23 @@
         <span>Expedo</span>
       </a>
       <nav id="nav">
-        <a href="#/" data-route="dashboard"><i data-icon="home"></i>Panou</a>
-        <a href="#/orders" data-route="orders"><i data-icon="box"></i>Comenzi <b class="nav-count" id="nav-attention" hidden></b></a>
-        <a href="#/activity" data-route="activity"><i data-icon="list"></i>Activitate</a>
-        <a href="#/settings" data-route="settings"><i data-icon="cog"></i>Setări</a>
+        <!-- Texts: data-i18n keys (ui.* in src/i18n), filled by app.js in the viewer's language; English until then. -->
+        <a href="#/" data-route="dashboard"><i data-icon="home"></i><span data-i18n="ui.nav.dashboard">Dashboard</span></a>
+        <a href="#/orders" data-route="orders"><i data-icon="box"></i><span data-i18n="ui.nav.orders">Orders</span> <b class="nav-count" id="nav-attention" hidden></b></a>
+        <a href="#/activity" data-route="activity"><i data-icon="list"></i><span data-i18n="ui.nav.activity">Activity</span></a>
+        <a href="#/settings" data-route="settings"><i data-icon="cog"></i><span data-i18n="ui.nav.settings">Settings</span></a>
       </nav>
       <div class="sidebar-foot">
-        <select id="store-switch" aria-label="Magazin" hidden></select>
+        <select id="store-switch" aria-label="Store" data-i18n-attr="aria-label:ui.nav.store" hidden></select>
         <div id="store-name" class="muted small"></div>
-        <form method="post" action="/logout" id="logout-form" hidden><button class="link small">Ieși din cont</button></form>
-        <div class="legal-links small"><a href="/confidentialitate" target="_blank" rel="noopener">Confidențialitate</a> · <a href="/termeni" target="_blank" rel="noopener">Termeni</a></div>
+        <form method="post" action="/logout" id="logout-form" hidden><button class="link small" data-i18n="ui.nav.logout">Log out</button></form>
+        <div class="legal-links small"><a href="/privacy" data-i18n-href="ui.legal.privacyUrl" target="_blank" rel="noopener" data-i18n="ui.nav.privacy">Privacy</a> · <a href="/terms" data-i18n-href="ui.legal.termsUrl" target="_blank" rel="noopener" data-i18n="ui.nav.terms">Terms</a></div>
       </div>
     </aside>
     <main>
       <div id="test-banner" class="banner warn" hidden>
-        <strong>Mod de probă.</strong> AWB-urile și facturile sunt de test, nu se trimite nimic la curieri sau la facturare, iar Shopify nu se modifică.
-        <a href="#/settings/general">Treci pe live</a>
+        <strong data-i18n="ui.banner.title">Test mode.</strong> <span data-i18n="ui.banner.text">Shipping labels (AWBs) and invoices are test ones: nothing goes to couriers or your invoicing app, and Shopify isn’t changed.</span>
+        <a href="#/settings/general" data-i18n="ui.banner.goLive">Go live</a>
       </div>
       <div id="view"></div>
     </main>

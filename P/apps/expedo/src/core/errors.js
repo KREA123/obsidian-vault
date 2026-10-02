@@ -33,7 +33,7 @@ export class ProcessingError extends Error {
     this.params = p;
     this.hintKey = hintKey;
     this.raw = k ? undefined : { message: String(message), hint };
-    this.hint = k ? renderHint('en', k, hintKey, p) : hint;
+    this.hint = k ? renderHint('en', k, hintKey, p) : hintKey ? t('en', hintKey, p) : hint;
     this.retryable = retryable;
     this.provider = provider;
     this.field = field;
@@ -44,7 +44,8 @@ export class ProcessingError extends Error {
   toJSON() {
     return {
       code: this.code,
-      ...(this.key ? { key: this.key, params: this.params, ...(this.hintKey ? { hintKey: this.hintKey } : {}) } : { message: this.raw.message, hint: this.raw.hint }),
+      ...(this.key ? { key: this.key, params: this.params } : { message: this.raw.message, hint: this.raw.hint }),
+      ...(this.hintKey ? { hintKey: this.hintKey } : {}),
       retryable: this.retryable,
       provider: this.provider,
       field: this.field,
@@ -72,7 +73,7 @@ export function renderError(e, locale) {
   if (!e) return e;
   const j = typeof e.toJSON === 'function' ? e.toJSON() : e;
   const { key, params, hintKey, ...rest } = j;
-  if (!key) return { ...rest };
+  if (!key) return hintKey ? { ...rest, hint: t(locale, hintKey, params || {}) } : { ...rest };
   return { ...rest, message: t(locale, `${key}.message`, params || {}), hint: renderHint(locale, key, hintKey, params || {}) };
 }
 

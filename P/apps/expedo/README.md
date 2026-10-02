@@ -1,73 +1,88 @@
-# Expedo — procesare comenzi Shopify
+# Expedo — Shopify order processing for Romania
 
-Expedo preia comenzile din Shopify și face restul: verifică adresa, generează AWB-ul la curier, emite factura, marchează comanda ca expediată în Shopify (clientul primește AWB-ul pe e-mail), urmărește coletul și, când e livrat, marchează rambursul ca încasat. E aceeași treabă ca la xConnector, construită pornind de la erorile pe care le avem acolo.
+Expedo takes the orders from Shopify and does the rest: checks the address, creates the shipping label (AWB) with the courier, issues the invoice, marks the order as fulfilled in Shopify (the customer gets the AWB by email), tracks the parcel and, once it's delivered, marks the cash on delivery (COD) as collected. It does the same job as xConnector, built starting from the errors we see there.
 
-## De ce e mai bun decât xConnector
+The app is in English, with Romanian as the second language (see [Languages](#languages)).
 
-| Problema la xConnector | Ce face Expedo |
+## Why it's better than xConnector
+
+| Problem with xConnector | What Expedo does |
 |---|---|
-| AWB-urile Cargus dau erori, fără să spună de ce | Adresa e verificată **înainte** de curier (județ, localitate, sector, telefon, cod poștal). Localitatea e căutată în nomenclatorul curierului; dacă nu se potrivește, vezi „Ai vrut: X, Y, Z?” și o corectezi într-un clic. |
-| Facturarea FGO dă „hashtagul nu a fost găsit” | Hash-ul FGO e calculat exact după documentația lor (v7.0, martie 2026), cu teste automate. Cererile se trimit ca JSON, cum cere acum FGO. |
-| Erori tehnice, în engleză sau JSON | Fiecare eroare are un mesaj scurt în română + ce să faci. Detaliile tehnice stau ascunse sub „Detalii tehnice”. |
-| Erori temporare (curier căzut) = comandă blocată | Se reîncearcă singur după 1, 5, 15, 60, 180 de minute. |
-| Risc de AWB sau factură dublă | O comandă nu primește niciodată două AWB-uri sau două facturi (blocare pe comandă + verificare în baza de date). |
-| Facturi de test pe comenzi reale | **Modul de probă**: tot fluxul rulează pe comenzi reale, dar cu curier și facturare de test; Shopify nu se atinge. |
-| Un singur curier pe magazin | **Reguli**: easybox → Sameday, peste 5 kg → 2 colete, ramburs peste 1.500 lei → în așteptare etc. |
+| Cargus AWBs fail without saying why | The address is checked **before** the courier (county, city, sector, phone, postal code). The city is looked up in the courier's list of places; if it doesn't match, you see "Did you mean: X, Y, Z?" and fix it in one click. |
+| FGO invoicing says "hashtag not found" | The FGO hash is computed exactly as their documentation says (v7.0, March 2026), with automated tests. Requests are sent as JSON, as FGO now requires. |
+| Technical errors, raw JSON | Every error has a short message + what to do, in the merchant's language. Technical details stay under "Technical details". |
+| Temporary errors (courier down) = stuck order | Retried automatically after 1, 5, 15, 60, 180 minutes. |
+| Risk of a duplicate AWB or invoice | An order never gets two AWBs or two invoices (a lock per order + a check in the database). |
+| Test invoices on real orders | **Test mode**: the whole flow runs on real orders, but with a test courier and test invoicing; Shopify isn't touched. |
+| One courier per store | **Rules**: easybox → Sameday, over 5 kg → 2 parcels, COD over RON 1,500 → on hold, etc. |
 
-În plus: etichete pentru mai multe comenzi într-un singur PDF (A6 sau A4), listă de picking, export ramburs (CSV) pentru verificarea plăților de la curieri, istoric complet pe fiecare comandă, panou cu ce e de făcut azi, și **istoricul de refuzuri**: dacă un client a mai refuzat un colet cu ramburs, comanda lui nouă arată „Clientul a refuzat 2 colete înainte (din 5)” înainte de AWB (și se poate face o regulă „Colete refuzate înainte > 0 → în așteptare”).
+Also: labels for many orders in one PDF (A6 or A4), a picking list, a COD export (CSV) to reconcile courier payouts, a full history on every order, a dashboard with what needs doing today, and the **refusal history**: if a customer refused a COD parcel before, their new order shows "The customer refused 2 parcels before (out of 5)" before the AWB (and you can make a rule "Parcels refused before > 0 → on hold").
 
-## Datele clienților
+## Customer data
 
-- Numele, adresele, telefoanele și e-mailurile sunt **criptate** în baza de date (AES-256-GCM, cheie din `APP_SECRET`). Căutarea după nume / telefon / e-mail merge prin coduri (HMAC), doar pe potrivire exactă; comanda, AWB-ul și factura se caută ca înainte. Bazele vechi se criptează singure la prima pornire.
-- **Setări → Date clienți**: câte zile se păstrează datele clienților după livrare / retur / anulare (90, 180, 365, 730; implicit 180). Zilnic se șterg; rămân nr. comenzii, sumele, AWB-ul și factura. Comenzile în lucru nu se ating.
-- **Activitate → Acces la date**: cine a deschis o comandă sau a descărcat etichete, facturi, picking, export ramburs, date client (păstrat un an).
-- Cererile GDPR din Shopify (date client, ștergere client, ștergere magazin) sunt tratate automat; cererea de date apare în Activitate cu buton de descărcare.
-- Pagini publice: `/confidentialitate`, `/termeni` (cu acordul de prelucrare a datelor), în engleză `/privacy`, `/terms`. Procedura pentru incidente și răspunsurile la chestionarul Shopify: [`docs/securitate.md`](docs/securitate.md).
+- Names, addresses, phone numbers and emails are **encrypted** in the database (AES-256-GCM, key from `APP_SECRET`). Search by name / phone / email works through codes (HMAC), exact matches only; order number, AWB and invoice are searched as before. Older databases are encrypted on their own at first start.
+- **Settings → Customer data**: how many days customer data is kept after delivery / return / cancellation (90, 180, 365, 730; default 180). It's deleted daily; the order number, amounts, AWB and invoice remain. Orders in progress aren't touched.
+- **Activity → Data access**: who opened an order or downloaded labels, invoices, the picking list, the COD export, customer data (kept one year).
+- Shopify GDPR requests (customer data, customer deletion, store deletion) are handled automatically; a data request shows up in Activity with a download button.
+- Public pages: `/privacy`, `/terms` (with the data processing agreement), in Romanian `/confidentialitate`, `/termeni`. The incident procedure and the answers to Shopify's questionnaire: [`docs/security.md`](docs/security.md) (Romanian: [`docs/securitate.md`](docs/securitate.md)).
 
-## Integrări
+## Integrations
 
-- **Curieri:** Cargus, Sameday (inclusiv easybox), FAN Courier (inclusiv FANbox), GLS, DPD.
-- **Facturare:** SmartBill, FGO, Oblio.
+- **Couriers:** Cargus, Sameday (including easybox), FAN Courier (including FANbox), GLS, DPD.
+- **Invoicing:** SmartBill, FGO, Oblio.
 
-Integrările sunt scrise după documentația oficială și verificate pe serverele reale cu date de conectare greșite intenționat (adrese, autentificare, erori). **Răspunsurile reușite (AWB creat, factură emisă) nu au fost încă văzute pe un cont real** (n-avem datele de conectare aici). Locurile nesigure sunt marcate în cod cu `// VERIFY:`. Primul pas la fiecare: „Testează conexiunea” din Setări, apoi o comandă în modul de probă, apoi una reală.
+The integrations are written from the official documentation and checked against the real servers with deliberately wrong login details (addresses, authentication, errors). **Successful answers (AWB created, invoice issued) haven't been seen on a real account yet** (we don't have the login details here). Uncertain spots are marked in the code with `// VERIFY:`. First step for each: "Test connection" in Settings, then an order in test mode, then a real one.
 
-## Pornire rapidă (demo, fără Shopify)
+## Languages
+
+English first, Romanian second. Every text the merchant sees comes from two catalogs, [`src/i18n/en.js`](src/i18n/en.js) and [`src/i18n/ro.js`](src/i18n/ro.js) (same keys; a test checks it).
+
+- **Which language:** inside the Shopify admin, the admin user's language (App Bridge `shopify.config.locale`, or the `locale` parameter Shopify adds): Romanian if it starts with `ro`, English otherwise. In the standalone dashboard, the store setting **Settings → General → Language** (English by default; the demo store too).
+- **Engine:** [`src/i18n/core.js`](src/i18n/core.js), no dependencies, shared by the server and the dashboard (served as `/i18n/core.js`; the dashboard's texts as `/i18n/<locale>.json`). `t(locale, key, params)` with `{param}` placeholders, plurals (`{ one, few, other }`, by `Intl.PluralRules`), money / date formats (`{amount, money}` → "RON 1,234.50" / "1.234,50 lei"), English fallback.
+- **Errors** keep a stable `code` plus `params`; the message and the hint (`errors.<CODE>.message` / `.hint`, or an adapter's own key) are rendered when shown, in the viewer's language. What a provider says verbatim stays verbatim, quoted ("SmartBill says: “…”").
+- **History** rows store a message key + params, rendered when read; rows from before keep their Romanian text.
+- Adding a text: add the key to both catalogs, use `t()` (dashboard) or `m(key, params)` (server: errors, events, adapter messages). `npm test` fails on a key missing in either language or never used.
+
+Left in Romanian on purpose: the order data itself (products, names, addresses, shipping methods come from Shopify), what couriers and invoicing apps say verbatim (quoted), their own menu names in the help texts ("SmartBill Cloud → Configurare → Serii"), the text Expedo puts on Romanian documents (invoice lines "Transport", unit "buc", "Comanda #1024", AWB contents "Produse"), and the Romanian legal pages.
+
+## Quick start (demo, no Shopify)
 
 ```bash
 npm install
 npm run demo        # http://localhost:3000
 ```
 
-Pornește cu un magazin demo cu 21 de comenzi românești, inclusiv unele „problemă” (fără telefon, fără județ, firmă cu CUI, easybox, comandă anulată) și un client care a mai refuzat un colet cu ramburs.
+Starts with a demo store with 21 Romanian orders, including some "problem" ones (no phone, no county, a company with a tax ID, easybox, a canceled order) and a customer who refused a COD parcel before. The demo store is in English; switch it in Settings → General → Language.
 
-## Teste
+## Tests
 
 ```bash
 npm test
 ```
 
-## Instalare pe un magazin real
+## Installing on a real store
 
-1. **Aplicație Shopify:** în Dev Dashboard (dev.shopify.com) creezi aplicația „Expedo”. Completezi `client_id` și adresele în `shopify.app.toml`, apoi `shopify app deploy`.
-   - Aplicația citește nume, adrese și telefoane din comenzi, deci are nevoie de acces la **protected customer data** (nivelul 2: nume, adresă, telefon, e-mail). Se cere din Partner Dashboard → API access; răspunsurile la chestionar sunt în `docs/securitate.md`. La „Privacy policy URL” pui `https://<server>/privacy` (sau `/confidentialitate`).
-2. **Server:** `render.yaml` e gata pentru Render. **Atenție:** baza de date e SQLite, deci are nevoie de disc persistent (planul Starter + disc, ~7 $/lună). Pe planul gratuit datele se pierd la fiecare repornire.
-3. **Variabile:** vezi `.env.example`. `APP_SECRET` criptează datele clienților, parolele curierilor și token-urile Shopify; nu se mai schimbă după pornire. `PUBLISHER_DETAILS` (CUI, sediu) apare pe paginile de confidențialitate și termeni.
-4. Instalezi aplicația pe magazin → se deschide în adminul Shopify → **Setări → Curieri** și **Facturare**: datele de conectare + „Testează conexiunea”.
-5. Rulezi câteva zile în **modul de probă**, apoi **Setări → General → Live**.
+1. **Shopify app:** create the "Expedo" app in the Dev Dashboard (dev.shopify.com). Fill in `client_id` and the URLs in `shopify.app.toml`, then `shopify app deploy`.
+   - The app reads names, addresses and phone numbers from orders, so it needs access to **protected customer data** (level 2: name, address, phone, email). Request it in the Partner Dashboard → API access; the questionnaire answers are in `docs/security.md`. For "Privacy policy URL" use `https://<server>/privacy`.
+2. **Server:** `render.yaml` is ready for Render. **Note:** the database is SQLite, so it needs a persistent disk (Starter plan + disk, about $7/month). On the free plan the data is lost on every restart.
+3. **Variables:** see `.env.example`. `APP_SECRET` encrypts customer data, courier passwords and Shopify tokens; never change it after the first start. `PUBLISHER_DETAILS` (tax ID, registered office) appears on the privacy and terms pages.
+4. Install the app on the store → it opens in the Shopify admin → **Settings → Couriers** and **Invoicing**: login details + "Test connection".
+5. Run a few days in **test mode**, then **Settings → General → Live**.
 
-## Cum e construit
+## How it's built
 
-- Node 22, Express, SQLite (`node:sqlite`), fără build pentru interfață.
-- `src/core/` — validare adrese, reguli, fluxul de procesare (`pipeline.js`).
-- `src/couriers/`, `src/invoicing/` — câte un fișier pe integrare, toate după același contract (`contract.js`).
-- `src/shopify/` — OAuth, token exchange pentru aplicația din admin, webhook-uri, GraphQL Admin API (2026-07).
-- `src/worker.js` — sarcini în fundal (procesare automată, urmărire colete la 30 min, resincronizare la 15 min), salvate în baza de date, deci nu se pierd la repornire.
-- `public/` — interfața (HTML + JS simplu). Merge în adminul Shopify (App Bridge) și separat, cu parolă (`ADMIN_PASSWORD`).
+- Node 22, Express, SQLite (`node:sqlite`), no build step for the dashboard.
+- `src/core/` — address validation, rules, the processing flow (`pipeline.js`).
+- `src/couriers/`, `src/invoicing/` — one file per integration, all on the same contract (`contract.js`).
+- `src/i18n/` — the catalogs (English, Romanian) and the translation engine.
+- `src/shopify/` — OAuth, token exchange for the embedded app, webhooks, GraphQL Admin API (2026-07).
+- `src/worker.js` — background jobs (automatic processing, parcel tracking every 30 min, re-sync every 15 min), saved in the database, so nothing is lost on restart.
+- `public/` — the dashboard (HTML + plain JS). Works inside the Shopify admin (App Bridge) and on its own, with a password (`ADMIN_PASSWORD`).
 
-## Test pe un magazin de dezvoltare
+## Testing on a development store
 
 ```bash
-SHOPIFY_API_KEY=... SHOPIFY_API_SECRET=... node scripts/e2e-devstore.mjs <magazin>.myshopify.com
+SHOPIFY_API_KEY=... SHOPIFY_API_SECRET=... node scripts/e2e-devstore.mjs <store>.myshopify.com
 ```
 
-Aplicația trebuie creată în Dev Dashboard de aceeași organizație ca magazinul, instalată pe el și cu acces la datele clienților (Partners → API access requests). Scriptul creează 3 comenzi de test și verifică tot fluxul în Shopify, fără e-mailuri către clienți. Magazinele proprii se pot lega și permanent prin `SHOPIFY_OWN_STORES`.
+The app must be created in the Dev Dashboard by the same organization as the store, installed on it, and have access to customer data (Partners → API access requests). The script creates 3 test orders and checks the whole flow in Shopify, without emails to customers. Your own stores can also be connected permanently through `SHOPIFY_OWN_STORES`.

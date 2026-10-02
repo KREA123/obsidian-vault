@@ -14,6 +14,7 @@ import { config } from '../src/config.js';
 import * as db from '../src/db.js';
 import { getShopify } from '../src/shopify/index.js';
 import { importOrder, processOrder } from '../src/core/pipeline.js';
+import { renderError } from '../src/core/errors.js';
 
 const shop = process.argv[2];
 if (!/\.myshopify\.com$/.test(shop || '')) {
@@ -120,7 +121,7 @@ for (const c of created) {
   if (!o) continue;
   const row = importOrder(db.getStore(store.id), o, { source: 'e2e' });
   const issues = row.issues.filter((i) => i.level === 'error');
-  check(`${c.name} adresa trece validarea`, !issues.length, issues.map((i) => i.message).join('; '));
+  check(`${c.name} adresa trece validarea`, !issues.length, issues.map((i) => renderError(i, 'en').message).join('; '));
   check(`${c.name} metoda de plată = ${c.expect.paymentMethod}`, o.paymentMethod === c.expect.paymentMethod, `${o.paymentMethod} (gateways: ${o.gateways.join(', ')}, status ${o.financialStatus})`);
   check(`${c.name} ramburs = ${c.expect.codAmount}`, Math.abs(o.codAmount - c.expect.codAmount) < 0.01, String(o.codAmount));
   check(`${c.name} telefon normalizat`, row.issues.every((i) => !i.code.startsWith('ADDRESS_PHONE')), o.phone);
@@ -140,7 +141,7 @@ const s = db.getStore(store.id);
 for (const c of created) {
   if (!c.orderId) continue;
   const r = await processOrder(s, c.orderId);
-  check(`${c.name} AWB + factură de test`, r.ok, r.ok ? `${r.awb} / ${r.invoice}` : r.error?.message);
+  check(`${c.name} AWB + factură de test`, r.ok, r.ok ? `${r.awb} / ${r.invoice}` : renderError(r.error, 'en')?.message);
   const order = db.getOrder(c.orderId);
   if (!order.awb) continue;
   try {

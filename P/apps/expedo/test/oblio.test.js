@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import oblio from '../src/invoicing/oblio.js';
 import { ProcessingError, authError } from '../src/core/errors.js';
+import { ro } from './helpers-i18n.js';
 
 // ── fakes ──────────────────────────────────────────────────────────────────
 
@@ -226,8 +227,8 @@ test('series error (HTTP 400 statusMessage) → INVOICE_SERIES_NOT_FOUND with hi
   await assert.rejects(oblio.createInvoice(ctx, b2c()), (err) => {
     assert.ok(err instanceof ProcessingError);
     assert.equal(err.code, 'INVOICE_SERIES_NOT_FOUND');
-    assert.match(err.message, /Seria FCT nu exista/);
-    assert.match(err.hint, /Setări → Facturare/);
+    assert.match(ro(err).message, /Seria FCT nu exista/);
+    assert.match(ro(err).hint, /Setări → Facturare/);
     assert.deepEqual(err.details, body);
     return true;
   });
@@ -235,14 +236,14 @@ test('series error (HTTP 400 statusMessage) → INVOICE_SERIES_NOT_FOUND with hi
 
 test('other rejection keeps Oblio\'s Romanian message; 5xx stays retryable', async () => {
   const a = ctxWith(router({ 'POST /docs/invoice': () => ({ status: 400, body: { status: 400, statusMessage: 'Numele clientului este obligatoriu' } }) }));
-  await assert.rejects(oblio.createInvoice(a.ctx, b2c()), (err) => err.code === 'PROVIDER_REJECTED' && /Numele clientului/.test(err.message) && !err.retryable);
+  await assert.rejects(oblio.createInvoice(a.ctx, b2c()), (err) => err.code === 'PROVIDER_REJECTED' && /Numele clientului/.test(ro(err).message) && !err.retryable);
   const b = ctxWith(router({ 'POST /docs/invoice': () => ({ status: 503, body: 'Service Unavailable' }) }));
   await assert.rejects(oblio.createInvoice(b.ctx, b2c()), (err) => err.retryable === true);
 });
 
 test('VAT error → hint to check VAT rates in Oblio', async () => {
   const { ctx } = ctxWith(router({ 'POST /docs/invoice': () => ({ status: 400, body: { status: 400, statusMessage: 'Cota TVA 11% nu exista' } }) }));
-  await assert.rejects(oblio.createInvoice(ctx, b2c()), (err) => err.code === 'VAT_RATE_NOT_DEFINED' && /Oblio/.test(err.hint));
+  await assert.rejects(oblio.createInvoice(ctx, b2c()), (err) => err.code === 'VAT_RATE_NOT_DEFINED' && /Oblio/.test(ro(err).hint));
 });
 
 // ── other operations ───────────────────────────────────────────────────────
@@ -299,15 +300,15 @@ test('testConnection: finds the company and the series', async () => {
   const { ctx } = ctxWith(router());
   const res = await oblio.testConnection(ctx);
   assert.equal(res.ok, true);
-  assert.match(res.message, /MAGAZIN SRL/);
-  assert.match(res.message, /Seria „FCT” a fost găsită/);
+  assert.match(ro(res).message, /MAGAZIN SRL/);
+  assert.match(ro(res).message, /Seria „FCT” a fost găsită/);
 });
 
 test('testConnection: CIF compared without RO prefix; unknown series → error', async () => {
   const a = ctxWith(router(), { cif: '37311090', series: 'XYZ' });
-  await assert.rejects(oblio.testConnection(a.ctx), (err) => err.code === 'INVOICE_SERIES_NOT_FOUND' && /FCT/.test(err.hint));
+  await assert.rejects(oblio.testConnection(a.ctx), (err) => err.code === 'INVOICE_SERIES_NOT_FOUND' && /FCT/.test(ro(err).hint));
   const b = ctxWith(router(), { cif: 'RO999' });
-  await assert.rejects(oblio.testConnection(b.ctx), (err) => err.code === 'INVOICING_COMPANY_NOT_FOUND' && /MAGAZIN SRL/.test(err.hint));
+  await assert.rejects(oblio.testConnection(b.ctx), (err) => err.code === 'INVOICING_COMPANY_NOT_FOUND' && /MAGAZIN SRL/.test(ro(err).hint));
 });
 
 test('listSeries returns invoice series only', async () => {
@@ -419,7 +420,7 @@ test('getPdf: show_file link answering with the HTML login page (seen live for a
   const { ctx } = ctxWith((c) => (c.url.hostname === 'www.oblio.eu' && c.url.pathname === '/api/docs/invoice'
     ? { body: { status: 200, data: { link: 'https://www.oblio.eu/utils/show_file/?ic=1&id=2&it=old' } } }
     : { body: Buffer.from('<!DOCTYPE html><html><title>Login</title>') }));
-  await assert.rejects(oblio.getPdf(ctx, { series: 'FCT', number: '0053' }), (err) => err.code === 'INVOICE_PDF_UNAVAILABLE' && err.retryable === false && /direct din Oblio/.test(err.hint));
+  await assert.rejects(oblio.getPdf(ctx, { series: 'FCT', number: '0053' }), (err) => err.code === 'INVOICE_PDF_UNAVAILABLE' && err.retryable === false && /direct din Oblio/.test(ro(err).hint));
 });
 
 // ── documented success shapes (test/fixtures/invoicing/oblio-documented-success.json — oblio.eu/api + official plugin, see _source) ──
@@ -477,7 +478,7 @@ test('docs: companies / series / vat_rates nomenclature bodies → testConnectio
     return new Error(p);
   });
   const res = await oblio.testConnection(ctx);
-  assert.match(res.message, /OBLIO SOFTWARE SRL/);
+  assert.match(ro(res).message, /OBLIO SOFTWARE SRL/);
   assert.deepEqual(await oblio.listSeries(ctx), [{ id: 'FCT', name: 'FCT', next: '0051', default: true }]);
   assert.deepEqual((await oblio.listVatRates(ctx)).map((v) => v.percent), [19, 9, 0]);
 });

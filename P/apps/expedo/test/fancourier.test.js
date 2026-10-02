@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import fan, { mapFanEvent, pickService, resolveFanLocality, tokenKey } from '../src/couriers/fancourier.js';
+import { ro } from './helpers-i18n.js';
 
 // ---- fake ctx: routes ctx.http calls to handlers, emulating src/lib/http.js error handling
 function fakeCtx({ routes, settings = {}, credentials = { username: 'shop', password: 'secret' } }) {
@@ -116,7 +117,7 @@ test('testConnection lists branches with a Romanian message', async () => {
   });
   const r = await fan.testConnection(ctx);
   assert.equal(r.ok, true);
-  assert.match(r.message, /Conectat la FAN Courier/);
+  assert.match(ro(r).message, /Conectat la FAN Courier/);
   assert.equal(r.info.branches[0].id, '7032158');
 });
 
@@ -186,8 +187,8 @@ test('unknown locality → ADDRESS_CITY_NOT_FOUND with suggestions', async () =>
   await assert.rejects(fan.createShipment(ctx, shipment({ recipient: { ...shipment().recipient, city: 'Cluj Napca' } })), (e) => {
     assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
     assert.equal(e.field, 'shippingAddress.city');
-    assert.match(e.hint, /^Ai vrut: Cluj-Napoca/);
-    assert.ok(e.hint.split(',').length <= 3);
+    assert.match(ro(e).hint, /^Ai vrut: Cluj-Napoca/);
+    assert.ok(ro(e).hint.split(',').length <= 3);
     return true;
   });
 });
@@ -208,7 +209,7 @@ test('FAN validation errors are mapped to order fields', async () => {
   const { ctx: ctx2 } = fakeCtx({
     routes: baseRoutes({ 'POST /intern-awb': () => ({ status: 422, body: { status: 'error', errors: { 'info.service': ['Serviciu invalid'] } } }) }),
   });
-  await assert.rejects(fan.createShipment(ctx2, shipment()), (e) => e.code === 'COURIER_REJECTED' && /FAN Courier/.test(e.message));
+  await assert.rejects(fan.createShipment(ctx2, shipment()), (e) => e.code === 'COURIER_REJECTED' && /FAN Courier/.test(ro(e).message));
 });
 
 test('missing clientId setting → SETTINGS_MISSING', async () => {
@@ -312,7 +313,7 @@ test('live: Laravel 422 {"status":"fail","data":{"errors":{...}}} is mapped by f
   await assert.rejects(fan.createShipment(ctx, shipment()), (e) => e.code === 'ADDRESS_CITY_NOT_FOUND' && e.field === 'shippingAddress.city');
   // Unknown field: generic, but FAN's own words reach the merchant.
   const { ctx: ctx2 } = fakeCtx({ routes: baseRoutes({ 'POST /intern-awb': () => ({ status: 422, body: LIVE.validationError.body }) }) });
-  await assert.rejects(fan.createShipment(ctx2, shipment()), (e) => e.code === 'COURIER_REJECTED' && /The per page must be a number/.test(e.hint));
+  await assert.rejects(fan.createShipment(ctx2, shipment()), (e) => e.code === 'COURIER_REJECTED' && /The per page must be a number/.test(ro(e).hint));
 });
 
 test('live: localities are public — fetched without a token; "Name (Commune)" spelling sent as FAN has it', async () => {
@@ -324,7 +325,7 @@ test('live: localities are public — fetched without a token; "Name (Commune)" 
 
   await assert.rejects(fan.createShipment(ctx, shipment({ recipient: { ...r, city: 'Alun' } })), (e) => {
     assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
-    assert.equal(e.hint.split('?')[0], 'Ai vrut: Alun (Bosorod), Alun (Bunila)');
+    assert.equal(ro(e).hint.split('?')[0], 'Ai vrut: Alun (Bosorod), Alun (Bunila)');
     return true;
   });
   await fan.createShipment(ctx, shipment({ recipient: { ...r, city: 'Alun, com. Bunila' } }));
@@ -369,7 +370,7 @@ test('live success: testConnection, listPickupPoints and listServices on the rea
   const conn = await fan.testConnection(ctx);
   assert.equal(conn.ok, true);
   assert.deepEqual(conn.info.branches.map((b) => b.id), ['7032158']); // numeric id in the body → string
-  assert.doesNotMatch(conn.message, /Atenție/);
+  assert.doesNotMatch(ro(conn).message, /Atenție/);
   const pts = await fan.listPickupPoints(ctx);
   assert.deepEqual(pts, [{ id: '7032158', name: 'FAN Courier - cont test', address: 'Fabrica de Glucoza (sosea), 11C, Bucuresti, Bucuresti' }]);
   const svcs = await fan.listServices(ctx);

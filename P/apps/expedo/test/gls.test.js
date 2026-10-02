@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import gls, { glsPasswordBytes, mapGlsStatus, parseGlsDate, buildParcel, parcelKey } from '../src/couriers/gls.js';
+import { ro } from './helpers-i18n.js';
 
 function fakeCtx({ routes, settings = {}, credentials = { username: 'shop@example.ro', password: 'Parola123!' } }) {
   const calls = [];
@@ -92,7 +93,7 @@ test('sandbox setting switches to api.test.mygls.ro', async () => {
   const { ctx, calls } = fakeCtx({ routes: { GetParcelList: () => ({ body: { GetParcelListErrors: [], PrintDataInfoList: [] } }) }, settings: { sandbox: true } });
   const r = await gls.testConnection(ctx);
   assert.equal(calls[0].host, 'api.test.mygls.ro');
-  assert.match(r.message, /Conectat la GLS \(mod test\)/);
+  assert.match(ro(r).message, /Conectat la GLS \(mod test\)/);
 });
 
 test('HTTP 401 and ErrorCode 14 → AUTH_FAILED', async () => {
@@ -161,13 +162,13 @@ test('missing ZIP → ADDRESS_ZIP_MISSING (Romanian hint) unless the city has a 
   await assert.rejects(gls.createShipment(ctx, shipment({ recipient: recipientWith({ zip: '' }) })), (e) => {
     assert.equal(e.code, 'ADDRESS_ZIP_MISSING');
     assert.equal(e.field, 'shippingAddress.zip');
-    assert.match(e.message, /cod(ul)? poștal/);
-    assert.match(e.hint, /Completează codul poștal/);
+    assert.match(ro(e).message, /cod(ul)? poștal/);
+    assert.match(ro(e).hint, /Completează codul poștal/);
     return true;
   });
   // city with several ZIPs
   const { ctx: ctx2 } = fakeCtx({ routes: { GetLocations: locationsBody, PrintLabels: printOk } });
-  await assert.rejects(gls.createShipment(ctx2, shipment({ recipient: recipientWith({ zip: undefined }) })), (e) => e.code === 'ADDRESS_ZIP_MISSING' && /400114/.test(e.hint));
+  await assert.rejects(gls.createShipment(ctx2, shipment({ recipient: recipientWith({ zip: undefined }) })), (e) => e.code === 'ADDRESS_ZIP_MISSING' && /400114/.test(ro(e).hint));
   // city with exactly one ZIP: derived
   const { ctx: ctx3, calls } = fakeCtx({ routes: { GetLocations: locationsBody, PrintLabels: printOk } });
   await gls.createShipment(ctx3, shipment({ recipient: recipientWith({ city: 'Com. Florești', zip: '' }) }));
@@ -186,7 +187,7 @@ test('unknown city and unknown ZIP → ADDRESS_CITY_NOT_FOUND with suggestions; 
   await assert.rejects(gls.createShipment(ctx, shipment({ recipient: recipientWith({ city: 'Cluj Napoka', zip: '499999' }) })), (e) => {
     assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
     assert.equal(e.field, 'shippingAddress.city');
-    assert.match(e.hint, /^Ai vrut: Cluj-Napoca/);
+    assert.match(ro(e).hint, /^Ai vrut: Cluj-Napoca/);
     return true;
   });
   await gls.createShipment(ctx, shipment());
@@ -203,7 +204,7 @@ test('PrintLabels errors are mapped (house number 0, ZIP validation, generic)', 
   const err = (list) => fakeCtx({ routes: { GetLocations: locationsBody, PrintLabels: () => ({ body: { Labels: null, PrintLabelsErrorList: list, PrintLabelsInfoList: [] } }) } }).ctx;
   await assert.rejects(gls.createShipment(err([{ ErrorCode: 23, ErrorDescription: 'The house number cannot be 0' }]), shipment()), (e) => e.code === 'ADDRESS_STREET_INVALID' && e.field === 'shippingAddress.address1');
   await assert.rejects(gls.createShipment(err([{ ErrorCode: 13, ErrorDescription: 'Invalid DeliveryAddress.ZipCode' }]), shipment()), (e) => e.code === 'ADDRESS_ZIP_INVALID' && e.details.PrintLabelsErrorList[0].ErrorCode === 13);
-  await assert.rejects(gls.createShipment(err([{ ErrorCode: 13, ErrorDescription: 'Something odd' }]), shipment()), (e) => e.code === 'COURIER_REJECTED' && e.message === 'GLS a refuzat coletul.');
+  await assert.rejects(gls.createShipment(err([{ ErrorCode: 13, ErrorDescription: 'Something odd' }]), shipment()), (e) => e.code === 'COURIER_REJECTED' && ro(e).message === 'GLS a refuzat coletul.');
   await assert.rejects(gls.createShipment(err([{ ErrorCode: 1001, ErrorDescription: 'Internal Problem' }]), shipment()), (e) => e.code === 'PROVIDER_DOWN' && e.retryable);
 });
 
@@ -326,7 +327,7 @@ test('live: HTTP 200 + ErrorCode -1 "Unauthorized." → AUTH_FAILED on every met
   const { ctx: c4 } = fakeCtx({ routes: { GetLocations: () => ({ status: 502, body: '<html>502 Bad Gateway</html>' }), PrintLabels: live('printLabelsLocked') } });
   await assert.rejects(gls.createShipment(c4, shipment()), (e) => {
     assert.equal(e.code, 'AUTH_FAILED');
-    assert.match(e.message, /blocat temporar.*până la 11:13/);
+    assert.match(ro(e).message, /blocat temporar.*până la 11:13/);
     return true;
   });
 });

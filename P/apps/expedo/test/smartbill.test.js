@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import smartbill from '../src/invoicing/smartbill.js';
 import { ProcessingError, authError } from '../src/core/errors.js';
+import { ro } from './helpers-i18n.js';
+import { catalogs } from '../src/i18n/index.js';
 
 // ── fakes ──────────────────────────────────────────────────────────────────
 
@@ -90,7 +92,7 @@ const invoiceCall = (calls) => calls.find((c) => c.method === 'POST' && c.url.pa
 
 // ── tests ──────────────────────────────────────────────────────────────────
 
-test('adapter shape and Romanian field labels', () => {
+test('adapter shape and field labels in both languages', () => {
   assert.equal(smartbill.id, 'smartbill');
   for (const k of ['testConnection', 'createInvoice', 'getPdf', 'cancelInvoice', 'stornoInvoice', 'registerPayment', 'listSeries']) {
     assert.equal(typeof smartbill[k], 'function', k);
@@ -98,7 +100,12 @@ test('adapter shape and Romanian field labels', () => {
   assert.deepEqual(smartbill.credentialFields.map((f) => f.key), ['email', 'token']);
   const keys = smartbill.settingsFields.map((f) => f.key);
   for (const k of ['cif', 'series', 'vatPayer', 'sendEmail', 'useStock', 'warehouseName', 'language']) assert.ok(keys.includes(k), k);
-  assert.ok(smartbill.settingsFields.every((f) => f.label && /[a-zăâîșț]/i.test(f.label)));
+  // Labels live in the catalogs (smartbill.fields.<key>.label), in English and Romanian.
+  for (const f of [...smartbill.credentialFields, ...smartbill.settingsFields]) {
+    const key = `smartbill.fields.${f.key}.label`;
+    assert.ok(catalogs.en[key] && catalogs.ro[key], key);
+    assert.equal(f.label, undefined, `${f.key}: no hard-coded label`);
+  }
 });
 
 test('HTTP Basic auth uses email:token (token trimmed) on every call', async () => {
@@ -212,8 +219,8 @@ test('VAT rate missing in the SmartBill account → actionable error, no invoice
   await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
     assert.ok(err instanceof ProcessingError);
     assert.equal(err.code, 'VAT_RATE_NOT_DEFINED');
-    assert.match(err.message, /11%/);
-    assert.match(err.hint, /SmartBill.*Cote TVA/);
+    assert.match(ro(err).message, /11%/);
+    assert.match(ro(err).hint, /SmartBill.*Cote TVA/);
     return true;
   });
   assert.equal(invoiceCall(calls), undefined);
@@ -224,8 +231,8 @@ test('errorText "Seria nu a fost gasita" (HTTP 400) → series error with settin
   const { ctx } = ctxWith(router({ 'POST /invoice/v2': () => ({ status: 400, body }) }));
   await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
     assert.equal(err.code, 'INVOICE_SERIES_NOT_FOUND');
-    assert.match(err.message, /Seria nu a fost gasita/);
-    assert.match(err.hint, /Setări → Facturare/);
+    assert.match(ro(err).message, /Seria nu a fost gasita/);
+    assert.match(ro(err).hint, /Setări → Facturare/);
     assert.equal(err.retryable, false);
     assert.deepEqual(err.details, body, 'raw response kept in details');
     return true;
@@ -237,7 +244,7 @@ test('errorText with HTTP 200 is still a failure; HTML is stripped from the mess
   const { ctx } = ctxWith(router({ 'POST /invoice/v2': () => ({ status: 200, body }) }));
   await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
     assert.equal(err.code, 'INVOICE_STOCK_ERROR');
-    assert.doesNotMatch(err.message, /</);
+    assert.doesNotMatch(ro(err).message, /</);
     return true;
   });
 });
@@ -245,7 +252,7 @@ test('errorText with HTTP 200 is still a failure; HTML is stripped from the mess
 test('VAT rate rejected by SmartBill on create → hint to add it in SmartBill', async () => {
   const body = { errorText: 'Cota tva a produsului Tricou nu a fost gasita pe server!' };
   const { ctx } = ctxWith(router({ 'POST /invoice/v2': () => ({ status: 400, body }) }));
-  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'VAT_RATE_NOT_DEFINED' && /Configurare → Cote TVA/.test(err.hint));
+  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'VAT_RATE_NOT_DEFINED' && /Configurare → Cote TVA/.test(ro(err).hint));
 });
 
 test('bad credentials → AUTH_FAILED', async () => {
@@ -257,7 +264,7 @@ test('bad credentials → AUTH_FAILED', async () => {
 test('unknown field (json_mapping_error, no errorText) is reported as an integration error', async () => {
   const body = { status: 400, type: 'invalid_request_error', errors: [{ code: 'json_mapping_error', message: 'Unrecognized property: zzz.', param: 'zzz' }] };
   const { ctx } = ctxWith(router({ 'POST /invoice/v2': () => ({ status: 400, body }) }));
-  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'PROVIDER_REJECTED' && /zzz/.test(err.message));
+  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'PROVIDER_REJECTED' && /zzz/.test(ro(err).message));
 });
 
 /** /series answers with a counter that the test can advance (as SmartBill does when an invoice is issued). */
@@ -278,8 +285,8 @@ test('timeout on create after which the series counter moved → INVOICE_STATUS_
   await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
     assert.equal(err.code, 'INVOICE_STATUS_UNKNOWN');
     assert.equal(err.retryable, false);
-    assert.match(err.hint, /Verifică în SmartBill/);
-    assert.match(err.message, /probabil EXP 8/);
+    assert.match(ro(err).hint, /Verifică în SmartBill/);
+    assert.match(ro(err).message, /probabil EXP 8/);
     return true;
   });
 });
@@ -293,7 +300,7 @@ test('timeout on create with the series counter unchanged → nothing was issued
   await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
     assert.equal(err.code, 'PROVIDER_TIMEOUT');
     assert.equal(err.retryable, true);
-    assert.match(err.message, /nu a fost emisă/);
+    assert.match(ro(err).message, /nu a fost emisă/);
     return true;
   });
   const series = calls.filter((c) => c.url.pathname.endsWith('/series'));
@@ -371,20 +378,20 @@ test('testConnection reports the configured series', async () => {
   const { ctx, calls } = ctxWith(router());
   const res = await smartbill.testConnection(ctx);
   assert.equal(res.ok, true);
-  assert.match(res.message, /Seria „EXP” a fost găsită/);
+  assert.match(ro(res).message, /Seria „EXP” a fost găsită/);
   const series = calls.find((c) => c.url.pathname.endsWith('/series'));
   assert.equal(series.url.searchParams.get('type'), 'f');
 });
 
 test('testConnection: unknown series → error listing the available ones', async () => {
   const { ctx } = ctxWith(router(), { series: 'NOPE' });
-  await assert.rejects(smartbill.testConnection(ctx), (err) => err.code === 'INVOICE_SERIES_NOT_FOUND' && /EXP, TST/.test(err.hint));
+  await assert.rejects(smartbill.testConnection(ctx), (err) => err.code === 'INVOICE_SERIES_NOT_FOUND' && /EXP, TST/.test(ro(err).hint));
 });
 
 test('testConnection for a non-VAT-payer company', async () => {
   const { ctx } = ctxWith(router({ 'GET /tax': () => ({ status: 400, body: { errorText: 'Firma este neplatitoare de tva.' } }) }));
   const res = await smartbill.testConnection(ctx);
-  assert.match(res.message, /neplătitoare de TVA/);
+  assert.match(ro(res).message, /neplătitoare de TVA/);
 });
 
 test('listSeries maps the series list', async () => {
@@ -399,7 +406,7 @@ const LIVE = JSON.parse(readFileSync(new URL('./fixtures/invoicing/live-response
 
 test('live 401 body (bad e-mail/token) → AUTH_FAILED, not retryable, on testConnection and before any invoice POST', async () => {
   const { ctx, calls } = ctxWith(() => ({ status: LIVE.auth401.status, body: LIVE.auth401.body }));
-  await assert.rejects(smartbill.testConnection(ctx), (err) => err.code === 'AUTH_FAILED' && err.retryable === false && /Setări → Integrări/.test(err.hint));
+  await assert.rejects(smartbill.testConnection(ctx), (err) => err.code === 'AUTH_FAILED' && err.retryable === false && /Setări → Integrări/.test(ro(err).hint));
   await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => err.code === 'AUTH_FAILED' && err.retryable === false);
   assert.equal(invoiceCall(calls), undefined);
 });
@@ -415,13 +422,13 @@ test('live invalid_request_error without param (404/406/415) names the code, not
     await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => {
       assert.equal(err.code, 'PROVIDER_REJECTED');
       assert.equal(err.retryable, false);
-      assert.doesNotMatch(err.message, /câmp/);
-      assert.match(err.message, new RegExp(`${LIVE[k].body.errors[0].code}, HTTP ${LIVE[k].status}`));
+      assert.doesNotMatch(ro(err).message, /câmp/);
+      assert.match(ro(err).message, new RegExp(`${LIVE[k].body.errors[0].code}, HTTP ${LIVE[k].status}`));
       return true;
     });
   }
   const { ctx } = ctxWith(router({ 'POST /invoice/v2': () => ({ status: 400, body: LIVE.unknownField400.body }) }));
-  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => /câmp: fooBar/.test(err.message));
+  await assert.rejects(smartbill.createInvoice(ctx, b2c()), (err) => /câmp: fooBar/.test(ro(err).message));
 });
 
 // ── adversarial review fixes ──
@@ -560,5 +567,5 @@ test('spec: /series examples → listSeries keeps invoice series with nextNumber
   assert.deepEqual(await smartbill.listSeries(ctx), [{ id: 'fac', name: 'fac', nextNumber: 3821 }]);
   const res = await smartbill.testConnection(ctx);
   assert.equal(res.ok, true);
-  assert.match(res.message, /fac/);
+  assert.match(ro(res).message, /fac/);
 });

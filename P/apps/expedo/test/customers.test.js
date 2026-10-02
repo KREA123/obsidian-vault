@@ -4,10 +4,11 @@ import * as db from '../src/db.js';
 import * as P from '../src/core/pipeline.js';
 import { seedDemo } from '../src/demo/seed.js';
 import { customerHistory, openOrdersOfCustomer } from '../src/core/customers.js';
-import { planOrder, colete } from '../src/core/build.js';
+import { planOrder } from '../src/core/build.js';
 import { ruleFacts, RULE_FIELDS } from '../src/core/rules.js';
 import { withDefaults } from '../src/core/settings.js';
 import { TrackingStatus } from '../src/couriers/contract.js';
+import { ro, roText } from './helpers-i18n.js';
 
 // Customer refusal history: counted per store by phone OR e-mail hash; warns before the AWB of a
 // ramburs order; usable in rules.
@@ -90,8 +91,8 @@ test('warning issue on a ramburs order before the AWB; message, hint, plural', (
   const cur = order(geo);
   const issue = cur.issues.find((i) => i.code === 'CUSTOMER_REFUSED_BEFORE');
   assert.equal(issue.level, 'warning');
-  assert.equal(issue.message, 'Clientul a refuzat 2 colete înainte (din 5).');
-  assert.equal(issue.hint, 'Sună-l înainte de AWB sau cere plata cu cardul.');
+  assert.equal(ro(issue).message, 'Clientul a refuzat 2 colete înainte (din 5).');
+  assert.equal(ro(issue).hint, 'Sună-l înainte de AWB sau cere plata cu cardul.');
   assert.equal(cur.status, 'ready', 'a warning does not block');
   // Card order: already paid, no warning.
   assert.ok(!issueCodes(order(geo, { payment: 'card' })).includes('CUSTOMER_REFUSED_BEFORE'));
@@ -103,15 +104,18 @@ test('warning issue on a ramburs order before the AWB; message, hint, plural', (
   const cardOnly = { phone: '0755000777' };
   order(cardOnly, { outcome: 'returned', payment: 'card' });
   assert.ok(!issueCodes(order(cardOnly)).includes('CUSTOMER_REFUSED_BEFORE'));
-  assert.equal(colete(1), '1 colet');
-  assert.equal(colete(2), '2 colete');
-  assert.equal(colete(19), '19 colete');
-  assert.equal(colete(20), '20 de colete');
-  assert.equal(colete(101), '101 colete');
+  // Romanian plural from the catalog (Intl.PluralRules 'ro': one / few / other).
+  const refused = (count) => ro({ key: 'errors.CUSTOMER_REFUSED_BEFORE', params: { count, total: 200 } }).message;
+  assert.equal(refused(1), 'Clientul a refuzat 1 colet înainte (din 200).');
+  assert.equal(refused(2), 'Clientul a refuzat 2 colete înainte (din 200).');
+  assert.equal(refused(19), 'Clientul a refuzat 19 colete înainte (din 200).');
+  assert.equal(refused(20), 'Clientul a refuzat 20 de colete înainte (din 200).');
+  assert.equal(refused(101), 'Clientul a refuzat 101 colete înainte (din 200).');
+  assert.equal(refused(100), 'Clientul a refuzat 100 de colete înainte (din 200).');
 });
 
 test('rule field "Colete refuzate înainte": refused > 0 → hold', () => {
-  assert.equal(RULE_FIELDS.refusedBefore.label, 'Colete refuzate înainte');
+  assert.equal(roText('rules.fields.refusedBefore'), 'Colete refuzate înainte');
   assert.equal(RULE_FIELDS.refusedBefore.type, 'number');
   const settings = withDefaults({ courier: { default: 'cargus' }, rules: [{ name: 'Refuzuri', conditions: [{ field: 'refusedBefore', op: 'gt', value: '0' }], actions: { hold: true } }] });
   const data = byName(demo, '#1101').data;
@@ -155,7 +159,7 @@ test('demo store: Florin Matei refused a ramburs parcel before; his new order sh
   assert.equal(byName(demo, '#1095').status, 'delivered');
   const cur = byName(demo, '#1111');
   const issue = cur.issues.find((i) => i.code === 'CUSTOMER_REFUSED_BEFORE');
-  assert.equal(issue.message, 'Clientul a refuzat 1 colet înainte (din 2).');
+  assert.equal(ro(issue).message, 'Clientul a refuzat 1 colet înainte (din 2).');
   assert.equal(cur.status, 'ready');
   const h = customerHistory(demo, cur);
   assert.deepEqual(h.orders.map((o) => o.name), ['#1095', '#1090']);

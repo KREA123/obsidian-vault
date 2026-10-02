@@ -1,5 +1,9 @@
 // Expedo dashboard — dependency-free SPA. Hash routes:
 //   #/  #/orders?status=..  #/orders/:id  #/activity  #/settings/:section
+// Every text goes through t() (src/i18n: the same engine the server uses, served as /i18n/core.js, and the
+// `ui.` part of the catalog, served as /i18n/<locale>.json). Errors and history entries come translated
+// from the server, in the same language (the X-Expedo-Locale header / the store's Language setting).
+import { createTranslator, formatMoney, formatDate, formatDay, normalizeLocale } from '/i18n/core.js';
 
 // ---------- tiny helpers ----------
 class Raw { constructor(s) { this.s = s; } toString() { return this.s; } }
@@ -21,16 +25,39 @@ function html(strings, ...vals) {
 const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '');
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-const lei = (n) => `${Number(n || 0).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lei`;
-const fmtDate = (s) => s ? new Date(s).toLocaleString('ro-RO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-const fmtDay = (s) => s ? new Date(s).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short' }) : '';
-const ago = (s) => {
-  const m = Math.round((Date.now() - new Date(s)) / 60000);
-  if (m < 1) return 'acum';
-  if (m < 60) return `acum ${m} min`;
-  if (m < 60 * 24) return `acum ${Math.round(m / 60)} h`;
-  return fmtDay(s);
-};
+
+// ---------- i18n ----------
+const i18n = { locale: 'en', t: null };
+/** Text from the catalog in the current language: t('ui.orders.title'), t('ui.orders.count', { count: 3 }). */
+const t = (key, params) => (i18n.t ? i18n.t(i18n.locale, key, params) : key);
+const money = (n, currency) => formatMoney(i18n.locale, n, currency);
+const fmtDate = (s) => formatDate(i18n.locale, s);
+const fmtDay = (s) => formatDay(i18n.locale, s);
+
+/** Inside the Shopify admin: the admin user's language (App Bridge, or the `locale` param Shopify adds). */
+function adminLocale() {
+  if (!window.__EMBEDDED__) return '';
+  return window.shopify?.config?.locale || new URLSearchParams(location.search).get('locale') || '';
+}
+
+async function loadLocale(locale) {
+  const loc = normalizeLocale(locale);
+  if (i18n.t && i18n.locale === loc) return;
+  const res = await fetch(`/i18n/${loc}.json`);
+  const catalog = res.ok ? await res.json() : {};
+  i18n.locale = loc;
+  i18n.t = createTranslator({ [loc]: catalog }).t;
+  try { localStorage.setItem('expedo.locale', loc); } catch {}
+  document.documentElement.lang = loc;
+  document.title = t('ui.app.title');
+  // Static parts of index.html: data-i18n="key" (text), data-i18n-attr="attr:key;attr:key".
+  $$('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-attr]').forEach((el) => el.dataset.i18nAttr.split(';').forEach((pair) => {
+    const [attr, key] = pair.split(':');
+    el.setAttribute(attr, t(key));
+  }));
+  $$('[data-i18n-href]').forEach((el) => { el.setAttribute('href', t(el.dataset.i18nHref)); });
+}
 
 const ICONS = {
   home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
@@ -66,6 +93,7 @@ async function authHeaders() {
   // Custom header on every request: the server refuses cookie-authenticated writes without it (CSRF).
   const h = { 'X-Expedo-Request': '1' };
   if (window.__EMBEDDED__ && window.shopify?.idToken) h.Authorization = `Bearer ${await window.shopify.idToken()}`;
+  if (adminLocale()) h['X-Expedo-Locale'] = adminLocale();
   if (storeId()) h['X-Store-Id'] = storeId();
   return h;
 }
@@ -77,7 +105,7 @@ async function api(path, { method = 'GET', body } = {}) {
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && data.error?.code === 'LOGIN_REQUIRED') { showLogin(); throw new Error('login'); }
   if (!res.ok) {
-    const err = new Error(data.error?.message || `Eroare ${res.status}`);
+    const err = new Error(data.error?.message || t('ui.errors.http', { status: res.status }));
     err.info = data.error;
     throw err;
   }
@@ -91,7 +119,7 @@ async function openPdf(path) {
     const res = await fetch(`/api${path}`, { headers: await authHeaders() });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error?.message || 'Nu am putut genera PDF-ul.');
+      throw new Error(data.error?.message || t('ui.errors.pdf'));
     }
     const url = URL.createObjectURL(await res.blob());
     if (win) win.location = url; else location.href = url;
@@ -107,7 +135,7 @@ async function download(path, filename) {
     const res = await fetch(`/api${path}`, { headers: await authHeaders() });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error?.message || 'Nu am putut descărca fișierul.');
+      throw new Error(data.error?.message || t('ui.errors.download'));
     }
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(await res.blob()), download: filename });
     a.click();
@@ -121,12 +149,12 @@ function showLogin() {
   $('#view').innerHTML = html`
     <div class="login card">
       <h1 style="margin-bottom:6px">Expedo</h1>
-      <p class="muted">${window.__LOGIN_ENABLED__ ? 'Intră cu parola de administrator.' : 'Deschide aplicația din adminul Shopify (Aplicații → Expedo).'}</p>
+      <p class="muted">${window.__LOGIN_ENABLED__ ? t('ui.login.withPassword') : t('ui.login.openFromShopify')}</p>
       ${window.__LOGIN_ENABLED__ ? html`
       <form method="post" action="/login" style="display:flex;flex-direction:column;gap:10px">
-        <input type="password" name="password" placeholder="Parolă" autofocus required>
-        ${location.search.includes('login=fail') ? html`<div class="result bad">Parola nu e corectă.</div>` : ''}
-        <button class="btn primary">Intră</button>
+        <input type="password" name="password" placeholder="${t('ui.login.password')}" aria-label="${t('ui.login.password')}" autofocus required>
+        ${location.search.includes('login=fail') ? html`<div class="result bad">${t('ui.login.wrong')}</div>` : ''}
+        <button class="btn primary">${t('ui.login.submit')}</button>
       </form>` : ''}
     </div>`;
 }
@@ -134,7 +162,7 @@ function showLogin() {
 // ---------- shared bits ----------
 const STATUS_KIND = { ready: 'info', needs_attention: 'bad', on_hold: 'warn', shipped: 'info', in_transit: 'info', delivered: 'ok', returned: 'warn', cancelled: '', new: '' };
 const statusBadge = (o) => html`<span class="badge ${STATUS_KIND[o.status] || ''}">${o.statusLabel || state.meta.statuses[o.status] || o.status}</span>`;
-const payPill = (o) => o.paymentMethod === 'cod' ? html`<span class="pill cod">Ramburs</span>` : o.paymentMethod === 'card' ? html`<span class="pill card">Card</span>` : html`<span class="pill">${o.paymentMethod || '—'}</span>`;
+const payPill = (o) => o.paymentMethod === 'cod' ? html`<span class="pill cod">${t('ui.pay.cod')}</span>` : o.paymentMethod === 'card' ? html`<span class="pill card">${t('ui.pay.card')}</span>` : html`<span class="pill">${o.paymentMethod || '—'}</span>`;
 const courierName = (id) => state.meta.couriers.find((c) => c.id === id)?.name || id || '—';
 const invoicerName = (id) => state.meta.invoicers.find((c) => c.id === id)?.name || id || '—';
 
@@ -144,6 +172,8 @@ function setActiveNav(route) {
 
 async function refreshChrome() {
   state.me = await api('/me');
+  // The server decides the language (Shopify admin language / store setting); follow it.
+  if (state.me.locale && state.me.locale !== i18n.locale) await loadLocale(state.me.locale);
   $('#test-banner').hidden = !state.me.testMode;
   $('#store-name').textContent = state.me.store.name || state.me.store.shop;
   const sw = $('#store-switch');
@@ -164,73 +194,73 @@ async function viewDashboard() {
   const [stats, ev] = await Promise.all([api('/stats'), api('/events')]);
   const attention = await api('/orders?status=needs_attention');
   $('#view').innerHTML = html`
-    <div class="page-head"><h1>Panou</h1><div class="spacer"></div>
-      <button class="btn" id="btn-track">${icon('refresh')} Verifică coletele</button>
-      <a class="btn primary" href="#/orders?status=ready">${icon('truck')} Procesează comenzile (${stats.toProcess})</a>
+    <div class="page-head"><h1>${t('ui.dashboard.title')}</h1><div class="spacer"></div>
+      <button class="btn" id="btn-track">${icon('refresh')} ${t('ui.dashboard.checkParcels')}</button>
+      <a class="btn primary" href="#/orders?status=ready">${icon('truck')} ${t('ui.dashboard.process', { count: stats.toProcess })}</a>
     </div>
     <div class="stats">
-      <a class="stat" href="#/orders?status=ready"><div class="label">De procesat</div><div class="value">${stats.toProcess}</div><div class="sub">gata pentru AWB</div></a>
-      <a class="stat ${stats.attention ? 'alert' : ''}" href="#/orders?status=needs_attention"><div class="label">Necesită atenție</div><div class="value">${stats.attention}</div><div class="sub">au o problemă de rezolvat</div></a>
-      <a class="stat" href="#/orders?status=in_transit"><div class="label">Pe drum</div><div class="value">${stats.inTransit}</div><div class="sub">${stats.awbToday} AWB-uri azi</div></a>
-      <div class="stat"><div class="label">Ramburs de încasat</div><div class="value">${lei(stats.codPending.v)}</div><div class="sub">${stats.codPending.c} colete la curieri</div></div>
-      <div class="stat"><div class="label">Ramburs încasat (30 zile)</div><div class="value">${lei(stats.codCollected30.v)}</div><div class="sub">${stats.codCollected30.c} colete livrate</div></div>
+      <a class="stat" href="#/orders?status=ready"><div class="label">${t('ui.dashboard.toProcess')}</div><div class="value">${stats.toProcess}</div><div class="sub">${t('ui.dashboard.toProcessSub')}</div></a>
+      <a class="stat ${stats.attention ? 'alert' : ''}" href="#/orders?status=needs_attention"><div class="label">${t('ui.dashboard.attention')}</div><div class="value">${stats.attention}</div><div class="sub">${t('ui.dashboard.attentionSub')}</div></a>
+      <a class="stat" href="#/orders?status=in_transit"><div class="label">${t('ui.dashboard.inTransit')}</div><div class="value">${stats.inTransit}</div><div class="sub">${t('ui.dashboard.awbToday', { count: stats.awbToday })}</div></a>
+      <div class="stat"><div class="label">${t('ui.dashboard.codPending')}</div><div class="value">${money(stats.codPending.v)}</div><div class="sub">${t('ui.dashboard.codPendingSub', { count: stats.codPending.c })}</div></div>
+      <div class="stat"><div class="label">${t('ui.dashboard.codCollected')}</div><div class="value">${money(stats.codCollected30.v)}</div><div class="sub">${t('ui.dashboard.codCollectedSub', { count: stats.codCollected30.c })}</div></div>
     </div>
     <div class="cols">
       <div>
         <div class="card">
-          <h2>De rezolvat</h2>
+          <h2>${t('ui.dashboard.todo')}</h2>
           ${attention.orders.length ? html`<table><tbody>${attention.orders.slice(0, 8).map((o) => html`
             <tr data-open="${o.id}"><td><span class="order-name">${o.name}</span><div class="faint small">${o.customer}</div></td>
             <td>${issueLines(o, 1)}</td></tr>`)}</tbody></table>`
-            : html`<div class="empty">Nicio comandă blocată. ${icon('check')}</div>`}
+            : html`<div class="empty">${t('ui.dashboard.nothingBlocked')} ${icon('check')}</div>`}
         </div>
         <div class="card">
-          <h2>Curieri (toate AWB-urile)</h2>
-          ${stats.byCourier.length ? html`<table><thead><tr><th>Curier</th><th class="num">AWB-uri</th><th class="num">Livrate</th><th class="num">Returnate</th></tr></thead><tbody>
+          <h2>${t('ui.dashboard.couriers')}</h2>
+          ${stats.byCourier.length ? html`<table><thead><tr><th>${t('ui.dashboard.courier')}</th><th class="num">${t('ui.dashboard.awbs')}</th><th class="num">${t('ui.dashboard.delivered')}</th><th class="num">${t('ui.dashboard.returned')}</th></tr></thead><tbody>
             ${stats.byCourier.map((c) => html`<tr><td>${courierName(c.courier)}</td><td class="num">${c.c}</td><td class="num">${c.delivered}</td><td class="num">${c.returned}${c.c ? html` <span class="faint small">(${Math.round((c.returned / c.c) * 100)}%)</span>` : ''}</td></tr>`)}
-          </tbody></table>` : html`<div class="empty">Încă niciun AWB.</div>`}
-          <div class="form-actions"><button class="btn small" id="btn-cod">${icon('download')} Export ramburs (CSV)</button><span class="muted small">Cost transport ultimele 30 zile: ${lei(stats.shippingCost30)}</span></div>
+          </tbody></table>` : html`<div class="empty">${t('ui.dashboard.noAwb')}</div>`}
+          <div class="form-actions"><button class="btn small" id="btn-cod">${icon('download')} ${t('ui.dashboard.codExport')}</button><span class="muted small">${t('ui.dashboard.shippingCost', { amount: money(stats.shippingCost30) })}</span></div>
         </div>
       </div>
       <div class="card">
-        <h2>Activitate recentă</h2>
+        <h2>${t('ui.dashboard.recent')}</h2>
         ${eventList(ev.events.slice(0, 14), true)}
-        <div class="form-actions"><a href="#/activity">Toată activitatea →</a></div>
+        <div class="form-actions"><a href="#/activity">${t('ui.dashboard.allActivity')}</a></div>
       </div>
     </div>`;
   $$('[data-open]').forEach((tr) => tr.addEventListener('click', () => openOrder(Number(tr.dataset.open))));
   $('#btn-track').onclick = trackNow;
-  $('#btn-cod').onclick = () => download('/cod.csv', 'ramburs.csv');
+  $('#btn-cod').onclick = () => download('/cod.csv', t('ui.files.cod'));
   bindDataDownloads($('#view'));
 }
 
 async function trackNow() {
   const r = await api('/track', { method: 'POST' });
-  toast(`Am verificat ${r.checked} colete; ${r.changed} au status nou.`, 'ok');
+  toast(t('ui.dashboard.tracked', { checked: r.checked, changed: r.changed }), 'ok');
   route();
 }
 
 function eventList(events, withOrder) {
-  if (!events.length) return html`<div class="empty">Nimic încă.</div>`;
+  if (!events.length) return html`<div class="empty">${t('ui.events.empty')}</div>`;
   return html`<ul class="timeline">${events.map((e) => html`
     <li class="${e.level}">
       <div>${withOrder && e.order_name ? html`<a href="#/orders/${e.order_id}">${e.order_name}</a> · ` : ''}${e.message}</div>
       ${e.data?.hint ? html`<div class="hint">${e.data.hint}</div>` : ''}
-      ${e.step === 'gdpr' && e.data?.orderIds?.length ? html`<button class="btn small" data-export="${e.data.orderIds.join(',')}">${icon('download')} Descarcă datele clientului</button>` : ''}
+      ${e.step === 'gdpr' && e.data?.orderIds?.length ? html`<button class="btn small" data-export="${e.data.orderIds.join(',')}">${icon('download')} ${t('ui.events.downloadCustomer')}</button>` : ''}
       <div class="when">${fmtDate(e.at)}</div>
     </li>`)}</ul>`;
 }
 
-/** "Descarcă datele" buttons (GDPR data request): a JSON file with everything Expedo holds. */
+/** "Download data" buttons (GDPR data request): a JSON file with everything Expedo holds. */
 function bindDataDownloads(root) {
   $$('[data-export]', root).forEach((b) => b.addEventListener('click', (e) => {
     e.stopPropagation();
-    download(`/customer-export?ids=${b.dataset.export}`, 'date-client.json');
+    download(`/customer-export?ids=${b.dataset.export}`, t('ui.files.customerData'));
   }));
 }
 
 /** Small badge: the customer refused parcels before (core/customers.js). */
-const refusedBadge = (n) => (n ? html`<span class="badge warn plain" title="Clientul a refuzat ${n === 1 ? 'un colet' : `${n} colete`} înainte">${n === 1 ? 'a refuzat 1 colet' : `a refuzat ${n} colete`}</span>` : '');
+const refusedBadge = (n) => (n ? html`<span class="badge warn plain" title="${t('ui.refused.title', { count: n })}">${t('ui.refused.badge', { count: n })}</span>` : '');
 
 function issueLines(o, max = 3) {
   const list = [];
@@ -240,10 +270,7 @@ function issueLines(o, max = 3) {
 }
 
 // ---------- orders ----------
-const TABS = [
-  ['open', 'De lucru'], ['ready', 'Gata de procesat'], ['needs_attention', 'Necesită atenție'], ['on_hold', 'În așteptare'],
-  ['shipped', 'Expediate'], ['in_transit', 'În livrare'], ['delivered', 'Livrate'], ['returned', 'Returnate'], ['all', 'Toate'],
-];
+const TABS = ['open', 'ready', 'needs_attention', 'on_hold', 'shipped', 'in_transit', 'delivered', 'returned', 'all'];
 
 function hashQuery() {
   const [, q = ''] = location.hash.split('?');
@@ -266,51 +293,51 @@ async function viewOrders() {
   const pages = Math.ceil(data.total / data.pageSize);
 
   $('#view').innerHTML = html`
-    <div class="page-head"><h1>Comenzi</h1><div class="spacer"></div>
-      <button class="btn" id="btn-sync">${icon('refresh')} Sincronizează cu Shopify</button>
+    <div class="page-head"><h1>${t('ui.orders.title')}</h1><div class="spacer"></div>
+      <button class="btn" id="btn-sync">${icon('refresh')} ${t('ui.orders.sync')}</button>
     </div>
-    <nav class="tabs">${TABS.map(([k, label]) => html`<a href="#/orders?status=${k}" class="${status === k ? 'active' : ''}">${label}<span class="count ${k === 'needs_attention' && c.needs_attention ? 'bad' : ''}">${count(k)}</span></a>`)}</nav>
+    <nav class="tabs">${TABS.map((k) => html`<a href="#/orders?status=${k}" class="${status === k ? 'active' : ''}">${t(`ui.orders.tabs.${k}`)}<span class="count ${k === 'needs_attention' && c.needs_attention ? 'bad' : ''}">${count(k)}</span></a>`)}</nav>
     <div class="toolbar">
-      <input type="search" id="search" placeholder="Caută: comandă, AWB, factură, nume, telefon, e-mail…" title="Numele și telefonul se caută întregi (ex. „Popescu”, „0745123456”)" value="${search}">
-      <span class="muted small">${data.total} comenzi</span>
-      ${ids ? html`<a class="btn small" href="#/orders?status=${status}">Doar comenzile procesate acum ${icon('x')}</a>` : ''}
+      <input type="search" id="search" placeholder="${t('ui.orders.search')}" aria-label="${t('ui.orders.search')}" title="${t('ui.orders.searchTitle')}" value="${search}">
+      <span class="muted small">${t('ui.orders.count', { count: data.total })}</span>
+      ${ids ? html`<a class="btn small" href="#/orders?status=${status}">${t('ui.orders.onlyProcessed')} ${icon('x')}</a>` : ''}
     </div>
     <div class="table-wrap">
       ${data.orders.length ? html`<table>
         <thead><tr>
-          <th class="check"><input type="checkbox" id="check-all" aria-label="Selectează tot"></th>
-          <th>Comandă</th><th>Client</th><th class="num">Total</th><th class="hide-sm">Livrare</th><th class="hide-sm">Factură</th><th>Status</th>
+          <th class="check"><input type="checkbox" id="check-all" aria-label="${t('ui.orders.selectAll')}"></th>
+          <th>${t('ui.orders.order')}</th><th>${t('ui.orders.customer')}</th><th class="num">${t('ui.orders.total')}</th><th class="hide-sm">${t('ui.orders.shipping')}</th><th class="hide-sm">${t('ui.orders.invoice')}</th><th>${t('ui.orders.status')}</th>
         </tr></thead>
         <tbody>${data.orders.map((o) => html`
           <tr data-id="${o.id}" class="${state.selected.has(o.id) ? 'selected' : ''}">
-            <td class="check"><input type="checkbox" data-check="${o.id}" ${state.selected.has(o.id) ? 'checked' : ''} aria-label="Selectează ${o.name}"></td>
-            <td><div class="order-name">${o.name} ${o.testMode && o.awb ? html`<span class="pill test">probă</span>` : ''}</div><div class="faint small nowrap">${fmtDate(o.createdAt)}</div></td>
-            <td><div>${o.redactedAt ? html`<span class="faint">Date șterse</span>` : o.company || o.customer} ${refusedBadge(o.refusedBefore)}</div><div class="muted small">${[o.city, o.county].filter(Boolean).join(', ')}${o.city || o.county ? ' · ' : ''}${o.items} buc.</div>${issueLines(o, 2)}</td>
-            <td class="num"><div class="nowrap">${lei(o.total)}</div><div>${payPill(o)}</div></td>
+            <td class="check"><input type="checkbox" data-check="${o.id}" ${state.selected.has(o.id) ? 'checked' : ''} aria-label="${t('ui.orders.select', { name: o.name })}"></td>
+            <td><div class="order-name">${o.name} ${o.testMode && o.awb ? html`<span class="pill test">${t('ui.orders.test')}</span>` : ''}</div><div class="faint small nowrap">${fmtDate(o.createdAt)}</div></td>
+            <td><div>${o.redactedAt ? html`<span class="faint">${t('ui.orders.redacted')}</span>` : o.company || o.customer} ${refusedBadge(o.refusedBefore)}</div><div class="muted small">${[o.city, o.county].filter(Boolean).join(', ')}${o.city || o.county ? ' · ' : ''}${t('ui.orders.items', { count: o.items })}</div>${issueLines(o, 2)}</td>
+            <td class="num"><div class="nowrap">${money(o.total, o.currency)}</div><div>${payPill(o)}</div></td>
             <td class="hide-sm">${o.awb ? html`<div>${courierName(o.courier)}</div><div class="mono">${o.awb}</div>${o.trackingText ? html`<div class="faint small">${o.trackingText}</div>` : ''}`
               : html`<span class="faint small">${o.courier ? `→ ${courierName(o.courier)}` : '—'}</span><div class="faint small">${o.shippingMethod || ''}</div>`}</td>
             <td class="hide-sm">${o.invoice ? html`<span class="nowrap">${o.invoice}</span>` : html`<span class="faint">—</span>`}</td>
             <td>${statusBadge(o)}</td>
           </tr>`)}</tbody></table>`
-        : html`<div class="empty">Nicio comandă aici.</div>`}
+        : html`<div class="empty">${t('ui.orders.empty')}</div>`}
     </div>
     ${pages > 1 ? html`<div class="form-actions">
-      ${page > 1 ? html`<a class="btn small" href="#/orders?status=${status}&q=${encodeURIComponent(search)}${ids ? `&ids=${ids}` : ''}&page=${page - 1}">← Înapoi</a>` : ''}
-      <span class="muted small">Pagina ${page} din ${pages}</span>
-      ${page < pages ? html`<a class="btn small" href="#/orders?status=${status}&q=${encodeURIComponent(search)}${ids ? `&ids=${ids}` : ''}&page=${page + 1}">Înainte →</a>` : ''}</div>` : ''}
+      ${page > 1 ? html`<a class="btn small" href="#/orders?status=${status}&q=${encodeURIComponent(search)}${ids ? `&ids=${ids}` : ''}&page=${page - 1}">${t('ui.orders.prev')}</a>` : ''}
+      <span class="muted small">${t('ui.orders.page', { page, pages })}</span>
+      ${page < pages ? html`<a class="btn small" href="#/orders?status=${status}&q=${encodeURIComponent(search)}${ids ? `&ids=${ids}` : ''}&page=${page + 1}">${t('ui.orders.next')}</a>` : ''}</div>` : ''}
     <div class="bulkbar" id="bulkbar" hidden>
       <span class="count" id="bulk-count"></span>
-      <button class="btn primary" data-bulk="all">${icon('truck')} Generează AWB + factură</button>
-      <button class="btn" data-bulk="awb">Doar AWB</button>
-      <button class="btn" data-bulk="invoice">Doar factură</button>
-      <button class="btn" data-bulk="labels">${icon('print')} Etichete</button>
-      <button class="btn" data-bulk="picking">${icon('clip')} Listă de picking</button>
-      <button class="btn" data-bulk="clear">${icon('x')}</button>
+      <button class="btn primary" data-bulk="all">${icon('truck')} ${t('ui.orders.bulk.all')}</button>
+      <button class="btn" data-bulk="awb">${t('ui.orders.bulk.awb')}</button>
+      <button class="btn" data-bulk="invoice">${t('ui.orders.bulk.invoice')}</button>
+      <button class="btn" data-bulk="labels">${icon('print')} ${t('ui.orders.bulk.labels')}</button>
+      <button class="btn" data-bulk="picking">${icon('clip')} ${t('ui.orders.bulk.picking')}</button>
+      <button class="btn" data-bulk="clear" aria-label="${t('ui.orders.bulk.clear')}" title="${t('ui.orders.bulk.clear')}">${icon('x')}</button>
     </div>`;
 
   const updateBulk = () => {
     $('#bulkbar').hidden = !state.selected.size;
-    $('#bulk-count').textContent = `${state.selected.size} selectate`;
+    $('#bulk-count').textContent = t('ui.orders.bulk.selected', { count: state.selected.size });
     $$('tbody tr[data-id]').forEach((tr) => tr.classList.toggle('selected', state.selected.has(Number(tr.dataset.id))));
   };
   updateBulk();
@@ -329,14 +356,14 @@ async function viewOrders() {
     $$('[data-check]').forEach((cb) => { cb.checked = e.target.checked; });
     updateBulk();
   });
-  let t;
+  let timer;
   $('#search').addEventListener('input', (e) => {
-    clearTimeout(t);
-    t = setTimeout(() => { location.hash = `#/orders?status=${status}&q=${encodeURIComponent(e.target.value)}`; }, 350);
+    clearTimeout(timer);
+    timer = setTimeout(() => { location.hash = `#/orders?status=${status}&q=${encodeURIComponent(e.target.value)}`; }, 350);
   });
   $('#btn-sync').onclick = async (e) => {
     busy(e.currentTarget, true);
-    try { const r = await api('/sync', { method: 'POST', body: { days: 14 } }); toast(`Sincronizat: ${r.imported} comenzi din ultimele 14 zile.`, 'ok'); route(); }
+    try { const r = await api('/sync', { method: 'POST', body: { days: 14 } }); toast(t('ui.orders.synced', { count: r.imported }), 'ok'); route(); }
     catch (err) { toast(err.message, 'bad'); busy(e.currentTarget, false); }
   };
   $$('[data-bulk]').forEach((b) => b.addEventListener('click', () => bulk(b.dataset.bulk, b)));
@@ -345,7 +372,7 @@ async function viewOrders() {
 
 function busy(btn, on) {
   if (!btn) return;
-  if (on) { btn.dataset.label = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span> Se lucrează…'; btn.disabled = true; }
+  if (on) { btn.dataset.label = btn.innerHTML; btn.innerHTML = `<span class="spinner"></span> ${esc(t('ui.common.working'))}`; btn.disabled = true; }
   else { btn.innerHTML = btn.dataset.label || btn.innerHTML; btn.disabled = false; }
 }
 
@@ -360,13 +387,13 @@ async function bulk(action, btn) {
     const r = await api('/orders/process', { method: 'POST', body: { ids, steps } });
     if (r.failed) {
       const first = r.results.find((x) => !x.ok);
-      toast(`${r.ok} reușite, ${r.failed} cu probleme. Ex. ${first.name}: ${first.error?.message}`, 'bad');
+      toast(t('ui.orders.bulk.partial', { ok: r.ok, failed: r.failed, name: first.name, error: first.error?.message }), 'bad');
     } else {
-      toast(`Gata: ${r.ok} comenzi procesate.`, 'ok');
+      toast(t('ui.orders.bulk.done', { count: r.ok }), 'ok');
     }
     const done = r.results.filter((x) => x.ok && x.awb).map((x) => x.id);
-    // Show exactly the orders just processed, still selected, so "Etichete" is one click away
-    // (they are not necessarily on the first page of "Expediate").
+    // Show exactly the orders just processed, still selected, so "Labels" is one click away
+    // (they are not necessarily on the first page of "Shipped").
     if (done.length && steps.includes('awb')) {
       state.selected = new Set(done);
       location.hash = `#/orders?status=all&ids=${done.join(',')}`;
@@ -381,11 +408,11 @@ async function bulk(action, btn) {
 async function picking(ids) {
   const p = await api(`/picking?ids=${ids.join(',')}`);
   const w = window.open('', '_blank');
-  if (!w) return toast('Permite ferestrele pop-up ca să printezi lista.', 'bad');
-  w.document.write(`<!doctype html><meta charset="utf-8"><title>Listă de picking</title>
+  if (!w) return toast(t('ui.picking.popup'), 'bad');
+  w.document.write(`<!doctype html><html lang="${i18n.locale}"><meta charset="utf-8"><title>${esc(t('ui.picking.title'))}</title>
     <style>body{font:14px system-ui;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f3f3f3}.q{font-size:18px;font-weight:700;text-align:center}</style>
-    <h2>Listă de picking — ${esc(new Date().toLocaleString('ro-RO'))}</h2><p>Comenzi: ${esc(p.orders.join(', '))}</p>
-    <table><tr><th>✓</th><th>SKU</th><th>Produs</th><th>Cant.</th><th>Comenzi</th></tr>
+    <h2>${esc(t('ui.picking.heading', { date: new Date().toLocaleString(i18n.locale === 'ro' ? 'ro-RO' : 'en-US') }))}</h2><p>${esc(t('ui.picking.orders', { list: p.orders.join(', ') }))}</p>
+    <table><tr><th>✓</th><th>${esc(t('ui.picking.sku'))}</th><th>${esc(t('ui.picking.product'))}</th><th>${esc(t('ui.picking.qty'))}</th><th>${esc(t('ui.picking.ordersCol'))}</th></tr>
     ${p.items.map((i) => `<tr><td style="width:24px"></td><td>${esc(i.sku)}</td><td>${esc(i.title)}</td><td class="q">${i.quantity}</td><td>${esc(i.orders.join(', '))}</td></tr>`).join('')}
     </table><script>print()<\/script>`);
   w.document.close();
@@ -426,95 +453,95 @@ async function renderOrder(id) {
 
   panel.innerHTML = html`
     <div class="drawer-head">
-      <h1>${o.name}</h1> ${statusBadge(o)} ${(o.testMode && o.awb) || (o.invoiceTest && o.invoice) ? html`<span class="pill test">probă</span>` : ''}
+      <h1>${o.name}</h1> ${statusBadge(o)} ${(o.testMode && o.awb) || (o.invoiceTest && o.invoice) ? html`<span class="pill test">${t('ui.order.test')}</span>` : ''}
       <div class="spacer"></div>
-      <button class="btn small" data-close>${icon('x')}</button>
+      <button class="btn small" data-close aria-label="${t('ui.common.close')}" title="${t('ui.common.close')}">${icon('x')}</button>
     </div>
     ${errors.map((e) => html`<div class="${e.level === 'warning' ? 'warn-box' : 'error-box'}">
       <strong>${e.message}</strong>${e.hint ? html`<div class="hint">${e.hint}</div>` : ''}
-      ${e.details ? html`<details class="small"><summary class="muted">Detalii tehnice</summary><pre class="mono" style="white-space:pre-wrap">${typeof e.details === 'string' ? e.details : JSON.stringify(e.details, null, 2)}</pre></details>` : ''}
+      ${e.details ? html`<details class="small"><summary class="muted">${t('ui.order.technical')}</summary><pre class="mono" style="white-space:pre-wrap">${typeof e.details === 'string' ? e.details : JSON.stringify(e.details, null, 2)}</pre></details>` : ''}
     </div>`)}
     <div class="actions" style="margin-bottom:16px">
-      ${canProcess ? html`<button class="btn primary" data-act="process">${icon('truck')} Generează AWB + factură</button>` : ''}
-      ${!canProcess && !o.invoice && o.awb ? html`<button class="btn" data-act="invoice">${icon('file')} Emite factura</button>` : ''}
-      ${o.awb ? html`<button class="btn" data-act="label">${icon('print')} Eticheta AWB</button>` : ''}
-      ${o.invoice ? html`<button class="btn" data-act="invoice-pdf">${icon('file')} Factura PDF</button>` : ''}
-      ${o.awb && !o.fulfilledAt && !o.testMode && !o.cancelled && !state.me.testMode ? html`<button class="btn" data-act="fulfill">Marchează expediată în Shopify</button>` : ''}
-      ${hasTestData && !state.me.testMode ? html`<button class="btn" data-act="reset-test" title="AWB-ul / factura de probă se șterg; comanda se poate procesa real.">Șterge datele de probă</button>` : ''}
-      ${o.awb ? html`<button class="btn danger" data-act="cancel-awb">Anulează AWB</button>` : ''}
-      ${o.invoice ? html`<button class="btn danger" data-act="storno">Stornează factura</button>` : ''}
-      ${!o.awb ? html`<button class="btn" data-act="hold">${o.overrides.hold ? 'Scoate din așteptare' : 'Pune în așteptare'}</button>` : ''}
-      <button class="btn" data-act="refresh">${icon('refresh')} Reîncarcă din Shopify</button>
+      ${canProcess ? html`<button class="btn primary" data-act="process">${icon('truck')} ${t('ui.order.actions.process')}</button>` : ''}
+      ${!canProcess && !o.invoice && o.awb ? html`<button class="btn" data-act="invoice">${icon('file')} ${t('ui.order.actions.invoice')}</button>` : ''}
+      ${o.awb ? html`<button class="btn" data-act="label">${icon('print')} ${t('ui.order.actions.label')}</button>` : ''}
+      ${o.invoice ? html`<button class="btn" data-act="invoice-pdf">${icon('file')} ${t('ui.order.actions.invoicePdf')}</button>` : ''}
+      ${o.awb && !o.fulfilledAt && !o.testMode && !o.cancelled && !state.me.testMode ? html`<button class="btn" data-act="fulfill">${t('ui.order.actions.fulfill')}</button>` : ''}
+      ${hasTestData && !state.me.testMode ? html`<button class="btn" data-act="reset-test" title="${t('ui.order.actions.resetTestTitle')}">${t('ui.order.actions.resetTest')}</button>` : ''}
+      ${o.awb ? html`<button class="btn danger" data-act="cancel-awb">${t('ui.order.actions.cancelAwb')}</button>` : ''}
+      ${o.invoice ? html`<button class="btn danger" data-act="storno">${t('ui.order.actions.storno')}</button>` : ''}
+      ${!o.awb ? html`<button class="btn" data-act="hold">${o.overrides.hold ? t('ui.order.actions.unhold') : t('ui.order.actions.hold')}</button>` : ''}
+      <button class="btn" data-act="refresh">${icon('refresh')} ${t('ui.order.actions.refresh')}</button>
     </div>
 
     <div class="card">
-      <h2>Livrare</h2>
+      <h2>${t('ui.order.shipping.title')}</h2>
       <dl class="kv">
-        ${o.awb ? html`<dt>AWB</dt><dd><span class="mono">${o.awb}</span> · ${courierName(o.courier)} ${safeUrl(o.trackingUrl) ? html`· <a href="${safeUrl(o.trackingUrl)}" target="_blank" rel="noopener">urmărește</a>` : ''}<div class="muted small">${o.trackingText || ''}</div></dd>` : ''}
-        <dt>Plată</dt><dd>${payPill(o)} ${o.paymentMethod === 'cod' ? html`ramburs <strong>${lei(o.awb ? o.codAmount : plan.cod)}</strong>${o.codCollectedAt ? html` · <span class="badge ok">încasat ${fmtDay(o.codCollectedAt)}</span>` : ''}` : d.financialStatus === 'PAID' ? 'plătită online' : d.financialStatus}</dd>
-        <dt>Metodă</dt><dd>${d.shippingMethod || '—'}${plan.lockerId ? html` · locker <span class="mono">${plan.lockerId}</span>` : ''}</dd>
-        ${plan.matchedRules.length ? html`<dt>Reguli aplicate</dt><dd>${plan.matchedRules.join(', ')}</dd>` : ''}
-        ${o.invoice ? html`<dt>Factură</dt><dd>${o.invoice} ${safeUrl(o.invoiceUrl) ? html`· <a href="${safeUrl(o.invoiceUrl)}" target="_blank" rel="noopener">deschide</a>` : ''}</dd>` : ''}
+        ${o.awb ? html`<dt>AWB</dt><dd><span class="mono">${o.awb}</span> · ${courierName(o.courier)} ${safeUrl(o.trackingUrl) ? html`· <a href="${safeUrl(o.trackingUrl)}" target="_blank" rel="noopener">${t('ui.order.shipping.track')}</a>` : ''}<div class="muted small">${o.trackingText || ''}</div>${o.trackingDetail ? html`<div class="faint small">${t('ui.order.shipping.courierSays', { text: o.trackingDetail })}</div>` : ''}</dd>` : ''}
+        <dt>${t('ui.order.shipping.payment')}</dt><dd>${payPill(o)} ${o.paymentMethod === 'cod' ? html`${t('ui.order.shipping.cod')} <strong>${money(o.awb ? o.codAmount : plan.cod)}</strong>${o.codCollectedAt ? html` · <span class="badge ok">${t('ui.order.shipping.collected', { date: fmtDay(o.codCollectedAt) })}</span>` : ''}` : d.financialStatus === 'PAID' ? t('ui.order.shipping.paidOnline') : d.financialStatus}</dd>
+        <dt>${t('ui.order.shipping.method')}</dt><dd>${d.shippingMethod || '—'}${plan.lockerId ? html` · ${t('ui.order.shipping.locker')} <span class="mono">${plan.lockerId}</span>` : ''}</dd>
+        ${plan.matchedRules.length ? html`<dt>${t('ui.order.shipping.rules')}</dt><dd>${plan.matchedRules.join(', ')}</dd>` : ''}
+        ${o.invoice ? html`<dt>${t('ui.order.shipping.invoice')}</dt><dd>${o.invoice} ${safeUrl(o.invoiceUrl) ? html`· <a href="${safeUrl(o.invoiceUrl)}" target="_blank" rel="noopener">${t('ui.order.shipping.open')}</a>` : ''}</dd>` : ''}
       </dl>
       ${canProcess ? html`
       <form id="plan-form" style="margin-top:14px">
         <div class="grid3">
-          <label class="field">Curier
-            <select name="courier">${[['', `Implicit / reguli (${courierName(plan.courier)})`], ...state.meta.couriers.map((c) => [c.id, c.name])].map(([v, l]) => html`<option value="${v}" ${(o.overrides.courier || '') === v ? 'selected' : ''}>${l}</option>`)}</select>
+          <label class="field">${t('ui.order.shipping.courier')}
+            <select name="courier">${[['', t('ui.order.shipping.courierDefault', { courier: courierName(plan.courier) })], ...state.meta.couriers.map((c) => [c.id, c.name])].map(([v, l]) => html`<option value="${v}" ${(o.overrides.courier || '') === v ? 'selected' : ''}>${l}</option>`)}</select>
           </label>
-          <label class="field">Colete <input type="number" name="parcels" min="1" value="${o.overrides.parcels ?? ''}" placeholder="${plan.parcels}"></label>
-          <label class="field">Greutate (kg) <input type="number" name="weightKg" min="0.1" step="0.1" value="${o.overrides.weightKg ?? ''}" placeholder="${plan.weightKg}"></label>
-          <label class="field">Ramburs (lei) <input type="number" name="cod" min="0" step="0.01" value="${o.overrides.cod ?? ''}" placeholder="${plan.cod}"></label>
-          <label class="field">Observații pe AWB <input type="text" name="notes" value="${o.overrides.notes ?? ''}" placeholder="ex. sunați înainte"></label>
-          <label class="field">Locker / punct <input type="text" name="lockerId" value="${o.overrides.lockerId ?? ''}" placeholder="${plan.lockerId || 'ID easybox / FANbox'}"></label>
+          <label class="field">${t('ui.order.shipping.parcels')} <input type="number" name="parcels" min="1" value="${o.overrides.parcels ?? ''}" placeholder="${plan.parcels}"></label>
+          <label class="field">${t('ui.order.shipping.weight')} <input type="number" name="weightKg" min="0.1" step="0.1" value="${o.overrides.weightKg ?? ''}" placeholder="${plan.weightKg}"></label>
+          <label class="field">${t('ui.order.shipping.codAmount')} <input type="number" name="cod" min="0" step="0.01" value="${o.overrides.cod ?? ''}" placeholder="${plan.cod}"></label>
+          <label class="field">${t('ui.order.shipping.notes')} <input type="text" name="notes" value="${o.overrides.notes ?? ''}" placeholder="${t('ui.order.shipping.notesPlaceholder')}"></label>
+          <label class="field">${t('ui.order.shipping.lockerId')} <input type="text" name="lockerId" value="${o.overrides.lockerId ?? ''}" placeholder="${plan.lockerId || t('ui.order.shipping.lockerPlaceholder')}"></label>
         </div>
-        <label class="check" style="margin-top:10px"><input type="checkbox" name="openPackage" ${plan.openPackage ? 'checked' : ''}> Deschidere colet la livrare</label>
-        <label class="check" style="margin-top:6px"><input type="checkbox" name="skipInvoice" ${plan.skipInvoice ? 'checked' : ''}> Fără factură pentru comanda asta</label>
-        <div class="form-actions"><button class="btn small">Salvează</button></div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" name="openPackage" ${plan.openPackage ? 'checked' : ''}> ${t('ui.order.shipping.openPackage')}</label>
+        <label class="check" style="margin-top:6px"><input type="checkbox" name="skipInvoice" ${plan.skipInvoice ? 'checked' : ''}> ${t('ui.order.shipping.skipInvoice')}</label>
+        <div class="form-actions"><button class="btn small">${t('ui.common.save')}</button></div>
       </form>` : ''}
     </div>
 
-    ${o.redactedAt ? html`<div class="card"><h2>Datele clientului au fost șterse</h2><p class="muted small" style="margin:0">Pe ${fmtDay(o.redactedAt)}, după zilele de păstrare din Setări → Date clienți (sau la cererea clientului). Au rămas numărul comenzii, sumele, produsele, AWB-ul și factura.</p></div>` : html`
+    ${o.redactedAt ? html`<div class="card"><h2>${t('ui.order.redacted.title')}</h2><p class="muted small" style="margin:0">${t('ui.order.redacted.text', { date: fmtDay(o.redactedAt) })}</p></div>` : html`
     <div class="card">
-      <h2>Adresa de livrare ${o.overrides.address ? html`<span class="badge warn plain">modificată manual</span>` : ''}</h2>
+      <h2>${t('ui.order.address.title')} ${o.overrides.address ? html`<span class="badge warn plain">${t('ui.order.address.edited')}</span>` : ''}</h2>
       ${canProcess ? html`
       <form id="addr-form">
         <div class="grid2">
-          <label class="field">Nume <input type="text" name="name" value="${a.name || [a.firstName, a.lastName].filter(Boolean).join(' ')}"></label>
-          <label class="field">Telefon <input type="text" name="phone" value="${a.phone}"></label>
-          <label class="field">Firmă <input type="text" name="company" value="${a.company}"></label>
-          <label class="field">Județ
-            <select name="province"><option value="">— alege —</option>${state.meta.counties.map((c) => html`<option value="${c.name}" ${plan.address.countyCode === c.code ? 'selected' : ''}>${c.name}</option>`)}</select>
+          <label class="field">${t('ui.order.address.name')} <input type="text" name="name" value="${a.name || [a.firstName, a.lastName].filter(Boolean).join(' ')}"></label>
+          <label class="field">${t('ui.order.address.phone')} <input type="text" name="phone" value="${a.phone}"></label>
+          <label class="field">${t('ui.order.address.company')} <input type="text" name="company" value="${a.company}"></label>
+          <label class="field">${t('ui.order.address.county')}
+            <select name="province"><option value="">${t('ui.order.address.choose')}</option>${state.meta.counties.map((c) => html`<option value="${c.name}" ${plan.address.countyCode === c.code ? 'selected' : ''}>${c.name}</option>`)}</select>
           </label>
-          <label class="field">Localitate <input type="text" name="city" value="${a.city}"><span class="help">Normalizat: ${plan.address.city || '—'}${plan.address.sector ? `, Sector ${plan.address.sector}` : ''}</span></label>
-          <label class="field">Cod poștal <input type="text" name="zip" value="${a.zip}"></label>
+          <label class="field">${t('ui.order.address.city')} <input type="text" name="city" value="${a.city}"><span class="help">${t('ui.order.address.normalized', { city: `${plan.address.city || '—'}${plan.address.sector ? `, Sector ${plan.address.sector}` : ''}` })}</span></label>
+          <label class="field">${t('ui.order.address.zip')} <input type="text" name="zip" value="${a.zip}"></label>
         </div>
-        <label class="field" style="margin-top:12px">Stradă, număr, bloc, ap. <input type="text" name="address1" value="${a.address1}"></label>
-        <label class="field" style="margin-top:12px">Detalii adresă <input type="text" name="address2" value="${a.address2}"></label>
-        <div class="form-actions"><button class="btn small">Salvează adresa</button>${o.overrides.address ? html`<button type="button" class="link small" id="addr-reset">Revino la adresa din Shopify</button>` : ''}
-          <span class="muted small">Modificarea rămâne aici; nu schimbă comanda în Shopify.</span></div>
-      </form>` : html`<dl class="kv"><dt>Destinatar</dt><dd>${plan.address.name}${plan.address.company ? ` (${plan.address.company})` : ''}</dd><dt>Telefon</dt><dd>${plan.address.phone}</dd><dt>Adresă</dt><dd>${plan.address.street}, ${plan.address.city}${plan.address.sector ? `, Sector ${plan.address.sector}` : ''}, ${plan.address.county} ${plan.address.zip}</dd></dl>`}
+        <label class="field" style="margin-top:12px">${t('ui.order.address.street')} <input type="text" name="address1" value="${a.address1}"></label>
+        <label class="field" style="margin-top:12px">${t('ui.order.address.details')} <input type="text" name="address2" value="${a.address2}"></label>
+        <div class="form-actions"><button class="btn small">${t('ui.order.address.save')}</button>${o.overrides.address ? html`<button type="button" class="link small" id="addr-reset">${t('ui.order.address.reset')}</button>` : ''}
+          <span class="muted small">${t('ui.order.address.note')}</span></div>
+      </form>` : html`<dl class="kv"><dt>${t('ui.order.address.recipient')}</dt><dd>${plan.address.name}${plan.address.company ? ` (${plan.address.company})` : ''}</dd><dt>${t('ui.order.address.phone')}</dt><dd>${plan.address.phone}</dd><dt>${t('ui.order.address.address')}</dt><dd>${plan.address.street}, ${plan.address.city}${plan.address.sector ? `, Sector ${plan.address.sector}` : ''}, ${plan.address.county} ${plan.address.zip}</dd></dl>`}
     </div>
     ${customer?.orders.length ? html`<div class="card">
-      <h2>Istoricul clientului ${customer.returned ? html`<span class="badge warn plain">a refuzat ${customer.returned === 1 ? '1 colet' : `${customer.returned} colete`}</span>` : ''}</h2>
-      <p class="muted small" style="margin-top:-6px">Alte comenzi cu același telefon sau e-mail: <strong>${customer.delivered}</strong> livrate, <strong>${customer.returned}</strong> refuzate sau returnate.</p>
+      <h2>${t('ui.order.history.title')} ${customer.returned ? html`<span class="badge warn plain">${t('ui.refused.badge', { count: customer.returned })}</span>` : ''}</h2>
+      <p class="muted small" style="margin-top:-6px">${t('ui.order.history.summary', { delivered: customer.delivered, returned: customer.returned })}</p>
       <table class="lines"><tbody>${customer.orders.map((h) => html`<tr data-open="${h.id}" class="clickable">
         <td><a href="#/orders/${h.id}">${h.name}</a></td><td class="muted small nowrap">${fmtDay(h.createdAt)}</td>
-        <td>${h.refused ? html`<span class="badge warn">Refuzat${h.cod ? ' (ramburs)' : ''}</span>` : statusBadge({ status: h.status })}</td></tr>`)}</tbody></table>
+        <td>${h.refused ? html`<span class="badge warn">${t(h.cod ? 'ui.order.history.refusedCod' : 'ui.order.history.refused')}</span>` : statusBadge({ status: h.status })}</td></tr>`)}</tbody></table>
     </div>` : ''}`}
 
     <div class="card">
-      <h2>Produse</h2>
-      <table class="lines"><thead><tr><th>Produs</th><th>SKU</th><th class="num">Cant.</th><th class="num">Preț</th></tr></thead><tbody>
-        ${d.lines.map((l) => html`<tr><td>${l.title}${l.variantTitle ? html` <span class="muted">· ${l.variantTitle}</span>` : ''}</td><td class="mono">${l.sku}</td><td class="num">${l.quantity}</td><td class="num nowrap">${lei(l.unitPrice)}</td></tr>`)}
-        ${d.shippingLines.map((s) => html`<tr><td class="muted">Transport · ${s.title}</td><td></td><td class="num">1</td><td class="num nowrap">${lei(s.price)}</td></tr>`)}
-        <tr><td colspan="3"><strong>Total</strong></td><td class="num nowrap"><strong>${lei(d.total)}</strong></td></tr>
+      <h2>${t('ui.order.products.title')}</h2>
+      <table class="lines"><thead><tr><th>${t('ui.order.products.product')}</th><th>${t('ui.order.products.sku')}</th><th class="num">${t('ui.order.products.qty')}</th><th class="num">${t('ui.order.products.price')}</th></tr></thead><tbody>
+        ${d.lines.map((l) => html`<tr><td>${l.title}${l.variantTitle ? html` <span class="muted">· ${l.variantTitle}</span>` : ''}</td><td class="mono">${l.sku}</td><td class="num">${l.quantity}</td><td class="num nowrap">${money(l.unitPrice, d.currency)}</td></tr>`)}
+        ${d.shippingLines.map((s) => html`<tr><td class="muted">${t('ui.order.products.shipping', { title: s.title })}</td><td></td><td class="num">1</td><td class="num nowrap">${money(s.price, d.currency)}</td></tr>`)}
+        <tr><td colspan="3"><strong>${t('ui.order.products.total')}</strong></td><td class="num nowrap"><strong>${money(d.total, d.currency)}</strong></td></tr>
       </tbody></table>
-      ${d.company ? html`<p class="small" style="margin:10px 0 0">Factură pe firmă: <strong>${d.company.name}</strong> · CUI ${d.company.vatCode}${d.company.regCom ? ` · ${d.company.regCom}` : ''}</p>` : ''}
-      ${d.note ? html`<p class="small muted" style="margin:10px 0 0">Notă client: ${d.note}</p>` : ''}
+      ${d.company ? html`<p class="small" style="margin:10px 0 0">${t('ui.order.products.company')} <strong>${d.company.name}</strong> · ${t('ui.order.products.vatCode')} ${d.company.vatCode}${d.company.regCom ? ` · ${d.company.regCom}` : ''}</p>` : ''}
+      ${d.note ? html`<p class="small muted" style="margin:10px 0 0">${t('ui.order.products.note', { note: d.note })}</p>` : ''}
     </div>
 
-    <div class="card"><h2>Istoric</h2>${eventList([...events].reverse(), false)}</div>`;
+    <div class="card"><h2>${t('ui.order.timeline')}</h2>${eventList([...events].reverse(), false)}</div>`;
 
   $$('[data-close]', panel).forEach((b) => b.addEventListener('click', closeDrawer));
   $$('tr[data-open]', panel).forEach((tr) => tr.addEventListener('click', (e) => { e.preventDefault(); openOrder(Number(tr.dataset.open)); }));
@@ -525,22 +552,22 @@ async function renderOrder(id) {
     const act = btn.dataset.act;
     if (act === 'label') return openPdf(`/labels.pdf?ids=${id}`);
     if (act === 'invoice-pdf') return openPdf(`/orders/${id}/invoice.pdf`);
-    if (act === 'cancel-awb' && !confirm(`Anulezi AWB-ul ${o.awb}? Dacă e marcată expediată în Shopify, se anulează și acolo.`)) return;
-    if (act === 'storno' && !confirm(`Stornezi factura ${o.invoice}? Se emite o factură de stornare.`)) return;
-    if (act === 'reset-test' && !confirm('Ștergi AWB-ul și factura de probă ale comenzii? Apoi o poți procesa real.')) return;
+    if (act === 'cancel-awb' && !confirm(t('ui.order.confirm.cancelAwb', { awb: o.awb }))) return;
+    if (act === 'storno' && !confirm(t('ui.order.confirm.storno', { invoice: o.invoice }))) return;
+    if (act === 'reset-test' && !confirm(t('ui.order.confirm.resetTest'))) return;
     run(btn, async () => {
       if (act === 'process' || act === 'invoice' || act === 'fulfill') {
         const steps = { process: ['awb', 'invoice', 'fulfill'], invoice: ['invoice'], fulfill: ['fulfill'] }[act];
         // From the order page the merchant decides explicitly: held orders are processed too.
         const r = (await api('/orders/process', { method: 'POST', body: { ids: [id], steps, force: true } })).results[0];
-        if (!r.ok) { toast(r.error?.message || 'Nu a mers.', 'bad'); return after(); }
-        return after(r.awb ? `AWB ${r.awb}${r.invoice ? ` · factura ${r.invoice}` : ''}` : 'Gata.');
+        if (!r.ok) { toast(r.error?.message || t('ui.errors.failed'), 'bad'); return after(); }
+        return after(r.awb ? t(r.invoice ? 'ui.order.toast.awbInvoice' : 'ui.order.toast.awb', { awb: r.awb, invoice: r.invoice }) : t('ui.order.toast.done'));
       }
-      if (act === 'cancel-awb') { await api(`/orders/${id}/cancel-awb`, { method: 'POST' }); return after('AWB anulat.'); }
-      if (act === 'storno') { await api(`/orders/${id}/storno-invoice`, { method: 'POST' }); return after('Factura a fost stornată.'); }
-      if (act === 'reset-test') { await api(`/orders/${id}/reset-test`, { method: 'POST' }); return after('Datele de probă au fost șterse.'); }
+      if (act === 'cancel-awb') { await api(`/orders/${id}/cancel-awb`, { method: 'POST' }); return after(t('ui.order.toast.awbCancelled')); }
+      if (act === 'storno') { await api(`/orders/${id}/storno-invoice`, { method: 'POST' }); return after(t('ui.order.toast.reversed')); }
+      if (act === 'reset-test') { await api(`/orders/${id}/reset-test`, { method: 'POST' }); return after(t('ui.order.toast.testReset')); }
       if (act === 'hold') { await api(`/orders/${id}`, { method: 'PATCH', body: { hold: o.overrides.hold ? null : true } }); return after(); }
-      if (act === 'refresh') { await api(`/orders/${id}/refresh`, { method: 'POST' }); return after('Reîncărcat.'); }
+      if (act === 'refresh') { await api(`/orders/${id}/refresh`, { method: 'POST' }); return after(t('ui.order.toast.reloaded')); }
     });
   }));
 
@@ -554,14 +581,14 @@ async function renderOrder(id) {
     if (openPackage !== !!plan.openPackage || o.overrides.openPackage != null) body.openPackage = openPackage;
     if (skipInvoice !== !!plan.skipInvoice || o.overrides.skipInvoice != null) body.skipInvoice = skipInvoice;
     try { await api(`/orders/${id}`, { method: 'PATCH', body }); } catch (err) { return toast(err.message, 'bad'); }
-    after('Salvat.');
+    after(t('ui.order.toast.saved'));
   });
   $('#addr-form', panel)?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.target));
     const [firstName, ...rest] = f.name.trim().split(/\s+/);
     try { await api(`/orders/${id}`, { method: 'PATCH', body: { address: { ...f, firstName, lastName: rest.join(' '), provinceCode: '' } } }); } catch (err) { return toast(err.message, 'bad'); }
-    after('Adresa a fost salvată și verificată din nou.');
+    after(t('ui.order.toast.addressSaved'));
   });
   $('#addr-reset', panel)?.addEventListener('click', async () => {
     await api(`/orders/${id}`, { method: 'PATCH', body: { address: null } });
@@ -584,14 +611,15 @@ async function refreshList() {
 }
 
 // ---------- activity ----------
-const actorLabel = (a) => (a === 'admin' ? 'Administrator' : a === 'shopify' ? 'Shopify (cerere GDPR)' : String(a).replace(/^shopify-session /, 'Utilizator Shopify #'));
+const actorLabel = (a) => (a === 'admin' ? t('ui.activity.actor.admin') : a === 'shopify' ? t('ui.activity.actor.shopify')
+  : /^shopify-session /.test(String(a)) ? t('ui.activity.actor.session', { id: String(a).replace(/^shopify-session /, '') }) : String(a));
 
 async function viewActivity() {
   setActiveNav('activity');
   const q = hashQuery();
   const tab = q.get('tab') === 'access' ? 'access' : 'events';
-  const head = html`<div class="page-head"><h1>Activitate</h1></div>
-    <nav class="tabs"><a href="#/activity" class="${tab === 'events' ? 'active' : ''}">Ce s-a întâmplat</a><a href="#/activity?tab=access" class="${tab === 'access' ? 'active' : ''}">${icon('shield')} Acces la date</a></nav>`;
+  const head = html`<div class="page-head"><h1>${t('ui.activity.title')}</h1></div>
+    <nav class="tabs"><a href="#/activity" class="${tab === 'events' ? 'active' : ''}">${t('ui.activity.events')}</a><a href="#/activity?tab=access" class="${tab === 'access' ? 'active' : ''}">${icon('shield')} ${t('ui.activity.access')}</a></nav>`;
   if (tab === 'events') {
     const { events } = await api('/events');
     $('#view').innerHTML = html`${head}<div class="card">${eventList(events, true)}</div>`;
@@ -606,46 +634,46 @@ async function viewActivity() {
   const link = (p) => `#/activity?tab=access&action=${encodeURIComponent(action)}&order=${encodeURIComponent(order)}&page=${p}`;
   $('#view').innerHTML = html`${head}
     <div class="toolbar">
-      <select id="acc-action" aria-label="Acțiune"><option value="">Toate acțiunile</option>${Object.entries(state.meta.accessActions).map(([k, l]) => html`<option value="${k}" ${action === k ? 'selected' : ''}>${l}</option>`)}</select>
-      <input type="search" id="acc-order" placeholder="Comanda (ex. #1101)" value="${order}">
-      <span class="muted small">${data.total} înregistrări · se păstrează ${data.keepDays} de zile</span>
+      <select id="acc-action" aria-label="${t('ui.activity.action')}"><option value="">${t('ui.activity.allActions')}</option>${Object.entries(state.meta.accessActions).map(([k, l]) => html`<option value="${k}" ${action === k ? 'selected' : ''}>${l}</option>`)}</select>
+      <input type="search" id="acc-order" placeholder="${t('ui.activity.orderPlaceholder')}" aria-label="${t('ui.activity.orderPlaceholder')}" value="${order}">
+      <span class="muted small">${t('ui.activity.count', { count: data.total, days: data.keepDays })}</span>
     </div>
     <div class="table-wrap">
-      ${data.entries.length ? html`<table class="static"><thead><tr><th>Când</th><th>Cine</th><th>Ce</th><th>Comanda</th><th class="hide-sm">Detalii</th></tr></thead><tbody>
+      ${data.entries.length ? html`<table class="static"><thead><tr><th>${t('ui.activity.when')}</th><th>${t('ui.activity.who')}</th><th>${t('ui.activity.what')}</th><th>${t('ui.activity.order')}</th><th class="hide-sm">${t('ui.activity.details')}</th></tr></thead><tbody>
         ${data.entries.map((e) => html`<tr>
           <td class="nowrap small">${fmtDate(e.at)}</td><td class="small">${actorLabel(e.actor)}</td><td class="small">${state.meta.accessActions[e.action] || e.action}</td>
           <td>${e.order_id ? html`<a href="#/orders/${e.order_id}">${e.order_name}</a>` : e.order_name || html`<span class="faint">—</span>`}
-            ${e.action === 'data_request' && e.order_id ? html`<div><button class="btn small" data-export="${e.order_id}">${icon('download')} Descarcă datele</button></div>` : ''}</td>
+            ${e.action === 'data_request' && e.order_id ? html`<div><button class="btn small" data-export="${e.order_id}">${icon('download')} ${t('ui.activity.download')}</button></div>` : ''}</td>
           <td class="hide-sm faint small">${e.detail || ''}</td></tr>`)}
-      </tbody></table>` : html`<div class="empty">Nicio înregistrare.</div>`}
+      </tbody></table>` : html`<div class="empty">${t('ui.activity.empty')}</div>`}
     </div>
-    ${pages > 1 ? html`<div class="form-actions">${page > 1 ? html`<a class="btn small" href="${link(page - 1)}">← Înapoi</a>` : ''}<span class="muted small">Pagina ${page} din ${pages}</span>${page < pages ? html`<a class="btn small" href="${link(page + 1)}">Înainte →</a>` : ''}</div>` : ''}
-    <p class="muted small">Aici apare cine a deschis o comandă sau a descărcat etichete, facturi, lista de picking, exportul de ramburs sau datele unui client. Cererile clienților venite prin Shopify apar tot aici.</p>`;
+    ${pages > 1 ? html`<div class="form-actions">${page > 1 ? html`<a class="btn small" href="${link(page - 1)}">${t('ui.orders.prev')}</a>` : ''}<span class="muted small">${t('ui.orders.page', { page, pages })}</span>${page < pages ? html`<a class="btn small" href="${link(page + 1)}">${t('ui.orders.next')}</a>` : ''}</div>` : ''}
+    <p class="muted small">${t('ui.activity.note')}</p>`;
   bindDataDownloads($('#view'));
   const go = () => { location.hash = `#/activity?tab=access&action=${encodeURIComponent($('#acc-action').value)}&order=${encodeURIComponent($('#acc-order').value.trim())}`; };
   $('#acc-action').addEventListener('change', go);
-  let t;
-  $('#acc-order').addEventListener('input', () => { clearTimeout(t); t = setTimeout(go, 400); });
+  let timer;
+  $('#acc-order').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(go, 400); });
   if (order) { const i = $('#acc-order'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
 }
 
 // ---------- settings ----------
-const SECTIONS = [['general', 'General'], ['couriers', 'Curieri'], ['invoicing', 'Facturare'], ['automation', 'Automatizări'], ['rules', 'Reguli'], ['packaging', 'Colete'], ['privacy', 'Date clienți']];
+const SECTIONS = ['general', 'couriers', 'invoicing', 'automation', 'rules', 'packaging', 'privacy'];
 
 async function viewSettings(section = 'general') {
   setActiveNav('settings');
   const [{ settings }, integrations] = await Promise.all([api('/settings'), api('/integrations')]);
   $('#view').innerHTML = html`
-    <div class="page-head"><h1>Setări</h1></div>
+    <div class="page-head"><h1>${t('ui.settings.title')}</h1></div>
     <div class="settings-layout">
-      <nav class="subnav">${SECTIONS.map(([k, l]) => html`<a href="#/settings/${k}" class="${section === k ? 'active' : ''}">${l}</a>`)}</nav>
+      <nav class="subnav">${SECTIONS.map((k) => html`<a href="#/settings/${k}" class="${section === k ? 'active' : ''}">${t(`ui.settings.sections.${k}`)}</a>`)}</nav>
       <div id="section"></div>
     </div>`;
   const el = $('#section');
-  const save = async (patch, msg = 'Setările au fost salvate.') => {
+  const save = async (patch, msg = t('ui.settings.saved')) => {
     try {
       const r = await api('/settings', { method: 'PUT', body: { settings: patch } });
-      toast(msg, 'ok');
+      if (msg) toast(msg, 'ok');
       refreshChrome();
       return r.settings;
     } catch (err) {
@@ -658,33 +686,51 @@ async function viewSettings(section = 'general') {
 
 function sectionGeneral(el, s, integrations, save) {
   const demo = state.me.store.demo;
+  const embedded = !!state.me.embedded;
   el.innerHTML = html`
     <div class="card">
-      <h2>Modul de lucru</h2>
+      <h2>${t('ui.settings.general.mode')}</h2>
       <div class="mode-switch">
-        <label class="provider ${s.mode !== 'live' ? 'active' : ''}"><span class="name"><input type="radio" name="mode" value="test" ${s.mode !== 'live' ? 'checked' : ''}> Probă</span>
-          <span class="muted small">AWB-uri și facturi de test. Nu se trimite nimic la curieri sau la facturare, iar Shopify nu se modifică. Bun ca să verifici regulile pe comenzi reale.</span></label>
-        <label class="provider ${s.mode === 'live' ? 'active' : ''}"><span class="name"><input type="radio" name="mode" value="live" ${s.mode === 'live' ? 'checked' : ''} ${demo ? 'disabled' : ''}> Live</span>
-          <span class="muted small">AWB-uri reale la curier, facturi reale, comenzile se marchează expediate în Shopify și clientul primește AWB-ul pe e-mail.</span></label>
+        <label class="provider ${s.mode !== 'live' ? 'active' : ''}"><span class="name"><input type="radio" name="mode" value="test" ${s.mode !== 'live' ? 'checked' : ''}> ${t('ui.settings.general.test')}</span>
+          <span class="muted small">${t('ui.settings.general.testHelp')}</span></label>
+        <label class="provider ${s.mode === 'live' ? 'active' : ''}"><span class="name"><input type="radio" name="mode" value="live" ${s.mode === 'live' ? 'checked' : ''} ${demo ? 'disabled' : ''}> ${t('ui.settings.general.live')}</span>
+          <span class="muted small">${t('ui.settings.general.liveHelp')}</span></label>
       </div>
-      ${demo ? html`<p class="muted small">Magazinul demo rămâne mereu în probă.</p>` : ''}
+      ${demo ? html`<p class="muted small">${t('ui.settings.general.demoNote')}</p>` : ''}
     </div>
     <div class="card">
-      <h2>După generarea AWB-ului</h2>
+      <h2>${t('ui.settings.general.language')}</h2>
+      ${embedded ? html`<p class="muted small" style="margin:0">${t('ui.settings.general.languageEmbedded')}</p>` : html`
+      <label class="field" style="max-width:260px">${t('ui.settings.general.languageLabel')}
+        <select name="language" id="language">${['en', 'ro'].map((l) => html`<option value="${l}" lang="${l}" ${(s.language || 'en') === l ? 'selected' : ''}>${t(`ui.settings.languages.${l}`)}</option>`)}</select>
+        <span class="help">${t('ui.settings.general.languageHelp')}</span></label>`}
+    </div>
+    <div class="card">
+      <h2>${t('ui.settings.general.afterAwb')}</h2>
       <form id="f">
-        <label class="check"><input type="checkbox" name="fulfillInShopify" ${s.fulfillment.fulfillInShopify ? 'checked' : ''}> <span>Marchează comanda ca expediată în Shopify, cu AWB-ul și link de urmărire</span></label>
-        <label class="check" style="margin-top:8px"><input type="checkbox" name="notifyCustomer" ${s.fulfillment.notifyCustomer ? 'checked' : ''}> <span>Trimite clientului e-mailul Shopify cu AWB-ul</span></label>
-        <label class="check" style="margin-top:8px"><input type="checkbox" name="markCodPaidOnDelivery" ${s.fulfillment.markCodPaidOnDelivery ? 'checked' : ''}> <span>Când coletul ramburs e livrat, marchează comanda ca plătită în Shopify</span></label>
-        <label class="check" style="margin-top:8px"><input type="checkbox" name="registerCodPayment" ${s.fulfillment.registerCodPayment ? 'checked' : ''}> <span>…și înregistrează încasarea pe factură (dacă programul de facturare permite)</span></label>
-        <label class="field" style="margin-top:14px;max-width:420px">Etichete adăugate în Shopify <input type="text" name="tags" value="${s.fulfillment.tags.join(', ')}"><span class="help">Separate prin virgulă. Gol = nicio etichetă.</span></label>
-        <div class="form-actions"><button class="btn primary">Salvează</button></div>
+        <label class="check"><input type="checkbox" name="fulfillInShopify" ${s.fulfillment.fulfillInShopify ? 'checked' : ''}> <span>${t('ui.settings.general.fulfill')}</span></label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" name="notifyCustomer" ${s.fulfillment.notifyCustomer ? 'checked' : ''}> <span>${t('ui.settings.general.notify')}</span></label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" name="markCodPaidOnDelivery" ${s.fulfillment.markCodPaidOnDelivery ? 'checked' : ''}> <span>${t('ui.settings.general.markPaid')}</span></label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" name="registerCodPayment" ${s.fulfillment.registerCodPayment ? 'checked' : ''}> <span>${t('ui.settings.general.registerCod')}</span></label>
+        <label class="field" style="margin-top:14px;max-width:420px">${t('ui.settings.general.tags')} <input type="text" name="tags" value="${s.fulfillment.tags.join(', ')}"><span class="help">${t('ui.settings.general.tagsHelp')}</span></label>
+        <div class="form-actions"><button class="btn primary">${t('ui.common.save')}</button></div>
       </form>
     </div>`;
   $$('input[name=mode]', el).forEach((r) => r.addEventListener('change', async () => {
-    if (r.value === 'live' && !confirm('Treci pe LIVE? De acum se generează AWB-uri și facturi reale.')) { r.checked = false; $('input[value=test]', el).checked = true; return; }
-    await save({ mode: r.value }, r.value === 'live' ? 'Ești pe live. Comenzile procesate în probă au butonul „Șterge datele de probă”.' : 'Ești în modul de probă.');
+    if (r.value === 'live' && !confirm(t('ui.settings.general.confirmLive'))) { r.checked = false; $('input[value=test]', el).checked = true; return; }
+    await save({ mode: r.value }, r.value === 'live' ? t('ui.settings.general.nowLive') : t('ui.settings.general.nowTest'));
     viewSettings('general');
   }));
+  // Standalone dashboard: the store's language. The answer comes back in the new language, so reload the texts.
+  $('#language', el)?.addEventListener('change', async (e) => {
+    const next = await save({ language: e.target.value }, '');
+    if (!next) return;
+    await loadLocale(next.language);
+    toast(t('ui.settings.general.languageSaved'), 'ok');
+    state.meta = await api('/meta');
+    await refreshChrome();
+    viewSettings('general');
+  });
   $('#f', el).addEventListener('submit', (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -698,7 +744,7 @@ function fieldInput(f, value, isSecret, isSet) {
   if (f.type === 'checkbox') return html`<label class="check"><input type="checkbox" name="${name}" ${v === true || v === 'true' ? 'checked' : ''}> <span>${f.label}${f.help ? html`<br><span class="muted small">${f.help}</span>` : ''}</span></label>`;
   const control = f.type === 'select'
     ? html`<select name="${name}">${(f.options || []).map((o) => html`<option value="${o.value}" ${String(v) === String(o.value) ? 'selected' : ''}>${o.label}</option>`)}</select>`
-    : html`<input type="${f.type === 'password' ? 'password' : f.type === 'number' ? 'number' : 'text'}" name="${name}" value="${isSecret ? '' : v}" placeholder="${isSecret && isSet ? '•••••• salvat — lasă gol ca să nu schimbi' : ''}" autocomplete="off">`;
+    : html`<input type="${f.type === 'password' ? 'password' : f.type === 'number' ? 'number' : 'text'}" name="${name}" value="${isSecret ? '' : v}" placeholder="${isSecret && isSet ? t('ui.settings.providers.secretSaved') : ''}" autocomplete="off">`;
   return html`<label class="field">${f.label}${f.required ? ' *' : ''} ${control}${f.help ? html`<span class="help">${f.help}</span>` : ''}</label>`;
 }
 
@@ -714,40 +760,40 @@ function sectionProviders(el, s, integrations, save, section) {
     const integ = saved.find((i) => i.provider === open);
     el.innerHTML = html`
       <div class="card">
-        <h2>${kind === 'courier' ? 'Curieri' : 'Program de facturare'}</h2>
-        <p class="muted small" style="margin-top:-6px">${kind === 'courier' ? 'Poți conecta mai mulți curieri; regulile aleg curierul pentru fiecare comandă.' : 'Facturile se emit automat la generarea AWB-ului (sau manual).'}</p>
+        <h2>${kind === 'courier' ? t('ui.settings.providers.couriers') : t('ui.settings.providers.invoicing')}</h2>
+        <p class="muted small" style="margin-top:-6px">${kind === 'courier' ? t('ui.settings.providers.couriersHelp') : t('ui.settings.providers.invoicingHelp')}</p>
         <div class="provider-list">${list.map((a) => {
           const i = saved.find((x) => x.provider === a.id);
           return html`<button type="button" class="provider ${open === a.id ? 'active' : ''}" data-p="${a.id}">
-            <span class="name">${a.name} ${current === a.id ? html`<span class="badge info plain">implicit</span>` : ''}</span>
-            <span class="small">${a.pending ? html`<span class="faint">în lucru</span>` : i?.verified_at ? html`<span class="badge ok">conectat</span>` : i ? html`<span class="badge warn">netestat</span>` : html`<span class="faint">neconfigurat</span>`}</span>
+            <span class="name">${a.name} ${current === a.id ? html`<span class="badge info plain">${t('ui.settings.providers.default')}</span>` : ''}</span>
+            <span class="small">${a.pending ? html`<span class="faint">${t('ui.settings.providers.pending')}</span>` : i?.verified_at ? html`<span class="badge ok">${t('ui.settings.providers.connected')}</span>` : i ? html`<span class="badge warn">${t('ui.settings.providers.untested')}</span>` : html`<span class="faint">${t('ui.settings.providers.notSet')}</span>`}</span>
           </button>`;
         })}</div>
       </div>
       ${adapter ? html`<div class="card">
         <h2>${adapter.name}</h2>
-        ${adapter.pending ? html`<p class="muted">Integrarea e încă în lucru.</p>` : html`
+        ${adapter.pending ? html`<p class="muted">${t('ui.settings.providers.pendingText')}</p>` : html`
         <form id="pf">
-          ${adapter.credentialFields.length ? html`<h3>Date de conectare</h3><div class="grid2">${adapter.credentialFields.map((f) => fieldInput(f, '', true, integ?.credentialsSet?.[f.key]))}</div>` : ''}
-          ${adapter.settingsFields.length ? html`<h3 style="margin-top:16px">Opțiuni</h3><div class="grid2">${adapter.settingsFields.map((f) => fieldInput(f, integ?.settings?.[f.key], false))}</div>` : ''}
-          ${adapter.capabilities.listPickupPoints ? html`<p class="small" style="margin:12px 0 0"><button type="button" class="link" id="load-pp">Arată punctele de ridicare din contul ${adapter.name}</button></p><div id="pp" class="small"></div>` : ''}
-          ${adapter.capabilities.listSeries ? html`<p class="small" style="margin:12px 0 0"><button type="button" class="link" id="load-series">Arată seriile de facturi din ${adapter.name}</button></p><div id="series" class="small"></div>` : ''}
+          ${adapter.credentialFields.length ? html`<h3>${t('ui.settings.providers.credentials')}</h3><div class="grid2">${adapter.credentialFields.map((f) => fieldInput(f, '', true, integ?.credentialsSet?.[f.key]))}</div>` : ''}
+          ${adapter.settingsFields.length ? html`<h3 style="margin-top:16px">${t('ui.settings.providers.options')}</h3><div class="grid2">${adapter.settingsFields.map((f) => fieldInput(f, integ?.settings?.[f.key], false))}</div>` : ''}
+          ${adapter.capabilities.listPickupPoints ? html`<p class="small" style="margin:12px 0 0"><button type="button" class="link" id="load-pp">${t('ui.settings.providers.showPoints', { provider: adapter.name })}</button></p><div id="pp" class="small"></div>` : ''}
+          ${adapter.capabilities.listSeries ? html`<p class="small" style="margin:12px 0 0"><button type="button" class="link" id="load-series">${t('ui.settings.providers.showSeries', { provider: adapter.name })}</button></p><div id="series" class="small"></div>` : ''}
           <div class="form-actions">
-            <button class="btn primary">Salvează</button>
-            <button type="button" class="btn" id="test" ${integ ? '' : 'disabled'}>Testează conexiunea</button>
-            ${current !== adapter.id ? html`<button type="button" class="btn" id="make-default" ${integ ? '' : 'disabled'}>Folosește ca implicit</button>` : ''}
+            <button class="btn primary">${t('ui.common.save')}</button>
+            <button type="button" class="btn" id="test" ${integ ? '' : 'disabled'}>${t('ui.settings.providers.test')}</button>
+            ${current !== adapter.id ? html`<button type="button" class="btn" id="make-default" ${integ ? '' : 'disabled'}>${t('ui.settings.providers.makeDefault')}</button>` : ''}
             <span class="result" id="res"></span>
           </div>
         </form>`}
       </div>` : ''}
-      ${kind === 'invoicing' ? html`<div class="card"><h2>Cum se facturează</h2><form id="invf">
+      ${kind === 'invoicing' ? html`<div class="card"><h2>${t('ui.settings.invoicing.title')}</h2><form id="invf">
         <div class="grid2">
-          <label class="field">Când se emite factura <select name="when"><option value="on_awb" ${s.invoicing.when === 'on_awb' ? 'selected' : ''}>Odată cu AWB-ul</option><option value="manual" ${s.invoicing.when === 'manual' ? 'selected' : ''}>Doar manual</option></select></label>
-          <label class="field">Cota TVA implicită (%) <input type="number" name="defaultVatRate" value="${s.invoicing.defaultVatRate}"><span class="help">Folosită când Shopify nu trimite TVA pe produs.</span></label>
+          <label class="field">${t('ui.settings.invoicing.when')} <select name="when"><option value="on_awb" ${s.invoicing.when === 'on_awb' ? 'selected' : ''}>${t('ui.settings.invoicing.onAwb')}</option><option value="manual" ${s.invoicing.when === 'manual' ? 'selected' : ''}>${t('ui.settings.invoicing.manual')}</option></select></label>
+          <label class="field">${t('ui.settings.invoicing.vat')} <input type="number" name="defaultVatRate" value="${s.invoicing.defaultVatRate}"><span class="help">${t('ui.settings.invoicing.vatHelp')}</span></label>
         </div>
-        <label class="check" style="margin-top:10px"><input type="checkbox" name="includeShipping" ${s.invoicing.includeShipping ? 'checked' : ''}> <span>Pune transportul pe factură</span></label>
-        <label class="check" style="margin-top:6px"><input type="checkbox" name="none" ${!s.invoicing.provider ? 'checked' : ''}> <span>Nu emite facturi din Expedo</span></label>
-        <div class="form-actions"><button class="btn primary">Salvează</button></div></form></div>` : ''}`;
+        <label class="check" style="margin-top:10px"><input type="checkbox" name="includeShipping" ${s.invoicing.includeShipping ? 'checked' : ''}> <span>${t('ui.settings.invoicing.shipping')}</span></label>
+        <label class="check" style="margin-top:6px"><input type="checkbox" name="none" ${!s.invoicing.provider ? 'checked' : ''}> <span>${t('ui.settings.invoicing.none')}</span></label>
+        <div class="form-actions"><button class="btn primary">${t('ui.common.save')}</button></div></form></div>` : ''}`;
 
     $$('[data-p]', el).forEach((b) => b.addEventListener('click', () => { open = b.dataset.p; draw(); }));
     const form = $('#pf', el);
@@ -766,7 +812,7 @@ function sectionProviders(el, s, integrations, save, section) {
       e.preventDefault();
       try {
         await api(`/integrations/${kind}/${open}`, { method: 'PUT', body: collect() });
-        toast(`${adapter.name} salvat. Apasă „Testează conexiunea”.`, 'ok');
+        toast(t('ui.settings.providers.savedTest', { provider: adapter.name }), 'ok');
         Object.assign(integrations, await api('/integrations'));
         saved.splice(0, saved.length, ...integrations[kind]);
         draw();
@@ -778,7 +824,7 @@ function sectionProviders(el, s, integrations, save, section) {
       try {
         const r = await api(`/integrations/${kind}/${open}/test`, { method: 'POST' });
         res.className = 'result ok';
-        res.textContent = r.message || 'Conexiune reușită.';
+        res.textContent = r.message || t('ui.settings.providers.testOk');
         Object.assign(integrations, await api('/integrations'));
         saved.splice(0, saved.length, ...integrations[kind]);
       } catch (err) {
@@ -789,15 +835,15 @@ function sectionProviders(el, s, integrations, save, section) {
     });
     $('#make-default', el)?.addEventListener('click', async () => {
       const next = kind === 'courier' ? { courier: { ...s.courier, default: open } } : { invoicing: { ...s.invoicing, provider: open } };
-      Object.assign(s, await save(next, `${adapter.name} e acum implicit.`));
+      Object.assign(s, await save(next, t('ui.settings.providers.nowDefault', { provider: adapter.name })));
       viewSettings(section);
     });
     const loadOptions = (what, target) => async () => {
       const box = $(target, el);
-      box.textContent = 'Se încarcă…';
+      box.textContent = t('ui.settings.providers.loading');
       try {
         const { items } = await api(`/integrations/${kind}/${open}/options/${what}`);
-        box.innerHTML = items.length ? html`<ul>${items.map((i) => html`<li><span class="mono">${i.id}</span> — ${i.name}${i.address ? html` <span class="muted">(${i.address})</span>` : ''}</li>`)}</ul>` : 'Nimic găsit (salvează și testează întâi).';
+        box.innerHTML = items.length ? html`<ul>${items.map((i) => html`<li><span class="mono">${i.id}</span> — ${i.name}${i.address ? html` <span class="muted">(${i.address})</span>` : ''}</li>`)}</ul>` : esc(t('ui.settings.providers.nothing'));
       } catch (err) { box.textContent = err.message; }
     };
     $('#load-pp', el)?.addEventListener('click', loadOptions('pickupPoints', '#pp'));
@@ -815,21 +861,21 @@ function sectionProviders(el, s, integrations, save, section) {
 function sectionAutomation(el, s, integrations, save) {
   const a = s.automation;
   el.innerHTML = html`<div class="card">
-    <h2>Procesare automată</h2>
+    <h2>${t('ui.settings.automation.title')}</h2>
     <form id="f">
-      <label class="check"><input type="checkbox" name="autoProcess" ${a.autoProcess ? 'checked' : ''}> <span><strong>Generează automat AWB-ul și factura pentru comenzile noi</strong><br><span class="muted small">Doar pentru comenzile fără probleme. Cele cu adresă greșită, telefon lipsă etc. rămân la „Necesită atenție”.</span></span></label>
+      <label class="check"><input type="checkbox" name="autoProcess" ${a.autoProcess ? 'checked' : ''}> <span><strong>${t('ui.settings.automation.auto')}</strong><br><span class="muted small">${t('ui.settings.automation.autoHelp')}</span></span></label>
       <div class="grid2" style="margin-top:14px">
-        <label class="field">Așteaptă înainte (minute) <input type="number" name="delayMinutes" min="0" value="${a.delayMinutes}"><span class="help">Ca să apuce clientul să anuleze sau să corecteze comanda.</span></label>
-        <label class="field">Nu procesa comenzile cu etichetele <input type="text" name="skipTags" value="${a.skipTags.join(', ')}"><span class="help">Separate prin virgulă.</span></label>
+        <label class="field">${t('ui.settings.automation.delay')} <input type="number" name="delayMinutes" min="0" value="${a.delayMinutes}"><span class="help">${t('ui.settings.automation.delayHelp')}</span></label>
+        <label class="field">${t('ui.settings.automation.skipTags')} <input type="text" name="skipTags" value="${a.skipTags.join(', ')}"><span class="help">${t('ui.settings.automation.skipTagsHelp')}</span></label>
       </div>
-      <div class="form-actions"><button class="btn primary">Salvează</button></div>
+      <div class="form-actions"><button class="btn primary">${t('ui.common.save')}</button></div>
     </form></div>
-    <div class="card"><h2>Ce se întâmplă singur, oricum</h2>
+    <div class="card"><h2>${t('ui.settings.automation.always')}</h2>
       <ul class="muted" style="margin:0;padding-left:18px">
-        <li>Comenzile noi vin din Shopify în câteva secunde; o dată la 15 minute verificăm să nu fi scăpat vreuna.</li>
-        <li>Statusul coletelor se verifică la fiecare 30 de minute.</li>
-        <li>Erorile temporare (curier căzut, timeout) se reîncearcă singure: după 1, 5, 15, 60 și 180 de minute.</li>
-        <li>O comandă nu primește niciodată două AWB-uri sau două facturi, chiar dacă apeși de mai multe ori.</li>
+        <li>${t('ui.settings.automation.a1')}</li>
+        <li>${t('ui.settings.automation.a2')}</li>
+        <li>${t('ui.settings.automation.a3')}</li>
+        <li>${t('ui.settings.automation.a4')}</li>
       </ul></div>`;
   $('#f', el).addEventListener('submit', (e) => {
     e.preventDefault();
@@ -840,15 +886,15 @@ function sectionAutomation(el, s, integrations, save) {
 
 function sectionPackaging(el, s, integrations, save) {
   const p = s.packaging;
-  el.innerHTML = html`<div class="card"><h2>Colete</h2><form id="f"><div class="grid2">
-    <label class="field">Greutate implicită (kg) <input type="number" step="0.1" name="defaultWeightKg" value="${p.defaultWeightKg}"><span class="help">Când produsele nu au greutate în Shopify.</span></label>
-    <label class="field">Greutate minimă (kg) <input type="number" step="0.1" name="minWeightKg" value="${p.minWeightKg}"></label>
-    <label class="field">Număr colete implicit <input type="number" name="parcels" min="1" value="${p.parcels}"></label>
-    <label class="field">Conținut (pe AWB) <input type="text" name="contents" value="${p.contents}"></label>
-    <label class="field">Format etichetă <select name="labelFormat"><option value="A6" ${s.courier.labelFormat === 'A6' ? 'selected' : ''}>A6 (imprimantă termică 10×15)</option><option value="A4" ${s.courier.labelFormat === 'A4' ? 'selected' : ''}>A4</option></select></label>
+  el.innerHTML = html`<div class="card"><h2>${t('ui.settings.packaging.title')}</h2><form id="f"><div class="grid2">
+    <label class="field">${t('ui.settings.packaging.defaultWeight')} <input type="number" step="0.1" name="defaultWeightKg" value="${p.defaultWeightKg}"><span class="help">${t('ui.settings.packaging.defaultWeightHelp')}</span></label>
+    <label class="field">${t('ui.settings.packaging.minWeight')} <input type="number" step="0.1" name="minWeightKg" value="${p.minWeightKg}"></label>
+    <label class="field">${t('ui.settings.packaging.parcels')} <input type="number" name="parcels" min="1" value="${p.parcels}"></label>
+    <label class="field">${t('ui.settings.packaging.contents')} <input type="text" name="contents" value="${p.contents}"></label>
+    <label class="field">${t('ui.settings.packaging.labelFormat')} <select name="labelFormat"><option value="A6" ${s.courier.labelFormat === 'A6' ? 'selected' : ''}>${t('ui.settings.packaging.a6')}</option><option value="A4" ${s.courier.labelFormat === 'A4' ? 'selected' : ''}>${t('ui.settings.packaging.a4')}</option></select></label>
   </div>
-  <label class="check" style="margin-top:10px"><input type="checkbox" name="openPackage" ${p.openPackage ? 'checked' : ''}> <span>Deschidere colet la livrare, implicit</span></label>
-  <div class="form-actions"><button class="btn primary">Salvează</button></div></form></div>`;
+  <label class="check" style="margin-top:10px"><input type="checkbox" name="openPackage" ${p.openPackage ? 'checked' : ''}> <span>${t('ui.settings.packaging.openPackage')}</span></label>
+  <div class="form-actions"><button class="btn primary">${t('ui.common.save')}</button></div></form></div>`;
   $('#f', el).addEventListener('submit', (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -858,27 +904,27 @@ function sectionPackaging(el, s, integrations, save) {
 
 function sectionPrivacy(el, s, integrations, save) {
   const days = s.privacy.retentionDays;
-  const label = (d) => ({ 90: '90 de zile (3 luni)', 180: '180 de zile (6 luni)', 365: '365 de zile (1 an)', 730: '730 de zile (2 ani)' }[d] || `${d} de zile`);
+  const label = (d) => ([90, 180, 365, 730].includes(d) ? t(`ui.settings.privacy.days.${d}`) : t('ui.settings.privacy.daysOther', { days: d }));
   el.innerHTML = html`<div class="card">
-    <h2>Păstrează datele clienților</h2>
+    <h2>${t('ui.settings.privacy.title')}</h2>
     <form id="f">
-      <label class="field" style="max-width:340px">După ce comanda e livrată, returnată sau anulată
+      <label class="field" style="max-width:340px">${t('ui.settings.privacy.after')}
         <select name="retentionDays">${[90, 180, 365, 730].map((d) => html`<option value="${d}" ${days === d ? 'selected' : ''}>${label(d)}</option>`)}</select>
-        <span class="help">Apoi ștergem numele, adresa, telefonul și e-mailul clientului din comandă. Rămân numărul comenzii, sumele, produsele, AWB-ul și factura, pentru contabilitate și verificarea rambursului.</span></label>
+        <span class="help">${t('ui.settings.privacy.help')}</span></label>
       <ul class="muted small" style="margin:12px 0 0;padding-left:18px">
-        <li>Comenzile încă în lucru nu se ating.</li>
-        <li>Istoricul de refuzuri al clienților ține tot atât.</li>
-        <li>Ștergerea rulează o dată pe zi.</li>
+        <li>${t('ui.settings.privacy.l1')}</li>
+        <li>${t('ui.settings.privacy.l2')}</li>
+        <li>${t('ui.settings.privacy.l3')}</li>
       </ul>
-      <div class="form-actions"><button class="btn primary">Salvează</button></div>
+      <div class="form-actions"><button class="btn primary">${t('ui.common.save')}</button></div>
     </form></div>
-    <div class="card"><h2>Cum sunt protejate datele</h2>
+    <div class="card"><h2>${t('ui.settings.privacy.protect')}</h2>
       <ul class="muted" style="margin:0;padding-left:18px">
-        <li>Numele, adresele, telefoanele și e-mailurile clienților sunt criptate în baza de date.</li>
-        <li>Fiecare deschidere de comandă și fiecare export se notează în <a href="#/activity?tab=access">Activitate → Acces la date</a>.</li>
-        <li>Când un client cere prin Shopify datele lui sau ștergerea lor, cererea apare în Activitate și se rezolvă de aici.</li>
+        <li>${t('ui.settings.privacy.p1')}</li>
+        <li>${t('ui.settings.privacy.p2')} <a href="#/activity?tab=access">${t('ui.settings.privacy.p2Link')}</a>.</li>
+        <li>${t('ui.settings.privacy.p3')}</li>
       </ul>
-      <p class="small" style="margin:12px 0 0"><a href="/confidentialitate" target="_blank" rel="noopener">Politica de confidențialitate</a> · <a href="/termeni" target="_blank" rel="noopener">Termeni și acordul de prelucrare a datelor</a></p>
+      <p class="small" style="margin:12px 0 0"><a href="${t('ui.legal.privacyUrl')}" target="_blank" rel="noopener">${t('ui.settings.privacy.privacyPolicy')}</a> · <a href="${t('ui.legal.termsUrl')}" target="_blank" rel="noopener">${t('ui.settings.privacy.terms')}</a></p>
     </div>`;
   $('#f', el).addEventListener('submit', (e) => {
     e.preventDefault();
@@ -892,28 +938,28 @@ function sectionRules(el, s, integrations, save) {
   const actionInput = (r, ri, key) => {
     const v = r.actions?.[key] ?? '';
     if (key === 'courier') return html`<select data-a="${ri}:courier"><option value="">—</option>${state.meta.couriers.map((c) => html`<option value="${c.id}" ${v === c.id ? 'selected' : ''}>${c.name}</option>`)}</select>`;
-    if (['openPackage', 'skipInvoice', 'hold'].includes(key)) return html`<select data-a="${ri}:${key}"><option value="">—</option><option value="true" ${v === true ? 'selected' : ''}>Da</option><option value="false" ${v === false ? 'selected' : ''}>Nu</option></select>`;
+    if (['openPackage', 'skipInvoice', 'hold'].includes(key)) return html`<select data-a="${ri}:${key}"><option value="">—</option><option value="true" ${v === true ? 'selected' : ''}>${t('ui.common.yes')}</option><option value="false" ${v === false ? 'selected' : ''}>${t('ui.common.no')}</option></select>`;
     return html`<input type="${['parcels', 'weightKg'].includes(key) ? 'number' : 'text'}" data-a="${ri}:${key}" value="${v}">`;
   };
   const draw = () => {
     el.innerHTML = html`<div class="card">
-      <h2>Reguli</h2>
-      <p class="muted small" style="margin-top:-6px">Se aplică de sus în jos. Dacă două reguli setează același lucru, câștigă cea de sus. Pentru „conține” poți pune mai multe valori separate prin virgulă.</p>
+      <h2>${t('ui.settings.rules.title')}</h2>
+      <p class="muted small" style="margin-top:-6px">${t('ui.settings.rules.help')}</p>
       ${rules.map((r, ri) => html`<div class="rule">
-        <div class="rule-head"><input type="checkbox" data-en="${ri}" ${r.enabled !== false ? 'checked' : ''} title="Activă"><input type="text" data-name="${ri}" value="${r.name}" placeholder="Numele regulii">
-          <button class="btn small" data-up="${ri}" ${ri === 0 ? 'disabled' : ''}>↑</button><button class="btn small danger" data-del="${ri}">${icon('x')}</button></div>
-        <div class="rule-label">Dacă</div>
+        <div class="rule-head"><input type="checkbox" data-en="${ri}" ${r.enabled !== false ? 'checked' : ''} title="${t('ui.settings.rules.active')}" aria-label="${t('ui.settings.rules.active')}"><input type="text" data-name="${ri}" value="${r.name}" placeholder="${t('ui.settings.rules.namePlaceholder')}" aria-label="${t('ui.settings.rules.namePlaceholder')}">
+          <button class="btn small" data-up="${ri}" ${ri === 0 ? 'disabled' : ''} title="${t('ui.settings.rules.moveUp')}" aria-label="${t('ui.settings.rules.moveUp')}">↑</button><button class="btn small danger" data-del="${ri}" title="${t('ui.common.remove')}" aria-label="${t('ui.common.remove')}">${icon('x')}</button></div>
+        <div class="rule-label">${t('ui.settings.rules.if')}</div>
         ${(r.conditions || []).map((c, ci) => html`<div class="rule-row">
           <select data-c="${ri}:${ci}:field">${Object.entries(fields).map(([k, f]) => html`<option value="${k}" ${c.field === k ? 'selected' : ''}>${f.label}</option>`)}</select>
           <select data-c="${ri}:${ci}:op">${Object.entries(ops).map(([k, l]) => html`<option value="${k}" ${c.op === k ? 'selected' : ''}>${l}</option>`)}</select>
           ${fields[c.field]?.type === 'select' ? html`<select data-c="${ri}:${ci}:value">${fields[c.field].options.map(([v, l]) => html`<option value="${v}" ${c.value === v ? 'selected' : ''}>${l}</option>`)}</select>`
             : html`<input type="text" data-c="${ri}:${ci}:value" value="${c.value}">`}
-          <button class="btn small" data-cdel="${ri}:${ci}">${icon('x')}</button></div>`)}
-        <button class="link small" data-cadd="${ri}">+ condiție</button>
-        <div class="rule-label">Atunci</div>
+          <button class="btn small" data-cdel="${ri}:${ci}" title="${t('ui.common.remove')}" aria-label="${t('ui.common.remove')}">${icon('x')}</button></div>`)}
+        <button class="link small" data-cadd="${ri}">${t('ui.settings.rules.addCondition')}</button>
+        <div class="rule-label">${t('ui.settings.rules.then')}</div>
         <div class="grid3">${Object.entries(actions).map(([k, l]) => html`<label class="field small">${l} ${actionInput(r, ri, k)}</label>`)}</div>
       </div>`)}
-      <div class="form-actions"><button class="btn" id="add">${icon('plus')} Regulă nouă</button><button class="btn primary" id="save">Salvează regulile</button></div>
+      <div class="form-actions"><button class="btn" id="add">${icon('plus')} ${t('ui.settings.rules.newRule')}</button><button class="btn primary" id="save">${t('ui.settings.rules.save')}</button></div>
     </div>`;
     const sync = () => {
       $$('[data-name]', el).forEach((i) => { rules[i.dataset.name].name = i.value; });
@@ -928,8 +974,8 @@ function sectionRules(el, s, integrations, save) {
       });
     };
     el.onchange = (e) => { if (e.target.matches('[data-c$=":field"]')) { sync(); draw(); } };
-    $('#add', el).onclick = () => { sync(); rules.push({ id: `r${Date.now()}`, name: 'Regulă nouă', enabled: true, conditions: [{ field: 'shippingMethod', op: 'contains', value: '' }], actions: {} }); draw(); };
-    $('#save', el).onclick = async () => { sync(); Object.assign(s, await save({ rules }, 'Regulile au fost salvate; comenzile deschise au fost reverificate.')); };
+    $('#add', el).onclick = () => { sync(); rules.push({ id: `r${Date.now()}`, name: t('ui.settings.rules.newRule'), enabled: true, conditions: [{ field: 'shippingMethod', op: 'contains', value: '' }], actions: {} }); draw(); };
+    $('#save', el).onclick = async () => { sync(); Object.assign(s, await save({ rules }, t('ui.settings.rules.saved'))); };
     $$('[data-del]', el).forEach((b) => (b.onclick = () => { sync(); rules.splice(Number(b.dataset.del), 1); draw(); }));
     $$('[data-up]', el).forEach((b) => (b.onclick = () => { sync(); const i = Number(b.dataset.up); [rules[i - 1], rules[i]] = [rules[i], rules[i - 1]]; draw(); }));
     $$('[data-cadd]', el).forEach((b) => (b.onclick = () => { sync(); rules[b.dataset.cadd].conditions.push({ field: 'total', op: 'gt', value: '' }); draw(); }));
@@ -962,6 +1008,10 @@ async function route() {
 
 async function boot() {
   $$('[data-icon]').forEach((i) => { i.innerHTML = icon(i.dataset.icon); });
+  // First guess, before the server says: the Shopify admin language, else the last one used here, else English.
+  let first = adminLocale();
+  if (!first) { try { first = localStorage.getItem('expedo.locale') || ''; } catch { first = ''; } }
+  await loadLocale(first || 'en');
   $('#store-switch').addEventListener('change', (e) => { try { localStorage.setItem('expedo.store', e.target.value); } catch {} state.selected.clear(); location.hash = '#/'; refreshChrome().then(route); });
   try {
     [state.meta] = await Promise.all([api('/meta'), refreshChrome()]);

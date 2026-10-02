@@ -5,6 +5,8 @@ import * as db from '../src/db.js';
 import * as P from '../src/core/pipeline.js';
 import { seedDemo } from '../src/demo/seed.js';
 import { TrackingStatus } from '../src/couriers/contract.js';
+import { ro } from './helpers-i18n.js';
+import { renderError } from '../src/core/errors.js';
 
 // End-to-end over the demo store: test providers, in-memory database.
 let store;
@@ -55,7 +57,8 @@ test('blocked order explains why, then succeeds after a manual fix', async () =>
   const r = await P.processOrder(store, o.id);
   assert.equal(r.ok, false);
   assert.equal(r.error.code, 'ADDRESS_PHONE_MISSING');
-  assert.ok(r.error.hint);
+  assert.ok(ro(r.error).hint);
+  assert.equal(r.error.key, 'errors.ADDRESS_PHONE_MISSING');
   db.updateOrder(o.id, { overrides: { address: { phone: '+40 745 111 222' } } });
   P.validateOrder(store, o.id);
   assert.equal(db.getOrder(o.id).status, 'ready');
@@ -107,5 +110,6 @@ test('live mode without configured courier gives a clear error', async () => {
   const r = await P.processOrder(live, o.id);
   assert.equal(r.ok, false);
   assert.equal(r.error.code, 'PROVIDER_NOT_CONFIGURED');
-  assert.match(r.error.hint, /Setări/);
+  assert.match(ro(r.error).hint, /Setări → Curieri/);
+  assert.match(renderError(r.error, 'en').hint, /Settings → Couriers/);
 });

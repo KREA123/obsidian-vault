@@ -84,15 +84,4 @@ export const TrackingStatus = Object.freeze({
 
 export const FINAL_STATUSES = new Set([TrackingStatus.DELIVERED, TrackingStatus.RETURNED, TrackingStatus.CANCELLED]);
 
-export const TRACKING_LABELS = {
-  created: 'AWB emis',
-  picked_up: 'Preluat de curier',
-  in_transit: 'În tranzit',
-  out_for_delivery: 'În livrare',
-  delivered: 'Livrat',
-  failed_attempt: 'Livrare eșuată',
-  returning: 'În retur',
-  returned: 'Returnat',
-  cancelled: 'Anulat',
-  unknown: 'Necunoscut',
-};
+// Status labels: tracking.<status> in the catalogs (src/i18n).

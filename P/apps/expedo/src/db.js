@@ -45,7 +45,7 @@ export function openDb(file = config.dbFile) {
       shopify_id TEXT NOT NULL,
       name TEXT NOT NULL,
       data TEXT NOT NULL,                     -- normalized order (src/shopify/mapper.js), encrypted
-      status TEXT NOT NULL DEFAULT 'new',     -- see ORDER_STATUS in core/pipeline.js
+      status TEXT NOT NULL DEFAULT 'new',     -- see ORDER_STATUSES in core/pipeline.js
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       payment_method TEXT,

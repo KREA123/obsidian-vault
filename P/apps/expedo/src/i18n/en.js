@@ -114,7 +114,7 @@ export default {
     ORDER_BUSY: { message: 'This order is already being processed.', hint: 'Try again in a few minutes.' },
     PROCESSING_INTERRUPTED: {
       message: 'The previous processing run for this order was interrupted before it finished.',
-      hint: 'Check your courier account for an AWB already created for this order, then click “Create AWB” to resume.',
+      hint: 'Check your courier account for an AWB already created for this order, then click “Create AWB + invoice” to resume.',
     },
     ORDER_CANCELLED: { message: 'The order is canceled in Shopify.', hint: 'It won’t be shipped.' },
     ORDER_CANCELLED_WITH_AWB: {
@@ -897,7 +897,7 @@ export default {
     app: { title: 'Expedo — orders' },
     nav: {
       dashboard: 'Dashboard', orders: 'Orders', activity: 'Activity', settings: 'Settings',
-      store: 'Store', logout: 'Log out', privacy: 'Privacy', terms: 'Terms', main: 'Main menu',
+      store: 'Store', logout: 'Log out', privacy: 'Privacy', terms: 'Terms',
     },
     legal: { privacyUrl: '/privacy', termsUrl: '/terms' },
     banner: {
@@ -905,7 +905,7 @@ export default {
       text: 'Shipping labels (AWBs) and invoices are test ones: nothing goes to couriers or your invoicing app, and Shopify isn’t changed.',
       goLive: 'Go live',
     },
-    common: { save: 'Save', close: 'Close', working: 'Working…', yes: 'Yes', no: 'No', none: '—', remove: 'Remove' },
+    common: { save: 'Save', close: 'Close', working: 'Working…', yes: 'Yes', no: 'No', remove: 'Remove' },
     errors: {
       http: 'Error {status}',
       pdf: 'Couldn’t create the PDF.',
@@ -1024,7 +1024,7 @@ export default {
         title: 'Shipping',
         track: 'track',
         payment: 'Payment',
-        cod: 'COD',
+        cod: 'to collect:',
         collected: 'collected {date}',
         paidOnline: 'paid online',
         method: 'Method',

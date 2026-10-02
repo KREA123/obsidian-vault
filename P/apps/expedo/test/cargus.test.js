@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import { TrackingStatus } from '../src/couriers/contract.js';
 import cargus, { mapCargusEvent, mapAwbError, pickService, tokenCacheKey } from '../src/couriers/cargus.js';
+import { ro } from './helpers-i18n.js';
 
 // ---- fakes ---------------------------------------------------------------------------------
 
@@ -147,19 +148,19 @@ describe('cargus auth', () => {
 
   test('bad credentials → AUTH_FAILED; bad subscription key → specific Romanian message', async () => {
     const bad = makeCtx(baseRoutes([{ method: 'POST', url: '/LoginUser', reply: { status: 400, body: 'Failed to authenticate!' } }]));
-    await assert.rejects(cargus.testConnection(bad.ctx), (e) => e.code === 'AUTH_FAILED' && /Cargus/.test(e.message));
+    await assert.rejects(cargus.testConnection(bad.ctx), (e) => e.code === 'AUTH_FAILED' && /Cargus/.test(ro(e).message));
 
     const badKey = makeCtx(baseRoutes([{ method: 'POST', url: '/LoginUser', reply: { status: 401, body: { statusCode: 401, message: 'Access denied due to invalid subscription key.' } } }]));
-    await assert.rejects(cargus.testConnection(badKey.ctx), (e) => e.code === 'AUTH_FAILED' && /Primary key/.test(e.message) && !/[{}]/.test(e.message));
+    await assert.rejects(cargus.testConnection(badKey.ctx), (e) => e.code === 'AUTH_FAILED' && /Primary key/.test(ro(e).message) && !/[{}]/.test(ro(e).message));
   });
 
   test('testConnection reports pickup points in Romanian', async () => {
     const { ctx } = makeCtx(baseRoutes());
     const r = await cargus.testConnection(ctx);
     assert.equal(r.ok, true);
-    assert.match(r.message, /Conectat la Cargus\. Am găsit 1 punct de ridicare\./);
+    assert.match(ro(r).message, /Conectat la Cargus\. Am găsit 1 punct de ridicare\./);
     const r2 = await cargus.testConnection({ ...ctx, settings: { pickupPointId: '999' } });
-    assert.match(r2.message, /999 din setări nu e în listă/);
+    assert.match(ro(r2).message, /999 din setări nu e în listă/);
   });
 });
 
@@ -208,9 +209,9 @@ describe('cargus locality resolution', () => {
     await assert.rejects(cargus.createShipment(ctx, s), (e) => {
       assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
       assert.equal(e.field, 'shippingAddress.city');
-      assert.match(e.message, /Florești/);
-      assert.match(e.message, /Alba/);
-      assert.match(e.hint, /^Ai vrut: Floresti \(cod 517176\), Floresti \(cod 515511\), Floresti \(cod 517596\)\?/);
+      assert.match(ro(e).message, /Florești/);
+      assert.match(ro(e).message, /Alba/);
+      assert.match(ro(e).hint, /^Ai vrut: Floresti \(cod 517176\), Floresti \(cod 515511\), Floresti \(cod 517596\)\?/);
       return true;
     });
     assert.equal(awbCall(calls), undefined, 'no AWB call when locality is ambiguous');
@@ -224,9 +225,9 @@ describe('cargus locality resolution', () => {
     const s = shipment({ recipient: { city: 'Cluj Napocca Est', zip: '' } });
     await assert.rejects(cargus.createShipment(ctx, s), (e) => {
       assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
-      assert.match(e.message, /„Cluj Napocca Est” nu există în nomenclatorul Cargus pentru județul Cluj/);
-      assert.match(e.hint, /^Ai vrut: Cluj-Napoca/);
-      assert.ok(e.hint.split('?')[0].split(',').length <= 3);
+      assert.match(ro(e).message, /„Cluj Napocca Est” nu există în nomenclatorul Cargus pentru județul Cluj/);
+      assert.match(ro(e).hint, /^Ai vrut: Cluj-Napoca/);
+      assert.ok(ro(e).hint.split('?')[0].split(',').length <= 3);
       return true;
     });
   });
@@ -326,7 +327,7 @@ describe('cargus createShipment', () => {
 
     const noMail = makeCtx(baseRoutes());
     await assert.rejects(cargus.createShipment(noMail.ctx, shipment({ lockerId: '114142', recipient: { email: '' } })),
-      (e) => e.code === 'ADDRESS_EMAIL_MISSING' && /Ship & Go/.test(e.message));
+      (e) => e.code === 'ADDRESS_EMAIL_MISSING' && /Ship & Go/.test(ro(e).message));
   });
 
   test('missing pickup point: uses the only one, otherwise asks for it', async () => {
@@ -336,7 +337,7 @@ describe('cargus createShipment', () => {
 
     const many = makeCtx(baseRoutes([{ url: '/PickupLocations', reply: { body: [{ LocationId: 1, Name: 'A' }, { LocationId: 2, Name: 'B' }] } }]), { settings: { pickupPointId: '' } });
     await assert.rejects(cargus.createShipment(many.ctx, shipment()),
-      (e) => e.code === 'CONFIG_PICKUP_POINT_MISSING' && /Nu e ales punctul de ridicare Cargus/.test(e.message) && /ID 1/.test(e.hint));
+      (e) => e.code === 'CONFIG_PICKUP_POINT_MISSING' && /Nu e ales punctul de ridicare Cargus/.test(ro(e).message) && /ID 1/.test(ro(e).hint));
   });
 
   test('WithGetAwb-style array response is accepted', async () => {
@@ -366,7 +367,7 @@ describe('cargus error mapping', () => {
         assert.equal(e.field, field);
         assert.equal(e.provider, 'cargus');
         assert.equal(e.retryable, false);
-        assert.ok(!/[{}[\]]/.test(e.message), `no JSON in message: ${e.message}`);
+        assert.ok(!/[{}[\]]/.test(ro(e).message), `no JSON in message: ${ro(e).message}`);
         assert.deepEqual(e.details, body);
         return true;
       });
@@ -381,7 +382,7 @@ describe('cargus error mapping', () => {
   test('mapAwbError never puts raw JSON in the message', () => {
     const e = mapAwbError({ weird: { nested: true } }, shipment(), 400);
     assert.equal(e.code, 'PROVIDER_REJECTED');
-    assert.equal(e.message, 'Cargus a refuzat AWB-ul (cod 400).');
+    assert.equal(ro(e).message, 'Cargus a refuzat AWB-ul (cod 400).');
   });
 });
 
@@ -408,7 +409,7 @@ describe('cargus label / cancel / track', () => {
     await cargus.cancelShipment(ok.ctx, '1100223344');
     assert.equal(ok.calls.at(-1).method, 'DELETE');
     const no = makeCtx(baseRoutes([{ method: 'DELETE', url: '/Awbs?barCode=', reply: { body: false } }]));
-    await assert.rejects(cargus.cancelShipment(no.ctx, '1100223344'), (e) => e.code === 'CANCEL_REFUSED' && /ridicat de curier/.test(e.hint));
+    await assert.rejects(cargus.cancelShipment(no.ctx, '1100223344'), (e) => e.code === 'CANCEL_REFUSED' && /ridicat de curier/.test(ro(e).hint));
   });
 
   test('track: batch AwbTrace/WithRedirect, latest event wins, missing AWBs omitted', async () => {
@@ -479,7 +480,7 @@ describe('cargus: live error shapes and hardening', () => {
       await assert.rejects(cargus.testConnection(ctx), (e) => {
         assert.equal(e.code, 'AUTH_FAILED');
         assert.equal(e.retryable, false);
-        assert.match(e.message, /Primary key/);
+        assert.match(ro(e).message, /Primary key/);
         return true;
       });
       assert.equal(calls.length, 1);
@@ -487,7 +488,7 @@ describe('cargus: live error shapes and hardening', () => {
     // Same answer on an authenticated call with a cached token: no re-login loop.
     const { ctx, calls } = makeCtx(baseRoutes([{ url: '/PickupLocations', reply: { status: 401, body: LIVE.authenticatedEndpointBadKey.body } }]));
     ctx.cache.set(tokenCacheKey(ctx), 'cached-token-xxxxxxxx', 3600);
-    await assert.rejects(cargus.listPickupPoints(ctx), (e) => e.code === 'AUTH_FAILED' && /Primary key/.test(e.message));
+    await assert.rejects(cargus.listPickupPoints(ctx), (e) => e.code === 'AUTH_FAILED' && /Primary key/.test(ro(e).message));
     assert.equal(calls.filter((c) => c.url.endsWith('/LoginUser')).length, 0);
   });
 
@@ -572,7 +573,7 @@ describe('cargus: documented success bodies', () => {
     assert.equal((await cargus.createShipment(ctx, toVoluntari())).awb, 'URGC10875236');
     for (const text of ['Error', 'Failed to authenticate!', 'Invalid']) {
       const bad = makeCtx(okRoutes([{ method: 'POST', url: '/Awbs', reply: { body: text } }]));
-      await assert.rejects(cargus.createShipment(bad.ctx, toVoluntari()), (e) => e instanceof ProcessingError && !e.message.includes('URGC'), text);
+      await assert.rejects(cargus.createShipment(bad.ctx, toVoluntari()), (e) => e instanceof ProcessingError && !ro(e).message.includes('URGC'), text);
     }
   });
 

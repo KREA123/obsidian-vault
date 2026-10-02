@@ -15,6 +15,7 @@ import { orderIdentity, searchHashes, phoneHash } from '../src/core/identity.js'
 import { applyRetention, redactOrder, pruneAccessLog, handleDataRequest, handleCustomerRedact } from '../src/core/privacy.js';
 import { sanitizeSettings } from '../src/core/settings.js';
 import { handlers } from '../src/worker.js';
+import { roEvent } from './helpers-i18n.js';
 
 // Customer data protection: encryption at rest, migration of old plaintext rows, search through
 // keyed hashes, retention (never on orders in progress), redaction, access log, GDPR webhooks.
@@ -97,7 +98,7 @@ test('at rest: order data, overrides, issues, events and cache are encrypted in 
   assert.equal(back.data.customerName, 'Elena Dumitrescu');
   assert.equal(back.overrides.address.phone, '0722111333');
   assert.ok(Array.isArray(back.issues));
-  assert.equal(db.orderEvents(o.id).at(-1).message, 'Telefonul „0711” nu pare valid.');
+  assert.equal(roEvent(db.orderEvents(o.id).at(-1)).message, 'Telefonul „0711” nu pare valid.');
   assert.deepEqual(db.orderEvents(o.id).at(-1).data, { body: { phone: '0711' } });
   assert.ok(db.storeCache(store.id).get('mock:issued'), 'test courier cache still readable');
   // The keyed hashes are never sent to the browser.
@@ -261,7 +262,7 @@ test('retention: removes customer data of old finished orders only; never orders
   const ev = db.orderEvents(delivered.id);
   assert.ok(!ev.some((e) => e.level === 'error' || e.step === 'edit'));
   assert.ok(ev.every((e) => e.data === null));
-  assert.ok(ev.some((e) => e.message === 'AWB AWBOLD generat la Cargus.'));
+  assert.ok(ev.some((e) => roEvent(e).message === 'AWB AWBOLD generat la Cargus.'));
   assert.equal(applyRetention(store).redacted, 0, 'idempotent');
   db.releaseOrder(busy.id);
   assert.equal(applyRetention(store).redacted, 1, 'released: its turn now');
@@ -328,7 +329,7 @@ test('access log: order page, labels, invoice, picking, COD export; who and when
   assert.deepEqual(actions, ['cod_export', 'invoice_pdf', 'labels', 'order_view', 'picking', 'picking']);
   assert.ok(rows.every((r) => r.actor === 'admin'));
   assert.ok(rows.filter((r) => r.action !== 'cod_export').every((r) => r.order_name));
-  assert.match(rows.find((r) => r.action === 'labels').detail, /^AWB /);
+  assert.match(db.renderAccessDetail(rows.find((r) => r.action === 'labels').detail, 'ro'), /^AWB /);
   assert.ok(!JSON.stringify(rows).includes('Popescu'), 'no customer data in the log');
 
   // Embedded: the Shopify staff user from the session token.
@@ -385,11 +386,11 @@ test('customers/data_request: logged in the access log and Activitate; export fi
   const logged = db.listAccess(store.id, { action: 'data_request' }).rows;
   // #1119 is already redacted (retention test above): no e-mail hash left to find it by.
   assert.deepEqual(logged.map((r) => r.order_name).sort(), ['#1101', '#1109'], 'listed order + same e-mail');
-  assert.ok(logged.every((r) => r.actor === 'shopify' && r.detail.includes('9001')));
+  assert.ok(logged.every((r) => r.actor === 'shopify' && db.renderAccessDetail(r.detail, 'ro').includes('9001')));
   const ev = db.storeEvents(store.id, 5).find((e) => e.step === 'gdpr');
   assert.equal(ev.level, 'warning');
-  assert.match(ev.message, /#1109/);
-  assert.match(ev.data.hint, /Descarcă datele/);
+  assert.match(roEvent(ev).message, /#1109/);
+  assert.match(roEvent(ev).data.hint, /Descarcă datele/);
 
   const exp = await call(`/api/customer-export?ids=${andreea.id}`);
   assert.equal(exp.status, 200);
@@ -402,7 +403,7 @@ test('customers/data_request: logged in the access log and Activitate; export fi
 
   // A customer we know nothing about: still recorded, nothing to send.
   assert.equal(handleDataRequest(store, { customer: { email: 'nimeni@example.com' }, orders_requested: [] }), 0);
-  assert.match(db.listAccess(store.id, { action: 'data_request' }).rows[0].detail, /nicio comandă/);
+  assert.match(db.renderAccessDetail(db.listAccess(store.id, { action: 'data_request' }).rows[0].detail, 'ro'), /nicio comandă/);
 });
 
 test('customers/redact: data removed from the listed orders and those with the same e-mail; not by shared phone', async () => {
@@ -419,7 +420,7 @@ test('customers/redact: data removed from the listed orders and those with the s
   assert.equal(byName('#1188').data.customerName, 'Rudă Popescu');
   assert.ok(byName('#1101').awb, 'accounting trail kept');
   assert.equal(db.listAccess(store.id, { action: 'customer_redact' }).rows.length, 2);
-  assert.match(db.storeEvents(store.id, 3).find((e) => e.step === 'gdpr').message, /ștergerea/);
+  assert.match(roEvent(db.storeEvents(store.id, 3).find((e) => e.step === 'gdpr')).message, /ștergerea/);
   // The test courier forgot the shipment (recipient) of the redacted test AWB.
   const issued = db.storeCache(store.id).get('mock:issued');
   assert.equal(issued[byName('#1101').awb].shipment, undefined);

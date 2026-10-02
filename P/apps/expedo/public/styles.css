@@ -195,7 +195,9 @@ table.static tbody tr { cursor: default; }
 .lines tr:hover td { background: none; }
 
 /* ---------- settings ---------- */
-.settings-layout { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: start; }
+.settings-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: start; }
+/* Long option labels (either language) must shrink with the column, not widen the page. */
+.settings-layout select, .rule-row > *, .grid2 > *, .grid3 > * { min-width: 0; max-width: 100%; }
 .subnav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 16px; }
 .subnav a { padding: 7px 10px; border-radius: 8px; color: var(--muted); font-weight: 500; }
 .subnav a.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
@@ -236,13 +238,13 @@ table.static tbody tr { cursor: default; }
   #store-name, .legal-links { display: none; }
   #view { padding: 16px; }
   .banner { padding: 10px 16px; }
-  .cols, .settings-layout, .grid2, .grid3 { grid-template-columns: 1fr; }
+  .cols, .settings-layout, .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); }
   .subnav { flex-direction: row; overflow-x: auto; position: static; }
   .toolbar input[type=search] { width: 100%; }
   .hide-sm { display: none; }
   .kv { grid-template-columns: 1fr; gap: 0 0; }
   .kv dt { margin-top: 6px; }
-  .rule-row { grid-template-columns: 1fr 1fr; }
+  .rule-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .drawer-panel { padding: 16px; }
 }
 @media print {
