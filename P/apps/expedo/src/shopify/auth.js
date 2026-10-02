@@ -45,6 +45,9 @@ async function tokenRequest(shop, body) {
 
 export const exchangeCode = (shop, code) => tokenRequest(shop, { code });
 
+/** Stores owned by the app's own organization: token via client credentials (valid ~24h, no user involved). */
+export const clientCredentialsToken = (shop) => tokenRequest(shop, { grant_type: 'client_credentials' });
+
 /** Embedded apps: swap an App Bridge session token for an offline Admin API token. */
 export const exchangeSessionToken = (shop, sessionToken) => tokenRequest(shop, {
   grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',

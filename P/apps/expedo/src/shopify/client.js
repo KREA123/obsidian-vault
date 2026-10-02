@@ -3,21 +3,49 @@ import { request } from '../lib/http.js';
 import { ProcessingError } from '../core/errors.js';
 import * as Q from './queries.js';
 import { mapOrder } from './mapper.js';
+import { clientCredentialsToken } from './auth.js';
+import { storeCache } from '../db.js';
+
+const isOwnStore = (store) => config.shopify.ownStores.includes(store.shop);
+
+/** Own-organization stores get a fresh client-credentials token when the cached one is gone. */
+async function accessToken(store, { refresh = false } = {}) {
+  if (!isOwnStore(store)) return store.accessToken;
+  const cache = storeCache(store.id);
+  if (!refresh) {
+    const cached = cache.get('shopify:cc-token');
+    if (cached) return cached;
+  }
+  const t = await clientCredentialsToken(store.shop);
+  cache.set('shopify:cc-token', t.access_token, Math.max(60, Number(t.expires_in || 86400) - 600));
+  return t.access_token;
+}
 
 // Admin GraphQL client for one store. Demo stores have no token and never reach this.
 
 export function shopifyClient(store) {
   async function gql(query, variables = {}) {
-    if (!store.accessToken) {
+    let token = await accessToken(store);
+    if (!token) {
       throw new ProcessingError({ code: 'SHOPIFY_NOT_CONNECTED', message: 'Magazinul nu e conectat la Shopify.', hint: 'Reinstalează aplicația din Shopify.', provider: 'shopify' });
     }
     const url = `https://${store.shop}/admin/api/${config.shopify.apiVersion}/graphql.json`;
     for (let attempt = 0; ; attempt++) {
-      const { body } = await request('Shopify', url, {
-        method: 'POST',
-        headers: { 'X-Shopify-Access-Token': store.accessToken },
-        json: { query, variables },
-      });
+      let body;
+      try {
+        ({ body } = await request('Shopify', url, {
+          method: 'POST',
+          headers: { 'X-Shopify-Access-Token': token },
+          json: { query, variables },
+        }));
+      } catch (err) {
+        // An expired client-credentials token: get a new one once.
+        if (err.code === 'AUTH_FAILED' && isOwnStore(store) && attempt === 0) {
+          token = await accessToken(store, { refresh: true });
+          continue;
+        }
+        throw err;
+      }
       const throttled = body?.errors?.some?.((e) => e?.extensions?.code === 'THROTTLED');
       if (throttled && attempt < 3) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));

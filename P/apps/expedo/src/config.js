@@ -16,6 +16,9 @@ export const config = {
     apiSecret: env.SHOPIFY_API_SECRET || '',
     apiVersion: env.SHOPIFY_API_VERSION || '2026-07',
     scopes: env.SHOPIFY_SCOPES || 'read_orders,write_orders,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders',
+    // Stores in the app's own organization (e.g. a dev store), connected with the client credentials grant
+    // instead of OAuth: no public URL or install flow needed. Comma-separated *.myshopify.com domains.
+    ownStores: (env.SHOPIFY_OWN_STORES || '').split(',').map((s) => s.trim()).filter(Boolean),
   },
   workerIntervalMs: Number(env.WORKER_INTERVAL_MS || 5000),
   trackingIntervalMinutes: Number(env.TRACKING_INTERVAL_MINUTES || 30),

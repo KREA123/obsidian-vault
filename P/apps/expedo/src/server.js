@@ -475,6 +475,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const { store, created } = seedDemo();
     if (created) await advanceDemo(store, P.processOrder);
   }
+  // Own-organization stores (client credentials): make sure they exist and get an initial sync.
+  for (const shop of config.shopify.ownStores) {
+    if (!auth.isValidShop(shop)) continue;
+    const existing = db.getStoreByShop(shop);
+    if (!existing || existing.uninstalled_at) {
+      const store = db.upsertStore({ shop, name: shop });
+      P.enqueue(store.id, 'sync_store', { days: 30 }, { key: `sync:${store.id}` });
+    }
+  }
   startWorker();
   createApp().listen(config.port, () => {
     console.log(`Expedo pornit pe ${config.appUrl}${config.demo ? ' (mod demo)' : ''}`);
