@@ -1,0 +1,17 @@
+{
+  "_source": {
+    "note": "No public Oblio test account or sandbox exists: the official SDKs' own integration tests read OBLIO_API_EMAIL/OBLIO_API_SECRET/OBLIO_API_CIF from CI secrets (OblioSoftware/OblioApi .github/workflows/php.yml). These bodies are the documented response examples, NOT captured live.",
+    "docs": "https://www.oblio.eu/api (fetched 2026-10-02): 'Generare token de acces', 'Nomenclator companii', 'Nomenclator cote TVA', 'Nomenclator serii documente', 'Emitere facturi → Exemplu de creare factura → Raspuns', 'Incasare factura → Raspuns', 'Vizualizare factura → Raspuns', 'Anulare factura → Raspuns', 'Stergere factura → Raspuns'. The docs give no separate response for 'stornare totala de factura' (same endpoint POST /api/docs/invoice with referenceDocument.refund=1): its response is the create response.",
+    "plugin": "OblioSoftware/woocommerce-oblio@372d02fafd51d5d19f9a28df9d871e390e69a3d2 (2026-05-12), woocommerce-oblio.php _wp_oblio_generate_invoice(): if ($result['status'] == 200) stores $result['data']['seriesName'], ['number'], ['link'] and redirects the browser to ['link'].",
+    "sdk": "OblioSoftware/OblioApi@027a5cced543581325089206a6a680736ab85145 src/Api.php: every call sends JSON (Guzzle 'json'), non-2xx → Exception($body['statusMessage'])."
+  },
+  "token": { "access_token": "67d6f8817c28d698bdae35728c7a30b02a75bd4d", "expires_in": "3600", "token_type": "Bearer", "scope": "", "request_time": "1540471129" },
+  "companies": { "status": 200, "statusMessage": "Success", "data": [{ "cif": "RO37311090", "company": "OBLIO SOFTWARE SRL", "userTypeAccess": "admin" }] },
+  "vatRates": { "status": 200, "statusMessage": "Success", "data": [{ "name": "Normala", "percent": 19, "default": true }, { "name": "Redusa", "percent": 9, "default": false }, { "name": "SFDD", "percent": 0, "default": false }] },
+  "series": { "status": 200, "statusMessage": "Success", "data": [{ "type": "Factura", "name": "FCT", "start": "0001", "next": "0051", "default": true }, { "type": "Proforma", "name": "PR", "start": "0001", "next": "0008", "default": true }] },
+  "createInvoice": { "status": 200, "statusMessage": "Success", "data": { "seriesName": "FCT", "number": "0053", "link": "https://www.oblio.eu/utils/show_file/?ic=91467&id=261751&it=bde87369631a5340057280037419f7e7" } },
+  "collect": { "status": 200, "statusMessage": "", "data": { "documentType": "Factura", "seriesName": "FCT", "number": "0055", "link": "https://www.oblio.eu/utils/show_file/?ic=91467&id=261753&it=8e4beb8abe58552dd702874addd1d518", "collects": [{ "issueDate": "2018-10-15", "type": "Ordin de plata", "number": "OP 7001", "value": 428.4 }] } },
+  "viewInvoice": { "status": 200, "statusMessage": "Success", "data": { "documentType": "Factura", "seriesName": "FCT", "number": "0055", "link": "https://www.oblio.eu/utils/show_file/?ic=91467&id=261753&it=8e4beb8abe58552dd702874addd1d518", "collects": [{ "issueDate": "2018-10-15", "type": "Ordin de plata", "number": "OP 7001", "value": 428.4 }] } },
+  "cancelInvoice": { "status": 200, "statusMessage": "Documentul a fost anulat.", "data": { "documentType": "Factura", "seriesName": "FCT", "number": "0055", "link": "https://www.oblio.eu/utils/show_file/?ic=91467&id=261753&it=8e4beb8abe58552dd702874addd1d518" } },
+  "deleteInvoice": { "status": 200, "statusMessage": "Documentul a fost sters.", "data": { "documentType": "Factura", "seriesName": "FCT", "number": "0055" } }
+}

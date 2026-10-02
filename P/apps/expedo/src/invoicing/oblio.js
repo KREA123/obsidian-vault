@@ -220,9 +220,13 @@ function invoicePayload(ctx, invoice) {
       // 0% must be named: 'SDD' (scutit fără drept de deducere).
       p.vatName = Number(l.vatRate) === 0 ? 'SDD' : '';
       p.vatPercentage = Number(l.vatRate);
+    } else {
+      // Exactly what the official plugin sends when the shop charges no VAT (OblioSoftware/woocommerce-oblio@372d02f,
+      // woocommerce-oblio.php: 'vatName' => $woocommerce_calc_taxes ? $vatName : '', 'vatPercentage' => ... : null) —
+      // the path every non-VAT-payer WooCommerce shop uses; the docs mark both fields optional.
+      p.vatName = '';
+      p.vatPercentage = null;
     }
-    // VERIFY: non-VAT payer — plugin sends vatName '' + vatPercentage null; we omit both so Oblio applies the
-    // company's "neplătitor" status.
     if (management && !l.isShipping) p.management = management;
     return p;
   });
@@ -354,9 +358,11 @@ export default {
     if (!link) {
       throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', message: `Oblio nu a trimis linkul PDF pentru factura ${series} ${number}.`, hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: body });
     }
-    // VERIFY: the show_file link serves the PDF directly (it does in the plugin's "download" action). Live 2026-10-02:
-    // a stale/invalid show_file link (the docs' sample) answers 301 → /account/ → the HTML login page, so an HTML
-    // answer means the link isn't usable without an Oblio session — retrying won't help.
+    // The link needs no Oblio session: the official plugin redirects the shopper's browser to data.link and puts it in
+    // the invoice e-mail to the customer (woocommerce-oblio.php, wp_redirect($result['data']['link']) and the [link]
+    // e-mail placeholder). VERIFY (needs a real document): that a server-side GET of a fresh link returns the PDF bytes
+    // rather than a viewer page. Live 2026-10-02: a stale/invalid show_file link (the docs' sample) answers 301 →
+    // /account/ → the HTML login page, so an HTML answer means the link isn't usable — retrying won't help.
     const res = await ctx.http(PROVIDER, link, { method: 'GET', responseType: 'buffer', headers: { Accept: 'application/pdf, */*' } });
     const buf = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.body ?? '');
     if (buf.subarray(0, 4).toString('latin1') !== '%PDF') {
@@ -391,7 +397,13 @@ export default {
     };
     if (issueDate) json.issueDate = issueDate;
     const body = await call(ctx, 'POST', '/docs/invoice', { json });
-    return { series: body?.data?.seriesName || series, number: String(body?.data?.number ?? ''), url: body?.data?.link || undefined };
+    const d = body?.data || {};
+    if (d.number == null || String(d.number).trim() === '') {
+      // The idempotencyKey makes a retry safe, but a "success" without a number must be looked at, not assumed.
+      throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: `Oblio nu a întors numărul facturii de stornare pentru ${series} ${number}.`, hint: 'Verifică în Oblio dacă stornarea a fost emisă.', provider: PROVIDER, details: body });
+    }
+    // Docs: storno = POST /api/docs/invoice with referenceDocument.refund — same response as a created invoice.
+    return { series: d.seriesName || series, number: String(d.number), url: d.link || undefined };
   },
 
   async registerPayment(ctx, { series, number, amount, date, method, reference, idempotencyKey: key }) {

@@ -1,0 +1,129 @@
+{
+  "_source": {
+    "note": "No public SmartBill test account exists (V3 mentions sb_test_ tokens for a test environment, but no credentials are published; V1 has only the production server). These bodies are the documented response examples, NOT captured live.",
+    "spec": "SmartBill API OpenAPI spec https://api.smartbill.ro/smartbill-api-spec.yaml (info.x-last-updated 2026-09-09, 'Ultima actualizare: 17 septembrie 2026'; fetched 2026-10-02, sha256 prefix 570149c0eddedb2e). Each key names operationId + response example.",
+    "plugin": "Official WooCommerce plugin smartbill-facturare-si-gestiune 3.4.10 (https://downloads.wordpress.org/plugin/smartbill-facturare-si-gestiune.zip), includes/woocommerce-functions.php: on success reads $server_call['series'], ['number'], ['documentUrl'] (stored as smartbill_private_link) and ['documentViewUrl'] (smartbill_view_document_url); an empty number means a draft."
+  },
+  "createInvoiceV2_success": {
+    "errorText": "",
+    "message": "",
+    "number": "0007",
+    "series": "ff",
+    "url": "",
+    "documentUrl": "https://cloud.smartbill.ro/documente/editare/factura/20363/",
+    "documentId": 20363,
+    "documentViewUrl": "https://cloud.smartbill.ro/documente/extern/pf/factura/f6a9a7d3...?srvid=2"
+  },
+  "createStornoInvoice": {
+    "errorText": "",
+    "message": "",
+    "number": "3739",
+    "series": "SERIA_FACTURII",
+    "url": "",
+    "documentId": 302368801,
+    "documentUrl": "https://cloud.smartbill.ro/documente/editare/factura/302368801/",
+    "documentViewUrl": "https://cloud.smartbill.ro/documente/extern/pf/factura/..."
+  },
+  "getInvoicePaymentStatus": {
+    "errorText": "",
+    "message": "",
+    "number": "",
+    "series": "",
+    "url": "",
+    "invoiceTotalAmount": 121.0,
+    "paidAmount": 0,
+    "unpaidAmount": 121.0,
+    "paid": false
+  },
+  "cancelInvoice": {
+    "anulata": {
+      "errorText": "",
+      "message": "Factura cu seria si numarul fac3744 a fost anulata cu succes.",
+      "number": "",
+      "series": "",
+      "url": ""
+    },
+    "deja_anulata": {
+      "errorText": "",
+      "message": "Factura fac3744 este deja anulata.",
+      "number": "",
+      "series": "",
+      "url": ""
+    }
+  },
+  "createPayment": {
+    "fara_document": {
+      "errorText": "",
+      "message": "",
+      "number": "",
+      "series": "",
+      "url": ""
+    },
+    "chitanta": {
+      "errorText": "",
+      "message": "",
+      "number": "0003",
+      "series": "CH",
+      "url": ""
+    }
+  },
+  "getTax": {
+    "errorText": "",
+    "message": "",
+    "number": "",
+    "series": "",
+    "url": "",
+    "taxes": [
+      {
+        "name": "Normala",
+        "percentage": 21
+      },
+      {
+        "name": "Redusa",
+        "percentage": 11
+      },
+      {
+        "name": "Taxare inversa",
+        "percentage": 0
+      }
+    ]
+  },
+  "getSeries_invoice": {
+    "errorText": "",
+    "message": "",
+    "number": "",
+    "series": "",
+    "url": "",
+    "list": [
+      {
+        "name": "fac",
+        "nextNumber": 3821,
+        "type": "f"
+      }
+    ]
+  },
+  "getSeries_all": {
+    "errorText": "",
+    "message": "",
+    "number": "",
+    "series": "",
+    "url": "",
+    "list": [
+      {
+        "name": "fac",
+        "nextNumber": 3821,
+        "type": "f"
+      },
+      {
+        "name": "pro",
+        "nextNumber": 227,
+        "type": "p"
+      },
+      {
+        "name": "CH",
+        "nextNumber": 7,
+        "type": "c"
+      }
+    ]
+  }
+}

@@ -180,12 +180,12 @@ test('createInvoice B2B paid by card: company client and collect block', async (
   assert.deepEqual(body.collect, { type: 'Card', documentNumber: '#1024' });
 });
 
-test('non-VAT payer: no VAT name/percentage sent; 0% lines as SDD for VAT payers', async () => {
+test('non-VAT payer: vatName "" + vatPercentage null, exactly as the official plugin; 0% lines as SDD for VAT payers', async () => {
   const a = ctxWith(router(), { vatPayer: false });
   await oblio.createInvoice(a.ctx, b2c());
   for (const p of invoiceCall(a.calls).json.products) {
-    assert.equal('vatName' in p, false);
-    assert.equal('vatPercentage' in p, false);
+    assert.equal(p.vatName, '');
+    assert.equal(p.vatPercentage, null);
     assert.equal(p.vatIncluded, 1);
   }
   const b = ctxWith(router());
@@ -420,4 +420,64 @@ test('getPdf: show_file link answering with the HTML login page (seen live for a
     ? { body: { status: 200, data: { link: 'https://www.oblio.eu/utils/show_file/?ic=1&id=2&it=old' } } }
     : { body: Buffer.from('<!DOCTYPE html><html><title>Login</title>') }));
   await assert.rejects(oblio.getPdf(ctx, { series: 'FCT', number: '0053' }), (err) => err.code === 'INVOICE_PDF_UNAVAILABLE' && err.retryable === false && /direct din Oblio/.test(err.hint));
+});
+
+// ── documented success shapes (test/fixtures/invoicing/oblio-documented-success.json — oblio.eu/api + official plugin, see _source) ──
+
+const DOC = JSON.parse(readFileSync(new URL('./fixtures/invoicing/oblio-documented-success.json', import.meta.url), 'utf8'));
+
+test('docs: token body (expires_in as a string) is accepted and used as Bearer', async () => {
+  const { http, calls } = fakeHttp((c) => (isToken(c) ? { body: DOC.token } : { body: DOC.companies }));
+  const ctx = { credentials: { email: 'test@expedo.ro', secret: 'x' }, settings: {}, http, cache: fakeCache(), log: () => {} };
+  const res = await oblio.testConnection(ctx);
+  assert.equal(res.ok, true);
+  assert.equal(calls[1].headers.Authorization, `Bearer ${DOC.token.access_token}`);
+});
+
+test('docs: create invoice → { series, number with leading zeros, url = data.link } (what the official plugin stores)', async () => {
+  const { ctx } = ctxWith(router({ 'POST /docs/invoice': () => ({ body: DOC.createInvoice }) }));
+  const res = await oblio.createInvoice(ctx, b2c());
+  assert.deepEqual({ series: res.series, number: res.number, url: res.url }, { series: 'FCT', number: '0053', url: DOC.createInvoice.data.link });
+});
+
+test('docs: view invoice → link downloaded into a PDF Buffer', async () => {
+  const pdf = Buffer.from('%PDF-1.4\n% TEST EXPEDO\n');
+  const { ctx } = ctxWith((c) => (c.url.pathname === '/api/docs/invoice' ? { body: DOC.viewInvoice } : c.url.href === DOC.viewInvoice.data.link ? { body: pdf } : new Error(c.url.href)));
+  const out = await oblio.getPdf(ctx, { series: 'FCT', number: '0055' });
+  assert.equal(out.subarray(0, 4).toString('latin1'), '%PDF');
+});
+
+test('docs: cancel response (statusMessage "Documentul a fost anulat.") resolves', async () => {
+  const { ctx } = ctxWith(() => ({ body: DOC.cancelInvoice }));
+  await oblio.cancelInvoice(ctx, { series: 'FCT', number: '0055' });
+});
+
+test('docs: storno answers like a created invoice → storno { series, number, url }; no number → error', async () => {
+  const { ctx } = ctxWith(() => ({ body: DOC.createInvoice }));
+  assert.deepEqual(await oblio.stornoInvoice(ctx, { series: 'FCT', number: '0052' }), { series: 'FCT', number: '0053', url: DOC.createInvoice.data.link });
+  const b = ctxWith(() => ({ body: { status: 200, statusMessage: 'Success', data: {} } }));
+  await assert.rejects(oblio.stornoInvoice(b.ctx, { series: 'FCT', number: '0052' }), (err) => err.code === 'PROVIDER_REJECTED');
+});
+
+test('docs: collects listed on the invoice ("OP 7001") → same reference is a no-op; a new one is PUT and the documented reply (statusMessage "") resolves', async () => {
+  const seen = ctxWith(() => ({ body: DOC.viewInvoice }));
+  assert.deepEqual(await oblio.registerPayment(seen.ctx, { series: 'FCT', number: '0055', amount: 428.4, method: 'transfer', reference: 'OP 7001' }), { alreadyPaid: true });
+  assert.equal(nonToken(seen.calls).filter((c) => c.method === 'PUT').length, 0);
+  const fresh = ctxWith((c) => (c.method === 'PUT' ? { body: DOC.collect } : { body: DOC.viewInvoice }));
+  assert.deepEqual(await oblio.registerPayment(fresh.ctx, { series: 'FCT', number: '0055', amount: 10, method: 'cod', reference: 'AWB123' }), {});
+  assert.equal(nonToken(fresh.calls).find((c) => c.method === 'PUT').json.collect.type, 'Ramburs');
+});
+
+test('docs: companies / series / vat_rates nomenclature bodies → testConnection, listSeries, listVatRates', async () => {
+  const { ctx } = ctxWith((c) => {
+    const p = c.url.pathname.replace('/api', '');
+    if (p === '/nomenclature/companies') return { body: DOC.companies };
+    if (p === '/nomenclature/series') return { body: DOC.series };
+    if (p === '/nomenclature/vat_rates') return { body: DOC.vatRates };
+    return new Error(p);
+  });
+  const res = await oblio.testConnection(ctx);
+  assert.match(res.message, /OBLIO SOFTWARE SRL/);
+  assert.deepEqual(await oblio.listSeries(ctx), [{ id: 'FCT', name: 'FCT', next: '0051', default: true }]);
+  assert.deepEqual((await oblio.listVatRates(ctx)).map((v) => v.percent), [19, 9, 0]);
 });

@@ -242,9 +242,16 @@ async function taxes(ctx) {
   return list;
 }
 
+/** Order in which 0% rates are picked: exempt (SDD/SFDD) before anything else, reverse charge last. */
+const zeroRank = (name) => (/^s?f?dd$/i.test(fold(name).replace(/\s+/g, '')) ? 0 : /taxare\s*inversa/i.test(fold(name)) ? 2 : 1);
+
 async function taxFor(ctx, rate) {
   const list = await taxes(ctx);
-  const hit = list.find((t) => Number(t.percentage) === Number(rate));
+  const matches = list.filter((t) => Number(t.percentage) === Number(rate));
+  // Several rates can share 0% ("Taxare inversa", "SDD", "SFDD", "TVA Inclus" — spec example /tax lists "Taxare
+  // inversa" 0). Reverse charge on a shop sale is wrong, so it is only used when it's the account's only 0% rate.
+  if (Number(rate) === 0) matches.sort((a, b) => zeroRank(a.name) - zeroRank(b.name));
+  const hit = matches[0];
   if (hit) return { taxName: hit.name, taxPercentage: Number(rate) };
   throw new ProcessingError({
     code: 'VAT_RATE_NOT_DEFINED',
@@ -321,10 +328,12 @@ async function invoicePayload(ctx, invoice) {
       saveToDb: false,
     };
     if (l.code) p.code = clean(l.code);
+    // Non-VAT-payer issuer: NO tax fields at all. Spec (api.smartbill.ro, "14. Emitere factura - emitent neplatitor de
+    // TVA"): "nu este necesar sa completezi campurile legate de TVA pe produse"; the official WooCommerce plugin
+    // (smartbill-facturare-si-gestiune 3.4.10, includes/class-smartbillutils.php) sets taxName/taxPercentage only when
+    // isTaxPayer. Sending taxPercentage 0 without a name would be worse: "La cota 0% ... fara [taxName], API-ul alege
+    // implicit Taxare inversa" (spec, example 15) — reverse charge on a non-payer's invoice.
     if (vatPayer(ctx)) Object.assign(p, await taxFor(ctx, l.vatRate));
-    // VERIFY: for a non-VAT-payer company the official plugin omits taxName/taxPercentage entirely;
-    // the spec marks taxPercentage required, so we send 0 and no taxName.
-    else p.taxPercentage = 0;
     if (useStock && !l.isShipping) p.warehouseName = clean(s.warehouseName);
     products.push(p);
   }
@@ -551,7 +560,17 @@ export default {
     const json = { companyVatCode: cif(ctx), seriesName: series, number: String(number) };
     if (issueDate) json.issueDate = issueDate;
     const body = await call(ctx, 'POST', '/invoice/reverse', { json });
-    return { series: body?.series || series, number: String(body?.number ?? ''), url: body?.documentViewUrl || undefined };
+    if (body?.number == null || String(body.number).trim() === '') {
+      // Never re-sent automatically: a second /invoice/reverse would reverse the invoice twice.
+      throw new ProcessingError({
+        code: 'PROVIDER_REJECTED',
+        message: `SmartBill nu a întors numărul facturii de stornare pentru ${series} ${number}.`,
+        hint: 'Verifică în SmartBill Cloud dacă stornarea a fost emisă; nu o reîncerca înainte.',
+        provider: PROVIDER,
+        details: body,
+      });
+    }
+    return { series: body.series || series, number: String(body.number), url: body.documentViewUrl || body.documentUrl || undefined };
   },
 
   async registerPayment(ctx, { series, number, amount, date, method }) {

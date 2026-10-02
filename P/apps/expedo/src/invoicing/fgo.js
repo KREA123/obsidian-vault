@@ -18,7 +18,9 @@ import { bucharestDateTime } from './ro-time.js';
 //      incasare/stergereincasare:            CodUnic + CheiePrivata + NumarFactura
 //      articol/*:                            CodUnic + CheiePrivata
 //    Spec example: SHA-1("2864518" + "1234567890" + "Ionescu Popescu") = 8C3A7726804C121C6933F7D68494B439463996E2.
-//    SHA-1 runs over the UTF-8 bytes (PHP sha1() / Node crypto in FGO's own samples), so the client name is
+//    SHA-1 runs over the UTF-8 bytes: both code samples FGO publishes (v7.0 docs "Code Examples": PHP sha1() on a UTF-8
+//    source string, Node crypto.createHash('sha1').update(string) = UTF-8) hash UTF-8; no FGO source mentions any
+//    other encoding or diacritics handling. So the client name is
 //    normalized ONCE (NFC, no control/zero-width chars, single spaces, ≤255 chars) and that exact string is both
 //    hashed and sent. Credentials are stripped of whitespace/invisible chars: FGO support's own fix for hash errors
 //    is "retype CIF and key, don't copy-paste".
@@ -32,6 +34,10 @@ import { bucharestDateTime } from './ro-time.js';
 //    api-testuat. No documented message mentions the hash: FGO identifies the API user by CodUnic + Hash, so a wrong
 //    hash most likely reads like the "not authorized" one — the diacritics retry therefore keys off any auth rejection.
 //  - VerificareDuplicat=true + IdExtern = order reference → FGO doesn't issue a second invoice for the same order.
+//    Answer when it already exists (official sources, no live sample): changelog v2.3 "Emitere: afișare Serie, NrFactura
+//    și link download când factura există deja" + FGO's WooCommerce module guide error #6 "Factura……..exista deja
+//    salvata." — handled both with the existing invoice in Factura (returned, flagged duplicate) and without it
+//    (INVOICE_DUPLICATE). Success bodies per method: test/fixtures/invoicing/fgo-documented-success.json.
 //  - Judet/Localitate must match FGO's nomenclature: ASCII names ("Bucuresti", "Bistrita-Nasaud", "Satu Mare"),
 //    localities mostly hyphenated ("Baia-Mare", "Sector-3") with a few spaced exceptions ("Pipera Voluntari",
 //    "Bistrita Bargaului Fabrici"). Live-checked: GET /nomenclator/judet (public, no auth) matches COUNTIES below
@@ -121,8 +127,14 @@ function fgoAuthError(details) {
 // ───────────────────────────── errors ─────────────────────────────
 
 // Observed live: "...nu este autorizata pentru utilizare API..." (prod) and "Codul unic nu exista sau nu este
-// asociat." (test env). hash/semnatura/cheia privata are kept for wordings we haven't seen.
-const AUTH_RE = /utilizare api|codul unic nu exista|nu este asociat|\bhash\b|semnatur|chei[ae] privat/i;
+// asociat." (test env). "Utilizatorul nu exista sau nu are drepturi de acces." is error #1 in FGO's own WooCommerce
+// module guide (sources.fgo.ro/addons/instructiuni-utilizare-modul-FGO-Woocommerce.pdf, "Anexa – cele mai frecvente
+// mesaje de eroare": test-mode/production mix-up). hash/semnatura/cheia privata are kept for wordings we haven't seen.
+const AUTH_RE = /utilizare api|codul unic nu exista|nu este asociat|utilizatorul nu exista|nu are drepturi de acces|\bhash\b|semnatur|chei[ae] privat/i;
+// FGO module guide, error #6: "Factura……..exista deja salvata." = VerificareDuplicat found the invoice. A field-required
+// message ("The “IdExtern field” is required", error #4) is NOT a duplicate.
+const DUPLICATE_RE = /exista deja|\bdeja\b.*\bemis|duplicat/i;
+const REQUIRED_RE = /obligatori|required/i;
 
 /** FGO's Message without the .NET exception prefix and stack trace it sometimes includes. */
 function fgoMessage(body) {
@@ -140,11 +152,12 @@ function mapFgoError(body, op, status = 200) {
   if (/timpul maxim/i.test(m)) {
     return mk({ code: 'PROVIDER_TIMEOUT', message: 'FGO nu a reușit să emită factura în timp util.', hint: 'Reîncercăm automat; FGO verifică duplicatele după numărul comenzii.', retryable: true });
   }
-  if (op === 'emitere' && /\bdeja\b.*\bemis|duplicat|idextern/i.test(m)) {
+  if (op === 'emitere' && DUPLICATE_RE.test(m) && !REQUIRED_RE.test(m)) {
     // VerificareDuplicat found an invoice for this IdExtern but didn't return it (when it does, we use it).
     return mk({ code: 'INVOICE_DUPLICATE', message: `FGO: ${msg}`, hint: 'FGO are deja o factură pentru această comandă. Caut-o în FGO după numărul comenzii; nu emite alta.' });
   }
-  if (/seri/i.test(m)) {
+  if (/seri|registr/i.test(m)) {
+    // "Registrul pentru seria … nu este definit sau a expirat" / "Registrul pentru acest utilizator nu exista…" (module guide #7)
     return mk({ code: 'INVOICE_SERIES_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Verifică seria în Setări → Facturare; trebuie să existe în FGO → Setări → Serii documente, cu registrul definit.', field: 'settings.series' });
   }
   if (/judet/i.test(m)) {
@@ -152,6 +165,10 @@ function mapFgoError(body, op, status = 200) {
   }
   if (/localitat/i.test(m)) {
     return mk({ code: 'ADDRESS_CITY_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Corectează localitatea clientului în comandă (trebuie să existe în nomenclatorul FGO pentru județul ales).', field: 'client.city' });
+  }
+  if (/codgestiune/i.test(m)) {
+    // Module guide #5: "Valoarea…asociata parametrului Continut[…][CodGestiune] nu a fost identificata."
+    return mk({ code: 'INVOICE_STOCK_ERROR', message: `FGO: ${msg}`, hint: 'Codul de gestiune din Setări → Facturare nu există în FGO. Trece codul (numărul) gestiunii, nu denumirea, sau lasă câmpul gol.', field: 'settings.warehouseCode' });
   }
   if (/\b(cod(ul)? ?unic|cui|cif|cod(ul)? fiscal)\b/i.test(m)) {
     return mk({ code: 'CLIENT_VAT_CODE_INVALID', message: `FGO: ${msg}`, hint: 'CUI-ul firmei client nu e valid. Corectează-l în comandă sau emite factura pe persoană fizică.', field: 'client.vatCode' });
@@ -387,8 +404,9 @@ export default {
     platformUrl(ctx);
     // FGO has no "whoami" call. getstatus for a non-existent number authenticates first, then fails on the
     // invoice — so an auth error means bad credentials and any other error means they were accepted.
-    // Auth wording is live-checked (see header; test env answers it with HTTP 500). VERIFY: the wording FGO uses for
-    // "invoice 0 not found" with VALID credentials — only a real account can show it.
+    // Auth wording is live-checked (see header; test env answers it with HTTP 500) plus FGO's module-guide wording
+    // "Utilizatorul nu exista sau nu are drepturi de acces." (test/production mix-up). VERIFY: the wording FGO uses for
+    // "invoice 0 not found" with VALID credentials — no FGO document lists it; only a real (test) account can show it.
     const series = clean(ctx.settings?.series) || 'X';
     const body = await post(ctx, 'factura/getstatus', { Numar: '0', Serie: series }, '0', {
       op: 'test',
@@ -396,7 +414,7 @@ export default {
       // "a intervenit o eroare" proves nothing.
       allowFailureBody: (b) => Boolean(fgoMessage(b)) && !AUTH_RE.test(fold(fgoMessage(b))) && !/a intervenit o eroare/i.test(fold(fgoMessage(b))),
     });
-    if (body.Success === false && /seri/i.test(fold(fgoMessage(body))) && !/factura/i.test(fold(fgoMessage(body)))) {
+    if (body.Success === false && /seri|registr/i.test(fold(fgoMessage(body))) && !/factura/i.test(fold(fgoMessage(body)))) {
       throw mapFgoError(body, 'test');
     }
     return {
@@ -415,7 +433,10 @@ export default {
       throw new ProcessingError({ code: 'CLIENT_NAME_MISSING', message: 'Comanda nu are numele clientului.', hint: 'Completează numele de facturare în comandă.', provider: PROVIDER, field: 'client.name' });
     }
     const payload = await buildEmitere(ctx, invoice, name);
-    const isExisting = (b) => Boolean(b?.Factura?.Numar); // duplicate check may answer with the existing invoice
+    // Duplicate check may answer with the existing invoice (changelog v2.3: "afișare Serie, NrFactura și link download
+    // când factura există deja").
+    const invoiceNumber = (b) => b?.Factura?.Numar ?? b?.Factura?.NrFactura;
+    const isExisting = (b) => Boolean(invoiceNumber(b));
 
     let body;
     try {
@@ -439,8 +460,14 @@ export default {
     }
 
     const f = body.Factura || {};
-    const result = { series: f.Serie || payload.Serie, number: String(f.Numar), url: f.Link || undefined, raw: body };
-    if (body.Success !== true) result.duplicate = true;
+    const num = invoiceNumber(body);
+    if (num == null || String(num).trim() === '') {
+      throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'FGO nu a întors numărul facturii.', hint: 'Verifică în FGO dacă factura a fost emisă înainte să reîncerci.', provider: PROVIDER, details: body });
+    }
+    // Spec examples: Link is "" in the PDF spec, a URL in the v7 HTML docs — "" means "no link", not a URL.
+    const result = { series: f.Serie || payload.Serie, number: String(num), url: f.Link || undefined, raw: body };
+    // Success:false + the existing invoice, or (defensively) Success:true whose message says it already existed.
+    if (body.Success !== true || DUPLICATE_RE.test(fold(fgoMessage(body)))) result.duplicate = true;
 
     if (invoice.paid && ctx.settings?.registerCardPayments && !result.duplicate) {
       try {
@@ -482,7 +509,12 @@ export default {
     const payload = { Numar: num, Serie: series };
     if (issueDate) payload.DataEmitere = issueDate;
     const body = await post(ctx, 'factura/stornare', payload, num, { op: 'stornare' });
-    return { series: body.Factura?.Serie || series, number: String(body.Factura?.Numar ?? ''), url: body.Factura?.Link || undefined };
+    const stornoNumber = body.Factura?.Numar;
+    if (stornoNumber == null || String(stornoNumber).trim() === '') {
+      // Never re-sent automatically: a second stornare would reverse the invoice twice.
+      throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: `FGO a confirmat stornarea facturii ${series} ${num}, dar nu a întors numărul facturii de stornare.`, hint: 'Verifică factura de stornare în FGO; nu reîncerca stornarea.', provider: PROVIDER, details: body });
+    }
+    return { series: body.Factura?.Serie || series, number: String(stornoNumber), url: body.Factura?.Link || undefined };
   },
 
   async registerPayment(ctx, p) {

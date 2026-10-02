@@ -1,0 +1,292 @@
+{
+  "_source": "REAL responses from https://api.fancourier.ro (production) captured 2026-10-02 by scripts/sandbox-couriers.mjs with the test account FAN Courier publishes in its own API documentation: the user/password shown in the Authentication request example (not repeated here: credentials are passed only through environment variables) and clientId 7032158 — \"API DOCUMENTATION FAN Courier V 2.0, September 2025\", https://www.fancourier.ro/wp-content/uploads/2025/09/EN_FANCourier_API_130825-1.pdf, p.4 (Authentication, request example) and pp.10-14 (clientId 7032158). The one AWB created (7000170297615, fake recipient \"Test Expedo\", reference EXPEDO-TEST) was deleted seconds later. Tokens, e-mail and bank details stripped; branch list cut to the documented test branch.",
+  "login": {
+    "request": "POST /login (form username/password)",
+    "status": 200,
+    "body": {
+      "status": "success",
+      "data": {
+        "token": "<stripped>",
+        "expiresAt": "2026-10-03 00:40:03"
+      }
+    }
+  },
+  "branches": {
+    "request": "GET /reports/branches (146 branches on the shared test account; only the documented one kept)",
+    "status": 200,
+    "body": {
+      "status": "success",
+      "data": [
+        {
+          "id": 7032158,
+          "name": "FAN Courier - cont test",
+          "bank": "<stripped>",
+          "bankAccount": "<stripped>",
+          "email": "<stripped>",
+          "phone": "0219336",
+          "secondaryPhone": "",
+          "contactPerson": "",
+          "address": {
+            "locality": "Bucuresti",
+            "localityId": 11,
+            "countyId": 10,
+            "county": "Bucuresti",
+            "street": "Fabrica de Glucoza (sosea)",
+            "streetNo": "11C",
+            "zipCode": "020331",
+            "building": "",
+            "entrance": "",
+            "floor": "",
+            "apartment": ""
+          }
+        }
+      ]
+    }
+  },
+  "services": {
+    "request": "GET /reports/services",
+    "status": 200,
+    "body": {
+      "status": "success",
+      "data": [
+        {
+          "id": 1,
+          "name": "Standard",
+          "description": "livrare min. 1 zi, max. 3 zile lucratoare"
+        },
+        {
+          "id": 2,
+          "name": "RedCode",
+          "description": "livrare pana in ora 10 a zilei urmatoare – verifica lista de pe site"
+        },
+        {
+          "id": 4,
+          "name": "Cont Colector",
+          "description": "plata ramburs in cont"
+        },
+        {
+          "id": 8,
+          "name": "Export",
+          "description": null
+        },
+        {
+          "id": 9,
+          "name": "Red code-Cont Colector",
+          "description": "livrare pana in ora 10 a zilei urmatoare cu plata ramburs in cont"
+        },
+        {
+          "id": 18,
+          "name": "Export-Cont Colector",
+          "description": null
+        },
+        {
+          "id": 19,
+          "name": "CollectPoint",
+          "description": null
+        },
+        {
+          "id": 20,
+          "name": "CollectPoint Cont Colector",
+          "description": null
+        },
+        {
+          "id": 21,
+          "name": "Produse Albe",
+          "description": "livrare electrocasnice max. 30kg"
+        },
+        {
+          "id": 22,
+          "name": "Produse Albe-Cont Colector",
+          "description": "livrare electrocasnice max. 30 kg cu plata ramburs in cont"
+        },
+        {
+          "id": 23,
+          "name": "Transport Marfa",
+          "description": "livrare marfa peste 30 kg"
+        },
+        {
+          "id": 24,
+          "name": "Transport Marfa-Cont Colector",
+          "description": "livrare marfa peste 30 kg, cu plata ramburs in cont"
+        },
+        {
+          "id": 25,
+          "name": "Transport Marfa Produse Albe",
+          "description": "livrare tip marfa - electrocasnice peste 30 kg"
+        },
+        {
+          "id": 26,
+          "name": "Transport Marfa Produse Albe-Cont Colector",
+          "description": "livrare tip marfa - electrocasnice peste 30 kg, cu plata ramburs in cont"
+        },
+        {
+          "id": 27,
+          "name": "FANbox",
+          "description": null
+        },
+        {
+          "id": 28,
+          "name": "FANbox Cont Colector",
+          "description": null
+        }
+      ]
+    }
+  },
+  "internAwbRequest": {
+    "request": "POST /intern-awb body the adapter sent (Cont Colector because COD > 0)",
+    "json": {
+      "clientId": 7032158,
+      "shipments": [
+        {
+          "info": {
+            "service": "Cont Colector",
+            "packages": {
+              "parcel": 1,
+              "envelope": 0
+            },
+            "weight": 1,
+            "cod": 10,
+            "declaredValue": 0,
+            "payment": "sender",
+            "observation": "TEST API - AWB anulat imediat",
+            "content": "EXPEDO-TEST Test API Expedo - NU EXPEDIATI",
+            "dimensions": {
+              "length": 20,
+              "height": 9,
+              "width": 15
+            },
+            "costCenter": "EXPEDO-TEST",
+            "options": []
+          },
+          "recipient": {
+            "name": "Test Expedo",
+            "contactPerson": "Test Expedo",
+            "phone": "0723456789",
+            "email": "",
+            "address": {
+              "county": "Cluj",
+              "locality": "Cluj-Napoca",
+              "street": "Str. Test 1",
+              "streetNo": "",
+              "zipCode": "400001"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "internAwbSuccess": {
+    "request": "POST /intern-awb",
+    "status": 200,
+    "body": {
+      "response": [
+        {
+          "awbNumber": 7000170297615,
+          "tariff": 38.27,
+          "vat": 8.04,
+          "packages": 1,
+          "weight": 1,
+          "letter": "F",
+          "routingCode": "4300",
+          "office": "Cluj-Napoca",
+          "pickUpPointId": null,
+          "visualCode": "",
+          "estimatedDeliveryTime": 24,
+          "sortingHub": "Cluj-Napoca",
+          "trackingUrl": "https://www.fancourier.ro/awb-tracking/?tracking=7000170297615",
+          "barcodes": [
+            "7000170297615001F4300"
+          ],
+          "errors": null
+        }
+      ]
+    }
+  },
+  "internAwbBlacklistedPhone": {
+    "request": "POST /intern-awb with recipient phone 0700000000 (no AWB created)",
+    "status": 200,
+    "body": {
+      "response": [
+        {
+          "awbNumber": null,
+          "success": false,
+          "errors": {
+            "info.recipient.phone": [
+              "app.awbGeneration.recipient.blacklistedPhone"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "label": {
+    "request": "GET /awb/label?clientId=7032158&awbs[]=7000170297615&pdf=1&format=A4",
+    "status": 200,
+    "contentType": "application/pdf",
+    "bodySummary": {
+      "_buffer": true,
+      "bytes": 42692,
+      "startsWith": "%PDF-1.4",
+      "isPdf": true
+    }
+  },
+  "trackingNoEvents": {
+    "request": "GET /reports/awb/tracking?clientId=7032158&language=ro&awb[]=7000000000001&awb[]=7000170297615 (first AWB does not exist)",
+    "status": 200,
+    "body": {
+      "status": "success",
+      "data": [
+        {
+          "content": null,
+          "awbNumber": "7000000000001",
+          "message": "AWB-ul nu a fost gasit."
+        },
+        {
+          "content": null,
+          "awbNumber": "7000170297615",
+          "message": "AWB-ul a fost inregistrat de catre clientul expeditor",
+          "serviceId": 4,
+          "optionCodes": []
+        }
+      ]
+    }
+  },
+  "trackingNotFoundEn": {
+    "request": "GET /reports/awb/tracking ... language omitted",
+    "status": 200,
+    "body": {
+      "status": "success",
+      "data": [
+        {
+          "content": null,
+          "awbNumber": "7000000000001",
+          "message": "The AWB was not found"
+        }
+      ]
+    }
+  },
+  "deleteSuccess": {
+    "request": "DELETE /awb?clientId=7032158&awb=7000170297615",
+    "status": 200,
+    "body": {
+      "status": "success",
+      "data": "The AWB was deleted successfully."
+    }
+  },
+  "deleteAgain": {
+    "request": "DELETE /awb (same AWB, second time)",
+    "status": 422,
+    "body": {
+      "status": "fail",
+      "message": "The AWB was already deleted.",
+      "data": {
+        "errors": {
+          "awb": [
+            "The AWB was already deleted."
+          ]
+        }
+      }
+    }
+  },
+  "afterDelete": "GET /reports/awb/tracking for the deleted AWB still returns the \"inregistrat\" row above; GET /awb/label for it still returns a PDF (200 application/pdf)."
+}

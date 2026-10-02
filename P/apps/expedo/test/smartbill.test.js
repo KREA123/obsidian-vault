@@ -166,12 +166,12 @@ test('VAT rates are fetched once and cached', async () => {
   assert.equal(calls.filter((c) => c.url.pathname.endsWith('/tax')).length, 1);
 });
 
-test('non-VAT payer: no /tax lookup, 0% and no taxName', async () => {
+test('non-VAT payer: no /tax lookup and no tax fields at all (spec example 14; 0% without a name = Taxare inversa)', async () => {
   const { ctx, calls } = ctxWith(router(), { vatPayer: false });
   await smartbill.createInvoice(ctx, b2c());
   assert.equal(calls.filter((c) => c.url.pathname.endsWith('/tax')).length, 0);
   for (const p of invoiceCall(calls).json.products) {
-    assert.equal(p.taxPercentage, 0);
+    assert.equal('taxPercentage' in p, false);
     assert.equal('taxName' in p, false);
     assert.equal(p.isTaxIncluded, true);
   }
@@ -485,4 +485,80 @@ test('registerPayment: checks /invoice/paymentstatus first — fully paid → no
   const part = ctxWith(status(85.47));
   await smartbill.registerPayment(part.ctx, { series: 'EXP', number: '0007', amount: 185.47, method: 'cod' });
   assert.equal(part.calls.find((c) => c.method === 'POST').json.value, 85.47);
+});
+
+// ── documented success shapes (test/fixtures/invoicing/smartbill-documented-success.json — official spec, see _source) ──
+
+const DOC = JSON.parse(readFileSync(new URL('./fixtures/invoicing/smartbill-documented-success.json', import.meta.url), 'utf8'));
+
+/** Router answering with the spec's documented bodies. */
+const docRouter = (overrides = {}) => router({
+  'GET /tax': () => ({ body: DOC.getTax }),
+  'GET /series': () => ({ body: { ...DOC.getSeries_invoice, list: [{ name: 'ff', nextNumber: 7, type: 'f' }] } }),
+  'POST /invoice/v2': () => ({ body: DOC.createInvoiceV2_success }),
+  ...overrides,
+});
+
+test('spec: createInvoiceV2 success → { series, number, url = documentViewUrl (public), not documentUrl (editor) }', async () => {
+  const { ctx } = ctxWith(docRouter(), { series: 'ff' });
+  const res = await smartbill.createInvoice(ctx, b2c());
+  assert.deepEqual({ series: res.series, number: res.number, url: res.url },
+    { series: 'ff', number: '0007', url: DOC.createInvoiceV2_success.documentViewUrl });
+});
+
+test('spec: createInvoiceV2 success without documentViewUrl → falls back to documentUrl; empty "url" (payment URL) is ignored', async () => {
+  const { documentViewUrl, ...noView } = DOC.createInvoiceV2_success;
+  const { ctx } = ctxWith(docRouter({ 'POST /invoice/v2': () => ({ body: noView }) }), { series: 'ff' });
+  const res = await smartbill.createInvoice(ctx, b2c());
+  assert.equal(res.url, DOC.createInvoiceV2_success.documentUrl);
+});
+
+test('spec: getInvoicePdf binary → PDF Buffer', async () => {
+  const pdf = Buffer.from('%PDF-1.4\n% TEST EXPEDO\n');
+  const { ctx } = ctxWith(() => ({ body: pdf }));
+  const out = await smartbill.getPdf(ctx, { series: 'ff', number: '0007' });
+  assert.equal(out.subarray(0, 4).toString('latin1'), '%PDF');
+});
+
+test('spec: createStornoInvoice → { series, number, url } of the storno; success without number → error, no blind retry', async () => {
+  const { ctx } = ctxWith(() => ({ body: DOC.createStornoInvoice }));
+  const out = await smartbill.stornoInvoice(ctx, { series: 'SERIA_FACTURII', number: '3738' });
+  assert.deepEqual(out, { series: 'SERIA_FACTURII', number: '3739', url: DOC.createStornoInvoice.documentViewUrl });
+  const b = ctxWith(() => ({ body: { errorText: '', message: '', number: '', series: '', url: '' } }));
+  await assert.rejects(smartbill.stornoInvoice(b.ctx, { series: 'ff', number: '0007' }), (err) => err.code === 'PROVIDER_REJECTED' && !err.retryable);
+});
+
+test('spec: cancelInvoice success and "deja anulata" (idempotent 200) both resolve', async () => {
+  for (const body of Object.values(DOC.cancelInvoice)) {
+    const { ctx } = ctxWith(() => ({ body }));
+    await smartbill.cancelInvoice(ctx, { series: 'fac', number: '3744' });
+  }
+});
+
+test('spec: paymentstatus (unpaid 121) + createPayment bodies → payment of what is unpaid, resolves for both response kinds', async () => {
+  for (const payBody of Object.values(DOC.createPayment)) {
+    const { ctx, calls } = ctxWith((c) => (c.url.pathname.endsWith('/invoice/paymentstatus') ? { body: DOC.getInvoicePaymentStatus } : { body: payBody }));
+    assert.deepEqual(await smartbill.registerPayment(ctx, { series: 'ff', number: '0007', amount: 150, method: 'cod' }), {});
+    assert.equal(calls.find((c) => c.url.pathname.endsWith('/payment')).json.value, 121);
+  }
+});
+
+test('spec: /tax example — 21/11 map to Normala/Redusa; 0% picks SDD over Taxare inversa, Taxare inversa only when alone', async () => {
+  const only = ctxWith(docRouter(), { series: 'ff' });
+  const inv = b2c();
+  inv.lines[1].vatRate = 0;
+  await smartbill.createInvoice(only.ctx, inv);
+  const ps = invoiceCall(only.calls).json.products;
+  assert.deepEqual(ps.map((p) => [p.taxName, p.taxPercentage]), [['Normala', 21], ['Taxare inversa', 0], ['Normala', 21]]);
+  const withSdd = ctxWith(docRouter({ 'GET /tax': () => ({ body: { ...DOC.getTax, taxes: [...DOC.getTax.taxes, { name: 'SDD', percentage: 0 }] } }) }), { series: 'ff' });
+  await smartbill.createInvoice(withSdd.ctx, inv);
+  assert.equal(invoiceCall(withSdd.calls).json.products[1].taxName, 'SDD');
+});
+
+test('spec: /series examples → listSeries keeps invoice series with nextNumber; testConnection finds "fac"', async () => {
+  const { ctx } = ctxWith(router({ 'GET /series': () => ({ body: DOC.getSeries_all }), 'GET /tax': () => ({ body: DOC.getTax }) }), { series: 'fac' });
+  assert.deepEqual(await smartbill.listSeries(ctx), [{ id: 'fac', name: 'fac', nextNumber: 3821 }]);
+  const res = await smartbill.testConnection(ctx);
+  assert.equal(res.ok, true);
+  assert.match(res.message, /fac/);
 });

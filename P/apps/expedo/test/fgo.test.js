@@ -515,3 +515,109 @@ test('client CUI rejected ("Codul unic al clientului...") → CLIENT_VAT_CODE_IN
   const inv = { ...b2c(), client: { ...b2c().client, name: 'ACME SRL', isCompany: true, vatCode: 'RO123' } };
   await assert.rejects(fgo.createInvoice(ctx, inv), (err) => err.code === 'CLIENT_VAT_CODE_INVALID' && err.field === 'client.vatCode');
 });
+
+// ── documented success shapes (test/fixtures/invoicing/fgo-documented-success.json — FGO's own docs, see _source) ──
+
+
+const DOC = JSON.parse(readFileSync(new URL('./fixtures/invoicing/fgo-documented-success.json', import.meta.url), 'utf8'));
+const PDF = Buffer.from('%PDF-1.4\n% TEST EXPEDO\n');
+
+test('docs: emitere success (v7.0 HTML docs) → { series, number with leading zeros, url = Factura.Link }', async () => {
+  const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ body: DOC.emitere.htmlDocs }) }));
+  const res = await fgo.createInvoice(ctx, b2c());
+  assert.deepEqual({ series: res.series, number: res.number, url: res.url }, { series: 'BV', number: '001', url: 'https://fgo.ro/facturi/001_BV.pdf' });
+  assert.equal(res.duplicate, undefined);
+});
+
+test('docs: emitere success with Link "" (PDF spec v7.1) → url undefined, never ""', async () => {
+  const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ body: DOC.emitere.specPdf }) }));
+  const res = await fgo.createInvoice(ctx, b2c());
+  assert.equal(res.number, '001');
+  assert.equal(res.url, undefined);
+});
+
+test('docs: emitere Success:true without Factura.Numar → error, never number "undefined"', async () => {
+  const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ body: { Success: true, Message: '' } }) }));
+  await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'PROVIDER_REJECTED' && !err.retryable);
+});
+
+test('docs: emitere timeout message → retryable PROVIDER_TIMEOUT', async () => {
+  const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ body: DOC.emitere.timeout }) }));
+  await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === 'PROVIDER_TIMEOUT' && err.retryable);
+});
+
+test('docs: print (HTML docs) → link downloaded into a PDF Buffer; print with Link "" (PDF spec) → retryable PDF error', async () => {
+  const a = ctxWith((c) => (c.url.pathname === '/v1/factura/print' ? { body: DOC.print.htmlDocs } : c.url.href === DOC.print.htmlDocs.Factura.Link ? { body: PDF } : new Error(c.url.href)));
+  const buf = await fgo.getPdf(a.ctx, { series: 'BV', number: '001' });
+  assert.ok(Buffer.isBuffer(buf));
+  assert.equal(buf.subarray(0, 4).toString('latin1'), '%PDF');
+  const b = ctxWith(() => ({ body: DOC.print.specPdf }));
+  await assert.rejects(fgo.getPdf(b.ctx, { series: 'BV', number: '001' }), (err) => err.code === 'INVOICE_PDF_UNAVAILABLE' && err.retryable);
+});
+
+test('docs: anulare success bodies (both doc versions) resolve', async () => {
+  for (const body of [DOC.anulare.specPdf, DOC.anulare.htmlDocs]) {
+    const { ctx } = ctxWith(() => ({ body }));
+    await fgo.cancelInvoice(ctx, { series: 'BV', number: '001' });
+  }
+});
+
+test('docs: stornare success → { series, number } of the storno invoice; missing number → error (no blind retry)', async () => {
+  const { ctx } = ctxWith(() => ({ body: DOC.stornare }));
+  const out = await fgo.stornoInvoice(ctx, { series: 'BV', number: '000' });
+  assert.deepEqual(out, { series: 'BV', number: '001', url: undefined });
+  const b = ctxWith(() => ({ body: { Success: true, Message: '' } }));
+  await assert.rejects(fgo.stornoInvoice(b.ctx, { series: 'BV', number: '000' }), (err) => err.code === 'PROVIDER_REJECTED' && !err.retryable);
+});
+
+test('docs: getstatus fully paid (with Incasari) → registerPayment is a no-op; incasare v1/v2 success bodies resolve', async () => {
+  const paid = ctxWith(router({ 'factura/getstatus': () => ({ body: DOC.getstatus.specPdf }) }));
+  assert.deepEqual(await fgo.registerPayment(paid.ctx, { series: 'X', number: '1', amount: 167.69, method: 'cod' }), { alreadyPaid: true });
+  assert.deepEqual(await fgo.getInvoiceStatus(paid.ctx, { series: 'X', number: '1' }).then((s) => ({ total: s.total, paid: s.paid })), { total: 167.69, paid: 167.69 });
+  for (const body of [DOC.incasare.v1, DOC.incasare.v2]) {
+    const due = ctxWith(router({
+      'factura/getstatus': () => ({ body: { ...DOC.getstatus.htmlDocs, Factura: { ...DOC.getstatus.htmlDocs.Factura, ValoareAchitata: '0' } } }),
+      'factura/incasare': () => ({ body }),
+    }));
+    assert.deepEqual(await fgo.registerPayment(due.ctx, { series: 'X', number: '1', method: 'cod' }), {});
+    assert.equal(due.calls.find((c) => c.url.pathname === '/v1/factura/incasare').json.SumaIncasata, 167.69);
+  }
+});
+
+test('module guide #1: "Utilizatorul nu exista sau nu are drepturi de acces." → AUTH_FAILED (testConnection no longer reports success)', async () => {
+  const { ctx } = ctxWith(() => ({ body: DOC.moduleGuideErrors['1_testModeMismatch'] }));
+  await assert.rejects(fgo.testConnection(ctx), (err) => err.code === 'AUTH_FAILED');
+  const p = ctxWith(() => ({ body: DOC.moduleGuideErrors['1_testModeMismatch'] }));
+  await assert.rejects(fgo.getPdf(p.ctx, { series: 'BV', number: '001' }), (err) => err.code === 'AUTH_FAILED'); // not INVOICE_NOT_FOUND
+});
+
+test('module guide #6: "Factura … exista deja salvata." → INVOICE_DUPLICATE; #4 "IdExtern field is required" is not a duplicate', async () => {
+  const dup = ctxWith(router({ 'factura/emitere': () => ({ body: DOC.moduleGuideErrors['6_duplicate'] }) }));
+  await assert.rejects(fgo.createInvoice(dup.ctx, b2c()), (err) => err.code === 'INVOICE_DUPLICATE' && !err.retryable);
+  const req = ctxWith(router({ 'factura/emitere': () => ({ body: DOC.moduleGuideErrors['4_idExternRequired'] }) }));
+  await assert.rejects(fgo.createInvoice(req.ctx, b2c()), (err) => err.code !== 'INVOICE_DUPLICATE');
+  const cui = ctxWith(router({ 'factura/emitere': () => ({ body: DOC.moduleGuideErrors['4_clientCuiRequired'] }) }));
+  await assert.rejects(fgo.createInvoice(cui.ctx, b2c()), (err) => err.code === 'CLIENT_VAT_CODE_INVALID');
+});
+
+test('module guide #6 with the existing invoice, even under Success:true → duplicate, no second card încasare', async () => {
+  const body = { Success: true, Message: DOC.moduleGuideErrors['6_duplicate'].Message, Factura: DOC.emitere.specPdf.Factura };
+  const { ctx, calls } = ctxWith(router({ 'factura/emitere': () => ({ body }) }), { registerCardPayments: true });
+  const res = await fgo.createInvoice(ctx, { ...b2c(), paid: true, paymentMethod: 'card' });
+  assert.equal(res.number, '001');
+  assert.equal(res.duplicate, true);
+  assert.equal(calls.filter((c) => c.url.pathname === '/v1/factura/incasare').length, 0);
+});
+
+test('module guide #3/#5/#7/#9: Premium-only, CodGestiune, Registru and Serie messages map to actionable codes', async () => {
+  const E = DOC.moduleGuideErrors;
+  const prem = ctxWith(router({ 'factura/incasare': () => ({ body: E['3_premiumOnly'] }) }));
+  await assert.rejects(fgo.registerPayment(prem.ctx, { series: 'BV', number: '001', amount: 10, method: 'cod' }), (err) => err.code === 'INVOICING_PLAN_LIMIT');
+  const cases = [['5_warehouse', 'INVOICE_STOCK_ERROR'], ['7_registerUser', 'INVOICE_SERIES_NOT_FOUND'], ['7_registerSeries', 'INVOICE_SERIES_NOT_FOUND'], ['9_seriesRequired', 'INVOICE_SERIES_NOT_FOUND']];
+  for (const [k, code] of cases) {
+    const { ctx } = ctxWith(router({ 'factura/emitere': () => ({ body: E[k] }) }));
+    await assert.rejects(fgo.createInvoice(ctx, b2c()), (err) => err.code === code, k);
+  }
+  const reg = ctxWith(() => ({ body: E['7_registerUser'] }));
+  await assert.rejects(fgo.testConnection(reg.ctx), (err) => err.code === 'INVOICE_SERIES_NOT_FOUND');
+});

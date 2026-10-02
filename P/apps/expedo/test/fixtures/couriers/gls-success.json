@@ -1,0 +1,348 @@
+{
+  "_source": "Success bodies built field-for-field from the OFFICIAL GLS documentation, because GLS publishes no literal JSON response examples: \"MyGLS API for system integration\" ver. 25.12.11, https://api.test.mygls.ro/docs/MyGLS_API.pdf (sha1 1e275681f065893439b23f6aab370e029ff1adb1, downloaded 2026-10-02): PrintLabelsResponse / PrintLabelsInfo p.24; GetPrintedLabelsResponse / PrintDataInfo pp.20-21; DeleteLabelsResponse / SuccessfullyDeleted pp.27-28; GetParcelListResponse p.30; GetParcelStatusResponse / ParcelStatus pp.31-32; GetParcelListStatusesResponse / ParcelStatuses pp.33-34; status codes Appendix G pp.44-46. JSON encodings (byte[] → array of byte values, DateTime → \"/Date(ms+zone)/\") as read by GLS’s own sample client php_rest_client.php in https://api.test.mygls.ro/docs/mygls_api_20260331.zip (PrintLabels(): implode(array_map(\"chr\", json_decode($response)->Labels)); GetParcelList: \"\\/Date(...)\\/\"). Numbers/ids are illustrative; StatusDescription texts are the doc’s Appendix G meanings. GLS publishes test credentials only inside that sample zip, explicitly marked \"NOT FOR CUSTOMER TESTING, USE YOUR OWN\" (and for the HU test server), so they were NOT used.",
+  "printLabels": {
+    "endpoint": "POST /ParcelService.svc/json/PrintLabels",
+    "body": {
+      "Labels": [
+        37,
+        80,
+        68,
+        70,
+        45,
+        49,
+        46,
+        52,
+        10,
+        37,
+        32,
+        108,
+        97,
+        98,
+        101,
+        108,
+        32,
+        98,
+        121,
+        116,
+        101,
+        115,
+        32,
+        40,
+        112,
+        108,
+        97,
+        99,
+        101,
+        104,
+        111,
+        108,
+        100,
+        101,
+        114,
+        58,
+        32,
+        116,
+        104,
+        101,
+        32,
+        100,
+        111,
+        99,
+        32,
+        103,
+        105,
+        118,
+        101,
+        115,
+        32,
+        110,
+        111,
+        32,
+        114,
+        101,
+        97,
+        108,
+        32,
+        108,
+        97,
+        98,
+        101,
+        108,
+        41,
+        10,
+        37,
+        37,
+        69,
+        79,
+        70,
+        10
+      ],
+      "PrintLabelsErrorList": [],
+      "PrintLabelsInfoList": [
+        {
+          "ClientReference": "EXPEDO-TEST",
+          "ParcelId": 512345678,
+          "ParcelNumber": 6110000123
+        },
+        {
+          "ClientReference": "EXPEDO-TEST",
+          "ParcelId": 512345679,
+          "ParcelNumber": 6110000124
+        }
+      ]
+    }
+  },
+  "getPrintedLabels": {
+    "endpoint": "POST /ParcelService.svc/json/GetPrintedLabels",
+    "body": {
+      "GetPrintedLabelsErrorList": [],
+      "Labels": [
+        37,
+        80,
+        68,
+        70,
+        45,
+        49,
+        46,
+        52,
+        10,
+        37,
+        32,
+        108,
+        97,
+        98,
+        101,
+        108,
+        32,
+        98,
+        121,
+        116,
+        101,
+        115,
+        32,
+        40,
+        112,
+        108,
+        97,
+        99,
+        101,
+        104,
+        111,
+        108,
+        100,
+        101,
+        114,
+        58,
+        32,
+        116,
+        104,
+        101,
+        32,
+        100,
+        111,
+        99,
+        32,
+        103,
+        105,
+        118,
+        101,
+        115,
+        32,
+        110,
+        111,
+        32,
+        114,
+        101,
+        97,
+        108,
+        32,
+        108,
+        97,
+        98,
+        101,
+        108,
+        41,
+        10,
+        37,
+        37,
+        69,
+        79,
+        70,
+        10
+      ],
+      "PrintDataInfoList": [
+        {
+          "B2CChar": "B",
+          "ClientReference": "EXPEDO-TEST",
+          "Depot": "40",
+          "DepotNumber": "400",
+          "Driver": "201",
+          "Parcel": null,
+          "ParcelId": 512345678,
+          "ParcelNumber": 6110000123,
+          "ParcelNumberWithCheckdigit": 61100001234,
+          "Sort": "1A",
+          "Displaylanguage": "RO"
+        },
+        {
+          "B2CChar": "B",
+          "ClientReference": "EXPEDO-TEST",
+          "Depot": "40",
+          "DepotNumber": "400",
+          "Driver": "201",
+          "Parcel": null,
+          "ParcelId": 512345679,
+          "ParcelNumber": 6110000124,
+          "ParcelNumberWithCheckdigit": 61100001241,
+          "Sort": "1A",
+          "Displaylanguage": "RO"
+        }
+      ]
+    }
+  },
+  "getParcelList": {
+    "endpoint": "POST /ParcelService.svc/json/GetParcelList",
+    "body": {
+      "GetParcelListErrors": [],
+      "PrintDataInfoList": [
+        {
+          "B2CChar": "B",
+          "ClientReference": "EXPEDO-TEST",
+          "Depot": "40",
+          "DepotNumber": "400",
+          "Driver": "201",
+          "Parcel": null,
+          "ParcelId": 512345678,
+          "ParcelNumber": 6110000123,
+          "ParcelNumberWithCheckdigit": 61100001234,
+          "Sort": "1A",
+          "Displaylanguage": "RO"
+        }
+      ]
+    }
+  },
+  "deleteLabels": {
+    "endpoint": "POST /ParcelService.svc/json/DeleteLabels",
+    "body": {
+      "DeleteLabelsErrorList": [],
+      "SuccessfullyDeletedList": [
+        {
+          "ParcelId": 512345678,
+          "SubParcelIdList": [
+            512345679
+          ]
+        }
+      ]
+    }
+  },
+  "getParcelListStatuses": {
+    "endpoint": "POST /ParcelService.svc/json/GetParcelListStatuses",
+    "body": {
+      "GetParcelListStatusesErrors": [],
+      "ParcelList": [
+        {
+          "ParcelNumber": 6110000123,
+          "Weight": 1.2,
+          "ClientNumber": 553001234,
+          "ClientReference": "EXPEDO-TEST",
+          "ParcelStatusList": [
+            {
+              "DepotCity": "Cluj-Napoca",
+              "DepotNumber": "400",
+              "StatusCode": "5",
+              "StatusDate": "/Date(1790767200000+0300)/",
+              "StatusDescription": "The parcel has been delivered.",
+              "StatusInfo": ""
+            },
+            {
+              "DepotCity": "Cluj-Napoca",
+              "DepotNumber": "400",
+              "StatusCode": "4",
+              "StatusDate": "/Date(1790746800000+0300)/",
+              "StatusDescription": "The parcel is expected to be delivered during the day.",
+              "StatusInfo": ""
+            },
+            {
+              "DepotCity": "Sibiu",
+              "DepotNumber": "550",
+              "StatusCode": "1",
+              "StatusDate": "/Date(1790690400000+0300)/",
+              "StatusDescription": "The parcel was handed over to GLS.",
+              "StatusInfo": ""
+            },
+            {
+              "DepotCity": "Cluj-Napoca",
+              "DepotNumber": "400",
+              "StatusCode": "93",
+              "StatusDate": "/Date(1790767260000+0300)/",
+              "StatusDescription": "Signature confirmed.",
+              "StatusInfo": ""
+            }
+          ]
+        },
+        {
+          "ParcelNumber": 6110000125,
+          "Weight": null,
+          "ClientNumber": 553001234,
+          "ClientReference": "EXPEDO-TEST-2",
+          "ParcelStatusList": [
+            {
+              "DepotCity": "Sibiu",
+              "DepotNumber": "550",
+              "StatusCode": "51",
+              "StatusDate": "/Date(1790841600000+0300)/",
+              "StatusDescription": "The parcel data was entered into the GLS IT system; the parcel was not yet handed over to GLS.",
+              "StatusInfo": ""
+            }
+          ]
+        },
+        {
+          "ParcelNumber": 6110000126,
+          "Weight": 0.5,
+          "ClientNumber": 553001234,
+          "ClientReference": "EXPEDO-TEST-3",
+          "ParcelStatusList": [
+            {
+              "DepotCity": "Brasov",
+              "DepotNumber": "500",
+              "StatusCode": "12",
+              "StatusDate": "/Date(1790773200000+0300)/",
+              "StatusDescription": "The parcel could not be delivered as the consignee was absent.",
+              "StatusInfo": ""
+            },
+            {
+              "DepotCity": "Brasov",
+              "DepotNumber": "500",
+              "StatusCode": "55",
+              "StatusDate": "/Date(1790845200000+0300)/",
+              "StatusDescription": "The parcel has been delivered at the ParcelShop (see ParcelShop information).",
+              "StatusInfo": ""
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "getParcelStatuses": {
+    "endpoint": "POST /ParcelService.svc/json/GetParcelStatuses",
+    "body": {
+      "ClientReference": "EXPEDO-TEST",
+      "DeliveryCountryCode": "RO",
+      "DeliveryZipCode": "400001",
+      "GetParcelStatusErrors": [],
+      "ParcelNumber": 6110000123,
+      "POD": null,
+      "Weight": 1.2,
+      "ParcelStatusList": [
+        {
+          "DepotCity": "Cluj-Napoca",
+          "DepotNumber": "400",
+          "StatusCode": "23",
+          "StatusDate": "/Date(1790924400000+0300)/",
+          "StatusDescription": "The parcel has been returned to sender.",
+          "StatusInfo": ""
+        }
+      ]
+    }
+  }
+}

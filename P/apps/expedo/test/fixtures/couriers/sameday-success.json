@@ -1,0 +1,503 @@
+{
+  "_source": "Success bodies copied verbatim from the official Sameday PHP SDK unit tests: github.com/sameday-courier/php-sdk, commit 8dea6b8b36aadfe70c7b12735bb3da899b28e5ce (2026-08-26), tests/Responses/*ResponseTest.php (testResponse). Endpoints from src/Sameday/Requests/*.php of the same commit. These are the SDK authors’ documented response shapes, not a capture from our own account (Sameday publishes no public test account: its README says the demo server https://sameday-api.demo.zitec.com needs a separate user/password from Sameday).",
+  "authenticate": {
+    "endpoint": "POST /api/authenticate",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayAuthenticateResponseTest.php",
+    "status": 200,
+    "body": {
+      "token": "foo",
+      "expire_at": "2010-01-02 12:23"
+    }
+  },
+  "pickupPoints": {
+    "endpoint": "GET /api/client/pickup-points",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayGetPickupPointsResponseTest.php",
+    "status": 200,
+    "body": {
+      "total": 1,
+      "currentPage": 2,
+      "pages": 3,
+      "perPage": 4,
+      "data": [
+        {
+          "id": 139,
+          "country": {
+            "id": 187,
+            "name": "Romania",
+            "code": "RO"
+          },
+          "county": {
+            "id": 1,
+            "name": "Bucuresti",
+            "code": "B"
+          },
+          "city": {
+            "samedayDeliveryAgency": "B_SEMA_A03",
+            "samedayPickupAgency": "B_SEMA_A03",
+            "id": 6,
+            "name": "Sectorul 6",
+            "extraKM": 0
+          },
+          "address": "Splaiul Independentei 319, OB17C",
+          "defaultPickupPoint": true,
+          "pickupPointContactPerson": [
+            {
+              "id": 145,
+              "name": "Software",
+              "phoneNumber": "021.637.06.60",
+              "defaultContactPerson": true
+            },
+            {
+              "id": 146,
+              "name": "Software2",
+              "phoneNumber": "021.637.06.600",
+              "defaultContactPerson": false
+            }
+          ],
+          "alias": "Software",
+          "status": true
+        },
+        {
+          "id": 1641,
+          "country": {
+            "id": 187,
+            "name": "Romania",
+            "code": "RO"
+          },
+          "county": {
+            "id": 1,
+            "name": "Bucuresti",
+            "code": "B"
+          },
+          "city": {
+            "samedayDeliveryAgency": "B_SEMA_A03",
+            "samedayPickupAgency": "B_SEMA_A03",
+            "id": 6,
+            "name": "Sectorul 6",
+            "extraKM": 10
+          },
+          "address": "Splaiul Independentei 319, OB17C",
+          "defaultPickupPoint": false,
+          "pickupPointContactPerson": [
+            {
+              "id": 1740,
+              "name": "Customer Care",
+              "phoneNumber": "021.637.06.60",
+              "defaultContactPerson": true
+            }
+          ],
+          "alias": "Customer Care",
+          "status": true
+        }
+      ]
+    }
+  },
+  "services": {
+    "endpoint": "GET /api/client/services",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayGetServicesResponseTest.php",
+    "status": 200,
+    "body": {
+      "total": 1,
+      "currentPage": 2,
+      "pages": 3,
+      "perPage": 4,
+      "data": [
+        {
+          "id": 1,
+          "name": "2H",
+          "serviceCode": "2H_code",
+          "deliveryType": {
+            "id": 1,
+            "name": "Sameday"
+          },
+          "defaultServices": true,
+          "serviceOptionalTaxes": []
+        },
+        {
+          "id": 7,
+          "name": "24H",
+          "serviceCode": "24",
+          "deliveryType": {
+            "id": 2,
+            "name": "NextDay"
+          },
+          "defaultServices": false,
+          "serviceOptionalTaxes": [
+            {
+              "costType": "Fix",
+              "id": 20,
+              "name": "Reambalare",
+              "tax": 6,
+              "packageType": 1
+            },
+            {
+              "costType": "Procentual",
+              "id": 23,
+              "name": "Deschidere Colet",
+              "tax": 1.1,
+              "packageType": 2,
+              "taxCode": "OPCG"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "counties": {
+    "endpoint": "GET /api/geolocation/county",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayGetCountiesResponseTest.php",
+    "status": 200,
+    "body": {
+      "total": 1,
+      "currentPage": 2,
+      "pages": 3,
+      "perPage": 4,
+      "data": [
+        {
+          "id": 1,
+          "name": "foo",
+          "code": "code_foo"
+        },
+        {
+          "id": 2,
+          "name": "bar",
+          "code": "code_bar"
+        }
+      ]
+    }
+  },
+  "cities": {
+    "endpoint": "GET /api/geolocation/city",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayGetCitiesResponseTest.php",
+    "status": 200,
+    "body": {
+      "total": 1,
+      "currentPage": 2,
+      "pages": 3,
+      "perPage": 4,
+      "data": [
+        {
+          "samedayDeliveryAgency": "B_SEMA_A03",
+          "samedayPickupAgency": "B_SEMA_A03",
+          "nextDayDeliveryAgency": "B_JILAVA_A02",
+          "logisticCircle": "Cerc 1",
+          "id": 7,
+          "name": "1 Decembrie",
+          "county": {
+            "id": 26,
+            "name": "Ilfov",
+            "code": "IF"
+          },
+          "postalCode": "077005",
+          "extraKM": 0,
+          "village": "1 Decembrie"
+        },
+        {
+          "samedayDeliveryAgency": "CT_CONSTANTA_A01",
+          "samedayPickupAgency": "CT_CONSTANTA_A01",
+          "nextDayDeliveryAgency": "CT_MANGALIA_A04",
+          "logisticCircle": "Cerc 1",
+          "id": 9438,
+          "name": "2 Mai",
+          "county": {
+            "id": 15,
+            "name": "Constanta",
+            "code": "CT"
+          },
+          "postalCode": "907161",
+          "extraKM": 1,
+          "village": "Limanu"
+        }
+      ]
+    }
+  },
+  "lockers": {
+    "endpoint": "GET /api/client/lockers",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayGetLockersResponseTest.php",
+    "status": 200,
+    "body": {
+      "total": 2,
+      "currentPage": 1,
+      "pages": 1,
+      "perPage": 50,
+      "data": [
+        {
+          "name": "easybox Kaufland Aparatorii Patriei( Oltenitei)",
+          "country": "Romania",
+          "countryId": 187,
+          "county": "Bucuresti",
+          "countyId": 1,
+          "city": "Sectorul 4",
+          "cityId": 4,
+          "address": "Sos. Oltenitei, Nr. 388",
+          "postalCode": "041337",
+          "lat": 44.384394,
+          "lng": 26.140431,
+          "lockerId": 1001,
+          "supportedPayment": 1,
+          "clientVisible": 1,
+          "deliveryLogisticLocationId": 107,
+          "deliveryLogisticLocation": "B_LOCKER_A07",
+          "email": null,
+          "phone": "00000",
+          "occupancyLevel": 1,
+          "excludedSellers": [],
+          "availableBoxes": [
+            {
+              "size": "S",
+              "number": 39
+            },
+            {
+              "size": "M",
+              "number": 17
+            },
+            {
+              "size": "L",
+              "number": 19
+            }
+          ],
+          "reservedBoxes": [],
+          "occupiedBoxes": [
+            {
+              "size": "S",
+              "number": 3
+            },
+            {
+              "size": "M",
+              "number": 8
+            },
+            {
+              "size": "L",
+              "number": 1
+            }
+          ],
+          "schedule": [
+            {
+              "day": 1,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 2,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 3,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 4,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 5,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 6,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 7,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            }
+          ]
+        },
+        {
+          "name": "easybox Boxes Food",
+          "country": "Romania",
+          "countryId": 187,
+          "county": "Dolj",
+          "countyId": 18,
+          "city": "Filiasi",
+          "cityId": 10380,
+          "address": "Str. Florilor, Nr. 2A",
+          "postalCode": "205300",
+          "lat": 44.55358,
+          "lng": 23.52228,
+          "lockerId": 2001,
+          "supportedPayment": 1,
+          "clientVisible": 1,
+          "deliveryLogisticLocationId": 117,
+          "deliveryLogisticLocation": "DJ_CRAIOVA_A02",
+          "email": null,
+          "phone": null,
+          "occupancyLevel": 1,
+          "excludedSellers": [],
+          "availableBoxes": [
+            {
+              "size": "S",
+              "number": 20
+            },
+            {
+              "size": "M",
+              "number": 4
+            },
+            {
+              "size": "L",
+              "number": 7
+            }
+          ],
+          "reservedBoxes": [],
+          "occupiedBoxes": [
+            {
+              "size": "S",
+              "number": 10
+            },
+            {
+              "size": "M",
+              "number": 10
+            },
+            {
+              "size": "L",
+              "number": 3
+            }
+          ],
+          "schedule": [
+            {
+              "day": 1,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 2,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 3,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 4,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 5,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 6,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            },
+            {
+              "day": 7,
+              "openingHour": "00:00",
+              "closingHour": "23:59"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "postAwb": {
+    "endpoint": "POST /api/awb",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayPostAwbResponseTest.php",
+    "status": 201,
+    "body": {
+      "awbNumber": "foo",
+      "awbCost": 12.34,
+      "parcels": [
+        {
+          "position": 1,
+          "awbNumber": "parcel_foo"
+        },
+        {
+          "position": 2,
+          "awbNumber": "parcel_bar"
+        }
+      ],
+      "pdfLink": "https://foo.com/awb"
+    }
+  },
+  "awbPdf": {
+    "endpoint": "GET /api/awb/download/{awb}/{A4|A6}",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayGetAwbPdfResponseTest.php",
+    "status": 200,
+    "body": "CONTENT"
+  },
+  "awbStatus": {
+    "endpoint": "GET /api/client/awb/{awb}/status",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/tests/Responses/SamedayGetAwbStatusHistoryResponseTest.php",
+    "status": 200,
+    "body": {
+      "expeditionSummary": {
+        "deliveredAt": "2019-02-26T12:37:28+0200",
+        "lastDeliveryAttempt": "",
+        "delivered": true,
+        "canceled": false,
+        "deliveryAttempts": 1,
+        "servicePayment": 0,
+        "awbWeight": 3,
+        "cashOnDelivery": 54.6,
+        "awbNumber": "1SDY241067423",
+        "redirectionsAttempts": 1
+      },
+      "expeditionStatus": {
+        "statusId": 1,
+        "status": "AWB Emis",
+        "statusLabel": "Document de transport emis",
+        "statusState": "Comanda curier primita",
+        "statusDate": "2019-02-26T09:37:28+0200",
+        "county": "Bucuresti",
+        "reason": "",
+        "transitLocation": ""
+      },
+      "parcelsStatus": [
+        {
+          "statusId": 1,
+          "status": "AWB Emis",
+          "statusLabel": "Document de transport emis",
+          "statusState": "Comanda curier primita",
+          "statusDate": "2019-02-26T09:37:28+0200",
+          "county": "",
+          "parcelAwbNumber": "1SDY241067423001",
+          "reason": "",
+          "parcelDetails": "https://sameday-api.demo.zitec.com/api/client/parcel/1SDY241067423001/status-history",
+          "transitLocation": ""
+        },
+        {
+          "statusId": 1,
+          "status": "AWB Emis",
+          "statusLabel": "Document de transport emis",
+          "statusState": "Comanda curier primita",
+          "statusDate": "2019-02-26T09:39:10+0200",
+          "county": "",
+          "parcelAwbNumber": "1SDY241067423002",
+          "reason": "",
+          "parcelDetails": "https://sameday-api.demo.zitec.com/api/client/parcel/1SDY241067423002/status-history",
+          "transitLocation": ""
+        }
+      ],
+      "expeditionHistory": [
+        {
+          "statusId": 1,
+          "status": "AWB Emis",
+          "statusLabel": "Document de transport emis",
+          "statusState": "Comanda curier primita",
+          "statusDate": "2019-02-26T09:37:28+0200",
+          "county": "Bucuresti",
+          "reason": "reason",
+          "transitLocation": "location1"
+        }
+      ]
+    }
+  },
+  "deleteAwb": {
+    "endpoint": "DELETE /api/awb/{awb}",
+    "source": "https://github.com/sameday-courier/php-sdk/blob/8dea6b8b36aadfe70c7b12735bb3da899b28e5ce/src/Sameday/Responses/SamedayDeleteAwbResponse.php",
+    "status": 200,
+    "body": "",
+    "note": "SamedayDeleteAwbResponse parses nothing; the SDK test only builds it from an empty body."
+  }
+}

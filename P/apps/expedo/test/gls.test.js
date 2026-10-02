@@ -385,3 +385,57 @@ test('parcel map is per environment and account; COD rounded', async () => {
   const p = buildParcel(shipment({ cod: 199.98999999 }), ctx.settings, { clientNumber: 1, zip: '400114', city: 'Cluj-Napoca' });
   assert.equal(p.CODAmount, 199.99);
 });
+
+// ---- success shapes built from the official MyGLS API documentation (see _source in the fixture) ----
+
+const DOC = JSON.parse(readFileSync(new URL('./fixtures/couriers/gls-success.json', import.meta.url), 'utf8'));
+
+test('documented success: PrintLabels → AWB = first ParcelNumber; GetPrintedLabels byte array → PDF; DeleteLabels ok', async () => {
+  const { ctx, calls } = fakeCtx({
+    routes: {
+      GetLocations: locationsBody,
+      PrintLabels: () => ({ body: DOC.printLabels.body }),
+      GetPrintedLabels: () => ({ body: DOC.getPrintedLabels.body }),
+      DeleteLabels: () => ({ body: DOC.deleteLabels.body }),
+    },
+  });
+  const res = await gls.createShipment(ctx, shipment({ reference: 'EXPEDO-TEST', parcels: 2 }));
+  assert.equal(res.awb, '6110000123');
+  assert.deepEqual(res.raw.parcelIds, [512345678, 512345679]);
+  const label = await gls.getLabel(ctx, res.awb, { format: 'A4' });
+  assert.ok(Buffer.isBuffer(label));
+  assert.equal(label.subarray(0, 5).toString('latin1'), '%PDF-');
+  assert.deepEqual(calls.find((c) => c.method === 'GetPrintedLabels').json.ParcelIdList, [512345678, 512345679]);
+  await gls.cancelShipment(ctx, res.awb);
+  assert.deepEqual(calls.find((c) => c.method === 'DeleteLabels').json.ParcelIdList, [512345678, 512345679]);
+});
+
+test('documented success: GetParcelList finds the ParcelId by ParcelNumber or ParcelNumberWithCheckdigit', async () => {
+  for (const awb of ['6110000123', '61100001234']) {
+    const { ctx, calls } = fakeCtx({ routes: { GetParcelList: () => ({ body: DOC.getParcelList.body }), GetPrintedLabels: () => ({ body: DOC.getPrintedLabels.body }) } });
+    const pdf = await gls.getLabel(ctx, awb);
+    assert.ok(Buffer.isBuffer(pdf));
+    assert.deepEqual(calls.find((c) => c.method === 'GetPrintedLabels').json.ParcelIdList, [512345678], awb);
+  }
+});
+
+test('documented success: GetParcelListStatuses (string StatusCode, /Date()/ dates, informational 93 skipped)', async () => {
+  const { ctx } = fakeCtx({ routes: { GetParcelListStatuses: () => ({ body: DOC.getParcelListStatuses.body }) } });
+  const res = await gls.track(ctx, ['6110000123', '6110000125', '6110000126', '6110000999']);
+  assert.deepEqual(res, [
+    { awb: '6110000123', status: 'delivered', statusText: 'The parcel has been delivered.', at: '2026-09-30T11:20:00.000Z', codCollected: true },
+    { awb: '6110000125', status: 'created', statusText: 'The parcel data was entered into the GLS IT system; the parcel was not yet handed over to GLS.', at: '2026-10-01T08:00:00.000Z' },
+    { awb: '6110000126', status: 'out_for_delivery', statusText: 'The parcel has been delivered at the ParcelShop (see ParcelShop information).', at: '2026-10-01T09:00:00.000Z' },
+  ]);
+});
+
+test('documented success: GetParcelStatuses (single-parcel fallback) → returned to sender', async () => {
+  const { ctx } = fakeCtx({
+    routes: {
+      GetParcelListStatuses: () => ({ status: 404, body: 'Endpoint not found' }),
+      GetParcelStatuses: () => ({ body: DOC.getParcelStatuses.body }),
+    },
+  });
+  const [r] = await gls.track(ctx, ['6110000123']);
+  assert.deepEqual(r, { awb: '6110000123', status: 'returned', statusText: 'The parcel has been returned to sender.', at: '2026-10-02T07:00:00.000Z' });
+});

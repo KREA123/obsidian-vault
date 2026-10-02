@@ -513,3 +513,107 @@ test('sameday: per-parcel weights add up exactly to packageWeight', async () => 
   assert.deepEqual(ws, [0.34, 0.33, 0.33]);
   assert.equal(Math.round(ws.reduce((a, b) => a + b, 0) * 100) / 100, Number(f.get('packageWeight')));
 });
+
+// ---- success shapes from the official SDK's own unit tests (sameday-courier/php-sdk; see _source) ----
+
+const SDK = JSON.parse(readFileSync(new URL('./fixtures/couriers/sameday-success.json', import.meta.url), 'utf8'));
+/** Paginated SDK bodies say "pages": 3: serve the exact body as page 1, then empty pages. */
+const firstPageOnly = (fixture) => ({ url }) => ({ status: fixture.status, body: new URL(url).searchParams.get('page') === '1' ? fixture.body : { ...fixture.body, data: [] } });
+const sdkRoutes = (extra = []) => [
+  ...extra,
+  { method: 'POST', url: '/api/authenticate', reply: { status: SDK.authenticate.status, body: SDK.authenticate.body } },
+  { url: '/api/client/pickup-points', reply: firstPageOnly(SDK.pickupPoints) },
+  { url: '/api/client/services', reply: firstPageOnly(SDK.services) },
+  { url: '/api/geolocation/county', reply: { body: page([{ id: 15, name: 'Constanta', code: 'CT' }, { id: 26, name: 'Ilfov', code: 'IF' }]) } },
+  { url: '/api/geolocation/city', reply: firstPageOnly(SDK.cities) },
+  { url: '/api/client/lockers', reply: { status: SDK.lockers.status, body: SDK.lockers.body } },
+  { method: 'POST', url: '/api/awb', reply: { status: SDK.postAwb.status, body: SDK.postAwb.body } },
+];
+
+describe('sameday: official SDK success bodies', () => {
+  test('authenticate {token, expire_at} → X-AUTH-TOKEN on later calls; pickup points + default contact person', async () => {
+    const { ctx, calls } = makeCtx(sdkRoutes());
+    const pts = await sameday.listPickupPoints(ctx);
+    assert.deepEqual(pts, [
+      { id: '139', name: 'Software', address: 'Splaiul Independentei 319, OB17C, Sectorul 6, Bucuresti', default: true },
+      { id: '1641', name: 'Customer Care', address: 'Splaiul Independentei 319, OB17C, Sectorul 6, Bucuresti', default: false },
+    ]);
+    const pp = calls.find((c) => c.url.includes('/api/client/pickup-points'));
+    assert.equal(pp.headers['X-AUTH-TOKEN'], 'foo');
+    const conn = await sameday.testConnection(ctx);
+    assert.equal(conn.ok, true);
+    assert.match(conn.message, /2 puncte de ridicare/);
+  });
+
+  test('services: ids, codes, OPCG optional tax recognised', async () => {
+    const { ctx } = makeCtx(sdkRoutes());
+    assert.deepEqual(await sameday.listServices(ctx), [
+      { id: '1', name: '2H (2H_code)', code: '2H_code' },
+      { id: '7', name: '24H (24)', code: '24' },
+    ]);
+  });
+
+  test('cities: "2 Mai" (Constanța, commune Limanu) resolves to its id', async () => {
+    const { ctx, calls } = makeCtx(sdkRoutes());
+    const { resolveLocality } = await import('../src/couriers/sameday.js');
+    const place = await resolveLocality(ctx, { county: 'Constanța', countyCode: 'CT', city: '2 Mai', zip: '907161' });
+    assert.equal(place.city.id, 9438);
+    assert.equal(place.county.id, 15);
+    assert.equal(new URL(calls.find((c) => c.url.includes('/api/geolocation/city')).url).searchParams.get('county'), '15');
+  });
+
+  test('POST /api/awb 201 {awbNumber, awbCost, parcels, pdfLink} → { awb, price }; default pickup point/contact sent', async () => {
+    const { ctx, calls } = makeCtx(sdkRoutes());
+    const res = await sameday.createShipment(ctx, shipment({
+      reference: 'EXPEDO-TEST',
+      recipient: { name: 'Test Expedo', contactPerson: 'Test Expedo', phone: '0700000000', email: '', county: 'Constanta', countyCode: 'CT', city: '2 Mai', street: 'Str. Test 1', zip: '907161' },
+      openPackage: true,
+    }));
+    assert.equal(res.awb, 'foo');
+    assert.equal(res.price, 12.34);
+    const f = awbForm(calls);
+    assert.equal(f.get('pickupPoint'), '139');
+    assert.equal(f.get('contactPerson'), '145');
+    assert.equal(f.get('service'), '7'); // code "24" → numeric id of this account
+    assert.equal(f.get('serviceTaxes[0]'), 'OPCG');
+    assert.equal(f.get('awbRecipient[city]'), '9438');
+    assert.equal(f.get('cashOnDelivery'), '149.9');
+  });
+
+  test('label: GET /api/awb/download/{awb}/A6 as buffer; the SDK sample body "CONTENT" is not a PDF → LABEL_UNAVAILABLE', async () => {
+    const pdf = Buffer.from('%PDF-1.4\n%%EOF');
+    const ok = makeCtx(sdkRoutes([{ url: '/api/awb/download/', reply: { body: pdf } }]));
+    assert.equal(await sameday.getLabel(ok.ctx, 'foo', { format: 'A6' }), pdf);
+    const call = ok.calls.find((c) => c.url.includes('/api/awb/download/'));
+    assert.match(call.url, /\/api\/awb\/download\/foo\/A6$/);
+    assert.equal(call.responseType, 'buffer');
+    const bad = makeCtx(sdkRoutes([{ url: '/api/awb/download/', reply: { body: Buffer.from(SDK.awbPdf.body) } }]));
+    await assert.rejects(sameday.getLabel(bad.ctx, 'foo'), (e) => e.code === 'LABEL_UNAVAILABLE' && e.retryable === true);
+  });
+
+  test('status: expeditionSummary.delivered wins; text and date come from the summary, COD collected', async () => {
+    const { ctx } = makeCtx(sdkRoutes([{ url: '/api/client/awb/1SDY241067423/status', reply: { body: SDK.awbStatus.body } }]));
+    const [r] = await sameday.track(ctx, ['1SDY241067423']);
+    assert.deepEqual(r, { awb: '1SDY241067423', status: 'delivered', statusText: 'Livrat', at: '2019-02-26T10:37:28.000Z', codCollected: true });
+    // Same body without the summary flag → the expedition status itself ("AWB Emis", id 1).
+    const notDelivered = structuredClone(SDK.awbStatus.body);
+    notDelivered.expeditionSummary.delivered = false;
+    const t2 = makeCtx(sdkRoutes([{ url: '/api/client/awb/', reply: { body: notDelivered } }]));
+    const [r2] = await sameday.track(t2.ctx, ['1SDY241067423']);
+    assert.deepEqual(r2, { awb: '1SDY241067423', status: 'created', statusText: 'Document de transport emis', at: '2019-02-26T07:37:28.000Z', codCollected: false });
+  });
+
+  test('cancel: DELETE /api/awb/{awb} with an empty 200 body resolves', async () => {
+    const { ctx, calls } = makeCtx(sdkRoutes([{ method: 'DELETE', url: '/api/awb/foo', reply: { status: SDK.deleteAwb.status, body: SDK.deleteAwb.body } }]));
+    await sameday.cancelShipment(ctx, 'foo');
+    assert.ok(calls.some((c) => c.method === 'DELETE' && c.url.endsWith('/api/awb/foo')));
+  });
+
+  test('lockers: SDK list → id/name/address, filtered by county (București sectors)', async () => {
+    const { ctx } = makeCtx(sdkRoutes());
+    const buc = await sameday.listLockers(ctx, { county: 'București' });
+    assert.deepEqual(buc, [{ id: '1001', name: 'easybox Kaufland Aparatorii Patriei( Oltenitei)', address: 'Sos. Oltenitei, Nr. 388, Sectorul 4, Bucuresti', city: 'Sectorul 4', county: 'Bucuresti', postalCode: '041337' }]);
+    const dj = await sameday.listLockers(ctx, { county: 'Dolj', city: 'Filiași' });
+    assert.deepEqual(dj.map((l) => l.id), ['2001']);
+  });
+});

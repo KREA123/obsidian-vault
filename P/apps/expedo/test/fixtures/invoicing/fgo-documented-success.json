@@ -1,0 +1,44 @@
+{
+  "_source": {
+    "note": "No public FGO test account exists (FGO's test environment needs a self-registered account at https://testuat.fgo.ro/inregistrare; the docs' CodUnic 2864518 / key 1234567890 are only the hash example — checked 2026-10-02 against api-testuat getstatus/articol/gestiune with the correct hash: 'Codul unic nu exista sau nu este asociat.'). These bodies are copied from FGO's own documentation, NOT captured live.",
+    "specPdf": "Metode API - integrare FGO v.7.1, http://testapp.fgo.ro/publicws/files/specificatii-api-latest.pdf (fetched 2026-10-02; sections EMITERE, PRINT, STERGERE, ANULARE, GETSTATUS, ADAUGARE INCASARE, STERGERE INCASARE, STORNARE FACTURA). The PDF's JSON has trailing commas; they were removed, nothing else changed.",
+    "htmlDocs": "FGO API Documentation v7.0, https://api.fgo.ro/v1/testing.html (same text at https://api-testuat.fgo.ro/v1/testing.html), sections 'Create Invoice → Example Response (Success)', 'Print Invoice', 'Cancel Invoice', 'Get Invoice Status', 'Delete Payment'.",
+    "moduleGuide": "Instructiuni utilizare modul FGO Woocommerce, https://sources.fgo.ro/addons/instructiuni-utilizare-modul-FGO-Woocommerce.pdf (PDF dated 2023-01-11), 'Anexa – cele mai frecvente mesaje de eroare'. The '……..' placeholders are filled with sample values."
+  },
+  "emitere": {
+    "htmlDocs": { "Success": true, "Message": "", "Factura": { "Numar": "001", "Serie": "BV", "Link": "https://fgo.ro/facturi/001_BV.pdf", "LinkPlata": "https://fgo.ro/plata/001_BV" }, "InfoStoc": [{ "CodConta": "A1", "Nume": "Produs 1", "Stoc": 10.0 }] },
+    "specPdf": { "Success": true, "Message": "", "Factura": { "Numar": "001", "Serie": "BV", "Link": "", "LinkPlata": "" }, "InfoStoc": [{ "CodConta": "A1", "Nume": "Produs 1", "Stoc": 10.0 }, { "CodConta": "A2", "Nume": "Produs 2", "Stoc": 5.0 }] },
+    "timeout": { "Success": false, "Message": "Timpul maxim pentru emiterea unei facturi a expirat. Factura nu a fost emisa si este necesar sa reincercati. [3]" }
+  },
+  "print": {
+    "htmlDocs": { "Success": true, "Message": "", "Factura": { "Numar": "001", "Serie": "BV", "Link": "https://fgo.ro/facturi/001_BV.pdf" } },
+    "specPdf": { "Success": true, "Message": "", "Factura": { "Numar": "001", "Serie": "BV", "Link": "" } }
+  },
+  "anulare": {
+    "specPdf": { "Success": true, "Message": "Factura a fost anulata." },
+    "htmlDocs": { "Success": true, "Message": "Invoice cancelled successfully" }
+  },
+  "stergere": { "Success": true, "Message": "Factura a fost stearsa" },
+  "stornare": { "Success": true, "Message": "", "Factura": { "Numar": "001", "Serie": "BV", "Link": "" } },
+  "getstatus": {
+    "specPdf": { "Success": true, "Factura": { "Numar": "1", "Serie": "X", "Valoare": "167.69", "ValoareAchitata": "167.69", "Incasari": [{ "SumaIncasata": 150.00, "DataIncasare": "2025-02-02", "Valuta": "RON" }, { "SumaIncasata": 17.69, "DataIncasare": "2025-02-02", "Valuta": "RON" }] } },
+    "htmlDocs": { "Success": true, "Factura": { "Numar": "1", "Serie": "X", "Valoare": "167.69", "ValoareAchitata": "167.69" } }
+  },
+  "incasare": {
+    "v1": { "Success": true, "Message": "", "Incasare": { "Numar": "001", "Serie": "BV" } },
+    "v2": { "Success": true, "Message": "", "Incasare": { "Numar": "001", "Serie": "BV" }, "Factura": { "Numar": "001", "Serie": "BV", "Link": "" } }
+  },
+  "stergereincasare": { "Success": true, "Message": "Incasarea a fost stearsa." },
+  "moduleGuideErrors": {
+    "1_testModeMismatch": { "Success": false, "Message": "Utilizatorul nu exista sau nu are drepturi de acces." },
+    "2_unknownCui": { "Success": false, "Message": "Codul unic nu exista sau nu este asociat." },
+    "3_premiumOnly": { "Success": false, "Message": "Pentru folosirea acestei functionalitati este necesar abonamentul Premium." },
+    "4_clientCuiRequired": { "Success": false, "Message": "Campul Client[CodUnic] este obligatoriu." },
+    "4_idExternRequired": { "Success": false, "Message": "The “IdExtern field” is required" },
+    "5_warehouse": { "Success": false, "Message": "Valoarea G1 asociata parametrului Continut[0][CodGestiune] nu a fost identificata." },
+    "6_duplicate": { "Success": false, "Message": "Factura BV 001 exista deja salvata." },
+    "7_registerUser": { "Success": false, "Message": "Registrul pentru acest utilizator nu exista sau nu este definit sau a expirat." },
+    "7_registerSeries": { "Success": false, "Message": "Registrul pentru seria BV nu este definit sau a expirat." },
+    "9_seriesRequired": { "Success": false, "Message": "Campul 'Serie' este obligatoriu." }
+  }
+}

@@ -350,3 +350,70 @@ test('token cache is per account', async () => {
   assert.deepEqual(awbs, ['Bearer T-shop', 'Bearer T-other']);
   assert.notEqual(tokenKey(ctx), tokenKey({ credentials: { username: 'shop', password: 'changed' } }));
 });
+
+// ---- REAL success responses (test account published in FAN's API docs, run 2026-10-02 by
+// scripts/sandbox-couriers.mjs; see _source in the fixture).
+const OK = JSON.parse(readFileSync(new URL('./fixtures/couriers/fancourier-success.json', import.meta.url), 'utf8'));
+const sandboxShipment = () => ({
+  reference: 'EXPEDO-TEST',
+  recipient: {
+    name: 'Test Expedo', contactPerson: 'Test Expedo', phone: '0723456789', email: '',
+    county: 'Cluj', countyCode: 'CJ', city: 'Cluj-Napoca', street: 'Str. Test 1', zip: '400001', country: 'RO',
+  },
+  parcels: 1, weightKg: 1, envelopes: 0, cod: 10, currency: 'RON', declaredValue: 0,
+  contents: 'Test API Expedo - NU EXPEDIATI', notes: 'TEST API - AWB anulat imediat',
+});
+
+test('live success: testConnection, listPickupPoints and listServices on the real bodies', async () => {
+  const { ctx } = fakeCtx({ routes: { 'POST /login': () => OK.login, 'GET /reports/branches': () => OK.branches, 'GET /reports/services': () => OK.services } });
+  const conn = await fan.testConnection(ctx);
+  assert.equal(conn.ok, true);
+  assert.deepEqual(conn.info.branches.map((b) => b.id), ['7032158']); // numeric id in the body → string
+  assert.doesNotMatch(conn.message, /Atenție/);
+  const pts = await fan.listPickupPoints(ctx);
+  assert.deepEqual(pts, [{ id: '7032158', name: 'FAN Courier - cont test', address: 'Fabrica de Glucoza (sosea), 11C, Bucuresti, Bucuresti' }]);
+  const svcs = await fan.listServices(ctx);
+  assert.equal(svcs.length, 16);
+  assert.ok(svcs.some((s) => s.id === 'Cont Colector') && svcs.some((s) => s.id === 'FANbox Cont Colector'));
+});
+
+test('live success: createShipment sends exactly the payload FAN accepted and returns the real AWB + price', async () => {
+  const { ctx, calls } = fakeCtx({ routes: baseRoutes({ 'POST /login': () => OK.login, 'POST /intern-awb': () => OK.internAwbSuccess }) });
+  const res = await fan.createShipment(ctx, sandboxShipment());
+  assert.deepEqual(lastJson(calls, '/intern-awb'), OK.internAwbRequest.json);
+  assert.equal(res.awb, '7000170297615'); // number in the body → string
+  assert.equal(res.price, 46.31); // tariff 38.27 + vat 8.04
+});
+
+test('live: 200 intern-awb with success:false and "info.recipient.phone" blacklisted → ADDRESS_PHONE_INVALID', async () => {
+  const { ctx } = fakeCtx({ routes: baseRoutes({ 'POST /intern-awb': () => OK.internAwbBlacklistedPhone }) });
+  await assert.rejects(fan.createShipment(ctx, sandboxShipment()), (e) => e.code === 'ADDRESS_PHONE_INVALID' && e.field === 'shippingAddress.phone');
+});
+
+test('live success: label is requested as pdf=1 and the PDF buffer is returned', async () => {
+  assert.equal(OK.label.contentType, 'application/pdf');
+  assert.equal(OK.label.bodySummary.startsWith, '%PDF-1.4');
+  const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF');
+  const { ctx, calls } = fakeCtx({ routes: { 'POST /login': okLogin, 'GET /awb/label': () => ({ body: pdf }) } });
+  assert.equal(await fan.getLabel(ctx, '7000170297615', { format: 'A4' }), pdf);
+  const q = calls.find((c) => c.path === '/awb/label').query;
+  assert.deepEqual([q.get('clientId'), q.getAll('awbs[]'), q.get('pdf'), q.get('format')], ['7032158', ['7000170297615'], '1', 'A4']);
+});
+
+test('live: tracking rows without events — unknown AWB omitted, registered AWB = created with FAN\'s text', async () => {
+  for (const fixture of [OK.trackingNoEvents, OK.trackingNotFoundEn]) {
+    const { ctx } = fakeCtx({ routes: { 'POST /login': okLogin, 'GET /reports/awb/tracking': () => fixture } });
+    const res = await fan.track(ctx, ['7000000000001', '7000170297615']);
+    assert.ok(!res.some((r) => r.awb === '7000000000001'), 'unknown AWB must be omitted');
+    if (fixture === OK.trackingNoEvents) {
+      assert.deepEqual(res, [{ awb: '7000170297615', status: 'created', statusText: 'AWB-ul a fost inregistrat de catre clientul expeditor', at: undefined }]);
+    }
+  }
+});
+
+test('live: DELETE succeeds, and a second DELETE (422 "already deleted") counts as cancelled', async () => {
+  const { ctx } = fakeCtx({ routes: { 'POST /login': okLogin, 'DELETE /awb': () => OK.deleteSuccess } });
+  await fan.cancelShipment(ctx, '7000170297615');
+  const { ctx: ctx2 } = fakeCtx({ routes: { 'POST /login': okLogin, 'DELETE /awb': () => OK.deleteAgain } });
+  await fan.cancelShipment(ctx2, '7000170297615');
+});

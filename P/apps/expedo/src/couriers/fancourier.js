@@ -20,6 +20,15 @@ import {
 //   any authenticated route, bad/no token → 401 {"message":"These credentials do not match our records."}
 //   (intern-awb / awb/label / DELETE awb add "status":"error"); unknown route → 404 {"message":"Not found"}.
 //   Laravel validation errors are therefore under data.errors, not at the top level.
+//
+// Live run 2026-10-02 with the test account FAN publishes in its API docs (user on p.4, clientId
+// 7032158, EN_FANCourier_API_130825-1.pdf p.4; production server): login, branches, services,
+// localities, intern-awb (Cont Colector, COD) → AWB, label → real PDF, tracking, DELETE all succeeded;
+// sanitized bodies in test/fixtures/couriers/fancourier-success.json. Seen there and handled below:
+// a 200 intern-awb with "success":false and errors keyed "info.recipient.phone"; tracking rows without
+// events; unknown AWBs returned as rows with a "not found" message; 422 on a second DELETE. A deleted
+// AWB keeps tracking as "inregistrat" (FAN never reports the deletion) and its label still prints.
+//
 //   GET /reports/counties, /reports/localities (13 834 rows, no paging) and /reports/streets are PUBLIC:
 //   no token needed. Locality names carry no diacritics, are unique per county, and same-named villages
 //   of one county are spelled "Alun (Bosorod)" / "Alun (Bunila)" (827 such names).
@@ -28,6 +37,8 @@ const PROVIDER = 'FAN Courier';
 const ID = 'fancourier';
 const BASE = 'https://api.fancourier.ro';
 const TOKEN_TTL = 23 * 60 * 60; // token lives 24h, refresh 1h early
+const AWB_NOT_FOUND = /nu a fost gasit|not found/i;
+const ALREADY_DELETED = /already deleted|deja (a fost )?sters/i;
 
 // FAN tracking event ids (GET /reports/awb-events) → normalized status.
 //   C0  ridicat de la expeditor ............................ picked_up
@@ -425,6 +436,9 @@ export default {
       res = await api(ctx, '/awb', { method: 'DELETE', query: q.toString() });
     } catch (err) {
       if (err?.code === 'AUTH_FAILED' || err?.retryable) throw err;
+      // Live 2026-10, second DELETE of the same AWB: 422 {"status":"fail","message":"The AWB was already
+      // deleted.",...}. The goal (AWB gone) is reached — e.g. a retry after a timeout on the first DELETE.
+      if (ALREADY_DELETED.test(String(err?.details?.message || ''))) return;
       throw cancelRefused(awb, err?.details ?? err);
     }
     if (res.body?.status && res.body.status !== 'success') throw cancelRefused(awb, res.body);
@@ -441,12 +455,16 @@ export default {
       for (const row of res.body?.data || []) {
         if (!row?.awbNumber) continue;
         const events = Array.isArray(row.events) ? row.events : [];
+        // Live 2026-10: an unknown AWB still comes back as a row, without events, with
+        // "message":"AWB-ul nu a fost gasit." / "The AWB was not found" — contract: omit it.
+        if (!events.length && AWB_NOT_FOUND.test(String(row.message || ''))) continue;
         const last = latestMeaningful(events, (e) => mapFanEvent(e.id));
         const status = last ? last.status : S.CREATED;
         out.push({
           awb: String(row.awbNumber),
           status,
-          statusText: last ? String(last.event.name || '').trim() : 'AWB emis',
+          // Without events FAN sends "message":"AWB-ul a fost inregistrat de catre clientul expeditor".
+          statusText: last ? String(last.event.name || '').trim() : (String(row.message || '').trim() || 'AWB emis'),
           at: last ? roLocalToIso(last.event.date) : undefined,
           ...(status === S.DELIVERED ? { codCollected: true } : {}),
         });

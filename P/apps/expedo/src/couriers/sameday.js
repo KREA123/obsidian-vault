@@ -601,14 +601,19 @@ const adapter = {
         throw err;
       }
       const st = body?.expeditionStatus || {};
+      const summary = body?.expeditionSummary || {};
       const status = mapSamedayStatus(body);
-      return {
-        awb,
-        status,
-        statusText: st.statusLabel || st.status || st.statusState || 'AWB emis',
-        at: courierDateToIso(st.statusDate), // "2019-02-26T09:37:28+0200" (SDK sample)
-        codCollected: status === TrackingStatus.DELIVERED,
-      };
+      let statusText = st.statusLabel || st.status || st.statusState || 'AWB emis';
+      let at = courierDateToIso(st.statusDate); // "2019-02-26T09:37:28+0200" (SDK sample)
+      // The SDK's own sample (tests/Responses/SamedayGetAwbStatusHistoryResponseTest.php) has
+      // expeditionSummary.delivered = true + deliveredAt while expeditionStatus still says "AWB Emis":
+      // the summary decides the status, so text and date must come from it too, not "Document de transport emis".
+      const summaryDelivered = summary.delivered === true || summary.delivered === 1;
+      if (status === TrackingStatus.DELIVERED && summaryDelivered && classifyStatusText(statusText) !== TrackingStatus.DELIVERED) {
+        statusText = 'Livrat';
+        at = courierDateToIso(summary.deliveredAt) || at;
+      }
+      return { awb, status, statusText, at, codCollected: status === TrackingStatus.DELIVERED };
     });
     return results.filter(Boolean);
   },
