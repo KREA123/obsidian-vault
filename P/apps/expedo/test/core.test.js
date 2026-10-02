@@ -160,3 +160,34 @@ test('Shopify signatures: webhook HMAC, OAuth query HMAC, session token', async 
   const expired = b64({ dest: 'https://x.myshopify.com', aud: 'key123', exp: now - 600 });
   assert.equal(auth.verifySessionToken(`${h}.${expired}.${createHmac('sha256', 'shh').update(`${h}.${expired}`).digest('base64url')}`), null);
 });
+
+test('COD: an order with nothing left to pay is not collected again', () => {
+  // Marked as paid / refunded in Shopify: totalOutstanding is 0, the mapper falls back to the total.
+  const o = mapOrder({ ...gqlOrder, displayFinancialStatus: 'PAID', totalOutstandingSet: money(0) });
+  const plan = planOrder(o, withDefaults({ courier: { default: 'cargus' } }), {});
+  assert.equal(plan.cod, 0);
+  assert.ok(plan.issues.some((i) => i.code === 'COD_ZERO'));
+  // Partially paid: only the rest.
+  const part = mapOrder({ ...gqlOrder, totalOutstandingSet: money(55.5) });
+  assert.equal(planOrder(part, withDefaults({ courier: { default: 'cargus' } }), {}).cod, 55.5);
+  // A manual amount always wins.
+  assert.equal(planOrder(o, withDefaults({ courier: { default: 'cargus' } }), { cod: 12 }).cod, 12);
+});
+
+test('invoice mismatch ignores shipping when shipping is not invoiced', () => {
+  const o = mapOrder(gqlOrder);
+  const noShip = withDefaults({ courier: { default: 'gls' }, invoicing: { includeShipping: false } });
+  const inv = buildInvoice(o, planOrder(o, noShip, {}), noShip);
+  assert.equal(inv.total, 180);
+  assert.equal(inv.mismatch, 0);
+  // A real difference (e.g. gift card) is still reported.
+  const gift = mapOrder({ ...gqlOrder, totalPriceSet: money(185) });
+  assert.equal(buildInvoice(gift, planOrder(gift, noShip, {}), noShip).mismatch, -20);
+});
+
+test('bucharestDayStart is local midnight in UTC, DST-aware', async () => {
+  const { bucharestDayStart } = await import('../src/core/build.js');
+  assert.equal(bucharestDayStart(new Date('2026-10-01T22:30:00Z')), '2026-10-01T21:00:00.000Z');
+  assert.equal(bucharestDayStart(new Date('2026-01-15T12:00:00Z')), '2026-01-14T22:00:00.000Z');
+  assert.equal(bucharestDayStart(new Date('2026-03-29T12:00:00Z')), '2026-03-28T22:00:00.000Z');
+});

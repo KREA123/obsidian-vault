@@ -50,7 +50,12 @@ export function planOrder(order, settings, overrides = {}) {
   if (!order.lines.some((l) => l.requiresShipping && !l.isGiftCard)) {
     issues.push({ level: 'error', code: 'NOTHING_TO_SHIP', message: 'Comanda nu are produse fizice de expediat.', hint: 'Doar carduri cadou / produse digitale.' });
   }
-  if (order.paymentMethod === 'cod' && order.codAmount <= 0) {
+  // What the courier collects: never more than Shopify says is still owed. (The mapper falls back to the
+  // full total when nothing is outstanding, which would make a paid or refunded order pay again.)
+  const owed = order.paymentMethod === 'cod' && typeof order.outstanding === 'number'
+    ? round2(Math.max(0, Math.min(order.codAmount || 0, order.outstanding)))
+    : order.codAmount || 0;
+  if (order.paymentMethod === 'cod' && owed <= 0 && overrides.cod == null) {
     issues.push({ level: 'warning', code: 'COD_ZERO', message: 'Plata e ramburs, dar suma de încasat e 0.', hint: 'Verifică dacă a fost deja plătită.' });
   }
 
@@ -63,7 +68,7 @@ export function planOrder(order, settings, overrides = {}) {
     service: overrides.service || actions.service || '',
     parcels: Number(overrides.parcels || actions.parcels || p.parcels || 1),
     weightKg,
-    cod: overrides.cod != null ? Number(overrides.cod) : order.codAmount,
+    cod: overrides.cod != null ? Number(overrides.cod) : owed,
     openPackage: overrides.openPackage ?? actions.openPackage ?? p.openPackage,
     notes: overrides.notes ?? actions.notes ?? '',
     lockerId: overrides.lockerId || detectLocker(order),
