@@ -159,8 +159,9 @@ function P(el, x, y, o = {}){
   el.style.visibility = (o.o ?? 1) <= 0.001 ? 'hidden' : 'visible';
 }
 // headline with masked word reveal. text: '\n' = line break. returns {el, ws:[inner spans]}
-function head(parent, text, css, cls = 'a h'){
+function head(parent, text, css, cls = 'a h', maxW = null){
   const el = mk('div', cls, parent, css); const ws = [];
+  el.dataset.maxw = maxW || (V ? 940 : 1680);   // fitted after fonts load (setup)
   text.split('\n').forEach(line => {
     const l = mk('span', 'ln', el);
     line.split(' ').forEach((w, i) => { if (i) l.appendChild(document.createTextNode(' '));
@@ -429,7 +430,7 @@ scene(b(24), b(32), root => {
   const n = s.nodes.length, nw = pick(250, 840), nh = pick(190, 128), gap = pick((1680 - 6*250)/5, 26);
   const step = .52, t0 = .35;
   const posN = i => V ? [W/2, 560 + i*(nh + gap) + nh/2] : [120 + nw/2 + i*(nw + gap), H*.52];
-  const ex = ci(seg(lt, 3.7, 4.0));
+  const ex = ci(seg(lt, 3.9, 4.0));
   P(s.k, V ? 80 : 120, V ? 170 : 150, { ax: 0, o: eo(seg(lt, 0, .3)) * (1 - ex) });
   reveal(s.hd, lt, .05, .06, .5); P(s.hd.el, V ? 80 : 120, V ? 215 : 195, { ax: 0, ay: 0, o: 1 - ex });
   // connector line
@@ -481,8 +482,8 @@ scene(b(32), b(48), root => {
   s.t2 = cropEl(F.hud, 'toast_1111_done', R(0, 0, M.toast_1111_done.w, M.toast_1111_done.h));
   [s.t1, s.t2].forEach(e => { e.style.borderRadius = '10px'; e.style.boxShadow = '0 12px 32px rgba(16,24,40,.25)'; });
   s.k = kicker(root, T.s4k);
-  s.h1 = head(root, tx(T.s4h), `font-size:${pick(68, 74)}px;color:${C.ink}`);
-  s.h2 = head(root, tx(T.s4h2), `font-size:${pick(68, 74)}px;color:${C.ink}`);
+  s.h1 = head(root, tx(T.s4h), `font-size:${pick(68, 74)}px;color:${C.ink}`, 'a h', pick(700, 940));
+  s.h2 = head(root, tx(T.s4h2), `font-size:${pick(68, 74)}px;color:${C.ink}`, 'a h', pick(700, 940));
   s.chips = T.s4chips.map(c => mk('div', 'chip', root, `font-size:${pick(22, 26)}px;padding:12px 20px 12px 14px;color:${C.ink}`,
     `<span style="width:28px;height:28px;border-radius:50%;background:${C.green};display:inline-flex;align-items:center;justify-content:center">${svgI('check', 17, '#fff', 3.2)}</span>${c}`));
   if (T.gl){ s.gl = mk('div', 'gloss', root, `font-size:${pick(24, 26)}px;padding:14px 20px`, `<b>EN</b>${T.gl.aivrut}`); }
@@ -490,8 +491,8 @@ scene(b(32), b(48), root => {
 }, (lt, s, t) => {
   blobsSet(s.bl, t);
   const F = s.F, FR = s.FR;
-  const ein = eo(seg(lt, 0, .6)), ex = ci(seg(lt, 7.75, 8));
-  P(s.persp, FR.x + FR.w/2 + (1 - ein)*pick(160, 0), FR.y + FR.h/2 + (1 - ein)*pick(0, 160), { o: clamp(ein*2) * (1 - ex) });
+  const ein = eo(seg(lt, 0, .6)), ex = ci(seg(lt, 7.92, 8));
+  P(s.persp, FR.x + FR.w/2 + (1 - ein)*pick(160, 0), FR.y + FR.h/2 + (1 - ein)*pick(0, 160), { o: Math.min(1, .55 + ein*2) * (1 - ex) });
   F.el.style.transform = `rotateY(${lerp(V ? 0 : -14, V ? 0 : -3, eo(seg(lt, 0, 2.5)))}deg) rotateX(${lerp(V ? 10 : 4, V ? 2 : 1, eo(seg(lt, 0, 2.5)))}deg)`;
   F.el.style.transformOrigin = V ? '50% 0%' : '0% 50%';
   // camera
@@ -557,9 +558,9 @@ scene(b(48), b(56), root => {
   return s;
 }, (lt, s, t) => {
   blobsSet(s.bl, t);
-  const F = s.F, FR = s.FR, ex = ci(seg(lt, 3.78, 4));
+  const F = s.F, FR = s.FR, ex = ci(seg(lt, 3.92, 4));
   const ein = eo(seg(lt, 0, .5));
-  P(F.el, FR.x + FR.w/2, FR.y + FR.h/2 + (1 - ein)*120, { o: clamp(ein*2) * (1 - ex), s: 1 + ex*.04 });
+  P(F.el, FR.x + FR.w/2, FR.y + FR.h/2 + (1 - ein)*120, { o: Math.min(1, .55 + ein*2) * (1 - ex), s: 1 + ex*.04 });
   const tbl = RC('orders_attention', 'table');
   const iss = U(RC('orders_attention','issue0'), RC('orders_attention','issue2'));
   const a = V ? F.fit(U(iss, R(400, 250, 640, 40)), 30, 2) : F.fit(U(tbl, R(250, 210, 1160, 10)), 30, 1.5);
@@ -600,9 +601,9 @@ scene(b(56), b(72), root => {
   return s;
 }, (lt, s, t) => {
   blobsSet(s.bl, t);
-  const F = s.F, FR = s.FR, ex = ci(seg(lt, 7.75, 8));
+  const F = s.F, FR = s.FR, ex = ci(seg(lt, 7.92, 8));
   const ein = eo(seg(lt, 0, .5));
-  P(F.el, FR.x + FR.w/2, FR.y + FR.h/2 + (1 - ein)*140, { o: clamp(ein*2) * (1 - ex) });
+  P(F.el, FR.x + FR.w/2, FR.y + FR.h/2 + (1 - ein)*140, { o: Math.min(1, .55 + ein*2) * (1 - ex) });
   // camera: table + bulk bar; vertical pans across the columns
   const area0 = U(RC('ready', 'table'), R(248, 640, 1164, 80));
   const area1 = U(RC('bulk_done', 'table'), RC('bulk_done', 'bulkbar'));
@@ -671,17 +672,17 @@ scene(b(72), b(80), root => {
   s.F2 = new Frame(root, s.FR2.w, s.FR2.h, ['general']);
   s.rg2 = mk('div', 'ring', s.F2.over);
   s.k = kicker(root, T.s7k);
-  s.h1 = head(root, tx(T.s7h), `font-size:${pick(68, 74)}px;color:${C.ink}`);
-  s.h2 = head(root, tx(T.s7h2), `font-size:${pick(68, 74)}px;color:${C.ink}`);
+  s.h1 = head(root, tx(T.s7h), `font-size:${pick(68, 74)}px;color:${C.ink}`, 'a h', pick(640, 940));
+  s.h2 = head(root, tx(T.s7h2), `font-size:${pick(68, 74)}px;color:${C.ink}`, 'a h', pick(640, 940));
   if (T.gl){ s.g1 = mk('div', 'gloss', root, `font-size:24px;padding:12px 18px`, `<b>EN</b>${T.gl.rules[0]}`);
              s.g2 = mk('div', 'gloss', root, `font-size:24px;padding:12px 18px`, `<b>EN</b>${T.gl.rules[1]}`);
              s.g3 = mk('div', 'gloss', root, `font-size:24px;padding:12px 18px`, `<b>EN</b>${T.gl.test}`); }
   return s;
 }, (lt, s, t) => {
   blobsSet(s.bl, t);
-  const F = s.F, FR = s.FR, F2 = s.F2, FR2 = s.FR2, ex = ci(seg(lt, 3.75, 4));
+  const F = s.F, FR = s.FR, F2 = s.F2, FR2 = s.FR2, ex = ci(seg(lt, 3.92, 4));
   const ein = eo(seg(lt, 0, .5));
-  P(F.el, FR.x + FR.w/2 + (1 - ein)*pick(140, 0), FR.y + FR.h/2 + (1 - ein)*pick(0, 120), { o: clamp(ein*2) * (1 - ex) });
+  P(F.el, FR.x + FR.w/2 + (1 - ein)*pick(140, 0), FR.y + FR.h/2 + (1 - ein)*pick(0, 120), { o: Math.min(1, .55 + ein*2) * (1 - ex) });
   const r0 = RC('rules', 'rule0'), r2 = RC('rules', 'rule2');
   const a0 = F.fit(R(r0.x, r0.y - 6, 810, 290), 16, 1.6), a2 = F.fit(R(r2.x, r2.y - 6, 810, r2.h + 8), 16, 1.6);
   F.cam(...kf(lt, [[0, a0[0], a0[1] + 20, a0[2]], [.4, ...a0], [1.15, ...a0], [1.7, ...a2], [4, a2[0], a2[1] + 10, a2[2]*1.03]]));
@@ -728,10 +729,10 @@ scene(b(80), b(88), root => {
   return s;
 }, (lt, s, t) => {
   blobsSet(s.bl, t);
-  const ex = ci(seg(lt, 3.75, 4));
+  const ex = ci(seg(lt, 3.92, 4));
   const ys = V ? [540, 840, 1270] : [250, 455, 770];
   [s.c1, s.c2, s.c3].forEach((c, i) => {
-    const p = seg(lt, [0, .9, 2.0][i], [0, .9, 2.0][i] + .45);
+    const p = i ? seg(lt, [0, .9, 2.0][i], [0, .9, 2.0][i] + .45) : .35 + .65*seg(lt, 0, .45);
     P(c, W/2 + (1 - eo(p))*pick(0, 0), ys[i] + (1 - eo(p))*60 - lt*6, { o: clamp(p*2) * (1 - ex), s: lerp(.96, 1, eo(p)) * (1 - ex*.05), b: ex*6 });
   });
 });
@@ -753,8 +754,8 @@ scene(b(88), b(100), root => {
   s.ring4 = mk('div', 'ring', s.F2.over);
   s.flash = mk('div', 'full', root, 'background:#fff');
   s.k = kicker(root, T.s9k);
-  s.h1 = head(root, tx(T.s9h), `font-size:${pick(76, 74)}px;color:${C.ink}`);
-  s.h2 = head(root, tx(T.s9h2), `font-size:${pick(76, 74)}px;color:${C.ink}`);
+  s.h1 = head(root, tx(T.s9h), `font-size:${pick(76, 74)}px;color:${C.ink}`, 'a h', pick(660, 940));
+  s.h2 = head(root, tx(T.s9h2), `font-size:${pick(76, 74)}px;color:${C.ink}`, 'a h', pick(660, 940));
   return s;
 }, (lt, s, t) => {
   blobsSet(s.bl, t);
@@ -866,6 +867,7 @@ function setup(){
     sc.root = mk('div', 'root', scenesEl, `width:${W}px;height:${H}px`);
     sc.st = sc.build(sc.root);
     if (sc.opts.fit) sc.opts.fit(sc.st);
+    sc.root.querySelectorAll('[data-maxw]').forEach(e => fitW(e, +e.dataset.maxw));
     sc.root.style.display = 'none';
   });
   buildFx();
@@ -895,7 +897,8 @@ window.READY = false;
   const srcs = new Set();
   document.querySelectorAll('img').forEach(i => srcs.add(i.src));
   document.querySelectorAll('div').forEach(d => { const m = /url\("?([^")]+)"?\)/.exec(d.style.backgroundImage || ''); if (m) srcs.add(m[1]); });
-  await Promise.all([...srcs].map(s => { const im = new Image(); im.src = s; return im.decode().catch(() => console.warn('img fail', s)); }));
+  await Promise.all([...srcs].map(s => { const im = new Image(); im.src = s; return im.decode().catch(() => new Promise(r => { im.onload = im.onerror = r; if (im.complete) r(); })); }));
+  await Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
   render(0);
   window.READY = true;
   if (Q.get('play')){ const t0 = performance.now(); const loop = () => { render(((performance.now() - t0)/1000) % T_END); requestAnimationFrame(loop); }; loop(); }
