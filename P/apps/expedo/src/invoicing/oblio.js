@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { ProcessingError, authError } from '../core/errors.js';
+import { m } from '../i18n/index.js';
 import { bucharestDay } from './ro-time.js';
 
 // Oblio REST API — https://www.oblio.eu/api, official PHP client github.com/OblioSoftware/OblioApi and the official
@@ -45,8 +46,7 @@ function cif(ctx) {
   if (!v) {
     throw new ProcessingError({
       code: 'INVOICING_SETTINGS_MISSING',
-      message: 'Lipsește CIF-ul firmei pentru Oblio.',
-      hint: 'Completează CIF-ul firmei în Setări → Facturare, exact ca în Oblio → Setări → Date firmă.',
+      key: 'oblio.errors.cifMissing',
       provider: PROVIDER,
       field: 'settings.cif',
     });
@@ -87,7 +87,7 @@ async function token(ctx) {
   });
   if (!res.body || typeof res.body !== 'object') {
     // HTML maintenance/error page with HTTP 200: not a credentials problem.
-    throw new ProcessingError({ code: 'PROVIDER_DOWN', message: 'Oblio a trimis un răspuns neașteptat la autentificare.', hint: 'Reîncercăm automat în câteva minute.', retryable: true, provider: PROVIDER, details: String(res.body ?? '').slice(0, 300) });
+    throw new ProcessingError({ code: 'PROVIDER_DOWN', key: 'oblio.errors.authUnexpected', retryable: true, provider: PROVIDER, details: String(res.body ?? '').slice(0, 300) });
   }
   const accessToken = res.body.access_token;
   if (!accessToken) throw authError(PROVIDER, res.body);
@@ -102,30 +102,20 @@ async function token(ctx) {
 // ───────────────────────────── errors ─────────────────────────────
 
 function mapOblioError(status, body) {
-  const msg = clean(body?.statusMessage || (typeof body === 'string' ? body : '')) || `cod ${status}`;
-  const m = fold(msg);
-  const mk = (p) => new ProcessingError({ retryable: false, provider: PROVIDER, details: body, ...p });
-  if (status === 429 || /prea multe|too many/i.test(m)) {
-    return mk({ code: 'PROVIDER_RATE_LIMIT', message: 'Oblio ne cere să încetinim (prea multe cereri).', hint: 'Reîncercăm automat în câteva minute.', retryable: true });
-  }
+  // Oblio's own words stay verbatim ("Oblio: …" / "Oblio says: “…”"); our hint: oblio.errors.<key> in the catalogs.
+  const said = clean(body?.statusMessage || (typeof body === 'string' ? body : ''));
+  const f = fold(said || `cod ${status}`);
+  const text = said || m('oblio.code', { status });
+  const mk = (code, key, p = {}) => new ProcessingError({ retryable: false, provider: PROVIDER, details: body, code, key: `oblio.errors.${key}`, params: { text }, ...p });
+  if (status === 429 || /prea multe|too many/i.test(f)) return mk('PROVIDER_RATE_LIMIT', 'rateLimit', { retryable: true });
   if (status >= 500) return undefined; // generic PROVIDER_DOWN, retryable
-  if (/seri/i.test(m)) {
-    return mk({ code: 'INVOICE_SERIES_NOT_FOUND', message: `Oblio: ${msg}`, hint: 'Verifică seria în Setări → Facturare; trebuie să existe în Oblio → Setări → Serii documente.', field: 'settings.series' });
-  }
-  if (/cota|tva/i.test(m)) {
-    return mk({ code: 'VAT_RATE_NOT_DEFINED', message: `Oblio: ${msg}`, hint: 'Verifică în Oblio → Setări → Cote TVA că există cota folosită (ex. 21% sau 11%) și setarea „plătitor de TVA”.' });
-  }
-  if (/stoc|gestiun/i.test(m)) {
-    return mk({ code: 'INVOICE_STOCK_ERROR', message: `Oblio: ${msg}`, hint: 'Verifică gestiunea din Setări → Facturare și stocul produsului în Oblio, sau dezactivează descărcarea de gestiune.' });
-  }
-  if (/acces/i.test(m) && /firm|cif|compan/i.test(m)) {
-    return mk({ code: 'INVOICING_COMPANY_NOT_FOUND', message: `Oblio: ${msg}`, hint: 'Verifică CIF-ul firmei în Setări → Facturare și că utilizatorul Oblio are acces la firmă.' });
-  }
+  if (/seri/i.test(f)) return mk('INVOICE_SERIES_NOT_FOUND', 'series', { field: 'settings.series' });
+  if (/cota|tva/i.test(f)) return mk('VAT_RATE_NOT_DEFINED', 'vat');
+  if (/stoc|gestiun/i.test(f)) return mk('INVOICE_STOCK_ERROR', 'stock');
+  if (/acces/i.test(f) && /firm|cif|compan/i.test(f)) return mk('INVOICING_COMPANY_NOT_FOUND', 'company');
   if (status === 401 || status === 403) return authError(PROVIDER, body);
-  if (/nu (a fost gasit|exista)|inexistent/i.test(m)) {
-    return mk({ code: 'INVOICE_NOT_FOUND', message: `Oblio: ${msg}`, hint: 'Verifică seria și numărul facturii în Oblio.' });
-  }
-  return mk({ code: 'PROVIDER_REJECTED', message: `Oblio a refuzat cererea: ${msg}`, hint: 'Verifică datele comenzii și setările de facturare, apoi încearcă din nou.' });
+  if (/nu (a fost gasit|exista)|inexistent/i.test(f)) return mk('INVOICE_NOT_FOUND', 'notFound');
+  return mk('PROVIDER_REJECTED', 'rejected');
 }
 
 async function call(ctx, method, path, { query, json } = {}, retried = false) {
@@ -146,7 +136,7 @@ async function call(ctx, method, path, { query, json } = {}, retried = false) {
     const body = res.body;
     if (typeof body === 'string' || Buffer.isBuffer(body)) {
       // e.g. HTTP 200 "Pagina inexistenta" HTML for an unknown path or a maintenance page.
-      throw new ProcessingError({ code: 'PROVIDER_DOWN', message: 'Oblio a trimis un răspuns neașteptat (nu JSON).', hint: 'Reîncercăm automat în câteva minute.', retryable: true, provider: PROVIDER, details: String(body).slice(0, 300) });
+      throw new ProcessingError({ code: 'PROVIDER_DOWN', key: 'oblio.errors.notJson', retryable: true, provider: PROVIDER, details: String(body).slice(0, 300) });
     }
     if (body && typeof body === 'object' && body.status && Number(body.status) !== 200) {
       throw mapOblioError(Number(body.status), body) || mapOblioError(400, body);
@@ -268,32 +258,22 @@ export default {
   id: 'oblio',
   name: 'Oblio',
 
+  // Labels and help: oblio.fields.<key> in the catalogs (src/i18n).
   credentialFields: [
-    { key: 'email', label: 'E-mail cont Oblio', type: 'text', required: true,
-      help: 'Adresa cu care intri în Oblio.' },
-    { key: 'secret', label: 'Cheie API (secret)', type: 'password', required: true,
-      help: 'Din Oblio → Setări → Date cont. Se schimbă dacă îți resetezi parola Oblio.' },
+    { key: 'email', type: 'text', required: true },
+    { key: 'secret', type: 'password', required: true },
   ],
 
   settingsFields: [
-    { key: 'cif', label: 'CIF firmă', type: 'text', required: true,
-      help: 'Exact ca în Oblio → Setări → Date firmă (ex. RO12345678).' },
-    { key: 'series', label: 'Serie factură', type: 'text', required: true,
-      help: 'Seria de facturi din Oblio. Apasă „Testează conexiunea” ca să vezi seriile.' },
-    { key: 'vatPayer', label: 'Firma este plătitoare de TVA', type: 'checkbox', default: true,
-      help: 'Debifează dacă firma nu e plătitoare de TVA: facturile se emit fără TVA.' },
-    { key: 'sendEmail', label: 'Trimite factura clientului pe e-mail', type: 'checkbox', default: false,
-      help: 'Folosește e-mailul configurat în Oblio → Setări → E-mail-uri.' },
-    { key: 'markPaid', label: 'Marchează încasate comenzile plătite online', type: 'checkbox', default: true,
-      help: 'Factura comenzilor plătite cu cardul se emite direct ca încasată.' },
-    { key: 'useStock', label: 'Descarcă stocul din gestiune', type: 'checkbox', default: false,
-      help: 'Necesită stocuri active în Oblio. Produsele trebuie să aibă același cod (SKU) ca în Oblio.' },
-    { key: 'management', label: 'Gestiune', type: 'text',
-      help: 'Numele gestiunii din Oblio, folosit doar cu descărcarea de stoc.' },
-    { key: 'workStation', label: 'Punct de lucru', type: 'text',
-      help: 'Opțional, doar cu stocuri active (implicit „Sediu”).' },
-    { key: 'language', label: 'Limba facturii', type: 'select', default: 'RO',
-      options: ['RO', 'EN', 'DE', 'FR', 'IT', 'ES', 'HU'].map((v) => ({ value: v, label: v })) },
+    { key: 'cif', type: 'text', required: true },
+    { key: 'series', type: 'text', required: true },
+    { key: 'vatPayer', type: 'checkbox', default: true },
+    { key: 'sendEmail', type: 'checkbox', default: false },
+    { key: 'markPaid', type: 'checkbox', default: true },
+    { key: 'useStock', type: 'checkbox', default: false },
+    { key: 'management', type: 'text' },
+    { key: 'workStation', type: 'text' },
+    { key: 'language', type: 'select', default: 'RO', options: ['RO', 'EN', 'DE', 'FR', 'IT', 'ES', 'HU'].map((v) => ({ value: v, label: v })) },
   ],
 
   async testConnection(ctx) {
@@ -303,22 +283,22 @@ export default {
     if (wantedCif && !company) {
       throw new ProcessingError({
         code: 'INVOICING_COMPANY_NOT_FOUND',
-        message: `Conectarea la Oblio merge, dar firma cu CIF ${wantedCif} nu e în cont.`,
-        hint: companies.length ? `Firme disponibile: ${companies.map((c) => `${c.company} (${c.cif})`).join(', ')}.` : 'Adaugă firma în Oblio sau verifică contul folosit.',
+        key: companies.length ? 'oblio.errors.companyMissing' : 'oblio.errors.companyMissingNone',
+        params: { cif: wantedCif, list: companies.map((c) => `${c.company} (${c.cif})`).join(', ') },
         provider: PROVIDER,
         field: 'settings.cif',
       });
     }
     if (!company) {
-      return { ok: true, message: `Conectat la Oblio. Firme în cont: ${companies.map((c) => `${c.company} (${c.cif})`).join(', ') || 'niciuna'}.`, info: { companies } };
+      return { ok: true, message: m('oblio.test.companies', { list: companies.map((c) => `${c.company} (${c.cif})`).join(', ') || m('smartbill.test.none') }), info: { companies } };
     }
     const series = await listSeries(ctx);
     const wanted = clean(ctx.settings?.series);
     if (wanted && !series.some((x) => x.name === wanted)) {
       throw new ProcessingError({
         code: 'INVOICE_SERIES_NOT_FOUND',
-        message: `Conectat la Oblio (${company.company}), dar seria „${wanted}” nu există.`,
-        hint: series.length ? `Alege una dintre seriile existente: ${series.map((x) => x.name).join(', ')}.` : 'Creează o serie de facturi în Oblio → Setări → Serii documente.',
+        key: series.length ? 'oblio.errors.seriesMissing' : 'oblio.errors.seriesMissingNone',
+        params: { company: company.company, series: wanted, list: series.map((x) => x.name).join(', ') },
         provider: PROVIDER,
         field: 'settings.series',
       });
@@ -326,8 +306,8 @@ export default {
     return {
       ok: true,
       message: wanted
-        ? `Conectat la Oblio (${company.company}). Seria „${wanted}” a fost găsită.`
-        : `Conectat la Oblio (${company.company}). Serii disponibile: ${series.map((x) => x.name).join(', ') || 'niciuna'}.`,
+        ? m('oblio.test.connectedSeries', { company: company.company, series: wanted })
+        : m('oblio.test.connectedList', { company: company.company, list: series.map((x) => x.name).join(', ') || m('smartbill.test.none') }),
       info: { company, series },
     };
   },
@@ -341,13 +321,13 @@ export default {
 
   async createInvoice(ctx, invoice) {
     if (!clean(ctx.settings?.series)) {
-      throw new ProcessingError({ code: 'INVOICING_SETTINGS_MISSING', message: 'Nu este aleasă seria de facturi Oblio.', hint: 'Alege seria în Setări → Facturare.', provider: PROVIDER, field: 'settings.series' });
+      throw new ProcessingError({ code: 'INVOICING_SETTINGS_MISSING', key: 'oblio.errors.seriesNotChosen', provider: PROVIDER, field: 'settings.series' });
     }
     const json = invoicePayload(ctx, invoice);
     const body = await call(ctx, 'POST', '/docs/invoice', { json });
     const d = body?.data || {};
     if (!d.number) {
-      throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'Oblio nu a întors numărul facturii.', hint: 'Verifică în Oblio dacă factura a fost emisă.', provider: PROVIDER, details: body });
+      throw new ProcessingError({ code: 'PROVIDER_REJECTED', key: 'oblio.errors.noNumber', provider: PROVIDER, details: body });
     }
     return { series: d.seriesName || json.seriesName, number: String(d.number), url: d.link || undefined, raw: body };
   },
@@ -356,7 +336,7 @@ export default {
     const body = await call(ctx, 'GET', '/docs/invoice', { query: { cif: cif(ctx), seriesName: series, number } });
     const link = body?.data?.link;
     if (!link) {
-      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', message: `Oblio nu a trimis linkul PDF pentru factura ${series} ${number}.`, hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: body });
+      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', key: 'oblio.errors.pdfLink', params: { series, number }, retryable: true, provider: PROVIDER, details: body });
     }
     // The link needs no Oblio session: the official plugin redirects the shopper's browser to data.link and puts it in
     // the invoice e-mail to the customer (woocommerce-oblio.php, wp_redirect($result['data']['link']) and the [link]
@@ -369,8 +349,8 @@ export default {
       const html = /^\s*<(!doctype|html)/i.test(buf.subarray(0, 100).toString('utf8'));
       throw new ProcessingError({
         code: 'INVOICE_PDF_UNAVAILABLE',
-        message: `Linkul Oblio pentru factura ${series} ${number} nu a întors un PDF.`,
-        hint: html ? 'Oblio a cerut autentificare pentru link. Descarcă factura direct din Oblio.' : 'Reîncearcă peste câteva minute.',
+        key: html ? 'oblio.errors.pdfLogin' : 'oblio.errors.pdf',
+        params: { series, number },
         retryable: !html,
         provider: PROVIDER,
         details: { link, start: buf.toString('utf8').slice(0, 200) },
@@ -400,7 +380,7 @@ export default {
     const d = body?.data || {};
     if (d.number == null || String(d.number).trim() === '') {
       // The idempotencyKey makes a retry safe, but a "success" without a number must be looked at, not assumed.
-      throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: `Oblio nu a întors numărul facturii de stornare pentru ${series} ${number}.`, hint: 'Verifică în Oblio dacă stornarea a fost emisă.', provider: PROVIDER, details: body });
+      throw new ProcessingError({ code: 'PROVIDER_REJECTED', key: 'oblio.errors.noStornoNumber', params: { series, number }, provider: PROVIDER, details: body });
     }
     // Docs: storno = POST /api/docs/invoice with referenceDocument.refund — same response as a created invoice.
     return { series: d.seriesName || series, number: String(d.number), url: d.link || undefined };
@@ -408,7 +388,7 @@ export default {
 
   async registerPayment(ctx, { series, number, amount, date, method, reference, idempotencyKey: key }) {
     if (amount != null && !(Number(amount) > 0)) {
-      ctx.log?.('Oblio: încasare cu suma 0 ignorată', { series, number, amount });
+      ctx.log?.(m('log.zeroPayment', { provider: PROVIDER }), { series, number, amount });
       return { skipped: true };
     }
     const documentNumber = clean(reference) || clean(key) || `${series}${number}`;

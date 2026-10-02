@@ -1,5 +1,6 @@
 import { ProcessingError } from './errors.js';
 import { RULE_FIELDS, RULE_OPS, RULE_ACTIONS } from './rules.js';
+import { m } from '../i18n/index.js';
 
 // Per-store settings with defaults. Stored as JSON on the store row; anything missing
 // falls back to DEFAULTS so older stores keep working after new options are added.
@@ -7,6 +8,8 @@ import { RULE_FIELDS, RULE_OPS, RULE_ACTIONS } from './rules.js';
 export const DEFAULTS = {
   // 'test' = all couriers & invoicing replaced by the test providers (nothing real is created).
   mode: 'test',
+  // Language of the standalone dashboard (inside the Shopify admin the admin user's language wins): 'en' | 'ro'.
+  language: 'en',
   courier: {
     default: '',               // provider id; '' = not configured yet
     labelFormat: 'A6',
@@ -57,13 +60,13 @@ export function withDefaults(settings = {}) {
 }
 
 export const RETENTION_DAYS = [90, 180, 365, 730];
-const ENUMS = { mode: ['test', 'live'], 'invoicing.when': ['on_awb', 'manual'], 'courier.labelFormat': ['A4', 'A6'], 'privacy.retentionDays': RETENTION_DAYS };
+const ENUMS = { mode: ['test', 'live'], language: ['en', 'ro'], 'invoicing.when': ['on_awb', 'manual'], 'courier.labelFormat': ['A4', 'A6'], 'privacy.retentionDays': RETENTION_DAYS };
 const NUMBER_RANGES = {
   'invoicing.defaultVatRate': [0, 100], 'automation.delayMinutes': [0, 7 * 24 * 60],
   'packaging.defaultWeightKg': [0, 1000], 'packaging.minWeightKg': [0, 1000], 'packaging.parcels': [1, 99],
 };
 
-const invalid = (what) => new ProcessingError({ code: 'SETTINGS_INVALID', message: `Setare greșită: ${what}.`, hint: 'Corectează valoarea și salvează din nou.' });
+const invalid = (what) => new ProcessingError({ code: 'SETTINGS_INVALID', params: { what } });
 
 /** Coerces one value to the type of its default (forms send strings, JSON sends anything). */
 function coerce(path, value, def) {
@@ -103,7 +106,7 @@ function cleanRules(rules) {
       if (['openPackage', 'skipInvoice', 'hold'].includes(k)) actions[k] = v === true || v === 'true';
       else if (['parcels', 'weightKg'].includes(k)) {
         const n = Number(v);
-        if (!Number.isFinite(n) || n <= 0 || (k === 'parcels' && !Number.isInteger(n))) throw invalid(`regula „${r.name || i + 1}”: ${RULE_ACTIONS[k]}`);
+        if (!Number.isFinite(n) || n <= 0 || (k === 'parcels' && !Number.isInteger(n))) throw invalid(m('errors.SETTINGS_INVALID.rule', { rule: r.name || i + 1, action: m(RULE_ACTIONS[k]) }));
         actions[k] = n;
       } else actions[k] = String(v).slice(0, 500);
     }

@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { config } from './config.js';
 import { encrypt, decrypt, sealJson, openJson, sealText, openText, isSealed } from './lib/crypto.js';
 import { orderIdentity } from './core/identity.js';
+import { t, isMessage } from './i18n/index.js';
 
 let db;
 
@@ -83,8 +84,10 @@ export function openDb(file = config.dbFile) {
       at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       level TEXT NOT NULL DEFAULT 'info',     -- info | success | warning | error
       step TEXT,                              -- validate | awb | invoice | fulfill | tracking | ...
-      message TEXT NOT NULL,                  -- encrypted (errors can quote an address or phone)
-      data TEXT                               -- encrypted
+      message TEXT NOT NULL,                  -- encrypted; '' when key is set (older rows: Romanian text)
+      data TEXT,                              -- encrypted
+      key TEXT,                               -- catalog key of the message (src/i18n), rendered when read
+      params TEXT                             -- encrypted JSON params of the message
     );
     CREATE INDEX IF NOT EXISTS events_order ON events(order_id, id);
     CREATE INDEX IF NOT EXISTS events_store ON events(store_id, id DESC);
@@ -157,6 +160,10 @@ function migrate() {
     db.exec(`UPDATE orders SET finished_at = strftime('%Y-%m-%dT%H:%M:%fZ', COALESCE(tracking_at, updated_at)) WHERE ${FINISHED_SQL}`);
   }
   if (!cols.has('redacted_at')) db.exec('ALTER TABLE orders ADD COLUMN redacted_at TEXT');
+  // Events store a catalog key + params instead of rendered (Romanian) text; old rows keep their text.
+  const eventCols = new Set(db.prepare('PRAGMA table_info(events)').all().map((c) => c.name));
+  if (!eventCols.has('key')) db.exec('ALTER TABLE events ADD COLUMN key TEXT');
+  if (!eventCols.has('params')) db.exec('ALTER TABLE events ADD COLUMN params TEXT');
   db.exec(`CREATE INDEX IF NOT EXISTS orders_phone ON orders(store_id, phone_hash);
     CREATE INDEX IF NOT EXISTS orders_email ON orders(store_id, email_hash);
     CREATE INDEX IF NOT EXISTS orders_finished ON orders(store_id, finished_at);`);
@@ -345,11 +352,29 @@ export function releaseOrder(id) {
   db.prepare('UPDATE orders SET processing_at = NULL WHERE id = ?').run(id);
 }
 
+/**
+ * Records an event in the order / store history. `message` is a message { key, params } (src/i18n m()),
+ * rendered in the viewer's language when read; a plain string is stored as is (shown verbatim).
+ * `data.hint` may be a message too.
+ */
 export function logEvent(storeId, orderId, level, step, message, data) {
-  db.prepare('INSERT INTO events (store_id, order_id, level, step, message, data) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(storeId, orderId ?? null, level, step ?? null, sealText(String(message)), data === undefined ? null : sealJson(data));
+  const keyed = isMessage(message);
+  db.prepare('INSERT INTO events (store_id, order_id, level, step, message, data, key, params) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(storeId, orderId ?? null, level, step ?? null, sealText(keyed ? '' : String(message)), data === undefined ? null : sealJson(data),
+      keyed ? message.key : null, keyed && message.params ? sealJson(message.params) : null);
 }
-const hydrateEvent = (e) => ({ ...e, message: openText(e.message), data: openJson(e.data, null) });
+const hydrateEvent = (e) => ({ ...e, message: openText(e.message), data: openJson(e.data, null), params: openJson(e.params, null) });
+
+/** Event row → text in `locale` (message, data.hint). Rows from before the catalogs keep their stored text. */
+export function renderEvent(e, locale) {
+  const { params, key, ...rest } = e;
+  const hint = rest.data?.hint;
+  return {
+    ...rest,
+    message: key ? t(locale, key, params || {}) : rest.message,
+    data: rest.data && hint != null ? { ...rest.data, hint: isMessage(hint) ? t(locale, hint) : hint } : rest.data,
+  };
+}
 export function orderEvents(orderId) {
   return db.prepare('SELECT * FROM events WHERE order_id = ? ORDER BY id').all(orderId).map(hydrateEvent);
 }
@@ -370,8 +395,19 @@ export function logAccess(storeId, { actor, action, orderId = null, orderName = 
       AND at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-5 minutes')`).get(storeId, orderId, actor);
     if (recent) return;
   }
+  // A message detail ({ key, params }) is kept as JSON and translated when the log is shown.
+  const text = detail == null ? null : isMessage(detail) ? JSON.stringify(detail) : String(detail);
   db.prepare('INSERT INTO access_log (store_id, actor, action, order_id, order_name, detail) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(storeId, String(actor).slice(0, 120), action, orderId, orderName, detail == null ? null : String(detail).slice(0, 500));
+    .run(storeId, String(actor).slice(0, 120), action, orderId, orderName, text == null ? null : text.slice(0, 500));
+}
+
+/** Access-log detail → text in `locale` (plain text from older rows as is). */
+export function renderAccessDetail(detail, locale) {
+  if (detail == null || detail === '') return detail;
+  if (detail.startsWith('{"key"')) {
+    try { return t(locale, JSON.parse(detail)); } catch { /* plain text */ }
+  }
+  return detail;
 }
 export function listAccess(storeId, { action = '', order = '', limit = 100, offset = 0 } = {}) {
   const where = ['store_id = ?'];

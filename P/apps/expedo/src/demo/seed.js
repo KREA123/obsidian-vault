@@ -1,9 +1,12 @@
 import * as db from '../db.js';
 import { importOrder } from '../core/pipeline.js';
 import { saveStoreSettings, getStoreByShop, upsertStore } from '../db.js';
+import { m } from '../i18n/index.js';
 
 // Demo store with realistic Romanian orders, including the messy ones that break
 // other connectors (no sector, +40 phones, wrong county, company with CUI, easybox).
+// The orders themselves (products, names, addresses, shipping method) are Romanian shop data on
+// purpose; the store, its rules and its history are in the viewer's language (English by default).
 
 const PRODUCTS = [
   { title: 'Set construcție Castelul Fermecat', sku: 'MS-10234', price: 249.9 },
@@ -85,24 +88,25 @@ function makeOrder(n, { person, items, payment = 'cod', createdAt, attributes = 
 export function seedDemo() {
   let store = getStoreByShop('demo.myshopify.com');
   if (store && db.getDb().prepare('SELECT COUNT(*) c FROM orders WHERE store_id = ?').get(store.id).c > 0) return { store, created: false };
-  store = upsertStore({ shop: 'demo.myshopify.com', name: 'Magazin demo (jucării)', demo: true });
+  store = upsertStore({ shop: 'demo.myshopify.com', name: 'Demo store (toys)', demo: true });
   saveStoreSettings(store.id, {
     mode: 'test',
+    language: 'en',
     courier: { default: 'cargus', labelFormat: 'A6' },
     invoicing: { provider: 'smartbill', when: 'on_awb', includeShipping: true, defaultVatRate: 21 },
     automation: { autoProcess: false, delayMinutes: 15, skipTags: ['manual', 'nu-procesa'] },
     rules: [
       { id: 'r1', name: 'Easybox → Sameday', enabled: true, conditions: [{ field: 'shippingMethod', op: 'contains', value: 'easybox, locker' }], actions: { courier: 'sameday' } },
-      { id: 'r2', name: 'Colete mari → 2 colete', enabled: true, conditions: [{ field: 'weightKg', op: 'gt', value: '5' }], actions: { parcels: 2 } },
-      { id: 'r3', name: 'Comenzi mari plătite ramburs → verificare', enabled: true, conditions: [{ field: 'paymentMethod', op: 'equals', value: 'cod' }, { field: 'total', op: 'gt', value: '1500' }], actions: { hold: true } },
-      { id: 'r4', name: 'Clienți care au refuzat colete → verificare', enabled: false, conditions: [{ field: 'paymentMethod', op: 'equals', value: 'cod' }, { field: 'refusedBefore', op: 'gt', value: '0' }], actions: { hold: true } },
+      { id: 'r2', name: 'Heavy orders → 2 parcels', enabled: true, conditions: [{ field: 'weightKg', op: 'gt', value: '5' }], actions: { parcels: 2 } },
+      { id: 'r3', name: 'Large COD orders → check first', enabled: true, conditions: [{ field: 'paymentMethod', op: 'equals', value: 'cod' }, { field: 'total', op: 'gt', value: '1500' }], actions: { hold: true } },
+      { id: 'r4', name: 'Customers who refused parcels → check first', enabled: false, conditions: [{ field: 'paymentMethod', op: 'equals', value: 'cod' }, { field: 'refusedBefore', op: 'gt', value: '0' }], actions: { hold: true } },
     ],
   });
   store = db.getStore(store.id);
 
   const P = PEOPLE;
   // Florin Matei refused a ramburs parcel last month and got the next one: his new order (#1111)
-  // shows "Clientul a refuzat 1 colet înainte (din 2)" before anyone makes the AWB.
+  // shows "The customer refused 1 parcel before (out of 2)" before anyone makes the AWB.
   seedPast(store, makeOrder(1090, { person: P[7], items: [[3, 1]], createdAt: daysAgo(45, 2) }), 'returned');
   seedPast(store, makeOrder(1095, { person: { ...P[7], phone: '+40 763 444 555' }, items: [[2, 1]], createdAt: daysAgo(20, 5) }), 'delivered');
 
@@ -139,17 +143,18 @@ function seedPast(store, normalized, outcome) {
   const returned = outcome === 'returned';
   db.updateOrder(order.id, {
     awb, awb_at: day(0.1), courier: 'cargus', shipping_cost: 18.5, test_mode: true, fulfilled_at: day(0.1), cod_amount: normalized.codAmount,
-    tracking_status: outcome, tracking_text: returned ? 'Returnat la expeditor (refuzat de destinatar)' : 'Livrat', tracking_at: day(returned ? 6 : 2),
+    tracking_status: outcome, tracking_text: null, tracking_at: day(returned ? 6 : 2),
     cod_collected_at: returned ? null : day(2), status: outcome,
   });
   // Finished when the courier said so, not now (the retention period counts from here).
   db.getDb().prepare('UPDATE orders SET finished_at = tracking_at WHERE id = ?').run(order.id);
-  db.logEvent(store.id, order.id, 'success', 'awb', `AWB ${awb} generat la Cargus (probă).`);
+  const test = m('events.testSuffix');
+  db.logEvent(store.id, order.id, 'success', 'awb', m('events.awbCreated', { awb, courier: 'Cargus', test }));
   if (returned) {
-    db.logEvent(store.id, order.id, 'warning', 'tracking', 'În retur: destinatarul a refuzat coletul.');
-    db.logEvent(store.id, order.id, 'warning', 'tracking', 'Returnat la expeditor.');
+    db.logEvent(store.id, order.id, 'warning', 'tracking', m('events.trackingText', { status: m('tracking.returning'), text: m('demo.refused') }));
+    db.logEvent(store.id, order.id, 'warning', 'tracking', m('events.tracking', { status: m('tracking.returned') }));
   } else {
-    db.logEvent(store.id, order.id, 'success', 'cod', `Ramburs de ${normalized.codAmount.toFixed(2)} lei încasat de curier (probă).`);
+    db.logEvent(store.id, order.id, 'success', 'cod', m('events.codCollected', { amount: normalized.codAmount, test }));
   }
 }
 

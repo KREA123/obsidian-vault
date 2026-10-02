@@ -5,8 +5,9 @@ import {
 } from './locality.js';
 import {
   normalizePhoneRO, classifyStatusText, parseDimensions, collectMessages, shortText,
-  accountKey, money, assertRonCod, courierDateToIso,
+  accountKey, money, assertRonCod, courierDateToIso, saidBy,
 } from './util.js';
+import { m, t } from '../i18n/index.js';
 
 // Cargus — "UrgentOnlineAPI" (Azure API Management).
 // Sources: Cargus API technical documentation V3 (cargus.ro/wp-content/uploads/DocumentationAPIV3-2.3.2-EN.pdf),
@@ -36,14 +37,8 @@ const DAY = 24 * 60 * 60;
 const TOKEN_TTL = 23 * 60 * 60; // token valid 24h; refresh a bit earlier
 const NOMENCLATOR_TTL = 7 * DAY;
 
-export const SERVICES = [
-  { id: '34', name: 'Economic Standard (până la 31 kg)' },
-  { id: '35', name: 'Standard Plus (31–50 kg)' },
-  { id: '36', name: 'Palet Standard (peste 50 kg)' },
-  { id: '38', name: 'PUDO / Ship & Go (livrare la punct)' },
-  { id: '39', name: 'Multipiece (max 15 colete, max 31 kg/colet)' },
-  { id: '1', name: 'Standard (contracte vechi)' },
-];
+// Names: cargus.fields.service.options.<id> in the catalogs.
+export const SERVICES = ['34', '35', '36', '38', '39', '1'].map((id) => ({ id }));
 
 // ---------------------------------------------------------------------------------------------
 // Tracking status mapping (Cargus → TrackingStatus)
@@ -95,8 +90,7 @@ function isBadSubscriptionKey(body) {
 function subscriptionKeyError(details) {
   return new ProcessingError({
     code: 'AUTH_FAILED',
-    message: 'Cheia API Cargus (Primary key) nu e acceptată.',
-    hint: 'Copiază „Primary key” din contul tău de pe urgentcargus.portal.azure-api.net (Products → UrgentOnlineAPI) și testează din nou conexiunea.',
+    key: 'cargus.errors.subscriptionKey',
     provider: PROVIDER,
     details,
   });
@@ -109,12 +103,7 @@ async function login(ctx, { force = false } = {}) {
   }
   const { username, password } = ctx.credentials || {};
   if (!subscriptionKey(ctx) || !username || !password) {
-    throw new ProcessingError({
-      code: 'AUTH_FAILED',
-      message: 'Lipsesc datele de conectare Cargus (cheie API, utilizator sau parolă).',
-      hint: 'Completează-le în Setări → Integrări → Cargus.',
-      provider: PROVIDER,
-    });
+    throw new ProcessingError({ code: 'AUTH_FAILED', key: 'cargus.errors.missingCredentials', provider: PROVIDER });
   }
   const res = await ctx.http(NAME, `${BASE_URL}/LoginUser`, {
     method: 'POST',
@@ -155,7 +144,7 @@ async function api(ctx, method, path, { json, mapError, responseType } = {}) {
       }
       return res.body;
     } catch (err) {
-      if (attempt === 0 && err?.code === 'AUTH_FAILED' && !/Primary key/.test(err.message)) {
+      if (attempt === 0 && err?.code === 'AUTH_FAILED' && err.key !== 'cargus.errors.subscriptionKey') {
         ctx.cache?.set(tokenCacheKey(ctx), null, 1);
         continue;
       }
@@ -219,7 +208,7 @@ export async function resolveLocality(ctx, recipient) {
     if (other) {
       const r2 = matchLocality({ ...q, county: other.name, countyCode: otherCode }, await getLocalities(ctx, other.id));
       if (r2.match && /^name/.test(r2.via)) {
-        ctx.log?.('cargus: localitate găsită în județul vecin', { city: recipient.city, from: recipient.county, to: other.name });
+        ctx.log?.(m('log.neighbourCounty', { provider: NAME }), { city: recipient.city, from: recipient.county, to: other.name });
         return { county: other, locality: r2.match, via: `${r2.via}+county` };
       }
     }
@@ -230,62 +219,34 @@ export async function resolveLocality(ctx, recipient) {
 // ---------------------------------------------------------------------------------------------
 // Error mapping for AWB creation
 
-function rejected(code, message, hint, field, details) {
-  return new ProcessingError({ code, message, hint, retryable: false, provider: PROVIDER, field, details });
+function rejected(code, key, params, field, details) {
+  return new ProcessingError({ code, key: `cargus.errors.${key}`, params, retryable: false, provider: PROVIDER, field, details });
 }
 
 export function mapAwbError(body, shipment, status) {
   const msgs = collectMessages(body);
-  const text = normalizeText(msgs.map((m) => `${m.path} ${m.message}`).join(' | '));
+  const text = normalizeText(msgs.map((x) => `${x.path} ${x.message}`).join(' | '));
   const first = shortText(msgs[0]?.message);
-  const said = first ? ` Cargus spune: „${first}”.` : '';
+  const said = saidBy(NAME, first);
   const r = shipment?.recipient || {};
-  if (/pudo|ship ?go|ship and go|deliverypudopoint/.test(text)) {
-    return rejected('LOCKER_INVALID', 'Punctul Ship & Go ales nu e acceptat de Cargus (inactiv sau fără ramburs).',
-      `Alege alt punct Ship & Go sau livrează la adresă.${said}`, 'lockerId', body);
-  }
-  if (/telefon|phone/.test(text)) {
-    return rejected('ADDRESS_PHONE_INVALID', `Cargus nu acceptă numărul de telefon „${r.phone || ''}”.`,
-      `Folosește un număr de 10 cifre (ex. 07xxxxxxxx), fără spații.${said}`, 'shippingAddress.phone', body);
-  }
+  if (/pudo|ship ?go|ship and go|deliverypudopoint/.test(text)) return rejected('LOCKER_INVALID', 'locker', { said }, 'lockerId', body);
+  if (/telefon|phone/.test(text)) return rejected('ADDRESS_PHONE_INVALID', 'phone', { phone: r.phone || '', said }, 'shippingAddress.phone', body);
   if (/localit|locality|\bcity\b|\boras\b/.test(text)) {
-    return rejected('ADDRESS_CITY_NOT_FOUND', `Cargus nu acceptă localitatea „${r.city || ''}” (județul ${r.county || '-'}).`,
-      `Verifică localitatea și județul din adresa de livrare.${said}`, 'shippingAddress.city', body);
+    return rejected('ADDRESS_CITY_NOT_FOUND', 'city', { city: r.city || '', county: r.county || '-', said }, 'shippingAddress.city', body);
   }
-  if (/judet|county/.test(text)) {
-    return rejected('ADDRESS_COUNTY_NOT_FOUND', `Cargus nu acceptă județul „${r.county || ''}”.`,
-      `Corectează județul în adresa de livrare.${said}`, 'shippingAddress.province', body);
-  }
-  if (/greutat|weight|\bkg\b/.test(text)) {
-    return rejected('SHIPMENT_WEIGHT_INVALID', `Cargus nu acceptă greutatea de ${shipment?.weightKg ?? '?'} kg pentru serviciul ales.`,
-      `Verifică greutatea produselor. Economic Standard: max 31 kg, Standard Plus: 31–50 kg, peste 50 kg: Palet.${said}`, 'weightKg', body);
-  }
+  if (/judet|county/.test(text)) return rejected('ADDRESS_COUNTY_NOT_FOUND', 'county', { county: r.county || '', said }, 'shippingAddress.province', body);
+  if (/greutat|weight|\bkg\b/.test(text)) return rejected('SHIPMENT_WEIGHT_INVALID', 'weight', { weight: shipment?.weightKg ?? '?', said }, 'weightKg', body);
   if (/punct de ridicare|pickup|locationid|sender|expeditor/.test(text)) {
-    return rejected('CONFIG_PICKUP_POINT_INVALID', 'Punctul de ridicare Cargus din setări nu e valid sau nu e activ pentru utilizatorul tău.',
-      `Alege din nou punctul de ridicare în Setări → Integrări → Cargus.${said}`, 'settings.pickupPointId', body);
+    return rejected('CONFIG_PICKUP_POINT_INVALID', 'pickupPoint', { said }, 'settings.pickupPointId', body);
   }
-  if (/serviciu|service/.test(text)) {
-    return rejected('CONFIG_SERVICE_INVALID', 'Serviciul Cargus ales nu e disponibil în contractul tău.',
-      `Alege alt serviciu în Setări → Integrări → Cargus (de obicei Economic Standard).${said}`, 'settings.service', body);
-  }
-  if (/ramburs|repayment/.test(text)) {
-    return rejected('COD_INVALID', 'Cargus a refuzat rambursul.',
-      `Dacă nu ai cont colector activ, alege „Ramburs numerar” în setările Cargus.${said}`, 'cod', body);
-  }
-  if (/tarif|pricetable/.test(text)) {
-    return rejected('CONFIG_PRICE_TABLE_INVALID', 'ID-ul de tarif Cargus din setări nu e valid.',
-      `Golește câmpul „ID tarif” din Setări → Integrări → Cargus sau cere ID-ul corect de la Cargus.${said}`, 'settings.priceTableId', body);
-  }
-  if (/e ?mail/.test(text)) {
-    return rejected('ADDRESS_EMAIL_INVALID', `Cargus nu acceptă emailul „${r.email || ''}”.`,
-      `Corectează emailul clientului.${said}`, 'email', body);
-  }
-  if (/adresa|address|strada|street/.test(text)) {
-    return rejected('ADDRESS_STREET_INVALID', 'Cargus nu acceptă adresa (strada/numărul) destinatarului.',
-      `Verifică strada și numărul în adresa de livrare.${said}`, 'shippingAddress.address1', body);
-  }
-  return rejected('PROVIDER_REJECTED', first ? `Cargus a refuzat AWB-ul: ${first}` : `Cargus a refuzat AWB-ul (cod ${status ?? '?'}).`,
-    'Verifică datele comenzii și setările Cargus; detaliile complete sunt în jurnal.', undefined, body);
+  if (/serviciu|service/.test(text)) return rejected('CONFIG_SERVICE_INVALID', 'service', { said }, 'settings.service', body);
+  if (/ramburs|repayment/.test(text)) return rejected('COD_INVALID', 'cod', { said }, 'cod', body);
+  if (/tarif|pricetable/.test(text)) return rejected('CONFIG_PRICE_TABLE_INVALID', 'priceTable', { said }, 'settings.priceTableId', body);
+  if (/e ?mail/.test(text)) return rejected('ADDRESS_EMAIL_INVALID', 'email', { email: r.email || '', said }, 'email', body);
+  if (/adresa|address|strada|street/.test(text)) return rejected('ADDRESS_STREET_INVALID', 'street', { said }, 'shippingAddress.address1', body);
+  return first
+    ? rejected('PROVIDER_REJECTED', 'rejected', { text: first }, undefined, body)
+    : rejected('PROVIDER_REJECTED', 'rejectedStatus', { status: status ?? '?' }, undefined, body);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -405,10 +366,8 @@ async function resolvePickupPointId(ctx) {
   if (points.length === 1) return points[0].id;
   throw new ProcessingError({
     code: 'CONFIG_PICKUP_POINT_MISSING',
-    message: 'Nu e ales punctul de ridicare Cargus.',
-    hint: points.length
-      ? `Alege-l în Setări → Integrări → Cargus (ai ${points.length} puncte: ${points.slice(0, 3).map((p) => `${p.name} – ID ${p.id}`).join('; ')}).`
-      : 'Contul Cargus nu are niciun punct de ridicare activ. Adaugă unul în WebExpress, apoi alege-l în Setări → Integrări → Cargus.',
+    key: points.length ? 'cargus.errors.pickupPointMissing' : 'cargus.errors.pickupPointMissingNone',
+    params: { count: points.length, points: points.slice(0, 3).map((p) => `${p.name} – ID ${p.id}`).join('; ') },
     provider: PROVIDER,
     field: 'settings.pickupPointId',
   });
@@ -426,57 +385,45 @@ const adapter = {
   name: NAME,
   trackingUrl: (awb) => `https://www.cargus.ro/personal/urmareste-coletul/?tracking_number=${encodeURIComponent(awb)}`,
 
+  // Labels and help: cargus.fields.<key> in the catalogs (src/i18n).
   credentialFields: [
-    { key: 'subscriptionKey', label: 'Cheie API (Primary key)', type: 'password', required: true,
-      help: 'Din urgentcargus.portal.azure-api.net → Products → UrgentOnlineAPI → Primary key.' },
-    { key: 'username', label: 'Utilizator WebExpress', type: 'text', required: true,
-      help: 'Același utilizator cu care intri în WebExpress Cargus.' },
-    { key: 'password', label: 'Parolă WebExpress', type: 'password', required: true },
+    { key: 'subscriptionKey', type: 'password', required: true },
+    { key: 'username', type: 'text', required: true },
+    { key: 'password', type: 'password', required: true },
   ],
 
   settingsFields: [
-    { key: 'pickupPointId', label: 'Punct de ridicare (LocationId)', type: 'text', required: true,
-      help: 'De unde ridică curierul coletele. Apasă „Testează conexiunea” ca să vezi ID-urile.' },
-    { key: 'service', label: 'Serviciu implicit', type: 'select', default: 'auto',
-      options: [{ value: 'auto', label: 'Automat după greutate (34 / 35 / 36)' }, ...SERVICES.filter((x) => x.id !== '38').map((x) => ({ value: x.id, label: x.name }))],
-      help: 'Pentru livrări la Ship & Go se folosește automat serviciul 38.' },
-    { key: 'codType', label: 'Tip ramburs', type: 'select', default: 'bank',
-      options: [{ value: 'bank', label: 'Cont colector (în bancă)' }, { value: 'cash', label: 'Numerar (în plic)' }],
-      help: 'Cum îți returnează Cargus banii din ramburs. Trebuie să corespundă contractului.' },
-    { key: 'openPackage', label: 'Deschidere colet la livrare', type: 'checkbox', default: false,
-      help: 'Valoarea implicită; poate fi schimbată per comandă.' },
-    { key: 'labelFormat', label: 'Format etichetă', type: 'select', default: 'A6',
-      options: [{ value: 'A6', label: 'Etichetă 10x14 cm (A6)' }, { value: 'A4', label: 'Pagină A4' }] },
-    { key: 'defaultDimensions', label: 'Dimensiuni implicite colet (cm)', type: 'text', default: '30x20x10',
-      help: 'Lungime x lățime x înălțime, folosite când comanda nu are dimensiuni.' },
-    { key: 'priceTableId', label: 'ID tarif (opțional)', type: 'text',
-      help: 'Doar dacă Cargus ți-a dat un PriceTableId. Altfel lasă gol.' },
+    { key: 'pickupPointId', type: 'text', required: true },
+    { key: 'service', type: 'select', default: 'auto',
+      options: [{ value: 'auto' }, ...SERVICES.filter((x) => x.id !== '38').map((x) => ({ value: x.id }))] },
+    { key: 'codType', type: 'select', default: 'bank', options: [{ value: 'bank' }, { value: 'cash' }] },
+    { key: 'openPackage', type: 'checkbox', default: false },
+    { key: 'labelFormat', type: 'select', default: 'A6', options: [{ value: 'A6' }, { value: 'A4' }] },
+    { key: 'defaultDimensions', type: 'text', default: '30x20x10' },
+    { key: 'priceTableId', type: 'text' },
   ],
 
   async testConnection(ctx) {
     await login(ctx, { force: true });
     const points = await adapter.listPickupPoints(ctx);
     const chosen = String(ctx.settings?.pickupPointId || '').trim();
-    let message = `Conectat la Cargus. Am găsit ${points.length} ${points.length === 1 ? 'punct' : 'puncte'} de ridicare.`;
-    if (chosen && !points.some((p) => String(p.id) === chosen)) {
-      message += ` Atenție: punctul de ridicare ${chosen} din setări nu e în listă.`;
-    } else if (!chosen && points.length > 1) {
-      message += ' Alege punctul de ridicare în setări.';
-    }
-    return { ok: true, message, info: { pickupPoints: points } };
+    let extra = '';
+    if (chosen && !points.some((p) => String(p.id) === chosen)) extra = m('cargus.test.pointMissing', { id: chosen });
+    else if (!chosen && points.length > 1) extra = m('cargus.test.choosePoint');
+    return { ok: true, message: m('cargus.test.connected', { count: points.length, extra }), info: { pickupPoints: points } };
   },
 
   async listPickupPoints(ctx) {
     const body = await api(ctx, 'GET', 'PickupLocations');
     return asArray(body).map((p) => ({
       id: String(p.LocationId),
-      name: p.Name || `Punct ${p.LocationId}`,
+      name: p.Name || t(ctx.locale, 'cargus.pointName', { id: p.LocationId }),
       address: [p.AddressText || [p.StreetName, p.BuildingNumber].filter(Boolean).join(' '), p.LocalityName, p.CountyName].filter(Boolean).join(', '),
     }));
   },
 
-  async listServices() {
-    return SERVICES.map((x) => ({ ...x }));
+  async listServices(ctx) {
+    return SERVICES.map((x) => ({ ...x, name: t(ctx?.locale, `cargus.fields.service.options.${x.id}`) }));
   },
 
   async listLockers(ctx, { county, city } = {}) {
@@ -512,8 +459,7 @@ const adapter = {
     let place = {};
     if (shipment.lockerId) {
       if (!r.email) {
-        throw rejected('ADDRESS_EMAIL_MISSING', 'Pentru livrare la Ship & Go, Cargus cere emailul destinatarului.',
-          'Adaugă emailul clientului în comandă sau livrează la adresă.', 'email');
+        throw rejected('ADDRESS_EMAIL_MISSING', 'emailMissing', {}, 'email');
       }
     } else {
       place = await resolveLocality(ctx, r);
@@ -525,7 +471,7 @@ const adapter = {
     });
     const awb = extractBarcode(body);
     if (!awb) throw mapAwbError(body, shipment, 200);
-    ctx.log?.('cargus: AWB creat', { awb, reference: shipment.reference, localityId: place.locality?.id, via: place.via });
+    ctx.log?.(m('log.awbCreated', { provider: NAME, awb }), { awb, reference: shipment.reference, localityId: place.locality?.id, via: place.via });
     return { awb, raw: { response: body, localityId: place.locality?.id, localityName: place.locality?.name } };
   },
 
@@ -537,8 +483,8 @@ const adapter = {
     if (pdf.subarray(0, 4).toString('latin1') !== '%PDF') {
       throw new ProcessingError({
         code: 'LABEL_UNAVAILABLE',
-        message: `Cargus nu a trimis eticheta pentru AWB ${awb}.`,
-        hint: 'Verifică dacă AWB-ul mai există (nu a fost anulat) și încearcă din nou.',
+        key: 'cargus.errors.label',
+        params: { awb },
         retryable: true,
         provider: PROVIDER,
         details: typeof body === 'string' ? body.slice(0, 500) : body,
@@ -552,8 +498,8 @@ const adapter = {
     if (body === false || String(body).toLowerCase() === 'false') {
       throw new ProcessingError({
         code: 'CANCEL_REFUSED',
-        message: `Cargus nu a anulat AWB-ul ${awb}.`,
-        hint: 'Se poate anula doar înainte să fie ridicat de curier. Dacă a plecat deja, cere returul din WebExpress.',
+        key: 'cargus.errors.cancel',
+        params: { awb },
         provider: PROVIDER,
         details: body,
       });

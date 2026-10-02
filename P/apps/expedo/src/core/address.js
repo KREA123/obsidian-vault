@@ -91,36 +91,36 @@ export function cleanCity(city, county) {
 
 /**
  * Validates and normalizes a shipping address. Returns the normalized address plus
- * `issues`: { level: 'error'|'warning', code, field, message, hint }.
+ * `issues`: { level: 'error'|'warning', code, field, key, params } (text: errors.<code> in the catalogs).
  * Errors block AWB generation; warnings are shown but don't block.
  */
 export function validateAddress(addr = {}, { requireZip = false } = {}) {
   const issues = [];
-  const add = (level, code, field, message, hint) => issues.push({ level, code, field, message, hint });
+  // Text comes from the catalogs (errors.<code>), rendered in the viewer's language (core/errors.js renderError).
+  const add = (level, code, field, params) => issues.push({ level, code, field, key: `errors.${code}`, params: params || {} });
 
   const country = (addr.countryCode || 'RO').toUpperCase();
   const name = [addr.firstName, addr.lastName].filter(Boolean).join(' ').trim() || String(addr.name || '').trim();
-  if (!name) add('error', 'ADDRESS_NAME_MISSING', 'shippingAddress.name', 'Lipsește numele destinatarului.', 'Completează numele în adresa de livrare.');
+  if (!name) add('error', 'ADDRESS_NAME_MISSING', 'shippingAddress.name');
 
   if (country !== 'RO') {
-    add('error', 'ADDRESS_FOREIGN', 'shippingAddress.country', `Adresa de livrare e în afara României (${country}).`, 'Livrările internaționale nu sunt încă suportate automat; procesează comanda manual.');
+    add('error', 'ADDRESS_FOREIGN', 'shippingAddress.country', { country });
   }
 
   const county = findCounty(addr.provinceCode) || findCounty(addr.province) || findCounty(addr.city);
   if (!county) {
     const given = addr.province || addr.provinceCode;
-    add('error', given ? 'ADDRESS_COUNTY_INVALID' : 'ADDRESS_COUNTY_MISSING', 'shippingAddress.province',
-      given ? `Județul „${given}” nu e recunoscut.` : 'Lipsește județul.', 'Alege județul corect din listă.');
+    add('error', given ? 'ADDRESS_COUNTY_INVALID' : 'ADDRESS_COUNTY_MISSING', 'shippingAddress.province', given ? { county: given } : {});
   }
 
   const city = cleanCity(addr.city, county);
-  if (!city) add('error', 'ADDRESS_CITY_MISSING', 'shippingAddress.city', 'Lipsește localitatea.', 'Completează localitatea în adresa de livrare.');
+  if (!city) add('error', 'ADDRESS_CITY_MISSING', 'shippingAddress.city');
 
   const street = [addr.address1, addr.address2].map((s) => String(s ?? '').trim()).filter(Boolean).join(', ');
   if (street.length < 3) {
-    add('error', 'ADDRESS_STREET_MISSING', 'shippingAddress.address1', 'Lipsește strada.', 'Completează strada și numărul.');
+    add('error', 'ADDRESS_STREET_MISSING', 'shippingAddress.address1');
   } else if (!/\d/.test(street) && !/\b(fn|f\.n\.|nr)\b/i.test(street)) {
-    add('warning', 'ADDRESS_NO_NUMBER', 'shippingAddress.address1', 'Adresa nu conține un număr de stradă.', 'Verifică dacă e completă; la sate e normal să lipsească.');
+    add('warning', 'ADDRESS_NO_NUMBER', 'shippingAddress.address1');
   }
 
   let sector = null;
@@ -131,16 +131,16 @@ export function validateAddress(addr = {}, { requireZip = false } = {}) {
       // București postal codes: 0[1-6]xxxx → sector from the second digit.
       if (z.valid && /^0[1-6]/.test(z.zip)) sector = Number(z.zip[1]);
     }
-    if (!sector) add('warning', 'ADDRESS_SECTOR_MISSING', 'shippingAddress.city', 'Nu am găsit sectorul pentru București.', 'Adaugă sectorul (ex. „Sector 3”) ca să ajungă coletul mai repede.');
+    if (!sector) add('warning', 'ADDRESS_SECTOR_MISSING', 'shippingAddress.city');
   }
 
   const p = normalizePhone(addr.phone);
-  if (!p.phone) add('error', 'ADDRESS_PHONE_MISSING', 'shippingAddress.phone', 'Lipsește telefonul destinatarului.', 'Curierii nu primesc AWB fără telefon. Adaugă-l în comandă.');
-  else if (!p.valid) add('error', 'ADDRESS_PHONE_INVALID', 'shippingAddress.phone', `Telefonul „${addr.phone}” nu pare valid.`, 'Un număr românesc are 10 cifre și începe cu 07, 02 sau 03.');
+  if (!p.phone) add('error', 'ADDRESS_PHONE_MISSING', 'shippingAddress.phone');
+  else if (!p.valid) add('error', 'ADDRESS_PHONE_INVALID', 'shippingAddress.phone', { phone: addr.phone });
 
   const z = normalizeZip(addr.zip);
-  if (!z.zip && requireZip) add('error', 'ADDRESS_ZIP_MISSING', 'shippingAddress.zip', 'Lipsește codul poștal.', 'Curierul ales cere cod poștal. Îl găsești pe posta-romana.ro.');
-  else if (z.zip && !z.valid) add('warning', 'ADDRESS_ZIP_INVALID', 'shippingAddress.zip', `Codul poștal „${addr.zip}” nu are 6 cifre.`, 'Verifică-l pe posta-romana.ro.');
+  if (!z.zip && requireZip) add('error', 'ADDRESS_ZIP_MISSING', 'shippingAddress.zip');
+  else if (z.zip && !z.valid) add('warning', 'ADDRESS_ZIP_INVALID', 'shippingAddress.zip', { zip: addr.zip });
 
   return {
     address: {

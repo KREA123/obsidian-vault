@@ -7,6 +7,7 @@ import {
   NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, splitStreet, toIntlPhone, latestMeaningful,
   accountKey, money,
 } from './util.js';
+import { m, t } from '../i18n/index.js';
 
 // GLS Romania — MyGLS API, REST/JSON (https://api.mygls.ro/ParcelService.svc/json/<Method>).
 // Source: "MyGLS API for system integration" ver. 25.12.11 (api.test.mygls.ro/docs/MyGLS_API.pdf)
@@ -77,20 +78,20 @@ export function mapGlsStatus(code) {
 
 const AUTH_FAIL_TTL = 15 * 60; // remember a rejected login: each retry counts towards GLS's lockout
 
-// MyGLS ErrorCode (Appendix A) → merchant message.
+// MyGLS ErrorCode (Appendix A) → [code, field]; text: gls.errors.code<N> in the catalogs.
 const GLS_ERRORS = {
-  8: ['COD_INVALID', 'Suma ramburs trebuie să fie zero sau pozitivă.', 'Verifică totalul comenzii.', 'cod'],
+  8: ['COD_INVALID', 'cod'],
   14: null, // user not exists → auth
   15: null, // not authorized for parcel → auth
-  23: ['ADDRESS_STREET_INVALID', 'Numărul străzii nu poate fi 0.', 'Corectează numărul din adresa de livrare.', 'shippingAddress.address1'],
+  23: ['ADDRESS_STREET_INVALID', 'shippingAddress.address1'],
   27: null, // not authorized for client → auth
-  28: ['PARCELS_INVALID', 'Cu asigurare (INS), GLS acceptă un singur colet pe AWB.', 'Trimite un singur colet sau scoate valoarea declarată.', 'parcels'],
-  29: ['PARCELS_INVALID', 'Numărul de colete trebuie să fie între 1 și 99.', 'Corectează numărul de colete.', 'parcels'],
-  31: ['PROVIDER_RATE_LIMIT', 'Aceeași cerere a fost trimisă de prea multe ori la GLS.', 'Așteaptă 5 minute și reîncearcă.', undefined],
-  32: ['REFERENCE_MISSING', 'GLS cere referința comenzii pe colet.', 'Reîncearcă; dacă persistă, contactează-ne.', undefined],
-  33: ['CONTENT_MISSING', 'GLS cere descrierea conținutului coletului.', 'Completează „Conținut” în setări sau în regulile de expediere.', 'contents'],
-  34: ['SETTINGS_INVALID', 'Tipul de imprimantă ales nu e acceptat de GLS.', 'Alege alt format de etichetă în Setări → Curieri → GLS.', 'settings.printerType'],
-  48: ['COD_INVALID', 'Moneda rambursului nu este acceptată de GLS.', 'Folosește RON pentru ramburs.', 'currency'],
+  28: ['PARCELS_INVALID', 'parcels'],
+  29: ['PARCELS_INVALID', 'parcels'],
+  31: ['PROVIDER_RATE_LIMIT', undefined],
+  32: ['REFERENCE_MISSING', undefined],
+  33: ['CONTENT_MISSING', 'contents'],
+  34: ['SETTINGS_INVALID', 'settings.printerType'],
+  48: ['COD_INVALID', 'currency'],
 };
 
 export function glsPasswordBytes(password) {
@@ -118,8 +119,7 @@ function clientNumber(ctx) {
   if (!n) {
     throw new ProcessingError({
       code: 'SETTINGS_MISSING',
-      message: 'Lipsește numărul de client GLS.',
-      hint: 'Completează „Număr client GLS” în Setări → Curieri → GLS (îl găsești în MyGLS sau în contract).',
+      key: 'gls.errors.clientNumberMissing',
       provider: ID, field: 'settings.clientNumber',
     });
   }
@@ -150,21 +150,17 @@ const lockedUntil = (text) => String(text || '').match(/locked until ([0-9:. apm
 function glsAuthError(first, raw) {
   const text = String(first?.ErrorDescription || '');
   const until = lockedUntil(text);
-  const e = authError(PROVIDER, raw);
-  e.provider = ID;
   if (/locked|too many/i.test(text)) {
-    e.message = `Contul MyGLS e blocat temporar după prea multe încercări de conectare eșuate${until ? ` (până la ${until})` : ''}.`;
-    e.hint = 'Verifică utilizatorul (e-mailul) și parola MyGLS în Setări → Curieri → GLS, apoi testează conexiunea după ora deblocării.';
+    return new ProcessingError({ code: 'AUTH_FAILED', key: until ? 'gls.errors.lockedUntil' : 'gls.errors.locked', params: { until }, provider: ID, details: raw });
   }
-  return e;
+  return new ProcessingError({ ...authError(PROVIDER, raw).toJSON(), provider: ID });
 }
 
+/** The remembered login failure ({ key, params } or, from older versions, { message, hint }). */
 function rememberedAuthError(failed) {
-  const e = authError(PROVIDER, failed.details);
-  e.provider = ID;
-  if (failed.message) e.message = failed.message;
-  if (failed.hint) e.hint = failed.hint;
-  return e;
+  if (failed.key) return new ProcessingError({ code: 'AUTH_FAILED', key: failed.key, params: failed.params, provider: ID, details: failed.details });
+  if (failed.message) return new ProcessingError({ code: 'AUTH_FAILED', message: failed.message, hint: failed.hint, provider: ID, details: failed.details });
+  return new ProcessingError({ ...authError(PROVIDER, failed.details).toJSON(), provider: ID });
 }
 
 const isAuthErrorInfo = (e) => [14, 15, 27].includes(Number(e?.ErrorCode))
@@ -179,36 +175,31 @@ function throwGlsErrors(list, raw, ctx) {
     const e = glsAuthError(first, raw);
     // Every further call with the same password counts as another failed login → lockout. Stop here.
     // (Only login failures: 15/27 are "not authorized for this parcel / client", not a bad password.)
-    if (ctx && [-1, 14].includes(code)) cacheSet(ctx, authFailKey(ctx), { message: e.message, hint: e.hint, details: first }, AUTH_FAIL_TTL);
+    if (ctx && [-1, 14].includes(code)) cacheSet(ctx, authFailKey(ctx), { key: e.key, params: e.params, details: first }, AUTH_FAIL_TTL);
     throw e;
   }
   if (code === 1000 || code === 1001) {
-    throw new ProcessingError({ code: 'PROVIDER_DOWN', message: 'GLS are o problemă internă.', hint: 'Reîncercăm automat în câteva minute.', retryable: true, provider: ID, details: raw });
+    throw new ProcessingError({ code: 'PROVIDER_DOWN', key: 'gls.errors.internal', retryable: true, provider: ID, details: raw });
   }
   const known = GLS_ERRORS[code];
   if (known) {
-    const [c, message, hint, field] = known;
-    throw new ProcessingError({ code: c, message, hint, field, retryable: code === 31, provider: ID, details: raw });
+    const [c, field] = known;
+    throw new ProcessingError({ code: c, key: `gls.errors.code${code}`, field, retryable: code === 31, provider: ID, details: raw });
   }
   const text = list.map((e) => e.ErrorDescription).filter(Boolean).join('; ');
   const byField = [
-    [/zip|postal|irányítószám/i, 'ADDRESS_ZIP_INVALID', 'GLS nu acceptă codul poștal al destinatarului.', 'shippingAddress.zip'],
-    [/city|town/i, 'ADDRESS_CITY_NOT_FOUND', 'GLS nu acceptă localitatea destinatarului.', 'shippingAddress.city'],
-    [/street|house/i, 'ADDRESS_STREET_INVALID', 'GLS nu acceptă strada sau numărul destinatarului.', 'shippingAddress.address1'],
-    [/phone/i, 'ADDRESS_PHONE_INVALID', 'GLS nu acceptă telefonul destinatarului.', 'shippingAddress.phone'],
-    [/email/i, 'ADDRESS_EMAIL_INVALID', 'GLS nu acceptă e-mailul destinatarului.', 'email'],
-    [/psd|parcel ?shop|delivery ?point/i, 'LOCKER_INVALID', 'Punctul GLS (ParcelShop/locker) ales nu este valid.', 'lockerId'],
-    [/pickup ?address|sender/i, 'SETTINGS_INVALID', 'Adresa de ridicare din setările GLS nu este acceptată.', 'settings.senderStreet'],
+    [/zip|postal|irányítószám/i, 'ADDRESS_ZIP_INVALID', 'shippingAddress.zip'],
+    [/city|town/i, 'ADDRESS_CITY_NOT_FOUND', 'shippingAddress.city'],
+    [/street|house/i, 'ADDRESS_STREET_INVALID', 'shippingAddress.address1'],
+    [/phone/i, 'ADDRESS_PHONE_INVALID', 'shippingAddress.phone'],
+    [/email/i, 'ADDRESS_EMAIL_INVALID', 'email'],
+    [/psd|parcel ?shop|delivery ?point/i, 'LOCKER_INVALID', 'lockerId'],
+    [/pickup ?address|sender/i, 'SETTINGS_INVALID', 'settings.senderStreet'],
   ];
-  for (const [re, c, message, field] of byField) {
-    if (re.test(text)) throw new ProcessingError({ code: c, message, field, hint: 'Corectează datele și reîncearcă.', provider: ID, details: raw });
+  for (const [re, c, field] of byField) {
+    if (re.test(text)) throw new ProcessingError({ code: c, key: `gls.errors.field.${c}`, field, provider: ID, details: raw });
   }
-  throw new ProcessingError({
-    code: 'COURIER_REJECTED',
-    message: 'GLS a refuzat coletul.',
-    hint: 'Verifică adresa destinatarului și setările GLS. Detaliile sunt în jurnal.',
-    provider: ID, details: raw,
-  });
+  throw new ProcessingError({ code: 'COURIER_REJECTED', key: 'gls.errors.rejected', provider: ID, details: raw });
 }
 
 function toBuffer(labels) {
@@ -230,9 +221,9 @@ async function loadLocations(ctx) {
   return cached(ctx, 'gls:locations:RO', NOMENCLATOR_TTL, async () => {
     const body = await call(ctx, 'MasterDataService', 'GetLocations', { CountryIsoCode: 'RO' }, { timeoutMs: 20_000 });
     if (Array.isArray(body.GetLocationsErrors)) throwGlsErrors(body.GetLocationsErrors, { ...body, Data: undefined }, ctx);
-    if (body.ErrorCode) throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'GLS nu a trimis nomenclatorul de localități.', provider: ID, details: body });
+    if (body.ErrorCode) throw new ProcessingError({ code: 'PROVIDER_REJECTED', key: 'gls.errors.locations', provider: ID, details: body });
     const raw = toBuffer(body.Data);
-    if (!raw?.length) throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'Nomenclator GLS gol.', provider: ID, details: { ...body, Data: undefined } });
+    if (!raw?.length) throw new ProcessingError({ code: 'PROVIDER_REJECTED', key: 'gls.errors.locationsEmpty', provider: ID, details: { ...body, Data: undefined } });
     const list = JSON.parse(gunzipSync(raw).toString('utf8'));
     return list.map((l) => [l.Name, String(l.ZipCode)]);
   });
@@ -259,7 +250,7 @@ export async function resolveGlsAddress(ctx, recipient) {
       if (err?.code === 'AUTH_FAILED') throw err;
       // Remember the failure for a while so every shipment does not wait on it again.
       await cacheSet(ctx, LOCATIONS_OFF_KEY, true, 6 * 60 * 60);
-      ctx.log?.('gls: locations nomenclator unavailable, skipping local check', { err: err?.message });
+      ctx.log?.(m('log.localitiesUnavailableSkip', { provider: PROVIDER }), { err: err?.message });
     }
   }
   if (!rows) {
@@ -289,7 +280,7 @@ export async function resolveGlsAddress(ctx, recipient) {
     if (!result.match) throw localityError({ provider: ID, providerName: PROVIDER, city: recipient.city, result: { notFound: true, suggestions: result.suggestions || [] } });
   }
   if (zipRows.length && cityRows.length) {
-    ctx.log?.('gls: ZIP belongs to another locality name, GLS routes by ZIP', { city: recipient.city, zip: zipIn, glsCityForZip: zipRows[0][0] });
+    ctx.log?.(m('log.zipOtherCity', { provider: PROVIDER }), { city: recipient.city, zip: zipIn, glsCityForZip: zipRows[0][0] });
   }
   return { zip: zipIn, city: displayCity(recipient) };
 }
@@ -299,24 +290,20 @@ function displayCity(r) {
 }
 
 function zipMissing(zips = [], suggestions = []) {
-  let hint = 'Completează codul poștal (6 cifre) în adresa de livrare. Îl găsești pe posta-romana.ro.';
-  if (zips.length > 1) hint = `Completează codul poștal în adresa de livrare (localitatea are mai multe coduri, ex. ${zips.slice(0, 3).join(', ')}).`;
-  else if (suggestions.length) hint = `Completează codul poștal și verifică localitatea. Ai vrut: ${suggestions.join(', ')}?`;
+  let hintKey = 'gls.errors.zipMissing.hint';
+  if (zips.length > 1) hintKey = 'gls.errors.zipMissing.hintZips';
+  else if (suggestions.length) hintKey = 'gls.errors.zipMissing.hintSuggestions';
   return new ProcessingError({
     code: 'ADDRESS_ZIP_MISSING',
-    message: 'GLS cere codul poștal al destinatarului, iar comanda nu îl are.',
-    hint,
+    key: 'gls.errors.zipMissing',
+    hintKey,
+    params: { zips: zips.slice(0, 3).join(', '), suggestions: suggestions.join(', ') },
     field: 'shippingAddress.zip', provider: ID,
   });
 }
 
 function zipInvalid(zip) {
-  return new ProcessingError({
-    code: 'ADDRESS_ZIP_INVALID',
-    message: `Codul poștal „${zip}” nu este valid: trebuie să aibă 6 cifre.`,
-    hint: 'Corectează codul poștal în adresa de livrare.',
-    field: 'shippingAddress.zip', provider: ID,
-  });
+  return new ProcessingError({ code: 'ADDRESS_ZIP_INVALID', key: 'gls.errors.zipInvalid', params: { zip }, field: 'shippingAddress.zip', provider: ID });
 }
 
 // ---------------------------------------------------------------- payload
@@ -326,8 +313,7 @@ function pickupAddress(settings) {
   if (missing.length) {
     throw new ProcessingError({
       code: 'SETTINGS_MISSING',
-      message: 'Adresa de ridicare GLS nu este completă.',
-      hint: 'Completează numele, strada, localitatea și codul poștal al expeditorului în Setări → Curieri → GLS.',
+      key: 'gls.errors.senderIncomplete',
       provider: ID, field: `settings.${missing[0]}`,
     });
   }
@@ -356,8 +342,7 @@ export function buildParcel(shipment, settings, { clientNumber: cn, zip, city, p
     if (!r.email) {
       throw new ProcessingError({
         code: 'ADDRESS_EMAIL_MISSING',
-        message: 'Pentru livrare în GLS ParcelShop/locker e nevoie de e-mailul destinatarului.',
-        hint: 'Adaugă e-mailul clientului în comandă sau alege livrare la adresă.',
+        key: 'gls.errors.emailMissing',
         field: 'email', provider: ID,
       });
     }
@@ -446,31 +431,25 @@ export default {
   name: PROVIDER,
   trackingUrl: (awb) => `https://gls-group.com/RO/ro/urmarire-colet?match=${encodeURIComponent(awb)}`,
 
+  // Labels and help: gls.fields.<key> in the catalogs (src/i18n).
   credentialFields: [
-    { key: 'username', label: 'Utilizator MyGLS (e-mail)', type: 'text', required: true, help: 'E-mailul cu care intri în mygls.ro.' },
-    { key: 'password', label: 'Parolă MyGLS', type: 'password', required: true },
+    { key: 'username', type: 'text', required: true },
+    { key: 'password', type: 'password', required: true },
   ],
 
   settingsFields: [
-    { key: 'clientNumber', label: 'Număr client GLS', type: 'text', required: true, help: 'Numărul de client din contractul GLS / MyGLS.' },
-    { key: 'senderName', label: 'Expeditor – nume', type: 'text', required: true, help: 'Apare pe etichetă ca expeditor.' },
-    { key: 'senderStreet', label: 'Expeditor – stradă și număr', type: 'text', required: true },
-    { key: 'senderCity', label: 'Expeditor – localitate', type: 'text', required: true },
-    { key: 'senderZip', label: 'Expeditor – cod poștal', type: 'text', required: true },
-    { key: 'senderContactName', label: 'Expeditor – persoană de contact', type: 'text' },
-    { key: 'senderPhone', label: 'Expeditor – telefon', type: 'text' },
-    { key: 'senderEmail', label: 'Expeditor – e-mail', type: 'text' },
-    {
-      key: 'printerType', label: 'Format etichetă', type: 'select', default: 'A4_2x2',
-      options: [
-        { value: 'A4_2x2', label: 'A4, 4 etichete pe pagină' },
-        { value: 'A4_4x1', label: 'A4, 4 etichete pe verticală' },
-        { value: 'Thermo', label: 'Termică (10×15)' },
-      ],
-    },
-    { key: 'notifyEmail', label: 'Anunță clientul pe e-mail (FDS)', type: 'checkbox', default: true, help: 'GLS trimite clientului e-mail cu ziua livrării.' },
-    { key: 'notifySms', label: 'Anunță clientul prin SMS', type: 'checkbox', default: false, help: 'Serviciu cu cost suplimentar la GLS.' },
-    { key: 'sandbox', label: 'Mod test GLS', type: 'checkbox', default: false, help: 'Folosește api.test.mygls.ro (cont de test GLS). Etichetele nu sunt reale.' },
+    { key: 'clientNumber', type: 'text', required: true },
+    { key: 'senderName', type: 'text', required: true },
+    { key: 'senderStreet', type: 'text', required: true },
+    { key: 'senderCity', type: 'text', required: true },
+    { key: 'senderZip', type: 'text', required: true },
+    { key: 'senderContactName', type: 'text' },
+    { key: 'senderPhone', type: 'text' },
+    { key: 'senderEmail', type: 'text' },
+    { key: 'printerType', type: 'select', default: 'A4_2x2', options: [{ value: 'A4_2x2' }, { value: 'A4_4x1' }, { value: 'Thermo' }] },
+    { key: 'notifyEmail', type: 'checkbox', default: true },
+    { key: 'notifySms', type: 'checkbox', default: false },
+    { key: 'sandbox', type: 'checkbox', default: false },
   ],
 
   async testConnection(ctx) {
@@ -484,7 +463,7 @@ export default {
     const test = baseUrl(ctx).includes('.test.');
     return {
       ok: true,
-      message: `Conectat la GLS${test ? ' (mod test)' : ''}. Client ${cn}: ${(body.PrintDataInfoList || []).length} etichete emise în ultimele 24 de ore.`,
+      message: m('gls.test.connected', { sandbox: test ? m('gls.test.sandbox') : '', client: cn, count: (body.PrintDataInfoList || []).length }),
     };
   },
 
@@ -504,7 +483,7 @@ export default {
     const infos = body.PrintLabelsInfoList || [];
     if (!infos.length || !infos[0].ParcelNumber) {
       // Not retryable: the label may exist already and a blind retry would print a second one.
-      throw new ProcessingError({ code: 'COURIER_REJECTED', message: 'GLS nu a returnat numărul coletului.', hint: 'Verifică în MyGLS dacă eticheta a fost creată înainte să reîncerci, ca să nu se dubleze.', retryable: false, provider: ID, details: { ...body, Labels: undefined } });
+      throw new ProcessingError({ code: 'COURIER_REJECTED', key: 'gls.errors.noParcelNumber', retryable: false, provider: ID, details: { ...body, Labels: undefined } });
     }
     const awb = String(infos[0].ParcelNumber);
     const parcelIds = infos.map((i) => i.ParcelId).filter(Boolean);
@@ -515,7 +494,7 @@ export default {
   async getLabel(ctx, awb, { format } = {}) {
     const ids = await parcelIdsFor(ctx, awb);
     if (!ids.length) {
-      throw new ProcessingError({ code: 'LABEL_FAILED', message: `GLS nu găsește coletul ${awb}.`, hint: 'Verifică în MyGLS dacă eticheta există (etichetele mai vechi de 30 de zile nu pot fi regăsite automat).', provider: ID });
+      throw new ProcessingError({ code: 'LABEL_FAILED', key: 'gls.errors.labelNotFound', params: { awb }, provider: ID });
     }
     const body = await call(ctx, 'ParcelService', 'GetPrintedLabels', {
       ParcelIdList: ids.slice(0, 99),
@@ -526,7 +505,7 @@ export default {
     throwGlsErrors(body.GetPrintedLabelsErrorList, { ...body, Labels: undefined }, ctx);
     const pdf = toBuffer(body.Labels);
     if (!isPdf(pdf)) {
-      throw new ProcessingError({ code: 'LABEL_FAILED', message: `GLS nu a trimis eticheta pentru coletul ${awb}.`, hint: 'Reîncearcă în câteva minute.', retryable: true, provider: ID, details: { ...body, Labels: undefined } });
+      throw new ProcessingError({ code: 'LABEL_FAILED', key: 'gls.errors.label', params: { awb }, retryable: true, provider: ID, details: { ...body, Labels: undefined } });
     }
     return pdf;
   },
@@ -534,15 +513,15 @@ export default {
   async cancelShipment(ctx, awb) {
     const ids = await parcelIdsFor(ctx, awb);
     if (!ids.length) {
-      throw new ProcessingError({ code: 'CANCEL_REFUSED', message: `GLS nu găsește coletul ${awb} pentru anulare.`, hint: 'Șterge eticheta direct din MyGLS.', provider: ID });
+      throw new ProcessingError({ code: 'CANCEL_REFUSED', key: 'gls.errors.cancelNotFound', params: { awb }, provider: ID });
     }
     const body = await call(ctx, 'ParcelService', 'DeleteLabels', { ParcelIdList: ids.slice(0, 50) });
     if (Array.isArray(body.DeleteLabelsErrorList) && body.DeleteLabelsErrorList.length) {
       if (isAuthErrorInfo(body.DeleteLabelsErrorList[0])) throwGlsErrors(body.DeleteLabelsErrorList, body, ctx);
       throw new ProcessingError({
         code: 'CANCEL_REFUSED',
-        message: `GLS nu a anulat coletul ${awb}.`,
-        hint: 'De obicei coletul a fost deja predat curierului. Verifică în MyGLS.',
+        key: 'gls.errors.cancel',
+        params: { awb },
         provider: ID, details: body,
       });
     }
@@ -584,7 +563,7 @@ export default {
         if (err?.code === 'AUTH_FAILED') throw err;
         // Batch method is new (2026-03; in the live RO WSDL); fall back to one call per parcel.
         // VERIFY: its answer for real parcels / unknown parcel numbers with a real account.
-        ctx.log?.('gls: GetParcelListStatuses failed, falling back to GetParcelStatuses', { err: err?.message });
+        ctx.log?.(m('log.statusBatchFailed', { provider: PROVIDER }), { err: err?.message });
         parcels = [];
         for (const awb of group) {
           const p = await single(awb);
@@ -602,7 +581,8 @@ export default {
         out.push({
           awb,
           status,
-          statusText: last ? String(last.event.StatusDescription || '').trim() : 'Etichetă emisă',
+          // No events yet: no words of the courier's own (the status label 'AWB created' is shown, translated).
+          statusText: last ? String(last.event.StatusDescription || '').trim() : undefined,
           at: last ? parseGlsDate(last.event.StatusDate) : undefined,
           ...(status === S.DELIVERED ? { codCollected: true } : {}),
         });
@@ -611,10 +591,10 @@ export default {
     return out;
   },
 
-  async listServices() {
+  async listServices(ctx) {
     return [
       { id: 'standard', name: 'GLS Business Parcel (standard)' },
-      { id: 'PSD', name: 'Livrare în GLS ParcelShop / locker' },
+      { id: 'PSD', name: t(ctx?.locale, 'gls.services.PSD') },
     ];
   },
 };

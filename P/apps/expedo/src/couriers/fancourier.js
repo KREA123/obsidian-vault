@@ -3,8 +3,9 @@ import { TrackingStatus as S } from './contract.js';
 import { findLocality, norm, normCounty } from './locality.js';
 import {
   NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, bufferToJson, roLocalToIso, latestMeaningful,
-  accountKey, money, assertRonCod, shortText,
+  accountKey, money, assertRonCod, shortText, saidBy,
 } from './util.js';
+import { m } from '../i18n/index.js';
 
 // FAN Courier — selfAWB REST API v2.0 (https://api.fancourier.ro).
 // Source: "API DOCUMENTATION FAN Courier V 2.0, September 2025" (fancourier.ro PDF) and the
@@ -111,8 +112,7 @@ function clientIdOf(ctx) {
   if (!id) {
     throw new ProcessingError({
       code: 'SETTINGS_MISSING',
-      message: 'Lipsește ID-ul de client FAN Courier (punctul de ridicare).',
-      hint: 'Completează „ID client” în Setări → Curieri → FAN Courier. Apasă „Testează conexiunea” ca să vezi ID-urile disponibile.',
+      key: 'fancourier.errors.clientIdMissing',
       provider: ID,
       field: 'settings.clientId',
     });
@@ -183,15 +183,15 @@ function mapHttpError(status, body) {
   return undefined;
 }
 
-// Field paths in FAN validation errors → the order field the merchant must fix.
+// Field paths in FAN validation errors → the order field the merchant must fix (text: fancourier.errors.field.<code>).
 const FIELD_MAP = [
-  [/locality|localitate/i, 'shippingAddress.city', 'ADDRESS_CITY_NOT_FOUND', 'Localitatea nu este acceptată de FAN Courier.'],
-  [/county|judet/i, 'shippingAddress.province', 'ADDRESS_COUNTY_INVALID', 'Județul nu este acceptat de FAN Courier.'],
-  [/street|strada/i, 'shippingAddress.address1', 'ADDRESS_STREET_INVALID', 'Strada lipsește sau nu este acceptată de FAN Courier.'],
-  [/zip|postal/i, 'shippingAddress.zip', 'ADDRESS_ZIP_INVALID', 'Codul poștal nu este acceptat de FAN Courier.'],
-  [/phone|telefon/i, 'shippingAddress.phone', 'ADDRESS_PHONE_INVALID', 'Numărul de telefon nu este acceptat de FAN Courier.'],
-  [/pickupLocation|fanbox/i, 'lockerId', 'LOCKER_INVALID', 'FANbox-ul ales nu este valid sau nu este disponibil.'],
-  [/recipient\.name|contactPerson/i, 'shippingAddress.name', 'ADDRESS_NAME_INVALID', 'Numele destinatarului lipsește sau e prea lung.'],
+  [/locality|localitate/i, 'shippingAddress.city', 'ADDRESS_CITY_NOT_FOUND'],
+  [/county|judet/i, 'shippingAddress.province', 'ADDRESS_COUNTY_INVALID'],
+  [/street|strada/i, 'shippingAddress.address1', 'ADDRESS_STREET_INVALID'],
+  [/zip|postal/i, 'shippingAddress.zip', 'ADDRESS_ZIP_INVALID'],
+  [/phone|telefon/i, 'shippingAddress.phone', 'ADDRESS_PHONE_INVALID'],
+  [/pickupLocation|fanbox/i, 'lockerId', 'LOCKER_INVALID'],
+  [/recipient\.name|contactPerson/i, 'shippingAddress.name', 'ADDRESS_NAME_INVALID'],
 ];
 
 function fanValidationError(errors, raw) {
@@ -199,21 +199,17 @@ function fanValidationError(errors, raw) {
     ? Object.entries(errors).map(([k, v]) => [k, Array.isArray(v) ? v.join('; ') : String(v)])
     : [['', Array.isArray(errors) ? errors.join('; ') : String(errors ?? '')]];
   for (const [key, text] of pairs) {
-    for (const [re, field, code, message] of FIELD_MAP) {
+    for (const [re, field, code] of FIELD_MAP) {
       if (re.test(key) || (!key && re.test(text))) {
-        return new ProcessingError({
-          code, message, field, provider: ID,
-          hint: 'Corectează adresa în comandă și reîncearcă.',
-          details: raw,
-        });
+        return new ProcessingError({ code, key: `fancourier.errors.field.${code}`, field, provider: ID, details: raw });
       }
     }
   }
-  const said = shortText(pairs.map(([, t]) => t).filter(Boolean)[0]);
+  const said = shortText(pairs.map(([, x]) => x).filter(Boolean)[0]);
   return new ProcessingError({
     code: 'COURIER_REJECTED',
-    message: 'FAN Courier a refuzat AWB-ul.',
-    hint: `Verifică datele comenzii și setările FAN Courier (serviciu, ID client).${said ? ` FAN spune: „${said}”.` : ' Detaliile sunt în jurnal.'}`,
+    key: 'fancourier.errors.rejected',
+    params: { said: said ? saidBy('FAN', said) : m('fancourier.detailsInLog') },
     provider: ID,
     details: raw,
   });
@@ -226,7 +222,7 @@ async function loadLocalities(ctx) {
     // Public endpoint (no token): a login problem must not block address validation.
     const res = await ctx.http(PROVIDER, `${BASE}/reports/localities`, { timeoutMs: 60_000 });
     const rows = Array.isArray(res.body?.data) ? res.body.data : [];
-    if (!rows.length) throw new ProcessingError({ code: 'PROVIDER_DOWN', message: 'FAN Courier nu a trimis lista de localități.', hint: 'Reîncercăm automat.', retryable: true, provider: ID, details: res.body });
+    if (!rows.length) throw new ProcessingError({ code: 'PROVIDER_DOWN', key: 'fancourier.errors.localities', retryable: true, provider: ID, details: res.body });
     return rows.map((r) => [r.name, r.county]);
   });
 }
@@ -314,35 +310,28 @@ export default {
   trackingUrl: (awb) => `https://www.fancourier.ro/awb-tracking/?tracking=${encodeURIComponent(awb)}`,
 
   credentialFields: [
-    { key: 'username', label: 'Utilizator selfAWB', type: 'text', required: true, help: 'Același utilizator cu care intri în selfawb.ro.' },
-    { key: 'password', label: 'Parolă selfAWB', type: 'password', required: true },
+    { key: 'username', type: 'text', required: true },
+    { key: 'password', type: 'password', required: true },
   ],
 
+  // Labels and help: fancourier.fields.<key> in the catalogs (src/i18n); FAN service names stay as FAN spells them.
   settingsFields: [
-    { key: 'clientId', label: 'ID client (punct de ridicare)', type: 'text', required: true, help: 'ID-ul punctului de lucru din selfAWB. „Testează conexiunea” îți arată ID-urile contului.' },
+    { key: 'clientId', type: 'text', required: true },
     {
-      key: 'service', label: 'Serviciu implicit', type: 'select', default: 'Standard',
+      key: 'service', type: 'select', default: 'Standard',
       options: [
         { value: 'Standard', label: 'Standard' },
-        { value: 'RedCode', label: 'RedCode (a doua zi până la 10:00)' },
+        { value: 'RedCode' },
         { value: 'Express Loco 2H', label: 'Express Loco 2H' },
         { value: 'Express Loco 4H', label: 'Express Loco 4H' },
         { value: 'Express Loco 6H', label: 'Express Loco 6H' },
-        { value: 'Produse Albe', label: 'Produse Albe' },
+        { value: 'Produse Albe' },
       ],
-      help: 'Pentru livrare în FANbox serviciul se alege automat.',
     },
-    { key: 'codToBankAccount', label: 'Ramburs în cont (Cont Colector)', type: 'checkbox', default: true, help: 'Bifat: rambursul vine în contul bancar și AWB-ul se emite pe „Cont Colector”. Debifat: ramburs numerar.' },
-    {
-      key: 'labelFormat', label: 'Format etichetă', type: 'select', default: 'A4',
-      options: [{ value: 'A4', label: 'A4 (imprimantă obișnuită)' }, { value: 'A5', label: 'A5' }, { value: 'A6', label: 'A6 termică (ePOD)' }],
-      help: 'A6 activează opțiunea ePOD la FAN; trebuie să o ai în contract.',
-    },
-    { key: 'openPackage', label: 'Deschidere colet la livrare', type: 'checkbox', default: false, help: 'Clientul poate verifica produsele înainte să plătească.' },
-    {
-      key: 'payer', label: 'Cine plătește transportul', type: 'select', default: 'sender',
-      options: [{ value: 'sender', label: 'Expeditorul (tu)' }, { value: 'recipient', label: 'Destinatarul' }],
-    },
+    { key: 'codToBankAccount', type: 'checkbox', default: true },
+    { key: 'labelFormat', type: 'select', default: 'A4', options: [{ value: 'A4' }, { value: 'A5', label: 'A5' }, { value: 'A6' }] },
+    { key: 'openPackage', type: 'checkbox', default: false },
+    { key: 'payer', type: 'select', default: 'sender', options: [{ value: 'sender' }, { value: 'recipient' }] },
   ],
 
   async testConnection(ctx) {
@@ -350,13 +339,13 @@ export default {
     const res = await api(ctx, '/reports/branches');
     const branches = (res.body?.data || []).map((b) => ({ id: String(b.id), name: b.name, address: [b.address?.street, b.address?.streetNo, b.address?.locality].filter(Boolean).join(' ') }));
     const configured = ctx.settings?.clientId ? String(ctx.settings.clientId) : '';
-    let message = `Conectat la FAN Courier. ${branches.length === 1 ? 'Un punct de ridicare' : `${branches.length} puncte de ridicare`} în cont.`;
+    let extra = '';
     if (configured && branches.length && !branches.some((b) => b.id === configured)) {
-      message += ` Atenție: ID-ul ${configured} nu apare în cont; alege unul dintre: ${branches.map((b) => b.id).join(', ')}.`;
+      extra = m('fancourier.test.idMissing', { id: configured, ids: branches.map((b) => b.id).join(', ') });
     } else if (!configured && branches.length) {
-      message += ` Completează „ID client” cu: ${branches.map((b) => `${b.id} (${b.name})`).join(', ')}.`;
+      extra = m('fancourier.test.fillId', { list: branches.map((b) => `${b.id} (${b.name})`).join(', ') });
     }
-    return { ok: true, message, info: { branches } };
+    return { ok: true, message: m('fancourier.test.connected', { count: branches.length, extra }), info: { branches } };
   },
 
   async createShipment(ctx, shipment) {
@@ -372,14 +361,13 @@ export default {
       if ((shipment.parcels ?? 1) > 1) {
         throw new ProcessingError({
           code: 'LOCKER_MULTI_PARCEL',
-          message: 'În FANbox se poate trimite un singur colet pe AWB.',
-          hint: 'Pune produsele într-un singur colet sau alege livrare la adresă.',
+          key: 'fancourier.errors.lockerMultiParcel',
           provider: ID, field: 'parcels',
         });
       }
       try { locker = await getPickupPoint(ctx, shipment.lockerId); } catch (err) {
         if (err?.code === 'AUTH_FAILED') throw err;
-        ctx.log?.('fancourier: FANbox lookup failed, using recipient address', { lockerId: shipment.lockerId, err: err?.message });
+        ctx.log?.(m('log.lockerLookupFailed', { provider: PROVIDER }), { lockerId: shipment.lockerId, err: err?.message });
       }
     }
 
@@ -389,7 +377,7 @@ export default {
       } catch (err) {
         if (String(err?.code || '').startsWith('ADDRESS_') || err?.code === 'AUTH_FAILED') throw err;
         // Nomenclator unavailable: FAN validates names server-side anyway.
-        ctx.log?.('fancourier: locality nomenclator unavailable, sending raw names', { err: err?.message });
+        ctx.log?.(m('log.localitiesUnavailable', { provider: PROVIDER }), { err: err?.message });
       }
     }
 
@@ -399,8 +387,7 @@ export default {
     if (!item) {
       throw new ProcessingError({
         code: 'COURIER_REJECTED',
-        message: 'FAN Courier nu a emis AWB-ul.',
-        hint: 'Verifică setările FAN Courier și reîncearcă. Detaliile sunt în jurnal.',
+        key: 'fancourier.errors.noAwb',
         provider: ID, details: res.body,
       });
     }
@@ -420,8 +407,8 @@ export default {
     if (!isPdf(res.body)) {
       throw new ProcessingError({
         code: 'LABEL_FAILED',
-        message: `FAN Courier nu a trimis eticheta pentru AWB ${awb}.`,
-        hint: 'Verifică dacă AWB-ul există în selfAWB și aparține punctului de ridicare setat.',
+        key: 'fancourier.errors.label',
+        params: { awb },
         retryable: true, provider: ID, details: bufferToJson(res.body) ?? String(res.body).slice(0, 300),
       });
     }
@@ -508,8 +495,8 @@ export default {
 function cancelRefused(awb, details) {
   return new ProcessingError({
     code: 'CANCEL_REFUSED',
-    message: `FAN Courier nu a anulat AWB-ul ${awb}.`,
-    hint: 'De obicei coletul a fost deja ridicat de curier. Anulează din selfAWB sau sună la FAN Courier.',
+    key: 'fancourier.errors.cancel',
+    params: { awb },
     provider: ID,
     details,
   });

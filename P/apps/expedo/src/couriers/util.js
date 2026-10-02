@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { ProcessingError } from '../core/errors.js';
 import { TrackingStatus } from './contract.js';
 import { normalizeText } from './locality.js';
+import { m } from '../i18n/index.js';
 
 // Non-locality helpers shared by the courier adapters (moved here from the former ro-helpers.js /
 // ro-nomenclator.js; locality matching lives in locality.js): caching, money, phones, dates,
@@ -59,8 +60,8 @@ export function assertRonCod(shipment, { provider, providerName }) {
   if (money(shipment?.cod) > 0 && currency !== 'RON') {
     throw new ProcessingError({
       code: 'COD_CURRENCY_UNSUPPORTED',
-      message: `${providerName} încasează rambursul doar în lei, iar comanda e în ${currency}.`,
-      hint: 'Convertește totalul în RON (sau marchează comanda ca plătită) și generează din nou AWB-ul.',
+      key: 'courier.codCurrency',
+      params: { provider: providerName, currency },
       retryable: false,
       provider,
       field: 'cod',
@@ -221,6 +222,15 @@ export function collectMessages(body, path = '', out = [], depth = 0) {
     }
   }
   return out;
+}
+
+/**
+ * " Cargus says: “…”." after a hint: the courier's own words, verbatim but quoted, so they read the
+ * same in both languages ('' when there is nothing useful to quote).
+ */
+export function saidBy(providerName, text) {
+  const s = shortText(text);
+  return s ? m('courier.says', { provider: providerName, text: s }) : '';
 }
 
 /** Short, single-line courier message suitable for a hint (never a JSON dump). */

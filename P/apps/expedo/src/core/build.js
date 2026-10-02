@@ -10,11 +10,6 @@ const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 const COURIERS_NEEDING_ZIP = new Set(['gls', 'dpd']);
 
-/** "1 colet", "2 colete", "20 de colete" (Romanian plural). */
-export function colete(n) {
-  if (n === 1) return '1 colet';
-  return n !== 0 && (n % 100 === 0 || n % 100 >= 20) ? `${n} de colete` : `${n} colete`;
-}
 
 export function bucharestDate(d = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
@@ -48,29 +43,25 @@ export function planOrder(order, settings, overrides = {}, { history } = {}) {
   const courier = overrides.courier || actions.courier || settings.courier.default || '';
   const { address, issues } = validateAddress(rawAddress, { requireZip: COURIERS_NEEDING_ZIP.has(courier) });
 
-  if (!courier) {
-    issues.push({ level: 'error', code: 'NO_COURIER', field: 'courier', message: 'Nu e ales niciun curier.', hint: 'Alege curierul implicit în Setări → Curieri sau adaugă o regulă.' });
-  }
-  if (order.cancelledAt) {
-    issues.push({ level: 'error', code: 'ORDER_CANCELLED', message: 'Comanda e anulată în Shopify.', hint: 'Nu se mai expediază.' });
-  }
-  if (!order.lines.some((l) => l.requiresShipping && !l.isGiftCard)) {
-    issues.push({ level: 'error', code: 'NOTHING_TO_SHIP', message: 'Comanda nu are produse fizice de expediat.', hint: 'Doar carduri cadou / produse digitale.' });
-  }
+  // Issues carry a catalog key + params (core/errors.js renderError), rendered in the viewer's language.
+  const add = (level, code, field, params) => issues.push({ level, code, field, key: `errors.${code}`, params: params || {} });
+  if (!courier) add('error', 'NO_COURIER', 'courier');
+  if (order.cancelledAt) add('error', 'ORDER_CANCELLED');
+  if (!order.lines.some((l) => l.requiresShipping && !l.isGiftCard)) add('error', 'NOTHING_TO_SHIP');
   // What the courier collects: never more than Shopify says is still owed. (The mapper falls back to the
   // full total when nothing is outstanding, which would make a paid or refunded order pay again.)
   const owed = order.paymentMethod === 'cod' && typeof order.outstanding === 'number'
     ? round2(Math.max(0, Math.min(order.codAmount || 0, order.outstanding)))
     : order.codAmount || 0;
   if (order.paymentMethod === 'other' && order.outstanding > 0 && overrides.cod == null) {
-    issues.push({ level: 'warning', code: 'PAYMENT_UNKNOWN', message: `Metodă de plată necunoscută (${(order.gateways || []).join(', ') || '—'}) și ${order.outstanding.toFixed(2)} lei neîncasați.`, hint: 'Dacă e ramburs, completează suma la „Ramburs” înainte de AWB.' });
+    add('warning', 'PAYMENT_UNKNOWN', undefined, { gateways: (order.gateways || []).join(', ') || '—', amount: order.outstanding });
   }
   if (order.paymentMethod === 'cod' && owed <= 0 && overrides.cod == null) {
-    issues.push({ level: 'warning', code: 'COD_ZERO', message: 'Plata e ramburs, dar suma de încasat e 0.', hint: 'Verifică dacă a fost deja plătită.' });
+    add('warning', 'COD_ZERO');
   }
   // A customer who refused a ramburs parcel before may do it again: the merchant pays transport both ways.
   if (order.paymentMethod === 'cod' && history?.refusedCod > 0) {
-    issues.push({ level: 'warning', code: 'CUSTOMER_REFUSED_BEFORE', message: `Clientul a refuzat ${colete(history.returned)} înainte (din ${history.total}).`, hint: 'Sună-l înainte de AWB sau cere plata cu cardul.' });
+    add('warning', 'CUSTOMER_REFUSED_BEFORE', undefined, { count: history.returned, total: history.total });
   }
 
   const p = settings.packaging;

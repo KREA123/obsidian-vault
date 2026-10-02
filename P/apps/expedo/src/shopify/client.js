@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { request } from '../lib/http.js';
 import { ProcessingError } from '../core/errors.js';
+import { m } from '../i18n/index.js';
 import * as Q from './queries.js';
 import { mapOrder } from './mapper.js';
 import { clientCredentialsToken } from './auth.js';
@@ -27,7 +28,7 @@ export function shopifyClient(store) {
   async function gql(query, variables = {}) {
     let token = await accessToken(store);
     if (!token) {
-      throw new ProcessingError({ code: 'SHOPIFY_NOT_CONNECTED', message: 'Magazinul nu e conectat la Shopify.', hint: 'Reinstalează aplicația din Shopify.', provider: 'shopify' });
+      throw new ProcessingError({ code: 'SHOPIFY_NOT_CONNECTED', provider: 'shopify' });
     }
     const url = `https://${store.shop}/admin/api/${config.shopify.apiVersion}/graphql.json`;
     for (let attempt = 0; ; attempt++) {
@@ -54,8 +55,7 @@ export function shopifyClient(store) {
       if (body?.errors?.length) {
         throw new ProcessingError({
           code: 'SHOPIFY_GRAPHQL',
-          message: `Shopify a refuzat cererea: ${body.errors.map((e) => e.message).join('; ')}`,
-          hint: 'Dacă scrie de permisiuni (access denied), reinstalează aplicația ca să accepți permisiunile noi.',
+          params: { text: body.errors.map((e) => e.message).join('; ') },
           retryable: throttled,
           provider: 'shopify',
           details: body.errors,
@@ -70,8 +70,7 @@ export function shopifyClient(store) {
     if (errs.length) {
       throw new ProcessingError({
         code: 'SHOPIFY_USER_ERROR',
-        message: `Shopify nu a acceptat ${what}: ${errs.map((e) => e.message).join('; ')}`,
-        hint: 'Verifică comanda în Shopify (poate a fost deja expediată, anulată sau editată).',
+        params: { what: m(`errors.SHOPIFY_USER_ERROR.what.${what}`), text: errs.map((e) => e.message).join('; ') },
         provider: 'shopify',
         details: errs,
       });
@@ -110,8 +109,6 @@ export function shopifyClient(store) {
       if (!open.length) {
         throw new ProcessingError({
           code: 'SHOPIFY_NOTHING_TO_FULFILL',
-          message: 'Comanda nu mai are produse de expediat în Shopify.',
-          hint: 'Probabil a fost marcată ca expediată manual. Nu e nevoie de nimic; AWB-ul rămâne salvat aici.',
           provider: 'shopify',
         });
       }
@@ -122,20 +119,20 @@ export function shopifyClient(store) {
           notifyCustomer: !!notifyCustomer,
         },
       });
-      return userErrors(res.fulfillmentCreate, 'expedierea').fulfillment;
+      return userErrors(res.fulfillmentCreate, 'fulfillment').fulfillment;
     },
 
     async cancelFulfillment(id) {
-      return userErrors((await gql(Q.FULFILLMENT_CANCEL_MUTATION, { id })).fulfillmentCancel, 'anularea expedierii');
+      return userErrors((await gql(Q.FULFILLMENT_CANCEL_MUTATION, { id })).fulfillmentCancel, 'fulfillmentCancel');
     },
 
     async markAsPaid(gid) {
-      return userErrors((await gql(Q.MARK_PAID_MUTATION, { input: { id: gid } })).orderMarkAsPaid, 'marcarea ca plătită');
+      return userErrors((await gql(Q.MARK_PAID_MUTATION, { input: { id: gid } })).orderMarkAsPaid, 'markPaid');
     },
 
     async addTags(gid, tags) {
       if (!tags?.length) return;
-      return userErrors((await gql(Q.TAGS_ADD_MUTATION, { id: gid, tags })).tagsAdd, 'etichetele');
+      return userErrors((await gql(Q.TAGS_ADD_MUTATION, { id: gid, tags })).tagsAdd, 'tags');
     },
 
     async registerWebhooks(baseUrl) {

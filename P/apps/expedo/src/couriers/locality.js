@@ -1,5 +1,6 @@
 import { ProcessingError } from '../core/errors.js';
 import { fold, levenshtein } from '../core/address.js';
+import { m } from '../i18n/index.js';
 
 // Romanian locality matching against a courier nomenclator — the #1 cause of "AWB-urile dau erori".
 // One implementation for all five adapters (it replaces ro-helpers.js and ro-nomenclator.js):
@@ -291,18 +292,19 @@ export function matchCounty({ county, countyCode }, counties) {
 
 // ---------------------------------------------------------------- errors
 
+/** Suggestion label: the name, plus what tells same-named places apart ("Floresti (postal code 517176)"). */
 function labelFor(c, { sameNames, parentsDistinct }) {
   let s = c.name;
   if (sameNames) {
     const q = qualifierOf(c);
     if (parentsDistinct && q && !/\(/.test(c.name)) s = `${c.name} (${c.parent})`;
-    else if (!parentsDistinct && c.postalCode) s = `${c.name} (cod ${c.postalCode})`;
+    else if (!parentsDistinct && c.postalCode) s = m('courier.locality.option.withZip', { name: c.name, zip: c.postalCode });
   }
-  if (c.countyLabel) s = `${s} (jud. ${c.countyLabel})`;
+  if (c.countyLabel) s = m('courier.locality.option.withCounty', { label: s, county: c.countyLabel });
   return s;
 }
 
-/** ProcessingError for a locality the courier won't accept, with "Ai vrut: X, Y, Z?" suggestions. */
+/** ProcessingError for a locality the courier won't accept, with "Did you mean: X, Y, Z?" suggestions. */
 export function localityError({ provider, providerName, city, county, result }) {
   const ambiguous = result?.ambiguous;
   const options = (ambiguous || result?.suggestions || []).slice(0, 3);
@@ -310,24 +312,14 @@ export function localityError({ provider, providerName, city, county, result }) 
   const parentsDistinct = sameNames && options.every((c) => qualifierOf(c))
     && new Set(options.map((c) => qualifierOf(c))).size === options.length;
   const isSectors = Boolean(ambiguous) && options.every((c) => isSectorName(c.name));
-  const did = options.length ? `Ai vrut: ${[...new Set(options.map((c) => labelFor(c, { sameNames, parentsDistinct })))].join(', ')}? ` : '';
-  const inCounty = county ? ` pentru județul ${county}` : '';
-  let message;
-  let fix;
-  if (isSectors) {
-    message = `Pentru București, ${providerName} cere sectorul, iar în adresă nu apare.`;
-    fix = 'Adaugă sectorul în localitate (ex. „Sector 3”) sau codul poștal corect.';
-  } else if (ambiguous) {
-    message = `Localitatea „${city}” apare de mai multe ori în nomenclatorul ${providerName}${inCounty}.`;
-    fix = 'Adaugă codul poștal corect (sau comuna) în adresă ca să alegem localitatea potrivită.';
-  } else {
-    message = `Localitatea „${city}” nu există în nomenclatorul ${providerName}${inCounty}.`;
-    fix = 'Corectează localitatea (și județul) în adresa de livrare a comenzii.';
-  }
+  const labels = [...new Map(options.map((c) => labelFor(c, { sameNames, parentsDistinct })).map((l) => [JSON.stringify(l), l])).values()];
+  const did = labels.length ? m('courier.locality.didYouMean', { options: labels }) : '';
+  const inCounty = county ? m('courier.locality.inCounty', { county }) : '';
+  const variant = isSectors ? 'sectors' : ambiguous ? 'ambiguous' : 'notFound';
   return new ProcessingError({
     code: 'ADDRESS_CITY_NOT_FOUND',
-    message,
-    hint: `${did}${fix}`,
+    key: `courier.locality.${variant}`,
+    params: { provider: providerName, city, inCounty, did },
     retryable: false,
     provider,
     field: 'shippingAddress.city',
@@ -338,8 +330,8 @@ export function localityError({ provider, providerName, city, county, result }) 
 export function countyError({ provider, providerName, county, countyCode }) {
   return new ProcessingError({
     code: 'ADDRESS_COUNTY_NOT_FOUND',
-    message: `Județul „${county || countyCode || '-'}” nu e recunoscut de ${providerName}.`,
-    hint: 'Corectează județul în adresa de livrare a comenzii.',
+    key: 'courier.countyNotFound',
+    params: { county: county || countyCode || '-', provider: providerName },
     retryable: false,
     provider,
     field: 'shippingAddress.province',
@@ -350,8 +342,7 @@ export function countyError({ provider, providerName, county, countyCode }) {
 export function cityMissingError(provider) {
   return new ProcessingError({
     code: 'ADDRESS_CITY_MISSING',
-    message: 'Lipsește localitatea destinatarului.',
-    hint: 'Completează localitatea în adresa de livrare.',
+    key: 'courier.cityMissing',
     retryable: false,
     field: 'shippingAddress.city',
     provider,

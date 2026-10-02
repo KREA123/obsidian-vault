@@ -1,16 +1,17 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { m, t } from '../i18n/index.js';
 
-// "Facturare de probă": numbers invoices locally, calls nobody. Demo mode and "mod de probă"
+// Test invoicing: numbers invoices locally, calls nobody. Demo mode and test mode
 // use it so a real series is never consumed by a test (no test invoices on real orders).
 
 export default {
   id: 'mock',
-  name: 'Facturare de probă',
+  name: 'Test invoicing',
   credentialFields: [],
-  settingsFields: [{ key: 'series', label: 'Serie', type: 'text', default: 'TEST' }],
+  settingsFields: [{ key: 'series', type: 'text', default: 'TEST' }],
 
   async testConnection() {
-    return { ok: true, message: 'Facturarea de probă funcționează. Nu se emite nicio factură reală.' };
+    return { ok: true, message: m('mock.invoicer.connected') };
   },
 
   async createInvoice(ctx, invoice) {
@@ -31,15 +32,17 @@ export default {
     const ascii = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '');
     let y = 790;
     const line = (t, size = 11) => { page.drawText(ascii(t), { x: 48, y, size, font }); y -= size + 8; };
-    line(`FACTURA DE PROBA ${series} ${number}`, 18);
-    line('Document fara valoare fiscala.', 9);
+    // Text in the store's language (ctx.locale, set by the pipeline).
+    const L = ctx.locale || 'en';
+    line(t(L, 'mock.invoice.title', { series, number }), 18);
+    line(t(L, 'mock.invoice.noValue'), 9);
     if (inv) {
-      line(`Client: ${inv.client.name}${inv.client.vatCode ? ` (${inv.client.vatCode})` : ''}`);
+      line(t(L, 'mock.invoice.client', { name: `${inv.client.name}${inv.client.vatCode ? ` (${inv.client.vatCode})` : ''}` }));
       line(`${inv.client.address}, ${inv.client.city}, ${inv.client.county}`);
       y -= 10;
-      for (const l of inv.lines) line(`${l.quantity} x ${l.name}  @ ${l.unitPrice.toFixed(2)}  TVA ${l.vatRate}%`, 10);
+      for (const l of inv.lines) line(t(L, 'mock.invoice.line', { quantity: l.quantity, name: l.name, price: l.unitPrice.toFixed(2), vat: l.vatRate }), 10);
       y -= 10;
-      line(`Total: ${inv.total.toFixed(2)} ${inv.currency}`, 14);
+      line(t(L, 'mock.invoice.total', { total: inv.total.toFixed(2), currency: inv.currency }), 14);
     }
     return Buffer.from(await doc.save());
   },

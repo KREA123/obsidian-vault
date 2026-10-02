@@ -1,6 +1,8 @@
 import * as db from '../db.js';
 import { withDefaults } from './settings.js';
 import { emailHash } from './identity.js';
+import { m, t } from '../i18n/index.js';
+import { renderEvent } from '../db.js';
 
 // Customer data protection (Shopify "protected customer data", GDPR):
 //   - retention: customer data of finished orders is removed N days after delivery / return / cancel
@@ -9,17 +11,9 @@ import { emailHash } from './identity.js';
 //   - GDPR webhooks: customers/data_request, customers/redact, shop/redact
 // See docs/securitate.md.
 
-/** What the access log records (action → label shown in Activitate). */
-export const ACCESS_ACTIONS = {
-  order_view: 'A deschis comanda',
-  invoice_pdf: 'A deschis factura',
-  labels: 'A descărcat etichete AWB',
-  picking: 'A deschis lista de picking',
-  cod_export: 'A descărcat exportul de ramburs',
-  customer_export: 'A descărcat datele clientului',
-  data_request: 'Shopify a cerut datele clientului',
-  customer_redact: 'Shopify a cerut ștergerea datelor clientului',
-};
+/** What the access log records (action → catalog key of the label shown in Activity). */
+export const ACCESS_ACTIONS = Object.fromEntries(['order_view', 'invoice_pdf', 'labels', 'picking', 'cod_export', 'customer_export', 'data_request', 'customer_redact']
+  .map((k) => [k, `access.actions.${k}`]));
 
 export const ACCESS_LOG_DAYS = 365;
 
@@ -50,9 +44,7 @@ export function redactOrder(store, orderId, reason) {
   d.prepare(`DELETE FROM events WHERE order_id = ? AND (level = 'error' OR step IN ('validate', 'edit'))`).run(orderId);
   d.prepare('UPDATE events SET data = NULL WHERE order_id = ?').run(orderId);
   if (order.awb && order.test_mode) forgetTestShipment(store.id, order.awb);
-  db.logEvent(store.id, orderId, 'info', 'privacy', reason === 'gdpr'
-    ? 'Datele clientului au fost șterse la cererea lui (prin Shopify).'
-    : 'Datele clientului au fost șterse (au trecut zilele de păstrare). Rămân numărul comenzii, sumele, AWB-ul și factura.');
+  db.logEvent(store.id, orderId, 'info', 'privacy', m(reason === 'gdpr' ? 'events.redactedGdpr' : 'events.redactedRetention'));
   return true;
 }
 
@@ -78,7 +70,7 @@ export function applyRetention(store, now = new Date()) {
   for (const id of ids) if (redactOrder(store, id, 'retention')) redacted++;
   // Store-level events (provider logs) can carry details of a shipment in `data`.
   const events = d.prepare('UPDATE events SET data = NULL WHERE store_id = ? AND order_id IS NULL AND at < ? AND data IS NOT NULL').run(store.id, cutoff).changes;
-  if (redacted) db.logEvent(store.id, null, 'info', 'privacy', `Datele clienților au fost șterse din ${redacted} ${redacted === 1 ? 'comandă terminată' : 'comenzi terminate'} de peste ${days} de zile.`);
+  if (redacted) db.logEvent(store.id, null, 'info', 'privacy', m('events.retentionApplied', { count: redacted, days }));
   return { redacted, events, cutoff };
 }
 
@@ -109,13 +101,15 @@ export function gdprOrders(store, payload) {
 /** customers/data_request: recorded so the merchant sees it and can send the customer their data. */
 export function handleDataRequest(store, payload) {
   const orders = gdprOrders(store, payload);
-  const ref = payload?.data_request?.id ? `cererea Shopify ${payload.data_request.id}` : 'cerere Shopify';
+  // Access-log details are stored as messages too (db.logAccess), translated when the log is shown.
+  const ref = payload?.data_request?.id ? m('access.detail.request', { id: payload.data_request.id }) : m('access.detail.requestNoId');
   for (const o of orders) db.logAccess(store.id, { actor: 'shopify', action: 'data_request', orderId: o.id, orderName: o.name, detail: ref });
-  if (!orders.length) db.logAccess(store.id, { actor: 'shopify', action: 'data_request', detail: `${ref}: nicio comandă a clientului în Expedo` });
+  if (!orders.length) db.logAccess(store.id, { actor: 'shopify', action: 'data_request', detail: m('access.detail.noOrders', { request: ref }) });
+  const names = orders.map((o) => o.name).join(', ');
   db.logEvent(store.id, null, 'warning', 'gdpr', orders.length
-    ? `Un client a cerut prin Shopify datele lui. În Expedo le avem în ${orders.length === 1 ? 'comanda' : 'comenzile'} ${orders.map((o) => o.name).join(', ')}.`
-    : 'Un client a cerut prin Shopify datele lui. În Expedo nu avem nicio comandă a lui.', {
-    hint: orders.length ? 'Apasă „Descarcă datele clientului” și trimite fișierul clientului, în cel mult 30 de zile.' : 'Nu e nimic de trimis din Expedo.',
+    ? m('events.dataRequest', { count: orders.length, orders: names })
+    : m('events.dataRequestNone'), {
+    hint: m(orders.length ? 'events.dataRequestHint' : 'events.dataRequestNoneHint'),
     orderIds: orders.map((o) => o.id),
   });
   return orders.length;
@@ -127,9 +121,11 @@ export function handleCustomerRedact(store, payload) {
   let n = 0;
   for (const o of orders) {
     if (redactOrder(store, o.id, 'gdpr')) n++;
-    db.logAccess(store.id, { actor: 'shopify', action: 'customer_redact', orderId: o.id, orderName: o.name, detail: 'datele clientului au fost șterse' });
+    db.logAccess(store.id, { actor: 'shopify', action: 'customer_redact', orderId: o.id, orderName: o.name, detail: m('access.detail.redacted') });
   }
-  db.logEvent(store.id, null, 'info', 'gdpr', `Un client a cerut prin Shopify ștergerea datelor lui: ${n ? `șterse din ${n === 1 ? 'comanda' : 'comenzile'} ${orders.map((o) => o.name).join(', ')}` : 'nu aveam date ale lui'}.`);
+  db.logEvent(store.id, null, 'info', 'gdpr', n
+    ? m('events.redactRequest', { count: n, orders: orders.map((o) => o.name).join(', ') })
+    : m('events.redactRequestNone'));
   return n;
 }
 
@@ -142,12 +138,12 @@ export function handleShopRedact(store) {
 }
 
 /** Everything Expedo holds about the given orders, to send to a customer who asked for their data. */
-export function customerExport(store, orderIds) {
+export function customerExport(store, orderIds, locale = 'en') {
   const orders = orderIds.map((id) => db.getOrder(id)).filter((o) => o && o.store_id === store.id);
   return {
     generatedAt: new Date().toISOString(),
     shop: store.shop,
-    note: 'Datele de mai jos sunt cele păstrate de aplicația Expedo pentru livrarea și facturarea comenzilor.',
+    note: t(locale, 'export.note'),
     orders: orders.map((o) => ({
       order: o.name,
       createdAt: o.created_at,
@@ -163,7 +159,7 @@ export function customerExport(store, orderIds) {
       courier: o.courier, awb: o.awb, trackingStatus: o.tracking_text,
       invoice: o.invoice_number ? `${o.invoice_series} ${o.invoice_number}` : null,
       redactedAt: o.redacted_at || null,
-      history: db.orderEvents(o.id).map((e) => ({ at: e.at, message: e.message })),
+      history: db.orderEvents(o.id).map((e) => ({ at: e.at, message: renderEvent(e, locale).message })),
     })),
   };
 }

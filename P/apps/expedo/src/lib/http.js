@@ -32,10 +32,7 @@ export async function request(provider, url, opts = {}) {
     const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError';
     throw new ProcessingError({
       code: timedOut ? 'PROVIDER_TIMEOUT' : 'PROVIDER_UNREACHABLE',
-      message: timedOut
-        ? `${provider} nu a răspuns în ${Math.round(timeoutMs / 1000)} secunde.`
-        : `Nu ne-am putut conecta la ${provider}.`,
-      hint: 'De obicei e o problemă temporară la ei. Reîncercăm automat.',
+      params: { provider, seconds: Math.round(timeoutMs / 1000) },
       retryable: true,
       provider,
       details: String(err?.cause?.message || err?.message || err),
@@ -60,19 +57,18 @@ export async function request(provider, url, opts = {}) {
     if (res.status === 429 || res.status >= 500) {
       throw new ProcessingError({
         code: res.status === 429 ? 'PROVIDER_RATE_LIMIT' : 'PROVIDER_DOWN',
-        message: res.status === 429
-          ? `${provider} ne cere să încetinim (prea multe cereri).`
-          : `${provider} are o problemă la server (cod ${res.status}).`,
-        hint: 'Reîncercăm automat în câteva minute.',
+        params: { provider, status: res.status },
         retryable: true,
         provider,
         details: parsed,
       });
     }
+    // The provider's own words stay verbatim, quoted ("Cargus says: …").
+    const said = extractMessage(parsed);
     throw new ProcessingError({
       code: 'PROVIDER_REJECTED',
-      message: `${provider} a refuzat cererea: ${extractMessage(parsed) || `cod ${res.status}`}`,
-      hint: 'Verifică datele comenzii și setările integrării, apoi încearcă din nou.',
+      key: said ? 'errors.PROVIDER_REJECTED' : 'errors.PROVIDER_REJECTED_STATUS',
+      params: { provider, text: said, status: res.status },
       retryable: false,
       provider,
       details: parsed,

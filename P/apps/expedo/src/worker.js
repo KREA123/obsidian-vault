@@ -2,7 +2,8 @@ import * as db from './db.js';
 import { config } from './config.js';
 import { processOrder, trackStore, importOrder, enqueue } from './core/pipeline.js';
 import { getShopify } from './shopify/index.js';
-import { ProcessingError, toProcessingError } from './core/errors.js';
+import { ProcessingError, toProcessingError, errorMessage, errorHint } from './core/errors.js';
+import { m } from './i18n/index.js';
 import { applyRetention, pruneAccessLog } from './core/privacy.js';
 
 // Background jobs stored in SQLite, so nothing is lost on restart.
@@ -23,13 +24,13 @@ export const handlers = {
   async sync_store(store, { days = 14 } = {}) {
     const since = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
     const orders = await getShopify(store).listOrders({ search: `created_at:>=${since}`, max: 500 });
-    for (const o of orders.reverse()) importOrder(store, o, { source: 'sincronizare' });
+    for (const o of orders.reverse()) importOrder(store, o, { source: 'resync' });
     return { imported: orders.length };
   },
   async track_store(store) {
     return trackStore(store);
   },
-  // Daily: customer data of old finished orders (store setting "Păstrează datele clienților"), access log > 1 year.
+  // Daily: customer data of old finished orders (store setting "Keep customer data"), access log > 1 year.
   async privacy_cleanup(store) {
     const r = applyRetention(store);
     pruneAccessLog();
@@ -51,8 +52,8 @@ export async function runDueJobs(limit = 10) {
       if (d.prepare(`UPDATE jobs SET status = 'running', attempts = attempts + 1 WHERE id = ? AND status = 'pending'`).run(job.id).changes !== 1) continue;
       const store = db.getStore(job.store_id);
       try {
-        if (!store || store.uninstalled_at) throw new ProcessingError({ code: 'STORE_GONE', message: 'Magazinul nu mai e conectat.' });
-        if (!Object.hasOwn(handlers, job.type)) throw new ProcessingError({ code: 'JOB_UNKNOWN', message: `Sarcină necunoscută: ${job.type}` });
+        if (!store || store.uninstalled_at) throw new ProcessingError({ code: 'STORE_GONE' });
+        if (!Object.hasOwn(handlers, job.type)) throw new ProcessingError({ code: 'JOB_UNKNOWN', params: { job: job.type } });
         await handlers[job.type](store, JSON.parse(job.payload));
         d.prepare(`UPDATE jobs SET status = 'done' WHERE id = ?`).run(job.id);
       } catch (err) {
@@ -65,11 +66,11 @@ export async function runDueJobs(limit = 10) {
           } catch (err2) {
             // The same work is already queued again (e.g. processOrder scheduled its own retry): keep that one.
             if (!/UNIQUE/.test(err2.message)) throw err2;
-            d.prepare(`UPDATE jobs SET status = 'done', last_error = ? WHERE id = ?`).run(`${e.message} (reîncercare deja programată)`, job.id);
+            d.prepare(`UPDATE jobs SET status = 'done', last_error = ? WHERE id = ?`).run(`${e.message} (retry already scheduled)`, job.id);
           }
         } else {
           d.prepare(`UPDATE jobs SET status = 'failed', last_error = ? WHERE id = ?`).run(e.message, job.id);
-          if (store) db.logEvent(store.id, job.payload.includes('orderId') ? JSON.parse(job.payload).orderId : null, 'error', job.type, `Sarcina „${job.type}” a eșuat: ${e.message}`, { hint: e.hint });
+          if (store) db.logEvent(store.id, job.payload.includes('orderId') ? JSON.parse(job.payload).orderId : null, 'error', job.type, m('events.jobFailed', { job: job.type, error: errorMessage(e) }), { hint: errorHint(e) });
         }
       }
     }
@@ -100,7 +101,7 @@ export function recoverJobs() {
     } catch (err) {
       // An identical job is already pending; that one will do the work.
       if (!/UNIQUE/.test(err.message)) throw err;
-      d.prepare(`UPDATE jobs SET status = 'done', last_error = 'întrerupt; înlocuit de o sarcină identică' WHERE id = ?`).run(job.id);
+      d.prepare(`UPDATE jobs SET status = 'done', last_error = 'interrupted; replaced by an identical job' WHERE id = ?`).run(job.id);
     }
   }
 }

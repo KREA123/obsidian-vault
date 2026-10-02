@@ -9,12 +9,13 @@ import { couriers, getCourier } from './couriers/index.js';
 import { invoicers, getInvoicer } from './invoicing/index.js';
 import { RULE_FIELDS, RULE_OPS, RULE_ACTIONS } from './core/rules.js';
 import { COUNTIES } from './core/address.js';
-import { TRACKING_LABELS } from './couriers/contract.js';
+import { TrackingStatus } from './couriers/contract.js';
 import { planOrder, bucharestDate, bucharestDayStart } from './core/build.js';
 import { DEFAULTS, sanitizeSettings, mergeSettings } from './core/settings.js';
 import { safeEqual } from './lib/crypto.js';
 import { request } from './lib/http.js';
-import { toProcessingError } from './core/errors.js';
+import { ProcessingError, toProcessingError, renderError } from './core/errors.js';
+import { t, m, has, catalogs, clientCatalog, requestLocale, acceptLanguageLocale, normalizeLocale, LOCALES } from './i18n/index.js';
 import { getShopify } from './shopify/index.js';
 import * as auth from './shopify/auth.js';
 import { startWorker, handlers } from './worker.js';
@@ -58,7 +59,7 @@ export function createApp() {
   // ---------- OAuth install ----------
   app.get('/auth', (req, res) => {
     const { shop } = req.query;
-    if (!auth.isValidShop(shop)) return res.status(400).send('Parametrul shop lipsește sau e invalid (ex: magazin.myshopify.com).');
+    if (!auth.isValidShop(shop)) return res.status(400).send(t(acceptLanguageLocale(req.get('Accept-Language')), 'server.shopInvalid'));
     const state = auth.newState();
     res.setHeader('Set-Cookie', `expedo_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
     res.redirect(auth.installUrl(shop, state));
@@ -68,7 +69,7 @@ export function createApp() {
     const { shop, code, state } = req.query;
     const cookieState = parseCookies(req).expedo_state;
     if (!auth.isValidShop(shop) || !auth.verifyQueryHmac(req.query) || !state || state !== cookieState) {
-      return res.status(400).send('Instalarea nu a putut fi verificată. Încearcă din nou din Shopify.');
+      return res.status(400).send(t(acceptLanguageLocale(req.get('Accept-Language')), 'server.installUnverified'));
     }
     try {
       const token = await auth.exchangeCode(shop, code);
@@ -77,7 +78,7 @@ export function createApp() {
       res.redirect(`https://${shop}/admin/apps/${config.shopify.apiKey}?installed=${store.id}`);
     } catch (err) {
       console.error(err);
-      res.status(500).send('Instalarea a eșuat. Încearcă din nou.');
+      res.status(500).send(t(acceptLanguageLocale(req.get('Accept-Language')), 'server.installFailed'));
     }
   });
 
@@ -99,6 +100,15 @@ export function createApp() {
     app.get(path, (req, res) => res.type('html').send(legalPage(page, lang)));
   }
   app.use(express.static(join(__dirname, '..', 'public'), { index: false }));
+  // i18n for the SPA: the same engine as the server (src/i18n/core.js) and the `ui.` part of a catalog.
+  const i18nCore = readFileSync(join(__dirname, 'i18n', 'core.js'), 'utf8');
+  app.get('/i18n/core.js', (req, res) => res.type('text/javascript').send(i18nCore));
+  app.get('/i18n/:locale.json', (req, res) => {
+    const locale = LOCALES.includes(req.params.locale) ? req.params.locale : null;
+    if (!locale) return res.status(404).json({});
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json(clientCatalog(locale));
+  });
   const indexHtml = readFileSync(join(__dirname, '..', 'public', 'index.html'), 'utf8')
     .replaceAll('%SHOPIFY_API_KEY%', config.shopify.apiKey)
     .replaceAll('%LOGIN_ENABLED%', config.adminPassword ? '1' : '');
@@ -114,21 +124,41 @@ export function createApp() {
       stores: req.session?.admin ? db.listStores().map(publicStore) : [publicStore(req.store)],
       embedded: !!req.embedded,
       testMode: P.isTestMode(req.store),
+      // Language the API answers in; the SPA loads the matching catalog.
+      locale: req.locale,
     });
   });
 
   api.get('/meta', (req, res) => {
-    const describe = (a) => ({ id: a.id, name: a.name, pending: !!a.pending, credentialFields: a.credentialFields, settingsFields: a.settingsFields,
+    const L = req.locale;
+    // Field labels / help / option labels of an adapter live in the catalogs: <provider>.fields.<key>.(label|help|options.<value>).
+    const field = (a) => (f) => {
+      const base = `${a.id}.fields.${f.key}`;
+      return {
+        ...f,
+        label: has(`${base}.label`) ? t(L, `${base}.label`) : f.label || f.key,
+        help: has(`${base}.help`) ? t(L, `${base}.help`) : f.help,
+        ...(f.options ? { options: f.options.map((o) => ({ ...o, label: has(`${base}.options.${o.value}`) ? t(L, `${base}.options.${o.value}`) : o.label })) } : {}),
+      };
+    };
+    const describe = (a) => ({ id: a.id, name: a.name, pending: !!a.pending, credentialFields: a.credentialFields.map(field(a)), settingsFields: a.settingsFields.map(field(a)),
       capabilities: Object.fromEntries(['listPickupPoints', 'listServices', 'listLockers', 'listSeries', 'stornoInvoice', 'registerPayment'].map((k) => [k, typeof a[k] === 'function'])) });
+    const labels = (obj) => Object.fromEntries(Object.entries(obj).map(([k, key]) => [k, t(L, key)]));
     res.json({
       couriers: Object.values(couriers).filter((c) => c.id !== 'mock').map(describe),
       invoicers: Object.values(invoicers).filter((c) => c.id !== 'mock').map(describe),
-      rules: { fields: RULE_FIELDS, ops: RULE_OPS, actions: RULE_ACTIONS },
-      statuses: P.ORDER_STATUS,
-      tracking: TRACKING_LABELS,
+      rules: {
+        fields: Object.fromEntries(Object.entries(RULE_FIELDS).map(([k, f]) => [k, {
+          ...f, label: t(L, `rules.fields.${k}`), ...(f.options ? { options: f.options.map((v) => [v, t(L, `rules.values.${k}.${v}`)]) } : {}),
+        }])),
+        ops: labels(RULE_OPS),
+        actions: labels(RULE_ACTIONS),
+      },
+      statuses: Object.fromEntries(P.ORDER_STATUSES.map((s) => [s, t(L, `status.${s}`)])),
+      tracking: Object.fromEntries(Object.values(TrackingStatus).map((s) => [s, t(L, `tracking.${s}`)])),
       counties: COUNTIES,
       defaults: DEFAULTS,
-      accessActions: privacy.ACCESS_ACTIONS,
+      accessActions: labels(privacy.ACCESS_ACTIONS),
     });
   });
 
@@ -165,7 +195,7 @@ export function createApp() {
     const total = d.prepare(`SELECT COUNT(*) c FROM orders WHERE ${where.join(' AND ')}`).get(...args).c;
     const counts = Object.fromEntries(d.prepare('SELECT status, COUNT(*) c FROM orders WHERE store_id = ? GROUP BY status').all(req.store.id).map((r) => [r.status, r.c]));
     // Small badge for customers who refused parcels before (one indexed lookup per row).
-    const orders = rows.map((o) => ({ ...orderSummary(o), refusedBefore: o.redacted_at ? 0 : customerHistory(req.store, o, { limit: 0 }).returned }));
+    const orders = rows.map((o) => ({ ...orderSummary(o, req.locale), refusedBefore: o.redacted_at ? 0 : customerHistory(req.store, o, { limit: 0 }).returned }));
     res.json({ orders, total, page, pageSize: limit, counts });
   });
 
@@ -177,10 +207,10 @@ export function createApp() {
     const courier = getCourier(order.courier);
     db.logAccess(req.store.id, { actor: req.actor, action: 'order_view', orderId: order.id, orderName: order.name });
     res.json({
-      order: { ...orderSummary(order), data: order.data, overrides: order.overrides, trackingUrl: order.awb && courier?.trackingUrl ? courier.trackingUrl(order.awb) : null },
+      order: { ...orderSummary(order, req.locale), data: order.data, overrides: order.overrides, trackingUrl: order.awb && courier?.trackingUrl ? courier.trackingUrl(order.awb) : null },
       plan: { courier: plan.courier, service: plan.service, parcels: plan.parcels, weightKg: plan.weightKg, cod: plan.cod, openPackage: plan.openPackage, lockerId: plan.lockerId, matchedRules: plan.matchedRules, address: plan.address, skipInvoice: plan.skipInvoice, hold: plan.hold },
       customer: { returned: history.returned, refusedCod: history.refusedCod, delivered: history.delivered, orders: history.orders },
-      events: db.orderEvents(order.id),
+      events: db.orderEvents(order.id).map((e) => db.renderEvent(e, req.locale)),
     });
   });
 
@@ -190,13 +220,13 @@ export function createApp() {
     if (!order) return;
     const overrides = { ...order.overrides };
     let patch;
-    try { patch = cleanOrderPatch(req.body); } catch (err) { return res.status(400).json({ error: { code: 'INVALID', message: err.message } }); }
+    try { patch = cleanOrderPatch(req.body); } catch (err) { return res.status(400).json({ error: renderError(toProcessingError(err), req.locale) }); }
     for (const [k, v] of Object.entries(patch)) {
       if (v === null) delete overrides[k];
       else overrides[k] = k === 'address' ? { ...(overrides.address || {}), ...v } : v;
     }
     db.updateOrder(order.id, { overrides });
-    db.logEvent(req.store.id, order.id, 'info', 'edit', 'Comanda a fost modificată manual.', req.body);
+    db.logEvent(req.store.id, order.id, 'info', 'edit', m('events.edited'), req.body);
     P.validateOrder(req.store, order.id);
     res.json({ ok: true });
   });
@@ -204,7 +234,7 @@ export function createApp() {
   api.post('/orders/process', async (req, res) => {
     const ids = idList(req.body.ids);
     const steps = Array.isArray(req.body.steps) ? req.body.steps.filter((s) => ['awb', 'invoice', 'fulfill'].includes(s)) : ['awb', 'invoice', 'fulfill'];
-    if (!steps.length) return res.status(400).json({ error: { code: 'INVALID', message: 'Pași necunoscuți.' } });
+    if (!steps.length) return sendError(req, res, 400, 'STEPS_UNKNOWN');
     // Held orders (tag, rule, manual hold) are processed only when asked for explicitly (from the order page),
     // not when they happen to be in a bulk selection.
     const force = req.body.force === true;
@@ -215,7 +245,10 @@ export function createApp() {
       const r = await P.processOrder(req.store, id, { steps, force }).catch((err) => ({ ok: false, error: toProcessingError(err).toJSON() }));
       results.push({ id, name: order.name, ...r });
     }
-    res.json({ results, ok: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length });
+    res.json({
+      results: results.map((r) => (r.error ? { ...r, error: renderError(r.error, req.locale) } : r)),
+      ok: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length,
+    });
   });
 
   api.post('/orders/:id/cancel-awb', wrap(async (req, res) => {
@@ -244,7 +277,7 @@ export function createApp() {
     const order = ownOrder(req, res);
     if (!order) return;
     const fresh = await getShopify(req.store).getOrder(order.shopify_id);
-    if (fresh) P.importOrder(req.store, fresh, { source: 'reîmprospătare' });
+    if (fresh) P.importOrder(req.store, fresh, { source: 'refresh' });
     else P.validateOrder(req.store, order.id);
     res.json({ ok: true });
   }));
@@ -254,10 +287,10 @@ export function createApp() {
     const { pdf } = await P.mergedLabels(req.store, ids, qstr(req.query.format));
     for (const id of ids) {
       const o = db.getOrder(id);
-      if (o?.store_id === req.store.id && o.awb) db.logAccess(req.store.id, { actor: req.actor, action: 'labels', orderId: o.id, orderName: o.name, detail: `AWB ${o.awb}` });
+      if (o?.store_id === req.store.id && o.awb) db.logAccess(req.store.id, { actor: req.actor, action: 'labels', orderId: o.id, orderName: o.name, detail: m('access.detail.awb', { awb: o.awb }) });
     }
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="etichete-${bucharestDate()}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${t(req.locale, 'server.files.labels')}-${bucharestDate()}.pdf"`);
     res.send(pdf);
   }));
 
@@ -267,7 +300,7 @@ export function createApp() {
     const pdf = await P.invoicePdf(req.store, order.id);
     db.logAccess(req.store.id, { actor: req.actor, action: 'invoice_pdf', orderId: order.id, orderName: order.name });
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="factura-${`${order.invoice_series}-${order.invoice_number}`.replace(/[^\w.-]+/g, '_')}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${t(req.locale, 'server.files.invoice')}-${`${order.invoice_series}-${order.invoice_number}`.replace(/[^\w.-]+/g, '_')}.pdf"`);
     res.send(pdf);
   }));
 
@@ -320,20 +353,21 @@ export function createApp() {
     const rows = db.getDb().prepare(`SELECT name, courier, awb, cod_amount, awb_at, cod_collected_at, status, invoice_series, invoice_number
       FROM orders WHERE store_id = ? AND cod_amount > 0 AND awb IS NOT NULL ORDER BY awb_at DESC`).all(req.store.id);
     const day = (iso) => (iso ? bucharestDate(new Date(iso)) : '');
-    const csv = ['Comanda,Curier,AWB,Ramburs,Data AWB,Incasat la,Status,Factura']
-      .concat(rows.map((r) => [r.name, r.courier, r.awb, r.cod_amount.toFixed(2), day(r.awb_at), day(r.cod_collected_at), P.ORDER_STATUS[r.status], [r.invoice_series, r.invoice_number].filter(Boolean).join(' ')].map(csvCell).join(',')))
+    // Amounts stay machine-readable (149.90) in both languages; headers and statuses are translated.
+    const csv = [t(req.locale, 'server.csv.codHeader')]
+      .concat(rows.map((r) => [r.name, r.courier, r.awb, r.cod_amount.toFixed(2), day(r.awb_at), day(r.cod_collected_at), has(`status.${r.status}`) ? t(req.locale, `status.${r.status}`) : r.status, [r.invoice_series, r.invoice_number].filter(Boolean).join(' ')].map(csvCell).join(',')))
       .join('\n');
-    db.logAccess(req.store.id, { actor: req.actor, action: 'cod_export', detail: `${rows.length} rânduri` });
+    db.logAccess(req.store.id, { actor: req.actor, action: 'cod_export', detail: m('access.detail.rows', { count: rows.length }) });
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="ramburs.csv"');
+    res.setHeader('Content-Disposition', `attachment; filename="${t(req.locale, 'server.files.cod')}.csv"`);
     res.send('﻿' + csv);
   });
 
   api.get('/events', (req, res) => {
-    res.json({ events: db.storeEvents(req.store.id, 200) });
+    res.json({ events: db.storeEvents(req.store.id, 200).map((e) => db.renderEvent(e, req.locale)) });
   });
 
-  // Who saw or exported customer data (Activitate → Acces la date).
+  // Who saw or exported customer data (Activity → Data access).
   api.get('/access-log', (req, res) => {
     const action = qstr(req.query.action);
     const page = Math.max(1, Number.parseInt(qstr(req.query.page), 10) || 1);
@@ -341,16 +375,16 @@ export function createApp() {
     const { rows, total } = db.listAccess(req.store.id, {
       action: Object.hasOwn(privacy.ACCESS_ACTIONS, action) ? action : '', order: qstr(req.query.order).trim().slice(0, 50), limit, offset: (page - 1) * limit,
     });
-    res.json({ entries: rows, total, page, pageSize: limit, keepDays: privacy.ACCESS_LOG_DAYS });
+    res.json({ entries: rows.map((r) => ({ ...r, detail: db.renderAccessDetail(r.detail, req.locale) })), total, page, pageSize: limit, keepDays: privacy.ACCESS_LOG_DAYS });
   });
 
   // Everything we hold about the given orders, for a customer's data request (logged).
   api.get('/customer-export', (req, res) => {
     const orders = idList(req.query.ids).map((id) => db.getOrder(id)).filter((o) => o?.store_id === req.store.id);
-    if (!orders.length) return res.status(404).json({ error: { message: 'Comanda nu există.' } });
+    if (!orders.length) return sendError(req, res, 404, 'ORDER_NOT_FOUND');
     for (const o of orders) db.logAccess(req.store.id, { actor: req.actor, action: 'customer_export', orderId: o.id, orderName: o.name });
-    const data = privacy.customerExport(req.store, orders.map((o) => o.id));
-    res.setHeader('Content-Disposition', `attachment; filename="date-client-${bucharestDate()}.json"`);
+    const data = privacy.customerExport(req.store, orders.map((o) => o.id), req.locale);
+    res.setHeader('Content-Disposition', `attachment; filename="${t(req.locale, 'server.files.customerData')}-${bucharestDate()}.json"`);
     res.json(data);
   });
 
@@ -367,10 +401,10 @@ export function createApp() {
   api.get('/settings', (req, res) => res.json({ settings: P.storeSettings(req.store) }));
   api.put('/settings', (req, res) => {
     let next;
-    try { next = mergeSettings(req.store.settings, sanitizeSettings(req.body.settings)); } catch (err) { return res.status(400).json({ error: toProcessingError(err).toJSON() }); }
-    if (next.mode === 'live' && req.store.demo) return res.status(400).json({ error: { message: 'Magazinul demo rămâne mereu în modul de probă.' } });
+    try { next = mergeSettings(req.store.settings, sanitizeSettings(req.body.settings)); } catch (err) { return res.status(400).json({ error: renderError(toProcessingError(err), req.locale) }); }
+    if (next.mode === 'live' && req.store.demo) return sendError(req, res, 400, 'DEMO_TEST_ONLY');
     db.saveStoreSettings(req.store.id, next);
-    db.logEvent(req.store.id, null, 'info', 'settings', 'Setările au fost salvate.');
+    db.logEvent(req.store.id, null, 'info', 'settings', m('events.settingsSaved'));
     const store = db.getStore(req.store.id);
     // Re-validate open orders: a new default courier or rule changes what's blocking.
     for (const r of db.getDb().prepare(`SELECT id FROM orders WHERE store_id = ? AND awb IS NULL AND status IN ('ready', 'needs_attention', 'on_hold', 'new')`).all(store.id)) P.validateOrder(store, r.id);
@@ -388,11 +422,11 @@ export function createApp() {
 
   api.put('/integrations/:kind/:provider', (req, res) => {
     const { kind, provider } = req.params;
-    if (!integrationAdapter(kind, provider)) return res.status(404).json({ error: { message: 'Integrare necunoscută.' } });
+    if (!integrationAdapter(kind, provider)) return sendError(req, res, 404, 'INTEGRATION_UNKNOWN');
     const plain = (o) => Object.fromEntries(Object.entries(o && typeof o === 'object' && !Array.isArray(o) ? o : {})
       .filter(([, v]) => v == null || ['string', 'number', 'boolean'].includes(typeof v)));
     const i = db.saveIntegration(req.store.id, kind, provider, { credentials: plain(req.body.credentials), settings: plain(req.body.settings), enabled: req.body.enabled !== false });
-    db.logEvent(req.store.id, null, 'info', 'settings', `Integrarea ${integrationAdapter(kind, provider).name} a fost salvată.`);
+    db.logEvent(req.store.id, null, 'info', 'settings', m('events.integrationSaved', { provider: integrationAdapter(kind, provider).name }));
     res.json({ ok: true, enabled: i.enabled });
   });
 
@@ -400,12 +434,13 @@ export function createApp() {
     const { kind, provider } = req.params;
     const adapter = integrationAdapter(kind, provider);
     const integration = db.getIntegration(req.store.id, kind, provider);
-    if (!adapter || !integration) return res.status(404).json({ error: { message: 'Salvează întâi datele de conectare.' } });
-    if (adapter.pending) return res.status(400).json({ error: { message: `${adapter.name} e încă în lucru.` } });
-    const ctx = { credentials: integration.credentials, settings: integration.settings, http: request, cache: db.storeCache(req.store.id), log: () => {} };
+    if (!adapter || !integration) return sendError(req, res, 404, 'INTEGRATION_NOT_SAVED');
+    if (adapter.pending) return sendError(req, res, 400, 'INTEGRATION_PENDING', { provider: adapter.name });
+    const ctx = { credentials: integration.credentials, settings: integration.settings, http: request, cache: db.storeCache(req.store.id), log: () => {}, locale: req.locale };
     const r = await adapter.testConnection(ctx);
     db.markIntegrationVerified(req.store.id, kind, provider);
-    res.json(r);
+    // Adapters answer with a message { key, params } (src/i18n), rendered here in the viewer's language.
+    res.json({ ...r, message: t(req.locale, r.message) });
   }));
 
   // Lists the courier/invoicing side offers (pickup points, services, series) to fill settings dropdowns.
@@ -415,21 +450,22 @@ export function createApp() {
     const integration = db.getIntegration(req.store.id, kind, provider);
     const fn = { pickupPoints: 'listPickupPoints', services: 'listServices', series: 'listSeries', lockers: 'listLockers' }[what];
     if (!adapter || !integration || !fn || typeof adapter[fn] !== 'function') return res.json({ items: [] });
-    const ctx = { credentials: integration.credentials, settings: integration.settings, http: request, cache: db.storeCache(req.store.id), log: () => {} };
+    const ctx = { credentials: integration.credentials, settings: integration.settings, http: request, cache: db.storeCache(req.store.id), log: () => {}, locale: req.locale };
     res.json({ items: await adapter[fn](ctx, req.query) });
   }));
 
   app.use('/api', api);
 
-  // Errors from handlers → Romanian message + hint for the UI.
+  // Errors from handlers → message + hint for the UI, in the viewer's language.
   app.use((err, req, res, next) => {
+    const locale = req.locale || fallbackLocale(req);
     // Body-parser errors (bad JSON, too large) are the client's fault, not ours.
     if (err?.type && err.status >= 400 && err.status < 500) {
-      return res.status(err.status).json({ error: { code: 'BAD_REQUEST', message: 'Cererea nu e validă.' } });
+      return res.status(err.status).json({ error: renderError(new ProcessingError({ code: 'BAD_REQUEST' }), locale) });
     }
     const e = toProcessingError(err);
     if (e.code === 'UNEXPECTED') console.error(err);
-    res.status(e.code === 'UNEXPECTED' ? 500 : 400).json({ error: e.toJSON() });
+    res.status(e.code === 'UNEXPECTED' ? 500 : 400).json({ error: renderError(e, locale) });
   });
 
   return app;
@@ -437,6 +473,14 @@ export function createApp() {
 
 // ---------- helpers ----------
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
+
+/** Language before the store is known (login, bad session): what the Shopify admin / browser says. */
+const fallbackLocale = (req) => (req.get('X-Expedo-Locale') ? normalizeLocale(req.get('X-Expedo-Locale')) : acceptLanguageLocale(req.get('Accept-Language')));
+
+/** JSON error answer { error: { code, message, hint } } with the text in the request's language. */
+function sendError(req, res, status, code, params) {
+  return res.status(status).json({ error: renderError(new ProcessingError({ code, params }), req.locale || fallbackLocale(req)) });
+}
 
 /** Express 5 query values can be strings or arrays (?a=1&a=2); handlers want one string. */
 const qstr = (v) => String((Array.isArray(v) ? v[0] : v) ?? '');
@@ -452,7 +496,7 @@ export function csvCell(v) {
 const ADDRESS_KEYS = ['name', 'firstName', 'lastName', 'company', 'address1', 'address2', 'city', 'province', 'provinceCode', 'zip', 'phone', 'countryCode'];
 const NUMBER_LIMITS = { parcels: [1, 99, true], weightKg: [0.01, 1000], cod: [0, 1_000_000] };
 
-/** Validates a manual edit of an order. null / '' = remove the override. Throws with a Romanian message. */
+/** Validates a manual edit of an order. null / '' = remove the override. Throws ProcessingError INVALID_EDIT. */
 export function cleanOrderPatch(body) {
   const out = {};
   for (const k of ['address', 'courier', 'service', 'parcels', 'weightKg', 'cod', 'notes', 'hold', 'openPackage', 'lockerId', 'skipInvoice']) {
@@ -460,18 +504,18 @@ export function cleanOrderPatch(body) {
     const v = body[k];
     if (v === '' || v === null) { out[k] = null; continue; }
     if (k === 'address') {
-      if (typeof v !== 'object' || Array.isArray(v)) throw new Error('Adresa nu e validă.');
+      if (typeof v !== 'object' || Array.isArray(v)) throw new ProcessingError({ code: 'INVALID_EDIT', key: 'errors.INVALID_EDIT.address' });
       out.address = Object.fromEntries(ADDRESS_KEYS.filter((a) => Object.hasOwn(v, a)).map((a) => [a, String(v[a] ?? '').slice(0, 300)]));
     } else if (k in NUMBER_LIMITS) {
       const [min, max, int] = NUMBER_LIMITS[k];
       const n = Number(v);
-      if (!Number.isFinite(n) || n < min || n > max || (int && !Number.isInteger(n))) throw new Error(`Valoare greșită pentru ${k}: ${v}.`);
+      if (!Number.isFinite(n) || n < min || n > max || (int && !Number.isInteger(n))) throw new ProcessingError({ code: 'INVALID_EDIT', key: 'errors.INVALID_EDIT.value', params: { field: k, value: String(v) } });
       out[k] = n;
     } else if (['hold', 'openPackage', 'skipInvoice'].includes(k)) {
-      if (typeof v !== 'boolean') throw new Error(`Valoare greșită pentru ${k}.`);
+      if (typeof v !== 'boolean') throw new ProcessingError({ code: 'INVALID_EDIT', key: 'errors.INVALID_EDIT.flag', params: { field: k } });
       out[k] = v;
     } else if (k === 'courier') {
-      if (v === 'mock' || !Object.hasOwn(couriers, v)) throw new Error(`Curier necunoscut: ${v}.`);
+      if (v === 'mock' || !Object.hasOwn(couriers, v)) throw new ProcessingError({ code: 'INVALID_EDIT', key: 'errors.INVALID_EDIT.courier', params: { courier: String(v) } });
       out[k] = v;
     } else {
       out[k] = String(v).slice(0, 500);
@@ -498,22 +542,29 @@ function publicStore(s) {
 function ownOrder(req, res) {
   const order = db.getOrder(Number(req.params.id));
   if (!order || order.store_id !== req.store.id) {
-    res.status(404).json({ error: { message: 'Comanda nu există.' } });
+    sendError(req, res, 404, 'ORDER_NOT_FOUND');
     return null;
   }
   return order;
 }
 
-function orderSummary(o) {
+/** Romanian tracking labels older versions stored in tracking_text: not the courier's own words. */
+const OLD_TRACKING_LABELS = new Set(Object.values(TrackingStatus).map((s) => catalogs.ro[`tracking.${s}`]));
+
+function orderSummary(o, locale) {
   const d = o.data;
   return {
-    id: o.id, name: o.name, createdAt: o.created_at, status: o.status, statusLabel: P.ORDER_STATUS[o.status] || o.status,
+    id: o.id, name: o.name, createdAt: o.created_at, status: o.status, statusLabel: has(`status.${o.status}`) ? t(locale, `status.${o.status}`) : o.status,
     customer: d.customerName, city: d.shippingAddress?.city, county: d.shippingAddress?.province,
     total: o.total, currency: d.currency, paymentMethod: o.payment_method, codAmount: o.cod_amount,
     items: d.lines?.reduce((s, l) => s + l.quantity, 0) || 0, shippingMethod: d.shippingMethod, company: d.company?.name || null,
-    courier: o.courier, awb: o.awb, awbAt: o.awb_at, trackingStatus: o.tracking_status, trackingText: o.tracking_text,
+    // trackingText: the status in the viewer's language; trackingDetail: the courier's own words, when they add something.
+    courier: o.courier, awb: o.awb, awbAt: o.awb_at, trackingStatus: o.tracking_status,
+    trackingText: o.tracking_status ? t(locale, `tracking.${o.tracking_status}`) : o.tracking_text,
+    trackingDetail: o.tracking_status && o.tracking_text && !OLD_TRACKING_LABELS.has(o.tracking_text) ? o.tracking_text : null,
     invoice: o.invoice_number ? `${o.invoice_series} ${o.invoice_number}` : null, invoiceUrl: o.invoice_url,
-    fulfilledAt: o.fulfilled_at, codCollectedAt: o.cod_collected_at, issues: o.issues, lastError: o.last_error,
+    fulfilledAt: o.fulfilled_at, codCollectedAt: o.cod_collected_at,
+    issues: (o.issues || []).map((i) => renderError(i, locale)), lastError: o.last_error ? renderError(o.last_error, locale) : null,
     testMode: o.test_mode, invoiceTest: o.invoice_test, hold: !!o.overrides?.hold, tags: d.tags, cancelled: !!d.cancelledAt,
     redactedAt: o.redacted_at || null,
   };
@@ -525,7 +576,7 @@ async function resolveStore(req, res, next) {
     const bearer = (req.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     if (bearer) {
       const v = auth.verifySessionToken(bearer);
-      if (!v) return res.status(401).json({ error: { code: 'SESSION_INVALID', message: 'Sesiunea Shopify a expirat. Reîncarcă pagina.' } });
+      if (!v) return sendError(req, res, 401, 'SESSION_INVALID');
       let store = db.getStoreByShop(v.shop);
       if (!store?.accessToken || store.uninstalled_at) {
         // Embedded first load (Shopify managed install): get an offline token via token exchange.
@@ -534,17 +585,19 @@ async function resolveStore(req, res, next) {
       }
       req.store = store;
       req.embedded = true;
+      // Inside the Shopify admin: the admin user's language (App Bridge locale, sent by the SPA).
+      req.locale = requestLocale({ embedded: true, embeddedLocale: req.get('X-Expedo-Locale') || qstr(req.query.locale), store });
       // The Shopify staff member (session token `sub`), for the access log.
       req.actor = `shopify-session ${v.payload.sub || '?'}`;
       return next();
     }
     const session = auth.readSession(parseCookies(req).expedo_session);
     const autoDemo = config.demo && !config.adminPassword;
-    if (!session?.admin && !autoDemo) return res.status(401).json({ error: { code: 'LOGIN_REQUIRED', message: 'Autentifică-te.' } });
+    if (!session?.admin && !autoDemo) return sendError(req, res, 401, 'LOGIN_REQUIRED');
     // Cookie auth: a cross-site form or image can carry the cookie, but cannot set a custom header
     // (that needs a CORS preflight we never allow). So every write must come from our own fetch().
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.get('X-Expedo-Request') !== '1') {
-      return res.status(403).json({ error: { code: 'CSRF', message: 'Cerere respinsă. Reîncarcă pagina.' } });
+      return sendError(req, res, 403, 'CSRF');
     }
     req.session = session || { admin: true };
     req.actor = 'admin';
@@ -552,7 +605,9 @@ async function resolveStore(req, res, next) {
     // Open demo mode (no password) only ever exposes the demo store, never a real one in the same database.
     const stores = db.listStores().filter((st) => session?.admin || st.demo);
     req.store = stores.find((s) => s.id === wanted) || stores.find((s) => !s.demo) || stores[0];
-    if (!req.store) return res.status(404).json({ error: { code: 'NO_STORE', message: 'Niciun magazin conectat. Instalează aplicația din Shopify.' } });
+    if (!req.store) return sendError(req, res, 404, 'NO_STORE');
+    // Standalone dashboard: the store's "Language" setting (English by default).
+    req.locale = requestLocale({ embedded: false, store: req.store });
     next();
   } catch (err) {
     next(err);
@@ -570,7 +625,7 @@ async function onInstalled(shop, token) {
     console.error('post-install', err);
   }
   store = db.getStore(store.id);
-  db.logEvent(store.id, null, 'success', 'install', 'Aplicația a fost conectată la magazin.');
+  db.logEvent(store.id, null, 'success', 'install', m('events.installed'));
   // Own key: the periodic 3-day re-sync (key sync:<id>) may already be pending and must not swallow this one.
   P.enqueue(store.id, 'sync_store', { days: 14 }, { key: `initial_sync:${store.id}` });
   return store;
@@ -625,6 +680,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   startWorker();
   createApp().listen(config.port, () => {
-    console.log(`Expedo pornit pe ${config.appUrl}${config.demo ? ' (mod demo)' : ''}`);
+    console.log(`Expedo running on ${config.appUrl}${config.demo ? ' (demo mode)' : ''}`);
   });
 }

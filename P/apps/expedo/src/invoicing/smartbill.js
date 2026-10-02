@@ -1,4 +1,5 @@
-import { ProcessingError, authError } from '../core/errors.js';
+import { ProcessingError, authError, errorMessage } from '../core/errors.js';
+import { m } from '../i18n/index.js';
 import { bucharestDay } from './ro-time.js';
 
 // SmartBill Cloud API V1 — https://api.smartbill.ro/ (OpenAPI spec: https://api.smartbill.ro/smartbill-api-spec.yaml,
@@ -43,12 +44,7 @@ const decimals = (n) => {
 function cif(ctx) {
   const v = noSpaces(ctx.settings?.cif).toUpperCase();
   if (!v) {
-    throw new ProcessingError({
-      code: 'INVOICING_SETTINGS_MISSING',
-      message: 'Lipsește CIF-ul firmei pentru SmartBill.',
-      hint: 'Completează CIF-ul firmei în Setări → Facturare, exact cum apare în SmartBill Cloud.',
-      provider: PROVIDER,
-    });
+    throw new ProcessingError({ code: 'INVOICING_SETTINGS_MISSING', key: 'smartbill.errors.cifMissing', provider: PROVIDER });
   }
   return v;
 }
@@ -80,102 +76,40 @@ function plainError(text) {
   return (cut >= 0 ? t.slice(0, cut) : t).replace(/\s+/g, ' ').trim();
 }
 
+// SmartBill's own errorText → [code, field]. The text stays SmartBill's, verbatim ("SmartBill: …" /
+// "SmartBill says: “…”"), with our hint: smartbill.errors.<code> in the catalogs.
 const RULES = [
-  [/autentificare esuata/i, () => authError(PROVIDER)],
-  [/firma la care incercati sa va conectati/i, (msg) => ({
-    code: 'INVOICING_COMPANY_NOT_FOUND',
-    message: `SmartBill: ${msg}`,
-    hint: 'Verifică CIF-ul firmei în Setări → Facturare: trebuie să fie exact cel din SmartBill Cloud (cu sau fără RO, la fel ca acolo) și utilizatorul API să aibă acces la firmă.',
-  })],
-  [/seria nu a fost gasita/i, (msg) => ({
-    code: 'INVOICE_SERIES_NOT_FOUND',
-    message: `SmartBill: ${msg}`,
-    hint: 'Verifică seria în Setări → Facturare. Seria trebuie să existe în SmartBill Cloud → Configurare → Serii (atenție la litere mari/mici).',
-    field: 'settings.series',
-  })],
-  [/cota (tva )?.*nu a fost gasita|trebuie sa setezi o cota tva|cota default nu a fost gasita|nu are cota tva setata/i, (msg) => ({
-    code: 'VAT_RATE_NOT_DEFINED',
-    message: `SmartBill: ${msg}`,
-    hint: 'Adaugă cota de TVA în SmartBill Cloud → Configurare → Cote TVA (ex. 21% „Normala”, 11% „Redusa”), apoi emite din nou factura.',
-  })],
-  [/nu are codul specificat/i, (msg) => ({
-    code: 'PRODUCT_CODE_MISSING',
-    message: `SmartBill: ${msg}`,
-    hint: 'Firma are activată opțiunea „Folosește cod produs” în SmartBill: completează SKU-ul produsului în Shopify sau dezactivează opțiunea în SmartBill.',
-    field: 'lines.code',
-  })],
-  [/nu aveti dreptul/i, (msg) => ({
-    code: 'INVOICING_PERMISSION_DENIED',
-    message: `SmartBill: ${msg}`,
-    hint: 'Utilizatorul API nu are drepturi pe firmă sau pe serie. Cere administratorului contului SmartBill să le acorde din Utilizatori.',
-  })],
-  [/numarul maxim de documente/i, (msg) => ({
-    code: 'INVOICING_PLAN_LIMIT',
-    message: `SmartBill: ${msg}`,
-    hint: 'Abonamentul SmartBill a atins limita de documente. Schimbă pachetul din contul SmartBill.',
-  })],
-  [/stoc|gestiunea|achizitie pentru produsul|factor de conversie|modulul stoc/i, (msg) => ({
-    code: 'INVOICE_STOCK_ERROR',
-    message: `SmartBill: ${msg}`,
-    hint: 'Verifică gestiunea din Setări → Facturare și stocul produsului în SmartBill, sau dezactivează descărcarea de gestiune.',
-  })],
-  [/server-ul de email|adresa de email a clientului/i, (msg) => ({
-    code: 'INVOICE_EMAIL_NOT_CONFIGURED',
-    message: `SmartBill: ${msg}`,
-    hint: 'Configurează serverul de e-mail în SmartBill Cloud → Configurare → Email sau dezactivează „Trimite factura clientului pe e-mail”.',
-  })],
-  [/client invalid|tara trebuie specificata|clientul exista deja/i, (msg) => ({
-    code: 'INVOICE_CLIENT_INVALID',
-    message: `SmartBill: ${msg}`,
-    hint: 'Verifică numele și țara clientului din comandă. Dacă există un client duplicat în SmartBill (același nume, alt CIF), șterge duplicatul din Nomenclatoare → Clienți.',
-    field: 'client.name',
-  })],
-  [/moneda nu a fost gasita/i, (msg) => ({
-    code: 'INVOICE_CURRENCY_INVALID',
-    message: `SmartBill: ${msg}`,
-    hint: 'Moneda comenzii nu e acceptată de SmartBill. Verifică moneda magazinului.',
-  })],
-  [/deja stornata/i, (msg) => ({
-    code: 'INVOICE_ALREADY_REVERSED',
-    message: `SmartBill: ${msg}`,
-    hint: 'Factura are deja o factură de stornare în SmartBill. Nu e nevoie de altă acțiune.',
-  })],
-  [/incasata sau stornata in totalitate/i, (msg) => ({
-    code: 'INVOICE_ALREADY_PAID',
-    message: `SmartBill: ${msg}`,
-    hint: 'Factura e deja încasată integral (sau stornată) în SmartBill. Nu mai e nimic de înregistrat.',
-  })],
-  [/nu este ultimul din serie/i, (msg) => ({
-    code: 'INVOICE_NOT_LAST',
-    message: `SmartBill: ${msg}`,
-    hint: 'Doar ultima factură din serie poate fi ștearsă. Folosește anularea sau stornarea.',
-  })],
-  [/anulata/i, (msg) => ({
-    code: 'INVOICE_CANCELLED',
-    message: `SmartBill: ${msg}`,
-    hint: 'Factura este anulată în SmartBill. Restaureaz-o din SmartBill dacă vrei să o stornezi.',
-  })],
-  [/nu a fost gasita/i, (msg) => ({
-    code: 'INVOICE_NOT_FOUND',
-    message: `SmartBill: ${msg}`,
-    hint: 'Verifică seria și numărul facturii; poate a fost ștearsă din SmartBill.',
-  })],
+  [/autentificare esuata/i, 'AUTH_FAILED'],
+  [/firma la care incercati sa va conectati/i, 'INVOICING_COMPANY_NOT_FOUND'],
+  [/seria nu a fost gasita/i, 'INVOICE_SERIES_NOT_FOUND', 'settings.series'],
+  [/cota (tva )?.*nu a fost gasita|trebuie sa setezi o cota tva|cota default nu a fost gasita|nu are cota tva setata/i, 'VAT_RATE_NOT_DEFINED'],
+  [/nu are codul specificat/i, 'PRODUCT_CODE_MISSING', 'lines.code'],
+  [/nu aveti dreptul/i, 'INVOICING_PERMISSION_DENIED'],
+  [/numarul maxim de documente/i, 'INVOICING_PLAN_LIMIT'],
+  [/stoc|gestiunea|achizitie pentru produsul|factor de conversie|modulul stoc/i, 'INVOICE_STOCK_ERROR'],
+  [/server-ul de email|adresa de email a clientului/i, 'INVOICE_EMAIL_NOT_CONFIGURED'],
+  [/client invalid|tara trebuie specificata|clientul exista deja/i, 'INVOICE_CLIENT_INVALID', 'client.name'],
+  [/moneda nu a fost gasita/i, 'INVOICE_CURRENCY_INVALID'],
+  [/deja stornata/i, 'INVOICE_ALREADY_REVERSED'],
+  [/incasata sau stornata in totalitate/i, 'INVOICE_ALREADY_PAID'],
+  [/nu este ultimul din serie/i, 'INVOICE_NOT_LAST'],
+  [/anulata/i, 'INVOICE_CANCELLED'],
+  [/nu a fost gasita/i, 'INVOICE_NOT_FOUND'],
 ];
 
 function mapErrorText(errorText, details, { status } = {}) {
   const msg = plainError(errorText);
-  for (const [re, make] of RULES) {
+  for (const [re, code, field] of RULES) {
     if (re.test(fold(msg))) {
-      const r = make(msg);
-      if (r instanceof ProcessingError) { r.details = details; return r; }
-      return new ProcessingError({ retryable: false, provider: PROVIDER, details, ...r });
+      if (code === 'AUTH_FAILED') return authError(PROVIDER, details);
+      return new ProcessingError({ code, key: `smartbill.errors.${code}`, params: { text: msg }, field, retryable: false, provider: PROVIDER, details });
     }
   }
   const retryable = status === 429 || status >= 500;
   return new ProcessingError({
     code: retryable ? 'PROVIDER_DOWN' : 'PROVIDER_REJECTED',
-    message: `SmartBill a refuzat cererea: ${msg}`,
-    hint: retryable ? 'Reîncercăm automat în câteva minute.' : 'Verifică datele comenzii și setările de facturare, apoi încearcă din nou.',
+    key: retryable ? 'smartbill.errors.rejectedRetry' : 'smartbill.errors.rejected',
+    params: { text: msg },
     retryable,
     provider: PROVIDER,
     details,
@@ -193,8 +127,8 @@ function mapHttpError(status, body) {
       const codes = body.errors.map((e) => e.code).filter(Boolean).join(', ');
       return new ProcessingError({
         code: 'PROVIDER_REJECTED',
-        message: `SmartBill a respins structura cererii${params ? ` (câmp: ${params})` : codes ? ` (${codes}, HTTP ${status})` : ''}.`,
-        hint: 'Este o eroare a integrării, nu a comenzii. Trimite-ne detaliile din jurnal.',
+        key: params ? 'smartbill.errors.structureField' : codes ? 'smartbill.errors.structureCodes' : 'smartbill.errors.structure',
+        params: { params, codes, status },
         provider: PROVIDER,
         details: body,
       });
@@ -255,8 +189,8 @@ async function taxFor(ctx, rate) {
   if (hit) return { taxName: hit.name, taxPercentage: Number(rate) };
   throw new ProcessingError({
     code: 'VAT_RATE_NOT_DEFINED',
-    message: `Cota de TVA ${rate}% nu este definită în SmartBill.`,
-    hint: `Adaugă cota ${rate}% în SmartBill Cloud → Configurare → Cote TVA, apoi emite din nou factura.`,
+    key: 'smartbill.errors.vatRate',
+    params: { rate },
     provider: PROVIDER,
     details: { configured: list },
   });
@@ -304,12 +238,7 @@ async function invoicePayload(ctx, invoice) {
   const s = ctx.settings || {};
   const currency = clean(invoice.currency || 'RON').toUpperCase();
   if (!CURRENCIES.has(currency)) {
-    throw new ProcessingError({
-      code: 'INVOICE_CURRENCY_INVALID',
-      message: `SmartBill nu acceptă moneda ${currency}.`,
-      hint: 'Emite factura manual în SmartBill sau schimbă moneda magazinului.',
-      provider: PROVIDER,
-    });
+    throw new ProcessingError({ code: 'INVOICE_CURRENCY_INVALID', key: 'smartbill.errors.currency', params: { currency }, provider: PROVIDER });
   }
   const useStock = Boolean(s.useStock && clean(s.warehouseName));
   const prec = Math.min(4, Math.max(2, ...invoice.lines.map((l) => decimals(l.unitPrice))));
@@ -390,19 +319,19 @@ async function resolveAmbiguous(ctx, invoice, seriesName, before, err) {
     // The series counter did not move: no invoice was issued, so retrying cannot create a duplicate.
     return new ProcessingError({
       code: err?.code || 'PROVIDER_DOWN',
-      message: `${err?.message || 'SmartBill nu a răspuns.'} Factura pentru comanda ${invoice.reference} nu a fost emisă.`,
-      hint: 'Am verificat numerotarea seriei în SmartBill: nu s-a emis nimic. Poți reîncerca fără risc de dublură.',
+      key: 'smartbill.errors.notIssued',
+      params: { error: err ? errorMessage(err) : m('smartbill.noAnswer'), order: invoice.reference },
       retryable: true,
       provider: PROVIDER,
       details: err?.details,
     });
   }
-  const candidate = before !== undefined && after === before + 1 ? ` (probabil ${seriesName} ${before})` : '';
-  ctx.log?.('SmartBill: rezultat necunoscut la emitere', { reference: invoice.reference, before, after, error: err?.message });
+  const candidate = before !== undefined && after === before + 1 ? m('smartbill.candidate', { series: seriesName, number: before }) : '';
+  ctx.log?.(m('log.invoiceUnknown', { provider: 'SmartBill' }), { reference: invoice.reference, before, after, error: err?.message });
   return new ProcessingError({
     code: 'INVOICE_STATUS_UNKNOWN',
-    message: `SmartBill nu a confirmat emiterea; factura pentru comanda ${invoice.reference} poate fi emisă totuși${candidate}.`,
-    hint: 'Verifică în SmartBill Cloud dacă factura există înainte să încerci din nou, ca să nu emiți două facturi.',
+    key: 'smartbill.errors.statusUnknown',
+    params: { order: invoice.reference, candidate },
     retryable: false,
     provider: PROVIDER,
     details: { error: err?.message, code: err?.code, nextNumberBefore: before, nextNumberAfter: after, providerDetails: err?.details },
@@ -415,33 +344,23 @@ export default {
   id: 'smartbill',
   name: 'SmartBill',
 
+  // Labels and help: smartbill.fields.<key> in the catalogs (src/i18n).
   credentialFields: [
-    { key: 'email', label: 'E-mail cont SmartBill', type: 'text', required: true,
-      help: 'Adresa cu care intri în SmartBill Cloud (Configurare → Integrări → API).' },
-    { key: 'token', label: 'Token API', type: 'password', required: true,
-      help: 'Îl găsești în SmartBill Cloud → Configurare → Integrări → API.' },
+    { key: 'email', type: 'text', required: true },
+    { key: 'token', type: 'password', required: true },
   ],
 
   settingsFields: [
-    { key: 'cif', label: 'CIF firmă', type: 'text', required: true,
-      help: 'Exact cum apare în SmartBill (Configurare → Integrări → API).' },
-    { key: 'series', label: 'Serie factură', type: 'text', required: true,
-      help: 'Seria de facturi din SmartBill → Configurare → Serii. Apasă „Testează conexiunea” ca să vezi seriile.' },
-    { key: 'vatPayer', label: 'Firma este plătitoare de TVA', type: 'checkbox', default: true,
-      help: 'Debifează dacă firma nu e plătitoare de TVA: facturile se emit fără TVA.' },
-    { key: 'sendEmail', label: 'Trimite factura clientului pe e-mail', type: 'checkbox', default: false,
-      help: 'Necesită server de e-mail configurat în SmartBill → Configurare → Email.' },
-    { key: 'markPaid', label: 'Marchează încasate comenzile plătite online', type: 'checkbox', default: true,
-      help: 'Factura comenzilor plătite cu cardul se emite direct ca încasată („Card online”).' },
-    { key: 'useStock', label: 'Descarcă stocul din gestiune', type: 'checkbox', default: false,
-      help: 'Scade stocul în SmartBill la emitere. Produsele trebuie să aibă același cod (SKU) ca în SmartBill.' },
-    { key: 'warehouseName', label: 'Gestiune', type: 'text',
-      help: 'Numele gestiunii din SmartBill, exact (contează literele mari/mici). Folosit doar cu descărcarea de stoc.' },
-    { key: 'language', label: 'Limba facturii', type: 'select', default: 'RO',
-      options: ['RO', 'EN', 'DE', 'FR', 'IT', 'ES'].map((v) => ({ value: v, label: v })) },
-    { key: 'codPaymentType', label: 'Tip încasare la ramburs', type: 'select', default: 'Ramburs',
-      options: [{ value: 'Ramburs', label: 'Ramburs' }, { value: 'Alta incasare', label: 'Altă încasare' }],
-      help: 'Cum se înregistrează în SmartBill banii primiți de la curier.' },
+    { key: 'cif', type: 'text', required: true },
+    { key: 'series', type: 'text', required: true },
+    { key: 'vatPayer', type: 'checkbox', default: true },
+    { key: 'sendEmail', type: 'checkbox', default: false },
+    { key: 'markPaid', type: 'checkbox', default: true },
+    { key: 'useStock', type: 'checkbox', default: false },
+    { key: 'warehouseName', type: 'text' },
+    { key: 'language', type: 'select', default: 'RO', options: ['RO', 'EN', 'DE', 'FR', 'IT', 'ES'].map((v) => ({ value: v, label: v })) },
+    // Values are SmartBill's own payment types.
+    { key: 'codPaymentType', type: 'select', default: 'Ramburs', options: [{ value: 'Ramburs' }, { value: 'Alta incasare' }] },
   ],
 
   async testConnection(ctx) {
@@ -449,14 +368,14 @@ export default {
     const series = await listSeries(ctx);
     const wanted = clean(ctx.settings?.series);
     const names = series.map((x) => x.name);
-    const vatInfo = list.length
-      ? `Cote TVA: ${list.map((t) => `${t.name} ${t.percentage}%`).join(', ')}.`
-      : 'Firma apare ca neplătitoare de TVA în SmartBill.';
+    const vat = list.length
+      ? m('smartbill.test.vatRates', { rates: list.map((x) => `${x.name} ${x.percentage}%`).join(', ') })
+      : m('smartbill.test.noVat');
     if (wanted && !names.includes(wanted)) {
       throw new ProcessingError({
         code: 'INVOICE_SERIES_NOT_FOUND',
-        message: `Conectarea la SmartBill merge, dar seria „${wanted}” nu există în cont.`,
-        hint: names.length ? `Alege una dintre seriile existente: ${names.join(', ')}.` : 'Creează o serie de facturi în SmartBill → Configurare → Serii.',
+        key: names.length ? 'smartbill.errors.seriesMissing' : 'smartbill.errors.seriesMissingNone',
+        params: { series: wanted, list: names.join(', ') },
         provider: PROVIDER,
         field: 'settings.series',
       });
@@ -464,8 +383,8 @@ export default {
     return {
       ok: true,
       message: wanted
-        ? `Conectat la SmartBill. Seria „${wanted}” a fost găsită. ${vatInfo}`
-        : `Conectat la SmartBill. Serii disponibile: ${names.join(', ') || 'niciuna'}. ${vatInfo}`,
+        ? m('smartbill.test.connectedSeries', { series: wanted, vat })
+        : m('smartbill.test.connectedList', { list: names.join(', ') || m('smartbill.test.none'), vat }),
       info: { series, taxes: list },
     };
   },
@@ -476,8 +395,7 @@ export default {
     if (!clean(ctx.settings?.series)) {
       throw new ProcessingError({
         code: 'INVOICING_SETTINGS_MISSING',
-        message: 'Nu este aleasă seria de facturi SmartBill.',
-        hint: 'Alege seria în Setări → Facturare.',
+        key: 'smartbill.errors.seriesNotChosen',
         provider: PROVIDER,
         field: 'settings.series',
       });
@@ -495,8 +413,7 @@ export default {
     if (!body?.number) {
       throw new ProcessingError({
         code: 'PROVIDER_REJECTED',
-        message: 'SmartBill nu a întors numărul facturii.',
-        hint: 'Verifică în SmartBill Cloud dacă factura a fost emisă.',
+        key: 'smartbill.errors.noNumber',
         provider: PROVIDER,
         details: body,
       });
@@ -519,8 +436,8 @@ export default {
         if (status === 502) {
           return new ProcessingError({
             code: 'INVOICE_NOT_FOUND',
-            message: `SmartBill nu a găsit factura ${series} ${number}.`,
-            hint: 'Verifică dacă factura mai există în SmartBill Cloud. Dacă există, reîncearcă peste câteva minute.',
+            key: 'smartbill.errors.pdfNotFound',
+            params: { series, number },
             retryable: true,
             provider: PROVIDER,
           });
@@ -537,8 +454,8 @@ export default {
       if (parsed?.errorText) throw mapErrorText(parsed.errorText, parsed);
       throw new ProcessingError({
         code: 'INVOICE_PDF_UNAVAILABLE',
-        message: `SmartBill nu a trimis PDF-ul facturii ${series} ${number}.`,
-        hint: 'Reîncearcă peste câteva minute.',
+        key: 'smartbill.errors.pdf',
+        params: { series, number },
         retryable: true,
         provider: PROVIDER,
         details: buf.toString('utf8').slice(0, 500),
@@ -564,8 +481,8 @@ export default {
       // Never re-sent automatically: a second /invoice/reverse would reverse the invoice twice.
       throw new ProcessingError({
         code: 'PROVIDER_REJECTED',
-        message: `SmartBill nu a întors numărul facturii de stornare pentru ${series} ${number}.`,
-        hint: 'Verifică în SmartBill Cloud dacă stornarea a fost emisă; nu o reîncerca înainte.',
+        key: 'smartbill.errors.noStornoNumber',
+        params: { series, number },
         provider: PROVIDER,
         details: body,
       });
@@ -575,7 +492,7 @@ export default {
 
   async registerPayment(ctx, { series, number, amount, date, method }) {
     if (amount != null && !(Number(amount) > 0)) {
-      ctx.log?.('SmartBill: încasare cu suma 0 ignorată', { series, number, amount });
+      ctx.log?.(m('log.zeroPayment', { provider: 'SmartBill' }), { series, number, amount });
       return { skipped: true };
     }
     const type = method === 'card' ? 'Card'

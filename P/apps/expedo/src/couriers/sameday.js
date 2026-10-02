@@ -5,7 +5,9 @@ import {
 } from './locality.js';
 import {
   normalizePhoneRO, classifyStatusText, collectMessages, shortText, accountKey, money, courierDateToIso, looksLikeHtml,
+  saidBy,
 } from './util.js';
+import { m, t } from '../i18n/index.js';
 
 // Sameday Courier API.
 // Sources: official PHP SDK github.com/sameday-courier/php-sdk (v2.4.2 — endpoints, field names,
@@ -33,12 +35,8 @@ const NOMENCLATOR_TTL = 7 * DAY;
 const PAGE_SIZE = 500; // the official SDK itself requests 500/page (GetStatusSync); VERIFY on geolocation/lockers
 
 // Service codes are stable; numeric ids differ per account, so we resolve ids via /api/client/services.
-export const SERVICE_CODES = {
-  '24': '24H (livrare a doua zi)',
-  LN: 'Locker NextDay (easybox)',
-  '6H': '6H (în aceeași zi, București)',
-  PP: 'Sameday Point (PUDO)',
-};
+// Names: sameday.services.<code> in the catalogs.
+export const SERVICE_CODES = ['24', 'LN', '6H', 'PP'];
 
 // ---------------------------------------------------------------------------------------------
 // Tracking status mapping (Sameday → TrackingStatus)
@@ -105,8 +103,8 @@ const ak = (ctx, k) => `sameday:${env(ctx)}:${account(ctx)}:${k}`;
 function blockedError(status, body) {
   return new ProcessingError({
     code: 'PROVIDER_DOWN',
-    message: `Sameday nu a răspuns cu date (pagină HTML, cod ${status}).`,
-    hint: 'De obicei e o protecție temporară a serverului Sameday. Reîncercăm automat.',
+    key: 'sameday.errors.blocked',
+    params: { status },
     retryable: true,
     provider: PROVIDER,
     details: String(Buffer.isBuffer(body) ? body.toString('utf8') : body).slice(0, 300),
@@ -143,12 +141,7 @@ async function authenticate(ctx, { force = false } = {}) {
   }
   const { username, password } = ctx.credentials || {};
   if (!username || !password) {
-    throw new ProcessingError({
-      code: 'AUTH_FAILED',
-      message: 'Lipsesc utilizatorul sau parola Sameday.',
-      hint: 'Completează-le în Setări → Integrări → Sameday (sunt datele de API primite de la Sameday, nu cele de eAWB, dacă diferă).',
-      provider: PROVIDER,
-    });
+    throw new ProcessingError({ code: 'AUTH_FAILED', key: 'sameday.errors.missingCredentials', provider: PROVIDER });
   }
   const res = await ctx.http(NAME, `${baseUrl(ctx)}/api/authenticate`, {
     method: 'POST',
@@ -157,9 +150,10 @@ async function authenticate(ctx, { force = false } = {}) {
     mapError: (status, body) => {
       if (status >= 500 || status === 429) return undefined;
       if (looksLikeHtml(body)) return blockedError(status, body);
-      const e = authError(NAME, body);
-      if (env(ctx) === 'demo') e.hint = 'Ai bifat „Mod test”: contul de test Sameday are alt utilizator și altă parolă decât cel de producție.';
-      return e;
+      if (env(ctx) === 'demo') {
+        return new ProcessingError({ ...authError(NAME, body).toJSON(), hintKey: 'sameday.errors.sandboxAuthHint' });
+      }
+      return authError(NAME, body);
     },
   });
   const token = res.body?.token;
@@ -252,7 +246,7 @@ export async function resolveLocality(ctx, recipient) {
     if (other) {
       const r2 = matchLocality({ ...q, county: other.name, countyCode: otherCode }, await getCities(ctx, other.id));
       if (r2.match && /^name/.test(r2.via)) {
-        ctx.log?.('sameday: localitate găsită în județul vecin', { city: recipient.city, from: recipient.county, to: other.name });
+        ctx.log?.(m('log.neighbourCounty', { provider: NAME }), { city: recipient.city, from: recipient.county, to: other.name });
         return { county: other, city: r2.match, via: `${r2.via}+county` };
       }
     }
@@ -263,76 +257,42 @@ export async function resolveLocality(ctx, recipient) {
 // ---------------------------------------------------------------------------------------------
 // Errors
 
-function rejected(code, message, hint, field, details, retryable = false) {
-  return new ProcessingError({ code, message, hint, retryable, provider: PROVIDER, field, details });
+function rejected(code, key, params, field, details, retryable = false) {
+  return new ProcessingError({ code, key: `sameday.errors.${key}`, params, retryable, provider: PROVIDER, field, details });
 }
 
-/** Map a Sameday 4xx body (Symfony form errors: errors.children.awbRecipient.children.phoneNumber.errors[]) to a Romanian error. */
+/** Map a Sameday 4xx body (Symfony form errors: errors.children.awbRecipient.children.phoneNumber.errors[]) to a clear error. */
 export function mapAwbError(body, shipment, status) {
-  const msgs = collectMessages(body).filter((m) => !/^validation failed$/i.test(m.message));
-  const fieldMsg = msgs.find((m) => m.path) || msgs[0];
+  const msgs = collectMessages(body).filter((x) => !/^validation failed$/i.test(x.message));
+  const fieldMsg = msgs.find((x) => x.path) || msgs[0];
   const path = (fieldMsg?.path || '').toLowerCase();
-  const all = normalizeText(msgs.map((m) => `${m.path} ${m.message}`).join(' | '));
-  const said = shortText(fieldMsg?.message) ? ` Sameday spune: „${shortText(fieldMsg.message)}”.` : '';
+  const all = normalizeText(msgs.map((x) => `${x.path} ${x.message}`).join(' | '));
+  const said = saidBy(NAME, fieldMsg?.message);
   const r = shipment?.recipient || {};
   const has = (re) => re.test(path) || re.test(all);
 
-  if (has(/lockerlastmile|locker|easybox|oohlastmile/)) {
-    return rejected('LOCKER_INVALID', 'Easybox-ul ales nu e acceptat de Sameday (inactiv, plin sau prea mic pentru colet).',
-      `Alege alt easybox pentru comandă sau livrează la adresă.${said}`, 'lockerId', body);
-  }
-  if (has(/phonenumber|phone|telefon/)) {
-    return rejected('ADDRESS_PHONE_INVALID', `Sameday nu acceptă numărul de telefon „${r.phone || ''}”.`,
-      `Folosește un număr de 10 cifre (ex. 07xxxxxxxx), fără spații.${said}`, 'shippingAddress.phone', body);
-  }
+  if (has(/lockerlastmile|locker|easybox|oohlastmile/)) return rejected('LOCKER_INVALID', 'locker', { said }, 'lockerId', body);
+  if (has(/phonenumber|phone|telefon/)) return rejected('ADDRESS_PHONE_INVALID', 'phone', { phone: r.phone || '', said }, 'shippingAddress.phone', body);
   if (has(/awbrecipient\.(city|citystring)|\bcity\b|localitat|oras/)) {
-    return rejected('ADDRESS_CITY_NOT_FOUND', `Sameday nu acceptă localitatea „${r.city || ''}” (județul ${r.county || '-'}).`,
-      `Verifică localitatea și județul din adresa de livrare.${said}`, 'shippingAddress.city', body);
+    return rejected('ADDRESS_CITY_NOT_FOUND', 'city', { city: r.city || '', county: r.county || '-', said }, 'shippingAddress.city', body);
   }
   if (has(/awbrecipient\.(county|countystring)|county|judet/)) {
-    return rejected('ADDRESS_COUNTY_NOT_FOUND', `Sameday nu acceptă județul „${r.county || ''}”.`,
-      `Corectează județul în adresa de livrare.${said}`, 'shippingAddress.province', body);
+    return rejected('ADDRESS_COUNTY_NOT_FOUND', 'county', { county: r.county || '', said }, 'shippingAddress.province', body);
   }
-  if (has(/postalcode|cod postal/)) {
-    return rejected('ADDRESS_ZIP_INVALID', `Sameday nu acceptă codul poștal „${r.zip || ''}”.`,
-      `Corectează codul poștal sau șterge-l din adresă.${said}`, 'shippingAddress.zip', body);
-  }
-  if (has(/email/)) {
-    return rejected('ADDRESS_EMAIL_INVALID', `Sameday nu acceptă emailul „${r.email || ''}”.`, `Corectează emailul clientului.${said}`, 'email', body);
-  }
-  if (has(/awbrecipient\.address|adresa|address/)) {
-    return rejected('ADDRESS_STREET_INVALID', 'Sameday nu acceptă adresa (strada/numărul) destinatarului.',
-      `Verifică strada și numărul în adresa de livrare.${said}`, 'shippingAddress.address1', body);
-  }
-  if (has(/awbrecipient\.name|recipient name/)) {
-    return rejected('ADDRESS_NAME_INVALID', 'Sameday nu acceptă numele destinatarului.',
-      `Completează numele și prenumele clientului.${said}`, 'shippingAddress.name', body);
-  }
-  if (has(/weight|greutat/)) {
-    return rejected('SHIPMENT_WEIGHT_INVALID', `Sameday nu acceptă greutatea de ${shipment?.weightKg ?? '?'} kg.`,
-      `Verifică greutatea produselor (și limita serviciului ales, ex. easybox).${said}`, 'weightKg', body);
-  }
-  if (has(/pickuppoint|contactperson|punct de ridicare/)) {
-    return rejected('CONFIG_PICKUP_POINT_INVALID', 'Punctul de ridicare Sameday din setări nu e valid.',
-      `Alege din nou punctul de ridicare în Setări → Integrări → Sameday.${said}`, 'settings.pickupPointId', body);
-  }
-  if (has(/servicetax|opcg/)) {
-    return rejected('OPEN_PACKAGE_UNAVAILABLE', 'Serviciul Sameday ales nu permite deschiderea coletului.',
-      `Dezactivează „Deschidere colet” pentru comanda asta sau cere activarea opțiunii la Sameday.${said}`, 'openPackage', body);
-  }
-  if (has(/service|serviciu/)) {
-    return rejected('CONFIG_SERVICE_INVALID', 'Serviciul Sameday ales nu e activ în contul tău.',
-      `Alege alt serviciu în Setări → Integrări → Sameday.${said}`, 'settings.service', body);
-  }
-  if (has(/cashondelivery|ramburs/)) {
-    return rejected('COD_INVALID', 'Sameday a refuzat suma de ramburs.', `Verifică totalul de încasat al comenzii.${said}`, 'cod', body);
-  }
-  if (has(/insuredvalue|asigur/)) {
-    return rejected('DECLARED_VALUE_INVALID', 'Sameday a refuzat valoarea declarată (asigurarea).', `Verifică valoarea declarată.${said}`, 'declaredValue', body);
-  }
+  if (has(/postalcode|cod postal/)) return rejected('ADDRESS_ZIP_INVALID', 'zip', { zip: r.zip || '', said }, 'shippingAddress.zip', body);
+  if (has(/email/)) return rejected('ADDRESS_EMAIL_INVALID', 'email', { email: r.email || '', said }, 'email', body);
+  if (has(/awbrecipient\.address|adresa|address/)) return rejected('ADDRESS_STREET_INVALID', 'street', { said }, 'shippingAddress.address1', body);
+  if (has(/awbrecipient\.name|recipient name/)) return rejected('ADDRESS_NAME_INVALID', 'name', { said }, 'shippingAddress.name', body);
+  if (has(/weight|greutat/)) return rejected('SHIPMENT_WEIGHT_INVALID', 'weight', { weight: shipment?.weightKg ?? '?', said }, 'weightKg', body);
+  if (has(/pickuppoint|contactperson|punct de ridicare/)) return rejected('CONFIG_PICKUP_POINT_INVALID', 'pickupPoint', { said }, 'settings.pickupPointId', body);
+  if (has(/servicetax|opcg/)) return rejected('OPEN_PACKAGE_UNAVAILABLE', 'openPackage', { said }, 'openPackage', body);
+  if (has(/service|serviciu/)) return rejected('CONFIG_SERVICE_INVALID', 'service', { said }, 'settings.service', body);
+  if (has(/cashondelivery|ramburs/)) return rejected('COD_INVALID', 'cod', { said }, 'cod', body);
+  if (has(/insuredvalue|asigur/)) return rejected('DECLARED_VALUE_INVALID', 'declaredValue', { said }, 'declaredValue', body);
   const first = shortText(msgs[0]?.message);
-  return rejected('PROVIDER_REJECTED', first ? `Sameday a refuzat AWB-ul: ${first}` : `Sameday a refuzat AWB-ul (cod ${status ?? '?'}).`,
-    'Verifică datele comenzii și setările Sameday; detaliile complete sunt în jurnal.', undefined, body);
+  return first
+    ? rejected('PROVIDER_REJECTED', 'rejected', { text: first }, undefined, body)
+    : rejected('PROVIDER_REJECTED', 'rejectedStatus', { status: status ?? '?' }, undefined, body);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -347,10 +307,8 @@ async function resolvePickupPoint(ctx) {
     point = { id: Number(wanted) || wanted };
   }
   if (!point) {
-    throw rejected('CONFIG_PICKUP_POINT_MISSING', 'Nu e ales punctul de ridicare Sameday.',
-      points.length
-        ? `Alege-l în Setări → Integrări → Sameday (ai ${points.length} puncte: ${points.slice(0, 3).map((p) => `${p.alias || p.address} – ID ${p.id}`).join('; ')}).`
-        : 'Contul Sameday nu are niciun punct de ridicare. Adaugă unul în eAWB, apoi alege-l în setări.',
+    throw rejected('CONFIG_PICKUP_POINT_MISSING', points.length ? 'pickupPointMissing' : 'pickupPointMissingNone',
+      { count: points.length, points: points.slice(0, 3).map((p) => `${p.alias || p.address} – ID ${p.id}`).join('; ') },
       'settings.pickupPointId');
   }
   const contacts = Array.isArray(point.pickupPointContactPerson) ? point.pickupPointContactPerson : [];
@@ -364,11 +322,9 @@ async function resolveService(ctx, shipment) {
   const byCode = services.find((s) => String(s.serviceCode || '').toUpperCase() === wanted.toUpperCase());
   const service = byCode || services.find((s) => String(s.id) === wanted);
   if (!service) {
-    throw rejected('CONFIG_SERVICE_INVALID', `Serviciul Sameday „${SERVICE_CODES[wanted] || wanted}” nu e activ în contul tău.`,
-      services.length
-        ? `Servicii disponibile: ${services.slice(0, 6).map((s) => `${s.name} (${s.serviceCode})`).join(', ')}. Alege unul în Setări → Integrări → Sameday.`
-        : 'Contul nu are niciun serviciu activ; contactează Sameday.',
-      'settings.service', { wanted, services: services.map((s) => ({ id: s.id, code: s.serviceCode, name: s.name })) });
+    throw rejected('CONFIG_SERVICE_INVALID', services.length ? 'serviceInactive' : 'serviceInactiveNone',
+      { service: SERVICE_CODES.includes(wanted) ? m(`sameday.services.${wanted}`) : wanted, services: services.slice(0, 6).map((x) => `${x.name} (${x.serviceCode})`).join(', ') },
+      'settings.service', { wanted, services: services.map((x) => ({ id: x.id, code: x.serviceCode, name: x.name })) });
   }
   return service;
 }
@@ -462,33 +418,27 @@ const adapter = {
   // VERIFY: sameday.ro answers non-browser clients with a Cloudflare challenge (403), so the page could not be checked.
   trackingUrl: (awb) => `https://sameday.ro/#awb=${encodeURIComponent(awb)}`,
 
+  // Labels and help: sameday.fields.<key> in the catalogs (src/i18n).
   credentialFields: [
-    { key: 'username', label: 'Utilizator API Sameday', type: 'text', required: true,
-      help: 'Primit de la Sameday pentru integrare (de obicei același cu cel din eAWB).' },
-    { key: 'password', label: 'Parolă API Sameday', type: 'password', required: true },
+    { key: 'username', type: 'text', required: true },
+    { key: 'password', type: 'password', required: true },
   ],
 
   settingsFields: [
-    { key: 'sandbox', label: 'Mod test (sandbox)', type: 'checkbox', default: false,
-      help: 'Folosește serverul de test Sameday. Necesită cont de test separat.' },
-    { key: 'pickupPointId', label: 'Punct de ridicare (ID)', type: 'text',
-      help: 'Gol = punctul implicit din contul Sameday. ID-urile apar după „Testează conexiunea”.' },
-    { key: 'service', label: 'Serviciu implicit', type: 'select', default: '24',
-      options: Object.entries(SERVICE_CODES).filter(([c]) => c !== 'LN' && c !== 'PP').map(([value, label]) => ({ value, label })),
-      help: 'Pentru livrări la easybox se folosește automat Locker NextDay.' },
-    { key: 'openPackage', label: 'Deschidere colet la livrare', type: 'checkbox', default: false,
-      help: 'Valoarea implicită; poate fi schimbată per comandă. Nu se aplică la easybox.' },
-    { key: 'labelFormat', label: 'Format etichetă', type: 'select', default: 'A6',
-      options: [{ value: 'A6', label: 'Etichetă A6 (10x15 cm)' }, { value: 'A4', label: 'Pagină A4' }] },
+    { key: 'sandbox', type: 'checkbox', default: false },
+    { key: 'pickupPointId', type: 'text' },
+    { key: 'service', type: 'select', default: '24', options: SERVICE_CODES.filter((c) => c !== 'LN' && c !== 'PP').map((value) => ({ value })) },
+    { key: 'openPackage', type: 'checkbox', default: false },
+    { key: 'labelFormat', type: 'select', default: 'A6', options: [{ value: 'A6' }, { value: 'A4' }] },
   ],
 
   async testConnection(ctx) {
     await authenticate(ctx, { force: true });
     ctx.cache?.set(ak(ctx, 'pickup-points'), null, 1);
     const points = await adapter.listPickupPoints(ctx);
-    let message = `Conectat la Sameday${env(ctx) === 'demo' ? ' (mod test)' : ''}. Am găsit ${points.length} ${points.length === 1 ? 'punct' : 'puncte'} de ridicare.`;
     const chosen = String(ctx.settings?.pickupPointId || '').trim();
-    if (chosen && !points.some((p) => p.id === chosen)) message += ` Atenție: punctul de ridicare ${chosen} din setări nu e în listă.`;
+    const extra = chosen && !points.some((p) => p.id === chosen) ? m('sameday.test.pointMissing', { id: chosen }) : '';
+    const message = m('sameday.test.connected', { count: points.length, sandbox: env(ctx) === 'demo' ? m('sameday.test.sandbox') : '', extra });
     return { ok: true, message, info: { pickupPoints: points, environment: env(ctx) } };
   },
 
@@ -496,7 +446,7 @@ const adapter = {
     const points = await getPickupPointsRaw(ctx);
     return points.map((p) => ({
       id: String(p.id),
-      name: p.alias || `Punct ${p.id}`,
+      name: p.alias || t(ctx.locale, 'cargus.pointName', { id: p.id }),
       address: [p.address, p.city?.name, p.county?.name].filter(Boolean).join(', '),
       default: Boolean(p.defaultPickupPoint),
     }));
@@ -532,14 +482,12 @@ const adapter = {
     if (shipment.lockerId) {
       locker = await getLocker(ctx, shipment.lockerId);
       if (!locker) {
-        throw rejected('LOCKER_INVALID', `Easybox-ul ${shipment.lockerId} nu mai există în lista Sameday.`,
-          'Alege alt easybox pentru comandă sau livrează la adresă.', 'lockerId');
+        throw rejected('LOCKER_INVALID', 'lockerGone', { locker: shipment.lockerId }, 'lockerId');
       }
     } else {
       place = await resolveLocality(ctx, r);
       if (Boolean(shipment.openPackage ?? ctx.settings?.openPackage) && !hasOpenPackageTax(service)) {
-        throw rejected('OPEN_PACKAGE_UNAVAILABLE', `Serviciul Sameday „${service.name}” nu permite deschiderea coletului.`,
-          'Dezactivează „Deschidere colet” pentru comanda asta sau cere activarea opțiunii la Sameday.', 'openPackage');
+        throw rejected('OPEN_PACKAGE_UNAVAILABLE', 'openPackageService', { service: service.name }, 'openPackage');
       }
     }
     const form = buildAwbForm(ctx, shipment, { pickupPointId, contactPersonId, service, place, locker });
@@ -549,7 +497,7 @@ const adapter = {
     });
     const awb = body?.awbNumber;
     if (!awb) throw mapAwbError(body, shipment, 200);
-    ctx.log?.('sameday: AWB creat', { awb, reference: shipment.reference, cityId: place?.city?.id, via: place?.via });
+    ctx.log?.(m('log.awbCreated', { provider: NAME, awb }), { awb, reference: shipment.reference, cityId: place?.city?.id, via: place?.via });
     const price = Number(body.awbCost);
     return { awb: String(awb), price: Number.isFinite(price) ? price : undefined, raw: body };
   },
@@ -559,11 +507,11 @@ const adapter = {
     const pdf = await api(ctx, 'GET', `/api/awb/download/${encodeURIComponent(awb)}/${f}`, {
       responseType: 'buffer',
       mapError: (status, b) => (status === 404
-        ? rejected('LABEL_UNAVAILABLE', `Sameday nu găsește AWB-ul ${awb}.`, 'Verifică dacă AWB-ul nu a fost anulat.', undefined, b?.toString?.('utf8')?.slice(0, 500))
+        ? rejected('LABEL_UNAVAILABLE', 'labelNotFound', { awb }, undefined, b?.toString?.('utf8')?.slice(0, 500))
         : undefined),
     });
     if (!Buffer.isBuffer(pdf) || pdf.subarray(0, 4).toString('latin1') !== '%PDF') {
-      throw rejected('LABEL_UNAVAILABLE', `Sameday nu a trimis eticheta pentru AWB ${awb}.`, 'Încearcă din nou în câteva minute.', undefined,
+      throw rejected('LABEL_UNAVAILABLE', 'label', { awb }, undefined,
         Buffer.isBuffer(pdf) ? pdf.toString('utf8').slice(0, 500) : pdf, true);
     }
     return pdf;
@@ -573,17 +521,15 @@ const adapter = {
     try {
       await api(ctx, 'DELETE', `/api/awb/${encodeURIComponent(awb)}`, {
         mapError: (status, b) => {
-          if (status === 404) return rejected('AWB_NOT_FOUND', `AWB-ul ${awb} nu există la Sameday.`, '', undefined, b);
+          if (status === 404) return rejected('AWB_NOT_FOUND', 'notFound', { awb }, undefined, b);
           if (status === 400 || status === 409 || status === 422) {
-            const said = shortText(collectMessages(b)[0]?.message);
-            return rejected('CANCEL_REFUSED', `Sameday nu a anulat AWB-ul ${awb}.`,
-              `Se poate anula doar înainte să fie ridicat de curier.${said ? ` Sameday spune: „${said}”.` : ''}`, undefined, b);
+            return rejected('CANCEL_REFUSED', 'cancel', { awb, said: saidBy(NAME, collectMessages(b)[0]?.message) }, undefined, b);
           }
           return undefined;
         },
       });
     } catch (err) {
-      if (err?.code === 'AWB_NOT_FOUND') { ctx.log?.('sameday: AWB inexistent la anulare, considerat anulat', { awb }); return; }
+      if (err?.code === 'AWB_NOT_FOUND') { ctx.log?.(m('log.cancelNotFound', { provider: NAME }), { awb }); return; }
       throw err;
     }
   },
@@ -594,7 +540,7 @@ const adapter = {
       let body;
       try {
         body = await api(ctx, 'GET', `/api/client/awb/${encodeURIComponent(awb)}/status`, {
-          mapError: (status, b) => (status === 404 ? rejected('AWB_NOT_FOUND', `AWB ${awb} inexistent`, '', undefined, b) : undefined),
+          mapError: (status, b) => (status === 404 ? rejected('AWB_NOT_FOUND', 'notFound', { awb }, undefined, b) : undefined),
         });
       } catch (err) {
         if (err?.code === 'AWB_NOT_FOUND') return null;

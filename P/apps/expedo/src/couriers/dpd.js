@@ -4,6 +4,7 @@ import { findLocality, norm, normCounty } from './locality.js';
 import {
   NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, bufferToJson, latestMeaningful, accountKey, money,
 } from './util.js';
+import { m } from '../i18n/index.js';
 
 // DPD Romania — Web API v1 (https://api.dpd.ro/v1), JSON over POST.
 // Source: https://api.dpd.ro/api/docs/ (Web API Documentation) and the official request examples
@@ -84,36 +85,28 @@ function dpdError(err, raw) {
   // Confirmed live: auth failures are code 1 (General Error) with "Nu s-a putut găsi utilizatorul pentru
   // autentificare!" / "Wrong username format". VERIFY: the message for an existing user with a wrong password.
   if ((code === 1 || !code) && AUTH_RE.test(err?.message || '') && !/recipient|destinatar|sender\.|expeditor/i.test(text)) {
-    const e = authError(PROVIDER, raw);
-    e.provider = ID;
-    return e;
+    return new ProcessingError({ ...authError(PROVIDER, raw).toJSON(), provider: ID });
   }
   const component = String(err?.component || err?.context || '');
-  const mk = (c, message, field, hint = 'Corectează datele comenzii și reîncearcă.') =>
-    new ProcessingError({ code: c, message, hint, field, provider: ID, details: raw });
+  // Text: dpd.errors.<key> in the catalogs (src/i18n).
+  const mk = (c, key, field) => new ProcessingError({ code: c, key: `dpd.errors.${key}`, field, provider: ID, details: raw });
   if (code === 120 || /address/i.test(component)) {
-    if (/site|postCode/i.test(component)) return mk('ADDRESS_CITY_NOT_FOUND', 'DPD nu acceptă localitatea sau codul poștal al destinatarului.', 'shippingAddress.city');
-    return mk('ADDRESS_STREET_INVALID', 'DPD nu acceptă adresa destinatarului.', 'shippingAddress.address1', 'Completează strada și numărul în adresa de livrare.');
+    if (/site|postCode/i.test(component)) return mk('ADDRESS_CITY_NOT_FOUND', 'city', 'shippingAddress.city');
+    return mk('ADDRESS_STREET_INVALID', 'street', 'shippingAddress.address1');
   }
-  if (/phone/i.test(component)) return mk('ADDRESS_PHONE_INVALID', 'DPD nu acceptă telefonul destinatarului.', 'shippingAddress.phone', 'Telefonul trebuie să înceapă cu 0 sau + și să conțină doar cifre.');
-  if (/clientName|contactName/i.test(component)) return mk('ADDRESS_NAME_INVALID', 'DPD nu acceptă numele destinatarului (minim 3 caractere).', 'shippingAddress.name');
-  if (/email/i.test(component)) return mk('ADDRESS_EMAIL_INVALID', 'DPD nu acceptă e-mailul destinatarului.', 'email');
-  if (code === 180 || /pickupOffice/i.test(component)) return mk('LOCKER_INVALID', 'Oficiul / lockerul DPD ales nu este valid.', 'lockerId', 'Alege alt punct DPD sau livrare la adresă.');
-  if (code === 160 || code === 100 || /sender/i.test(component)) return mk('SETTINGS_INVALID', 'DPD nu acceptă expeditorul din setări.', 'settings.senderClientId', 'Verifică „ID client expeditor” și „Oficiu de predare” în Setări → Curieri → DPD.');
-  if (code === 400) return mk('SETTINGS_INVALID', 'Serviciul DPD ales nu este disponibil pentru această destinație.', 'settings.serviceId', 'Alege alt serviciu în Setări → Curieri → DPD.');
-  if (code === 410) return mk('COD_INVALID', 'DPD nu acceptă rambursul pentru această expediere.', 'cod', 'Verifică dacă ai anexa de ramburs în contract și suma.');
-  if (code === 415) return mk('DECLARED_VALUE_INVALID', 'DPD nu acceptă valoarea declarată.', 'declaredValue');
-  if (code === 420) return mk('OPEN_PACKAGE_INVALID', 'DPD nu acceptă opțiunea de deschidere colet pentru această expediere.', 'openPackage', 'Dezactivează „Deschidere colet” sau verifică contractul.');
-  if (code === 620 || code === 630) return mk('PARCELS_INVALID', 'DPD nu acceptă greutatea sau coletele declarate.', 'weightKg');
-  if (code === 600) return mk('CONTENT_INVALID', 'DPD nu acceptă descrierea conținutului.', 'contents');
-  if (code === 700) return mk('SETTINGS_INVALID', 'DPD nu acceptă plătitorul transportului ales.', 'settings.payer');
-  return new ProcessingError({
-    code: 'COURIER_REJECTED',
-    message: 'DPD a refuzat cererea.',
-    hint: 'Verifică datele comenzii și setările DPD. Detaliile sunt în jurnal.',
-    provider: ID,
-    details: raw,
-  });
+  if (/phone/i.test(component)) return mk('ADDRESS_PHONE_INVALID', 'phone', 'shippingAddress.phone');
+  if (/clientName|contactName/i.test(component)) return mk('ADDRESS_NAME_INVALID', 'name', 'shippingAddress.name');
+  if (/email/i.test(component)) return mk('ADDRESS_EMAIL_INVALID', 'email', 'email');
+  if (code === 180 || /pickupOffice/i.test(component)) return mk('LOCKER_INVALID', 'locker', 'lockerId');
+  if (code === 160 || code === 100 || /sender/i.test(component)) return mk('SETTINGS_INVALID', 'sender', 'settings.senderClientId');
+  if (code === 400) return mk('SETTINGS_INVALID', 'service', 'settings.serviceId');
+  if (code === 410) return mk('COD_INVALID', 'cod', 'cod');
+  if (code === 415) return mk('DECLARED_VALUE_INVALID', 'declaredValue', 'declaredValue');
+  if (code === 420) return mk('OPEN_PACKAGE_INVALID', 'openPackage', 'openPackage');
+  if (code === 620 || code === 630) return mk('PARCELS_INVALID', 'parcels', 'weightKg');
+  if (code === 600) return mk('CONTENT_INVALID', 'content', 'contents');
+  if (code === 700) return mk('SETTINGS_INVALID', 'payer', 'settings.payer');
+  return new ProcessingError({ code: 'COURIER_REJECTED', key: 'dpd.errors.rejected', provider: ID, details: raw });
 }
 
 async function call(ctx, path, body = {}, opts = {}) {
@@ -185,7 +178,7 @@ async function loadSites(ctx) {
       if (j.error) throw dpdError(j.error, j);
     }
     const sites = compactSites(text);
-    if (sites.length < 100) throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'DPD nu a trimis nomenclatorul de localități.', provider: ID, retryable: true, details: String(text).slice(0, 300) });
+    if (sites.length < 100) throw new ProcessingError({ code: 'PROVIDER_REJECTED', key: 'dpd.errors.sites', provider: ID, retryable: true, details: String(text).slice(0, 300) });
     return sites;
   });
 }
@@ -211,7 +204,7 @@ export async function resolveDpdSite(ctx, recipient) {
     } catch (err) {
       if (err?.code === 'AUTH_FAILED') throw err;
       await cacheSet(ctx, sitesOffKey(ctx), true, 6 * 60 * 60); // do not retry the export on every order
-      ctx.log?.('dpd: site CSV unavailable, using findSite', { err: err?.message });
+      ctx.log?.(m('log.localitiesUnavailableSearch', { provider: PROVIDER }), { err: err?.message });
     }
   }
   if (!sites) sites = await findSites(ctx, recipient);
@@ -319,24 +312,19 @@ export default {
   trackingUrl: (awb) => `https://services.dpd.ro/tracking/?shipmentNumber=${encodeURIComponent(awb)}&language=ro`,
 
   credentialFields: [
-    { key: 'userName', label: 'Utilizator API DPD', type: 'text', required: true, help: 'Primit de la DPD pentru integrare (nu e același cu contul de pe site, de obicei).' },
-    { key: 'password', label: 'Parolă API DPD', type: 'password', required: true },
+    { key: 'userName', type: 'text', required: true },
+    { key: 'password', type: 'password', required: true },
   ],
 
+  // Labels and help: dpd.fields.<key> in the catalogs (src/i18n).
   settingsFields: [
-    { key: 'senderClientId', label: 'ID client expeditor (punct de ridicare)', type: 'text', help: 'Lasă gol pentru adresa contului. „Testează conexiunea” îți arată ID-urile disponibile.' },
-    { key: 'dropoffOfficeId', label: 'Oficiu DPD de predare (opțional)', type: 'text', help: 'Completează doar dacă predai coletele tu la un oficiu DPD.' },
-    { key: 'senderPhone', label: 'Telefon expeditor', type: 'text', help: 'Apare pe AWB; implicit cel din contul DPD.' },
-    { key: 'serviceId', label: 'Serviciu implicit', type: 'number', default: DEFAULT_SERVICE, help: '2505 = DPD Standard. Lista exactă vine din contractul tău.' },
-    {
-      key: 'labelFormat', label: 'Format etichetă', type: 'select', default: 'A6',
-      options: [{ value: 'A6', label: 'A6 (imprimantă termică)' }, { value: 'A4', label: 'A4' }],
-    },
-    { key: 'openPackage', label: 'Deschidere colet la livrare', type: 'checkbox', default: false, help: 'Clientul poate deschide coletul înainte să plătească rambursul.' },
-    {
-      key: 'payer', label: 'Cine plătește transportul', type: 'select', default: 'SENDER',
-      options: [{ value: 'SENDER', label: 'Expeditorul (tu)' }, { value: 'RECIPIENT', label: 'Destinatarul' }],
-    },
+    { key: 'senderClientId', type: 'text' },
+    { key: 'dropoffOfficeId', type: 'text' },
+    { key: 'senderPhone', type: 'text' },
+    { key: 'serviceId', type: 'number', default: DEFAULT_SERVICE },
+    { key: 'labelFormat', type: 'select', default: 'A6', options: [{ value: 'A6' }, { value: 'A4', label: 'A4' }] },
+    { key: 'openPackage', type: 'checkbox', default: false },
+    { key: 'payer', type: 'select', default: 'SENDER', options: [{ value: 'SENDER' }, { value: 'RECIPIENT' }] },
   ],
 
   async testConnection(ctx) {
@@ -345,7 +333,7 @@ export default {
     const list = clients.map((c) => `${c.clientId} (${c.objectName || c.clientName})`);
     return {
       ok: true,
-      message: `Conectat la DPD. ${clients.length === 1 ? 'Un punct de ridicare' : `${clients.length} puncte de ridicare`} în contract${list.length ? `: ${list.slice(0, 5).join(', ')}` : ''}.`,
+      message: m('dpd.test.connected', { count: clients.length, list: list.length ? `: ${list.slice(0, 5).join(', ')}` : '' }),
       info: { clients },
     };
   },
@@ -358,7 +346,7 @@ export default {
     const body = await call(ctx, '/shipment', req);
     if (!body?.id) {
       // Not retryable: without an id we cannot tell whether DPD created it; a blind retry may duplicate it.
-      throw new ProcessingError({ code: 'COURIER_REJECTED', message: 'DPD nu a emis AWB-ul.', hint: 'Verifică în contul DPD dacă expedierea a fost creată înainte să reîncerci, ca să nu se dubleze.', retryable: false, provider: ID, details: body });
+      throw new ProcessingError({ code: 'COURIER_REJECTED', key: 'dpd.errors.noAwb', retryable: false, provider: ID, details: body });
     }
     const parcelIds = (body.parcels || []).map((p) => String(p.id)).filter(Boolean);
     if (parcelIds.length) await cacheSet(ctx, parcelsKey(ctx, body.id), parcelIds, PARCELS_TTL);
@@ -372,7 +360,7 @@ export default {
     if (isPdf(buf)) return buf;
     const j = Buffer.isBuffer(buf) ? bufferToJson(buf) : buf;
     if (j?.error) throw dpdError(j.error, j);
-    throw new ProcessingError({ code: 'LABEL_FAILED', message: `DPD nu a trimis eticheta pentru AWB ${awb}.`, hint: 'Reîncearcă în câteva minute.', retryable: true, provider: ID, details: j ?? String(buf).slice(0, 300) });
+    throw new ProcessingError({ code: 'LABEL_FAILED', key: 'dpd.errors.label', params: { awb }, retryable: true, provider: ID, details: j ?? String(buf).slice(0, 300) });
   },
 
   async cancelShipment(ctx, awb) {
@@ -382,8 +370,8 @@ export default {
       if (err?.code === 'AUTH_FAILED' || err?.retryable) throw err;
       throw new ProcessingError({
         code: 'CANCEL_REFUSED',
-        message: `DPD nu a anulat AWB-ul ${awb}.`,
-        hint: 'DPD anulează doar AWB-urile pentru care nu s-a comandat încă ridicarea. Sună la DPD dacă trebuie oprit.',
+        key: 'dpd.errors.cancel',
+        params: { awb },
         provider: ID,
         details: err?.details ?? String(err?.message || err),
       });

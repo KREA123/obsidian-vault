@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { ProcessingError } from '../core/errors.js';
+import { m } from '../i18n/index.js';
 import { bucharestDateTime } from './ro-time.js';
 
 // FGO API — official docs: https://api.fgo.ro/v1/testing.html ("FGO API Documentation v7.0", updated 2026-03-25)
@@ -94,7 +95,7 @@ const sleep = (ctx, ms) => (ctx.sleep ? ctx.sleep(ms) : new Promise((r) => setTi
 function creds(ctx) {
   const codUnic = fgoCodUnic(ctx.credentials?.cui);
   const privateKey = fgoKey(ctx.credentials?.privateKey);
-  if (!codUnic || !privateKey) throw fgoAuthError('CUI sau cheie privată lipsă');
+  if (!codUnic || !privateKey) throw fgoAuthError('missing CUI or private key');
   return { codUnic, privateKey };
 }
 
@@ -103,8 +104,7 @@ function platformUrl(ctx) {
   if (!u) {
     throw new ProcessingError({
       code: 'INVOICING_SETTINGS_MISSING',
-      message: 'Lipsește adresa magazinului (PlatformaUrl), obligatorie pentru FGO.',
-      hint: 'Completează adresa magazinului (ex. https://magazinul-meu.ro) în Setări → Facturare.',
+      key: 'fgo.errors.platformUrlMissing',
       provider: PROVIDER,
       field: 'settings.platformUrl',
     });
@@ -116,8 +116,7 @@ function platformUrl(ctx) {
 function fgoAuthError(details) {
   return new ProcessingError({
     code: 'AUTH_FAILED',
-    message: 'FGO nu acceptă datele de conectare (CUI sau cheia privată).',
-    hint: 'Verifică în FGO → Setări → Utilizatori că utilizatorul API e activ. Introdu CUI-ul fără „RO” și cheia privată tastate, nu copiate (spațiile ascunse strică semnătura). Dacă folosești contul de test FGO, bifează „Mediu de test”.',
+    key: 'fgo.errors.auth',
     retryable: false,
     provider: PROVIDER,
     details,
@@ -145,51 +144,37 @@ function fgoMessage(body) {
 }
 
 function mapFgoError(body, op, status = 200) {
-  const msg = fgoMessage(body) || 'eroare necunoscută';
-  const m = fold(msg);
-  const mk = (p) => new ProcessingError({ retryable: false, provider: PROVIDER, details: body, ...p });
-  if (AUTH_RE.test(m)) return fgoAuthError(body);
-  if (/timpul maxim/i.test(m)) {
-    return mk({ code: 'PROVIDER_TIMEOUT', message: 'FGO nu a reușit să emită factura în timp util.', hint: 'Reîncercăm automat; FGO verifică duplicatele după numărul comenzii.', retryable: true });
-  }
-  if (op === 'emitere' && DUPLICATE_RE.test(m) && !REQUIRED_RE.test(m)) {
+  // FGO's own words stay verbatim ("FGO: …" / "FGO says: “…”"); our hint: fgo.errors.<key> in the catalogs.
+  const said = fgoMessage(body);
+  const f = fold(said);
+  const text = said || m('fgo.unknownError');
+  const mk = (code, key, p = {}) => new ProcessingError({ retryable: false, provider: PROVIDER, details: body, code, key: `fgo.errors.${key}`, params: { text }, ...p });
+  if (AUTH_RE.test(f)) return fgoAuthError(body);
+  if (/timpul maxim/i.test(f)) return mk('PROVIDER_TIMEOUT', 'timeout', { retryable: true });
+  if (op === 'emitere' && DUPLICATE_RE.test(f) && !REQUIRED_RE.test(f)) {
     // VerificareDuplicat found an invoice for this IdExtern but didn't return it (when it does, we use it).
-    return mk({ code: 'INVOICE_DUPLICATE', message: `FGO: ${msg}`, hint: 'FGO are deja o factură pentru această comandă. Caut-o în FGO după numărul comenzii; nu emite alta.' });
+    return mk('INVOICE_DUPLICATE', 'duplicate');
   }
-  if (/seri|registr/i.test(m)) {
+  if (/seri|registr/i.test(f)) {
     // "Registrul pentru seria … nu este definit sau a expirat" / "Registrul pentru acest utilizator nu exista…" (module guide #7)
-    return mk({ code: 'INVOICE_SERIES_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Verifică seria în Setări → Facturare; trebuie să existe în FGO → Setări → Serii documente, cu registrul definit.', field: 'settings.series' });
+    return mk('INVOICE_SERIES_NOT_FOUND', 'series', { field: 'settings.series' });
   }
-  if (/judet/i.test(m)) {
-    return mk({ code: 'ADDRESS_COUNTY_INVALID', message: `FGO: ${msg}`, hint: 'Corectează județul clientului în comandă.', field: 'client.county' });
-  }
-  if (/localitat/i.test(m)) {
-    return mk({ code: 'ADDRESS_CITY_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Corectează localitatea clientului în comandă (trebuie să existe în nomenclatorul FGO pentru județul ales).', field: 'client.city' });
-  }
-  if (/codgestiune/i.test(m)) {
+  if (/judet/i.test(f)) return mk('ADDRESS_COUNTY_INVALID', 'county', { field: 'client.county' });
+  if (/localitat/i.test(f)) return mk('ADDRESS_CITY_NOT_FOUND', 'city', { field: 'client.city' });
+  if (/codgestiune/i.test(f)) {
     // Module guide #5: "Valoarea…asociata parametrului Continut[…][CodGestiune] nu a fost identificata."
-    return mk({ code: 'INVOICE_STOCK_ERROR', message: `FGO: ${msg}`, hint: 'Codul de gestiune din Setări → Facturare nu există în FGO. Trece codul (numărul) gestiunii, nu denumirea, sau lasă câmpul gol.', field: 'settings.warehouseCode' });
+    return mk('INVOICE_STOCK_ERROR', 'warehouse', { field: 'settings.warehouseCode' });
   }
-  if (/\b(cod(ul)? ?unic|cui|cif|cod(ul)? fiscal)\b/i.test(m)) {
-    return mk({ code: 'CLIENT_VAT_CODE_INVALID', message: `FGO: ${msg}`, hint: 'CUI-ul firmei client nu e valid. Corectează-l în comandă sau emite factura pe persoană fizică.', field: 'client.vatCode' });
-  }
-  if (/tva/i.test(m)) {
-    return mk({ code: 'VAT_RATE_NOT_DEFINED', message: `FGO: ${msg}`, hint: 'Verifică cota de TVA a produsului și setarea „plătitor de TVA”.' });
-  }
-  if (/decomisionat|premium|enterprise|abonament|pachet/i.test(m)) {
-    return mk({ code: 'INVOICING_PLAN_LIMIT', message: `FGO: ${msg}`, hint: op === 'incasare' ? 'Înregistrarea încasărilor prin API necesită FGO Premium sau Enterprise. Dezactivează opțiunea sau schimbă abonamentul.' : 'Funcția nu e inclusă în abonamentul FGO.' });
-  }
-  if (/request|cereri|interval|limita/i.test(m)) {
-    return mk({ code: 'PROVIDER_RATE_LIMIT', message: 'FGO ne cere să încetinim (prea multe cereri).', hint: 'Reîncercăm automat.', retryable: true });
-  }
-  if (/nu (a fost gasita|exista)|inexistent/i.test(m) && op !== 'emitere') {
-    return mk({ code: 'INVOICE_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Verifică seria și numărul facturii în FGO.' });
-  }
+  if (/\b(cod(ul)? ?unic|cui|cif|cod(ul)? fiscal)\b/i.test(f)) return mk('CLIENT_VAT_CODE_INVALID', 'clientVatCode', { field: 'client.vatCode' });
+  if (/tva/i.test(f)) return mk('VAT_RATE_NOT_DEFINED', 'vat');
+  if (/decomisionat|premium|enterprise|abonament|pachet/i.test(f)) return mk('INVOICING_PLAN_LIMIT', op === 'incasare' ? 'planPayments' : 'plan');
+  if (/request|cereri|interval|limita/i.test(f)) return mk('PROVIDER_RATE_LIMIT', 'rateLimit', { retryable: true });
+  if (/nu (a fost gasita|exista)|inexistent/i.test(f) && op !== 'emitere') return mk('INVOICE_NOT_FOUND', 'notFound');
   if (status >= 500) {
     // e.g. 500 "Ne pare rau, a intervenit o eroare". On emitere a retry is safe: VerificareDuplicat + IdExtern.
-    return mk({ code: 'PROVIDER_DOWN', message: `FGO are o problemă la server: ${msg}`, hint: 'Reîncercăm automat în câteva minute.', retryable: true });
+    return mk('PROVIDER_DOWN', 'server', { retryable: true });
   }
-  return mk({ code: 'PROVIDER_REJECTED', message: `FGO a refuzat cererea: ${msg}`, hint: 'Verifică datele comenzii și setările de facturare, apoi încearcă din nou.' });
+  return mk('PROVIDER_REJECTED', 'rejected');
 }
 
 /** POST to FGO with CodUnic/Hash/PlatformaUrl added; throws on Success:false (which arrives with HTTP 200). */
@@ -212,7 +197,7 @@ async function post(ctx, path, payload, hashSuffix, { op, allowFailureBody } = {
   });
   const body = res.body;
   if (!body || typeof body !== 'object') {
-    throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'FGO a trimis un răspuns neașteptat.', hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: body });
+    throw new ProcessingError({ code: 'PROVIDER_REJECTED', key: 'fgo.errors.unexpected', retryable: true, provider: PROVIDER, details: body });
   }
   if (body.Success !== true && !(allowFailureBody && allowFailureBody(body))) throw mapFgoError(body, op, res.status);
   return body;
@@ -247,7 +232,7 @@ async function localities(ctx, countyCode) {
     if (list.length) ctx.cache?.set(cacheKey, list, NOMENCLATURE_TTL);
     return list;
   } catch (err) {
-    ctx.log?.('FGO: nomenclatorul de localități nu e disponibil', { countyCode, error: err?.message });
+    ctx.log?.(m('log.localitiesUnavailablePlain', { provider: PROVIDER }), { countyCode, error: err?.message });
     return [];
   }
 }
@@ -346,7 +331,7 @@ async function incasare(ctx, { series, number, amount, date, method }, { fresh =
   const num = String(number);
   let value = amount == null ? null : round(amount, 2);
   if (value != null && !(value > 0)) {
-    ctx.log?.('FGO: încasare cu suma 0 ignorată', { series, number: num, amount });
+    ctx.log?.(m('log.zeroPayment', { provider: PROVIDER }), { series, number: num, amount });
     return { skipped: true };
   }
   if (!fresh) {
@@ -358,7 +343,7 @@ async function incasare(ctx, { series, number, amount, date, method }, { fresh =
     await sleep(ctx, MIN_INTERVAL_MS); // FGO: max 1 invoice/payment request per second
   }
   if (value == null || !Number.isFinite(value)) {
-    throw new ProcessingError({ code: 'PAYMENT_AMOUNT_MISSING', message: `Nu știm ce sumă să înregistrăm pe factura FGO ${series} ${num}.`, hint: 'Înregistrează încasarea manual în FGO.', provider: PROVIDER });
+    throw new ProcessingError({ code: 'PAYMENT_AMOUNT_MISSING', key: 'fgo.errors.paymentAmount', params: { series, number: num }, provider: PROVIDER });
   }
   await post(ctx, 'factura/incasare', {
     NumarFactura: num,
@@ -374,30 +359,22 @@ export default {
   id: 'fgo',
   name: 'FGO',
 
+  // Labels and help: fgo.fields.<key> in the catalogs (src/i18n).
   credentialFields: [
-    { key: 'cui', label: 'CUI firmă', type: 'text', required: true,
-      help: 'Codul fiscal al firmei din contul FGO, fără „RO” (ex. 12345678).' },
-    { key: 'privateKey', label: 'Cheie privată API', type: 'password', required: true,
-      help: 'Din FGO → Setări → Utilizatori → utilizator API. Tasteaz-o, nu o copia cu spații.' },
+    { key: 'cui', type: 'text', required: true },
+    { key: 'privateKey', type: 'password', required: true },
   ],
 
   settingsFields: [
-    { key: 'series', label: 'Serie factură', type: 'text', required: true,
-      help: 'Seria definită în FGO → Setări → Serii documente.' },
-    { key: 'platformUrl', label: 'Adresa magazinului (PlatformaUrl)', type: 'text', required: true,
-      help: 'Obligatorie pentru FGO, ex. https://magazinul-meu.ro.' },
-    { key: 'vatPayer', label: 'Firma este plătitoare de TVA', type: 'checkbox', default: true,
-      help: 'Debifează dacă firma nu e plătitoare de TVA: produsele se facturează cu cota 0.' },
-    { key: 'warehouseCode', label: 'Cod gestiune', type: 'text',
-      help: 'Opțional: codul gestiunii din FGO, pentru descărcarea corectă în contabilitate.' },
-    { key: 'registerCardPayments', label: 'Marchează încasate comenzile plătite cu cardul', type: 'checkbox', default: false,
-      help: 'Adaugă încasarea pe factură. Necesită FGO Premium sau Enterprise.' },
-    { key: 'cardPaymentType', label: 'Tip încasare pentru card', type: 'text', default: 'Banca',
-      help: 'Valoare din nomenclatorul FGO „Tip încasare” (ex. Banca).' },
-    { key: 'codPaymentType', label: 'Tip încasare pentru ramburs', type: 'text', default: 'Banca',
-      help: 'Banii de la curier intră de obicei în bancă: „Banca”.' },
-    { key: 'testMode', label: 'Mediu de test FGO', type: 'checkbox', default: false,
-      help: 'Folosește api-testuat.fgo.ro (cont de test separat, creat pe testuat.fgo.ro).' },
+    { key: 'series', type: 'text', required: true },
+    { key: 'platformUrl', type: 'text', required: true },
+    { key: 'vatPayer', type: 'checkbox', default: true },
+    { key: 'warehouseCode', type: 'text' },
+    { key: 'registerCardPayments', type: 'checkbox', default: false },
+    // Values from FGO's own "Tip încasare" list.
+    { key: 'cardPaymentType', type: 'text', default: 'Banca' },
+    { key: 'codPaymentType', type: 'text', default: 'Banca' },
+    { key: 'testMode', type: 'checkbox', default: false },
   ],
 
   async testConnection(ctx) {
@@ -419,18 +396,18 @@ export default {
     }
     return {
       ok: true,
-      message: `Conectat la FGO${ctx.settings?.testMode ? ' (mediu de test)' : ''}: CUI-ul și cheia privată sunt acceptate.`,
+      message: m('fgo.test.connected', { sandbox: ctx.settings?.testMode ? m('fgo.test.sandbox') : '' }),
       info: { response: body },
     };
   },
 
   async createInvoice(ctx, invoice) {
     if (!clean(ctx.settings?.series)) {
-      throw new ProcessingError({ code: 'INVOICING_SETTINGS_MISSING', message: 'Nu este aleasă seria de facturi FGO.', hint: 'Completează seria în Setări → Facturare.', provider: PROVIDER, field: 'settings.series' });
+      throw new ProcessingError({ code: 'INVOICING_SETTINGS_MISSING', key: 'fgo.errors.seriesNotChosen', provider: PROVIDER, field: 'settings.series' });
     }
     let name = fgoClientName(invoice.client.name);
     if (!name) {
-      throw new ProcessingError({ code: 'CLIENT_NAME_MISSING', message: 'Comanda nu are numele clientului.', hint: 'Completează numele de facturare în comandă.', provider: PROVIDER, field: 'client.name' });
+      throw new ProcessingError({ code: 'CLIENT_NAME_MISSING', key: 'fgo.errors.clientName', provider: PROVIDER, field: 'client.name' });
     }
     const payload = await buildEmitere(ctx, invoice, name);
     // Duplicate check may answer with the existing invoice (changelog v2.3: "afișare Serie, NrFactura și link download
@@ -449,7 +426,7 @@ export default {
       // VERIFY: remove once FGO confirms UTF-8 hashing on their side.
       const ascii = fgoClientName(fold(name));
       if (err?.code === 'AUTH_FAILED' && ascii !== name) {
-        ctx.log?.('FGO: semnătura respinsă pentru un nume cu diacritice; reîncerc fără diacritice', { reference: invoice.reference });
+        ctx.log?.(m('log.fgoDiacriticsRetry', { provider: PROVIDER }), { reference: invoice.reference });
         await sleep(ctx, MIN_INTERVAL_MS);
         name = ascii;
         const retry = { ...payload, Client: { ...payload.Client, Denumire: ascii } };
@@ -462,7 +439,7 @@ export default {
     const f = body.Factura || {};
     const num = invoiceNumber(body);
     if (num == null || String(num).trim() === '') {
-      throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'FGO nu a întors numărul facturii.', hint: 'Verifică în FGO dacă factura a fost emisă înainte să reîncerci.', provider: PROVIDER, details: body });
+      throw new ProcessingError({ code: 'PROVIDER_REJECTED', key: 'fgo.errors.noNumber', provider: PROVIDER, details: body });
     }
     // Spec examples: Link is "" in the PDF spec, a URL in the v7 HTML docs — "" means "no link", not a URL.
     const result = { series: f.Serie || payload.Serie, number: String(num), url: f.Link || undefined, raw: body };
@@ -477,7 +454,7 @@ export default {
         await incasare(ctx, { series: result.series, number: result.number, amount, date: invoice.issueDate, method: invoice.paymentMethod }, { fresh: true });
       } catch (err) {
         // The invoice exists; a failed "încasare" must not make the pipeline issue it again.
-        ctx.log?.('FGO: factura a fost emisă, dar încasarea nu a putut fi înregistrată', { reference: invoice.reference, error: err?.message });
+        ctx.log?.(m('log.paymentAfterInvoiceFailed', { provider: PROVIDER }), { reference: invoice.reference, error: err?.message });
         result.paymentError = err?.message;
       }
     }
@@ -489,12 +466,12 @@ export default {
     const body = await post(ctx, 'factura/print', { Numar: num, Serie: series }, num, { op: 'print' });
     const link = body.Factura?.Link;
     if (!link) {
-      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', message: `FGO nu a trimis linkul PDF pentru factura ${series} ${num}.`, hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: body });
+      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', key: 'fgo.errors.pdfLink', params: { series, number: num }, retryable: true, provider: PROVIDER, details: body });
     }
     const res = await ctx.http(PROVIDER, link, { method: 'GET', responseType: 'buffer', headers: { Accept: 'application/pdf, */*' } });
     const buf = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.body ?? '');
     if (buf.subarray(0, 4).toString('latin1') !== '%PDF') {
-      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', message: `Linkul FGO pentru factura ${series} ${num} nu a întors un PDF.`, hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: { link, start: buf.toString('utf8').slice(0, 200) } });
+      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', key: 'fgo.errors.pdf', params: { series, number: num }, retryable: true, provider: PROVIDER, details: { link, start: buf.toString('utf8').slice(0, 200) } });
     }
     return buf;
   },
@@ -512,7 +489,7 @@ export default {
     const stornoNumber = body.Factura?.Numar;
     if (stornoNumber == null || String(stornoNumber).trim() === '') {
       // Never re-sent automatically: a second stornare would reverse the invoice twice.
-      throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: `FGO a confirmat stornarea facturii ${series} ${num}, dar nu a întors numărul facturii de stornare.`, hint: 'Verifică factura de stornare în FGO; nu reîncerca stornarea.', provider: PROVIDER, details: body });
+      throw new ProcessingError({ code: 'PROVIDER_REJECTED', key: 'fgo.errors.noStornoNumber', params: { series, number: num }, provider: PROVIDER, details: body });
     }
     return { series: body.Factura?.Serie || series, number: String(stornoNumber), url: body.Factura?.Link || undefined };
   },

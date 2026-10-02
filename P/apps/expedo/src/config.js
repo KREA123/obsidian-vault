@@ -11,7 +11,7 @@ export const config = {
   // Standalone dashboard login (outside the Shopify admin).
   adminPassword: env.ADMIN_PASSWORD || '',
   demo: env.DEMO === '1',
-  // Shown next to the publisher's name on /confidentialitate and /termeni (e.g. "CUI ..., sediu ...").
+  // Shown next to the publisher's name on /privacy, /terms (and /confidentialitate, /termeni) (e.g. "CUI ..., sediu ...").
   publisherDetails: env.PUBLISHER_DETAILS || '',
   shopify: {
     apiKey: env.SHOPIFY_API_KEY || '',
@@ -31,5 +31,5 @@ if (!config.appSecret) {
   throw new Error('APP_SECRET is required in production (used to encrypt customer data and saved credentials).');
 }
 if (env.NODE_ENV === 'production' && config.adminPassword && config.adminPassword.length < 12) {
-  console.warn('ADMIN_PASSWORD e prea scurtă: folosește cel puțin 16 caractere aleatorii (docs/securitate.md).');
+  console.warn('ADMIN_PASSWORD is too short: use at least 16 random characters (docs/security.md).');
 }

@@ -5,39 +5,25 @@ import { fold } from './address.js';
 // All conditions must match. Rules are evaluated in order; every matching rule's actions
 // are merged, earlier rules winning (so put specific rules first).
 
+// Labels are in the catalogs: rules.fields.<field>, rules.values.<field>.<value>, rules.ops.<op>,
+// rules.actions.<action> (the server sends them translated in /api/meta).
 export const RULE_FIELDS = {
-  shippingMethod: { label: 'Metoda de livrare', type: 'text' },
-  paymentMethod: { label: 'Plata', type: 'select', options: [['cod', 'Ramburs'], ['card', 'Card'], ['transfer', 'Transfer'], ['other', 'Altă']] },
-  total: { label: 'Total comandă (lei)', type: 'number' },
-  weightKg: { label: 'Greutate (kg)', type: 'number' },
-  county: { label: 'Județ', type: 'text' },
-  city: { label: 'Localitate', type: 'text' },
-  tags: { label: 'Etichete Shopify', type: 'text' },
-  sku: { label: 'SKU în comandă', type: 'text' },
-  itemCount: { label: 'Număr produse', type: 'number' },
-  isCompany: { label: 'Client firmă', type: 'select', options: [['true', 'Da'], ['false', 'Nu']] },
-  refusedBefore: { label: 'Colete refuzate înainte', type: 'number' },
+  shippingMethod: { type: 'text' },
+  paymentMethod: { type: 'select', options: ['cod', 'card', 'transfer', 'other'] },
+  total: { type: 'number' },
+  weightKg: { type: 'number' },
+  county: { type: 'text' },
+  city: { type: 'text' },
+  tags: { type: 'text' },
+  sku: { type: 'text' },
+  itemCount: { type: 'number' },
+  isCompany: { type: 'select', options: ['true', 'false'] },
+  refusedBefore: { type: 'number' },
 };
 
-export const RULE_OPS = {
-  contains: 'conține',
-  not_contains: 'nu conține',
-  equals: 'este',
-  not_equals: 'nu este',
-  gt: 'mai mare decât',
-  lt: 'mai mic decât',
-};
+export const RULE_OPS = Object.fromEntries(['contains', 'not_contains', 'equals', 'not_equals', 'gt', 'lt'].map((k) => [k, `rules.ops.${k}`]));
 
-export const RULE_ACTIONS = {
-  courier: 'Curier',
-  service: 'Serviciu curier',
-  parcels: 'Număr colete',
-  weightKg: 'Greutate fixă (kg)',
-  openPackage: 'Deschidere colet',
-  skipInvoice: 'Fără factură',
-  hold: 'Pune în așteptare (nu procesa automat)',
-  notes: 'Observații pe AWB',
-};
+export const RULE_ACTIONS = Object.fromEntries(['courier', 'service', 'parcels', 'weightKg', 'openPackage', 'skipInvoice', 'hold', 'notes'].map((k) => [k, `rules.actions.${k}`]));
 
 /** Values a rule can test, computed from the normalized order (+ the customer's history, core/customers.js). */
 export function ruleFacts(order, normalizedAddress, history) {
