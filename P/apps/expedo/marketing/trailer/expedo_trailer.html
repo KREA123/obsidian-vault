@@ -86,7 +86,7 @@ const TX = {
   s4k: 'Verificare adresă', s4h: {h:'Adresa, verificată\nînainte de curier.', v:'Adresa, verificată\nînainte de curier.'},
   s4chips: ['Județ','Localitate','Sector','Telefon','Cod poștal'], s4h2: {h:'Ai greșit?\nCorectezi pe loc.', v:'Ai greșit?\nCorectezi pe loc.'},
   s5h: {h:'Fiecare eroare, pe românește.', v:'Fiecare eroare,\npe românește.'}, s5s: 'Și ce ai de făcut.',
-  s6h: 'Selectezi tot. Un clic.', s6h2: {h:'AWB-uri, facturi, etichete. Un singur PDF.', v:'AWB-uri, facturi, etichete.\nUn singur PDF.'}, pdfTag: '1 PDF · 6 etichete',
+  s6h: 'Selectezi tot. Un clic.', s6h2: {h:'AWB-uri, facturi, etichete. Un singur PDF.', v:'AWB-uri, facturi, etichete.\nUn singur PDF.'}, pdfTag: n => `1 PDF · ${n} etichete`,
   s7k: 'Reguli', s7h: {h:'Reguli pentru\nfiecare caz.', v:'Reguli pentru\nfiecare caz.'}, s7h2: {h:'Mod de probă,\npe comenzi reale.', v:'Mod de probă,\npe comenzi reale.'},
   s8a: 'Fără AWB-uri sau facturi duble', s8b: 'Reîncearcă singur când un curier nu răspunde', s8k: 'Clienți care au refuzat colete',
   s9k: 'Urmărire colete', s9h: {h:'Urmărit până\nla livrare.', v:'Urmărit până la livrare.'}, s9h2: {h:'Ramburs încasat,\nbifat automat.', v:'Ramburs încasat,\nbifat automat.'},
@@ -106,11 +106,11 @@ const TX = {
   s4k: 'Address check', s4h: {h:'Addresses checked\nbefore the courier.', v:'Addresses checked\nbefore the courier.'},
   s4chips: ['County','Town','Sector','Phone','Postcode'], s4h2: {h:'A typo?\nFix it on the spot.', v:'A typo?\nFix it on the spot.'},
   s5h: {h:'Every error in plain words.', v:'Every error\nin plain words.'}, s5s: 'Plus what to do next.',
-  s6h: 'Select all. One click.', s6h2: {h:'Labels and invoices. One PDF.', v:'Labels and invoices.\nOne PDF.'}, pdfTag: '1 PDF · 6 labels',
+  s6h: 'Select all. One click.', s6h2: {h:'Labels and invoices. One PDF.', v:'Labels and invoices.\nOne PDF.'}, pdfTag: n => `1 PDF · ${n} labels`,
   s7k: 'Rules', s7h: {h:'Rules for\nevery case.', v:'Rules for\nevery case.'}, s7h2: {h:'Test mode,\non real orders.', v:'Test mode,\non real orders.'},
   s8a: 'No duplicate labels or invoices', s8b: 'Retries on its own when a courier is down', s8k: 'Customers who refused parcels before',
   s9k: 'Parcel tracking', s9h: {h:'Tracked all the way\nto the door.', v:'Tracked to the door.'}, s9h2: {h:'Cash on delivery,\nmarked as collected.', v:'Cash on delivery,\nmarked as collected.'},
-  endTag: 'Orders that ship themselves.', endSub: 'For Shopify stores in Romania', pub: 'ARTEMIS DIGITAL SRL',
+  endTag: 'Orders that ship themselves.', endSub: 'Built for Shopify stores in Romania', pub: 'ARTEMIS DIGITAL SRL',
   // English glosses for the Romanian UI (the app speaks Romanian; the EN cut translates the key lines)
   gl: { aivrut: 'Did you mean: Eforie Sud, Eforie Nord, Corbu?', iss: ['Missing county. Pick it from the list.',
         'Missing phone. Couriers refuse labels without one.', 'Town not in the Cargus list. Did you mean …?'],
@@ -119,6 +119,7 @@ const TX = {
  },
 };
 const T = TX[LANG];
+if (M.uiLang === LANG) T.gl = null;   // the UI already speaks the video's language: no glosses
 const tx = v => (v && typeof v === 'object' && !Array.isArray(v)) ? (V ? v.v : v.h) : v;
 
 /* ───────────────────────── math / easing ───────────────────────── */
@@ -142,6 +143,22 @@ function kf(t, keys, ease = eio){
     if (t <= t1){ const p = ease(seg(t, t0, t1)); return keys[i].slice(1).map((v, j) => lerp(keys[i-1][j+1], v, p)); }
   }
   return keys[keys.length-1].slice(1);
+}
+
+/* number formatting copied from a UI string: '1.441,30 lei' / 'RON 1,441.30' → formatter + parser */
+function parseNum(t){
+  const m = /\d[\d.,\s\u00a0]*/.exec(t || ''); if (!m) return 0;
+  let x = m[0].replace(/[\s\u00a0]/g, '').replace(/[.,]$/, '');
+  if (/[.,]\d{2}$/.test(x)) x = x.slice(0, -3).replace(/[.,]/g, '') + '.' + x.slice(-2); else x = x.replace(/[.,]/g, '');
+  return parseFloat(x) || 0;
+}
+function numFormat(t){
+  const m = /\d[\d.,\s\u00a0]*\d/.exec(t || '0,00 lei') || ['0'];
+  const num = m[0], pre = (t || '').slice(0, m.index || 0), post = (t || ' lei').slice((m.index || 0) + num.length);
+  const dec = /[.,]\d{2}$/.test(num) ? num[num.length - 3] : null;
+  const grp = (num.replace(dec ? num.slice(-3) : '', '').match(/[.,\s\u00a0]/) || [dec === ',' ? '.' : ','])[0];
+  return v => { const [i, f] = Math.abs(v).toFixed(dec ? 2 : 0).split('.');
+    return pre + i.replace(/\B(?=(\d{3})+(?!\d))/g, grp) + (dec ? dec + f : '') + post; };
 }
 
 /* ───────────────────────── DOM helpers ───────────────────────── */
@@ -470,16 +487,16 @@ scene(b(32), b(48), root => {
   s.bg = bgDiv(root, 'paper'); s.bl = blobs(root);
   s.FR = V ? { x:60, y:700, w:960, h:1120 } : { x:860, y:80, w:960, h:920 };
   s.persp = mk('div', 'a', root, `width:${s.FR.w}px;height:${s.FR.h}px;perspective:2600px`);
-  s.F = new Frame(s.persp, s.FR.w, s.FR.h, ['d1111_err', 'd1111_typed', 'd1111_done']);
+  s.F = new Frame(s.persp, s.FR.w, s.FR.h, ['dloc_err', 'dloc_typed', 'dloc_done']);
   const F = s.F;
   s.ring1 = mk('div', 'ring', F.over); s.ring2 = mk('div', 'ring', F.over);
   s.mk1 = mk('div', 'mark', F.over);
   // typed text patch inside the Localitate input (Inter 14px like the app)
-  const city = RC('d1111_err', 'city');
+  const city = RC('dloc_err', 'city');
   s.patch = mk('div', 'a', F.over, `left:${city.x + 2}px;top:${city.y + 3}px;width:${city.w - 4}px;height:${city.h - 6}px;background:#fff;
     font:14px/28px Inter;color:#16191f;padding-left:9px;white-space:nowrap`);
-  s.t1 = cropEl(F.hud, 'toast_addr_saved', R(0, 0, M.toast_addr_saved.w, M.toast_addr_saved.h));
-  s.t2 = cropEl(F.hud, 'toast_1111_done', R(0, 0, M.toast_1111_done.w, M.toast_1111_done.h));
+  s.t1 = cropEl(F.hud, 'toast_loc_saved', R(0, 0, M.toast_loc_saved.w, M.toast_loc_saved.h));
+  s.t2 = cropEl(F.hud, 'toast_loc_done', R(0, 0, M.toast_loc_done.w, M.toast_loc_done.h));
   [s.t1, s.t2].forEach(e => { e.style.borderRadius = '10px'; e.style.boxShadow = '0 12px 32px rgba(16,24,40,.25)'; });
   s.k = kicker(root, T.s4k);
   s.h1 = head(root, tx(T.s4h), `font-size:${pick(68, 74)}px;color:${C.ink}`, 'a h', pick(700, 940));
@@ -496,11 +513,12 @@ scene(b(32), b(48), root => {
   F.el.style.transform = `rotateY(${lerp(V ? 0 : -14, V ? 0 : -3, eo(seg(lt, 0, 2.5)))}deg) rotateX(${lerp(V ? 10 : 4, V ? 2 : 1, eo(seg(lt, 0, 2.5)))}deg)`;
   F.el.style.transformOrigin = V ? '50% 0%' : '0% 50%';
   // camera
-  const top = U(RC('d1111_err','head'), RC('d1111_err','error'), RC('d1111_err','actions'), R(24, 244, 712, 140));
-  const err = R(20, 60, V ? 560 : 600, 140);
-  const form = RC('d1111_err', 'addr_card');
-  const city = U(RC('d1111_err','city'), R(30, 800, 380, 120));
-  const done = U(RC('d1111_done','head'), RC('d1111_done','livrare'));
+  const lv = RC('dloc_err', 'livrare'), er = RC('dloc_err', 'error'), cy0 = RC('dloc_err', 'city');
+  const top = U(RC('dloc_err','head'), er, RC('dloc_err','actions'), R(lv.x, lv.y, lv.w, 140));
+  const err = R(er.x - 4, er.y - 9, V ? 560 : 600, er.h + 28);
+  const form = RC('dloc_err', 'addr_card');
+  const city = U(cy0, R(cy0.x - 13, cy0.y - 43, 380, 120));
+  const done = U(RC('dloc_done','head'), RC('dloc_done','livrare'));
   const fz = (r, pad, zmax) => F.fit(r, pad, zmax);
   const k = [
     [0, ...fz(top, 30, 1.6)], [1.3, ...fz(top, 30, 1.6)], [1.9, ...fz(err, 20, 2.3)], [3.4, ...fz(err, 20, 2.3)],
@@ -511,21 +529,21 @@ scene(b(32), b(48), root => {
   const typing0 = 4.25, cps = .11, typed = ' Nord';
   const nTyped = clamp(Math.floor((lt - typing0)/cps), 0, typed.length);
   const dn = seg(lt, 6.5, 6.62);
-  F.L.d1111_err.style.opacity = lt < 4.1 ? 1 : 0;
-  F.L.d1111_typed.style.opacity = lt >= 4.1 ? 1 - dn : 0;
-  F.L.d1111_done.style.opacity = dn;
+  F.L.dloc_err.style.opacity = lt < 4.1 ? 1 : 0;
+  F.L.dloc_typed.style.opacity = lt >= 4.1 ? 1 - dn : 0;
+  F.L.dloc_done.style.opacity = dn;
   const blink = Math.floor(lt*2.4) % 2 === 0;
   s.patch.style.display = lt >= 4.1 && lt < 6.5 ? '' : 'none';
   s.patch.innerHTML = 'Eforie' + typed.slice(0, nTyped).replace(/ /g, '&nbsp;') + `<span style="display:inline-block;width:1px;height:17px;background:#16191f;vertical-align:-3px;margin-left:1px;opacity:${(nTyped < typed.length || blink) && lt < 5.2 ? 1 : 0}"></span>`;
   // highlights
-  ringSet(s.ring1, F, RC('d1111_err', 'aivrut'), seg(lt, 2.0, 2.35), 6);
+  ringSet(s.ring1, F, RC('dloc_err', 'aivrut'), seg(lt, 2.0, 2.35), 6);
   s.ring1.style.display = lt > 2.0 && lt < 4.0 ? '' : 'none';
   s.ring1.style.opacity = (1 - seg(lt, 3.6, 3.95)) * clamp(seg(lt, 2.0, 2.35)*2);
-  markSet(s.mk1, RC('d1111_err', 'nord'), seg(lt, 2.7, 3.05), 1 - seg(lt, 3.6, 3.95));
-  ringSet(s.ring2, F, RC('d1111_done', 'badge'), seg(lt, 6.75, 7.05), 5, C.cobalt);
+  markSet(s.mk1, RC('dloc_err', 'nord'), seg(lt, 2.7, 3.05), 1 - seg(lt, 3.6, 3.95));
+  ringSet(s.ring2, F, RC('dloc_done', 'badge'), seg(lt, 6.75, 7.05), 5, C.cobalt);
   s.ring2.style.display = lt > 6.75 ? '' : 'none';
   // cursor (world coords)
-  const nord = RC('d1111_err', 'nord'), cty = RC('d1111_err', 'city'), sv = RC('d1111_err', 'addr_save'), pr = RC('d1111_err', 'process');
+  const nord = RC('dloc_err', 'nord'), cty = RC('dloc_err', 'city'), sv = RC('dloc_err', 'addr_save'), pr = RC('dloc_err', 'process');
   F.cursor(lt, [[2.6, nord.cx + 30, nord.cy + 60], [3.2, nord.cx + 6, nord.cy + 8], [3.5, nord.cx + 6, nord.cy + 8], [4.0, cty.x + 120, cty.cy + 4],
                 [5.0, cty.x + 160, cty.cy + 30], [5.45, sv.cx, sv.cy], [5.9, sv.cx, sv.cy], [6.25, pr.cx, pr.cy], [7, pr.cx + 40, pr.cy + 70]],
            [4.05, 5.5, 6.35], [2.6, 7.2]);
@@ -551,10 +569,11 @@ scene(b(48), b(56), root => {
   s.bg = bgDiv(root, 'paper'); s.bl = blobs(root);
   s.FR = V ? { x:40, y:620, w:1000, h:760 } : { x:120, y:300, w:1680, h:680 };
   s.F = new Frame(root, s.FR.w, s.FR.h, ['orders_attention']);
-  s.marks = [0,1,2].map(i => (M.orders_attention.rects['msg' + i] || []).map(() => mk('div', 'mark', s.F.over)));
+  s.n = Math.min(3, M.orders_attention.count || 3);
+  s.marks = Array.from({length: s.n}, (_, i) => (M.orders_attention.rects['msg' + i] || []).map(() => mk('div', 'mark', s.F.over)));
   s.h = head(root, tx(T.s5h), `font-size:${pick(84, 84)}px;color:${C.ink}`);
   s.sub = head(root, T.s5s, `font-size:${pick(52, 58)}px;color:${C.cobalt};font-weight:700`);
-  if (T.gl) s.gls = T.gl.iss.map(g => mk('div', 'gloss', s.F.hud, `font-size:${pick(24, 24)}px;padding:12px 18px`, `<b>EN</b>${g}`));
+  if (T.gl) s.gls = T.gl.iss.slice(0, s.n).map(g => mk('div', 'gloss', s.F.hud, `font-size:${pick(24, 24)}px;padding:12px 18px`, `<b>EN</b>${g}`));
   return s;
 }, (lt, s, t) => {
   blobsSet(s.bl, t);
@@ -562,7 +581,7 @@ scene(b(48), b(56), root => {
   const ein = eo(seg(lt, 0, .5));
   P(F.el, FR.x + FR.w/2, FR.y + FR.h/2 + (1 - ein)*120, { o: Math.min(1, .55 + ein*2) * (1 - ex), s: 1 + ex*.04 });
   const tbl = RC('orders_attention', 'table');
-  const iss = U(RC('orders_attention','issue0'), RC('orders_attention','issue2'));
+  const iss = U(RC('orders_attention','issue0'), RC('orders_attention','issue' + (s.n - 1)));
   const a = V ? F.fit(U(iss, R(400, 250, 640, 40)), 30, 2) : F.fit(U(tbl, R(250, 210, 1160, 10)), 30, 1.5);
   const z2 = V ? F.fit(iss, 24, 1.8) : F.fit(U(iss, R(250, 300, 1000, 10)), 30, 1.7);
   F.cam(...kf(lt, [[0, a[0], a[1] + 30, a[2]*.94], [.6, ...a], [3.9, ...z2]], sio));
@@ -585,17 +604,19 @@ scene(b(56), b(72), root => {
   const bb = RC('ready_selected', 'bulkbar');
   s.bar = cropEl(F.over, 'ready_selected', R(bb.x - 2, bb.y - 2, bb.w + 4, bb.h + 6));
   s.bar.style.borderRadius = '12px';
-  s.marks = [0,1,2,3,4,5].map(() => mk('div', 'mark', F.over));
-  s.marks2 = [0,1,2,3,4,5].map(() => mk('div', 'mark', F.over));
+  s.nr = Object.keys(M.bulk_done.rects).filter(k => /^awb\d+$/.test(k)).length;
+  s.marks = Array.from({length: s.nr}, () => mk('div', 'mark', F.over));
+  s.marks2 = Array.from({length: s.nr}, () => mk('div', 'mark', F.over));
   s.ringL = mk('div', 'ring', F.over);
   s.toast = cropEl(F.hud, 'toast_bulk', R(0, 0, M.toast_bulk.w, M.toast_bulk.h)); s.toast.style.borderRadius = '10px'; s.toast.style.boxShadow = '0 12px 32px rgba(16,24,40,.25)';
   s.dim = mk('div', 'a', root, `width:${W}px;height:${H}px;background:rgba(13,31,92,.55)`);
   // the labels PDF: one page per order (pdftoppm render of the real PDF, top part)
   const LW = pick(360, 420), LH = LW*620/920;
-  s.labels = Array.from({length: 6}, (_, i) => mk('div', 'a', root, `width:${LW}px;height:${LH}px;background:#fff url(ui/label_${i+1}.png) no-repeat;
+  s.nl = Math.min(6, M.labels.count);
+  s.labels = Array.from({length: s.nl}, (_, i) => mk('div', 'a', root, `width:${LW}px;height:${LH}px;background:#fff url(ui/label_${i+1}.png) no-repeat;
       background-size:100% auto;background-position:0 ${-60*LW/920}px;border-radius:10px;box-shadow:0 24px 50px rgba(0,0,0,.35)`));
   s.pdf = mk('div', 'chip', root, `font-size:${pick(30, 32)}px;padding:16px 28px;color:${C.ink};font-family:Archivo;font-weight:800;font-stretch:108%`,
-    `<span style="display:inline-flex;width:40px;height:40px;border-radius:10px;background:#d93025;color:#fff;font:800 13px Inter;align-items:center;justify-content:center">PDF</span>${T.pdfTag}`);
+    `<span style="display:inline-flex;width:40px;height:40px;border-radius:10px;background:#d93025;color:#fff;font:800 13px Inter;align-items:center;justify-content:center">PDF</span>${T.pdfTag(M.labels.count)}`);
   s.h = head(root, T.s6h, `font-size:${pick(84, 80)}px;color:${C.ink}`);
   s.h2 = head(root, tx(T.s6h2), `font-size:${pick(84, 64)}px;color:${C.ink}`);
   return s;
@@ -609,9 +630,12 @@ scene(b(56), b(72), root => {
   const area1 = U(RC('bulk_done', 'table'), RC('bulk_done', 'bulkbar'));
   let k;
   if (!V) k = [[0, ...F.fit(area0, 24, 1.4)], [2.6, ...F.fit(area0, 24, 1.4)], [3.1, ...F.fit(area1, 24, 1.4)], [8, ...F.fit(area1, 10, 1.45)]];
-  else { const L = R(250, 210, 700, 520), Rr = R(700, 210, 712, 600), bar = R(250, 640, 700, 90);
+  else { const tb = RC('ready', 'table'), bs = RC('ready_selected', 'bulkbar'), bd = RC('bulk_done', 'bulkbar'), td = RC('bulk_done', 'table');
+    const L = R(tb.x, tb.y - 8, 700, tb.h + 8), bar = R(bs.x, bs.y, 700, bs.h);
+    const a0 = RC('bulk_done', 'awb0'), sl = RC('bulk_done', 'st' + (s.nr - 1)), Rr = U(R(a0.x - 260, td.y - 8, 10, 10), sl);
+    const L2 = U(R(td.x, td.y - 8, 700, td.h), R(bd.x, bd.y, 700, bd.h));
     k = [[0, ...F.fit(U(L, bar), 20, 1.4)], [2.6, ...F.fit(U(L, bar), 20, 1.4)], [3.2, ...F.fit(Rr, 20, 1.4)], [4.3, ...F.fit(Rr, 20, 1.4)],
-         [4.8, ...F.fit(U(R(250, 210, 700, 600), RC('bulk_done', 'bulkbar')), 20, 1.4)], [8, ...F.fit(U(R(250, 210, 700, 600), RC('bulk_done', 'bulkbar')), 20, 1.4)]]; }
+         [4.8, ...F.fit(L2, 20, 1.4)], [8, ...F.fit(L2, 20, 1.4)]]; }
   F.cam(...kf(lt, k));
   // layers
   const sel = seg(lt, 1.0, 1.25), dn = seg(lt, 2.95, 3.1);
@@ -646,7 +670,7 @@ scene(b(56), b(72), root => {
   const cxL = W/2, cyL = pick(H*.56, H*.52);
   s.labels.forEach((e, i) => {
     const p = eo(seg(lt, 5.1 + i*.09, 5.65 + i*.09));
-    const fan = (i - 2.5);
+    const fan = (i - (s.nl - 1)/2);
     const tx_ = V ? W/2 + (i % 2 ? 1 : -1)*235 : cxL + fan*200, ty = (V ? cyL - 330 + Math.floor(i/2)*300 + (i % 2)*40 : cyL + Math.abs(fan)*16) + Math.sin(lt*2 + i)*4;
     P(e, lerp(sx, tx_, p), lerp(sy, ty, p), { s: lerp(.2, 1, p) * (1 + .02*Math.sin(lt*3 + i)), r: lerp(0, V ? (i % 2 ? 4 : -4) : fan*5, p), o: (lt > 5.1 + i*.09 ? 1 : 0) * (1 - out) });
     e.style.zIndex = 30 + i;
@@ -683,16 +707,16 @@ scene(b(72), b(80), root => {
   const F = s.F, FR = s.FR, F2 = s.F2, FR2 = s.FR2, ex = ci(seg(lt, 3.92, 4));
   const ein = eo(seg(lt, 0, .5));
   P(F.el, FR.x + FR.w/2 + (1 - ein)*pick(140, 0), FR.y + FR.h/2 + (1 - ein)*pick(0, 120), { o: Math.min(1, .55 + ein*2) * (1 - ex) });
-  const r0 = RC('rules', 'rule0'), r2 = RC('rules', 'rule2');
+  const r0 = RC('rules', 'ruleA'), r2 = RC('rules', 'ruleB');
   const a0 = F.fit(R(r0.x, r0.y - 6, 810, 290), 16, 1.6), a2 = F.fit(R(r2.x, r2.y - 6, 810, r2.h + 8), 16, 1.6);
   F.cam(...kf(lt, [[0, a0[0], a0[1] + 20, a0[2]], [.4, ...a0], [1.15, ...a0], [1.7, ...a2], [4, a2[0], a2[1] + 10, a2[2]*1.03]]));
-  ringSet(s.rg[0], F, RC('rules', 'rname0'), seg(lt, .4, .7), 6); s.rg[0].style.display = lt > .4 && lt < 1.4 ? '' : 'none';
-  ringSet(s.rg[1], F, RC('rules', 'rname2'), seg(lt, 1.75, 2.05), 6); s.rg[1].style.display = lt > 1.75 ? '' : 'none';
+  ringSet(s.rg[0], F, RC('rules', 'rnameA'), seg(lt, .4, .7), 6); s.rg[0].style.display = lt > .4 && lt < 1.4 ? '' : 'none';
+  ringSet(s.rg[1], F, RC('rules', 'rnameB'), seg(lt, 1.75, 2.05), 6); s.rg[1].style.display = lt > 1.75 ? '' : 'none';
   // test-mode card slides in over it
   const t2 = eo(seg(lt, 2.0, 2.45));
   P(F2.el, FR2.x + FR2.w/2 + (1 - t2)*pick(-120, 0), FR2.y + FR2.h/2 + (1 - t2)*pick(60, 140), { o: clamp(t2*2) * (1 - ex), r: lerp(-3, -1, t2) });
   F2.el.style.zIndex = 5;
-  const gz = R(232, 0, 720, 292);
+  const pr = RC('general', 'probe'), gz = R(pr.x - 260, 0, 720, pr.y + pr.h + 8);
   F2.cam(...kf(lt, [[2.0, ...F2.fit(gz, 8, 1.55)], [4, ...F2.fit(gz, 20, 1.55)]]));
   ringSet(s.rg2, F2, RC('general', 'probe'), seg(lt, 2.6, 2.9), 5); s.rg2.style.display = lt > 2.6 ? '' : 'none';
   const tx0 = V ? 80 : 120;
@@ -742,13 +766,18 @@ scene(b(88), b(100), root => {
   const s = {};
   s.bg = bgDiv(root, 'paper'); s.bl = blobs(root);
   s.FR = V ? { x:60, y:620, w:960, h:1180 } : { x:820, y:80, w:1000, h:920 };
-  s.F = new Frame(root, s.FR.w, s.FR.h, ['d1118_tracked']);
-  s.lis = Array.from({length: 10}, () => mk('div', 'mark', s.F.over));
+  s.F = new Frame(root, s.FR.w, s.FR.h, ['dtrack']);
+  s.cls = M.dtrack.li || [];                                  // timeline items, newest first (classes: success / info / …)
+  s.lis = s.cls.map(() => mk('div', 'mark', s.F.over));
   s.ringLiv = mk('div', 'ring', s.F.over);
   s.FR2 = V ? { x:60, y:820, w:960, h:620 } : { x:820, y:240, w:1000, h:560 };
   s.F2 = new Frame(root, s.FR2.w, s.FR2.h, ['dash_after']);
-  // live counter over the "Ramburs încasat (30 zile)" stat (Inter 700 24px, tabular, like the app)
-  const v4 = RC('dash_after', 'val4'), s4 = RC('dash_after', 'sub4');
+  // live counter over the "COD collected (30 days)" stat (Inter 700 24px, tabular, like the app), formatted like the UI
+  s.ci = M.codStat ?? 4;
+  const v4 = RC('dash_after', 'val' + s.ci), s4 = RC('dash_after', 'sub' + s.ci);
+  const tA = M.dash_after.texts, tB = M.dash_before.texts;
+  s.fmt = numFormat(tA['val' + s.ci]); s.v0 = parseNum(tB['val' + s.ci]); s.v1 = parseNum(tA['val' + s.ci]);
+  s.sub0 = tB['sub' + s.ci]; s.sub1 = tA['sub' + s.ci];
   s.cnt = mk('div', 'a', s.F2.over, `left:${v4.x - 1}px;top:${v4.y}px;width:${v4.w + 2}px;height:${v4.h}px;background:#fff;font:700 24px/36px Inter;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:#16191f;white-space:nowrap`);
   s.sub = mk('div', 'a', s.F2.over, `left:${s4.x - 1}px;top:${s4.y}px;width:${s4.w + 2}px;height:${s4.h}px;background:#fff;font:400 12px/18px Inter;color:#8b93a1;white-space:nowrap`);
   s.ring4 = mk('div', 'ring', s.F2.over);
@@ -766,28 +795,27 @@ scene(b(88), b(100), root => {
   P(F.el, FR.x + FR.w/2, FR.y + FR.h/2 + (1 - ein)*60, { o: (1 - sw), s: lerp(1.04, 1, ein) });
   P(F2.el, s.FR2.x + s.FR2.w/2, s.FR2.y + s.FR2.h/2, { o: sw * (1 - ex), s: lerp(1.04, 1, eo(seg(lt, 3.0, 3.4))) });
   // timeline: oldest (bottom) → newest (top)
-  const tl = RC('d1118_tracked', 'timeline');
+  const tl = RC('dtrack', 'timeline');
   const hz = F.fit(R(tl.x - 10, tl.y, 560, tl.h), 24, 1.75);
   F.cam(...kf(lt, [[0, hz[0], hz[1] + 60, hz[2]], [2.9, hz[0], hz[1] - 50, hz[2]*1.04]], sio));
-  const order = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
-  s.lis.forEach((m, i) => {
-    const li = RC('d1118_tracked', 'li' + order[i]);
-    const p = seg(lt, .25 + i*.23, .45 + i*.23);
-    const good = order[i] <= 2;  // livrat, ramburs încasat, încasare înregistrată
-    markSet(m, R(li.x + 18, li.y + 1, Math.min(li.w - 18, 420), 22), p, .85, good ? 'rgba(15,122,74,.16)' : 'rgba(31,75,216,.10)');
+  const n = s.lis.length, stp = Math.min(.23, 2.3 / Math.max(1, n));
+  const lr = i => { const t = M.dtrack.rects['lit' + i]; return t && t[0] ? R(t[0][0] - 4, t[0][1] - 2, t[0][2] + 8, t[0][3] + 4) : RC('dtrack', 'li' + i); };
+  s.lis.forEach((m, k) => {                                    // oldest (bottom) → newest (top)
+    const i = n - 1 - k, r = lr(i);
+    const p = seg(lt, .25 + k*stp, .45 + k*stp);
+    markSet(m, r, p, .85, s.cls[i] === 'success' && i < 3 ? 'rgba(15,122,74,.18)' : 'rgba(31,75,216,.10)');
   });
-  ringSet(s.ringLiv, F, R(RC('d1118_tracked','li2').x + 16, RC('d1118_tracked','li2').y - 2, 210, 26), seg(lt, 1.95, 2.25), 5, C.cobalt);
+  const liv = Math.max(0, s.cls.findIndex(c => c !== 'success'));   // the newest status line = "Delivered"
+  ringSet(s.ringLiv, F, lr(liv), seg(lt, 1.95, 2.25), 5, C.cobalt);
   s.ringLiv.style.display = lt > 1.95 ? '' : 'none';
   // dashboard: the counter rolls up to the real value
-  const st = U(RC('dash_after', 'stat3'), RC('dash_after', 'stat4'));
+  const st = U(RC('dash_after', 'stat' + Math.max(0, s.ci - 1)), RC('dash_after', 'stat' + s.ci));
   const dz = F2.fit(st, 30, 2.4);
   F2.cam(...kf(lt, [[3.0, dz[0], dz[1] + 6, dz[2]*.94], [6, dz[0], dz[1], dz[2]*1.0]], sio));
-  const target = MANI_STATS.codCollected30.v, cnt = MANI_STATS.codCollected30.c;
   const cp = eio(seg(lt, 3.3, 4.6));
-  const val = target * cp;
-  s.cnt.textContent = val.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' lei';
-  s.sub.textContent = `${Math.round(cnt * seg(lt, 3.3, 4.6))} colete livrate`;
-  ringSet(s.ring4, F2, RC('dash_after', 'stat4'), seg(lt, 4.55, 4.85), 4, C.cobalt); s.ring4.style.display = lt > 4.55 ? '' : 'none';
+  s.cnt.textContent = s.fmt(lerp(s.v0, s.v1, cp));
+  s.sub.textContent = cp < 1 ? s.sub0 : s.sub1;
+  ringSet(s.ring4, F2, RC('dash_after', 'stat' + s.ci), seg(lt, 4.55, 4.85), 4, C.cobalt); s.ring4.style.display = lt > 4.55 ? '' : 'none';
   const tx0 = V ? 80 : 120;
   P(s.k, tx0, V ? 180 : 230, { ax: 0, o: eo(seg(lt, .1, .4)) * (1 - ex) });
   reveal(s.h1, lt, .15, .07, .5, 2.8); P(s.h1.el, tx0, V ? 240 : 290, { ax: 0, ay: 0, o: lt < 3.3 ? 1 - ex : 0 });
@@ -859,10 +887,8 @@ function fxRender(t){
 
 /* ───────────────────────── setup / render ───────────────────────── */
 const stage = document.getElementById('stage'), scenesEl = document.getElementById('scenes');
-let MANI_STATS = null;
 function setup(){
   stage.style.width = W + 'px'; stage.style.height = H + 'px';
-  MANI_STATS = M.stats_after;
   SCENES.forEach(sc => {
     sc.root = mk('div', 'root', scenesEl, `width:${W}px;height:${H}px`);
     sc.st = sc.build(sc.root);

@@ -48,7 +48,7 @@ VO = {
   (8,   'Și nimeni nu-ți spune ce să repari.',                   'headline over the blurred errors'),
   (17,  'Fă cunoștință cu Expedo.',                              'logo reveal on the drop'),
   (24,  'De la comandă la ramburs, totul automat.',              'the six-step chain + courier / invoicing names'),
-  (32,  'Adresa e verificată înainte să ajungă la curier.',      'order #1111, Cargus locality error'),
+  (32,  'Adresa e verificată înainte să ajungă la curier.',      'order #1110, Cargus locality error'),
   (40,  'Ai greșit localitatea? Corectezi pe loc.',              '"Ai vrut: …?", typing Eforie Nord, AWB + invoice'),
   (48,  'Fiecare eroare, pe românește, cu ce ai de făcut.',      'orders that need attention'),
   (56,  'Selectezi tot. Un singur clic.',                        'select all → Generează AWB + factură', '+12%'),
@@ -65,7 +65,7 @@ VO = {
   (8,   'And nobody tells you what to fix.',                      'headline over the blurred errors'),
   (17,  'Meet Expedo.',                                           'logo reveal on the drop'),
   (24,  'From order to cash on delivery. All automatic.',         'the six-step chain + courier / invoicing names'),
-  (32,  'Every address is checked before it reaches the courier.', 'order #1111, Cargus locality error'),
+  (32,  'Every address is checked before it reaches the courier.', 'order #1110, Cargus locality error'),
   (40,  'Wrong town? Fix it on the spot.',                        '"Did you mean …?", typing Eforie Nord, label + invoice'),
   (48,  'Every error in plain words, plus what to do.',           'orders that need attention'),
   (56,  'Select all. One click.',                                 'select all → generate label + invoice'),
@@ -75,7 +75,7 @@ VO = {
   (88,  'Every parcel, tracked to the door.',                     'tracking timeline, second drop'),
   (94,  'And cash on delivery, marked as collected.',             'dashboard counter'),
   (100, 'Expedo. Orders that ship themselves.',                   'end card'),
-  (107, 'For Shopify stores in Romania.',                         'end card subline'),
+  (107, 'Built for Shopify stores in Romania.',                       'end card subline'),
  ],
 }
 def tts_say(text, lang):   # phonetic help for the TTS only (on-screen text keeps the real spelling)
@@ -385,14 +385,15 @@ def asr_check(path, lang):
 
 def tc(t): return f'{int(t // 60):02d}:{t % 60:05.2f}'
 def write_script(all_durs):
-    rows = ['# Expedo trailer: voice-over script (RO + EN)', '',
-            f'Timeline: `expedo_trailer_ro.mp4` / `expedo_trailer_ro_vertical.mp4` (RO) and `expedo_trailer_en.mp4` (EN), {T_END:.0f} s, '
+    rows = ['# Expedo trailer: voice-over script (EN + RO)', '',
+            f'Timeline: `expedo_trailer_en.mp4` / `expedo_trailer_en_vertical.mp4` (English, primary) and `expedo_trailer_ro.mp4` / '
+            f'`expedo_trailer_ro_vertical.mp4` (Romanian), {T_END:.0f} s, '
             f'music at 120 BPM (one beat = {BEAT} s). Each line starts on a beat, right on its cut: one short line per scene.',
-            'Voices: Microsoft neural TTS through edge-tts. RO `ro-RO-EmilNeural` (rate %s, pitch %s), EN `en-US-AndrewMultilingualNeural` (rate %s).'
-            % (VOICES['ro'][1], VOICES['ro'][2], VOICES['en'][1]),
+            'Voices: Microsoft neural TTS through edge-tts. EN `en-US-AndrewMultilingualNeural` (rate %s), RO `ro-RO-EmilNeural` (rate %s, pitch %s).'
+            % (VOICES['en'][1], VOICES['ro'][1], VOICES['ro'][2]),
             'To replace a voice with a recorded one (ElevenLabs or a human), record these lines to these timecodes: **Start** is the beat',
             'the line starts on, **End (max)** the latest it may run (the next line or cut), "TTS length" what the current synthetic read takes.', '']
-    for lang, title in (('ro', 'Română'), ('en', 'English')):
+    for lang, title in (('en', 'English (primary)'), ('ro', 'Română')):
         rows += [f'## {title}', '', '| # | Start | End (max) | TTS length | Line | On screen |', '|---|---|---|---|---|---|']
         starts = [b(l[0]) for l in VO[lang]]
         for i, ((bt, text, note, *_), t0) in enumerate(zip(VO[lang], starts), 1):
@@ -428,11 +429,11 @@ def mix_lang(lang, bed, trailer, sfx):
     mix = bed * db(-1) * g[:, None] + trailer * db(-2) * np.sqrt(g)[:, None] + sfx * db(-7) + vo * db(2)
     mix *= .9 / np.abs(mix).max()
     pre = TMP / f'mix_pre_{lang}.wav'; write_wav(pre, mix)
-    r = subprocess.run(['ffmpeg', '-hide_banner', '-i', str(pre), '-af', 'loudnorm=I=-14:TP=-2:LRA=11:print_format=json', '-f', 'null', '-'],
+    r = subprocess.run(['ffmpeg', '-hide_banner', '-i', str(pre), '-af', 'loudnorm=I=-14:TP=-2.8:LRA=11:print_format=json', '-f', 'null', '-'],
                        capture_output=True, text=True)
     m = json.loads(re.search(r'\{[^{}]*"input_i"[^{}]*\}', r.stderr).group(0))
     final = TMP / f'mix_final_{lang}.wav'
-    af = (f"loudnorm=I=-14:TP=-2:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
+    af = (f"loudnorm=I=-14:TP=-2.8:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
           f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(pre), '-af', af, '-ar', str(SR), str(final)], check=True)
     if not os.environ.get('NO_MUX'):
@@ -453,7 +454,7 @@ def main():
     # keep the other language's lengths in the script if it was not rebuilt this run
     for lang in VO:
         if lang not in durs:
-            try: durs[lang] = [len(tts_line(lang, i, l[1])) / SR for i, l in enumerate(VO[lang])]
+            try: durs[lang] = [len(tts_line(lang, i, l[1], l[3] if len(l) > 3 else None)) / SR for i, l in enumerate(VO[lang])]
             except Exception: pass
     write_script(durs)
 

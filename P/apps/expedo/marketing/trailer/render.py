@@ -6,7 +6,7 @@ usage:
   python3 render.py video ro h                  # expedo_trailer_ro.mp4            (1920x1080)
   python3 render.py video en h                  # expedo_trailer_en.mp4
   python3 render.py video ro v                  # expedo_trailer_ro_vertical.mp4   (1080x1920)
-  python3 render.py contact                     # expedo_trailer_contact.png (key frames, RO h + EN h + RO v)
+  python3 render.py contact                     # expedo_trailer_contact.png (key frames, EN h + EN v + RO h)
 env: FRAMES_DIR (default /tmp/claude-0/expedo_frames), WORKERS (default 4), FPS (30)
 The video is written silent; audio.py adds the soundtrack and muxes it into every mp4 that exists.
 """
@@ -77,10 +77,10 @@ def video(lang, lay):
 
 
 def contact():
-    """Key-frame contact sheet: one row per cut (RO h, EN h), plus RO vertical."""
+    """Key-frame contact sheet: EN horizontal, EN vertical, RO horizontal."""
     from PIL import Image, ImageDraw, ImageFont
     ts = [1.6, 5.0, 10.0, 14.5, 17.5, 19.2, 21.0, 23.0, 26.5, 29.0, 31.6, 34.0, 37.0, 39.0, 42.5, 45.5, 48.5, 53.0]
-    rows = [('ro', 'h', 6), ('en', 'h', 6), ('ro', 'v', 9)]
+    rows = [('en', 'h', 6), ('en', 'v', 9), ('ro', 'h', 6)]   # English first (primary), Romanian secondary
     sheets = []
     for lang, lay, cols in rows:
         fs = stills(lang, lay, ts)

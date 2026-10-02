@@ -1,37 +1,52 @@
 #!/usr/bin/env python3
-"""Capture the real Expedo UI for the trailer (Playwright, deviceScaleFactor 2).
+"""Capture the real Expedo UI for the trailer (Playwright, deviceScaleFactor 2). Re-runnable, one command:
 
-Starts the app in demo mode on a fresh database, drives it through the UI and the API
-(exactly what a merchant would click), and saves crisp screenshots + element rectangles:
+  python3 capture.py                                              # frozen snapshot (default APP_DIR)
+  python3 capture.py --app /home/user/obsidian-vault/P/apps/expedo --port 3302    # the current app (English UI)
 
-  ui/<shot>.png        2x screenshots (a page viewport, or one element such as the order drawer)
-  ui/label_<n>.png     pages of the labels PDF (one PDF for the whole bulk run), rasterised by pdftoppm
-  ui/manifest.json(.js) {shot: {w, h, rects: {name: [x, y, w, h]}}}  in CSS px of the shot (image px / 2)
+Starts the app in demo mode on a fresh database (DEMO=1, its own PORT and DB_FILE), drives it through the UI and the
+API (what a merchant would click), and writes:
 
-The app source is never edited. Two things are set up in the demo database, because the demo
-uses the test courier (which never talks to a real courier nomenclator):
-  * order #1111 gets the address "Eforie" and the error the real Cargus adapter raises for it.
-    The message is produced by the app's own code (src/couriers/locality.js: matchLocality +
-    localityError) against real Constanța county locality names, so it is word-for-word what the
-    merchant sees live: "Localitatea „Eforie” nu există în nomenclatorul Cargus … Ai vrut: Eforie Sud,
-    Eforie Nord, Corbu?"
-  * the test courier's issue time of one AWB is moved back step by step, so tracking walks through
-    every status (ridicat → depozit → în livrare → livrat → ramburs încasat) in seconds, not minutes.
-Plus one DOM-only element: the customer-refusal warning (CUSTOMER_REFUSED_BEFORE) is newer than this
-frozen copy of the UI, so it is rendered into the drawer with the app's own .warn-box markup and the
-exact message text from src/core/build.js (working copy) and captured as a crop.
+  ui/<shot>.png          2x screenshots (a page viewport, or one element such as the order drawer)
+  ui/label_<n>.png       pages of the labels PDF (one PDF for the whole bulk run), rasterised by pdftoppm
+  ui/manifest.json(.js)  {shot: {w, h, rects: {name: [x, y, w, h]}}} in CSS px of the shot (image px / 2), plus the UI
+                         language, live values (stats, texts) and indices the trailer needs. The trailer only reads
+                         ui/, so re-capturing swaps every UI layer (e.g. Romanian → English UI) without touching it.
 
-usage: python3 capture.py        env: APP_DIR (frozen app), PORT (3301), DB_FILE
+Selectors are structural (classes, data-attributes, hrefs), not UI text, so they work in any UI language.
+The app source is never edited. What is set up in the demo database, and why:
+  * the locality-error order (--loc-order, default #1110) gets the address "Eforie" and the error the real Cargus
+    adapter raises for it, produced by the app's own code (src/couriers/locality.js: matchLocality + localityError)
+    against real Constanța county locality names, so it is word-for-word what the merchant sees live
+    ("… Ai vrut: Eforie Sud, Eforie Nord, Corbu?"). The demo uses the test courier, which has no nomenclator.
+  * the test courier's issue time of one AWB is moved back step by step, so tracking walks through every status
+    (picked up → depot → out for delivery → delivered → COD collected) in seconds instead of minutes.
+  * customer-refusal warning: if the app has it (GET /api/orders/:id returns `customer`), the real warning of the
+    demo customer with a refused parcel is captured. Older builds without the feature get the app's own .warn-box
+    markup with the exact message text of src/core/build.js (CUSTOMER_REFUSED_BEFORE), rendered into the drawer.
+
+options / env: --app APP_DIR  --port PORT (3301)  --db DB_FILE  --locale (en-US)  --loc-order (#1110)  --track-order (#1118)
+               --out DIR (dry run elsewhere; the trailer reads ui/)
 """
-import json, os, pathlib, re, shutil, sqlite3, subprocess, sys, time, urllib.request
+import argparse, json, os, pathlib, re, signal, socket, subprocess, sys, time, urllib.parse, urllib.request
 from playwright.sync_api import sync_playwright
 
+ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+ap.add_argument('--app', default=os.environ.get('APP_DIR', '/tmp/claude-0/expedo-snap/P/apps/expedo'))
+ap.add_argument('--port', type=int, default=int(os.environ.get('PORT', 3301)))
+ap.add_argument('--db', default=os.environ.get('DB_FILE', '/tmp/claude-0/trailer-demo.db'))
+ap.add_argument('--locale', default=os.environ.get('UI_LOCALE', 'en-US'), help='browser locale (the app may pick its UI language from it)')
+ap.add_argument('--loc-order', default='#1110', help='order that gets the Cargus locality error ("Eforie")')
+ap.add_argument('--track-order', default='#1118', help='ramburs order walked through tracking to delivered')
+ap.add_argument('--out', default=None, help='output folder (default: ui/ next to this script, which the trailer reads)')
+ARGS = ap.parse_args()
+
 HERE = pathlib.Path(__file__).resolve().parent
-APP = pathlib.Path(os.environ.get('APP_DIR', '/tmp/claude-0/expedo-snap/P/apps/expedo'))
-PORT = int(os.environ.get('PORT', 3301))
-DB = pathlib.Path(os.environ.get('DB_FILE', '/tmp/claude-0/trailer-demo.db'))
+APP = pathlib.Path(ARGS.app)
+PORT = ARGS.port
+DB = pathlib.Path(ARGS.db)
 BASE = f'http://localhost:{PORT}'
-OUT = HERE / 'ui'
+OUT = pathlib.Path(ARGS.out) if ARGS.out else HERE / 'ui'
 FD = HERE / 'fonts'
 MAN = {}
 
@@ -53,21 +68,38 @@ def api(method, path, body=None):
         return json.loads(b) if r.headers.get('content-type', '').startswith('application/json') else b
 
 def start_server():
+    with socket.socket() as so:
+        if so.connect_ex(('127.0.0.1', PORT)) == 0: sys.exit(f'port {PORT} is busy: stop that server or pass --port')
     for f in DB.parent.glob(DB.name + '*'): f.unlink()
     env = {**os.environ, 'DEMO': '1', 'PORT': str(PORT), 'DB_FILE': str(DB)}
-    p = subprocess.Popen(['node', '--disable-warning=ExperimentalWarning', 'src/server.js'], cwd=APP, env=env,
-                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    for _ in range(100):
+    p = subprocess.Popen(['npm', 'start', '--silent'], cwd=APP, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                         start_new_session=True)
+    for _ in range(150):
         try: urllib.request.urlopen(BASE + '/healthz'); break
         except Exception: time.sleep(.2)
-    time.sleep(1.5)            # demo seed + advanceDemo (processes 8 orders)
+    else: sys.exit('the app did not start: ' + (p.stdout.read() if p.poll() is not None else '(still starting)'))
+    time.sleep(1.5)            # demo seed + advanceDemo (processes the oldest orders)
     return p
+
+def stop_server(p):
+    try: os.killpg(p.pid, signal.SIGTERM)
+    except ProcessLookupError: pass
 
 def order_id(name):
     return next(o['id'] for o in api('GET', '/orders?status=all&q=' + urllib.parse.quote(name))['orders'] if o['name'] == name)
 
-# ── #1111: the customer typed "Eforie"; Cargus has only "Eforie Nord" / "Eforie Sud" → real adapter error
-def setup_locality_error():
+def app_db(script, **params):
+    """Runs a snippet against the demo database through the app's own db module (src/db.js), so it works whether the
+    app stores rows in plain JSON or encrypted at rest. `db` (the module) and `P` (params) are in scope; print JSON."""
+    js = (f"import * as db from {json.dumps(str(APP / 'src/db.js'))};\n"
+          f"db.openDb(process.env.DB_FILE);\nconst P = {json.dumps(params)};\n" + script)
+    r = subprocess.run(['node', '--disable-warning=ExperimentalWarning', '--input-type=module', '-e', js], cwd=APP,
+                       env={**os.environ, 'DB_FILE': str(DB), 'DEMO': '1'}, capture_output=True, text=True)
+    if r.returncode: sys.exit('db helper failed: ' + r.stderr)
+    return json.loads(r.stdout.strip().splitlines()[-1]) if r.stdout.strip() else None
+
+def setup_locality_error(name):
+    """The customer typed "Eforie"; Cargus only has "Eforie Nord" / "Eforie Sud" → the real adapter error, from the app's code."""
     js = """
       import { matchLocality, localityError } from '%s/src/couriers/locality.js';
       const CT = ['Constanta','Mangalia','Medgidia','Navodari','Ovidiu','Eforie Nord','Eforie Sud','Techirghiol','Cumpana',
@@ -77,27 +109,28 @@ def setup_locality_error():
       const e = localityError({ provider: 'cargus', providerName: 'Cargus', city: q.city, county: q.county, result: matchLocality(q, CT, { fuzzy: true }) });
       console.log(JSON.stringify(e.toJSON()));
     """ % APP
-    err = json.loads(subprocess.run(['node', '--input-type=module', '-e', js], capture_output=True, text=True, check=True).stdout)
-    con = sqlite3.connect(DB); con.row_factory = sqlite3.Row
-    row = con.execute("SELECT id, data, store_id FROM orders WHERE name = '#1111'").fetchone()
-    d = json.loads(row['data'])
-    for k in ('shippingAddress', 'billingAddress'):
-        d[k].update(city='Eforie', address1='Str. Tudor Vladimirescu nr. 12', zip='')
-    now = time.strftime('%Y-%m-%dT%H:%M:%S.000Z', time.gmtime())
-    con.execute('UPDATE orders SET data = ?, last_error = ?, status = ? WHERE id = ?',
-                (json.dumps(d), json.dumps({**err, 'step': 'awb', 'at': now}), 'needs_attention', row['id']))
-    con.execute('INSERT INTO events (store_id, order_id, level, step, message, data) VALUES (?, ?, ?, ?, ?, ?)',
-                (row['store_id'], row['id'], 'error', 'awb', err['message'], json.dumps({'hint': err['hint'], 'code': err['code'], 'details': err['details']})))
-    con.commit(); con.close()
-    print('locality error:', err['message'], '|', err['hint'])
+    err = json.loads(subprocess.run(['node', '--input-type=module', '-e', js], capture_output=True, text=True, check=True, cwd=APP).stdout)
+    oid = app_db("""
+      const row = db.getDb().prepare('SELECT id, store_id FROM orders WHERE name = ?').get(P.name);
+      const o = db.getOrder(row.id), d = o.data;
+      for (const k of ['shippingAddress', 'billingAddress'])
+        Object.assign(d[k], { city: 'Eforie', province: 'Constanța', provinceCode: 'CT', address1: 'Str. Tudor Vladimirescu nr. 12', zip: '' });
+      db.updateOrder(row.id, { data: d, last_error: { ...P.err, step: 'awb', at: new Date().toISOString() }, status: 'needs_attention' });
+      db.logEvent(row.store_id, row.id, 'error', 'awb', P.err.message, { hint: P.err.hint, code: P.err.code, details: P.err.details });
+      console.log(JSON.stringify(row.id));
+    """, name=name, err=err)
+    print('locality error on', name, ':', err['message'], '|', err['hint'])
+    return oid, err
 
 def age_awb(awb, minutes):
     """Moves the test courier's issue time of one AWB back, so the next tracking check sees the next status."""
-    con = sqlite3.connect(DB)
-    store_id, raw = con.execute("SELECT store_id, value FROM cache WHERE key = 'mock:issued'").fetchone()
-    v = json.loads(raw); v[awb]['at'] = int(time.time() * 1000 - minutes * 60_000 - 5_000)
-    con.execute("UPDATE cache SET value = ? WHERE store_id = ? AND key = 'mock:issued'", (json.dumps(v), store_id))
-    con.commit(); con.close()
+    app_db("""
+      for (const s of db.getDb().prepare('SELECT id FROM stores').all()) {
+        const c = db.storeCache(s.id), v = c.get('mock:issued');
+        if (v && v[P.awb]) { v[P.awb].at = Date.now() - P.min * 60000 - 5000; c.set('mock:issued', v, 60 * 60 * 24 * 30); }
+      }
+      console.log('true');
+    """, awb=awb, min=minutes)
 
 # ── screenshot helpers
 RECT_JS = """([sels, root]) => {
@@ -113,6 +146,17 @@ RECT_JS = """([sels, root]) => {
       if (!hit) continue;
       const rg = document.createRange(); rg.setStart(hit[0], hit[1]); rg.setEnd(hit[0], hit[1] + txt.length);
       const rs = [...rg.getClientRects()];
+      const l = Math.min(...rs.map(r => r.left)), t = Math.min(...rs.map(r => r.top)), r2 = Math.max(...rs.map(r => r.right)), b2 = Math.max(...rs.map(r => r.bottom));
+      out[k] = [l - R.left, t - R.top, r2 - l, b2 - t].map(v => Math.round(v * 10) / 10);
+      continue;
+    }
+    if (s.startsWith('rangeq=')) {         // rangeq=<selector>: from the start of its text to the first '?' (the "Did you mean …?" part)
+      const host = document.querySelector(s.slice(7)); if (!host) continue;
+      const tw = document.createTreeWalker(host, NodeFilter.SHOW_TEXT); let n, hit = null;
+      while ((n = tw.nextNode())) { const i = n.data.indexOf('?'); if (i >= 0) { hit = [n, i]; break; } }
+      if (!hit) continue;
+      const rg = document.createRange(); rg.setStart(hit[0], 0); rg.setEnd(hit[0], hit[1] + 1);
+      const rs = [...rg.getClientRects()].filter(r => r.width > 0);
       const l = Math.min(...rs.map(r => r.left)), t = Math.min(...rs.map(r => r.top)), r2 = Math.max(...rs.map(r => r.right)), b2 = Math.max(...rs.map(r => r.bottom));
       out[k] = [l - R.left, t - R.top, r2 - l, b2 - t].map(v => Math.round(v * 10) / 10);
       continue;
@@ -171,16 +215,48 @@ def open_order(pg, oid, height=1900):
     pg.wait_for_selector('.drawer-panel .drawer-head')
     pg.wait_for_timeout(600)
 
+# structural selectors (no UI text) → work for any UI language
 DRAWER = {
     'head': '.drawer-head', 'badge': '.drawer-head .badge', 'error': '.drawer-panel .error-box', 'error_title': '.drawer-panel .error-box strong',
     'error_hint': '.drawer-panel .error-box .hint', 'details': '.drawer-panel .error-box details', 'process': '[data-act=process]',
     'actions': '.drawer-panel .actions', 'city': 'input[name=city]', 'phone': 'input[name=phone]', 'county': 'select[name=province]',
-    'zip': 'input[name=zip]', 'addr_card': 'text=.drawer-panel .card|Adresa de livrare', 'addr_save': 'text=#addr-form button|Salvează adresa',
-    'livrare': 'text=.drawer-panel .card|Livrare', 'kv': '.drawer-panel .kv', 'history': 'text=.drawer-panel .card|Istoric',
+    'zip': 'input[name=zip]', 'addr_save': '#addr-form button:not([type=button])',
+    'addr_card': '.drawer-panel .card:has(#addr-form), .drawer-panel .card:has(.kv) ~ .card:has(.kv)',
+    'livrare': '.drawer-panel .card:has(.kv)', 'kv': '.drawer-panel .kv', 'history': '.drawer-panel .card:has(.timeline)',
     'timeline': '.drawer-panel .timeline', 'cod_badge': '.drawer-panel .kv .badge.ok', 'awb': '.drawer-panel .kv dd .mono',
-    'aivrut': 'range=.drawer-panel .error-box .hint|Ai vrut: Eforie Sud, Eforie Nord, Corbu?', 'nord': 'range=.drawer-panel .error-box .hint|Eforie Nord',
-    'factura': 'text=.drawer-panel .kv dd|TEST 0', 'pay': 'text=.drawer-panel .kv dd|ramburs',
-    **{f'li{i}': f'.drawer-panel .timeline li:nth-child({i + 1})' for i in range(12)},
+    'aivrut': 'rangeq=.drawer-panel .error-box .hint', 'nord': 'range=.drawer-panel .error-box .hint|Eforie Nord',
+    'factura': 'text=.drawer-panel .kv dd|TEST 0', 'pay': '.drawer-panel .kv dd:has(.pill)',
+    **{f'li{i}': f'.drawer-panel .timeline li:nth-child({i + 1})' for i in range(14)},
+    **{f'lit{i}': f'lines=.drawer-panel .timeline li:nth-child({i + 1}) > div:first-child' for i in range(14)},
+}
+STATS = {**{f'stat{i}': f'.stats > :nth-child({i + 1})' for i in range(6)},
+         **{f'val{i}': f'.stats > :nth-child({i + 1}) .value' for i in range(6)}, **{f'sub{i}': f'.stats > :nth-child({i + 1}) .sub' for i in range(6)}}
+
+def texts(pg, sels):
+    return pg.evaluate("s => Object.fromEntries(Object.entries(s).map(([k, q]) => [k, document.querySelector(q)?.innerText ?? null]))", sels)
+
+def num(t):
+    """'1.441,30 lei' / '1,441.30 RON' → 1441.3"""
+    m = re.search(r'\d[\d.,\s\u00a0]*', t or '')
+    if not m: return None
+    x = re.sub(r'[\s\u00a0]', '', m.group(0)).rstrip('.,')
+    if re.search(r'[.,]\d{2}$', x): x = re.sub(r'[.,]', '', x[:-3]) + '.' + x[-2:]
+    else: x = re.sub(r'[.,]', '', x)
+    return float(x)
+
+def refusal_order():
+    """An open order whose customer refused a parcel before (apps with the refusal history), else None."""
+    for o in api('GET', '/orders?status=all')['orders']:
+        if o.get('awb'): continue
+        d = api('GET', f"/orders/{o['id']}")
+        c = d.get('customer') or {}
+        iss = [i for i in (d.get('plan', {}).get('issues') or d.get('order', {}).get('issues') or []) if i.get('code') == 'CUSTOMER_REFUSED_BEFORE']
+        if c.get('returned') and iss: return o['id'], o['name'], iss[0]
+    return None
+
+REFUSED_FALLBACK = {   # src/core/build.js (CUSTOMER_REFUSED_BEFORE), for builds whose UI predates the feature
+    'ro': ('Clientul a refuzat 2 colete înainte (din 3).', 'Sună-l înainte de AWB sau cere plata cu cardul.'),
+    'en': ('The customer refused 2 parcels before (out of 3).', 'Call them before the AWB, or ask for card payment.'),
 }
 
 def main():
@@ -188,71 +264,80 @@ def main():
     for f in OUT.glob('*.png'): f.unlink()
     srv = start_server()
     try:
-        setup_locality_error()
+        refused = refusal_order()                       # find it before we change anything
+        loc_id, loc_err = setup_locality_error(ARGS.loc_order)
         with sync_playwright() as p:
             b = p.chromium.launch(args=['--force-color-profile=srgb', '--font-render-hinting=none'])
-            ctx = b.new_context(viewport={'width': 1440, 'height': 900}, device_scale_factor=2, color_scheme='light', locale='ro-RO',
+            ctx = b.new_context(viewport={'width': 1440, 'height': 900}, device_scale_factor=2, color_scheme='light', locale=ARGS.locale,
                                 timezone_id='Europe/Bucharest')
             pg = ctx.new_page(); pg.route('**/*', route)
             pg.on('dialog', lambda d: d.accept())
 
             # 1. dashboard before anything
             goto(pg, '/')
-            stats = {**{f'stat{i}': f'.stats > :nth-child({i + 1})' for i in range(5)},
-                     **{f'val{i}': f'.stats > :nth-child({i + 1}) .value' for i in range(5)}, **{f'sub{i}': f'.stats > :nth-child({i + 1}) .sub' for i in range(5)}}
-            shot(pg, 'dash_before', {**stats, 'todo': 'text=.card|De rezolvat', 'banner': '#test-banner', 'brand': '.brand',
-                                     'cta': '.page-head .btn.primary', 'activity': 'text=.card|Activitate recentă'})
+            # UI language: what the navigation actually says (falls back to <html lang>)
+            MAN['uiLang'] = pg.evaluate("""() => { const t = document.querySelector('#nav')?.innerText || '';
+              if (/\\b(Orders|Settings|Activity|Dashboard)\\b/.test(t)) return 'en';
+              if (/Comenzi|Setări|Activitate|Panou/.test(t)) return 'ro';
+              return (document.documentElement.lang || 'ro').slice(0, 2); }""")
+            print('UI language:', MAN['uiLang'])
+            shot(pg, 'dash_before', {**STATS, 'banner': '#test-banner', 'brand': '.brand', 'cta': '.page-head .btn.primary',
+                                     'todo': '.cols > div > .card:first-child', 'activity': '.cols > .card'})
+            MAN['dash_before']['texts'] = texts(pg, {k: v for k, v in STATS.items() if k[:3] in ('val', 'sub')})
 
-            # 2. orders that need attention: plain-Romanian errors, in red
+            # 2. orders that need attention: errors in plain words, in red, with what to do
             goto(pg, '/orders?status=needs_attention')
-            rows = {f'row{i}': f'tbody tr:nth-child({i + 1})' for i in range(4)}
-            issues = {**{f'issue{i}': f'tbody tr:nth-child({i + 1}) .issue-line' for i in range(4)},
-                      **{f'msg{i}': f'lines=tbody tr:nth-child({i + 1}) .issue-line > span' for i in range(4)}}
-            shot(pg, 'orders_attention', {**rows, **issues, 'table': '.table-wrap', 'tabs': '.tabs', 'tab_bad': 'text=.tabs a|Necesită'})
-            goto(pg, '/orders')
-            shot(pg, 'orders_open', {**{f'row{i}': f'tbody tr:nth-child({i + 1})' for i in range(10)}, 'table': '.table-wrap', 'tabs': '.tabs'}, full=True)
+            rows = {f'row{i}': f'tbody tr:nth-child({i + 1})' for i in range(5)}
+            issues = {**{f'issue{i}': f'tbody tr:nth-child({i + 1}) .issue-line' for i in range(5)},
+                      **{f'msg{i}': f'lines=tbody tr:nth-child({i + 1}) .issue-line > span' for i in range(5)}}
+            shot(pg, 'orders_attention', {**rows, **issues, 'table': '.table-wrap', 'tabs': '.tabs', 'tab_bad': '.tabs a[href*="needs_attention"]'})
+            MAN['orders_attention']['count'] = pg.locator('tbody tr').count()
 
-            # 3. #1111 — the address is checked against the courier's locality list: "Ai vrut: …?"
-            o1111 = order_id('#1111')
-            open_order(pg, o1111)
-            shot(pg, 'd1111_err', DRAWER, el='.drawer-panel')
+            # 3. the address is checked against the courier's locality list: "Did you mean …?" → typed fix → AWB + invoice
+            open_order(pg, loc_id)
+            shot(pg, 'dloc_err', DRAWER, el='.drawer-panel')
             pg.locator('input[name=city]').click(); pg.wait_for_timeout(100)
             pg.locator('input[name=city]').press('End'); pg.locator('input[name=city]').type(' Nord', delay=40)
-            shot(pg, 'd1111_typed', DRAWER, el='.drawer-panel')
-            pg.locator('#addr-form button', has_text='Salvează adresa').click()
-            toast(pg, 'toast_addr_saved'); pg.wait_for_timeout(500)
-            shot(pg, 'd1111_saved', DRAWER, el='.drawer-panel')
+            shot(pg, 'dloc_typed', DRAWER, el='.drawer-panel')
+            pg.locator(DRAWER['addr_save']).first.click()
+            toast(pg, 'toast_loc_saved'); pg.wait_for_timeout(500)
             pg.locator('[data-act=process]').click()
-            toast(pg, 'toast_1111_done'); pg.wait_for_timeout(600)
-            shot(pg, 'd1111_done', DRAWER, el='.drawer-panel')
+            toast(pg, 'toast_loc_done'); pg.wait_for_timeout(600)
+            shot(pg, 'dloc_done', DRAWER, el='.drawer-panel')
+            MAN['loc'] = {'order': ARGS.loc_order, 'message': loc_err['message'], 'hint': loc_err['hint']}
 
-            # 4. #1113 — missing phone: say it in Romanian, fix it in the order
-            o1113 = order_id('#1113')
-            open_order(pg, o1113)
-            shot(pg, 'd1113_err', DRAWER, el='.drawer-panel')
-            pg.locator('input[name=phone]').click(); pg.locator('input[name=phone]').type('0733 111 222', delay=40)
-            shot(pg, 'd1113_typed', DRAWER, el='.drawer-panel')
-            pg.locator('#addr-form button', has_text='Salvează adresa').click()
-            toast(pg, 'toast_1113_saved'); pg.wait_for_timeout(500)
-            shot(pg, 'd1113_fixed', DRAWER, el='.drawer-panel')
+            # 3b. an order with a missing phone: fixed through the order panel (so it ships in the bulk run below)
+            try:
+                pid = order_id('#1113')
+                open_order(pg, pid)
+                if pg.locator('input[name=phone]').count() and not pg.locator('input[name=phone]').input_value():
+                    pg.locator('input[name=phone]').click(); pg.locator('input[name=phone]').type('0733 111 222', delay=20)
+                    pg.locator(DRAWER['addr_save']).first.click(); pg.wait_for_timeout(800)
+            except StopIteration: pass
 
-            # 5. customer refusal warning (newer than this UI snapshot): the app's own .warn-box markup + message
-            o1117 = order_id('#1117')
-            open_order(pg, o1117)
-            pg.evaluate("""() => {
-              const box = document.createElement('div'); box.className = 'warn-box'; box.id = 'refused';
-              box.innerHTML = '<strong>Clientul a refuzat 2 colete înainte (din 3).</strong><div class="hint">Sună-l înainte de AWB sau cere plata cu cardul.</div>';
-              document.querySelector('.drawer-head').after(box);
-            }""")
-            shot(pg, 'warn_refused', el='#refused')
-            shot(pg, 'd1117_refused', DRAWER, el='.drawer-panel')
+            # 4. customer refusal warning
+            if refused:
+                rid, rname, iss = refused
+                open_order(pg, rid)
+                box = pg.locator('.drawer-panel .warn-box', has_text=iss['message'][:24]).first
+                box.evaluate("e => e.id = 'refused'")
+                shot(pg, 'warn_refused', el='#refused')
+                MAN['warn_refused'].update(real=True, order=rname, text=iss['message'] + ' ' + (iss.get('hint') or ''))
+            else:
+                msg, hint = REFUSED_FALLBACK.get(MAN['uiLang'], REFUSED_FALLBACK['en'])
+                open_order(pg, order_id('#1117'))
+                pg.evaluate("""([m, h]) => { const box = document.createElement('div'); box.className = 'warn-box'; box.id = 'refused';
+                  box.innerHTML = '<strong></strong><div class="hint"></div>'; box.querySelector('strong').textContent = m;
+                  box.querySelector('.hint').textContent = h; document.querySelector('.drawer-head').after(box); }""", [msg, hint])
+                shot(pg, 'warn_refused', el='#refused')
+                MAN['warn_refused'].update(real=False, text=msg + ' ' + hint)
 
-            # 6. bulk: select every order that is ready → one click → AWB + invoice → one labels PDF
+            # 5. bulk: select every order that is ready → one click → AWB + invoice → one labels PDF
             pg.set_viewport_size({'width': 1440, 'height': 900})
             pg.goto(f'{BASE}/#/'); pg.wait_for_selector('.stats')
             goto(pg, '/orders?status=ready')
             rsel = {**{f'row{i}': f'tbody tr:nth-child({i + 1})' for i in range(8)}, **{f'cb{i}': f'tbody tr:nth-child({i + 1}) input' for i in range(8)},
-                    'checkall': '#check-all', 'table': '.table-wrap', 'tabs': '.tabs', 'tab_ready': 'text=.tabs a|Gata de procesat'}
+                    'checkall': '#check-all', 'table': '.table-wrap', 'tabs': '.tabs', 'tab_ready': '.tabs a[href*="status=ready"]'}
             shot(pg, 'ready', rsel)
             pg.locator('#check-all').check(); pg.wait_for_timeout(300)
             bsel = {**rsel, 'bulkbar': '#bulkbar', 'bulk_count': '#bulk-count', 'bulk_all': '[data-bulk=all]', 'bulk_labels': '[data-bulk=labels]'}
@@ -261,9 +346,12 @@ def main():
             pg.locator('[data-bulk=all]').click()
             toast(pg, 'toast_bulk')
             pg.wait_for_selector('tbody tr .mono'); pg.wait_for_timeout(800)
-            shot(pg, 'bulk_done', {**bsel, **{f'awb{i}': f'tbody tr:nth-child({i + 1}) td:nth-child(5)' for i in range(8)},
-                                   **{f'inv{i}': f'tbody tr:nth-child({i + 1}) td:nth-child(6)' for i in range(8)},
-                                   **{f'st{i}': f'tbody tr:nth-child({i + 1}) td:nth-child(7)' for i in range(8)}})
+            # AWB / invoice / status columns found by header position (no text)
+            cols = pg.evaluate("""() => { const th = [...document.querySelectorAll('thead th')];
+              const i = c => th.findIndex(t => t.matches(c)) + 1; return { awb: th.length - 2, inv: th.length - 1, st: th.length }; }""")
+            shot(pg, 'bulk_done', {**bsel, **{f'awb{i}': f'tbody tr:nth-child({i + 1}) td:nth-child({cols["awb"]})' for i in range(8)},
+                                   **{f'inv{i}': f'tbody tr:nth-child({i + 1}) td:nth-child({cols["inv"]})' for i in range(8)},
+                                   **{f'st{i}': f'tbody tr:nth-child({i + 1}) td:nth-child({cols["st"]})' for i in range(8)}})
             done = api('GET', '/orders?status=all&ids=' + ','.join(map(str, ready_ids)))['orders']
             MAN['bulk_orders'] = [{k: o.get(k) for k in ('id', 'name', 'customer', 'city', 'awb', 'invoice', 'courier', 'total', 'paymentMethod')} for o in done]
             pdf = api('GET', '/labels.pdf?ids=' + ','.join(str(o['id']) for o in done))
@@ -275,36 +363,42 @@ def main():
             MAN['labels'] = {'count': len(labels)}
             print('labels:', len(labels))
 
-            # 7. rules + test mode
+            # 6. rules (the easybox → Sameday rule and the big-COD → on hold rule, found in the settings) + test mode
+            rules = api('GET', '/settings')['settings']['rules']
+            ia = next((i for i, r in enumerate(rules) if (r.get('actions') or {}).get('courier') == 'sameday'), 0)
+            ib = next((i for i, r in enumerate(rules) if (r.get('actions') or {}).get('hold') and any(c.get('field') == 'total' for c in r.get('conditions', []))), 2)
             pg.set_viewport_size({'width': 1440, 'height': 1000})
             goto(pg, '/settings/rules', '.rule')
-            shot(pg, 'rules', {**{f'rule{i}': f'.rule:nth-of-type({i + 1})' for i in range(3)}, 'section': '#section .card', 'subnav': '.subnav',
-                               **{f'rname{i}': f'.rule:nth-of-type({i + 1}) .rule-head' for i in range(3)}}, full=True)
+            shot(pg, 'rules', {'ruleA': f'.rule:nth-of-type({ia + 1})', 'ruleB': f'.rule:nth-of-type({ib + 1})',
+                               'rnameA': f'.rule:nth-of-type({ia + 1}) .rule-head', 'rnameB': f'.rule:nth-of-type({ib + 1}) .rule-head',
+                               'section': '#section .card', 'subnav': '.subnav'}, full=True)
             goto(pg, '/settings/general', '.mode-switch')
             shot(pg, 'general', {'banner': '#test-banner', 'mode': '.mode-switch', 'probe': '.mode-switch .provider.active',
-                                 'live': '.mode-switch .provider:not(.active)', 'after': 'text=.card|După generarea'})
+                                 'live': '.mode-switch .provider:not(.active)', 'after': '#section .card:nth-of-type(2)'})
 
-            # 8. tracking: the test courier walks one ramburs parcel to "Livrat", ramburs marked collected
-            o = next(x for x in done if x['name'] == '#1118')
+            # 7. tracking: the test courier walks one COD parcel to "delivered"; COD is marked collected
+            o = next(x for x in done if x['name'] == ARGS.track_order)
             for k in (1, 2, 3, 4):
                 age_awb(o['awb'], 2 * k)
                 api('POST', '/track'); time.sleep(.3)
             open_order(pg, o['id'])
-            shot(pg, 'd1118_tracked', DRAWER, el='.drawer-panel')
+            shot(pg, 'dtrack', DRAWER, el='.drawer-panel')
+            MAN['dtrack']['li'] = pg.evaluate("[...document.querySelectorAll('.drawer-panel .timeline li')].map(l => l.className)")
             pg.set_viewport_size({'width': 1440, 'height': 900})
-            pg.evaluate("location.hash = '#/'"); pg.wait_for_timeout(300)
             pg.goto(f'{BASE}/#/'); pg.wait_for_selector('.stats'); pg.wait_for_timeout(600)
-            shot(pg, 'dash_after', {**stats, 'todo': 'text=.card|De rezolvat', 'activity': 'text=.card|Activitate recentă',
-                                    'couriers': 'text=.card|Curieri'})
-            MAN['stats_after'] = api('GET', '/stats')
+            shot(pg, 'dash_after', {**STATS, 'todo': '.cols > div > .card:first-child', 'activity': '.cols > .card'})
+            MAN['dash_after']['texts'] = texts(pg, {k: v for k, v in STATS.items() if k[:3] in ('val', 'sub')})
+            st = api('GET', '/stats'); MAN['stats_after'] = st
+            # which stat card is "COD collected (30 days)": the one showing that number
+            vals = {k: num(v) for k, v in MAN['dash_after']['texts'].items() if k.startswith('val') and v}
+            MAN['codStat'] = next((int(k[3:]) for k, v in vals.items() if v is not None and abs(v - st['codCollected30']['v']) < .01), 4)
             b.close()
     finally:
-        srv.terminate()
+        stop_server(srv)
     (OUT / 'manifest.json').write_text(json.dumps(MAN, ensure_ascii=False, indent=1))
     (OUT / 'manifest.js').write_text('window.UI_MANIFEST = ' + json.dumps(MAN, ensure_ascii=False) + ';\n')   # for the trailer page (file://)
     tot = sum(f.stat().st_size for f in OUT.glob('*.png'))
     print(f'wrote {len(list(OUT.glob("*.png")))} images, {tot // 1024} KB')
 
 if __name__ == '__main__':
-    import urllib.parse
     main()
