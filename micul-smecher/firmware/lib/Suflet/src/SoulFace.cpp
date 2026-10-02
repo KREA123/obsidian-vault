@@ -11,7 +11,7 @@ static inline float approach(float v, float t, float rate, float dt) { return v 
 bool SoulFace::begin(int w, int h) {
   W_ = w;
   H_ = h;
-  return ren_.begin(w, h);
+  return ren_.begin(w, h) && ring_.reserve(2048);
 }
 
 void SoulFace::setSeed(uint32_t seed) { rig_ = EyeRig(seed); }
@@ -166,8 +166,7 @@ void SoulFace::render(Canvas& cv) {
   if (!ringsActive()) return;
   // one light at a time on the rim (no glow on the device: flat rings)
   Raster& ras = ren_.raster();
-  static Path p;
-  if (!p.edgeCount() && !p.reserve(2048)) return;
+  Path& p = ring_;
   const float R = S * 0.5f, t = t_;
   auto ring = [&](Rgb c, float a, float w, float a0 = 0, float a1 = 6.2831853f) {
     if (a <= 0.01f) return;

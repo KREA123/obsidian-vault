@@ -1,0 +1,386 @@
+// SoulOS on the device: the flows of the web SoulOS v4, driven by a simulated
+// finger through the real gesture code, plus the frame pipeline.
+#include <unity.h>
+
+#include <cmath>
+#include <cstring>
+#include <string>
+#include <vector>
+
+#include "Frame.h"
+#include "Gestures.h"
+#include "Os.h"
+
+using namespace suflet;
+
+namespace {
+
+const uint32_t kNow = 1790359080u;  // a Friday, 18:38 local
+
+struct Dev {
+  Brain brain{Personality::fromSeed(0xC0FFEE), 7};
+  Alarms alarms;
+  Os os{&alarms};
+  TouchGestures tg;
+  DisplayGeometry g = displays::kLcd28;
+  std::vector<uint16_t> fb = std::vector<uint16_t>(480 * 480);
+  Canvas cv{480, 480, fb.data()};
+  FrameComposer comp{&cv};
+  bool finger = false;
+  float fx = 0, fy = 0;
+  uint32_t clock = kNow;
+  float frac = 0;
+  Inputs in;
+  bool render = false;
+
+  explicit Dev(bool booted, AiMode mode = AiMode::Claude, bool connected = true) {
+    os.settings().booted = booted;
+    os.settings().ai = (uint8_t)mode;
+    BirthInfo b;
+    b.design = 5;
+    b.chip = "C0:FF:EE:12:34:56";
+    b.seed = 1234;
+    os.begin(g, b);
+    NetInfo n;
+    n.configured = n.connected = connected;
+    n.keyClaude = true;
+    n.ssid = "home";
+    os.setNet(n);
+    tg.setMode(TouchMode::Text);
+    os.setClock(clock);
+    in.hour = 18.6f;
+  }
+  void step(float dt = 1.0f / 30) {
+    frac += dt;
+    while (frac >= 1) {
+      frac -= 1;
+      ++clock;
+    }
+    os.setClock(clock);
+    tg.update(finger, fx, fy, dt);
+    TouchEv e;
+    while (tg.poll(e)) os.touch(e);
+    os.update(dt, brain);
+    brain.update(dt, in);
+    if (render) comp.compose(os);
+  }
+  void run(float s) {
+    for (int i = 0; i < (int)(s * 30 + 0.5f); ++i) step();
+  }
+  void tap(float x, float y) {  // design px
+    fx = g.s(x);
+    fy = g.s(y);
+    finger = true;
+    run(0.08f);
+    finger = false;
+    run(0.5f);
+  }
+  void hold(float x, float y, float s) {
+    fx = g.s(x);
+    fy = g.s(y);
+    finger = true;
+    run(s);
+    finger = false;
+    run(0.3f);
+  }
+  void swipe(float x0, float y0, float x1, float y1) {
+    finger = true;
+    for (int i = 0; i <= 6; ++i) {
+      fx = g.s(x0 + (x1 - x0) * i / 6);
+      fy = g.s(y0 + (y1 - y0) * i / 6);
+      step();
+    }
+    finger = false;
+    run(0.4f);
+  }
+  bool hasCmd(OsCmd want) {
+    OsCmd c;
+    bool found = false;
+    while (os.popCmd(c))
+      if (c == want) found = true;
+    return found;
+  }
+};
+
+}  // namespace
+
+static void test_os_first_boot_birth_name_brain_hold() {
+  Dev d(false, AiMode::None);
+  TEST_ASSERT_EQUAL_INT((int)View::Boot, (int)d.os.view());
+  TEST_ASSERT_EQUAL_INT((int)BootStep::Birth, (int)d.os.bootStep());
+  d.run(1.6f);
+  d.tap(233, 250);
+  TEST_ASSERT_EQUAL_INT((int)BootStep::Name, (int)d.os.bootStep());
+  d.tap(233, 212);  // the first suggested name
+  TEST_ASSERT_EQUAL_INT((int)BootStep::Brain, (int)d.os.bootStep());
+  TEST_ASSERT_TRUE(strlen(d.os.settings().name) > 1);
+  d.tap(233, 186 + 46 * 3);  // "No AI"
+  TEST_ASSERT_EQUAL_INT((int)AiMode::None, (int)d.os.aiMode());
+  d.tap(233, 420);  // Next
+  TEST_ASSERT_EQUAL_INT((int)BootStep::Hold, (int)d.os.bootStep());
+  d.hold(233, 233, 0.8f);  // hold the glass, let go
+  TEST_ASSERT_EQUAL_INT((int)View::Home, (int)d.os.view());
+  TEST_ASSERT_EQUAL_INT(1, d.os.settings().booted);
+  TEST_ASSERT_TRUE(d.hasCmd(OsCmd::SaveSettings));
+}
+
+static void test_os_boot_brain_step_opens_the_setup_portal_when_a_key_is_missing() {
+  Dev d(false, AiMode::None, false);
+  d.run(1.6f);
+  d.tap(233, 250);
+  d.tap(233, 212);
+  d.hasCmd(OsCmd::None);
+  d.tap(233, 232);  // "Claude · your key", no key, no Wi-Fi
+  TEST_ASSERT_EQUAL_INT((int)AiMode::Claude, (int)d.os.aiMode());
+  TEST_ASSERT_TRUE(d.hasCmd(OsCmd::StartPortal));
+}
+
+static void test_os_swipe_opens_the_orbit_and_back_is_one_level() {
+  Dev d(true);
+  d.run(0.5f);
+  d.swipe(330, 240, 150, 240);
+  TEST_ASSERT_EQUAL_INT((int)View::Launcher, (int)d.os.view());
+  d.swipe(330, 330, 150, 330);  // spin: the next app
+  TEST_ASSERT_EQUAL_INT(1, d.os.launcherIndex());
+  d.os.go(View::AiMode);
+  d.run(0.3f);
+  d.swipe(233, 200, 233, 380);  // swipe down = back: up one level
+  TEST_ASSERT_EQUAL_INT((int)View::Settings, (int)d.os.view());
+  d.os.button(true);
+  d.run(0.1f);
+  d.os.button(false);
+  TEST_ASSERT_EQUAL_INT((int)View::Home, (int)d.os.view());
+  d.swipe(233, 380, 233, 150);  // swipe up from the face: Today
+  TEST_ASSERT_EQUAL_INT((int)View::Today, (int)d.os.view());
+}
+
+static void test_os_alarm_in_three_touches() {
+  Dev d(true);
+  d.os.go(View::Alarms);
+  d.run(0.3f);
+  d.tap(233, 376);  // + New: the Rim-Dial
+  TEST_ASSERT_EQUAL_INT((int)View::Dial, (int)d.os.view());
+  // drag the hour from 7 (first alarm) to 6 on the rim, let go
+  const float a0 = TimePicker::hourAngle(7), a1 = TimePicker::hourAngle(6);
+  d.finger = true;
+  for (int i = 0; i <= 10; ++i) {
+    const float a = (a0 + (a1 - a0) * i / 10) * 3.14159265f / 180;
+    d.fx = d.g.s(233 + 205 * cosf(a));
+    d.fy = d.g.s(233 + 205 * sinf(a));
+    d.step();
+  }
+  d.finger = false;
+  d.run(0.8f);
+  d.tap(233, 350);  // ✓: saved at once
+  TEST_ASSERT_EQUAL_INT((int)View::Alarms, (int)d.os.view());
+  TEST_ASSERT_EQUAL_INT(1, d.alarms.count());
+  TEST_ASSERT_EQUAL_INT(6, d.alarms.at(0).hour);
+  TEST_ASSERT_TRUE(d.hasCmd(OsCmd::SaveAlarms));
+  d.tap(233, 168);  // tap the row: off
+  TEST_ASSERT_FALSE(d.alarms.at(0).enabled);
+  d.hold(233, 168, 1.4f);  // hold the row: deleted
+  TEST_ASSERT_EQUAL_INT(0, d.alarms.count());
+}
+
+static void test_os_ask_claude_round_trip_runs_the_actions() {
+  Dev d(true, AiMode::Claude);
+  d.os.ask("wake me at 6:30 on weekdays");
+  TEST_ASSERT_TRUE(d.os.thinking());
+  TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());
+  AiJob job;
+  TEST_ASSERT_TRUE(d.os.popAiJob(job));
+  TEST_ASSERT_EQUAL_STRING("wake me at 6:30 on weekdays", job.text.c_str());
+  TEST_ASSERT_EQUAL_UINT32(kNow, job.ctx.now);
+  AiOutcome o;
+  o.reply = parseReply(
+      "{\"say\":\"Weekdays at 6:30.\",\"actions\":[{\"type\":\"alarm.set\",\"time\":\"06:30\",\"label\":\"Up\",\"repeat\":\"weekdays\"}]}");
+  o.raw = "{...}";
+  d.os.aiResult(o);
+  TEST_ASSERT_FALSE(d.os.thinking());
+  TEST_ASSERT_EQUAL_INT(1, d.alarms.count());
+  TEST_ASSERT_EQUAL_HEX8(0x1F, d.alarms.at(0).days);
+  TEST_ASSERT_EQUAL_STRING("Weekdays at 6:30.", d.os.lastReply().say.c_str());
+  // the next question carries the conversation
+  d.os.ask("and a timer for 5 minutes");
+  TEST_ASSERT_TRUE(d.os.popAiJob(job));
+  TEST_ASSERT_EQUAL_INT(2, (int)job.history.size());  // the earlier question + answer; the new text travels apart
+  TEST_ASSERT_TRUE(job.ctx.alarms.find("06:30 weekdays") != std::string::npos);
+}
+
+static void test_os_errors_say_what_to_do_and_local_rules_still_act() {
+  Dev d(true, AiMode::Claude);
+  d.os.ask("set a timer for 10 minutes");
+  AiJob job;
+  d.os.popAiJob(job);
+  AiOutcome bad;
+  bad.err = AiErr::BadKey;
+  d.os.aiResult(bad);
+  TEST_ASSERT_EQUAL_INT((int)AiErr::BadKey, (int)d.os.lastError());
+  TEST_ASSERT_EQUAL_INT(600, d.os.timerLeft());  // the on-device rules still started it
+  FaceInputs fi = d.os.faceInputs(d.brain);
+  TEST_ASSERT_EQUAL_INT((int)FaceState::Error, (int)fi.state);  // the eyes: confused
+  // offline: no request at all
+  Dev off(true, AiMode::Claude, false);
+  off.os.ask("wake me at 7");
+  TEST_ASSERT_FALSE(off.os.popAiJob(job));
+  TEST_ASSERT_EQUAL_INT((int)AiErr::Offline, (int)off.os.lastError());
+  TEST_ASSERT_EQUAL_INT(1, off.alarms.count());
+  // and a hung network times out by itself
+  Dev slow(true, AiMode::Claude);
+  slow.os.ask("hello?");
+  slow.run(46);
+  TEST_ASSERT_FALSE(slow.os.thinking());
+  TEST_ASSERT_EQUAL_INT((int)AiErr::Timeout, (int)slow.os.lastError());
+}
+
+static void test_os_no_ai_mode_keeps_working_on_the_device() {
+  Dev d(true, AiMode::None);
+  d.os.ask("remind me to call the bank at 5");
+  AiJob job;
+  TEST_ASSERT_FALSE(d.os.popAiJob(job));
+  TEST_ASSERT_EQUAL_INT(1, (int)d.os.reminders().size());
+  TEST_ASSERT_EQUAL_UINT32(17u, d.os.reminders()[0].when % 86400 / 3600);
+  d.os.ask("the meaning of life");
+  TEST_ASSERT_EQUAL_INT(1, (int)d.os.notes().size());  // kept in Notes
+}
+
+static void test_os_hold_the_glass_approves_a_claude_request() {
+  Dev d(true);
+  ClaudeInfo ci;
+  ci.linked = ci.prompt = true;
+  ci.tool = "Bash";
+  d.os.setClaude(ci);
+  d.brain.event(Ev::ClaudePrompt);
+  d.run(0.3f);
+  TEST_ASSERT_EQUAL_INT((int)FaceState::Wait, (int)d.os.faceInputs(d.brain).state);
+  TEST_ASSERT_TRUE(d.os.faceInputs(d.brain).alert);
+  d.fx = d.g.s(233);
+  d.fy = d.g.s(260);
+  d.finger = true;
+  bool approved = false, progressed = false;
+  for (int i = 0; i < 60; ++i) {
+    d.step();
+    if (d.brain.approveProgress() > 0.5f) progressed = true;
+    Cue c;
+    while (d.brain.popCue(c))
+      if (c == Cue::ClaudeApprove) approved = true;
+  }
+  d.finger = false;
+  d.run(0.2f);
+  TEST_ASSERT_TRUE(progressed);
+  TEST_ASSERT_TRUE(approved);
+}
+
+static void test_os_timer_rings_and_stop_goes_home() {
+  Dev d(true);
+  d.os.startTimer(2, false);
+  d.run(2.3f);
+  TEST_ASSERT_EQUAL_INT((int)View::Ringing, (int)d.os.view());
+  TEST_ASSERT_TRUE(d.os.ringing());
+  d.tap(233, 400);  // Stop (centred for a timer)
+  d.tap(316, 400);
+  TEST_ASSERT_FALSE(d.os.ringing());
+  TEST_ASSERT_EQUAL_INT((int)View::Home, (int)d.os.view());
+}
+
+static void test_os_notes_settings_and_reminders_survive_a_restart() {
+  Dev a(true);
+  a.os.ask("x");  // a note via the no-AI path would need mode None; add directly
+  a.os.notes().clear();
+  Note n1;
+  n1.text = "buy oat milk";
+  n1.t = 5;
+  Note n2;
+  n2.text = "idea:\ttabs\nand lines";
+  n2.t = 6;
+  a.os.notes() = {n1, n2};
+  Reminder r;
+  r.when = kNow + 600;
+  r.text = "oven";
+  a.os.reminders() = {r};
+  snprintf(a.os.settings().name, sizeof a.os.settings().name, "Miso");
+  a.os.settings().lang = 1;
+  uint8_t buf[sizeof(OsSettings)];
+  const size_t n = a.os.saveSettings(buf, sizeof buf);
+  Dev b(true);
+  TEST_ASSERT_TRUE(b.os.loadSettings(buf, n));
+  b.os.loadNotes(a.os.saveNotes());
+  b.os.loadReminders(a.os.saveReminders());
+  TEST_ASSERT_EQUAL_STRING("Miso", b.os.settings().name);
+  TEST_ASSERT_TRUE(b.os.ro());
+  TEST_ASSERT_EQUAL_INT(2, (int)b.os.notes().size());
+  TEST_ASSERT_EQUAL_STRING("idea: tabs and lines", b.os.notes()[1].text.c_str());
+  TEST_ASSERT_EQUAL_UINT32(kNow + 600, b.os.reminders()[0].when);
+  buf[0] = 99;  // another version: refused, defaults kept
+  TEST_ASSERT_FALSE(b.os.loadSettings(buf, n));
+  b.os.loadNotes(std::string("garbage without tabs\n\n\t\n123\tok\n"));
+  TEST_ASSERT_EQUAL_INT(1, (int)b.os.notes().size());
+}
+
+static void test_frame_pipeline_equals_a_full_redraw() {
+  // Draw only what changes (repair under the old eyes + the UI's dirty
+  // rects), then compare with a from-scratch render of the same state.
+  Dev d(true);
+  d.render = true;
+  std::vector<uint16_t> ref(480 * 480);
+  Canvas rc(480, 480, ref.data());
+  auto check = [&](const char* when) {
+    std::fill(ref.begin(), ref.end(), 0);
+    rc.clearClip();
+    d.os.render(rc);
+    d.os.face().render(rc);
+    int diff = 0;
+    for (size_t i = 0; i < ref.size(); ++i)
+      if (ref[i] != d.fb[i]) ++diff;
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, diff, when);
+  };
+  d.run(1.0f);
+  check("home");
+  d.os.face().react(eyes::X_laugh);
+  d.run(0.7f);
+  check("laugh");
+  d.swipe(330, 240, 150, 240);
+  d.run(0.4f);
+  check("launcher");
+  d.os.go(View::Alarms);
+  d.run(0.1f);
+  check("fading in");
+  d.run(0.5f);
+  check("alarms");
+  d.os.go(View::Talk);
+  d.run(0.5f);
+  d.os.ask("what time is it?");
+  d.run(0.6f);
+  check("thinking ring");
+  d.os.go(View::Home);
+  d.run(1.2f);
+  check("home again");
+}
+
+static void test_frame_pipeline_touches_little_of_the_glass_when_idle() {
+  Dev d(true);
+  d.render = true;
+  d.run(1.5f);
+  uint64_t px = 0;
+  for (int i = 0; i < 60; ++i) {
+    d.step();
+    px += d.comp.stats().changedPx;
+  }
+  const double frac = px / (60.0 * 480 * 480);
+  TEST_ASSERT_TRUE_MESSAGE(frac < 0.45, "idle frames should touch less than half the glass");
+}
+
+void runOsTests() {
+  RUN_TEST(test_os_first_boot_birth_name_brain_hold);
+  RUN_TEST(test_os_boot_brain_step_opens_the_setup_portal_when_a_key_is_missing);
+  RUN_TEST(test_os_swipe_opens_the_orbit_and_back_is_one_level);
+  RUN_TEST(test_os_alarm_in_three_touches);
+  RUN_TEST(test_os_ask_claude_round_trip_runs_the_actions);
+  RUN_TEST(test_os_errors_say_what_to_do_and_local_rules_still_act);
+  RUN_TEST(test_os_no_ai_mode_keeps_working_on_the_device);
+  RUN_TEST(test_os_hold_the_glass_approves_a_claude_request);
+  RUN_TEST(test_os_timer_rings_and_stop_goes_home);
+  RUN_TEST(test_os_notes_settings_and_reminders_survive_a_restart);
+  RUN_TEST(test_frame_pipeline_equals_a_full_redraw);
+  RUN_TEST(test_frame_pipeline_touches_little_of_the_glass_when_idle);
+}

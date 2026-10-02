@@ -1,6 +1,7 @@
 #include "audio.h"
 
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 #include <math.h>
 
 #include "AlarmTone.h"
@@ -17,6 +18,29 @@ static constexpr uint32_t kRate = 16000;
 #endif
 
 static float level = 0;
+static int16_t* rec = nullptr;
+static size_t recN = 0;
+static bool recOn = false;
+static constexpr size_t kRecMax = 16000 * 8;
+
+void audioRecord(bool on) {
+#if SUFLET_MIC_INMP441
+  if (on) {
+    if (!rec) rec = (int16_t*)heap_caps_malloc(kRecMax * sizeof(int16_t), MALLOC_CAP_SPIRAM);
+    recN = 0;
+    recOn = rec != nullptr;
+  } else {
+    recOn = false;
+  }
+#else
+  (void)on;
+#endif
+}
+bool audioRecording() { return recOn; }
+const int16_t* audioTake(size_t& samples) {
+  samples = recOn ? 0 : recN;
+  return rec;
+}
 static constexpr float AlarmToneHz = suflet::AlarmTone::kToneHz;
 
 void audioInit() {
@@ -56,8 +80,12 @@ void audioTick(bool alarmOn) {
 #if SUFLET_MIC_INMP441
   if (i2sOk) {
     int32_t buf[256];
+    for (int chunk = 0; chunk < 12; ++chunk) {  // drain the DMA: ~1 frame of audio per call
     const size_t n = i2s.readBytes((char*)buf, sizeof buf) / sizeof(int32_t);
-    if (n) {
+    if (!n) break;
+    if (recOn)
+      for (size_t i = 0; i < n && recN < kRecMax; ++i) rec[recN++] = (int16_t)(buf[i] >> 16);
+    {
       double acc = 0;
       for (size_t i = 0; i < n; ++i) {
         const double s = (buf[i] >> 8) / 8388608.0;  // 24-bit sample -> -1..1
@@ -67,6 +95,7 @@ void audioTick(bool alarmOn) {
       const float db = 20.0f * log10f(rms);                      // dBFS
       const float target = constrain((db + 60.0f) / 40.0f, 0.0f, 1.0f);  // -60..-20 dBFS -> 0..1
       level += (target - level) * (target > level ? 0.5f : 0.1f);        // fast attack, slow release
+    }
     }
   }
 #endif

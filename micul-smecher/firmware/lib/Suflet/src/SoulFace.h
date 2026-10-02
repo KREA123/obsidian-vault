@@ -52,6 +52,7 @@ class SoulFace {
   // Draws the eyes and the rim rings; marks the canvas dirty where it drew.
   void render(Canvas& cv);
   bool ringsActive() const;  // a ring is lit: the whole rim is redrawn
+  Raster& raster() { return ren_.raster(); }
   const eyes::EyeRig& rig() const { return rig_; }
   eyes::EyeRig& rig() { return rig_; }
   float layoutK() const { return lay_[0]; }
@@ -70,6 +71,7 @@ class SoulFace {
   bool lastAlert_ = false;
   float lay_[3] = {1, 0, 0}, layV_[3] = {0, 0, 0}, layT_[3] = {1, 0, 0};
   float fListen_ = 0, fAlert_ = 0, fThink_ = 0, fFlash_ = 0, progress_ = 0;
+  Path ring_;
   Rgb flashCol_ = Rgb::hex(0xC9F2E4);
   float flashLeft_ = 0, t_ = 0, waitT_ = 0, talkNext_ = 0;
   Mode mode_ = Mode::Awake;

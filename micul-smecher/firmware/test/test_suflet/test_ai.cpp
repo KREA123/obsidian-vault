@@ -182,7 +182,7 @@ static void test_ai_openai_request_and_answers() {
 
 static void test_ai_relay_request_and_action_mapping() {
   AiConfig cfg;
-  cfg.mode = AiMode::Relay;
+  cfg.mode = AiMode::Cloud;
   cfg.relayUrl = "https://soul.example.eu/";
   cfg.relayToken = "tok";
   cfg.deviceId = "SOUL-A1B2";

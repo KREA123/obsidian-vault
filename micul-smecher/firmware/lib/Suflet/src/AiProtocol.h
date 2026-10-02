@@ -23,8 +23,8 @@
 
 namespace suflet {
 
-enum class AiMode : uint8_t { None, Claude, ChatGpt, Relay };
-const char* aiModeName(AiMode m);  // "none" | "claude" | "chatgpt" | "relay"
+enum class AiMode : uint8_t { None, Claude, ChatGpt, Cloud };  // Offline · your Claude key · your OpenAI key · SOUL Cloud
+const char* aiModeName(AiMode m);  // "none" | "claude" | "chatgpt" | "cloud"
 AiMode aiModeFrom(const char* s);
 
 enum class AiErr : uint8_t {

@@ -27,9 +27,9 @@ FONTS = os.path.join(HERE, "fonts")
 
 RO = "ăâîșțĂÂÎȘȚ"
 TRAY = "àáäéèêëíïóôöúüçčćñšß" + "ÀÁÄÉÈÊËÍÏÓÔÖÚÜÇČĆÑŠ"
-TYPO = "„”“’…–·°€£«»"
+TYPO = "„”“’…–·°€£«»‹›×•"
 FULL = "".join(chr(c) for c in range(0x20, 0x7F)) + RO + TRAY + TYPO
-DIGITS = "0123456789: "
+DIGITS = "0123456789:- "
 
 # name, file, pixel size, charset
 SIZES = [

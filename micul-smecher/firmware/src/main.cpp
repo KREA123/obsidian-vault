@@ -1,67 +1,64 @@
-// Micul Șmecher — firmware v0 for the Waveshare round dev boards: the
-// AMOLED-1.43 / 1.75 (size S) and the 2.8" IPS LCD-2.8C (size M).
+// SOUL firmware: SoulOS on the Waveshare round boards — the 2.8" IPS
+// LCD-2.8C ("SOUL M", the main target) and the AMOLED-1.43 / 1.75 (size S).
 //
-// Hardware in, Events out: touch + IMU + clock + the Claude desktop link
-// feed the portable "soul" (lib/Suflet); the Brain returns one Face per
-// frame, which we draw into a PSRAM framebuffer and push to the panel
-// (only the part that changed).
+// Two tasks:
+//   core 1  this loop: touch, IMU, the Claude Desktop link (BLE), the Brain,
+//           SoulOS and the frame (only what changed is drawn and pushed)
+//   core 0  the network task (src/net.cpp): Wi-Fi, the setup portal, NTP and
+//           the AI calls (HTTPS), plus the panel's bounce-buffer interrupt
+// The loop never waits on the network: questions are posted and answers polled.
 //
-// SoulOS v1 hook: a small Shell sees every touch first. A long press on the
-// face opens a note field (the round keyboard); serial 'A' opens the Rim-Dial
-// time picker to set an alarm; BOOT (GPIO0) goes back. Alarms are kept in
-// NVS and ring through the Brain, plus a beep pattern on the 2.8C's buzzer
-// (or an optional I2S amp); a touch or BOOT silences it.
-//
-// Serial (115200) commands, for filming and debugging — type '?' for help.
+// Serial (115200): '?' lists the commands (bring-up without a finger).
 #include <Arduino.h>
-#include <Arduino_GFX_Library.h>
 #include <Preferences.h>
 #include <SensorPCF85063.hpp>
 #include <SensorQMI8658.hpp>
 #include <Wire.h>
+#include <esp_heap_caps.h>
 #include <esp_mac.h>
+#include <esp_sleep.h>
+#include <esp_timer.h>
 
+#include "AiProtocol.h"
 #include "AlarmTone.h"
 #include "Alarms.h"
 #include "Brain.h"
 #include "ClaudeLink.h"
-#include "Face.h"
+#include "EyeRig.h"
+#include "Frame.h"
 #include "Geometry.h"
 #include "Gestures.h"
+#include "Os.h"
 #include "Personality.h"
-#include "Shell.h"
 #include "audio.h"
 #include "ble_link.h"
 #include "board.h"
+#include "net.h"
 #if defined(SUFLET_BOARD_LCD28)
 #include "board_lcd28.h"
+#else
+#include <Arduino_GFX_Library.h>
 #endif
-
 #if TOUCH_CST9217
 #include <touch/TouchDrvCST92xx.h>
 #endif
+
+#ifndef SUFLET_VOICE
+#define SUFLET_VOICE 0
+#endif
+#define FW_VERSION "1.0.0"
 
 using namespace suflet;
 
 // ------------------------------------------------------------------ state --
 
-// The one description of this panel every screen is laid out against.
 static const DisplayGeometry kGeom = DISPLAY_GEOMETRY;
 static_assert(LCD_W == DISPLAY_GEOMETRY.w && LCD_H == DISPLAY_GEOMETRY.h, "board.h size vs geometry");
 
-#if LCD_IS_RGB
-static Arduino_GFX* panel = nullptr;  // RGB panel: the framebuffer is scanned out continuously
-static float backlightNow = 0;        // 0..1, eased toward the target every frame
-#else
-static Arduino_DataBus* bus = nullptr;
-static Arduino_OLED* panel = nullptr;
-#endif
-static Arduino_Canvas* gcanvas = nullptr;  // owns the framebuffer, draws text
-static Canvas* cv = nullptr;               // our SDF renderer on the same buffer
-static uint16_t* pushBuf = nullptr;
-static Rect prevDirty;
-static bool displayIsOff = false;
-static uint8_t brightness = 0;
+static Canvas* cv = nullptr;
+static FrameComposer composer;
+static float backlightNow = 0;
+static bool displayOn = true;
 
 static SensorQMI8658 imu;
 static bool imuOk = false;
@@ -74,36 +71,40 @@ static bool touchOk = false;
 
 static Preferences prefs;
 static Brain* brain = nullptr;
+static Alarms alarms;
+static Os os(&alarms);
 static TouchGestures touch;
 static MotionDetector motion;
 static ClaudeLink claude;
-static Inputs in;
-static Alarms alarms;
-static Shell shell(&alarms);
 static AlarmTone alarmTone;
-static int shownAlarm = -1;
-static bool bootWasDown = true;  // wait for the first release after power-on
-static uint32_t bootDownMs = 0;
+static Inputs in;
 
-static uint32_t lastMs = 0, lastSaveMs = 0, lastStatusMs = 0;
+static uint32_t lastSaveMs = 0, lastStatusMs = 0, lastNetMs = 0, lastPerfMs = 0;
+static int64_t lastFrameUs = 0;
 static float imuAcc = 0;
+static bool rtcSynced = false;
+static uint32_t bornDay = 0, naps = 0, lastNtpSync = 0;
 static bool demo = false;
 static float demoT = 0;
 static int demoIdx = 0;
-static bool rtcSynced = false;
-static uint32_t bornDay = 0;  // days since epoch of the first boot with a valid clock
-static uint32_t naps = 0;
+static uint32_t offSinceMs = 0;
+static bool aiBusy = false;
+
+// perf (the debug overlay and the serial log)
+static double accFrameMs = 0, accRenderMs = 0, accPushMs = 0, accBusyMs = 0;
+static int accFrames = 0;
+static int64_t perfWallStartUs = 0;
 
 // ------------------------------------------------------------------- I2C ---
 
-static bool i2cWrite(uint8_t addr, uint8_t reg, uint8_t val) {
+[[maybe_unused]] static bool i2cWrite(uint8_t addr, uint8_t reg, uint8_t val) {
   Wire.beginTransmission(addr);
   Wire.write(reg);
   Wire.write(val);
   return Wire.endTransmission() == 0;
 }
 
-static bool i2cRead(uint8_t addr, uint8_t reg, uint8_t* buf, size_t n) {
+[[maybe_unused]] static bool i2cRead(uint8_t addr, uint8_t reg, uint8_t* buf, size_t n) {
   Wire.beginTransmission(addr);
   Wire.write(reg);
   if (Wire.endTransmission(false) != 0) return false;
@@ -113,21 +114,20 @@ static bool i2cRead(uint8_t addr, uint8_t reg, uint8_t* buf, size_t n) {
 }
 
 #if HAS_PMU
-// AXP2101 set-up, same register values as the xiaozhi-esp32 board support
-// for this board (MIT): 3.3 V rails, 4 s hold to power off, 400 mA charge.
+// AXP2101 set-up, same values as the xiaozhi-esp32 board support (MIT).
 static void pmuInit() {
-  i2cWrite(PMU_ADDR, 0x22, 0b110);                // PWRON > OFFLEVEL as power-off source
-  i2cWrite(PMU_ADDR, 0x27, 0x10);                 // hold 4 s to power off
-  i2cWrite(PMU_ADDR, 0x80, 0x01);                 // DCDC1 on
-  i2cWrite(PMU_ADDR, 0x90, 0x00);                 // LDOs off...
+  i2cWrite(PMU_ADDR, 0x22, 0b110);
+  i2cWrite(PMU_ADDR, 0x27, 0x10);
+  i2cWrite(PMU_ADDR, 0x80, 0x01);
+  i2cWrite(PMU_ADDR, 0x90, 0x00);
   i2cWrite(PMU_ADDR, 0x91, 0x00);
-  i2cWrite(PMU_ADDR, 0x82, (3300 - 1500) / 100);  // DCDC1 3.3 V
-  i2cWrite(PMU_ADDR, 0x92, (3300 - 500) / 100);   // ALDO1 3.3 V
-  i2cWrite(PMU_ADDR, 0x90, 0x01);                 // ...then ALDO1 on
-  i2cWrite(PMU_ADDR, 0x64, 0x02);                 // charge to 4.1 V (gentler on the cell)
-  i2cWrite(PMU_ADDR, 0x61, 0x02);                 // precharge 50 mA
-  i2cWrite(PMU_ADDR, 0x62, 0x08);                 // charge 200 mA (safe for 400-500 mAh)
-  i2cWrite(PMU_ADDR, 0x63, 0x01);                 // termination 25 mA
+  i2cWrite(PMU_ADDR, 0x82, (3300 - 1500) / 100);
+  i2cWrite(PMU_ADDR, 0x92, (3300 - 500) / 100);
+  i2cWrite(PMU_ADDR, 0x90, 0x01);
+  i2cWrite(PMU_ADDR, 0x64, 0x02);
+  i2cWrite(PMU_ADDR, 0x61, 0x02);
+  i2cWrite(PMU_ADDR, 0x62, 0x08);
+  i2cWrite(PMU_ADDR, 0x63, 0x01);
 }
 #endif
 
@@ -137,19 +137,66 @@ static void readBattery(int& pct, int& mv, bool& usb) {
   usb = false;
 #if HAS_PMU
   uint8_t v = 0;
-  if (i2cRead(PMU_ADDR, 0xA4, &v, 1) && v <= 100) pct = v;  // fuel gauge %
+  if (i2cRead(PMU_ADDR, 0xA4, &v, 1) && v <= 100) pct = v;
   uint8_t st = 0;
-  if (i2cRead(PMU_ADDR, 0x00, &st, 1)) usb = st & 0x20;     // VBUS good
+  if (i2cRead(PMU_ADDR, 0x00, &st, 1)) usb = st & 0x20;
 #elif BAT_ADC_PIN >= 0
   mv = analogReadMilliVolts(BAT_ADC_PIN) * 3;  // 200k/100k divider
 #if BAT_USB_SENSE
-  usb = mv > 4500;  // measures VCC: ~4.7 V on USB
+  usb = mv > 4500;
 #endif
-  // TODO(lcd28): on the 2.8C the divider sits on the cell behind the
-  // ETA6098 charger, so while charging this reads the charge voltage.
+  // The 2.8C divider sits on the cell behind the ETA6098 charger: while
+  // charging this reads the charge voltage (reads high). No VBUS sense.
   if (!usb) pct = constrain(map(mv, 3300, 4150, 0, 100), 0, 100);
 #endif
 }
+
+// --------------------------------------------------------------- display ---
+
+#if !LCD_IS_RGB
+// AMOLED (QSPI): our canvas in PSRAM, the changed rectangle pushed through Arduino_GFX.
+static Arduino_DataBus* bus = nullptr;
+static Arduino_OLED* panel = nullptr;
+static uint16_t* canvasBuf = nullptr;
+static uint16_t* pushBuf = nullptr;
+static void displayInit() {
+  bus = new Arduino_ESP32QSPI(LCD_CS, LCD_SCLK, LCD_D0, LCD_D1, LCD_D2, LCD_D3);
+#if defined(SUFLET_PANEL_SH8601)
+  panel = new Arduino_SH8601(bus, LCD_RST, 0, LCD_W, LCD_H);
+#else
+  panel = new Arduino_CO5300(bus, LCD_RST, 0, LCD_W, LCD_H, LCD_COL_OFFSET, 0, LCD_COL_OFFSET, 0);
+#endif
+  panel->begin(40000000);
+  panel->fillScreen(0);
+  panel->setBrightness(255);
+  canvasBuf = (uint16_t*)heap_caps_calloc(LCD_W * LCD_H, 2, MALLOC_CAP_SPIRAM);
+  pushBuf = (uint16_t*)heap_caps_malloc(LCD_W * LCD_H * 2, MALLOC_CAP_SPIRAM);
+  cv = new Canvas(LCD_W, LCD_H, canvasBuf);
+}
+static void displayPresent(Rect r) {
+  r.x0 &= ~1;  // CO5300 wants even start/size
+  r.y0 &= ~1;
+  r.x1 = min((r.x1 + 1) & ~1, LCD_W);
+  r.y1 = min((r.y1 + 1) & ~1, LCD_H);
+  if (r.empty()) return;
+  for (int y = r.y0; y < r.y1; ++y) memcpy(pushBuf + (y - r.y0) * r.w(), canvasBuf + y * LCD_W + r.x0, r.w() * 2);
+  panel->draw16bitRGBBitmap(r.x0, r.y0, pushBuf, r.w(), r.h());
+}
+static void backlight(float v) { panel->setBrightness((uint8_t)(v * 255)); }
+static void displayPower(bool on) {
+  if (on) panel->displayOn();
+  else panel->displayOff();
+}
+#else
+static void displayInit() {
+  lcd28::backlightInit();
+  if (!lcd28::displayInit()) Serial.println("[lcd] display init FAILED");
+  cv = new Canvas(LCD_W, LCD_H, lcd28::displayCanvas());
+}
+static void displayPresent(const Rect& r) { lcd28::displayPresent(r); }
+static void backlight(float v) { lcd28::backlight(v); }
+static void displayPower(bool on) { lcd28::displayPower(on); }
+#endif
 
 // ----------------------------------------------------------------- touch ---
 
@@ -176,7 +223,7 @@ static bool readTouch(float& x, float& y) {
 
 static void touchInit() {
 #if TOUCH_FT3168
-  touchOk = i2cWrite(TOUCH_ADDR, 0x00, 0x00);  // normal operating mode
+  touchOk = i2cWrite(TOUCH_ADDR, 0x00, 0x00);
 #elif TOUCH_CST9217
   touchDrv.setPins(TOUCH_RST, TOUCH_INT);
   touchOk = touchDrv.begin(Wire, TOUCH_ADDR, I2C_SDA, I2C_SCL);
@@ -186,198 +233,11 @@ static void touchInit() {
   Serial.printf("[touch] %s\n", touchOk ? "ok" : "NOT FOUND");
 }
 
-// --------------------------------------------------------------- display ---
-
-// Panel brightness 0..255 and power. AMOLED: the controller's brightness
-// register (black pixels are off anyway). IPS: the backlight is the only
-// way to get black, so "off" is backlight 0.
-[[maybe_unused]] static void panelBrightness(uint8_t b) {
-#if LCD_IS_RGB
-  lcd28::backlight(b / 255.0f);
-#else
-  panel->setBrightness(b);
-#endif
-}
-
-static void panelPower(bool on) {
-#if LCD_IS_RGB
-  if (!on) {
-    backlightNow = 0;
-    lcd28::backlight(0);
-  }  // on: the backlight fades in from renderFrame
-#else
-  if (on) panel->displayOn();
-  else panel->displayOff();
-#endif
-}
-
-static void displayInit() {
-#if LCD_IS_RGB
-  lcd28::backlightInit();  // dark until the first frame is in the framebuffer
-  panel = lcd28::displayCreate();
-  // Our Canvas renders into its own PSRAM buffer; pushRect copies the
-  // changed part into the panel's scanned-out framebuffer (no tearing from
-  // the clear-then-draw of a frame, the panel never shows half a frame of it).
-  gcanvas = new Arduino_Canvas(LCD_W, LCD_H, panel);
-  if (!lcd28::displayBegin(panel)) Serial.println("[lcd] RGB panel begin FAILED");
-  if (!gcanvas->begin(GFX_SKIP_OUTPUT_BEGIN)) Serial.println("[lcd] canvas FAILED");
-#else
-  bus = new Arduino_ESP32QSPI(LCD_CS, LCD_SCLK, LCD_D0, LCD_D1, LCD_D2, LCD_D3);
-#if defined(SUFLET_PANEL_SH8601)
-  panel = new Arduino_SH8601(bus, LCD_RST, 0, LCD_W, LCD_H);
-#else
-  panel = new Arduino_CO5300(bus, LCD_RST, 0, LCD_W, LCD_H, LCD_COL_OFFSET, 0, LCD_COL_OFFSET, 0);
-#endif
-  gcanvas = new Arduino_Canvas(LCD_W, LCD_H, panel);
-  if (!gcanvas->begin(40000000)) Serial.println("[lcd] begin FAILED");
-#endif
-  cv = new Canvas(LCD_W, LCD_H, gcanvas->getFramebuffer());
-  pushBuf = (uint16_t*)ps_malloc(LCD_W * LCD_H * sizeof(uint16_t));
-  cv->fill(pal::kBlack);
-  panel->fillScreen(0);
-  brightness = 255;
-#if !LCD_IS_RGB
-  panelBrightness(brightness);
-#endif
-  prevDirty = Rect{};
-}
-
-// Rotate a point of the logical picture into panel coordinates.
-static inline void rot(int x, int y, int& px, int& py) {
-#if SUFLET_ROTATION == 90
-  px = LCD_W - 1 - y;
-  py = x;
-#elif SUFLET_ROTATION == 180
-  px = LCD_W - 1 - x;
-  py = LCD_H - 1 - y;
-#elif SUFLET_ROTATION == 270
-  px = y;
-  py = LCD_H - 1 - x;
-#else
-  px = x;
-  py = y;
-#endif
-}
-
-// Push only the changed rectangle (CO5300 wants even start/size).
-static void pushRect(Rect r) {
-  r.x0 &= ~1;
-  r.y0 &= ~1;
-  r.x1 = (r.x1 + 1) & ~1;
-  r.y1 = (r.y1 + 1) & ~1;
-  if (r.x1 > LCD_W) r.x1 = LCD_W;
-  if (r.y1 > LCD_H) r.y1 = LCD_H;
-  if (r.empty()) return;
-  const uint16_t* fb = cv->data();
-  int ax, ay, bx, by;
-  rot(r.x0, r.y0, ax, ay);
-  rot(r.x1 - 1, r.y1 - 1, bx, by);
-  const int px0 = min(ax, bx), py0 = min(ay, by);
-  const int pw = abs(bx - ax) + 1, ph = abs(by - ay) + 1;
-  for (int y = r.y0; y < r.y1; ++y) {
-    for (int x = r.x0; x < r.x1; ++x) {
-      int px, py;
-      rot(x, y, px, py);
-      pushBuf[(py - py0) * pw + (px - px0)] = fb[y * LCD_W + x];
-    }
-  }
-  panel->draw16bitRGBBitmap(px0, py0, pushBuf, pw, ph);
-}
-
-// `y` is in design pixels (466 px disc), scaled to this panel.
-static void drawCentered(const char* s, int y, int size, uint16_t color) {
-  y = kGeom.si(y);
-  const int w = (int)strlen(s) * 6 * size;
-  gcanvas->setTextSize(size);
-  gcanvas->setTextColor(color);
-  gcanvas->setCursor((LCD_W - w) / 2, y);
-  gcanvas->print(s);
-  cv->markDirty(Rect{(LCD_W - w) / 2 - 2, y - 2, (LCD_W + w) / 2 + 2, y + 8 * size + 2});
-}
-
-#if LCD_IS_RGB
-// IPS has no true black: the backlight shines through "black" pixels. So
-// the backlight follows the face: full while awake, dimmer at night, and
-// fully off while the eyes are closed (asleep) — the face's closed lids are
-// not worth a glowing grey disc on the nightstand.
-static void updateBacklight(float dt, float hour) {
-  float target = 1.0f;
-  if (brain->mode() == Mode::Asleep || brain->displayOff()) target = 0.0f;
-  else if (hour >= 22.0f || hour < 7.0f) target = 0.35f;
-  if (shell.screen() != Screen::Face) target = fmaxf(target, 0.6f);  // typing needs light
-  if (alarmTone.ringing()) target = 1.0f;
-  const float rate = target > backlightNow ? 3.0f : 1.2f;  // ~0.3 s up, ~0.8 s down
-  const float d = target - backlightNow;
-  backlightNow += fabsf(d) < rate * dt ? d : (d > 0 ? rate * dt : -rate * dt);
-  lcd28::backlight(backlightNow);
-}
-#endif
-
-static void renderFrame() {
-  if (brain->displayOff()) {
-    if (!displayIsOff) {
-      panelPower(false);
-      displayIsOff = true;
-    }
-    return;
-  }
-  if (displayIsOff) {
-    panelPower(true);
-    displayIsOff = false;
-    prevDirty = Rect{0, 0, LCD_W, LCD_H};
-  }
-#if !LCD_IS_RGB
-  const uint8_t want = brain->mode() == Mode::Asleep ? 110 : 255;
-  if (want != brightness) {
-    brightness = want;
-    panelBrightness(brightness);
-  }
-#endif
-  // prevDirty is what the face and text drew last frame: clear it. The
-  // Shell's screen is a persistent layer: it redraws only when it changed or
-  // when that clear wiped part of it, and before the face (eyes on top).
-  cv->fillRect(prevDirty, pal::kBlack);
-  cv->resetDirty();
-  shell.render(*cv, prevDirty);
-  const Rect uiDirty = cv->dirty();
-  cv->resetDirty();
-  Face face = brain->face();
-  shell.adjustFace(face);
-  renderFace(*cv, face, shell.faceLayout());
-
-  // text overlays: BLE passkey while pairing, the Claude request while pending
-  const uint32_t pk = blePasskey();
-  if (shell.screen() != Screen::Face) {
-    // the keyboard / time picker own the screen: no text overlays
-  } else if (pk) {
-    char buf[8];
-    snprintf(buf, sizeof buf, "%06lu", (unsigned long)pk);
-    drawCentered(buf, 60, 5, RGB565(255, 240, 200));
-  } else if (brain->claudePrompt()) {
-    char tool[24], hint[34];
-    snprintf(tool, sizeof tool, "%.20s?", claude.promptTool().c_str());
-    snprintf(hint, sizeof hint, "%.30s", claude.promptHint().c_str());
-    drawCentered(tool, 70, 3, RGB565(255, 196, 110));
-    drawCentered(hint, 356, 2, RGB565(200, 205, 215));
-    drawCentered("hold = yes   2x tap = no", 392, 1, RGB565(140, 145, 155));
-  }
-
-  Rect r = cv->dirty();
-  const Rect dyn = r;
-  r.add(prevDirty);
-  r.add(uiDirty);
-  pushRect(r);
-  prevDirty = dyn;
-}
-
 // ----------------------------------------------------------------- clock ---
 
-static bool clockValid() {
-  if (!rtcOk) return false;
-  return rtc.getDateTime().getYear() >= 2025;
-}
+static bool clockValid() { return rtcOk && rtc.getDateTime().getYear() >= 2025; }
 
-static uint32_t localEpoch() {  // RTC keeps local time
+static uint32_t localEpoch() {  // the RTC keeps local time
   if (!clockValid()) return 0;
   RTC_DateTime d = rtc.getDateTime();
   struct tm t = {};
@@ -387,7 +247,10 @@ static uint32_t localEpoch() {  // RTC keeps local time
   t.tm_hour = d.getHour();
   t.tm_min = d.getMinute();
   t.tm_sec = d.getSecond();
-  return (uint32_t)mktime(&t);  // TZ is UTC on the device, so this is "local seconds"
+  setenv("TZ", "UTC0", 1);  // mktime on a UTC process = our "local seconds"
+  tzset();
+  const uint32_t v = (uint32_t)mktime(&t);
+  return v;
 }
 
 static void setClockLocal(uint32_t localSecs) {
@@ -398,9 +261,8 @@ static void setClockLocal(uint32_t localSecs) {
   rtc.setDateTime(t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
 }
 
-// localEpoch() reads the RTC over I2C; the UI wants it every frame, so keep
-// a copy and refresh it once a second.
-static uint32_t localNowCached() {
+// The RTC over I2C once a second; millis() in between.
+static uint32_t localNow() {
   static uint32_t base = 0, baseMs = 0;
   const uint32_t ms = millis();
   if (!base || ms - baseMs >= 1000) {
@@ -412,13 +274,13 @@ static uint32_t localNowCached() {
 }
 
 static float hourNow() {
-  if (!clockValid()) return claude.localHour();
-  RTC_DateTime d = rtc.getDateTime();
-  return d.getHour() + d.getMinute() / 60.0f;
+  const uint32_t n = localNow();
+  if (!n) return claude.localHour();
+  return (n % 86400) / 3600.0f;
 }
 
 static void updateCalendar() {
-  const uint32_t now = localEpoch();
+  const uint32_t now = localNow();
   if (!now) return;
   const uint32_t day = now / 86400;
   if (!bornDay) {
@@ -429,18 +291,10 @@ static void updateCalendar() {
   struct tm tb, tn;
   gmtime_r(&b, &tb);
   gmtime_r(&n, &tn);
-  const bool birthday = day != bornDay && tb.tm_mon == tn.tm_mon && tb.tm_mday == tn.tm_mday;
-  brain->setDay((int32_t)day, birthday);
+  brain->setDay((int32_t)day, day != bornDay && tb.tm_mon == tn.tm_mon && tb.tm_mday == tn.tm_mday);
 }
 
 // ----------------------------------------------------------- persistence ---
-
-static void saveMemory() {
-  prefs.putBytes("mem", &brain->memory(), sizeof(Memory));
-  const uint32_t now = localEpoch();
-  if (now) prefs.putUInt("seen", now);
-  prefs.putUInt("naps", naps);
-}
 
 static void saveAlarms() {
   uint8_t buf[Alarms::kMaxBlob];
@@ -448,68 +302,68 @@ static void saveAlarms() {
   if (n) prefs.putBytes("alarms", buf, n);
 }
 
-static void loadAlarms() {
+static void saveSettings() {
+  uint8_t buf[sizeof(OsSettings)];
+  const size_t n = os.saveSettings(buf, sizeof buf);
+  if (n) prefs.putBytes("os", buf, n);
+}
+
+static void saveMemory() {
+  prefs.putBytes("mem", &brain->memory(), sizeof(Memory));
+  const uint32_t now = localNow();
+  if (now) prefs.putUInt("seen", now);
+  prefs.putUInt("naps", naps);
+}
+
+static void loadAll() {
   uint8_t buf[Alarms::kMaxBlob];
-  const size_t n = prefs.getBytes("alarms", buf, sizeof buf);
+  size_t n = prefs.getBytes("alarms", buf, sizeof buf);
   if (n && !alarms.deserialize(buf, n)) Serial.println("[alarms] stored data unreadable, ignored");
-  Serial.printf("[alarms] %d loaded\n", alarms.count());
-}
-
-static void listAlarms() {
-  const uint32_t now = localNowCached();
-  for (int i = 0; i < alarms.count(); ++i) {
-    const Alarm& a = alarms.at(i);
-    const uint32_t nf = now ? Alarms::nextFire(a, now) : 0;
-    Serial.printf("  %d  %02u:%02u  days %02X  %s  '%s'  next in %lu min\n", i, a.hour, a.minute, a.days,
-                  a.enabled ? "on " : "off", a.label, nf ? (unsigned long)((nf - now + 59) / 60) : 0UL);
-  }
-  if (!alarms.count()) Serial.println("  no alarms");
-}
-
-static void loadMemory() {
+  uint8_t sb[sizeof(OsSettings)];
+  n = prefs.getBytes("os", sb, sizeof sb);
+  if (n && !os.loadSettings(sb, n)) Serial.println("[os] settings from an older version, defaults used");
+  os.loadNotes(prefs.getString("notes", "").c_str());
+  os.loadReminders(prefs.getString("rems", "").c_str());
   Memory m;
   if (prefs.getBytes("mem", &m, sizeof m) == sizeof m) brain->memory() = m;
   bornDay = prefs.getUInt("born", 0);
   naps = prefs.getUInt("naps", 0);
-  const uint32_t seen = prefs.getUInt("seen", 0), now = localEpoch();
-  if (seen && now > seen) brain->setAbsence((now - seen) / 3600.0f);
+  Serial.printf("[store] %d alarms, %d notes, %d reminders\n", alarms.count(), (int)os.notes().size(),
+                (int)os.reminders().size());
 }
 
 // ---------------------------------------------------------------- serial ---
 
 static void help() {
   Serial.println(
-      "Micul Smecher v0 - serial commands:\n"
-      "  b boop   l laugh  s shy     p purr on/off d dizzy   f scared  c confused\n"
-      "  y yawn   n sneeze h hiccup  v love     r birthday m missed-you o lonely\n"
-      "  k startle g good-night w wake  z sleep  D demo loop on/off\n"
-      "  i imu raw  t time  T<epoch_local> set clock  P personality  U unpair  ? help\n"
-      "  SoulOS: N note field  A alarm time picker  L list alarms  X delete alarms  (BOOT = back)");
+      "SOUL " FW_VERSION " serial commands:\n"
+      "  F   perf overlay on/off      p   perf line now        i  IMU raw   t  time\n"
+      "  T<local epoch>  set clock    P   personality + design U  unpair Claude\n"
+      "  W   Wi-Fi setup portal       w   stop the portal      B  re-run first boot\n"
+      "  e<name>  play an expression (e.g. elaugh)              D  demo loop on/off\n"
+      "  a<text>  ask the AI (like typing on the glass)         h  home    ?  help");
+}
+
+static std::string readLine() {
+  std::string s;
+  const uint32_t t0 = millis();
+  while (millis() - t0 < 200) {
+    while (Serial.available()) {
+      const int c = Serial.read();
+      if (c == '\n' || c == '\r') return s;
+      s += (char)c;
+    }
+    delay(1);
+  }
+  return s;
 }
 
 static void serialCommands() {
   while (Serial.available()) {
     const int c = Serial.read();
     switch (c) {
-      case 'b': brain->trigger(Reaction::Boop); break;
-      case 'l': brain->trigger(Reaction::Laugh); break;
-      case 's': brain->trigger(Reaction::Shy); break;
-      case 'p': brain->event(brain->reaction() == Reaction::Purr ? Ev::StrokeEnd : Ev::StrokeStart); break;
-      case 'd': brain->trigger(Reaction::Dizzy); break;
-      case 'f': brain->trigger(Reaction::Scared); break;
-      case 'c': brain->trigger(Reaction::Confused); break;
-      case 'y': brain->trigger(Reaction::Yawn); break;
-      case 'n': brain->trigger(Reaction::Sneeze); break;
-      case 'h': brain->trigger(Reaction::Hiccup); break;
-      case 'v': brain->trigger(Reaction::Love); break;
-      case 'r': brain->trigger(Reaction::Birthday); break;
-      case 'm': brain->trigger(Reaction::MissedYou); break;
-      case 'o': brain->trigger(Reaction::Lonely); break;
-      case 'k': brain->trigger(Reaction::Startle); break;
-      case 'g': brain->event(Ev::FaceDown); break;
-      case 'w': brain->event(Ev::PickUp); break;
-      case 'z': brain->trigger(Reaction::GoodNight); break;
-      case 'D': demo = !demo; Serial.printf("demo %s\n", demo ? "on" : "off"); break;
+      case 'F': os.settings().debug = !os.settings().debug; break;
+      case 'p': lastPerfMs = 0; break;
       case 'i': {
         float x = 0, y = 0, z = 0;
         if (imuOk) imu.getAccelerometer(x, y, z);
@@ -517,8 +371,8 @@ static void serialCommands() {
         break;
       }
       case 't':
-        Serial.printf("clock %s, hour %.2f, mode %s, reaction %s\n", clockValid() ? "ok" : "unset",
-                      hourNow(), modeName(brain->mode()), reactionName(brain->reaction()));
+        Serial.printf("clock %s, hour %.2f, mode %s, view %s\n", clockValid() ? "ok" : "unset", hourNow(),
+                      modeName(brain->mode()), viewName(os.view()));
         break;
       case 'T': {
         const uint32_t v = Serial.parseInt();
@@ -531,20 +385,29 @@ static void serialCommands() {
       }
       case 'P': {
         const Personality& p = brain->personality();
-        Serial.printf("I am '%s' - eyes %s (%s), shy %.2f, curious %.2f, sleepy %.2f, boops %lu\n",
-                      p.archetypeRo(), p.tintName(), p.rarityName(), p.shyness, p.curiosity,
-                      p.sleepiness, (unsigned long)brain->memory().boopsTotal);
+        const eyes::Design& d = eyes::kDesigns[os.face().design()];
+        Serial.printf("'%s' - design #%03d %s (%s); shy %.2f, curious %.2f, sleepy %.2f\n", os.settings().name, d.num,
+                      d.name, eyes::kRarityName[(int)d.rarity], p.shyness, p.curiosity, p.sleepiness);
         break;
       }
       case 'U': bleClearBonds(); break;
-      case 'N': shell.openNote(); break;
-      case 'A': shell.openTimePicker(((int)hourNow() + 1) % 24, 0); break;  // the next whole hour
-      case 'L': listAlarms(); break;
-      case 'X':
-        alarms.clear();
-        saveAlarms();
-        Serial.println("alarms deleted");
+      case 'W': netStartPortal(); break;
+      case 'w': netStopPortal(); break;
+      case 'B': os.restartBoot(); break;
+      case 'h': os.home(); break;
+      case 'D': demo = !demo; break;
+      case 'e': {
+        const std::string name = readLine();
+        const int e = eyes::exprByName(name.c_str());
+        if (e >= 0) os.face().react(e, 2.4f);
+        else Serial.println("unknown expression");
         break;
+      }
+      case 'a': {
+        const std::string q = readLine();
+        if (!q.empty()) os.ask(q);
+        break;
+      }
       case '?': help(); break;
       default: break;
     }
@@ -552,82 +415,178 @@ static void serialCommands() {
 }
 
 static void demoTick(float dt) {
-  static const Reaction kLoop[] = {Reaction::Boop,    Reaction::Laugh,    Reaction::Shy,
-                                   Reaction::Dizzy,   Reaction::Sneeze,   Reaction::Love,
-                                   Reaction::Confused, Reaction::Hiccup,  Reaction::Birthday,
-                                   Reaction::Yawn,    Reaction::MissedYou};
   demoT += dt;
-  if (demoT > 5.0f) {
+  if (demoT > 4.0f) {
     demoT = 0;
-    brain->trigger(kLoop[demoIdx++ % (sizeof(kLoop) / sizeof(kLoop[0]))]);
+    os.face().react(demoIdx++ % eyes::X_Count, 2.2f);
   }
+}
+
+// ------------------------------------------------------------------ power ---
+
+// Deep sleep only when it is useless to be awake: night, the screen off
+// (face down or asleep long enough), no Claude session. Wakes on the side
+// button, a touch (GT911 INT, if it idles high) or a timer a minute before
+// the next alarm / at 07:00.
+static void maybeDeepSleep(uint32_t nowMs) {
+  const float hour = hourNow();
+  const bool night = hour >= 0 && (hour >= 23.0f || hour < 6.0f);
+  if (!os.settings().nightOff || !night || brain->mode() != Mode::Off || bleConnected() || os.ringing()) {
+    offSinceMs = 0;
+    return;
+  }
+  if (!offSinceMs) offSinceMs = nowMs;
+  if (nowMs - offSinceMs < 10u * 60u * 1000u) return;
+  const uint32_t now = localNow();
+  uint32_t wakeIn = 6 * 3600;
+  uint32_t when = 0;
+  if (now && alarms.next(now, when) >= 0 && when > now + 120) wakeIn = min<uint32_t>(wakeIn, when - now - 60);
+  if (now) {
+    const uint32_t seven = (now / 86400) * 86400 + 7 * 3600 + (hour >= 7 ? 86400 : 0);
+    if (seven > now) wakeIn = min<uint32_t>(wakeIn, seven - now);
+  }
+  Serial.printf("[power] deep sleep for %lu s (night, screen off)\n", (unsigned long)wakeIn);
+  saveMemory();
+  saveAlarms();
+  backlight(0);
+  displayPower(false);
+  esp_sleep_enable_timer_wakeup((uint64_t)wakeIn * 1000000ULL);
+  uint64_t mask = 1ULL << BOOT_BUTTON;
+#if TOUCH_INT >= 0
+  if (digitalRead(TOUCH_INT) == HIGH) mask |= 1ULL << TOUCH_INT;  // only if the line idles high
+#endif
+  esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW);
+  Serial.flush();
+  esp_deep_sleep_start();
 }
 
 // ------------------------------------------------------------ setup/loop ---
 
 void setup() {
   Serial.begin(115200);
-  delay(200);
+  delay(150);
   Wire.begin(I2C_SDA, I2C_SCL, 400000);
 #if HAS_PMU
   pmuInit();
 #endif
 #if defined(SUFLET_BOARD_LCD28)
-  // The expander holds the LCD and touch resets, the LCD chip select and the buzzer.
   if (!lcd28::exioInit()) Serial.println("[exio] TCA9554 NOT FOUND (display/touch will fail)");
 #endif
   displayInit();
   touchInit();
   audioInit();
-  shell.setGeometry(kGeom);
-  Serial.printf("[board] %s %dx%d, disc %.1f mm, key pitch %.1f mm\n", BOARD_NAME, kGeom.w, kGeom.h,
-                kGeom.activeMm, kGeom.mm(kGeom.s(44)));
-
   imuOk = imu.begin(Wire, IMU_ADDR, I2C_SDA, I2C_SCL);
   if (imuOk) {
-    imu.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, SensorQMI8658::ACC_ODR_125Hz,
-                            SensorQMI8658::LPF_MODE_0);
+    imu.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, SensorQMI8658::ACC_ODR_125Hz, SensorQMI8658::LPF_MODE_0);
     imu.enableAccelerometer();
   }
   rtcOk = rtc.begin(Wire, I2C_SDA, I2C_SCL);
-  Serial.printf("[imu] %s  [rtc] %s\n", imuOk ? "ok" : "NOT FOUND", rtcOk ? "ok" : "NOT FOUND");
+  Serial.printf("[board] %s %dx%d  [imu] %s  [rtc] %s  psram %u KB free\n", BOARD_NAME, kGeom.w, kGeom.h,
+                imuOk ? "ok" : "NOT FOUND", rtcOk ? "ok" : "NOT FOUND",
+                (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024));
 
-  // Birth: the chip's unique MAC is the seed of its personality.
+  // Birth: the chip's 48-bit eFuse MAC rolls the eye design (eyes.js rollFromChipId)
+  // and seeds the personality. A given unit is always the same SOUL.
   uint8_t mac[6];
   esp_efuse_mac_get_default(mac);
   uint64_t seed = 0;
   for (int i = 0; i < 6; ++i) seed = (seed << 8) | mac[i];
+  const eyes::RollResult roll = eyes::rollFromMac(mac);
+  BirthInfo birth;
+  birth.design = roll.design;
+  char chip[24];
+  snprintf(chip, sizeof chip, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  birth.chip = chip;
+  birth.seed = eyes::hashStr(eyes::kDesigns[roll.design].id) ^ 0x5eed;
+  Serial.printf("[soul] chip %s: design #%03d %s (%s, 1 in %.0f)\n", chip, eyes::kDesigns[roll.design].num,
+                eyes::kDesigns[roll.design].name, eyes::kRarityName[(int)roll.rarity], 1.0 / roll.odds);
+
   brain = new Brain(Personality::fromSeed(seed));
+  brain->sleepAfterS = 300;      // always-on eyes: doze after 5 min of stillness by day
+  brain->nightSleepAfterS = 90;  // sooner at night
   prefs.begin("suflet", false);
-  loadMemory();
-  loadAlarms();
+  loadAll();
+  const uint32_t seen = prefs.getUInt("seen", 0), now = localEpoch();
+  if (seen && now > seen) brain->setAbsence((now - seen) / 3600.0f);
   updateCalendar();
   brain->boot();
+
+  os.setVoiceAvailable(SUFLET_VOICE && audioHasMic());
+  os.begin(kGeom, birth);
+  composer.setCanvas(cv);
+  touch.setMode(TouchMode::Text);
 
   char name[32];
   snprintf(name, sizeof name, "Claude-Suflet-%02X%02X", mac[4], mac[5]);
   claude.setName(name);
   bleInit(name);
+  char ap[16];
+  snprintf(ap, sizeof ap, "SOUL-%02X%02X", mac[4], mac[5]);
+  char devId[16];
+  snprintf(devId, sizeof devId, "SOUL-%02X%02X%02X", mac[3], mac[4], mac[5]);
+  netBegin(ap, devId);
+  netSetMode(os.aiMode());
 
   pinMode(BOOT_BUTTON, INPUT_PULLUP);
-  if (digitalRead(BOOT_BUTTON) == LOW) demo = true;  // hold BOOT at power-on = demo loop
-
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED && digitalRead(BOOT_BUTTON) == LOW) demo = true;
   help();
-  const Personality& p = brain->personality();
-  Serial.printf("[soul] %s, eyes %s (%s)\n", p.archetypeRo(), p.tintName(), p.rarityName());
-  lastMs = lastSaveMs = lastStatusMs = millis();
+  lastSaveMs = lastStatusMs = millis();
+  lastFrameUs = esp_timer_get_time();
+  perfWallStartUs = lastFrameUs;
+}
+
+static void handleCmds() {
+  OsCmd c;
+  while (os.popCmd(c)) {
+    switch (c) {
+      case OsCmd::SaveSettings:
+        saveSettings();
+        netSetMode(os.aiMode());
+        break;
+      case OsCmd::SaveAlarms: saveAlarms(); break;
+      case OsCmd::SaveNotes: prefs.putString("notes", os.saveNotes().c_str()); break;
+      case OsCmd::SaveReminders: prefs.putString("rems", os.saveReminders().c_str()); break;
+      case OsCmd::StartPortal: netStartPortal(); break;
+      case OsCmd::StopPortal: netStopPortal(); break;
+      case OsCmd::ForgetWifi: netForgetWifi(); break;
+      case OsCmd::SetKey:
+        netSetKey(os.aiMode(), os.pendingKey());
+        os.clearPendingKey();
+        break;
+      case OsCmd::ForgetKeys: netForgetKeys(); break;
+      case OsCmd::ClaudeApprove: claude.decide(true); break;
+      case OsCmd::ClaudeDeny: claude.decide(false); break;
+      case OsCmd::VoiceStart: audioRecord(true); break;
+      case OsCmd::VoiceStop: {
+        audioRecord(false);
+        size_t n = 0;
+        const int16_t* pcm = audioTake(n);
+        if (n < 16000 / 3 || !netTranscribe(pcm, n, os.ro())) os.voiceText("", AiErr::None);
+        break;
+      }
+      case OsCmd::Restart: ESP.restart(); break;
+      case OsCmd::FactoryReset:
+        prefs.clear();
+        ESP.restart();
+        break;
+      default: break;
+    }
+  }
 }
 
 void loop() {
-  const uint32_t now = millis();
-  float dt = (now - lastMs) / 1000.0f;
-  lastMs = now;
-  if (dt > 0.5f) dt = 0.5f;
+  const int64_t frameStartUs = esp_timer_get_time();
+  float dt = (frameStartUs - lastFrameUs) / 1e6f;
+  lastFrameUs = frameStartUs;
+  if (dt > 0.25f) dt = 0.25f;
+  const uint32_t nowMs = millis();
 
-  // touch
+  // touch -> SoulOS (raw stream; SoulOS recognises taps, holds, swipes, petting)
   float tx = 0, ty = 0;
   const bool down = readTouch(tx, ty);
   touch.update(down, tx, ty, dt);
+  TouchEv te;
+  while (touch.poll(te)) os.touch(te);
 
   // IMU at ~100 Hz
   imuAcc += dt;
@@ -640,8 +599,13 @@ void loop() {
     }
   }
   if (imuAcc > 0.05f) imuAcc = 0;
+  Ev e;
+  while (motion.poll(e)) os.motion(e);
 
-  // Claude desktop link
+  // the side button: back (hold = home); it also silences a ringing alarm
+  os.button(digitalRead(BOOT_BUTTON) == LOW);
+
+  // Claude Desktop (Hardware Buddy over BLE)
   uint8_t chunk[128];
   size_t n = 0;
   while (bleAvailable() && n < sizeof chunk) chunk[n++] = (uint8_t)bleRead();
@@ -649,56 +613,73 @@ void loop() {
   claude.setTransportConnected(bleConnected());
   claude.tick(dt);
   if (claude.unpairRequested()) bleClearBonds();
+  while (claude.poll(e)) brain->event(e);
+  {
+    ClaudeInfo ci;
+    ci.linked = claude.alive();
+    ci.busy = claude.busy();
+    ci.prompt = claude.hasPrompt();
+    ci.tool = claude.promptTool();
+    ci.hint = claude.promptHint();
+    ci.msg = claude.msg();
+    ci.bleName = claude.deviceName();
+    ci.passkey = blePasskey();
+    ci.secure = bleSecure();
+    ci.approvals = claude.approvals();
+    ci.denials = claude.denials();
+    os.setClaude(ci);
+  }
+
+  // the clock: Claude Desktop or NTP set the RTC (which keeps local time)
   if (claude.timeValid() && !rtcSynced) {
     setClockLocal((uint32_t)(claude.epochNow() + claude.tzOffset()));
     rtcSynced = true;
     updateCalendar();
   }
-
-  // a ringing alarm: the first touch or the BOOT button only silences it
-  if (alarmTone.ringing() && (down || digitalRead(BOOT_BUTTON) == LOW)) {
-    alarmTone.stop();
-    Serial.println("[alarm] silenced");
-  }
-
-  // BOOT button (GPIO0): back / cancel on SoulOS screens
-  const bool bootDown = digitalRead(BOOT_BUTTON) == LOW;
-  if (bootDown && !bootWasDown) bootDownMs = now;
-  if (!bootDown && bootWasDown && now - bootDownMs < 1500 && shell.screen() != Screen::Face) shell.back();
-  bootWasDown = bootDown;
-
-  // touches go to the Shell first; what it doesn't use reaches the Brain
-  shell.holdOpensNote = !brain->claudePrompt();
-  Ev e;
-  TouchEv te;
-  while (touch.poll(te))
-    if (!shell.event(te)) brain->event(te.e);
-  touch.setMode(shell.wantsTextTouch() ? TouchMode::Text : TouchMode::Face);
-  const uint32_t localNow = localNowCached();
-  shell.update(dt, localNow);
-  while (shell.poll(e)) {
-    if (e == Ev::TextCommit && !shell.notes().empty())
-      Serial.printf("[note] %s\n", shell.notes().back().c_str());
-    brain->event(e);
-  }
-  if (shell.lastAlarm() != shownAlarm) {
-    shownAlarm = shell.lastAlarm();
-    saveAlarms();
-    listAlarms();
-  }
-  if (localNow) {
-    const int due = alarms.poll(localNow);
-    if (due >= 0) {
-      Serial.printf("[alarm] %02u:%02u '%s' rings\n", alarms.at(due).hour, alarms.at(due).minute,
-                    alarms.at(due).label);
-      brain->event(Ev::AlarmDue);
-      alarmTone.start();
-      saveAlarms();  // lastFired / one-shot off survive a reboot
+  if (nowMs - lastNetMs > 500) {
+    lastNetMs = nowMs;
+    os.setNet(netInfo());
+    const uint32_t ntp = netLocalTime();
+    if (ntp && (!lastNtpSync || nowMs - lastNtpSync > 3600000u)) {
+      const uint32_t rtcNow = localEpoch();
+      if (!rtcNow || (rtcNow > ntp ? rtcNow - ntp : ntp - rtcNow) > 2) setClockLocal(ntp);
+      lastNtpSync = nowMs;
+      updateCalendar();
+    }
+    std::string nm;
+    if (netPollPortalSettings(nm)) {
+      snprintf(os.settings().name, sizeof os.settings().name, "%s", nm.c_str());
+      saveSettings();
     }
   }
-  while (motion.poll(e)) brain->event(e);
-  while (claude.poll(e)) brain->event(e);
+  const uint32_t local = localNow();
+  os.setClock(local);
 
+  // the AI: questions go to the network task, answers come back here
+  AiJob job;
+  if (!aiBusy && os.popAiJob(job)) aiBusy = netAsk(job);
+  AiOutcome out;
+  if (netPollAnswer(out)) {
+    aiBusy = false;
+    os.aiResult(out);
+  }
+  std::string heard;
+  AiErr verr;
+  if (netPollVoice(heard, verr)) os.voiceText(heard, verr);
+
+  // alarms (SoulOS shows the ringing screen; the tone plays here)
+  if (local) {
+    const int due = alarms.poll(local);
+    if (due >= 0) {
+      Serial.printf("[alarm] %02u:%02u '%s'\n", alarms.at(due).hour, alarms.at(due).minute, alarms.at(due).label);
+      os.alarmDue(due);
+      saveAlarms();
+    }
+  }
+  if (os.ringing() && !alarmTone.ringing()) alarmTone.start();
+  if (os.silenceRequested() || (!os.ringing() && alarmTone.ringing())) alarmTone.stop();
+
+  // the Brain and SoulOS
   in.tiltX = motion.tiltX();
   in.tiltY = motion.tiltY();
   in.stillFor = touch.isDown() ? 0.0f : motion.stillFor();
@@ -708,49 +689,101 @@ void loop() {
   in.hour = hourNow();
   if (audioHasMic()) in.audioLevel = audioLevel();
   if (demo) demoTick(dt);
+  os.update(dt, *brain);
   const Mode before = brain->mode();
   brain->update(dt, in);
   if (before != Mode::Asleep && brain->mode() == Mode::Asleep) ++naps;
-
   Cue c;
   while (brain->popCue(c)) {
     if (c == Cue::ClaudeApprove) claude.decide(true);
     if (c == Cue::ClaudeDeny) claude.decide(false);
-    // v0 dev boards have no haptic motor; cues are logged for the sound/haptic pass
   }
   std::string line;
   while (claude.popOutgoing(line)) bleWrite((const uint8_t*)line.data(), line.size());
+  handleCmds();
 
-  if (now - lastStatusMs > 2000) {
-    lastStatusMs = now;
+  if (nowMs - lastStatusMs > 2000) {
+    lastStatusMs = nowMs;
     int pct, mv;
     bool usb;
     readBattery(pct, mv, usb);
+    PowerInfo pw;
+    pw.batPct = pct;
+    pw.charging = usb;
+    os.setPower(pw);
     claude.status.batPct = pct;
     claude.status.batMv = mv;
     claude.status.usb = usb;
     claude.status.secure = bleSecure();
-    claude.status.uptimeS = now / 1000;
+    claude.status.uptimeS = nowMs / 1000;
     claude.status.heap = ESP.getFreeHeap();
     claude.status.naps = naps;
   }
 
+  // backlight: eases toward what SoulOS wants (~0.25 s up, ~0.8 s down)
+  const float target = os.backlight(in.hour, *brain);
+  const float rate = target > backlightNow ? 4.0f : 1.2f;
+  const float d = target - backlightNow;
+  backlightNow += fabsf(d) < rate * dt ? d : (d > 0 ? rate * dt : -rate * dt);
+  backlight(backlightNow);
+
+  // the frame: only what changed is drawn and pushed
+  const bool wantOn = brain->mode() != Mode::Off || os.ringing();
+  if (wantOn != displayOn) {
+    displayOn = wantOn;
+    displayPower(wantOn);
+    if (wantOn) composer.invalidateAll();
+  }
+  const int64_t r0 = esp_timer_get_time();
+  int64_t r1 = r0, r2 = r0;
+  if (displayOn) {
+    const Rect changed = composer.compose(os);
+    r1 = esp_timer_get_time();
+    displayPresent(changed);
+    r2 = esp_timer_get_time();
+  }
   audioTick(alarmTone.update(dt));
-#if LCD_IS_RGB
-  updateBacklight(dt, in.hour);
-#endif
-  renderFrame();
   serialCommands();
 
-  if (now - lastSaveMs > 60000) {
-    lastSaveMs = now;
+  if (nowMs - lastSaveMs > 60000) {
+    lastSaveMs = nowMs;
     saveMemory();
     updateCalendar();
   }
+  maybeDeepSleep(nowMs);
 
-  // frame pacing: 30 fps awake, fewer when asleep (saves battery)
-  const float fps = shell.screen() != Screen::Face ? 30.0f : brain->frameRateHint();  // typing stays snappy
-  const uint32_t frameMs = (uint32_t)(1000.0f / fps);
-  const uint32_t spent = millis() - now;
-  if (spent < frameMs) delay(frameMs - spent);
+  // perf: frame time, CPU share of this loop, memory
+  const int64_t endUs = esp_timer_get_time();
+  accFrameMs += (endUs - frameStartUs) / 1000.0;
+  accRenderMs += (r1 - r0) / 1000.0;
+  accPushMs += (r2 - r1) / 1000.0;
+  accBusyMs += (endUs - frameStartUs) / 1000.0;
+  ++accFrames;
+  if (nowMs - lastPerfMs > 5000) {
+    const double wallMs = (endUs - perfWallStartUs) / 1000.0;
+    os.perf.fps = (float)(accFrames * 1000.0 / wallMs);
+    os.perf.frameMs = (float)(accFrameMs / accFrames);
+    os.perf.renderMs = (float)(accRenderMs / accFrames);
+    os.perf.pushMs = (float)(accPushMs / accFrames);
+    os.perf.cpu = (float)(accBusyMs / wallMs);
+    os.perf.heapKb = (uint32_t)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024);
+    os.perf.psramKb = (uint32_t)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024);
+    Serial.printf("[perf] %.1f fps (asked %.0f), frame %.1f ms (draw %.1f, push %.1f), loop cpu %.0f%%, view %s, "
+                  "mode %s, heap %u K (min %u K), psram %u K\n",
+                  os.perf.fps, os.fpsHint(*brain), os.perf.frameMs, os.perf.renderMs, os.perf.pushMs, os.perf.cpu * 100,
+                  viewName(os.view()), modeName(brain->mode()), (unsigned)os.perf.heapKb,
+                  (unsigned)(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL) / 1024), (unsigned)os.perf.psramKb);
+    lastPerfMs = nowMs;
+    accFrameMs = accRenderMs = accPushMs = accBusyMs = 0;
+    accFrames = 0;
+    perfWallStartUs = endUs;
+  }
+
+  // pacing: 30 fps when something moves, 24 calm, 10-15 dozing, 4 with the screen off.
+  // The idle task runs WFI between frames (the CPU sleeps; the panel keeps scanning).
+  float fps = os.fpsHint(*brain);
+  if (!displayOn) fps = 4;
+  const int64_t frameUs = (int64_t)(1e6f / (fps < 1 ? 1 : fps));
+  const int64_t spent = esp_timer_get_time() - frameStartUs;
+  if (spent < frameUs) vTaskDelay(pdMS_TO_TICKS((frameUs - spent) / 1000 ? (frameUs - spent) / 1000 : 1));
 }

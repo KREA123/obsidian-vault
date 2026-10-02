@@ -1,0 +1,9 @@
+{
+  "name": "Suflet",
+  "version": "1.0.0",
+  "description": "SOUL's hardware-free core: the eyes engine, SoulOS, the Brain, the AI protocol",
+  "build": {
+    "flags": "-Wall -Wextra"
+  },
+  "platforms": "*"
+}

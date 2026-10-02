@@ -495,7 +495,8 @@ void Brain::update(float dt, const Inputs& in) {
   modeT_ += dt;
   switch (mode_) {
     case Mode::Awake: {
-      const float sleepAfter = night() ? 12.0f : p_.sleepAfterSeconds();
+      const float sleepAfter = night() ? (nightSleepAfterS > 0 ? nightSleepAfterS : 12.0f)
+                                       : (sleepAfterS > 0 ? sleepAfterS : p_.sleepAfterSeconds());
       if (cur_ == Reaction::None && queued_ == Reaction::None && in.stillFor > sleepAfter &&
           t_ - lastInteractT_ > sleepAfter) {
         mode_ = Mode::Drowsy;

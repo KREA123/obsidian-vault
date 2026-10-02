@@ -1,0 +1,1321 @@
+// SoulOS on the device: state, navigation, gestures, AI, persistence.
+// Drawing lives in OsDraw.cpp.
+#include "Os.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+namespace suflet {
+
+using namespace eyes;
+
+static const Rgb kAmber = Rgb::hex(0xFFB347), kMint = Rgb::hex(0xC9F2E4), kRose = Rgb::hex(0xFF8FAB);
+
+enum KbCtx : int { KbTalk = 1, KbNote, KbNoteEdit, KbName, KbKey, KbAlarmLabel };
+
+// item ids: 1.. per screen; rows use 100 + index
+enum : int {
+  IdNext = 1,
+  IdType,
+  IdNew,
+  IdSnooze,
+  IdStop,
+  IdPause,
+  IdDelete,
+  IdSetup,
+  IdStopSetup,
+  IdForget,
+  IdName,
+  IdLater,
+  IdCenter,
+  IdRow = 100,
+};
+
+static constexpr float kFadeS = 0.18f;  // screens fade in, well inside the 250 ms budget
+
+static const View kApps[] = {View::Talk, View::Alarms, View::Timer, View::Notes, View::Today, View::Claude, View::Settings};
+int Os::appCount() { return (int)(sizeof(kApps) / sizeof(kApps[0])); }
+View Os::appView(int i) { return kApps[((i % appCount()) + appCount()) % appCount()]; }
+
+const char* viewName(View v) {
+  static const char* const k[] = {"boot",  "home",   "launcher", "today",    "talk",   "answer", "alarms",
+                                  "dial",  "ringing", "timer",   "notes",    "note",   "claude", "settings",
+                                  "aimode", "wifi",  "mysoul",   "about",    "keyboard"};
+  static_assert(sizeof(k) / sizeof(k[0]) == (unsigned)View::Count, "view names");
+  return (unsigned)v < (unsigned)View::Count ? k[(int)v] : "?";
+}
+
+void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
+  g_ = g;
+  birth_ = b;
+  kb_.setGeometry(g);
+  tp_.setGeometry(g);
+  face_.begin(g.w, g.h);
+  face_.setSeed(b.seed);
+  face_.setDesign(b.design, true);
+  if (!set_.booted) {
+    view_ = View::Boot;
+    bootStep_ = BootStep::Birth;
+    face_.hide();
+    face_.react(kDesigns[b.design].rarity >= eyes::Rarity::Epic ? X_excited : X_hello, 2.0f);
+  } else {
+    view_ = View::Home;
+    face_.react(X_wake);
+  }
+  face_.snapLayout(layoutFor(view_));
+  invalidate();
+}
+
+// ------------------------------------------------------------- layout ---
+
+FaceLayoutT Os::layoutFor(View v) const {
+  FaceLayoutT l;
+  switch (v) {
+    case View::Boot:
+      if (bootStep_ == BootStep::Name || bootStep_ == BootStep::Brain) l = {0.3f, 0, -0.33f};
+      else l = {0.62f, 0, -0.08f};
+      break;
+    case View::Home: l = {1, 0, 0}; break;
+    case View::Launcher: l = {0.46f, 0, -0.21f}; break;
+    case View::Today: l = {0.25f, 0, -0.35f}; break;
+    case View::Talk: l = {0.62f, 0, -0.11f}; break;
+    case View::Answer: l = {0.42f, 0, -0.26f}; break;
+    case View::Ringing: l = {0.44f, 0, -0.2f}; break;
+    case View::Dial: l = {0.19f, 0, -0.268f}; break;
+    case View::Keyboard: l = {0.2f, 0, -0.414f}; break;
+    case View::MySoul: l = {0.5f, 0, -0.12f}; break;
+    case View::Timer: l = {0.28f, 0, -0.34f}; break;
+    default: l = {0.3f, 0, -0.33f}; break;
+  }
+  return l;
+}
+
+// ----------------------------------------------------------- navigation ---
+
+void Os::go(View v) {
+  if (v == view_) return;
+  if (view_ == View::Keyboard && v != View::Keyboard) kb_.close();
+  if (view_ == View::Dial && v != View::Dial) tp_.close();
+  view_ = v;
+  viewT_ = 0;
+  fade_ = 0;
+  page_ = 0;
+  holdItem_ = -1;
+  invalidate();
+}
+
+void Os::home() {
+  if (view_ == View::Boot) return;
+  if (view_ == View::Ringing) return;  // a ringing alarm needs Stop / Snooze
+  go(View::Home);
+}
+
+void Os::back() {
+  switch (view_) {
+    case View::Boot:
+      bootPrev();
+      return;
+    case View::Keyboard: {
+      // the draft is kept (the keyboard remembers it until the next open)
+      kb_.cancel();
+      KbResult r;
+      kb_.poll(r);
+      go(kbReturn_);
+      return;
+    }
+    case View::Dial:
+      tp_.cancel();
+      go(View::Alarms);
+      return;
+    case View::NoteView: go(View::Notes); return;
+    case View::AiMode:
+    case View::Wifi:
+    case View::MySoul:
+    case View::About: go(View::Settings); return;
+    case View::Answer:
+      go(answerReturn_ == View::Answer ? View::Home : answerReturn_);
+      return;
+    case View::Ringing: return;
+    case View::Home: return;
+    default: go(View::Home); return;
+  }
+}
+
+void Os::restartBoot() {
+  set_.booted = 0;
+  bootStep_ = BootStep::Birth;
+  go(View::Boot);
+  face_.hide();
+  face_.react(X_hello);
+  pushCmd(OsCmd::SaveSettings);
+}
+
+void Os::bootNext() {
+  switch (bootStep_) {
+    case BootStep::Birth: bootStep_ = BootStep::Name; break;
+    case BootStep::Name: bootStep_ = BootStep::Brain; break;
+    case BootStep::Brain: bootStep_ = BootStep::Hold; break;
+    case BootStep::Hold:
+    case BootStep::Done:
+      bootStep_ = BootStep::Done;
+      set_.booted = 1;
+      if (!set_.born && now_) set_.born = now_;
+      pushCmd(OsCmd::SaveSettings);
+      if (net_.portal) pushCmd(OsCmd::StopPortal);
+      view_ = View::Boot;  // force the change below
+      go(View::Home);
+      face_.react(X_happy, 1.6f);
+      toast(tr("Hi! I'm ", "Bună! Sunt ") + set_.name, kMint);
+      return;
+  }
+  viewT_ = 0;
+  fade_ = 0;
+  invalidate();
+}
+
+void Os::bootPrev() {
+  if (bootStep_ == BootStep::Birth) return;
+  bootStep_ = (BootStep)((int)bootStep_ - 1);
+  viewT_ = 0;
+  fade_ = 0;
+  invalidate();
+}
+
+void Os::toast(const std::string& text, Rgb color, float seconds) {
+  toast_ = text;
+  toastColor_ = color;
+  toastLeft_ = seconds;
+  invalidate();
+}
+
+void Os::pushCmd(OsCmd c) {
+  if (cmdCount_ == 16) return;
+  cmds_[(cmdHead_ + cmdCount_) % 16] = c;
+  ++cmdCount_;
+}
+
+bool Os::popCmd(OsCmd& c) {
+  if (!cmdCount_) return false;
+  c = cmds_[cmdHead_];
+  cmdHead_ = (cmdHead_ + 1) % 16;
+  --cmdCount_;
+  return true;
+}
+
+bool Os::popAiJob(AiJob& j) {
+  if (jobs_.empty()) return false;
+  j = jobs_.front();
+  jobs_.erase(jobs_.begin());
+  return true;
+}
+
+void Os::clearPendingKey() {
+  // overwrite before freeing: the key should not linger in RAM
+  for (char& c : pendingKey_) c = 0;
+  pendingKey_.clear();
+}
+
+// ---------------------------------------------------------------- inputs ---
+
+void Os::setNet(const NetInfo& n) {
+  const bool was = net_.connected;
+  const bool changed = n.connected != net_.connected || n.portal != net_.portal || n.ssid != net_.ssid ||
+                       n.connecting != net_.connecting || n.keyClaude != net_.keyClaude ||
+                       n.keyOpenai != net_.keyOpenai || n.relay != net_.relay;
+  net_ = n;
+  if (changed) invalidate();
+  if (netKnown_ && !was && n.connected && set_.booted) toast(tr("Wi-Fi connected", "Wi-Fi conectat"), kMint, 2.0f);
+  netKnown_ = true;
+}
+
+void Os::setClaude(const ClaudeInfo& c) {
+  const bool changed = c.linked != claude_.linked || c.busy != claude_.busy || c.prompt != claude_.prompt ||
+                       c.passkey != claude_.passkey || c.tool != claude_.tool || c.hint != claude_.hint ||
+                       c.msg != claude_.msg;
+  claude_ = c;
+  if (changed) invalidate();
+}
+
+void Os::button(bool down) {
+  if (down && !buttonDown_) {
+    buttonDown_ = true;
+    buttonT_ = 0;
+    if (ringing()) silence_ = true;
+    return;
+  }
+  if (!down && buttonDown_) {
+    buttonDown_ = false;
+    if (view_ == View::Ringing) {  // the side button stops a ringing alarm
+      if (ringingAlarm_ >= 0 && alarms_) alarms_->dismiss(ringingAlarm_);
+      ringingAlarm_ = -1;
+      timerRinging_ = false;
+      pushCmd(OsCmd::SaveAlarms);
+      go(View::Home);
+      return;
+    }
+    if (view_ == View::Boot) {  // during first boot the button skips a step
+      bootNext();
+      return;
+    }
+    if (buttonT_ > 1.5f) home();
+    else back();
+  }
+}
+
+void Os::motion(Ev e) {
+  switch (e) {
+    case Ev::PickUp:  // wake + the eyes look at you
+      lookUntil_ = t_ + 1.5f;
+      lookX_ = 0;
+      lookY_ = -0.15f;
+      break;
+    case Ev::Shake:  // dismisses an answer or a toast (dizzy is the Brain's)
+      if (view_ == View::Answer && !thinking_) back();
+      toastLeft_ = 0;
+      break;
+    case Ev::FaceDown:  // face down on a ringing alarm = snooze
+      if (view_ == View::Ringing && ringingAlarm_ >= 0 && alarms_) {
+        alarms_->snooze(ringingAlarm_, now_);
+        ringingAlarm_ = -1;
+        pushCmd(OsCmd::SaveAlarms);
+        silence_ = true;
+        go(View::Home);
+      }
+      break;
+    default: break;
+  }
+  brainEvents_.push_back(e);
+}
+
+void Os::touch(const TouchEv& e) {
+  // the keyboard and the dial take the raw stream
+  if (view_ == View::Keyboard) {
+    kb_.touch(e);
+    // pulling the text field down closes it (the web: drag the field down)
+    if (e.e == Ev::TouchDown) {
+      dx0_ = e.x;
+      dy0_ = e.y;
+      downT_ = t_;
+      down_ = true;
+    } else if (e.e == Ev::TouchUp) {
+      down_ = false;
+      if (dy0_ < g_.s(130) && e.y - dy0_ > g_.s(90) && fabsf(e.x - dx0_) < g_.s(60) && t_ - downT_ < 0.6f) back();
+    }
+    setDirtyFromKeyboard();
+    return;
+  }
+  if (view_ == View::Dial) {
+    if (e.e == Ev::TouchDown) {
+      dx0_ = e.x;
+      dy0_ = e.y;
+      downT_ = t_;
+    }
+    tp_.touch(e);
+    if (tp_.changed()) invalidate();
+    return;
+  }
+  const float x = e.x, y = e.y;
+  switch (e.e) {
+    case Ev::TouchDown:
+      down_ = true;
+      holding_ = stroking_ = false;
+      dx0_ = dx_ = x;
+      dy0_ = dy_ = y;
+      downT_ = t_;
+      lookUntil_ = t_ + 2.2f;  // every touch: the eyes glance at the finger
+      lookX_ = (x / g_.w - 0.5f) * 2.4f;
+      lookY_ = (y / g_.h - 0.5f) * 2.4f;
+      break;
+    case Ev::TouchMove: {
+      if (!down_) break;
+      dx_ = x;
+      dy_ = y;
+      lookUntil_ = t_ + 2.2f;
+      lookX_ = (x / g_.w - 0.5f) * 2.4f;
+      lookY_ = (y / g_.h - 0.5f) * 2.4f;
+      const float dist = hypotf(x - dx0_, y - dy0_);
+      if (view_ == View::Launcher) {
+        orbitDrag_ = (x - dx0_) / g_.s(140);
+        invalidate();
+      }
+      // a slow, long touch that moves = petting (the Brain purrs), on the face only
+      if (view_ == View::Home && !holding_ && !stroking_ && dist > g_.s(45) && t_ - downT_ > 0.45f) {
+        stroking_ = true;
+        brainEvents_.push_back(Ev::StrokeStart);
+      }
+      break;
+    }
+    case Ev::HoldStart:
+      if (!down_ || stroking_) break;
+      holding_ = true;
+      onHoldStart(x, y);
+      break;
+    case Ev::TouchUp: {
+      if (!down_) break;
+      down_ = false;
+      const float dur = t_ - downT_;
+      const float ddx = x - dx0_, ddy = y - dy0_, dist = hypotf(ddx, ddy);
+      if (view_ == View::Launcher && fabsf(orbitDrag_) > 0.001f) {
+        orbitDrag_ = 0;
+        invalidate();
+      }
+      if (holding_) {
+        holding_ = false;
+        onHoldEnd();
+        break;
+      }
+      if (stroking_) {
+        stroking_ = false;
+        brainEvents_.push_back(Ev::StrokeEnd);
+        break;
+      }
+      if (dist > g_.s(55) && dur < 0.7f) {
+        if (fabsf(ddx) > fabsf(ddy)) onSwipe(ddx < 0 ? 0 : 1);
+        else onSwipe(ddy < 0 ? 2 : 3);
+        break;
+      }
+      if (dist < g_.s(24) && dur < 0.45f) {
+        if (t_ - lastTapT_ < 0.38f && hypotf(x - lastTapX_, y - lastTapY_) < g_.s(50)) {
+          lastTapT_ = -10;
+          onDoubleTap(x, y);
+        } else {
+          lastTapT_ = t_;
+          lastTapX_ = x;
+          lastTapY_ = y;
+          onTap(x, y);
+        }
+      }
+      break;
+    }
+    default: break;
+  }
+}
+
+void Os::setDirtyFromKeyboard() {
+  if (kb_.changed()) invalidate(kb_.bounds());
+}
+
+static bool claudeHoldView(View v) {
+  return v == View::Home || v == View::Today || v == View::Claude || v == View::Launcher || v == View::Talk;
+}
+
+void Os::onHoldStart(float x, float y) {
+  if (claude_.prompt && claudeHoldView(view_)) {  // hold the glass = approve (1.2 s, mint arc)
+    brainHold_ = true;
+    brainEvents_.push_back(Ev::HoldStart);
+    return;
+  }
+  switch (view_) {
+    case View::Boot:
+      if (bootStep_ == BootStep::Hold) {
+        listening_ = true;
+        invalidate();
+      }
+      return;
+    case View::Home:
+    case View::Talk:
+      if (aiMode() == AiMode::None && view_ == View::Home) {  // no AI: holding the stone = purr
+        brainHold_ = true;
+        brainEvents_.push_back(Ev::HoldStart);
+        return;
+      }
+      listening_ = true;  // hold = talk (voice when a mic is fitted, else the keyboard after)
+      if (voice_) {
+        voiceFrom_ = view_;
+        pushCmd(OsCmd::VoiceStart);
+      }
+      invalidate();
+      return;
+    case View::Notes:  // on Notes, hold = dictate a note (kept on the device, no AI round trip)
+      if (voice_) {
+        listening_ = true;
+        voiceFrom_ = view_;
+        pushCmd(OsCmd::VoiceStart);
+        invalidate();
+        return;
+      }
+      {
+        const int id = hitItem(x, y);
+        if (id >= 0) {
+          holdItem_ = id;
+          holdItemT_ = 0;
+          invalidate();
+        }
+      }
+      return;
+    case View::Alarms:
+    case View::NoteView:
+    case View::Wifi:
+    case View::AiMode:
+    case View::Settings: {
+      const int id = hitItem(x, y);
+      if (id >= 0) {
+        holdItem_ = id;
+        holdItemT_ = 0;
+        invalidate();
+      }
+      return;
+    }
+    default: return;
+  }
+}
+
+void Os::onHoldEnd() {
+  if (brainHold_) {
+    brainHold_ = false;
+    brainEvents_.push_back(Ev::HoldEnd);
+    return;
+  }
+  if (listening_) {
+    listening_ = false;
+    invalidate();
+    if (view_ == View::Boot && bootStep_ == BootStep::Hold) {
+      face_.react(X_approve);
+      bootNext();
+      return;
+    }
+    // No microphone on this build: after "hold the glass", the round keyboard
+    // takes the question (voice uses the same path when SUFLET_VOICE is on).
+    if (voice_) {
+      pushCmd(OsCmd::VoiceStop);
+      voiceWait_ = true;
+      thinking_ = false;
+      return;
+    }
+    openKeyboard(KbTalk);
+    return;
+  }
+  holdItem_ = -1;
+  invalidate();
+}
+
+void Os::onSwipe(int dir) {
+  switch (view_) {
+    case View::Boot:
+      if (dir == 3) bootPrev();
+      else if (dir == 0 && bootStep_ == BootStep::Birth) bootNext();
+      return;
+    case View::Home:
+      if (dir == 0 || dir == 1) {
+        go(View::Launcher);
+        face_.react(X_happy, 0.8f);
+      } else if (dir == 2) {
+        go(View::Today);
+      }
+      return;
+    case View::Launcher:
+      if (dir == 0) orbit_ = (orbit_ + 1) % appCount();
+      else if (dir == 1) orbit_ = (orbit_ + appCount() - 1) % appCount();
+      else if (dir == 3) back();
+      else if (dir == 2) go(View::Today);
+      invalidate();
+      return;
+    case View::Alarms:
+    case View::Notes:
+    case View::Settings:
+      if (dir == 2) {  // swipe up: the next page
+        ++page_;
+        invalidate();
+        return;
+      }
+      if (dir == 3 || dir == 1) back();
+      return;
+    case View::Ringing: return;
+    default:
+      if (dir == 3 || dir == 1) back();
+      return;
+  }
+}
+
+void Os::onDoubleTap(float x, float y) {
+  if (claude_.prompt && claudeHoldView(view_)) {  // 2x = deny
+    brainEvents_.push_back(Ev::DoubleTap);
+    return;
+  }
+  if (view_ == View::Home) {
+    brainEvents_.push_back(Ev::DoubleTap);
+    return;
+  }
+  onTap(x, y);  // elsewhere a double tap is two taps
+}
+
+void Os::onTap(float x, float y) {
+  if (claude_.prompt && claudeHoldView(view_) && view_ != View::Talk) return;  // on a Claude request a single tap does nothing
+  if (toastLeft_ > 0 && y < g_.s(70)) {
+    toastLeft_ = 0;
+    invalidate();
+    return;
+  }
+  switch (view_) {
+    case View::Home: brainEvents_.push_back(Ev::Tap); return;
+    case View::Answer:
+      if (!thinking_) back();
+      return;
+    case View::Boot:
+      if (bootStep_ == BootStep::Birth) {
+        bootNext();
+        return;
+      }
+      break;
+    default: break;
+  }
+  const int id = hitItem(x, y);
+  if (id >= 0) activate(id);
+}
+
+// ---------------------------------------------------------- the actions ---
+
+void Os::activate(int id) {
+  invalidate();
+  switch (view_) {
+    case View::Boot:
+      if (bootStep_ == BootStep::Name) {
+        if (id == IdType) {
+          openKeyboard(KbName);
+          return;
+        }
+        if (id >= IdRow) {
+          buildItems(items_);
+          for (const Item& it : items_)
+            if (it.id == id) snprintf(set_.name, sizeof set_.name, "%s", it.label.c_str());
+          face_.react(X_happy, 1.2f);
+          bootNext();
+        }
+      } else if (bootStep_ == BootStep::Brain) {
+        if (id >= IdRow && id < IdRow + 4) {
+          static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::None};
+          set_.ai = (uint8_t)kModes[id - IdRow];
+          pushCmd(OsCmd::SaveSettings);
+          const bool needs = (aiMode() == AiMode::Claude && !net_.keyClaude) ||
+                             (aiMode() == AiMode::ChatGpt && !net_.keyOpenai) ||
+                             (aiMode() == AiMode::Cloud && !net_.relay) ||
+                             (aiMode() != AiMode::None && !net_.configured);
+          if (needs && !net_.portal) pushCmd(OsCmd::StartPortal);
+          face_.react(aiMode() == AiMode::None ? X_smug : X_excited, 1.2f);
+        } else if (id == IdNext || id == IdLater) {
+          bootNext();
+        }
+      }
+      return;
+    case View::Launcher:
+      if (id == IdCenter) {
+        go(appView(orbit_));
+        if (appView(orbit_) == View::Talk) face_.react(X_happy, 0.8f);
+      } else if (id == IdRow) {
+        orbit_ = (orbit_ + appCount() - 1) % appCount();
+      } else if (id == IdRow + 1) {
+        orbit_ = (orbit_ + 1) % appCount();
+      }
+      return;
+    case View::Talk:
+      if (id == IdType) openKeyboard(KbTalk);
+      return;
+    case View::Alarms:
+      if (id == IdNew) {
+        if (alarms_ && alarms_->count() >= Alarms::kMax) {
+          toast(tr("16 alarms is the limit", "Maximum 16 alarme"), kAmber);
+          return;
+        }
+        const int h = now_ ? (localclock::hour(now_) + 1) % 24 : 7;
+        tp_.setLang(ro() ? Lang::Ro : Lang::En);
+        tp_.setNow(now_);
+        tp_.open(alarms_ && alarms_->count() == 0 ? 7 : h, 0);
+        go(View::Dial);
+      } else if (id >= IdRow && alarms_) {
+        const int i = id - IdRow;
+        if (i < alarms_->count()) {
+          Alarm& a = alarms_->at(i);
+          a.enabled = !a.enabled;
+          a.snoozeUntil = 0;
+          pushCmd(OsCmd::SaveAlarms);
+          face_.react(a.enabled ? X_approve : X_bored, a.enabled ? 0 : 1.0f);
+        }
+      }
+      return;
+    case View::Ringing:
+      if (id == IdSnooze && ringingAlarm_ >= 0 && alarms_) {
+        alarms_->snooze(ringingAlarm_, now_);
+        toast(tr("Snoozed 5 min", "Amânată 5 min"), kAmber);
+      } else if (id == IdStop) {
+        if (ringingAlarm_ >= 0 && alarms_) alarms_->dismiss(ringingAlarm_);
+        face_.react(X_happy, 1.2f);
+      } else {
+        return;
+      }
+      ringingAlarm_ = -1;
+      timerRinging_ = false;
+      silence_ = true;
+      pushCmd(OsCmd::SaveAlarms);
+      go(View::Home);
+      return;
+    case View::Timer:
+      if (id >= IdRow) {
+        static const int kMin[] = {1, 3, 5, 10, 25};
+        const int m = kMin[(id - IdRow) % 5];
+        startTimer(m * 60, m == 25);
+      } else if (id == IdPause) {
+        timerPaused_ = !timerPaused_;
+      } else if (id == IdStop) {
+        stopTimer();
+      }
+      return;
+    case View::Notes:
+      if (id == IdNew) {
+        openKeyboard(KbNote);
+      } else if (id >= IdRow) {
+        noteSel_ = id - IdRow;
+        go(View::NoteView);
+      }
+      return;
+    case View::NoteView:
+      if (id == IdType && noteSel_ >= 0 && noteSel_ < (int)notes_.size()) openKeyboard(KbNoteEdit, notes_[noteSel_].text);
+      return;
+    case View::Settings:
+      switch (id) {
+        case IdRow + 0:
+          set_.bright = (uint8_t)((set_.bright + 1) % 4);
+          break;
+        case IdRow + 1: go(View::AiMode); return;
+        case IdRow + 2: go(View::Wifi); return;
+        case IdRow + 3:
+          set_.lang = set_.lang ? 0 : 1;
+          break;
+        case IdRow + 4: go(View::MySoul); return;
+        case IdRow + 5:
+          set_.largeText = !set_.largeText;
+          break;
+        case IdRow + 6: go(View::About); return;
+        case IdRow + 7:
+          set_.debug = !set_.debug;
+          break;
+        case IdRow + 8:
+          set_.nightOff = !set_.nightOff;
+          break;
+        default: return;
+      }
+      pushCmd(OsCmd::SaveSettings);
+      return;
+    case View::AiMode:
+      if (id >= IdRow && id < IdRow + 4) {
+        static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::None};
+        set_.ai = (uint8_t)kModes[id - IdRow];
+        pushCmd(OsCmd::SaveSettings);
+        history_.clear();
+        face_.react(aiMode() == AiMode::None ? X_smug : X_excited, 1.2f);
+        const bool needs = (aiMode() == AiMode::Claude && !net_.keyClaude) ||
+                           (aiMode() == AiMode::ChatGpt && !net_.keyOpenai) || (aiMode() == AiMode::Cloud && !net_.relay);
+        if (needs) {
+          toast(tr("Add it on your phone: Wi-Fi setup", "Pune-o din telefon: Wi-Fi"), kAmber, 3);
+          if (!net_.portal) pushCmd(OsCmd::StartPortal);
+          go(View::Wifi);
+        }
+      } else if (id == IdForget) {
+        pushCmd(OsCmd::ForgetKeys);
+        toast(tr("Keys forgotten", "Cheile au fost uitate"), kAmber);
+      }
+      return;
+    case View::Wifi:
+      if (id == IdSetup) pushCmd(OsCmd::StartPortal);
+      else if (id == IdStopSetup) pushCmd(OsCmd::StopPortal);
+      else if (id == IdType) openKeyboard(KbKey);
+      return;
+    case View::MySoul:
+      if (id == IdName) openKeyboard(KbName, set_.name);
+      return;
+    default: return;
+  }
+}
+
+void Os::openKeyboard(int ctx, const std::string& initial) {
+  KbConfig c;
+  c.uiLang = ro() ? Lang::Ro : Lang::En;
+  c.action = ctx == KbTalk ? KbAction::Send : KbAction::Save;
+  c.maxChars = ctx == KbNote || ctx == KbNoteEdit ? 300 : ctx == KbName ? 16 : ctx == KbKey ? 220 : 280;
+  switch (ctx) {
+    case KbTalk:
+      c.placeholder = ro() ? "Întreabă ceva…" : "Ask something…";
+      c.chips[0] = ro() ? "Trezește-mă la 7" : "Wake me at 7";
+      c.chips[1] = ro() ? "Minutar 10 min" : "Timer 10 min";
+      c.chips[2] = ro() ? "Ce vreme e?" : "Tell me a joke";
+      break;
+    case KbNote:
+    case KbNoteEdit:
+      c.placeholder = ro() ? "Notiță nouă…" : "New note…";
+      c.chips[0] = ro() ? "Cumpără lapte" : "Buy milk";
+      c.chips[1] = ro() ? "Idee:" : "Idea:";
+      c.chips[2] = ro() ? "Sună-o pe mama" : "Call mom";
+      break;
+    case KbName:
+      c.placeholder = ro() ? "Numele meu…" : "My name…";
+      break;
+    case KbKey:
+      c.placeholder = aiMode() == AiMode::ChatGpt ? "sk-…" : "sk-ant-…";
+      break;
+    default: break;
+  }
+  if (ro()) c.undoLabel = "\xE2\x86\xB6 Anulează";
+  kbCtx_ = ctx;
+  kbReturn_ = view_ == View::Keyboard ? kbReturn_ : view_;
+  kb_.open(c, initial);
+  view_ = View::Keyboard;
+  viewT_ = 0;
+  fade_ = 0;
+  invalidate();
+}
+
+void Os::kbCommit(const std::string& text) {
+  const int ctx = kbCtx_;
+  view_ = kbReturn_;
+  viewT_ = 0;
+  fade_ = 0;
+  invalidate();
+  switch (ctx) {
+    case KbTalk:
+      if (!text.empty()) ask(text);
+      break;
+    case KbNote:
+      if (!text.empty()) {
+        addNote(text);
+        face_.react(X_approve);
+        toast(tr("Note saved", "Notiță salvată"), kMint);
+      }
+      break;
+    case KbNoteEdit:
+      if (noteSel_ >= 0 && noteSel_ < (int)notes_.size()) {
+        if (text.empty()) notes_.erase(notes_.begin() + noteSel_);
+        else notes_[noteSel_].text = text;
+        pushCmd(OsCmd::SaveNotes);
+        view_ = View::Notes;
+      }
+      break;
+    case KbName:
+      if (!text.empty()) {
+        snprintf(set_.name, sizeof set_.name, "%s", text.c_str());
+        pushCmd(OsCmd::SaveSettings);
+        face_.react(X_happy, 1.2f);
+        if (view_ == View::Boot && bootStep_ == BootStep::Name) bootNext();
+      }
+      break;
+    case KbKey:
+      if (keyLooksValid(aiMode(), text)) {
+        pendingKey_ = text;
+        pushCmd(OsCmd::SetKey);
+        toast(tr("Key saved on this SOUL", "Cheie salvată pe SOUL"), kMint);
+        face_.react(X_approve);
+      } else {
+        toast(tr("That doesn't look like a key", "Nu pare o cheie"), kAmber);
+        face_.react(X_confused, 1.4f);
+      }
+      break;
+    default: break;
+  }
+}
+
+// ------------------------------------------------------------------- AI ---
+
+AiContext Os::context() const {
+  AiContext c;
+  c.name = set_.name;
+  c.ro = ro();
+  c.now = now_;
+  if (alarms_) {
+    static const char* const kRep[] = {"once", "daily", "weekdays", "weekend"};
+    for (int i = 0; i < alarms_->count(); ++i) {
+      const Alarm& a = alarms_->at(i);
+      const char* rep = a.days == 0 ? kRep[0] : a.days == 0x7F ? kRep[1] : a.days == 0x1F ? kRep[2] : a.days == 0x60 ? kRep[3] : "some days";
+      char b[96];
+      snprintf(b, sizeof b, "%s%02u:%02u %s \"%s\" %s", c.alarms.empty() ? "" : "; ", a.hour, a.minute, rep, a.label,
+               a.enabled ? "on" : "off");
+      c.alarms += b;
+    }
+  }
+  int n = 0;
+  for (const Reminder& r : rems_) {
+    if (n++ >= 5) break;
+    char b[128];
+    const bool tomorrow = now_ && r.when / 86400 > now_ / 86400;
+    snprintf(b, sizeof b, "%s%02d:%02d%s \"%s\"", c.reminders.empty() ? "" : "; ", (int)(r.when % 86400 / 3600),
+             (int)(r.when % 3600 / 60), tomorrow ? " tomorrow" : "", r.text.c_str());
+    c.reminders += b;
+  }
+  c.timerLeftMin = timerRun_ ? (int)ceilf(timerLeft_ / 60.0f) : -1;
+  c.notes = (int)notes_.size();
+  return c;
+}
+
+void Os::ask(const std::string& text) {
+  answerReturn_ = view_ == View::Answer || view_ == View::Keyboard ? View::Home : view_;
+  if (answerReturn_ == View::Boot) answerReturn_ = View::Home;
+  chips_.clear();
+  reply_ = AiReply();
+  lastErr_ = AiErr::None;
+  if (aiMode() == AiMode::None) {
+    AiReply r = localReply(text, now_, ro(), true);
+    runActions(r.actions, &chips_);
+    showAnswer(r, AiErr::None, ro() ? "Fără AI · pe device" : "No AI · on the device");
+    return;
+  }
+  if (!net_.connected) {
+    AiReply r;
+    if (localAct(text, now_, ro(), r)) runActions(r.actions, &chips_);
+    else r.say.clear();
+    showAnswer(r, AiErr::Offline, "");
+    return;
+  }
+  AiJob j;
+  j.text = text;
+  j.ctx = context();
+  j.history = history_;
+  jobs_.push_back(j);
+  history_.push_back({true, text});
+  thinking_ = true;
+  thinkT_ = 0;
+  reply_.say = text;  // shown dim while thinking
+  go(View::Answer);
+}
+
+void Os::aiResult(const AiOutcome& o) {
+  if (!thinking_) return;  // cancelled
+  thinking_ = false;
+  chips_.clear();
+  const char* src = aiMode() == AiMode::Claude ? (ro() ? "Claude · cheia ta" : "Claude · your key")
+                    : aiMode() == AiMode::ChatGpt ? (ro() ? "ChatGPT · cheia ta" : "ChatGPT · your key")
+                                                  : "SOUL Cloud";
+  const std::string question = history_.empty() ? std::string() : history_.back().text;
+  if (o.err != AiErr::None) {
+    if (!history_.empty() && history_.back().user) history_.pop_back();
+    // the on-device rules still do what they can (an alarm, a reminder, a timer)
+    AiReply r;
+    if (localAct(question, now_, ro(), r)) runActions(r.actions, &chips_);
+    else r.say.clear();
+    showAnswer(r, o.err, src);
+    return;
+  }
+  history_.push_back({false, o.raw.size() > 1200 ? o.raw.substr(0, 1200) : o.raw});
+  while (history_.size() > 12) history_.erase(history_.begin());
+  runActions(o.reply.actions, &chips_);
+  showAnswer(o.reply, AiErr::None, src);
+}
+
+void Os::voiceText(const std::string& text, AiErr err) {
+  if (!voiceWait_) return;
+  voiceWait_ = false;
+  if (err != AiErr::None || text.empty()) {
+    AiReply r;
+    if (err == AiErr::None) r.say = tr("I didn't catch that.", "N-am prins ce ai spus.");
+    showAnswer(r, err, "");
+    return;
+  }
+  if (voiceFrom_ == View::Notes) {  // dictated note: saved here, no AI call
+    addNote(text);
+    face_.react(X_approve);
+    toast(tr("Note saved", "Notiță salvată"), kMint);
+    return;
+  }
+  ask(text);
+}
+
+void Os::showAnswer(const AiReply& r, AiErr err, const char* src) {
+  reply_ = r;
+  lastErr_ = err;
+  answerSrc_ = src ? src : "";
+  answerT_ = 0;
+  const size_t len = r.say.size() + (err != AiErr::None ? 40 : 0);
+  answerFor_ = 6.5f + (len > 80 ? (len - 80) * 0.03f : 0.0f);
+  if (answerFor_ > 14) answerFor_ = 14;
+  if (err != AiErr::None) {
+    face_.flash(kRose, 1.2f);  // the face goes "confused" through FaceState::Error
+  } else if (!r.actions.empty()) {
+    face_.react(X_approve);
+    face_.flash(kMint, 1.4f);
+  } else {
+    const int e = exprByName(r.face.c_str());
+    if (e >= 0) face_.react(e, 2.0f);
+  }
+  if (view_ != View::Answer) go(View::Answer);
+  invalidate();
+}
+
+void Os::runActions(const std::vector<AiAction>& acts, std::vector<std::string>* chips) {
+  for (const AiAction& a : acts) {
+    std::string chip;
+    switch (a.type) {
+      case AiAction::AlarmSet:
+        addAlarm(a.hour, a.minute, a.days, a.text.empty() ? tr("Alarm", "Alarmă") : a.text);
+        chip = tr("Alarm ", "Alarmă ") + hhmm(a.hour, a.minute);
+        break;
+      case AiAction::TimerStart:
+      case AiAction::FocusStart:
+        startTimer(a.minutes * 60, a.type == AiAction::FocusStart);
+        chip = (a.type == AiAction::FocusStart ? std::string("Focus ") : tr("Timer ", "Minutar ")) + std::to_string(a.minutes) + " min";
+        break;
+      case AiAction::ReminderCreate:
+        addReminder(a.hour, a.minute, a.tomorrow, a.text);
+        chip = tr("Reminder ", "Memento ") + (a.tomorrow ? tr("tomorrow ", "mâine ") : std::string()) + hhmm(a.hour, a.minute);
+        break;
+      case AiAction::NoteCreate:
+        addNote(a.text);
+        chip = tr("Note saved", "Notiță salvată");
+        break;
+    }
+    if (chips) chips->push_back(chip);
+  }
+}
+
+// ------------------------------------------------------------ the data ---
+
+std::string Os::hhmm(int h, int m) const {
+  char b[16];
+  snprintf(b, sizeof b, "%02d:%02d", h, m);
+  return b;
+}
+
+void Os::addAlarm(int h, int m, uint8_t days, const std::string& label) {
+  if (!alarms_) return;
+  Alarm a;
+  a.hour = (uint8_t)h;
+  a.minute = (uint8_t)m;
+  a.days = days;
+  a.enabled = true;
+  a.setLabel(label.c_str());
+  alarms_->add(a, now_);
+  pushCmd(OsCmd::SaveAlarms);
+}
+
+void Os::addNote(const std::string& text) {
+  Note n;
+  n.text = text;
+  n.t = now_;
+  notes_.insert(notes_.begin(), n);
+  if (notes_.size() > 24) notes_.pop_back();
+  pushCmd(OsCmd::SaveNotes);
+}
+
+void Os::addReminder(int h, int m, bool tomorrow, const std::string& text) {
+  if (!now_) return;
+  uint32_t when = localclock::dayStart(now_) + (uint32_t)h * 3600u + (uint32_t)m * 60u;
+  if (tomorrow || when <= now_) when += 86400u;  // a time already passed moves to tomorrow
+  Reminder r;
+  r.when = when;
+  r.text = text.empty() ? tr("Reminder", "Memento") : text;
+  rems_.push_back(r);
+  if (rems_.size() > 12) rems_.erase(rems_.begin());
+  pushCmd(OsCmd::SaveReminders);
+}
+
+void Os::startTimer(int seconds, bool focus) {
+  timerRun_ = true;
+  timerPaused_ = false;
+  timerRinging_ = false;
+  timerFocus_ = focus;
+  timerTotal_ = seconds;
+  timerLeft_ = (float)seconds;
+  invalidate();
+}
+
+void Os::stopTimer() {
+  timerRun_ = timerPaused_ = timerRinging_ = false;
+  silence_ = true;
+  invalidate();
+}
+
+int Os::timerLeft() const { return timerRun_ ? (int)ceilf(timerLeft_) : -1; }
+
+void Os::tickTimer(float dt) {
+  if (!timerRun_ || timerPaused_) return;
+  timerLeft_ -= dt;
+  const int s = (int)ceilf(timerLeft_);
+  if (s != lastTimerSec_) {
+    lastTimerSec_ = s;
+    if (view_ == View::Timer || view_ == View::Home || view_ == View::Today) invalidate();
+  }
+  if (timerLeft_ <= 0) {
+    timerRun_ = false;
+    timerRinging_ = true;
+    ringingAlarm_ = -1;
+    face_.react(X_excited, 2.4f);
+    brainEvents_.push_back(Ev::AlarmDue);  // wakes the Brain whatever its mode
+    go(View::Ringing);
+  }
+}
+
+void Os::tickReminders() {
+  if (!now_) return;
+  for (size_t i = 0; i < rems_.size(); ++i) {
+    if (rems_[i].when <= now_) {
+      if (now_ - rems_[i].when < 600) {  // say it (missed by more than 10 min: just drop it)
+        toast(rems_[i].text, kAmber, 6.0f);
+        face_.react(X_surprised, 1.6f);
+        brainEvents_.push_back(Ev::AlarmDue);
+      }
+      rems_.erase(rems_.begin() + i);
+      pushCmd(OsCmd::SaveReminders);
+      return;
+    }
+  }
+}
+
+void Os::alarmDue(int index) {
+  ringingAlarm_ = index;
+  if (view_ == View::Keyboard) kb_.cancel();
+  view_ = View::Home;  // make the change below a real one
+  go(View::Ringing);
+  brainEvents_.push_back(Ev::AlarmDue);
+  face_.react(X_wake);
+}
+
+std::string Os::nextAlarmText() const {
+  if (!alarms_ || !now_) return "";
+  uint32_t when = 0;
+  const int i = alarms_->next(now_, when);
+  if (i < 0) return "";
+  const uint32_t mins = (when - now_ + 59) / 60;
+  char b[64];
+  if (mins < 60) snprintf(b, sizeof b, "%02u:%02u · %s %u min", alarms_->at(i).hour, alarms_->at(i).minute, ro() ? "în" : "in", (unsigned)mins);
+  else snprintf(b, sizeof b, "%02u:%02u · %s %u h %u min", alarms_->at(i).hour, alarms_->at(i).minute, ro() ? "în" : "in", (unsigned)(mins / 60), (unsigned)(mins % 60));
+  return b;
+}
+
+// --------------------------------------------------------------- update ---
+
+void Os::update(float dt, Brain& brain) {
+  t_ += dt;
+  viewT_ += dt;
+  if (buttonDown_) buttonT_ += dt;
+  if (fade_ < 1) {
+    fade_ = viewT_ / kFadeS;
+    if (fade_ > 1) fade_ = 1;
+    invalidate();
+  }
+  if (toastLeft_ > 0) {
+    toastLeft_ -= dt;
+    if (toastLeft_ <= 0) invalidate();
+  }
+  if (view_ == View::Keyboard) {
+    kb_.update(dt);
+    setDirtyFromKeyboard();
+    KbResult r;
+    if (kb_.poll(r)) {
+      if (r == KbResult::Commit) kbCommit(kb_.committed());
+      else go(kbReturn_);
+    }
+  } else if (view_ == View::Dial) {
+    tp_.setNow(now_);
+    tp_.update(dt);
+    if (tp_.changed()) invalidate();
+    KbResult r;
+    if (tp_.poll(r)) {
+      if (r == KbResult::Commit) {  // saved at once (3 touches: +, drag the hour, ✓)
+        addAlarm(tp_.hour(), tp_.minute(), 0, tr("Alarm", "Alarmă"));
+        toast(tr("Alarm set ", "Alarmă pusă ") + hhmm(tp_.hour(), tp_.minute()), kMint);
+        face_.react(X_approve);
+      }
+      go(View::Alarms);
+    }
+  }
+  if (holdItem_ >= 0) {  // hold a row: delete (alarms, notes) / forget (Wi-Fi, keys) / start over
+    holdItemT_ += dt;
+    invalidate();
+    if (holdItemT_ >= 1.0f) {
+      const int id = holdItem_;
+      holdItem_ = -1;
+      if (view_ == View::Alarms && id >= IdRow && alarms_ && id - IdRow < alarms_->count()) {
+        alarms_->remove(id - IdRow);
+        pushCmd(OsCmd::SaveAlarms);
+        toast(tr("Alarm deleted", "Alarmă ștearsă"), kAmber);
+        face_.react(X_sad, 1.0f);
+      } else if (view_ == View::Notes && id >= IdRow && id - IdRow < (int)notes_.size()) {
+        notes_.erase(notes_.begin() + (id - IdRow));
+        pushCmd(OsCmd::SaveNotes);
+        toast(tr("Note deleted", "Notiță ștearsă"), kAmber);
+      } else if (view_ == View::NoteView && id == IdDelete && noteSel_ >= 0 && noteSel_ < (int)notes_.size()) {
+        notes_.erase(notes_.begin() + noteSel_);
+        pushCmd(OsCmd::SaveNotes);
+        toast(tr("Note deleted", "Notiță ștearsă"), kAmber);
+        go(View::Notes);
+      } else if (view_ == View::Wifi && id == IdForget) {
+        pushCmd(OsCmd::ForgetWifi);
+        toast(tr("Wi-Fi forgotten", "Wi-Fi uitat"), kAmber);
+      } else if (view_ == View::AiMode && id >= IdRow && id <= IdRow + 2) {
+        if (id == IdRow + 1 || id == IdRow + 2) {
+          set_.ai = (uint8_t)(id == IdRow + 1 ? AiMode::Claude : AiMode::ChatGpt);
+          openKeyboard(KbKey);  // type the key on the round keyboard (masked on screen)
+        }
+      } else if (view_ == View::Settings && id == IdRow + 9) {
+        restartBoot();
+      }
+    }
+  }
+  if (view_ == View::Answer && !thinking_) {
+    answerT_ += dt;
+    if (answerT_ > answerFor_ && !down_) back();
+  }
+  if (thinking_) {
+    thinkT_ += dt;
+    if (thinkT_ > 45.0f) {  // the device never waits forever
+      AiOutcome o;
+      o.err = AiErr::Timeout;
+      aiResult(o);
+    }
+  }
+  tickTimer(dt);
+  tickReminders();
+  // the clock on the rim
+  const int minute = now_ ? (int)(now_ / 60) : -1;
+  if (minute != lastMinute_) {
+    lastMinute_ = minute;
+    if (view_ == View::Home || view_ == View::Today || view_ == View::Talk || view_ == View::Launcher) invalidate();
+  }
+  if (view_ == View::Boot && bootStep_ == BootStep::Birth && viewT_ < 2.0f) invalidate();  // the chip id types out
+  if (set_.debug && (int)(t_ * 2) != (int)((t_ - dt) * 2)) invalidate(g_.rect(130, 400, 336, 460));
+  // what the Brain hears
+  brain.setAiLink(aiMode() != AiMode::None);
+  for (Ev e : brainEvents_) brain.event(e);
+  brainEvents_.clear();
+  face_.update(dt, faceInputs(brain));
+}
+
+FaceInputs Os::faceInputs(const Brain& b) const {
+  FaceInputs in;
+  in.mode = b.mode();
+  in.reaction = b.reaction();
+  in.layout = layoutFor(view_);
+  if (view_ == View::Keyboard) {
+    in.look = true;  // the eyes watch the keys
+    in.lookX = down_ ? (dx_ / g_.w - 0.5f) * 1.2f : 0;
+    in.lookY = 0.6f;
+  } else if (view_ == View::Dial) {
+    const float a = tp_.knobAngle() * 3.14159265f / 180.0f;
+    in.look = true;
+    in.lookX = 0.8f * cosf(a);
+    in.lookY = 0.8f * sinf(a);
+  } else if (t_ < lookUntil_) {
+    in.look = true;
+    in.lookX = lookX_;
+    in.lookY = lookY_;
+  }
+  if (listening_) in.state = FaceState::Listen;
+  else if (thinking_ || voiceWait_) in.state = FaceState::Think;
+  else if (view_ == View::Answer && lastErr_ != AiErr::None) in.state = FaceState::Error;
+  else if (claude_.prompt) in.state = FaceState::Wait;
+  else if (claude_.busy) in.state = FaceState::Busy;
+  else if (power_.charging) in.state = FaceState::Charge;
+  else if (power_.batPct >= 0 && power_.batPct < 10) in.state = FaceState::Low;
+  in.alert = claude_.prompt || view_ == View::Ringing;
+  in.progress = b.approveProgress();
+  if (power_.charging && power_.batPct >= 0) in.level = power_.batPct / 100.0f;
+  if (view_ == View::Boot && bootStep_ == BootStep::Hold && !listening_) in.state = FaceState::Idle;
+  return in;
+}
+
+float Os::fpsHint(const Brain& b) const {
+  if (view_ == View::Keyboard || view_ == View::Dial || down_ || fade_ < 1) return 30;
+  if (b.mode() == Mode::Off) return 0;
+  if (b.mode() == Mode::Asleep) return 10;
+  if (b.mode() == Mode::Drowsy) return 15;
+  if (thinking_ || listening_ || claude_.prompt || view_ == View::Ringing || b.reaction() != Reaction::None) return 30;
+  return 24;  // calm and awake: the springs still look smooth at 24
+}
+
+float Os::backlight(float hour, const Brain& b) const {
+  if (b.mode() == Mode::Off) return 0;
+  const bool night = hour >= 0 && (hour >= 22.0f || hour < 7.0f);
+  float level;
+  switch (set_.bright) {
+    case 1: level = 0.4f; break;
+    case 2: level = 0.7f; break;
+    case 3: level = 1.0f; break;
+    default: level = night ? 0.35f : (hour >= 0 && (hour < 8.5f || hour >= 20.5f) ? 0.7f : 1.0f); break;
+  }
+  if (b.mode() == Mode::Asleep) level = night ? 0.06f : 0.18f;  // always-on, but only a glow
+  else if (b.mode() == Mode::Drowsy) level *= 0.6f;
+  if (view_ == View::Keyboard || view_ == View::Dial) level = fmaxf(level, 0.6f);  // typing needs light
+  if (view_ == View::Ringing || claude_.prompt) level = 1.0f;
+  return level;
+}
+
+Rect Os::takeDirty() {
+  Rect r = dirty_;
+  if (dirtyAll_) r = Rect{0, 0, g_.w, g_.h};
+  dirtyAll_ = false;
+  dirty_ = Rect{};
+  return r;
+}
+
+// ------------------------------------------------------------ persistence ---
+
+size_t Os::saveSettings(uint8_t* buf, size_t cap) const {
+  if (cap < sizeof(OsSettings)) return 0;
+  memcpy(buf, &set_, sizeof(OsSettings));
+  return sizeof(OsSettings);
+}
+
+bool Os::loadSettings(const uint8_t* buf, size_t n) {
+  if (n != sizeof(OsSettings) || buf[0] != OsSettings::kVersion) return false;
+  OsSettings s;
+  memcpy(&s, buf, sizeof s);
+  s.name[sizeof s.name - 1] = 0;
+  if (s.lang > 1 || s.bright > 3 || s.ai > 3) return false;
+  set_ = s;
+  return true;
+}
+
+// notes: one per line, "<epoch>\t<text>" (tabs and newlines in the text become spaces)
+std::string Os::saveNotes() const {
+  std::string s;
+  for (const Note& n : notes_) {
+    s += std::to_string(n.t) + "\t";
+    for (char c : n.text) s += (c == '\n' || c == '\t' || c == '\r') ? ' ' : c;
+    s += '\n';
+  }
+  return s;
+}
+
+void Os::loadNotes(const std::string& s) {
+  notes_.clear();
+  size_t i = 0;
+  while (i < s.size() && notes_.size() < 24) {
+    size_t e = s.find('\n', i);
+    if (e == std::string::npos) e = s.size();
+    const size_t tab = s.find('\t', i);
+    if (tab != std::string::npos && tab < e) {
+      Note n;
+      n.t = (uint32_t)strtoul(s.substr(i, tab - i).c_str(), nullptr, 10);
+      n.text = s.substr(tab + 1, e - tab - 1);
+      if (n.text.size() > 1200) n.text.resize(1200);
+      if (!n.text.empty()) notes_.push_back(n);
+    }
+    i = e + 1;
+  }
+}
+
+std::string Os::saveReminders() const {
+  std::string s;
+  for (const Reminder& r : rems_) {
+    s += std::to_string(r.when) + "\t";
+    for (char c : r.text) s += (c == '\n' || c == '\t') ? ' ' : c;
+    s += '\n';
+  }
+  return s;
+}
+
+void Os::loadReminders(const std::string& s) {
+  rems_.clear();
+  size_t i = 0;
+  while (i < s.size() && rems_.size() < 12) {
+    size_t e = s.find('\n', i);
+    if (e == std::string::npos) e = s.size();
+    const size_t tab = s.find('\t', i);
+    if (tab != std::string::npos && tab < e) {
+      Reminder r;
+      r.when = (uint32_t)strtoul(s.substr(i, tab - i).c_str(), nullptr, 10);
+      r.text = s.substr(tab + 1, e - tab - 1);
+      if (r.when) rems_.push_back(r);
+    }
+    i = e + 1;
+  }
+}
+
+}  // namespace suflet

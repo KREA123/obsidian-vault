@@ -1403,6 +1403,7 @@ void test_alarm_tone_pattern_and_timeout() {
 
 void runEyeTests();
 void runAiTests();
+void runOsTests();
 
 int main(int, char**) {
   UNITY_BEGIN();
@@ -1471,5 +1472,6 @@ int main(int, char**) {
   RUN_TEST(test_alarm_tone_pattern_and_timeout);
   runEyeTests();
   runAiTests();
+  runOsTests();
   return UNITY_END();
 }

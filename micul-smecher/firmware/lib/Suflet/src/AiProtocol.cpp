@@ -17,7 +17,7 @@ const char* aiModeName(AiMode m) {
   switch (m) {
     case AiMode::Claude: return "claude";
     case AiMode::ChatGpt: return "chatgpt";
-    case AiMode::Relay: return "relay";
+    case AiMode::Cloud: return "cloud";
     default: return "none";
   }
 }
@@ -26,7 +26,7 @@ AiMode aiModeFrom(const char* s) {
   if (!s) return AiMode::None;
   if (!strcmp(s, "claude") || !strcmp(s, "api")) return AiMode::Claude;
   if (!strcmp(s, "chatgpt")) return AiMode::ChatGpt;
-  if (!strcmp(s, "relay")) return AiMode::Relay;
+  if (!strcmp(s, "cloud") || !strcmp(s, "relay")) return AiMode::Cloud;
   return AiMode::None;
 }
 
@@ -132,7 +132,7 @@ static size_t skipSpaces(const std::string& f, size_t i) {
 }
 
 static std::string hm(int h, int m) {
-  char b[8];
+  char b[16];
   snprintf(b, sizeof b, "%02d:%02d", h, m);
   return b;
 }
@@ -465,7 +465,7 @@ AiErr buildRequest(const AiConfig& cfg, const AiContext& ctx, const std::vector<
       m["content"] = text;
       break;
     }
-    case AiMode::Relay: {
+    case AiMode::Cloud: {
       if (cfg.relayUrl.empty()) return AiErr::NoKey;
       std::string base = cfg.relayUrl;
       while (!base.empty() && base.back() == '/') base.pop_back();
@@ -612,7 +612,7 @@ AiOutcome parseResponse(const AiConfig& cfg, int status, const char* body, size_
       if (!strcmp(doc["choices"][0]["finish_reason"] | "", "length") && o.reply.loose) o.err = AiErr::Truncated;
       break;
     }
-    case AiMode::Relay: {
+    case AiMode::Cloud: {
       const char* say = doc["say"] | "";
       o.reply.say = cleanStr(say, 280);
       static const char* const kTone[][2] = {{"happy", "happy"}, {"sad", "sad"}, {"surprised", "surprised"},

@@ -137,6 +137,9 @@ class Brain {
   bool claudeBusy() const { return claudeBusy_; }
   float approveProgress() const { return approveHold_ ? approveT_ / kApproveHoldS : 0.0f; }
   static constexpr float kApproveHoldS = 1.2f;  // hold this long to approve
+  // Stillness before dozing off; 0 = the personality's own (20..60 s by day,
+  // 12 s at night). SoulOS keeps the eyes awake longer (they are always on).
+  float sleepAfterS = 0, nightSleepAfterS = 0;
   float time() const { return t_; }
 
  private:
