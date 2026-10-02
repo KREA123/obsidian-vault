@@ -1,0 +1,28 @@
+# Render blueprint. SQLite needs a persistent disk (not available on the free plan).
+services:
+  - type: web
+    name: expedo
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_FILE
+        value: /var/data/expedo.db
+      - key: APP_URL
+        sync: false
+      - key: APP_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SHOPIFY_API_KEY
+        sync: false
+      - key: SHOPIFY_API_SECRET
+        sync: false

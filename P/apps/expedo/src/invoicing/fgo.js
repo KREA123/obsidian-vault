@@ -1,0 +1,435 @@
+import { createHash } from 'node:crypto';
+import { ProcessingError } from '../core/errors.js';
+
+// FGO API — official docs: https://api.fgo.ro/v1/testing.html ("FGO API Documentation v7.0", updated 2026-03-25)
+// and the PDF "Metode API - integrare FGO v7.1" (https://testapp.fgo.ro/publicws/files/specificatii-api-latest.pdf).
+//
+// Verified against those sources:
+//  - Production https://api.fgo.ro/v1, test https://api-testuat.fgo.ro/v1 (separate accounts, no sync).
+//  - Bodies are RAW JSON (Content-Type: application/json) with nested Client{} / Continut[] — the v7.0 docs say
+//    application/x-www-form-urlencoded is NOT supported anymore (a form POST to api.fgo.ro now gets HTTP 409).
+//    The older PDF still shows Client[Denumire] form keys; those are the same fields, nested.
+//  - Hash = UPPERCASE hex SHA-1 of:
+//      emitere:                               CodUnic + CheiePrivata + Client.Denumire
+//      print/anulare/stornare/getstatus/awb:  CodUnic + CheiePrivata + Numar  (the number exactly as emitere
+//                                             returned it, e.g. "001" — leading zeros matter, no series)
+//      incasare/stergereincasare:            CodUnic + CheiePrivata + NumarFactura
+//      articol/*:                            CodUnic + CheiePrivata
+//    Spec example: SHA-1("2864518" + "1234567890" + "Ionescu Popescu") = 8C3A7726804C121C6933F7D68494B439463996E2.
+//    SHA-1 runs over the UTF-8 bytes (PHP sha1() / Node crypto in FGO's own samples), so the client name is
+//    normalized ONCE (NFC, no control/zero-width chars, single spaces, ≤255 chars) and that exact string is both
+//    hashed and sent. Credentials are stripped of whitespace/invisible chars: FGO support's own fix for hash errors
+//    is "retype CIF and key, don't copy-paste".
+//  - Errors come as HTTP 200 {Success:false, Message}. Rate limit: 1 request/second for invoice calls.
+//  - VerificareDuplicat=true + IdExtern = order reference → FGO doesn't issue a second invoice for the same order.
+//  - Judet/Localitate must match FGO's nomenclature: ASCII names ("Bucuresti", "Bistrita-Nasaud"),
+//    localities hyphenated ("Baia-Mare", "Sector-3").
+//  - factura/incasare is only available on FGO Premium/Enterprise; TipIncasare nomenclature is
+//    Banca / Retur Casa / Bon / Chitanta (there is no "Ramburs").
+
+const PROVIDER = 'FGO';
+const PROD = 'https://api.fgo.ro/v1';
+const TEST = 'https://api-testuat.fgo.ro/v1';
+const NOMENCLATURE_TTL = 7 * 24 * 60 * 60;
+const MIN_INTERVAL_MS = 1100;
+
+// Canonical FGO county names (GET /nomenclator/judet), keyed by ISO 3166-2:RO code.
+const COUNTIES = {
+  AB: 'Alba', AR: 'Arad', AG: 'Arges', BC: 'Bacau', BH: 'Bihor', BN: 'Bistrita-Nasaud', BT: 'Botosani',
+  BR: 'Braila', BV: 'Brasov', B: 'Bucuresti', BZ: 'Buzau', CL: 'Calarasi', CS: 'Caras-Severin', CJ: 'Cluj',
+  CT: 'Constanta', CV: 'Covasna', DB: 'Dambovita', DJ: 'Dolj', GL: 'Galati', GR: 'Giurgiu', GJ: 'Gorj',
+  HR: 'Harghita', HD: 'Hunedoara', IL: 'Ialomita', IS: 'Iasi', IF: 'Ilfov', MM: 'Maramures', MH: 'Mehedinti',
+  MS: 'Mures', NT: 'Neamt', OT: 'Olt', PH: 'Prahova', SJ: 'Salaj', SM: 'Satu Mare', SB: 'Sibiu', SV: 'Suceava',
+  TR: 'Teleorman', TM: 'Timis', TL: 'Tulcea', VL: 'Valcea', VS: 'Vaslui', VN: 'Vrancea',
+};
+
+// ───────────────────────────── helpers ─────────────────────────────
+
+const INVISIBLE = /[\u0000-\u001F\u007F\u00AD\u200B-\u200F\u2028\u2029\u2060\uFEFF]/g;
+const clean = (s) => String(s ?? '').normalize('NFC').replace(INVISIBLE, '').replace(/[\s\u00A0]+/g, ' ').trim();
+const fold = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036F]/g, '');
+const round = (n, d = 2) => Math.round((Number(n) + Number.EPSILON) * 10 ** d) / 10 ** d;
+const key = (s) => fold(s).toLowerCase().replace(/^(municipiul|mun\.?|orasul|oras|comuna|com\.?|satul|sat)\s+/, '').replace(/[\s_-]+/g, '-').trim();
+
+/** Merchant CUI exactly as FGO identifies the company: digits only, no "RO", no spaces. */
+export function fgoCodUnic(raw) {
+  return String(raw ?? '').normalize('NFKC').replace(INVISIBLE, '').replace(/[\s\u00A0]+/g, '').replace(/^RO/i, '');
+}
+/** Private key: invisible/whitespace characters are never part of it (copy-paste artefacts). */
+export function fgoKey(raw) {
+  return String(raw ?? '').normalize('NFKC').replace(INVISIBLE, '').replace(/[\s\u00A0]+/g, '');
+}
+/** Client name as it will be hashed AND sent — call once and reuse the result. */
+export function fgoClientName(raw) {
+  return Array.from(clean(raw)).slice(0, 255).join('').trim();
+}
+/** Uppercase hex SHA-1 of the UTF-8 bytes of codUnic + key + suffix. */
+export function fgoHash(codUnic, privateKey, suffix = '') {
+  return createHash('sha1').update(`${codUnic}${privateKey}${suffix}`, 'utf8').digest('hex').toUpperCase();
+}
+
+const baseUrl = (ctx) => (ctx.settings?.testMode ? TEST : PROD);
+const sleep = (ctx, ms) => (ctx.sleep ? ctx.sleep(ms) : new Promise((r) => setTimeout(r, ms)));
+
+function creds(ctx) {
+  const codUnic = fgoCodUnic(ctx.credentials?.cui);
+  const privateKey = fgoKey(ctx.credentials?.privateKey);
+  if (!codUnic || !privateKey) throw fgoAuthError('CUI sau cheie privată lipsă');
+  return { codUnic, privateKey };
+}
+
+function platformUrl(ctx) {
+  let u = String(ctx.settings?.platformUrl ?? '').trim();
+  if (!u) {
+    throw new ProcessingError({
+      code: 'INVOICING_SETTINGS_MISSING',
+      message: 'Lipsește adresa magazinului (PlatformaUrl), obligatorie pentru FGO.',
+      hint: 'Completează adresa magazinului (ex. https://magazinul-meu.ro) în Setări → Facturare.',
+      provider: PROVIDER,
+      field: 'settings.platformUrl',
+    });
+  }
+  if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
+  return u;
+}
+
+function fgoAuthError(details) {
+  return new ProcessingError({
+    code: 'AUTH_FAILED',
+    message: 'FGO nu acceptă datele de conectare (CUI sau cheia privată).',
+    hint: 'Verifică în FGO → Setări → Utilizatori că utilizatorul API e activ. Introdu CUI-ul fără „RO” și cheia privată tastate, nu copiate (spațiile ascunse strică semnătura). Dacă folosești contul de test FGO, bifează „Mediu de test”.',
+    retryable: false,
+    provider: PROVIDER,
+    details,
+  });
+}
+
+// ───────────────────────────── errors ─────────────────────────────
+
+const AUTH_RE = /autorizat|codul unic nu exista|nu este asociat|hash|cheie|cheia/i;
+
+function mapFgoError(body, op) {
+  const msg = clean(body?.Message) || 'eroare necunoscută';
+  const m = fold(msg);
+  const mk = (p) => new ProcessingError({ retryable: false, provider: PROVIDER, details: body, ...p });
+  if (AUTH_RE.test(m)) return fgoAuthError(body);
+  if (/timpul maxim/i.test(m)) {
+    return mk({ code: 'PROVIDER_TIMEOUT', message: 'FGO nu a reușit să emită factura în timp util.', hint: 'Reîncercăm automat; FGO verifică duplicatele după numărul comenzii.', retryable: true });
+  }
+  if (/seri/i.test(m)) {
+    return mk({ code: 'INVOICE_SERIES_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Verifică seria în Setări → Facturare; trebuie să existe în FGO → Setări → Serii documente, cu registrul definit.', field: 'settings.series' });
+  }
+  if (/judet/i.test(m)) {
+    return mk({ code: 'ADDRESS_COUNTY_INVALID', message: `FGO: ${msg}`, hint: 'Corectează județul clientului în comandă.', field: 'client.county' });
+  }
+  if (/localitat/i.test(m)) {
+    return mk({ code: 'ADDRESS_CITY_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Corectează localitatea clientului în comandă (trebuie să existe în nomenclatorul FGO pentru județul ales).', field: 'client.city' });
+  }
+  if (/cod ?unic|cui|cif|cod fiscal/i.test(m)) {
+    return mk({ code: 'CLIENT_VAT_CODE_INVALID', message: `FGO: ${msg}`, hint: 'CUI-ul firmei client nu e valid. Corectează-l în comandă sau emite factura pe persoană fizică.', field: 'client.vatCode' });
+  }
+  if (/tva/i.test(m)) {
+    return mk({ code: 'VAT_RATE_NOT_DEFINED', message: `FGO: ${msg}`, hint: 'Verifică cota de TVA a produsului și setarea „plătitor de TVA”.' });
+  }
+  if (/decomisionat|premium|enterprise|abonament|pachet/i.test(m)) {
+    return mk({ code: 'INVOICING_PLAN_LIMIT', message: `FGO: ${msg}`, hint: op === 'incasare' ? 'Înregistrarea încasărilor prin API necesită FGO Premium sau Enterprise. Dezactivează opțiunea sau schimbă abonamentul.' : 'Funcția nu e inclusă în abonamentul FGO.' });
+  }
+  if (/request|cereri|interval|limita/i.test(m)) {
+    return mk({ code: 'PROVIDER_RATE_LIMIT', message: 'FGO ne cere să încetinim (prea multe cereri).', hint: 'Reîncercăm automat.', retryable: true });
+  }
+  if (/nu (a fost gasita|exista)|inexistent/i.test(m) && op !== 'emitere') {
+    return mk({ code: 'INVOICE_NOT_FOUND', message: `FGO: ${msg}`, hint: 'Verifică seria și numărul facturii în FGO.' });
+  }
+  return mk({ code: 'PROVIDER_REJECTED', message: `FGO a refuzat cererea: ${msg}`, hint: 'Verifică datele comenzii și setările de facturare, apoi încearcă din nou.' });
+}
+
+/** POST to FGO with CodUnic/Hash/PlatformaUrl added; throws on Success:false (which arrives with HTTP 200). */
+async function post(ctx, path, payload, hashSuffix, { op, allowFailureBody } = {}) {
+  const { codUnic, privateKey } = creds(ctx);
+  const json = { CodUnic: codUnic, Hash: fgoHash(codUnic, privateKey, hashSuffix), ...payload, PlatformaUrl: platformUrl(ctx) };
+  const res = await ctx.http(PROVIDER, `${baseUrl(ctx)}/${path}`, {
+    method: 'POST',
+    json,
+    timeoutMs: 30000,
+    mapError: (status, body) => (body && typeof body === 'object' && body.Success === false ? mapFgoError(body, op) : undefined),
+  });
+  const body = res.body;
+  if (!body || typeof body !== 'object') {
+    throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'FGO a trimis un răspuns neașteptat.', hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: body });
+  }
+  if (body.Success !== true && !(allowFailureBody && allowFailureBody(body))) throw mapFgoError(body, op);
+  return body;
+}
+
+// ───────────────────────────── address ─────────────────────────────
+
+function countyName(c) {
+  const code = String(c.countyCode ?? '').trim().toUpperCase();
+  if (COUNTIES[code]) return { code, name: COUNTIES[code] };
+  const k = key(c.county).replace(/-/g, ' ');
+  for (const [cc, name] of Object.entries(COUNTIES)) {
+    if (key(name).replace(/-/g, ' ') === k) return { code: cc, name };
+  }
+  return { code: '', name: fold(clean(c.county)) };
+}
+
+function bucharestSector(c) {
+  const m = fold(c.city).match(/sector(?:ul)?\s*([1-6])\b/i) || fold(c.address).match(/sector(?:ul)?\s*([1-6])\b/i);
+  if (m) return Number(m[1]);
+  const z = String(c.zip ?? '').trim().match(/^0([1-6])\d{4}$/);
+  return z ? Number(z[1]) : null;
+}
+
+async function localities(ctx, countyCode) {
+  const cacheKey = `fgo:loc:${ctx.settings?.testMode ? 't' : 'p'}:${countyCode}`;
+  const hit = ctx.cache?.get(cacheKey);
+  if (hit) return hit;
+  try {
+    const res = await ctx.http(PROVIDER, `${baseUrl(ctx)}/nomenclator/localitati?judet=${encodeURIComponent(countyCode)}`, { method: 'GET', timeoutMs: 10000 });
+    const list = (res.body?.List || []).map((x) => x.Nume).filter(Boolean);
+    if (list.length) ctx.cache?.set(cacheKey, list, NOMENCLATURE_TTL);
+    return list;
+  } catch (err) {
+    ctx.log?.('FGO: nomenclatorul de localități nu e disponibil', { countyCode, error: err?.message });
+    return [];
+  }
+}
+
+async function localityName(ctx, c, county) {
+  if (county.code === 'B') {
+    const s = bucharestSector(c);
+    return s ? `Sector-${s}` : 'Bucuresti';
+  }
+  const wanted = key(c.city);
+  if (county.code) {
+    const list = await localities(ctx, county.code);
+    const found = list.find((n) => key(n) === wanted);
+    if (found) return found;
+  }
+  // VERIFY: unknown whether FGO rejects a locality outside its nomenclature; we send the closest canonical form.
+  return fold(clean(c.city)).replace(/\s+/g, '-');
+}
+
+// ───────────────────────────── adapter ─────────────────────────────
+
+async function buildEmitere(ctx, invoice, clientName) {
+  const s = ctx.settings || {};
+  const c = invoice.client;
+  const isRo = !c.country || /^(ro|romania)$/i.test(fold(clean(c.country)));
+  const county = isRo ? countyName(c) : { code: '', name: clean(c.county) };
+  const isCompany = Boolean(c.isCompany && c.vatCode);
+
+  const client = {
+    Denumire: clientName,
+    Tip: isCompany ? 'PJ' : 'PF',
+    Tara: isRo ? 'RO' : clean(c.country),
+    Judet: county.name,
+    Localitate: isRo ? await localityName(ctx, c, county) : clean(c.city),
+    Adresa: clean(c.address).slice(0, 500),
+  };
+  // PF: no CNP placeholder — FGO ignores invalid CNPs and identifies natural persons by name + county.
+  if (isCompany) client.CodUnic = String(c.vatCode).replace(/\s+/g, '').toUpperCase();
+  if (isCompany && c.regCom) client.NrRegCom = clean(c.regCom);
+  if (c.email) client.Email = clean(c.email).slice(0, 100);
+  if (c.phone) client.Telefon = clean(c.phone).slice(0, 100);
+
+  const vatPayer = s.vatPayer !== false;
+  const warehouse = clean(s.warehouseCode);
+  const Continut = invoice.lines.map((l) => {
+    const qty = Number(l.quantity);
+    const total = round(Math.abs(qty * Number(l.unitPrice)), 2);
+    const negative = Number(l.unitPrice) < 0;
+    const item = {
+      Denumire: clean(l.name).slice(0, 1000),
+      UM: String(l.unit || 'buc').slice(0, 5),
+      // Negative lines (discounts) go as negative quantity, per spec.
+      NrProduse: negative ? -Math.abs(qty) : qty,
+      CotaTVA: vatPayer ? Number(l.vatRate) : 0,
+      // PretTotal = what the customer paid for the line, VAT and quantity included ("calcul invers").
+      // FGO derives the unit price and VAT from it, so we never compute nets ourselves.
+      PretTotal: total,
+    };
+    if (l.code) item.CodArticol = clean(l.code).slice(0, 128);
+    if (warehouse && !l.isShipping) item.CodGestiune = warehouse;
+    return item;
+  });
+
+  const body = {
+    Valuta: invoice.currency || 'RON',
+    TipFactura: 'Factura',
+    Serie: clean(s.series),
+    DataEmitere: invoice.issueDate,
+    VerificareDuplicat: true,
+    IdExtern: String(invoice.idempotencyKey || invoice.reference || '').slice(0, 36),
+    Client: client,
+    Continut,
+  };
+  if (invoice.dueDate) body.DataScadenta = invoice.dueDate;
+  // "Text" is the old "Destinatar" field (delegate name); free mentions belong in "Explicatii".
+  if (invoice.mentions) body.Explicatii = clean(invoice.mentions).slice(0, 2000);
+  if (!body.IdExtern) delete body.IdExtern;
+  return body;
+}
+
+function invoiceDateTime(date) {
+  const d = date ? String(date) : new Date().toISOString();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return `${d} 00:00:00`;
+  const m = d.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/);
+  return m ? `${m[1]} ${m[2]}` : d.slice(0, 19);
+}
+
+function paymentType(ctx, method) {
+  // VERIFY: TipIncasare values may differ per FGO account; the public nomenclature lists Banca / Retur Casa / Bon / Chitanta.
+  if (method === 'card') return ctx.settings?.cardPaymentType || 'Banca';
+  if (method === 'cod' || !method) return ctx.settings?.codPaymentType || 'Banca';
+  return 'Banca';
+}
+
+async function incasare(ctx, { series, number, amount, date, method }) {
+  const num = String(number);
+  await post(ctx, 'factura/incasare', {
+    NumarFactura: num,
+    SerieFactura: series,
+    TipIncasare: paymentType(ctx, method),
+    SumaIncasata: round(amount, 2),
+    DataIncasare: invoiceDateTime(date),
+  }, num, { op: 'incasare' });
+}
+
+export default {
+  id: 'fgo',
+  name: 'FGO',
+
+  credentialFields: [
+    { key: 'cui', label: 'CUI firmă', type: 'text', required: true,
+      help: 'Codul fiscal al firmei din contul FGO, fără „RO” (ex. 12345678).' },
+    { key: 'privateKey', label: 'Cheie privată API', type: 'password', required: true,
+      help: 'Din FGO → Setări → Utilizatori → utilizator API. Tasteaz-o, nu o copia cu spații.' },
+  ],
+
+  settingsFields: [
+    { key: 'series', label: 'Serie factură', type: 'text', required: true,
+      help: 'Seria definită în FGO → Setări → Serii documente.' },
+    { key: 'platformUrl', label: 'Adresa magazinului (PlatformaUrl)', type: 'text', required: true,
+      help: 'Obligatorie pentru FGO, ex. https://magazinul-meu.ro.' },
+    { key: 'vatPayer', label: 'Firma este plătitoare de TVA', type: 'checkbox', default: true,
+      help: 'Debifează dacă firma nu e plătitoare de TVA: produsele se facturează cu cota 0.' },
+    { key: 'warehouseCode', label: 'Cod gestiune', type: 'text',
+      help: 'Opțional: codul gestiunii din FGO, pentru descărcarea corectă în contabilitate.' },
+    { key: 'registerCardPayments', label: 'Marchează încasate comenzile plătite cu cardul', type: 'checkbox', default: false,
+      help: 'Adaugă încasarea pe factură. Necesită FGO Premium sau Enterprise.' },
+    { key: 'cardPaymentType', label: 'Tip încasare pentru card', type: 'text', default: 'Banca',
+      help: 'Valoare din nomenclatorul FGO „Tip încasare” (ex. Banca).' },
+    { key: 'codPaymentType', label: 'Tip încasare pentru ramburs', type: 'text', default: 'Banca',
+      help: 'Banii de la curier intră de obicei în bancă: „Banca”.' },
+    { key: 'testMode', label: 'Mediu de test FGO', type: 'checkbox', default: false,
+      help: 'Folosește api-testuat.fgo.ro (cont de test separat, creat pe testuat.fgo.ro).' },
+  ],
+
+  async testConnection(ctx) {
+    platformUrl(ctx);
+    // FGO has no "whoami" call. getstatus for a non-existent number authenticates first, then fails on the
+    // invoice — so an auth error means bad credentials and any other error means they were accepted.
+    // VERIFY: exact wording of FGO's "invoice not found" vs. "hash invalid" messages.
+    const series = clean(ctx.settings?.series) || 'X';
+    const body = await post(ctx, 'factura/getstatus', { Numar: '0', Serie: series }, '0', {
+      op: 'test',
+      allowFailureBody: (b) => !AUTH_RE.test(fold(b.Message || '')),
+    });
+    if (body.Success === false && /seri/i.test(fold(body.Message || '')) && !/factura/i.test(fold(body.Message || ''))) {
+      throw mapFgoError(body, 'test');
+    }
+    return {
+      ok: true,
+      message: `Conectat la FGO${ctx.settings?.testMode ? ' (mediu de test)' : ''}: CUI-ul și cheia privată sunt acceptate.`,
+      info: { response: body },
+    };
+  },
+
+  async createInvoice(ctx, invoice) {
+    if (!clean(ctx.settings?.series)) {
+      throw new ProcessingError({ code: 'INVOICING_SETTINGS_MISSING', message: 'Nu este aleasă seria de facturi FGO.', hint: 'Completează seria în Setări → Facturare.', provider: PROVIDER, field: 'settings.series' });
+    }
+    let name = fgoClientName(invoice.client.name);
+    if (!name) {
+      throw new ProcessingError({ code: 'CLIENT_NAME_MISSING', message: 'Comanda nu are numele clientului.', hint: 'Completează numele de facturare în comandă.', provider: PROVIDER, field: 'client.name' });
+    }
+    const payload = await buildEmitere(ctx, invoice, name);
+    const isExisting = (b) => Boolean(b?.Factura?.Numar); // duplicate check may answer with the existing invoice
+
+    let body;
+    try {
+      body = await post(ctx, 'factura/emitere', payload, name, { op: 'emitere', allowFailureBody: isExisting });
+    } catch (err) {
+      // Defensive: if FGO's side hashes a different byte form of a name with diacritics, the call fails before any
+      // invoice exists, so one retry with the diacritic-free name is safe (the same string is hashed and sent).
+      // VERIFY: remove once FGO confirms UTF-8 hashing on their side.
+      const ascii = fgoClientName(fold(name));
+      if (err?.code === 'AUTH_FAILED' && /hash/i.test(String(err?.details?.Message || '')) && ascii !== name) {
+        ctx.log?.('FGO: semnătura respinsă pentru un nume cu diacritice; reîncerc fără diacritice', { reference: invoice.reference });
+        await sleep(ctx, MIN_INTERVAL_MS);
+        name = ascii;
+        const retry = { ...payload, Client: { ...payload.Client, Denumire: ascii } };
+        body = await post(ctx, 'factura/emitere', retry, ascii, { op: 'emitere', allowFailureBody: isExisting });
+      } else {
+        throw err;
+      }
+    }
+
+    const f = body.Factura || {};
+    const result = { series: f.Serie || payload.Serie, number: String(f.Numar), url: f.Link || undefined, raw: body };
+    if (body.Success !== true) result.duplicate = true;
+
+    if (invoice.paid && ctx.settings?.registerCardPayments && !result.duplicate) {
+      try {
+        await sleep(ctx, MIN_INTERVAL_MS); // FGO: max 1 invoice/payment request per second
+        await incasare(ctx, { series: result.series, number: result.number, amount: invoice.total, date: invoice.issueDate, method: invoice.paymentMethod });
+      } catch (err) {
+        // The invoice exists; a failed "încasare" must not make the pipeline issue it again.
+        ctx.log?.('FGO: factura a fost emisă, dar încasarea nu a putut fi înregistrată', { reference: invoice.reference, error: err?.message });
+        result.paymentError = err?.message;
+      }
+    }
+    return result;
+  },
+
+  async getPdf(ctx, { series, number }) {
+    const num = String(number);
+    const body = await post(ctx, 'factura/print', { Numar: num, Serie: series }, num, { op: 'print' });
+    const link = body.Factura?.Link;
+    if (!link) {
+      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', message: `FGO nu a trimis linkul PDF pentru factura ${series} ${num}.`, hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: body });
+    }
+    const res = await ctx.http(PROVIDER, link, { method: 'GET', responseType: 'buffer', headers: { Accept: 'application/pdf, */*' } });
+    const buf = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.body ?? '');
+    if (buf.subarray(0, 4).toString('latin1') !== '%PDF') {
+      throw new ProcessingError({ code: 'INVOICE_PDF_UNAVAILABLE', message: `Linkul FGO pentru factura ${series} ${num} nu a întors un PDF.`, hint: 'Reîncearcă peste câteva minute.', retryable: true, provider: PROVIDER, details: { link, start: buf.toString('utf8').slice(0, 200) } });
+    }
+    return buf;
+  },
+
+  async cancelInvoice(ctx, { series, number }) {
+    const num = String(number);
+    await post(ctx, 'factura/anulare', { Numar: num, Serie: series }, num, { op: 'anulare' });
+  },
+
+  async stornoInvoice(ctx, { series, number, issueDate }) {
+    const num = String(number);
+    const payload = { Numar: num, Serie: series };
+    if (issueDate) payload.DataEmitere = issueDate;
+    const body = await post(ctx, 'factura/stornare', payload, num, { op: 'stornare' });
+    return { series: body.Factura?.Serie || series, number: String(body.Factura?.Numar ?? ''), url: body.Factura?.Link || undefined };
+  },
+
+  async registerPayment(ctx, p) {
+    await incasare(ctx, p);
+  },
+
+  /** Total and paid amount of an invoice (factura/getstatus). */
+  async getInvoiceStatus(ctx, { series, number }) {
+    const num = String(number);
+    const body = await post(ctx, 'factura/getstatus', { Numar: num, Serie: series }, num, { op: 'getstatus' });
+    const f = body.Factura || {};
+    return { total: Number(f.Valoare), paid: Number(f.ValoareAchitata), raw: body };
+  },
+};

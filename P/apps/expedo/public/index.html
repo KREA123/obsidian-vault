@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Expedo — comenzi</title>
+  <script>
+    // Inside the Shopify admin, App Bridge must be the first script on the page.
+    (function () {
+      var q = new URLSearchParams(location.search);
+      if (q.get('host') || q.get('embedded') === '1') {
+        document.write('<meta name="shopify-api-key" content="%SHOPIFY_API_KEY%"><script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"><\/script>');
+        window.__EMBEDDED__ = true;
+      }
+      window.__LOGIN_ENABLED__ = '%LOGIN_ENABLED%' === '1';
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231f4bd8'/><path d='M8 11l8-4 8 4v10l-8 4-8-4z' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/><path d='M8 11l8 4 8-4M16 15v10' fill='none' stroke='white' stroke-width='2.2'/></svg>">
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <a class="brand" href="#/">
+        <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M8 11l8-4 8 4v10l-8 4-8-4z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><path d="M8 11l8 4 8-4M16 15v10" fill="none" stroke="#fff" stroke-width="2.2"/></svg>
+        <span>Expedo</span>
+      </a>
+      <nav id="nav">
+        <a href="#/" data-route="dashboard"><i data-icon="home"></i>Panou</a>
+        <a href="#/orders" data-route="orders"><i data-icon="box"></i>Comenzi <b class="nav-count" id="nav-attention" hidden></b></a>
+        <a href="#/activity" data-route="activity"><i data-icon="list"></i>Activitate</a>
+        <a href="#/settings" data-route="settings"><i data-icon="cog"></i>Setări</a>
+      </nav>
+      <div class="sidebar-foot">
+        <select id="store-switch" aria-label="Magazin" hidden></select>
+        <div id="store-name" class="muted small"></div>
+        <form method="post" action="/logout" id="logout-form" hidden><button class="link small">Ieși din cont</button></form>
+      </div>
+    </aside>
+    <main>
+      <div id="test-banner" class="banner warn" hidden>
+        <strong>Mod de probă.</strong> AWB-urile și facturile sunt de test, nu se trimite nimic la curieri sau la facturare, iar Shopify nu se modifică.
+        <a href="#/settings/general">Treci pe live</a>
+      </div>
+      <div id="view"></div>
+    </main>
+  </div>
+  <div id="drawer" class="drawer" hidden>
+    <div class="drawer-backdrop" data-close></div>
+    <section class="drawer-panel" role="dialog" aria-modal="true"></section>
+  </div>
+  <div id="toasts" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
