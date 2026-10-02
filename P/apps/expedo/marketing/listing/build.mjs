@@ -284,6 +284,15 @@ async function captureAll(browser, dir) {
     const liv = await p.locator('.drawer-panel .card').first().boundingBox();
     C.deliveredTop = await cap(p, 'delivered-top', { x: Math.floor(liv.x - 6), y: Math.floor(head.y - 6), width: Math.ceil(liv.width + 12), height: Math.ceil(liv.y + liv.height - head.y + 12) },
       [['.drawer-panel .kv .badge.ok', 5]]);
+    // Feature image: the same view for another delivered cash-on-delivery order (unique image)
+    const cod2 = orders.filter((o) => o.paymentMethod === 'cod' && o.codCollectedAt && o.id !== cod.id)[0] || cod;
+    await go(p, `#/orders/${cod2.id}`);
+    {
+      const h2 = await p.locator('.drawer-head').boundingBox();
+      const l2 = await p.locator('.drawer-panel .card').first().boundingBox();
+      C.featureCard = await cap(p, 'feature-card', { x: Math.floor(l2.x - 6), y: Math.floor(h2.y - 6), width: Math.ceil(l2.width + 12), height: Math.ceil(l2.y + l2.height - h2.y + 12) },
+        [['.drawer-panel .kv .badge.ok', 5]]);
+    }
     await p.setViewportSize({ width: 600, height: 1400 });
     await go(p, `#/orders/${cod.id}`);
     const hist = p.locator('.drawer-panel .card', { has: p.locator('h2', { hasText: 'Istoric' }) });
@@ -293,7 +302,7 @@ async function captureAll(browser, dir) {
 
   // Mobile (412 css wide, DSF 2): dashboard, the order with the locality error, a delivered order
   {
-    const MW = 430, MH = 723;
+    const MW = 412, MH = 692;
     const p = await newAppPage(browser, { width: MW, height: MH, mobile: true });
     const full = { x: 0, y: 0, width: MW, height: MH };
     await go(p, '#/');
@@ -322,14 +331,7 @@ async function captureAll(browser, dir) {
     C.labels = readdirSync(dir).filter((f) => /^label-\d+\.png$/.test(f)).sort().map((f) => join(dir, f));
     C.labelCount = C.labels.length;
 
-    // Feature image: the processed orders next to the delivered ones, AWB + invoice + status columns
-    await api('/track', { method: 'POST' });
     await p.context().close();
-    const q = await newAppPage(browser, { width: 1000, height: 640 });
-    const recent = (await api(`/orders?status=all&ids=${ids.join(',')}`)).orders.slice(0, 2).map((o) => o.id);
-    await go(q, `#/orders?status=all&ids=${[...recent, ...C.deliveredIds].join(',')}`);
-    C.processed = await cap(q, 'processed', { x: MAIN, y: 0, width: 780, height: 640 }, [['tbody tr:last-child .badge', 5]]);
-    await q.context().close();
   }
   return C;
 }
@@ -354,8 +356,6 @@ body{font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased;color:${BRA
 .fade{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(rgba(238,242,253,0),${BRAND.soft})}
 .mark{position:absolute;border:4px solid ${BRAND.yellow};border-radius:12px;box-shadow:0 0 0 4px rgba(245,197,24,.28)}
 .tag{position:absolute;background:${BRAND.ink};color:#fff;font-weight:700;font-size:17px;padding:7px 12px;border-radius:9px;letter-spacing:.01em}
-.brand{position:absolute;right:64px;top:56px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;color:${BRAND.ink}}
-.brand svg{width:34px;height:34px}
 `;
 
 /** Places a capture at (x, y) scaled to width w (height follows). Marks are capture-relative CSS boxes. */
@@ -369,7 +369,6 @@ function placeShot(c, { x, y, w, h, crop = null, marks = true, z = 1, radius = 1
     <img src="${img(c.file)}" style="height:${fullH}px;margin-top:${-(crop || 0) * scale}px">${fade ? '<div class="fade"></div>' : ''}</div>${m}`;
 }
 
-const BRAND_SVG = (s = 34) => `<svg viewBox="0 0 32 32" width="${s}" height="${s}"><rect width="32" height="32" rx="7.5" fill="${BRAND.cobalt}"/>${ICON_PATHS(32, 1)}</svg>`;
 
 async function renderHtml(browser, html, out, { width, height }) {
   const file = join(TMP, `${basename(out, '.png')}-${Math.random().toString(36).slice(2, 7)}.html`);
@@ -439,7 +438,7 @@ function featureHtml(lang, C) {
     <h1 style="font-size:58px;line-height:1.08;font-weight:800;color:#fff;letter-spacing:-.025em">${esc(t.title)}</h1>
     <div style="width:96px;height:8px;background:${BRAND.yellow};border-radius:4px;margin:30px 0 26px"></div>
     <p style="font-size:26px;line-height:1.35;color:rgba(255,255,255,.9);font-weight:500">${esc(t.sub)}</p></div>
-  ${placeShot(C.processed, { x: 690, y: 120, w: 830, radius: 16 })}`;
+  ${placeShot(C.featureCard, { x: 690, y: 450 - (C.featureCard.h * 830 / C.featureCard.w) / 2, w: 830, radius: 16 })}`;
 }
 
 // ------------------------------------------------------------------ icon
@@ -551,8 +550,6 @@ function checkLimits() {
 
 function writeCopyDocs() {
   checkLimits();
-  const n = (s) => `(${s.length}/${''})`;
-  void n;
   for (const lang of ['en', 'ro']) {
     const c = COPY[lang];
     const L = lang === 'en';
@@ -607,11 +604,55 @@ ${SCREENSHOTS.map((s) => `- **${s[lang].title}.** ${s[lang].sub}`).join('\n')}
   log('wrote LISTING-COPY.en.md / LISTING-COPY.ro.md');
 }
 
+// ------------------------------------------------------------------ LISTING.md asset table (from the files on disk)
+function writeAssetTable() {
+  const rows = [];
+  const dims = (f) => {
+    if (f.endsWith('.png')) { const { w, h } = pngSize(f); return `${w}×${h}`; }
+    if (f.endsWith('.mp4')) {
+      try {
+        const o = execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=width,height', '-show_entries', 'format=duration', '-of', 'default=nw=1', f]).toString();
+        const g = (k) => (o.match(new RegExp(`${k}=([\\d.]+)`)) || [])[1];
+        const d = Number(g('duration'));
+        return `${g('width')}×${g('height')}, ${Math.floor(d / 60)}:${String(Math.round(d % 60)).padStart(2, '0')}`;
+      } catch { return ''; }
+    }
+    return '';
+  };
+  const add = (rel, purpose, field) => {
+    const f = join(HERE, rel);
+    if (!existsSync(f)) return;
+    const kb = statSync(f).size / 1024;
+    rows.push(`| \`${rel}\` | ${[dims(f), kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`].filter(Boolean).join(', ')} | ${purpose} | ${field} |`);
+  };
+  add('icon/expedo-icon-1200.png', 'App icon, square (Shopify rounds the corners), no text', '**App icon** in the listing and in the app configuration (Dev Dashboard)');
+  for (const s of [512, 256, 128, 64]) add(`icon/expedo-icon-${s}.png`, 'Smaller export of the icon', 'Not uploaded; website, e-mail, docs');
+  for (const s of [512, 64]) add(`icon/expedo-icon-rounded-${s}.png`, 'Rounded-corner variant', 'Not uploaded to Shopify (it rounds the square itself); website, favicon');
+  add('icon/expedo-icon.svg', 'Vector master of the icon', 'Source');
+  add('icon/expedo-icon-rounded.svg', 'Vector master, rounded variant', 'Source');
+  add('icon/icon-preview.png', 'Icon at 160/96/64/32 px on light and dark', 'Check only');
+  for (const lang of ['en', 'ro']) {
+    const L = lang === 'en' ? 'English (primary) listing' : 'Romanian listing / translation';
+    add(`feature/feature-${lang}.png`, `Feature image: ${FEATURE[lang].title}`, `**Feature media** (static image), ${L}`);
+    SCREENSHOTS.forEach((sc, i) => add(`screenshots/${lang}/${sc.id}.png`, `Screenshot ${i + 1}: ${sc[lang].title}`, `**Desktop screenshots**, position ${i + 1}, ${L}`));
+    MOBILE.forEach((m, i) => add(`screenshots/${lang}/mobile/${m.id}.png`, `Mobile screenshot ${i + 1}: ${m[lang].title}`, `**Mobile screenshots**, position ${i + 1}, ${L}`));
+  }
+  add('screenshots/labels-sample.pdf', 'The labels PDF rendered in screenshot 3 (test labels)', 'Reference only');
+  add('review/expedo-review-screencast.mp4', 'Screencast for review: real walkthrough of the demo UI, English captions burned in, H.264 CRF 23', '**Testing instructions → screencast** (upload, or unlisted video link)');
+  add('review/expedo-review-screencast.en.srt', 'The screencast captions as subtitles', 'Optional: subtitles if uploaded to YouTube/Vimeo');
+  add('review/screencast-chapters.json', 'Caption timestamps', 'Reference for the reviewer notes');
+  const table = ['| File | Size | Purpose | Form field |', '|---|---|---|---|', ...rows].join('\n');
+  const f = join(HERE, 'LISTING.md');
+  const md = readFileSync(f, 'utf8').replace(/<!-- assets:start -->[\s\S]*?<!-- assets:end -->/, `<!-- assets:start -->\n${table}\n<!-- assets:end -->`);
+  writeFileSync(f, md);
+  log('updated the asset table in LISTING.md');
+}
+
 // ------------------------------------------------------------------ main
 async function main() {
   ensureDir(TMP);
   if (want('copy')) writeCopyDocs();
-  if (!(want('icon') || want('screens') || want('video'))) return;
+  if (!(want('icon') || want('screens') || want('video'))) { writeAssetTable(); return; }
   ensureFonts();
   const { chromium } = await loadPlaywright();
   const browser = await chromium.launch({ executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined });
@@ -627,6 +668,7 @@ async function main() {
   const pngs = produced.filter((f) => f.endsWith('.png'));
   if (pngs.length) optimizePngs(pngs);
   for (const f of produced) log(`${(statSync(f).size / 1024).toFixed(0).padStart(6)} KB  ${f.replace(HERE + '/', '')}`);
+  writeAssetTable();
 }
 
 main().catch(async (e) => { console.error(e); await stopServer(); process.exit(1); });

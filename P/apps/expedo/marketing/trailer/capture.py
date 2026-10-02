@@ -117,6 +117,15 @@ RECT_JS = """([sels, root]) => {
       out[k] = [l - R.left, t - R.top, r2 - l, b2 - t].map(v => Math.round(v * 10) / 10);
       continue;
     }
+    if (s.startsWith('lines=')) {          // lines=<selector>: one box per rendered line of an inline element
+      const el2 = document.querySelector(s.slice(6)); if (!el2) continue;
+      const rg = document.createRange(); rg.selectNodeContents(el2);
+      const byLine = new Map();
+      for (const r of rg.getClientRects()) { if (r.width < 1) continue; const key = Math.round(r.top / 4);
+        const o = byLine.get(key); byLine.set(key, o ? [Math.min(o[0], r.left), Math.min(o[1], r.top), Math.max(o[2], r.right), Math.max(o[3], r.bottom)] : [r.left, r.top, r.right, r.bottom]); }
+      out[k] = [...byLine.values()].map(([l, t, r2, b2]) => [l - R.left, t - R.top, r2 - l, b2 - t].map(v => Math.round(v * 10) / 10));
+      continue;
+    }
     if (s.startsWith('text=')) {           // text=<selector>|<text>: the first element matching selector containing text
       const [sel, txt] = s.slice(5).split('|');
       el = [...document.querySelectorAll(sel)].find(e => e.textContent.includes(txt));
@@ -197,7 +206,8 @@ def main():
             # 2. orders that need attention: plain-Romanian errors, in red
             goto(pg, '/orders?status=needs_attention')
             rows = {f'row{i}': f'tbody tr:nth-child({i + 1})' for i in range(4)}
-            issues = {f'issue{i}': f'tbody tr:nth-child({i + 1}) .issue-line' for i in range(4)}
+            issues = {**{f'issue{i}': f'tbody tr:nth-child({i + 1}) .issue-line' for i in range(4)},
+                      **{f'msg{i}': f'lines=tbody tr:nth-child({i + 1}) .issue-line > span' for i in range(4)}}
             shot(pg, 'orders_attention', {**rows, **issues, 'table': '.table-wrap', 'tabs': '.tabs', 'tab_bad': 'text=.tabs a|Necesită'})
             goto(pg, '/orders')
             shot(pg, 'orders_open', {**{f'row{i}': f'tbody tr:nth-child({i + 1})' for i in range(10)}, 'table': '.table-wrap', 'tabs': '.tabs'}, full=True)

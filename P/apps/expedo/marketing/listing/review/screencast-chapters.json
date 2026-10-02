@@ -1,0 +1,98 @@
+[
+ {
+  "at": "00:00:00",
+  "caption": "Expedo: Screencast for app review. The app UI is in Romanian; these captions explain each step in English."
+ },
+ {
+  "at": "00:00:07",
+  "caption": "1 · Install: Install on a development store, approve access to orders and fulfillments, then open Expedo from Apps in the Shopify admin."
+ },
+ {
+  "at": "00:00:18",
+  "caption": "2 · Dashboard: After install, the dashboard shows what to do today: orders to process, orders needing attention, parcels on the way and cash on delivery."
+ },
+ {
+  "at": "00:00:25",
+  "caption": "3 · Test mode: The store is in Test mode (yellow banner): AWBs and invoices are test documents, couriers and invoicing apps are not called, Shopify is not changed."
+ },
+ {
+  "at": "00:00:31",
+  "caption": "4 · Couriers: Five couriers: Cargus, Sameday, FAN Courier, GLS, DPD. On a live store you paste the API credentials and click “Testează conexiunea” (Test connection)."
+ },
+ {
+  "at": "00:00:39",
+  "caption": "4 · Couriers: Reviewers: in Test mode no account is needed. Click “Salvează” (Save) with empty fields, then “Folosește ca implicit” (Use as default)."
+ },
+ {
+  "at": "00:00:45",
+  "caption": "5 · Invoicing: SmartBill, FGO or Oblio are set up the same way. The invoice is issued together with the AWB, or only manually."
+ },
+ {
+  "at": "00:00:50",
+  "caption": "6 · Rules: Rules choose the courier per order: easybox orders go to Sameday, heavy orders get two parcels, large cash-on-delivery orders wait for a check."
+ },
+ {
+  "at": "00:00:57",
+  "caption": "7 · Orders: Orders with a problem are stopped before any courier call. Each problem says, in Romanian, what is wrong and what to do."
+ },
+ {
+  "at": "00:01:04",
+  "caption": "8 · Address fix: Order #1115 has no county (“Lipsește județul”). Pick it from the list and save: the address is checked again."
+ },
+ {
+  "at": "00:01:14",
+  "caption": "8 · Address fix: Order #1116: FAN Courier does not know the locality “Volutari”. Expedo suggests “Ai vrut: Voluntari, …?” (Did you mean…?)."
+ },
+ {
+  "at": "00:01:18",
+  "caption": "8 · Address fix: Type the right locality and save. The change stays in Expedo; the order in Shopify is not modified."
+ },
+ {
+  "at": "00:01:23",
+  "caption": "9 · AWB + invoice: “Generează AWB + factură” creates the AWB at the courier and the invoice. In Test mode both are test documents."
+ },
+ {
+  "at": "00:01:29",
+  "caption": "10 · Bulk: Open “Gata de procesat” (Ready), select the orders and click “Generează AWB + factură” once for all of them."
+ },
+ {
+  "at": "00:01:33",
+  "caption": "10 · Bulk: Done: every order has one AWB and one invoice. Clicking again never creates a second AWB or invoice for the same order."
+ },
+ {
+  "at": "00:01:38",
+  "caption": "11 · Labels: “Etichete” (Labels) downloads one PDF with every label, A6 or A4. In Test mode the labels are marked as test labels."
+ },
+ {
+  "at": "00:01:44",
+  "caption": "11 · Picking list: “Listă de picking” (Picking list) adds up the products to pick for the selected orders, ready to print."
+ },
+ {
+  "at": "00:01:50",
+  "caption": "12 · Tracking: Parcels are checked every 30 minutes, or on demand with “Verifică coletele” (Check parcels)."
+ },
+ {
+  "at": "00:01:56",
+  "caption": "12 · Cash on delivery: A delivered cash-on-delivery parcel is marked collected (“încasat”). On a live store the order is also marked paid in Shopify."
+ },
+ {
+  "at": "00:02:02",
+  "caption": "12 · History: Every step is in the order history: import, AWB, invoice, tracking, delivery, cash collected and payment recorded on the invoice."
+ },
+ {
+  "at": "00:02:08",
+  "caption": "13 · COD export: “Export ramburs (CSV)” exports cash-on-delivery amounts per parcel, to check courier payments."
+ },
+ {
+  "at": "00:02:14",
+  "caption": "14 · Automation: Optional automatic processing for new orders. Temporary courier errors are retried after 1, 5, 15, 60 and 180 minutes."
+ },
+ {
+  "at": "00:02:21",
+  "caption": "15 · Go live: When ready: switch to Live. Real AWBs and invoices; the order is fulfilled in Shopify with tracking and the customer gets Shopify’s shipping e-mail."
+ },
+ {
+  "at": "00:02:31",
+  "caption": "Expedo: Support: office@krea.ro · ARTEMIS DIGITAL SRL"
+ }
+]

@@ -148,22 +148,52 @@
     101.8
    ],
    "issue0": [
-    402.8,
+    403.2,
     314.5,
-    594.1,
+    593.8,
     18.8
    ],
    "issue1": [
-    402.8,
+    403.2,
     398,
-    594.1,
+    593.8,
     18.8
    ],
    "issue2": [
-    402.8,
+    403.2,
     481.5,
-    594.1,
+    593.8,
     37.5
+   ],
+   "msg0": [
+    [
+     420.1,
+     315.5,
+     286.9,
+     15
+    ]
+   ],
+   "msg1": [
+    [
+     420.1,
+     399,
+     562.4,
+     15
+    ]
+   ],
+   "msg2": [
+    [
+     420.1,
+     482.5,
+     569.2,
+     15
+    ],
+    [
+     420.1,
+     501.3,
+     535.2,
+     15
+    ]
    ],
    "table": [
     248,
@@ -708,10 +738,10 @@
   }
  },
  "toast_1111_done": {
-  "w": 307.9,
+  "w": 311.2,
   "h": 40.2,
   "rects": {},
-  "text": "AWB TEST3719923552 · factura TEST 0009"
+  "text": "AWB TEST3783539996 · factura TEST 0009"
  },
  "d1111_done": {
   "w": 760,
@@ -1750,7 +1780,7 @@
    "name": "#1118",
    "customer": "Gabriela Niculescu",
    "city": "Sibiu",
-   "awb": "TEST3721080625",
+   "awb": "TEST3784677812",
    "invoice": "TEST 0010",
    "courier": "cargus",
    "total": 283,
@@ -1761,7 +1791,7 @@
    "name": "#1116",
    "customer": "Ion Marin",
    "city": "Voluntari",
-   "awb": "TEST3721081351",
+   "awb": "TEST3784679037",
    "invoice": "TEST 0011",
    "courier": "cargus",
    "total": 313,
@@ -1772,7 +1802,7 @@
    "name": "#1113",
    "customer": "Elena Dumitrescu",
    "city": "Iași",
-   "awb": "TEST3721082043",
+   "awb": "TEST3784680071",
    "invoice": "TEST 0012",
    "courier": "cargus",
    "total": 114.5,
@@ -1783,7 +1813,7 @@
    "name": "#1112",
    "customer": "Radu Georgescu",
    "city": "Timișoara",
-   "awb": "TEST3721082842",
+   "awb": "TEST3784681021",
    "invoice": "TEST 0013",
    "courier": "cargus",
    "total": 1052.9,
@@ -1794,7 +1824,7 @@
    "name": "#1110",
    "customer": "Cristina Stan",
    "city": "Bucuresti Sector 6",
-   "awb": "TEST3721083411",
+   "awb": "TEST3784682079",
    "invoice": "TEST 0014",
    "courier": "cargus",
    "total": 94.9,
@@ -1805,7 +1835,7 @@
    "name": "#1109",
    "customer": "Andreea Popescu",
    "city": "Cluj-Napoca",
-   "awb": "TEST3721084121",
+   "awb": "TEST3784683070",
    "invoice": "TEST 0015",
    "courier": "sameday",
    "total": 144,

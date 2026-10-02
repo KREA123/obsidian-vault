@@ -28,7 +28,8 @@ export const COPY = {
       'Rules choose courier, parcels or hold, e.g. easybox orders go to Sameday',
       'Test mode on real orders: test AWBs and invoices, nothing leaves the app',
       'Every error explained in Romanian, with what to do next',
-      'One AWB and one invoice per order, even on a double click; failures retried',
+      'One AWB and one invoice per order, even after a double click',
+      'Temporary courier errors retried automatically, without blocking the order',
       'Picking list for the warehouse and cash-on-delivery export to CSV',
     ],
     // Add once the feature ships (it is being built now; don't list it before it is live):
@@ -49,7 +50,8 @@ export const COPY = {
       'Reguli pentru curier, colete sau așteptare, ex. easybox → Sameday',
       'Mod de probă pe comenzi reale: AWB-uri și facturi de test, nu pleacă nimic',
       'Fiecare eroare explicată în română, cu ce ai de făcut',
-      'Un singur AWB și o singură factură pe comandă; erorile temporare se reîncearcă',
+      'Un singur AWB și o singură factură pe comandă, chiar dacă apeși de două ori',
+      'Erorile temporare ale curierului se reîncearcă automat',
       'Listă de picking pentru depozit și export ramburs în CSV',
     ],
     featuresPending: ['Avertizare pentru clienții care au mai refuzat colete'],
@@ -127,6 +129,6 @@ export const MOBILE = [
 ];
 
 export const FEATURE = {
-  en: { title: 'From order to AWB, invoice and collected cash', sub: 'For Shopify stores shipping in Romania', alt: 'Expedo order list with orders selected for AWB and invoice, and an order marked delivered with cash collected' },
-  ro: { title: 'De la comandă la AWB, factură și ramburs încasat', sub: 'Pentru magazinele Shopify care livrează în România', alt: 'Lista de comenzi Expedo cu comenzi selectate pentru AWB și factură și o comandă livrată cu rambursul încasat' },
+  en: { title: 'From order to AWB, invoice and collected cash', sub: 'For online stores shipping in Romania', alt: 'Expedo order list with orders selected for AWB and invoice, and an order marked delivered with cash collected' },
+  ro: { title: 'De la comandă la AWB, factură și ramburs încasat', sub: 'Pentru magazinele online care livrează în România', alt: 'Lista de comenzi Expedo cu comenzi selectate pentru AWB și factură și o comandă livrată cu rambursul încasat' },
 };
