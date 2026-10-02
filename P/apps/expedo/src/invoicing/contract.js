@@ -51,7 +51,7 @@
 //   paymentMethod: 'card'|'cod'|'transfer'|'other',
 //   mentions?: string,                  // e.g. 'Comanda #1024'
 //   sendEmail?: boolean,
-//   idempotencyKey: string,             // '#1024', or '#1024-2' when re-invoicing after a storno; use for provider duplicate checks
+//   idempotencyKey: string,             // store-scoped, e.g. 'mystore:#1024', or 'mystore:#1024-2' when re-invoicing after a storno; use for provider duplicate checks
 // }
 //
 // Prices are sent VAT-inclusive (prețuri cu TVA inclus) — that's how Shopify stores sell to

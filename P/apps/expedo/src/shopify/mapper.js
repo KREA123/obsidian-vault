@@ -11,7 +11,8 @@ export function detectPaymentMethod(gateways = [], financialStatus) {
   const g = gateways.join(' | ');
   if (COD_GATEWAYS.test(g)) return 'cod';
   if (TRANSFER_GATEWAYS.test(g)) return 'transfer';
-  if (/manual/i.test(g) && financialStatus !== 'PAID') return 'cod';
+  // A bare "manual" gateway can be anything (bank transfer, pay at pickup): don't collect it as ramburs.
+  if (/manual/i.test(g) && financialStatus !== 'PAID') return 'other';
   if (gateways.length) return 'card';
   return financialStatus === 'PAID' ? 'card' : 'other';
 }
@@ -75,7 +76,7 @@ export function mapOrder(o) {
 
   const financialStatus = o.displayFinancialStatus || '';
   const paymentMethod = detectPaymentMethod(o.paymentGatewayNames || [], financialStatus);
-  const total = money(o.totalPriceSet);
+  const total = money(o.currentTotalPriceSet ?? o.totalPriceSet);
   const outstanding = money(o.totalOutstandingSet);
 
   return {
@@ -92,12 +93,13 @@ export function mapOrder(o) {
     gateways: o.paymentGatewayNames || [],
     paymentMethod,
     total,
-    subtotal: money(o.subtotalPriceSet),
-    shippingTotal: money(o.totalShippingPriceSet),
-    discountTotal: money(o.totalDiscountsSet),
+    // "current" amounts reflect order edits and refunds; the plain ones are what was first charged.
+    subtotal: money(o.currentSubtotalPriceSet ?? o.subtotalPriceSet),
+    shippingTotal: money(o.currentShippingPriceSet ?? o.totalShippingPriceSet),
+    discountTotal: money(o.currentTotalDiscountsSet ?? o.totalDiscountsSet),
     outstanding,
     // Ramburs = what the customer still owes. Card orders: 0.
-    codAmount: paymentMethod === 'cod' ? round2(outstanding || total) : 0,
+    codAmount: paymentMethod === 'cod' ? round2(o.totalOutstandingSet ? outstanding : total) : 0,
     email: o.email || '',
     phone: o.phone || ship.phone || o.billingAddress?.phone || '',
     customerName: [ship.firstName, ship.lastName].filter(Boolean).join(' ') || ship.name || '',

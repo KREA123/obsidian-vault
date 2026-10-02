@@ -1,9 +1,10 @@
 import { ProcessingError, authError } from '../core/errors.js';
 import { TrackingStatus as S } from './contract.js';
+import { findLocality, norm, normCounty } from './locality.js';
 import {
-  NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, bufferToJson, norm, normCounty,
-  resolveLocality, roLocalToIso, latestMeaningful,
-} from './ro-nomenclator.js';
+  NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, bufferToJson, roLocalToIso, latestMeaningful,
+  accountKey, money, assertRonCod, shortText,
+} from './util.js';
 
 // FAN Courier — selfAWB REST API v2.0 (https://api.fancourier.ro).
 // Source: "API DOCUMENTATION FAN Courier V 2.0, September 2025" (fancourier.ro PDF) and the
@@ -11,6 +12,17 @@ import {
 //
 // Auth: POST /login (username, password) → bearer token valid 24h; cached via ctx.cache.
 // Every call also needs `clientId` = the selfAWB branch (punct de lucru) the AWB is issued from.
+//
+// Live check 2026-10 (invalid credentials):
+//   POST /login (form or JSON body) → 401 {"status":"error","message":"These credentials do not match our records."}
+//   POST /login without fields     → 422 {"status":"fail","message":"The username field is required.",
+//                                         "data":{"errors":{"username":[...],"password":[...]}}}
+//   any authenticated route, bad/no token → 401 {"message":"These credentials do not match our records."}
+//   (intern-awb / awb/label / DELETE awb add "status":"error"); unknown route → 404 {"message":"Not found"}.
+//   Laravel validation errors are therefore under data.errors, not at the top level.
+//   GET /reports/counties, /reports/localities (13 834 rows, no paging) and /reports/streets are PUBLIC:
+//   no token needed. Locality names carry no diacritics, are unique per county, and same-named villages
+//   of one county are spelled "Alun (Bosorod)" / "Alun (Bunila)" (827 such names).
 
 const PROVIDER = 'FAN Courier';
 const ID = 'fancourier';
@@ -99,7 +111,8 @@ function clientIdOf(ctx) {
 
 // ---------------------------------------------------------------- auth & http
 
-const tokenKey = (ctx) => `fancourier:token:${ctx.credentials?.username || ''}`;
+/** One token per account (user + password): two FAN accounts in one store never share it. */
+export const tokenKey = (ctx) => `fancourier:token:${accountKey(ctx.credentials?.username, ctx.credentials?.password)}`;
 
 async function login(ctx) {
   const { username, password } = ctx.credentials || {};
@@ -151,7 +164,9 @@ async function api(ctx, path, { query, ...opts } = {}) {
 
 function mapHttpError(status, body) {
   if (status === 422 || status === 400) {
-    const errs = body?.errors || body?.message;
+    // Laravel: {"status":"fail","message":"...","data":{"errors":{"field":["..."]}}} (live shape);
+    // older/other routes: {"errors":{...}} or just {"message":"..."}.
+    const errs = body?.data?.errors || body?.errors || body?.message;
     return fanValidationError(errs, body);
   }
   return undefined;
@@ -183,10 +198,11 @@ function fanValidationError(errors, raw) {
       }
     }
   }
+  const said = shortText(pairs.map(([, t]) => t).filter(Boolean)[0]);
   return new ProcessingError({
     code: 'COURIER_REJECTED',
     message: 'FAN Courier a refuzat AWB-ul.',
-    hint: 'Verifică datele comenzii și setările FAN Courier (serviciu, ID client). Detaliile sunt în jurnal.',
+    hint: `Verifică datele comenzii și setările FAN Courier (serviciu, ID client).${said ? ` FAN spune: „${said}”.` : ' Detaliile sunt în jurnal.'}`,
     provider: ID,
     details: raw,
   });
@@ -196,7 +212,8 @@ function fanValidationError(errors, raw) {
 
 async function loadLocalities(ctx) {
   return cached(ctx, 'fancourier:localities', NOMENCLATOR_TTL, async () => {
-    const res = await api(ctx, '/reports/localities');
+    // Public endpoint (no token): a login problem must not block address validation.
+    const res = await ctx.http(PROVIDER, `${BASE}/reports/localities`, { timeoutMs: 60_000 });
     const rows = Array.isArray(res.body?.data) ? res.body.data : [];
     if (!rows.length) throw new ProcessingError({ code: 'PROVIDER_DOWN', message: 'FAN Courier nu a trimis lista de localități.', hint: 'Reîncercăm automat.', retryable: true, provider: ID, details: res.body });
     return rows.map((r) => [r.name, r.county]);
@@ -205,9 +222,9 @@ async function loadLocalities(ctx) {
 
 export async function resolveFanLocality(ctx, recipient) {
   const rows = await loadLocalities(ctx);
-  const hit = resolveLocality(rows, recipient, {
-    nameOf: (r) => r[0], countyOf: (r) => r[1], describe: (r) => r[0],
-    allowDuplicates: true, provider: PROVIDER, providerId: ID,
+  // FAN takes county + locality NAMES, so the exact FAN spelling ("Alun (Bosorod)") is what we send.
+  const hit = findLocality(rows, recipient, {
+    nameOf: (r) => r[0], countyOf: (r) => r[1], sameNameIsSame: true, provider: ID, providerName: PROVIDER,
   });
   return { locality: hit[0], county: hit[1] };
 }
@@ -220,7 +237,7 @@ async function getPickupPoint(ctx, id) {
 
 // ---------------------------------------------------------------- payload
 
-const DEFAULT_DIMENSIONS = { length: 20, width: 15, height: 9 }; // fits a FANbox "S" drawer; VERIFY: FAN requires dimensions
+const DEFAULT_DIMENSIONS = { length: 20, width: 15, height: 9 }; // fits a FANbox "S" drawer; docs Sept 2025: info.dimensions is mandatory
 
 export function buildAwbPayload(shipment, settings, { clientId, county, locality, locker }) {
   const r = shipment.recipient;
@@ -239,8 +256,9 @@ export function buildAwbPayload(shipment, settings, { clientId, county, locality
     ? {
       county: locker?.address?.county || county,
       locality: locker?.address?.locality || locality,
-      // The schema table says "pickupLocation", every example and the PHP client send "pickupLocationId".
-      pickupLocationId: shipment.lockerId, // VERIFY: field name (docs disagree)
+      // The schema table says "pickupLocation"; the FANbox/PayPoint chapters of the Sept 2025 docs, all
+      // their examples and the PHP client use "pickupLocationId" (e.g. "F1011137").
+      pickupLocationId: shipment.lockerId,
     }
     : {
       county,
@@ -256,9 +274,9 @@ export function buildAwbPayload(shipment, settings, { clientId, county, locality
       info: {
         service,
         packages: { parcel: isFanbox ? 1 : Math.max(0, shipment.parcels ?? 1), envelope: shipment.envelopes || 0 },
-        weight: Math.max(1, Math.ceil(shipment.weightKg || 1)), // VERIFY: FAN wants integer kg (examples use ints)
-        cod: shipment.cod > 0 ? Number(shipment.cod.toFixed(2)) : 0,
-        declaredValue: shipment.declaredValue || 0,
+        weight: Math.max(1, Math.ceil(shipment.weightKg || 1)), // VERIFY: docs say "numeric", every example is an int
+        cod: money(shipment.cod), // no currency field: always RON (non-RON refused in createShipment)
+        declaredValue: money(shipment.declaredValue),
         payment: settings.payer === 'recipient' ? 'recipient' : 'sender',
         observation: (shipment.notes || '').slice(0, 255),
         content: [shipment.reference, shipment.contents].filter(Boolean).join(' ').slice(0, 255),
@@ -332,6 +350,7 @@ export default {
 
   async createShipment(ctx, shipment) {
     const clientId = clientIdOf(ctx);
+    assertRonCod(shipment, { provider: ID, providerName: PROVIDER });
     const settings = ctx.settings || {};
     const r = shipment.recipient;
     let county = r.county;
@@ -384,7 +403,7 @@ export default {
     const q = new URLSearchParams({ clientId: String(clientId) });
     q.append('awbs[]', awb);
     q.set('pdf', '1');
-    // FAN prints A4/A5; A6 only for AWBs issued with ePOD (option X). VERIFY: A6 on non-ePOD AWBs.
+    // FAN prints A4/A5; A6 only for AWBs issued with ePOD (option X) — docs: "A6 (only for ePOD)".
     q.set('format', fmt === 'A6' ? (ctx.settings?.labelFormat === 'A6' ? 'A6' : 'A5') : fmt);
     const res = await api(ctx, '/awb/label', { query: q.toString(), responseType: 'buffer', headers: { Accept: 'application/pdf' } });
     if (!isPdf(res.body)) {

@@ -33,11 +33,17 @@ const fakeCourier = {
 const fakeInvoicer = {
   id: 'fakeinv', name: 'Facturare falsă', credentialFields: [], settingsFields: [],
   async testConnection() { return { ok: true }; },
-  async createInvoice() { calls.createInvoice++; return { series: 'REAL', number: String(calls.createInvoice) }; },
+  async createInvoice(ctx, invoice) { calls.createInvoice++; calls.lastInvoice = invoice; return { series: 'REAL', number: String(calls.createInvoice) }; },
   async getPdf() { return Buffer.from('%PDF'); },
   async cancelInvoice() {},
-  async registerPayment(ctx, p) { calls.registerPayment.push(p); },
+  async registerPayment(ctx, p) { calls.registerPayment.push(p); return paymentResult; },
+  async stornoInvoice() {
+    if (stornoBehaviour) return stornoBehaviour();
+    return { series: 'REAL', number: 'S1' };
+  },
 };
+let paymentResult;
+let stornoBehaviour = null;
 
 let store;
 let seq = 0;
@@ -288,4 +294,60 @@ test('worker: a retryable failure while a twin job is pending does not leave the
   const rows = d.prepare(`SELECT status FROM jobs WHERE key = ?`).all(`process:${o.id}`).map((r) => r.status);
   assert.ok(!rows.includes('running'), `job stuck: ${rows}`);
   assert.equal(rows.filter((s) => s === 'pending').length, 1);
+});
+
+test('invoice idempotency key is scoped to the store (two shops, one invoicing company)', async () => {
+  setMode('live');
+  const o = add();
+  await P.processOrder(store, o.id, { force: true });
+  assert.equal(calls.lastInvoice.idempotencyKey, `live-test:${o.name}`);
+  // After a storno the key gets a suffix, still store-scoped.
+  await P.stornoInvoice(store, o.id);
+  await P.processOrder(store, o.id, { steps: ['invoice'], force: true });
+  assert.equal(calls.lastInvoice.idempotencyKey, `live-test:${o.name}-2`);
+  // Long shop domains stay under 60 characters and remain distinct.
+  const long = db.upsertStore({ shop: `${'a'.repeat(58)}.myshopify.com`, accessToken: 't' });
+  const key = P.invoiceIdempotencyKey(long, '#100234', 3);
+  assert.ok(key.length <= 60, key);
+  assert.ok(key.endsWith(':#100234-3'));
+  assert.notEqual(key, P.invoiceIdempotencyKey({ shop: `${'a'.repeat(57)}b.myshopify.com` }, '#100234', 3));
+});
+
+test('a storno retried after a timeout ("already reversed") counts as done', async () => {
+  setMode('live');
+  const o = add();
+  await P.processOrder(store, o.id, { force: true });
+  stornoBehaviour = () => { throw new ProcessingError({ code: 'INVOICE_ALREADY_REVERSED', message: 'deja stornată' }); };
+  try {
+    await P.stornoInvoice(store, o.id);
+  } finally { stornoBehaviour = null; }
+  const after = db.getOrder(o.id);
+  assert.equal(after.invoice_number, null);
+  assert.ok(db.orderEvents(o.id).some((e) => e.level === 'warning' && /deja stornat/i.test(e.message)));
+  // Other errors still fail.
+  await P.processOrder(store, o.id, { steps: ['invoice'], force: true });
+  stornoBehaviour = () => { throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'nu' }); };
+  try {
+    await assert.rejects(P.stornoInvoice(store, o.id));
+  } finally { stornoBehaviour = null; }
+  assert.ok(db.getOrder(o.id).invoice_number);
+});
+
+test('registerPayment reporting alreadyPaid / skipped is logged as info, not as a new payment', async () => {
+  setMode('live');
+  fakeCourier.track = async (ctx, awbs) => awbs.map((awb) => ({ awb, status: TrackingStatus.DELIVERED, statusText: 'livrat' }));
+  try {
+    for (const [result, re] of [[{ alreadyPaid: true }, /deja/i], [{ skipped: true }, /nu a fost înregistrat/i]]) {
+      paymentResult = result;
+      const o = add();
+      await P.processOrder(store, o.id, { force: true });
+      await P.trackStore(store);
+      const ev = db.orderEvents(o.id).filter((e) => e.step === 'invoice');
+      assert.ok(!ev.some((e) => /^Încasarea a fost înregistrată/.test(e.message)), JSON.stringify(ev));
+      assert.ok(ev.some((e) => e.level === 'info' && re.test(e.message)), JSON.stringify(ev.map((e) => e.message)));
+    }
+  } finally {
+    paymentResult = undefined;
+    fakeCourier.track = async (ctx, awbs) => awbs.map((awb) => ({ awb, status: TrackingStatus.IN_TRANSIT, statusText: 'tranzit' }));
+  }
 });

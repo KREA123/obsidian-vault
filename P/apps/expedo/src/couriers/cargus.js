@@ -1,9 +1,12 @@
 import { ProcessingError, authError } from '../core/errors.js';
 import { TrackingStatus } from './contract.js';
 import {
-  matchLocality, matchCounty, localityError, countyError, isBucharest, normalizePhoneRO,
-  classifyStatusText, parseDimensions, collectMessages, shortText, normalizeText, compactKey,
-} from './ro-helpers.js';
+  matchLocality, matchCounty, localityError, countyError, isBucharest, normalizeText, compactKey,
+} from './locality.js';
+import {
+  normalizePhoneRO, classifyStatusText, parseDimensions, collectMessages, shortText,
+  accountKey, money, assertRonCod, courierDateToIso,
+} from './util.js';
 
 // Cargus — "UrgentOnlineAPI" (Azure API Management).
 // Sources: Cargus API technical documentation V3 (cargus.ro/wp-content/uploads/DocumentationAPIV3-2.3.2-EN.pdf),
@@ -12,6 +15,14 @@ import {
 //
 // Auth: every call sends `Ocp-Apim-Subscription-Key`; POST LoginUser {UserName, Password} returns a
 // JSON string token (valid 24h) sent as `Authorization: Bearer <token>`.
+//
+// Live check 2026-10 (invalid credentials only): Azure API Management answers every known operation
+// with HTTP 401 {"statusCode":401,"message":"Access denied due to invalid subscription key. ..."}
+// ("... due to missing subscription key ..." without the header) and unknown operations with 404
+// {"statusCode":404,"message":"Resource not found"} — the key is checked before the backend, so the
+// "bad user, valid key" answer of LoginUser could not be observed (docs: non-200 status).
+// APIM routes on required query parameters: LoginUser is POST-only, AwbDocuments needs barCodes+type,
+// Localities needs countryId, AwbTrace/WithRedirect and DELETE Awbs need barCode. All paths below exist.
 //
 // Why we resolve the locality ourselves: competitors send CountyName/LocalityName as free text and
 // Cargus refuses anything that is not spelled exactly like its nomenclator (diacritics, "Sector 3",
@@ -69,7 +80,8 @@ export function mapCargusEvent(event) {
 // HTTP + auth
 
 const subscriptionKey = (ctx) => String(ctx.credentials?.subscriptionKey || '').trim();
-const tokenCacheKey = (ctx) => `cargus:token:${ctx.credentials?.username || ''}`;
+// One token per account (subscription key + user + password), never shared across accounts of a store.
+export const tokenCacheKey = (ctx) => `cargus:token:${accountKey(subscriptionKey(ctx), ctx.credentials?.username, ctx.credentials?.password)}`;
 
 function baseHeaders(ctx) {
   return { 'Ocp-Apim-Subscription-Key': subscriptionKey(ctx), 'Ocp-Apim-Trace': 'true' };
@@ -179,7 +191,7 @@ async function getLocalities(ctx, countyId) {
       name: l.Name,
       // docs: CodPostal; some API versions: PostalCode
       postalCode: l.CodPostal ?? l.PostalCode ?? l.ZipCode ?? '',
-      parent: l.ParentName,
+      parent: l.ParentName || '',
       extraKm: l.ExtraKm,
     }));
     if (list.length) ctx.cache?.set(key, list, NOMENCLATOR_TTL);
@@ -194,7 +206,7 @@ export async function resolveLocality(ctx, recipient) {
   if (!county) throw countyError({ provider: PROVIDER, providerName: NAME, county: recipient.county, countyCode: recipient.countyCode });
 
   const q = { city: recipient.city, zip: recipient.zip, sector: recipient.sector, county: recipient.county, countyCode: recipient.countyCode };
-  const result = matchLocality(q, await getLocalities(ctx, county.id));
+  const result = matchLocality(q, await getLocalities(ctx, county.id), { fuzzy: true });
   if (result.match) return { county, locality: result.match, via: result.via };
 
   // Bucharest ↔ Ilfov mix-ups are common ("Voluntari, București" or "București, Ilfov"):
@@ -307,7 +319,7 @@ export function buildAwbPayload(ctx, shipment, { locality, county, pickupPointId
   if (parcels > 0) totalWeight = Math.max(totalWeight, parcels);
   const dims = shipment.dimensionsCm || parseDimensions(s.defaultDimensions) || { length: 30, width: 20, height: 10 };
   const contents = String(shipment.contents || '').slice(0, 250);
-  const cod = Math.max(0, Number(shipment.cod) || 0);
+  const cod = money(shipment.cod); // Cargus has no currency field: always RON (non-RON refused in createShipment)
   const bank = (s.codType || 'bank') === 'bank';
   const serviceId = pickService(s, shipment);
   const phone = normalizePhoneRO(r.phone);
@@ -320,7 +332,7 @@ export function buildAwbPayload(ctx, shipment, { locality, county, pickupPointId
     Envelopes: envelopes,
     TotalWeight: totalWeight,
     ServiceId: serviceId,
-    DeclaredValue: Math.max(0, Number(shipment.declaredValue) || 0),
+    DeclaredValue: money(shipment.declaredValue),
     CashRepayment: bank ? 0 : cod,
     BankRepayment: bank ? cod : 0,
     OtherRepayment: '',
@@ -400,8 +412,9 @@ async function resolvePickupPointId(ctx) {
   });
 }
 
-// Docs pass AWB lists as a JSON array in the query (barCodes=[804419419,804418863]).
-// VERIFY: AwbDocuments/AwbTrace batch format against the live API (official plugins pass the same JSON list).
+// Docs V3 pass AWB lists as a JSON array in the query (AwbDocuments?barCodes=[804419419,804418863]&type=PDF
+// &format=1, AwbTrace/WithRedirect?barCode=[...]); the live APIM accepts those parameter names.
+// VERIFY: max AWBs per AwbTrace call (we send 50) — the docs give no limit.
 const encodeBarcodes = (awbs) => encodeURIComponent(`[${awbs.map((a) => (/^\d+$/.test(a) ? a : JSON.stringify(a))).join(',')}]`);
 
 // ---------------------------------------------------------------------------------------------
@@ -488,6 +501,7 @@ const adapter = {
 
   async createShipment(ctx, shipment) {
     const r = shipment.recipient || {};
+    assertRonCod(shipment, { provider: PROVIDER, providerName: NAME });
     const pickupPointId = await resolvePickupPointId(ctx);
     let place = {};
     if (shipment.lockerId) {
@@ -554,12 +568,12 @@ const adapter = {
           .sort((a, b) => String(a.Date).localeCompare(String(b.Date)));
         const last = events[events.length - 1];
         const status = mapCargusEvent(last);
-        const d = last?.Date ? new Date(last.Date) : null; // VERIFY: Cargus dates have no timezone (Europe/Bucharest)
         out.push({
           awb: code,
           status,
           statusText: last?.Description || (last ? 'Necunoscut' : 'AWB emis'),
-          at: d && !Number.isNaN(d.getTime()) ? d.toISOString() : undefined,
+          // Docs examples carry no zone ("2019-10-24T12:33:12.035"): Bucharest local time, not the server's.
+          at: courierDateToIso(last?.Date),
           codCollected: status === TrackingStatus.DELIVERED,
         });
       }

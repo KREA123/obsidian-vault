@@ -15,6 +15,10 @@ fragment OrderFields on Order {
   totalPriceSet { ...Money }
   subtotalPriceSet { ...Money }
   totalShippingPriceSet { ...Money }
+  currentTotalPriceSet { ...Money }
+  currentSubtotalPriceSet { ...Money }
+  currentShippingPriceSet { ...Money }
+  currentTotalDiscountsSet { ...Money }
   totalDiscountsSet { ...Money }
   totalOutstandingSet { ...Money }
   shippingAddress { ...Addr }

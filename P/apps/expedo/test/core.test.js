@@ -191,3 +191,17 @@ test('bucharestDayStart is local midnight in UTC, DST-aware', async () => {
   assert.equal(bucharestDayStart(new Date('2026-01-15T12:00:00Z')), '2026-01-14T22:00:00.000Z');
   assert.equal(bucharestDayStart(new Date('2026-03-29T12:00:00Z')), '2026-03-28T22:00:00.000Z');
 });
+
+test('mapper: current totals after edits, COD never re-collects paid orders, bare manual gateway is not COD', () => {
+  const edited = mapOrder({ ...gqlOrder, currentTotalPriceSet: money(115), currentSubtotalPriceSet: money(90), totalOutstandingSet: money(115) });
+  assert.equal(edited.total, 115);
+  assert.equal(edited.subtotal, 90);
+  assert.equal(edited.codAmount, 115);
+  const paid = mapOrder({ ...gqlOrder, totalOutstandingSet: money(0) });
+  assert.equal(paid.codAmount, 0);
+  const manual = mapOrder({ ...gqlOrder, paymentGatewayNames: ['manual'] });
+  assert.equal(manual.paymentMethod, 'other');
+  assert.equal(manual.codAmount, 0);
+  const plan = planOrder(manual, withDefaults({ courier: { default: 'cargus' } }), {});
+  assert.ok(plan.issues.some((i) => i.code === 'PAYMENT_UNKNOWN'));
+});

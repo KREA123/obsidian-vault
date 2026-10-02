@@ -2,10 +2,11 @@ import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { ProcessingError, authError } from '../core/errors.js';
 import { TrackingStatus as S } from './contract.js';
+import { cityVariants, compactKey, localityKeys, matchLocality, localityError } from './locality.js';
 import {
-  NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, norm, resolveLocality, closest,
-  stripPrefix, cityVariants, splitStreet, toIntlPhone, latestMeaningful,
-} from './ro-nomenclator.js';
+  NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, splitStreet, toIntlPhone, latestMeaningful,
+  accountKey, money,
+} from './util.js';
 
 // GLS Romania — MyGLS API, REST/JSON (https://api.mygls.ro/ParcelService.svc/json/<Method>).
 // Source: "MyGLS API for system integration" ver. 25.12.11 (api.test.mygls.ro/docs/MyGLS_API.pdf)
@@ -13,7 +14,22 @@ import {
 //
 // No session: every body carries Username + Password, where Password is the SHA-512 digest of the
 // password as a JSON array of byte values (0-255). The doc's change log says ClientNumberList must
-// not be used, so it is omitted. Bad credentials come back as HTTP 401.
+// not be used, so it is omitted.
+//
+// Live check 2026-10 (api.mygls.ro and api.test.mygls.ro behave the same; WSDL ?singleWsdl is public):
+//  - bad credentials are NOT an HTTP error: HTTP 200 with the method's error list, e.g.
+//    {"GetParcelStatusErrors":[{"ErrorCode":-1,"ErrorDescription":"Unauthorized.",...}],"ParcelNumber":0,
+//     "ParcelStatusList":[],...} (same in GetParcelListErrors, GetPrintedLabelsErrorList,
+//    DeleteLabelsErrorList, PrintLabelsErrorList);
+//  - after ~5 failed logins the user is LOCKED: ErrorCode -1 "Too many failed login attempts. Your
+//    account has been locked until 11:13. Please try logging in later." — so a wrong password must
+//    never be retried in a loop (we stop at the first auth error and remember it for a while);
+//  - GetParcelListStatuses with bad credentials answers {"GetParcelListStatusesErrors":[],"ParcelList":[]}
+//    (silent!), so an empty batch is double-checked with GetParcelStatuses;
+//  - MasterDataService/GetLocations drops the connection (prod) / 502 (test) — the locality
+//    nomenclator is optional here; unknown methods → 404 HTML page.
+//  - WSDL: INSParameter is ServiceParameterDecimal {Value: decimal}, PSDParameter is
+//    {StringValue, IntegerValue}, StatusCode is a string, ParcelProperties.Weight decimal (kg).
 //
 // Parcels are addressed two ways: ParcelId (database id, needed by GetPrintedLabels / DeleteLabels)
 // and ParcelNumber (the number printed on the label = our AWB, used for tracking). We remember the
@@ -58,6 +74,8 @@ export function mapGlsStatus(code) {
   if (Object.hasOwn(GLS_STATUS, n)) return GLS_STATUS[n];
   return S.UNKNOWN;
 }
+
+const AUTH_FAIL_TTL = 15 * 60; // remember a rejected login: each retry counts towards GLS's lockout
 
 // MyGLS ErrorCode (Appendix A) → merchant message.
 const GLS_ERRORS = {
@@ -108,9 +126,14 @@ function clientNumber(ctx) {
   return n;
 }
 
+const account = (ctx) => accountKey(baseUrl(ctx), ctx.credentials?.username, ctx.credentials?.password);
+const authFailKey = (ctx) => `gls:authfail:${account(ctx)}`;
+
 async function call(ctx, service, method, body, { timeoutMs = 60_000 } = {}) {
   const { username, password } = ctx.credentials || {};
   if (!username || !password) throw authError(PROVIDER, 'missing credentials');
+  const failed = await cacheGet(ctx, authFailKey(ctx));
+  if (failed) throw rememberedAuthError(failed);
   const url = `${baseUrl(ctx)}/${service}.svc/json/${method}`;
   const res = await ctx.http(PROVIDER, url, {
     method: 'POST',
@@ -120,12 +143,44 @@ async function call(ctx, service, method, body, { timeoutMs = 60_000 } = {}) {
   return res.body || {};
 }
 
+/** "Too many failed login attempts... locked until 11:13" → "11:13". */
+const lockedUntil = (text) => String(text || '').match(/locked until ([0-9:. apmAPM]+?)(?:\.|\s*Please|$)/)?.[1]?.trim();
+
+/** MyGLS auth failure: ErrorCode 14/15/27 (Appendix A) or -1 "Unauthorized." / lockout (live). */
+function glsAuthError(first, raw) {
+  const text = String(first?.ErrorDescription || '');
+  const until = lockedUntil(text);
+  const e = authError(PROVIDER, raw);
+  e.provider = ID;
+  if (/locked|too many/i.test(text)) {
+    e.message = `Contul MyGLS e blocat temporar după prea multe încercări de conectare eșuate${until ? ` (până la ${until})` : ''}.`;
+    e.hint = 'Verifică utilizatorul (e-mailul) și parola MyGLS în Setări → Curieri → GLS, apoi testează conexiunea după ora deblocării.';
+  }
+  return e;
+}
+
+function rememberedAuthError(failed) {
+  const e = authError(PROVIDER, failed.details);
+  e.provider = ID;
+  if (failed.message) e.message = failed.message;
+  if (failed.hint) e.hint = failed.hint;
+  return e;
+}
+
+const isAuthErrorInfo = (e) => [14, 15, 27].includes(Number(e?.ErrorCode))
+  || (Number(e?.ErrorCode) === -1 && /unauthori[sz]ed|login|locked|password|credential|user/i.test(String(e?.ErrorDescription || '')));
+
 /** Throws a merchant-readable error for a MyGLS ErrorInfo list (no-op when empty). */
-function throwGlsErrors(list, raw) {
+function throwGlsErrors(list, raw, ctx) {
   if (!Array.isArray(list) || !list.length) return;
   const first = list[0] || {};
   const code = Number(first.ErrorCode);
-  if ([14, 15, 27].includes(code)) throw authError(PROVIDER, raw);
+  if (isAuthErrorInfo(first)) {
+    const e = glsAuthError(first, raw);
+    // Every further call with the same password counts as another failed login → lockout. Stop here.
+    if (ctx) cacheSet(ctx, authFailKey(ctx), { message: e.message, hint: e.hint, details: first }, AUTH_FAIL_TTL);
+    throw e;
+  }
   if (code === 1000 || code === 1001) {
     throw new ProcessingError({ code: 'PROVIDER_DOWN', message: 'GLS are o problemă internă.', hint: 'Reîncercăm automat în câteva minute.', retryable: true, provider: ID, details: raw });
   }
@@ -172,6 +227,7 @@ const LOCATIONS_OFF_KEY = 'gls:locations:RO:unavailable';
 async function loadLocations(ctx) {
   return cached(ctx, 'gls:locations:RO', NOMENCLATOR_TTL, async () => {
     const body = await call(ctx, 'MasterDataService', 'GetLocations', { CountryIsoCode: 'RO' }, { timeoutMs: 20_000 });
+    if (Array.isArray(body.GetLocationsErrors)) throwGlsErrors(body.GetLocationsErrors, { ...body, Data: undefined }, ctx);
     if (body.ErrorCode) throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'GLS nu a trimis nomenclatorul de localități.', provider: ID, details: body });
     const raw = toBuffer(body.Data);
     if (!raw?.length) throw new ProcessingError({ code: 'PROVIDER_REJECTED', message: 'Nomenclator GLS gol.', provider: ID, details: { ...body, Data: undefined } });
@@ -209,14 +265,16 @@ export async function resolveGlsAddress(ctx, recipient) {
     return { zip: zipIn, city: displayCity(recipient) };
   }
 
-  const variants = cityVariants(recipient);
-  const isCity = (r) => variants.includes(stripPrefix(norm(r[0])));
+  const wanted = new Set(cityVariants(recipient).map(compactKey));
+  const isCity = (r) => localityKeys(r[0]).some((k) => wanted.has(k));
   const cityRows = rows.filter(isCity);
+  // The nomenclator has no county: suggestions only, never a match we would act on.
+  const suggest = () => matchLocality({ city: recipient.city }, rows.map((r) => ({ name: r[0], postalCode: r[1] })));
 
   if (!zipIn) {
     const zips = [...new Set(cityRows.map((r) => r[1]))];
     if (zips.length === 1) return { zip: zips[0], city: cityRows[0][0] };
-    const suggestions = cityRows.length ? [] : closest(rows, variants[variants.length - 1], { nameOf: (r) => r[0] });
+    const suggestions = cityRows.length ? [] : (suggest().suggestions || []).map((c) => c.name);
     throw zipMissing(zips, suggestions);
   }
 
@@ -225,7 +283,8 @@ export async function resolveGlsAddress(ctx, recipient) {
   if (confirmed) return { zip: zipIn, city: confirmed[0] };
   if (!zipRows.length && !cityRows.length) {
     // Neither the ZIP nor the city exist for GLS: almost certainly a typo in the city.
-    resolveLocality(rows, recipient, { nameOf: (r) => r[0], allowDuplicates: true, provider: PROVIDER, providerId: ID });
+    const result = suggest();
+    if (!result.match) throw localityError({ provider: ID, providerName: PROVIDER, city: recipient.city, result: { notFound: true, suggestions: result.suggestions || [] } });
   }
   if (zipRows.length && cityRows.length) {
     ctx.log?.('gls: ZIP belongs to another locality name, GLS routes by ZIP', { city: recipient.city, zip: zipIn, glsCityForZip: zipRows[0][0] });
@@ -309,15 +368,17 @@ export function buildParcel(shipment, settings, { clientNumber: cn, zip, city, p
     if (notifyEmail && r.email) services.push({ Code: 'FSS', FSSParameter: { Value: phone } }); // FSS needs FDS
     else services.push({ Code: 'SM2', SM2Parameter: { Value: phone } });
   }
-  if (shipment.declaredValue > 0) services.push({ Code: 'INS', INSParameter: { Value: String(shipment.declaredValue) } });
+  // INSParameter is a WCF decimal: a JSON number, not a string.
+  if (money(shipment.declaredValue) > 0) services.push({ Code: 'INS', INSParameter: { Value: money(shipment.declaredValue) } });
   if (shipment.saturday) services.push({ Code: 'SAT' });
 
-  const hasCod = shipment.cod > 0;
+  const cod = money(shipment.cod);
+  const hasCod = cod > 0;
   const parcel = {
     ClientNumber: cn,
     ClientReference: String(shipment.reference ?? '').slice(0, 40),
     Count: Math.max(1, shipment.parcels || 1),
-    CODAmount: hasCod ? Number(shipment.cod.toFixed(2)) : 0,
+    CODAmount: cod,
     // COD needs no ServiceList entry: CODAmount > 0 is enough (doc + SDKs). VERIFY with GLS RO contract.
     ...(hasCod ? { CODReference: String(shipment.reference ?? '').slice(0, 40), CODCurrency: shipment.currency || 'RON' } : {}),
     Content: [shipment.contents, shipment.notes].filter(Boolean).join(' / ').slice(0, 100) || String(shipment.reference ?? ''),
@@ -356,10 +417,11 @@ function printerFor(settings, format) {
   return PRINTERS.includes(settings.printerType) ? settings.printerType : 'A4_2x2';
 }
 
-const parcelKey = (awb) => `gls:parcel:${awb}`;
+/** AWB → ParcelId map, per environment + account: test and production parcel numbers can collide. */
+export const parcelKey = (ctx, awb) => `gls:parcel:${account(ctx)}:${awb}`;
 
 async function parcelIdsFor(ctx, awb) {
-  const hit = await cacheGet(ctx, parcelKey(awb));
+  const hit = await cacheGet(ctx, parcelKey(ctx, awb));
   if (hit?.parcelIds?.length) return hit.parcelIds;
   // Fallback: look the parcel up among the labels printed in the last 30 days.
   const now = Date.now();
@@ -367,11 +429,11 @@ async function parcelIdsFor(ctx, awb) {
     PrintDateFrom: glsDate(new Date(now - 30 * 864e5)),
     PrintDateTo: glsDate(new Date(now + 864e5)),
   });
-  throwGlsErrors(body.GetParcelListErrors, body);
+  throwGlsErrors(body.GetParcelListErrors, body, ctx);
   const want = String(awb);
   const hits = (body.PrintDataInfoList || []).filter((p) => String(p.ParcelNumber) === want || String(p.ParcelNumberWithCheckdigit) === want);
   const ids = hits.map((p) => p.ParcelId).filter(Boolean);
-  if (ids.length) await cacheSet(ctx, parcelKey(awb), { parcelIds: ids }, PARCEL_MAP_TTL);
+  if (ids.length) await cacheSet(ctx, parcelKey(ctx, awb), { parcelIds: ids }, PARCEL_MAP_TTL);
   return ids;
 }
 
@@ -416,7 +478,7 @@ export default {
       PrintDateFrom: glsDate(new Date(now - 864e5)),
       PrintDateTo: glsDate(new Date(now)),
     });
-    throwGlsErrors(body.GetParcelListErrors, body);
+    throwGlsErrors(body.GetParcelListErrors, body, ctx);
     const test = baseUrl(ctx).includes('.test.');
     return {
       ok: true,
@@ -436,14 +498,15 @@ export default {
       PrintPosition: 1,
       ShowPrintDialog: false,
     });
-    throwGlsErrors(body.PrintLabelsErrorList, { ...body, Labels: undefined });
+    throwGlsErrors(body.PrintLabelsErrorList, { ...body, Labels: undefined }, ctx);
     const infos = body.PrintLabelsInfoList || [];
     if (!infos.length || !infos[0].ParcelNumber) {
-      throw new ProcessingError({ code: 'COURIER_REJECTED', message: 'GLS nu a returnat numărul coletului.', hint: 'Reîncearcă; dacă se repetă, verifică în MyGLS dacă eticheta a fost creată.', retryable: true, provider: ID, details: { ...body, Labels: undefined } });
+      // Not retryable: the label may exist already and a blind retry would print a second one.
+      throw new ProcessingError({ code: 'COURIER_REJECTED', message: 'GLS nu a returnat numărul coletului.', hint: 'Verifică în MyGLS dacă eticheta a fost creată înainte să reîncerci, ca să nu se dubleze.', retryable: false, provider: ID, details: { ...body, Labels: undefined } });
     }
     const awb = String(infos[0].ParcelNumber);
     const parcelIds = infos.map((i) => i.ParcelId).filter(Boolean);
-    await cacheSet(ctx, parcelKey(awb), { parcelIds, parcelNumbers: infos.map((i) => String(i.ParcelNumber)) }, PARCEL_MAP_TTL);
+    await cacheSet(ctx, parcelKey(ctx, awb), { parcelIds, parcelNumbers: infos.map((i) => String(i.ParcelNumber)) }, PARCEL_MAP_TTL);
     return { awb, raw: { parcelIds, parcelNumbers: infos.map((i) => String(i.ParcelNumber)), zip, city } };
   },
 
@@ -458,7 +521,7 @@ export default {
       PrintPosition: 1,
       ShowPrintDialog: false,
     });
-    throwGlsErrors(body.GetPrintedLabelsErrorList, { ...body, Labels: undefined });
+    throwGlsErrors(body.GetPrintedLabelsErrorList, { ...body, Labels: undefined }, ctx);
     const pdf = toBuffer(body.Labels);
     if (!isPdf(pdf)) {
       throw new ProcessingError({ code: 'LABEL_FAILED', message: `GLS nu a trimis eticheta pentru coletul ${awb}.`, hint: 'Reîncearcă în câteva minute.', retryable: true, provider: ID, details: { ...body, Labels: undefined } });
@@ -473,8 +536,7 @@ export default {
     }
     const body = await call(ctx, 'ParcelService', 'DeleteLabels', { ParcelIdList: ids.slice(0, 50) });
     if (Array.isArray(body.DeleteLabelsErrorList) && body.DeleteLabelsErrorList.length) {
-      const code = Number(body.DeleteLabelsErrorList[0].ErrorCode);
-      if ([14, 15, 27].includes(code)) throw authError(PROVIDER, body);
+      if (isAuthErrorInfo(body.DeleteLabelsErrorList[0])) throwGlsErrors(body.DeleteLabelsErrorList, body, ctx);
       throw new ProcessingError({
         code: 'CANCEL_REFUSED',
         message: `GLS nu a anulat coletul ${awb}.`,
@@ -495,7 +557,7 @@ export default {
           LanguageIsoCode: 'RO',
         });
         if (Array.isArray(body.GetParcelListStatusesErrors) && body.GetParcelListStatusesErrors.length && !body.ParcelList?.length) {
-          throwGlsErrors(body.GetParcelListStatusesErrors, body);
+          throwGlsErrors(body.GetParcelListStatusesErrors, body, ctx);
         }
         parcels = body.ParcelList || [];
       } catch (err) {

@@ -1,9 +1,11 @@
 import { ProcessingError, authError } from '../core/errors.js';
 import { TrackingStatus } from './contract.js';
 import {
-  matchLocality, matchCounty, localityError, countyError, isBucharest, normalizePhoneRO,
-  classifyStatusText, collectMessages, shortText, normalizeText, compactKey,
-} from './ro-helpers.js';
+  matchLocality, matchCounty, localityError, countyError, isBucharest, normalizeText, compactKey,
+} from './locality.js';
+import {
+  normalizePhoneRO, classifyStatusText, collectMessages, shortText, accountKey, money, courierDateToIso, looksLikeHtml,
+} from './util.js';
 
 // Sameday Courier API.
 // Sources: official PHP SDK github.com/sameday-courier/php-sdk (v2.4.2 — endpoints, field names,
@@ -13,6 +15,14 @@ import {
 // Auth: POST /api/authenticate (form body remember_me=1) with X-AUTH-USERNAME / X-AUTH-PASSWORD →
 // { token, expire_at: "Y-m-d H:i" }; then header X-AUTH-TOKEN. Bodies are application/x-www-form-urlencoded
 // with PHP bracket notation (awbRecipient[name]=..., parcels[0][weight]=...), exactly as the SDK sends them.
+//
+// Live check 2026-10 (invalid credentials, production api.sameday.ro and demo sameday-api.demo.zitec.com
+// behave the same): POST /api/authenticate with bad X-AUTH-* → HTTP 403
+// {"error":{"code":403,"message":"Invalid credentials."}}; any /api/... call with a bad X-AUTH-TOKEN →
+// HTTP 401 with the same shape (code 401); GET /api/authenticate → 405. Production sits behind
+// Cloudflare, so a 403 can also be an HTML challenge page — that is not a credentials problem.
+// DELETE /api/awb/{unknown} on production → 404 {"error":{"code":404,"message":"Couldn't determine an
+// AWB/parcel with `X` number."}}.
 
 const PROVIDER = 'sameday';
 const NAME = 'Sameday';
@@ -83,8 +93,25 @@ export function mapSamedayStatus(body) {
 
 const baseUrl = (ctx) => (ctx.settings?.sandbox === true || ctx.settings?.sandbox === 'true' || ctx.settings?.sandbox === 1 ? SANDBOX_URL : PROD_URL);
 const env = (ctx) => (baseUrl(ctx) === SANDBOX_URL ? 'demo' : 'prod');
-const tokenKey = (ctx) => `sameday:${env(ctx)}:token:${ctx.credentials?.username || ''}`;
+const account = (ctx) => accountKey(env(ctx), ctx.credentials?.username, ctx.credentials?.password);
+/** Token cache key: per environment AND per account (user + password), never shared. */
+export const tokenKey = (ctx) => `sameday:${env(ctx)}:token:${account(ctx)}`;
+/** Shared nomenclator data (counties, cities): per environment only. */
 const ck = (ctx, k) => `sameday:${env(ctx)}:${k}`;
+/** Account data (services and their ids, pickup points, contact persons): per account. */
+const ak = (ctx, k) => `sameday:${env(ctx)}:${account(ctx)}:${k}`;
+
+/** Cloudflare challenge / HTML error page in front of the API: transient, not bad credentials. */
+function blockedError(status, body) {
+  return new ProcessingError({
+    code: 'PROVIDER_DOWN',
+    message: `Sameday nu a răspuns cu date (pagină HTML, cod ${status}).`,
+    hint: 'De obicei e o protecție temporară a serverului Sameday. Reîncercăm automat.',
+    retryable: true,
+    provider: PROVIDER,
+    details: String(Buffer.isBuffer(body) ? body.toString('utf8') : body).slice(0, 300),
+  });
+}
 
 /** PHP http_build_query: nested objects/arrays → a[b][0][c]=v; null/undefined skipped; booleans → 1/0. */
 export function toForm(obj) {
@@ -129,6 +156,7 @@ async function authenticate(ctx, { force = false } = {}) {
     body: toForm({ remember_me: true }),
     mapError: (status, body) => {
       if (status >= 500 || status === 429) return undefined;
+      if (looksLikeHtml(body)) return blockedError(status, body);
       const e = authError(NAME, body);
       if (env(ctx) === 'demo') e.hint = 'Ai bifat „Mod test”: contul de test Sameday are alt utilizator și altă parolă decât cel de producție.';
       return e;
@@ -153,7 +181,10 @@ async function api(ctx, method, path, { query, form, mapError, responseType } = 
         headers,
         body: form ? toForm(form) : undefined,
         responseType,
-        mapError: (status, body) => (status === 401 || status === 403 ? authError(NAME, body) : mapError?.(status, body)),
+        mapError: (status, body) => {
+          if ((status === 401 || status === 403) && looksLikeHtml(body)) return blockedError(status, body);
+          return status === 401 || status === 403 ? authError(NAME, body) : mapError?.(status, body);
+        },
       });
       return res.body;
     } catch (err) {
@@ -196,11 +227,12 @@ const getCounties = (ctx) => cached(ctx, ck(ctx, 'counties'), NOMENCLATOR_TTL, a
 
 const getCities = (ctx, countyId) => cached(ctx, ck(ctx, `cities:${countyId}`), NOMENCLATOR_TTL, async () =>
   (await getAll(ctx, '/api/geolocation/city', { county: countyId })).map((c) => ({
-    id: c.id, name: c.name, postalCode: c.postalCode || '', village: c.village, extraKm: c.extraKM,
+    // `village` is the commune the locality belongs to (SDK sample: "2 Mai" → "Limanu").
+    id: c.id, name: c.name, postalCode: c.postalCode || '', village: c.village, parent: c.village || '', extraKm: c.extraKM,
   })));
 
-const getServices = (ctx) => cached(ctx, ck(ctx, 'services'), DAY, () => getAll(ctx, '/api/client/services'));
-const getPickupPointsRaw = (ctx) => cached(ctx, ck(ctx, 'pickup-points'), 60 * 60, () => getAll(ctx, '/api/client/pickup-points'));
+const getServices = (ctx) => cached(ctx, ak(ctx, 'services'), DAY, () => getAll(ctx, '/api/client/services'));
+const getPickupPointsRaw = (ctx) => cached(ctx, ak(ctx, 'pickup-points'), 60 * 60, () => getAll(ctx, '/api/client/pickup-points'));
 
 /** Recipient county + city ids as Sameday knows them, or ProcessingError ADDRESS_*. */
 export async function resolveLocality(ctx, recipient) {
@@ -208,7 +240,7 @@ export async function resolveLocality(ctx, recipient) {
   const county = matchCounty(recipient, counties);
   if (!county) throw countyError({ provider: PROVIDER, providerName: NAME, county: recipient.county, countyCode: recipient.countyCode });
   const q = { city: recipient.city, zip: recipient.zip, sector: recipient.sector, county: recipient.county, countyCode: recipient.countyCode };
-  const result = matchLocality(q, await getCities(ctx, county.id));
+  const result = matchLocality(q, await getCities(ctx, county.id), { fuzzy: true });
   if (result.match) return { county, city: result.match, via: result.via };
 
   // Bucharest ↔ Ilfov mix-ups: accept the neighbouring county only on an exact name match.
@@ -342,7 +374,7 @@ async function resolveService(ctx, shipment) {
 }
 
 async function getLocker(ctx, lockerId) {
-  const key = ck(ctx, `locker:${lockerId}`);
+  const key = ak(ctx, `locker:${lockerId}`);
   return cached(ctx, key, DAY, async () => {
     const body = await api(ctx, 'GET', '/api/client/lockers', { query: { lockersList: lockerId, page: 1, countPerPage: 10 } });
     const list = Array.isArray(body?.data) ? body.data : [];
@@ -387,9 +419,9 @@ export function buildAwbForm(ctx, shipment, { pickupPointId, contactPersonId, se
     packageWeight: total,
     service: service.id,
     awbPayment: 1, // expeditorul plătește transportul
-    cashOnDelivery: Math.max(0, Number(shipment.cod) || 0),
+    cashOnDelivery: money(shipment.cod),
     cashOnDeliveryReturns: undefined,
-    insuredValue: Math.max(0, Number(shipment.declaredValue) || 0),
+    insuredValue: money(shipment.declaredValue),
     thirdPartyPickup: 0,
     serviceTaxes: openPackage ? ['OPCG'] : undefined, // codes, as the official plugin sends them
     awbRecipient,
@@ -449,7 +481,7 @@ const adapter = {
 
   async testConnection(ctx) {
     await authenticate(ctx, { force: true });
-    ctx.cache?.set(ck(ctx, 'pickup-points'), null, 1);
+    ctx.cache?.set(ak(ctx, 'pickup-points'), null, 1);
     const points = await adapter.listPickupPoints(ctx);
     let message = `Conectat la Sameday${env(ctx) === 'demo' ? ' (mod test)' : ''}. Am găsit ${points.length} ${points.length === 1 ? 'punct' : 'puncte'} de ridicare.`;
     const chosen = String(ctx.settings?.pickupPointId || '').trim();
@@ -473,7 +505,7 @@ const adapter = {
   },
 
   async listLockers(ctx, { county, city } = {}) {
-    const lockers = await cached(ctx, ck(ctx, 'lockers'), DAY, async () =>
+    const lockers = await cached(ctx, ak(ctx, 'lockers'), DAY, async () =>
       (await getAll(ctx, '/api/client/lockers')).map((l) => ({
         id: String(l.lockerId),
         name: l.name,
@@ -567,12 +599,11 @@ const adapter = {
       }
       const st = body?.expeditionStatus || {};
       const status = mapSamedayStatus(body);
-      const d = st.statusDate ? new Date(st.statusDate) : null;
       return {
         awb,
         status,
         statusText: st.statusLabel || st.status || st.statusState || 'AWB emis',
-        at: d && !Number.isNaN(d.getTime()) ? d.toISOString() : undefined,
+        at: courierDateToIso(st.statusDate), // "2019-02-26T09:37:28+0200" (SDK sample)
         codCollected: status === TrackingStatus.DELIVERED,
       };
     });

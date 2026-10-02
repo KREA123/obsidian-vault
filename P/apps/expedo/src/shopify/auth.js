@@ -66,7 +66,7 @@ export function verifySessionToken(token) {
   try { payload = JSON.parse(Buffer.from(p, 'base64url').toString('utf8')); } catch { return null; }
   const now = Math.floor(Date.now() / 1000);
   if (payload.aud !== config.shopify.apiKey) return null;
-  if (payload.exp && payload.exp < now - 5) return null;
+  if (!payload.exp || payload.exp < now - 5) return null;
   if (payload.nbf && payload.nbf > now + 5) return null;
   const shop = String(payload.dest || '').replace(/^https:\/\//, '');
   return isValidShop(shop) ? { shop, payload } : null;

@@ -55,6 +55,9 @@ export function planOrder(order, settings, overrides = {}) {
   const owed = order.paymentMethod === 'cod' && typeof order.outstanding === 'number'
     ? round2(Math.max(0, Math.min(order.codAmount || 0, order.outstanding)))
     : order.codAmount || 0;
+  if (order.paymentMethod === 'other' && order.outstanding > 0 && overrides.cod == null) {
+    issues.push({ level: 'warning', code: 'PAYMENT_UNKNOWN', message: `Metodă de plată necunoscută (${(order.gateways || []).join(', ') || '—'}) și ${order.outstanding.toFixed(2)} lei neîncasați.`, hint: 'Dacă e ramburs, completează suma la „Ramburs” înainte de AWB.' });
+  }
   if (order.paymentMethod === 'cod' && owed <= 0 && overrides.cod == null) {
     issues.push({ level: 'warning', code: 'COD_ZERO', message: 'Plata e ramburs, dar suma de încasat e 0.', hint: 'Verifică dacă a fost deja plătită.' });
   }

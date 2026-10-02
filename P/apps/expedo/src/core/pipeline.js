@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { PDFDocument } from 'pdf-lib';
 import * as db from '../db.js';
 import { request } from '../lib/http.js';
@@ -259,7 +260,7 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
         const invoice = buildInvoice(order.data, plan, settings);
         // After a storno the order is invoiced again; FGO/Oblio would reject the same key as a duplicate.
         const previous = db.getDb().prepare(`SELECT COUNT(*) c FROM events WHERE order_id = ? AND step = 'invoice' AND level = 'success' AND message LIKE 'Factura % emisă%'`).get(orderId).c;
-        invoice.idempotencyKey = previous ? `${order.name}-${previous + 1}` : order.name;
+        invoice.idempotencyKey = invoiceIdempotencyKey(store, order.name, previous ? previous + 1 : 0);
         if (invoice.mismatch) {
           db.logEvent(store.id, orderId, 'warning', 'invoice', `Totalul facturii diferă de totalul din Shopify cu ${invoice.mismatch.toFixed(2)} lei (card cadou, comandă editată, rotunjiri?). Verifică factura.`);
         }
@@ -322,6 +323,19 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
 }
 
 /**
+ * Key invoicing providers use to refuse duplicates (FGO IdExtern, Oblio...). They dedupe per company,
+ * and two Shopify stores can invoice through the same company, so the key names the store too:
+ * "magazin:#1024", "magazin:#1024-2" after a storno. Kept within 60 characters.
+ */
+export function invoiceIdempotencyKey(store, orderName, n = 0) {
+  const name = n ? `${orderName}-${n}` : String(orderName);
+  let shop = String(store.shop || '').replace(/\.myshopify\.com$/i, '');
+  const room = 60 - name.length - 1;
+  if (shop.length > room) shop = createHash('sha256').update(String(store.shop)).digest('hex').slice(0, Math.max(8, room));
+  return `${shop}:${name}`;
+}
+
+/**
  * A timeout while creating an AWB / invoice is ambiguous: the provider may have created it and only
  * the answer was lost. Retrying automatically could make a second one, so it becomes a manual check.
  */
@@ -375,14 +389,22 @@ export async function stornoInvoice(store, orderId) {
   const { adapter, ctx, realAdapter } = existingProviderContext(store, 'invoicing', order.invoice_provider, order.invoice_test);
   const ref = { series: order.invoice_series, number: order.invoice_number };
   let message;
-  if (adapter.stornoInvoice) {
-    const s = await adapter.stornoInvoice(ctx, ref);
-    message = `Factura ${ref.series} ${ref.number} a fost stornată (factură storno ${s.series} ${s.number}).`;
-  } else {
-    await adapter.cancelInvoice(ctx, ref);
-    message = `Factura ${ref.series} ${ref.number} a fost anulată.`;
+  let level = 'success';
+  try {
+    if (adapter.stornoInvoice) {
+      const s = await adapter.stornoInvoice(ctx, ref);
+      message = `Factura ${ref.series} ${ref.number} a fost stornată (factură storno ${s.series} ${s.number}).`;
+    } else {
+      await adapter.cancelInvoice(ctx, ref);
+      message = `Factura ${ref.series} ${ref.number} a fost anulată.`;
+    }
+  } catch (err) {
+    // A storno retried after a timeout: the first one went through. Done, not stuck.
+    if (err?.code !== 'INVOICE_ALREADY_REVERSED') throw err;
+    level = 'warning';
+    message = `Factura ${ref.series} ${ref.number} era deja stornată; am marcat-o ca stornată și aici.`;
   }
-  db.logEvent(store.id, orderId, 'success', 'invoice', `${message} (${realAdapter?.name}${order.invoice_test ? ', probă' : ''})`);
+  db.logEvent(store.id, orderId, level, 'invoice', `${message} (${realAdapter?.name}${order.invoice_test ? ', probă' : ''})`);
   db.updateOrder(orderId, { invoice_series: null, invoice_number: null, invoice_url: null, invoice_at: null, invoice_test: false });
 }
 
@@ -497,8 +519,11 @@ async function onDelivered(store, order) {
         try {
           const { adapter, ctx } = existingProviderContext(store, 'invoicing', order.invoice_provider, order.invoice_test);
           if (adapter.registerPayment) {
-            await adapter.registerPayment(ctx, { series: order.invoice_series, number: order.invoice_number, amount: order.cod_amount, date: bucharestDate(), method: 'cod', reference: order.awb || order.name });
-            db.logEvent(store.id, order.id, 'success', 'invoice', `Încasarea a fost înregistrată pe factura ${order.invoice_series} ${order.invoice_number}.`);
+            const r = await adapter.registerPayment(ctx, { series: order.invoice_series, number: order.invoice_number, amount: order.cod_amount, date: bucharestDate(), method: 'cod', reference: order.awb || order.name });
+            const ref = `${order.invoice_series} ${order.invoice_number}`;
+            if (r?.alreadyPaid) db.logEvent(store.id, order.id, 'info', 'invoice', `Factura ${ref} era deja încasată în programul de facturare.`);
+            else if (r?.skipped) db.logEvent(store.id, order.id, 'info', 'invoice', `Încasarea nu a fost înregistrată pe factura ${ref} (programul de facturare a sărit-o${r.reason ? `: ${r.reason}` : ''}).`);
+            else db.logEvent(store.id, order.id, 'success', 'invoice', `Încasarea a fost înregistrată pe factura ${ref}.`);
           }
         } catch (err) {
           db.logEvent(store.id, order.id, 'warning', 'invoice', `Încasarea nu s-a putut înregistra: ${toProcessingError(err).message}`);

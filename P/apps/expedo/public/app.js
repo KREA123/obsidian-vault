@@ -683,7 +683,10 @@ function sectionProviders(el, s, integrations, save, section) {
       const credentials = {};
       const settings = {};
       for (const fd of adapter.credentialFields) credentials[fd.key] = fd.type === 'checkbox' ? f.has(`cred.${fd.key}`) : f.get(`cred.${fd.key}`) ?? '';
-      for (const fd of adapter.settingsFields) settings[fd.key] = fd.type === 'checkbox' ? f.has(`set.${fd.key}`) : f.get(`set.${fd.key}`) ?? '';
+      for (const fd of adapter.settingsFields) {
+        const v = f.get(`set.${fd.key}`) ?? '';
+        settings[fd.key] = fd.type === 'checkbox' ? f.has(`set.${fd.key}`) : fd.type === 'number' && v !== '' ? Number(v) : v;
+      }
       return { credentials, settings };
     };
     form?.addEventListener('submit', async (e) => {
