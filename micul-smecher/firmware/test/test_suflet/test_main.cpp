@@ -1401,6 +1401,8 @@ void test_alarm_tone_pattern_and_timeout() {
   TEST_ASSERT_FALSE(tone.update(0.05f));
 }
 
+void runEyeTests();
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_personality_is_deterministic);
@@ -1466,5 +1468,6 @@ int main(int, char**) {
   RUN_TEST(test_timepicker_rim_dial_at_480px);
   RUN_TEST(test_shell_at_480px_routes_and_draws_inside_the_disc);
   RUN_TEST(test_alarm_tone_pattern_and_timeout);
+  runEyeTests();
   return UNITY_END();
 }
