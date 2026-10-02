@@ -1,0 +1,426 @@
+{
+ "source": "GET https://api.fancourier.ro/reports/localities?county=Ilfov (public)",
+ "fetchedAt": "2026-10-02T10:27:11.367Z",
+ "data": [
+  {
+   "name": "1 Decembrie",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Afumati",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Alunisu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Balaceanca",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Balotesti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Balta Neagra",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Balteni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Berceni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Bragadiru",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Branesti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Buciumeni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Buda",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Buftea",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Burias",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Caciulati",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Caldararu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Catelu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Cernica",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Chiajna",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Chitila",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Ciofliceni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Ciolpani",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Ciorogarla",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Clinceni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Copaceni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Corbeanca",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Cornetu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Cozieni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Creata",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Cretesti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Cretuleasca",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Darasti-Ilfov",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Darvari IF",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Dascalu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Dimieni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Dobroesti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Domnesti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Dragomiresti-Deal",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Dragomiresti-Vale",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Dudu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Dumbraveni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Dumitrana",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Fundeni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Gagu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Ganeasa",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Ghermanesti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Glina",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Gradistea",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Gruiu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Islaz",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Izvorani",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Jilava",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Lipia",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Luparia",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Magurele",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Maineasca",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Manolache",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Merii Petchii",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Micsunestii Mari",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Micsunesti-Moara",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Moara Domneasca",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Moara Vlasiei",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Mogosoaia",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Nuci",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Odaile",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Olteni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Ordoreanu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Ostratu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Otopeni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Pantelimon",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Pasarea(Ilfov)",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Peris",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Petrachioaia",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Petresti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Pipera (Voluntari)",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Piscu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Piteasca",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Popesti-Leordeni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Posta",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Pruni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Rosu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Rudeni",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Runcu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Saftica",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Santu-Floresti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Silistea Snagovului",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Sindrilita",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Sintesti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Sitaru",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Snagov",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Stefanestii de Jos",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Stefanestii de Sus",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Surlari",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Tamasi",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Tancabesti",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Tanganu",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Teghes",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Tunari",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Vadu Anei",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Vanatori",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Varteju",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Vidra",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Vladiceasca",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Voluntari",
+   "county": "Ilfov"
+  },
+  {
+   "name": "Zurbaua",
+   "county": "Ilfov"
+  }
+ ]
+}

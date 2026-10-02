@@ -1,0 +1,632 @@
+#!/usr/bin/env node
+// Builds the Shopify App Store listing kit for Expedo from the real demo UI.
+//
+//   node marketing/listing/build.mjs              # everything
+//   node marketing/listing/build.mjs icon screens # only some parts: icon | screens | video | copy
+//
+// Env (all optional):
+//   EXPEDO_APP_DIR   app to run (default: the frozen snapshot if present, else ../..)
+//   PORT             demo server port (3302)
+//   DB_FILE          demo database, recreated on every run (/tmp/claude-0/listing-demo.db)
+//   CHROMIUM_PATH    Chromium for Playwright (/opt/pw-browsers/chromium-1194/chrome-linux/chrome)
+//   PLAYWRIGHT_MODULE path to playwright's index.mjs if `import('playwright')` fails
+//   BUILD_TMP        scratch dir for intermediate captures and video frames
+//
+// Nothing in the app is modified: the demo server runs with DEMO=1 on a throwaway database and is
+// driven through its own UI and API (header X-Expedo-Request: 1). One state is staged directly in
+// that throwaway database: a FAN Courier locality rejection, produced by the app's own
+// localityError() on FAN's public locality list (the demo has no courier accounts). See LISTING.md.
+
+import { spawn, execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, statSync, copyFileSync } from 'node:fs';
+import { dirname, join, resolve, basename } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { tmpdir } from 'node:os';
+import { COPY, LIMITS, SCREENSHOTS, MOBILE, FEATURE, INTEGRATIONS } from './copy.mjs';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SNAP = '/tmp/claude-0/expedo-snap/P/apps/expedo';
+const APP_DIR = resolve(process.env.EXPEDO_APP_DIR || (existsSync(SNAP) ? SNAP : join(HERE, '..', '..')));
+const PORT = Number(process.env.PORT || 3302);
+const BASE = `http://localhost:${PORT}`;
+const DB_FILE = process.env.DB_FILE || '/tmp/claude-0/listing-demo.db';
+const TMP = process.env.BUILD_TMP || join(tmpdir(), 'expedo-listing-build');
+const CHROMIUM = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const FONTS = join(HERE, 'assets', 'fonts');
+const parts = new Set(process.argv.slice(2));
+const want = (p) => parts.size === 0 || parts.has(p);
+
+const BRAND = { cobalt: '#1f4bd8', cobaltDark: '#173aa8', yellow: '#f5c518', ink: '#16191f', soft: '#eef2fd', muted: '#4a5263' };
+
+const log = (...a) => console.log('[listing]', ...a);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const ensureDir = (d) => { mkdirSync(d, { recursive: true }); return d; };
+
+// ------------------------------------------------------------------ playwright
+async function loadPlaywright() {
+  try { return await import('playwright'); } catch {}
+  const p = process.env.PLAYWRIGHT_MODULE || '/opt/node-tools/node_modules/playwright/index.mjs';
+  return import(pathToFileURL(p).href);
+}
+
+// ------------------------------------------------------------------ fonts (Inter + JetBrains Mono, latin + latin-ext)
+const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
+const GOOGLE_CSS = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap';
+
+function ensureFonts() {
+  ensureDir(FONTS);
+  const cssFile = join(FONTS, 'google.css');
+  if (!existsSync(cssFile)) execFileSync('curl', ['-sSf', '-A', UA, GOOGLE_CSS, '-o', cssFile]);
+  const css = readFileSync(cssFile, 'utf8');
+  const blocks = [...css.matchAll(/\/\* (\S+) \*\/\s*@font-face \{([\s\S]*?)\}/g)].filter(([, sub]) => sub === 'latin' || sub === 'latin-ext');
+  let local = '';
+  for (const [, sub, body] of blocks) {
+    const url = body.match(/url\((.*?)\)/)[1];
+    const file = basename(new URL(url).pathname);
+    const dest = join(FONTS, file);
+    if (!existsSync(dest)) execFileSync('curl', ['-sSf', '-A', UA, url, '-o', dest]);
+    local += `/* ${sub} */\n@font-face {${body.replace(/url\((.*?)\)/, `url(${file})`)}}\n`;
+  }
+  writeFileSync(join(FONTS, 'fonts.css'), local);
+  return local;
+}
+
+/** Serves Google Fonts requests of the app page from the local copies (no network, same files). */
+async function routeFonts(context) {
+  const localCss = readFileSync(join(FONTS, 'fonts.css'), 'utf8').replace(/url\(([^)]+)\)/g, 'url(https://fonts.gstatic.com/local/$1)');
+  await context.route('https://fonts.googleapis.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/css', body: localCss }));
+  await context.route('https://fonts.gstatic.com/**', (r) => {
+    const f = join(FONTS, basename(new URL(r.request().url()).pathname));
+    return existsSync(f) ? r.fulfill({ status: 200, contentType: 'font/woff2', body: readFileSync(f) }) : r.fulfill({ status: 404, body: '' });
+  });
+}
+
+// ------------------------------------------------------------------ FAN public locality list (Ilfov) for the staged error
+function ensureFanIlfov() {
+  const f = join(HERE, 'assets', 'fan-localities-ilfov.json');
+  if (!existsSync(f)) {
+    const raw = execFileSync('curl', ['-sSf', '-m', '30', 'https://api.fancourier.ro/reports/localities?county=Ilfov&perPage=500']).toString();
+    const data = JSON.parse(raw).data.map((d) => ({ name: d.name, county: d.county }));
+    writeFileSync(f, JSON.stringify({ source: 'GET https://api.fancourier.ro/reports/localities?county=Ilfov (public)', fetchedAt: new Date().toISOString(), data }, null, 1));
+  }
+  return JSON.parse(readFileSync(f, 'utf8')).data;
+}
+
+// ------------------------------------------------------------------ demo server
+let server = null;
+async function startServer() {
+  await stopServer();
+  for (const ext of ['', '-wal', '-shm']) rmSync(DB_FILE + ext, { force: true });
+  server = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'src/server.js'], {
+    cwd: APP_DIR,
+    env: { ...process.env, DEMO: '1', PORT: String(PORT), DB_FILE, ADMIN_PASSWORD: '', APP_URL: BASE },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  server.stderr.on('data', (d) => process.stderr.write(`[server] ${d}`));
+  for (let i = 0; i < 100; i++) {
+    try { if ((await fetch(`${BASE}/healthz`)).ok) break; } catch {}
+    await sleep(150);
+  }
+  // advanceDemo() runs before listen(); wait until its 8 AWBs are there.
+  for (let i = 0; i < 60; i++) {
+    const s = await api('/stats');
+    if (s.awbToday >= 8) break;
+    await sleep(250);
+  }
+  log('demo server up on', BASE, 'from', APP_DIR);
+}
+async function stopServer() {
+  if (!server) return;
+  const s = server;
+  server = null;
+  s.kill('SIGTERM');
+  await new Promise((r) => { s.once('exit', r); setTimeout(r, 3000); });
+}
+async function api(path, { method = 'GET', body } = {}) {
+  const res = await fetch(`${BASE}/api${path}`, {
+    method,
+    headers: { 'X-Expedo-Request': '1', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const ct = res.headers.get('content-type') || '';
+  if (!res.ok) throw new Error(`${method} ${path} -> ${res.status} ${await res.text()}`);
+  return ct.includes('json') ? res.json() : Buffer.from(await res.arrayBuffer());
+}
+async function orderByName(name) {
+  const { orders } = await api(`/orders?status=all&q=${encodeURIComponent(name.replace('#', ''))}`);
+  return orders.find((o) => o.name === name);
+}
+
+/**
+ * Demo state used by every capture:
+ *  - parcels tracked once, so the oldest test AWBs are delivered and their cash on delivery collected;
+ *  - #1116 (Voluntari, Ilfov) carries the customer's typo "Volutari", is routed to FAN Courier and holds
+ *    the rejection that FAN's locality list produces, built by the app's own localityError().
+ */
+async function stageDemo() {
+  await api('/track', { method: 'POST' });
+  const { findLocality } = await import(pathToFileURL(join(APP_DIR, 'src/couriers/locality.js')).href);
+  const rows = ensureFanIlfov().map((d) => [d.name, d.county]);
+  let err;
+  try {
+    findLocality(rows, { city: 'Volutari', county: 'Ilfov' }, { nameOf: (r) => r[0], countyOf: (r) => r[1], sameNameIsSame: true, provider: 'fancourier', providerName: 'FAN Courier' });
+  } catch (e) { err = e; }
+  if (!err?.hint?.startsWith('Ai vrut:')) throw new Error('expected an "Ai vrut" locality error');
+
+  const o = await orderByName('#1116');
+  const { DatabaseSync } = await import('node:sqlite');
+  const db = new DatabaseSync(DB_FILE);
+  db.exec('PRAGMA busy_timeout = 5000');
+  const row = db.prepare('SELECT data FROM orders WHERE id = ?').get(o.id);
+  const data = JSON.parse(row.data);
+  data.shippingAddress.city = 'Volutari';
+  data.billingAddress.city = 'Volutari';
+  db.prepare('UPDATE orders SET data = ? WHERE id = ?').run(JSON.stringify(data), o.id);
+  db.close();
+  await api(`/orders/${o.id}`, { method: 'PATCH', body: { courier: 'fancourier' } });
+  const db2 = new DatabaseSync(DB_FILE);
+  db2.exec('PRAGMA busy_timeout = 5000');
+  const at = new Date().toISOString();
+  db2.prepare("UPDATE orders SET last_error = ?, status = 'needs_attention' WHERE id = ?")
+    .run(JSON.stringify({ ...err.toJSON(), step: 'awb', at }), o.id);
+  db2.prepare('INSERT INTO events (store_id, order_id, level, step, message, data) VALUES ((SELECT store_id FROM orders WHERE id = ?), ?, ?, ?, ?, ?)')
+    .run(o.id, o.id, 'error', 'awb', err.message, JSON.stringify({ hint: err.hint, code: err.code }));
+  db2.close();
+  log('staged:', err.message, '|', err.hint);
+  return { stagedOrderId: o.id };
+}
+
+// ------------------------------------------------------------------ helpers for captures
+const HIDE_BANNER = '#test-banner{display:none!important}';
+const NO_ANIM = '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}';
+
+async function newAppPage(browser, { width, height, dsf = 2, hideBanner = true, mobile = false }) {
+  const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dsf, isMobile: mobile, hasTouch: mobile, locale: 'ro-RO', timezoneId: 'Europe/Bucharest' });
+  await routeFonts(context);
+  const page = await context.newPage();
+  page.on('pageerror', (e) => log('pageerror', e.message));
+  page.hideBanner = hideBanner;
+  return page;
+}
+async function go(page, hash) {
+  await page.goto(`${BASE}/${hash}`);
+  await settle(page);
+}
+async function settle(page, ms = 350) {
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.evaluate(() => document.fonts.ready);
+  await page.addStyleTag({ content: NO_ANIM + (page.hideBanner ? HIDE_BANNER : '') });
+  await page.waitForTimeout(ms);
+}
+async function shot(page, file, clip) {
+  await page.screenshot({ path: file, clip, animations: 'disabled' });
+  return file;
+}
+/** Bounding box of an element relative to a clip, in CSS px. */
+async function boxIn(page, selector, clip, pad = 6) {
+  const loc = page.locator(selector).first();
+  await loc.waitFor({ state: 'visible', timeout: 8000 });
+  const b = await loc.boundingBox();
+  if (!b) return null;
+  return { x: b.x - clip.x - pad, y: b.y - clip.y - pad, w: b.width + pad * 2, h: b.height + pad * 2 };
+}
+const pngSize = (f) => { const b = readFileSync(f); return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) }; };
+
+// ------------------------------------------------------------------ desktop + mobile captures
+async function captureAll(browser, dir) {
+  const C = {};
+  const MAIN = 220; // sidebar width: captures of a page start after it unless the sidebar is wanted
+  const clipOf = (b, pad = 0) => ({ x: Math.floor(b.x - pad), y: Math.floor(b.y - pad), width: Math.ceil(b.width + pad * 2), height: Math.ceil(b.height + pad * 2) });
+  const cap = async (p, name, clip, marks = []) => ({ file: await shot(p, join(dir, `${name}.png`), clip), w: clip.width, h: clip.height, marks: await Promise.all(marks.map(([sel, pad]) => boxIn(p, sel, clip, pad))) });
+  const id1116 = (await orderByName('#1116')).id;
+
+  // 1. Dashboard, wide enough for the five stat tiles on one row
+  {
+    const p = await newAppPage(browser, { width: 1320, height: 602 });
+    await go(p, '#/');
+    C.dashboard = await cap(p, 'dashboard', { x: 0, y: 0, width: 1320, height: 602 }, [['.stat.alert', 4]]);
+    await p.context().close();
+  }
+
+  // 2. Address check: the courier's rejection with "Ai vrut", and the address fixed and saved
+  {
+    const p = await newAppPage(browser, { width: 1180, height: 1500 });
+    await go(p, '#/orders?status=needs_attention');
+    C.attention = await cap(p, 'attention', { x: MAIN, y: 0, width: 960, height: 560 }, [[`tr[data-id="${id1116}"] .issue-line`, 6]]);
+    await go(p, `#/orders/${id1116}`);
+    await p.locator('.drawer-panel .error-box').first().waitFor({ state: 'visible', timeout: 8000 });
+    const box = await p.locator('.drawer-panel .error-box').first().boundingBox();
+    C.errorBox = await cap(p, 'error-box', clipOf(box, 2), [['.drawer-panel .error-box .hint', 4]]);
+    await p.locator('#addr-form input[name=city]').fill('Voluntari');
+    await p.locator('#addr-form button.btn').click();
+    await p.waitForFunction(() => document.querySelector('.drawer-panel h2 .badge'), null, { timeout: 10000 });
+    await settle(p, 300);
+    await p.evaluate(() => document.querySelectorAll('.toast').forEach((t) => t.remove()));
+    const card = await p.locator('.drawer-panel .card', { has: p.locator('#addr-form') }).boundingBox();
+    const street = await p.locator('#addr-form label.field:has(input[name=address1])').boundingBox();
+    C.addressCard = await cap(p, 'address-card', { x: Math.floor(card.x), y: Math.floor(card.y), width: Math.ceil(card.width), height: Math.ceil(street.y + street.height + 18 - card.y) },
+      [['#addr-form label.field:has(input[name=city])', 6]]);
+    await p.context().close();
+  }
+
+  // 4. Rules (test-mode banner visible on purpose) + test/live switch from a narrower window
+  {
+    const p = await newAppPage(browser, { width: 1180, height: 600, hideBanner: false });
+    await go(p, '#/settings/rules');
+    C.rules = await cap(p, 'rules', { x: MAIN, y: 0, width: 960, height: 600 }, [['.rule:first-of-type .rule-head', 4]]);
+    await p.setViewportSize({ width: 1000, height: 900 });
+    await go(p, '#/settings/general');
+    C.mode = await cap(p, 'mode', clipOf(await p.locator('#section .card').first().boundingBox()));
+    await p.context().close();
+  }
+
+  // 6. Couriers + invoicing
+  {
+    const p = await newAppPage(browser, { width: 1180, height: 600 });
+    await go(p, '#/settings/couriers');
+    C.couriers = await cap(p, 'couriers', { x: MAIN, y: 0, width: 960, height: 600 }, [['.provider-list', 6]]);
+    await p.setViewportSize({ width: 1000, height: 900 });
+    await go(p, '#/settings/invoicing');
+    C.invoicing = await cap(p, 'invoicing', clipOf(await p.locator('#section .card').first().boundingBox()));
+    await p.context().close();
+  }
+
+  // 5. Tracking + cash on delivery collected (oldest delivered COD order)
+  {
+    const { orders } = await api('/orders?status=delivered');
+    const cod = orders.filter((o) => o.paymentMethod === 'cod' && o.codCollectedAt).sort((a, b) => a.name.localeCompare(b.name))[0];
+    C.deliveredId = cod.id;
+    C.deliveredIds = orders.map((o) => o.id);
+    const p = await newAppPage(browser, { width: 1180, height: 1400 });
+    await go(p, '#/orders?status=delivered');
+    await go(p, `#/orders/${cod.id}`);
+    const head = await p.locator('.drawer-head').boundingBox();
+    const liv = await p.locator('.drawer-panel .card').first().boundingBox();
+    C.deliveredTop = await cap(p, 'delivered-top', { x: Math.floor(liv.x - 6), y: Math.floor(head.y - 6), width: Math.ceil(liv.width + 12), height: Math.ceil(liv.y + liv.height - head.y + 12) },
+      [['.drawer-panel .kv .badge.ok', 5]]);
+    await p.setViewportSize({ width: 600, height: 1400 });
+    await go(p, `#/orders/${cod.id}`);
+    const hist = p.locator('.drawer-panel .card', { has: p.locator('h2', { hasText: 'Istoric' }) });
+    C.history = await cap(p, 'history', clipOf(await hist.boundingBox()));
+    await p.context().close();
+  }
+
+  // Mobile (412 css wide, DSF 2): dashboard, the order with the locality error, a delivered order
+  {
+    const MW = 430, MH = 723;
+    const p = await newAppPage(browser, { width: MW, height: MH, mobile: true });
+    const full = { x: 0, y: 0, width: MW, height: MH };
+    await go(p, '#/');
+    C.mDash = await cap(p, 'm-dash', full);
+    await go(p, `#/orders/${id1116}`);
+    C.mOrder = await cap(p, 'm-order', full);
+    await go(p, `#/orders/${C.deliveredId}`);
+    C.mDelivered = await cap(p, 'm-delivered', full);
+    await p.context().close();
+  }
+
+  // 3. Bulk: every ready order selected, bulk bar in view; then really process them and render the labels PDF
+  {
+    const p = await newAppPage(browser, { width: 1280, height: 600 });
+    await go(p, '#/orders?status=ready');
+    await p.locator('#check-all').check();
+    await p.mouse.move(5, 300);
+    await p.waitForTimeout(200);
+    C.bulk = await cap(p, 'bulk', { x: MAIN, y: 0, width: 1060, height: 600 }, [['[data-bulk=all]', 5]]);
+    const ids = (await api('/orders?status=ready')).orders.map((o) => o.id);
+    await p.locator('[data-bulk=all]').click();
+    await p.waitForFunction(() => location.hash.includes('ids='), null, { timeout: 30000 });
+    const pdfFile = join(dir, 'labels.pdf');
+    writeFileSync(pdfFile, await api(`/labels.pdf?ids=${ids.join(',')}`));
+    execFileSync('pdftoppm', ['-r', '220', '-png', pdfFile, join(dir, 'label')]);
+    C.labels = readdirSync(dir).filter((f) => /^label-\d+\.png$/.test(f)).sort().map((f) => join(dir, f));
+    C.labelCount = C.labels.length;
+
+    // Feature image: the processed orders next to the delivered ones, AWB + invoice + status columns
+    await api('/track', { method: 'POST' });
+    await p.context().close();
+    const q = await newAppPage(browser, { width: 1000, height: 640 });
+    const recent = (await api(`/orders?status=all&ids=${ids.join(',')}`)).orders.slice(0, 2).map((o) => o.id);
+    await go(q, `#/orders?status=all&ids=${[...recent, ...C.deliveredIds].join(',')}`);
+    C.processed = await cap(q, 'processed', { x: MAIN, y: 0, width: 780, height: 640 }, [['tbody tr:last-child .badge', 5]]);
+    await q.context().close();
+  }
+  return C;
+}
+
+// ------------------------------------------------------------------ composition (HTML -> PNG)
+function fontFaceCss() {
+  return readFileSync(join(FONTS, 'fonts.css'), 'utf8').replace(/url\(([^)]+)\)/g, (_, f) => `url(${pathToFileURL(join(FONTS, f)).href})`);
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const img = (f) => pathToFileURL(f).href;
+
+const BASE_CSS = () => `${fontFaceCss()}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:var(--W);height:var(--H);overflow:hidden}
+body{font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased;color:${BRAND.ink};background:${BRAND.soft};position:relative}
+.cap{position:absolute;left:72px;top:58px;right:72px}
+.cap h1{font-size:46px;line-height:1.12;font-weight:800;letter-spacing:-.022em;color:${BRAND.ink}}
+.cap p{margin-top:12px;font-size:23px;line-height:1.38;color:${BRAND.muted};font-weight:500}
+.arrow{position:absolute;width:0;height:0;border-left:22px solid transparent;border-right:22px solid transparent;border-top:26px solid ${BRAND.yellow};z-index:4}
+.shot{position:absolute;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08),0 18px 48px rgba(23,58,168,.20);border:1px solid rgba(22,25,31,.08)}
+.shot img{display:block;width:100%;height:100%}
+.fade{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(rgba(238,242,253,0),${BRAND.soft})}
+.mark{position:absolute;border:4px solid ${BRAND.yellow};border-radius:12px;box-shadow:0 0 0 4px rgba(245,197,24,.28)}
+.tag{position:absolute;background:${BRAND.ink};color:#fff;font-weight:700;font-size:17px;padding:7px 12px;border-radius:9px;letter-spacing:.01em}
+.brand{position:absolute;right:64px;top:56px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;color:${BRAND.ink}}
+.brand svg{width:34px;height:34px}
+`;
+
+/** Places a capture at (x, y) scaled to width w (height follows). Marks are capture-relative CSS boxes. */
+function placeShot(c, { x, y, w, h, crop = null, marks = true, z = 1, radius = 14, fade = false }) {
+  const scale = w / c.w;
+  const fullH = c.h * scale;
+  const boxH = h ?? fullH;
+  const m = (marks && c.marks ? c.marks.filter(Boolean) : []).map((b) =>
+    `<div class="mark" style="left:${x + b.x * scale}px;top:${y + b.y * scale - (crop || 0) * scale}px;width:${b.w * scale}px;height:${b.h * scale}px;z-index:${z + 1}"></div>`).join('');
+  return `<div class="shot" style="left:${x}px;top:${y}px;width:${w}px;height:${boxH}px;z-index:${z};border-radius:${radius}px">
+    <img src="${img(c.file)}" style="height:${fullH}px;margin-top:${-(crop || 0) * scale}px">${fade ? '<div class="fade"></div>' : ''}</div>${m}`;
+}
+
+const BRAND_SVG = (s = 34) => `<svg viewBox="0 0 32 32" width="${s}" height="${s}"><rect width="32" height="32" rx="7.5" fill="${BRAND.cobalt}"/>${ICON_PATHS(32, 1)}</svg>`;
+
+async function renderHtml(browser, html, out, { width, height }) {
+  const file = join(TMP, `${basename(out, '.png')}-${Math.random().toString(36).slice(2, 7)}.html`);
+  writeFileSync(file, `<!doctype html><html><head><meta charset="utf-8"><style>:root{--W:${width}px;--H:${height}px}${BASE_CSS()}</style></head><body>${html}</body></html>`);
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+  await page.goto(pathToFileURL(file).href);
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(() => [...document.images].every((i) => i.complete));
+  await page.waitForTimeout(100);
+  // Fail loudly on text that does not fit its box (clipped captions).
+  const overflow = await page.evaluate(() => [...document.querySelectorAll('[data-fit]')].filter((e) => e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1).map((e) => e.textContent.trim().slice(0, 60)));
+  if (overflow.length) throw new Error(`text overflow in ${out}: ${overflow.join(' | ')}`);
+  const outside = await page.evaluate(([W, H]) => [...document.querySelectorAll('.tag,.cap,h1,p,span')].filter((e) => { const r = e.getBoundingClientRect(); return r.width && (r.right > W + 0.5 || r.bottom > H + 0.5 || r.left < 0 || r.top < 0); }).map((e) => e.textContent.trim().slice(0, 60)), [width, height]);
+  if (outside.length) throw new Error(`text outside the canvas in ${out}: ${outside.join(' | ')}`);
+  ensureDir(dirname(out));
+  await page.screenshot({ path: out, clip: { x: 0, y: 0, width, height } });
+  await page.close();
+  return out;
+}
+
+function caption(t, { maxW = 1456 } = {}) {
+  return `<div class="cap" data-fit style="height:178px;max-width:${maxW}px"><h1>${esc(t.title)}</h1><p>${esc(t.sub)}</p></div>`;
+}
+
+// Scene layouts (1600x900). Captures are 2x pixels drawn at ~1.0-1.3x their CSS size: crisp.
+const SCENES = {
+  dashboard: (C) => placeShot(C.dashboard, { x: 72, y: 236, w: 1456, h: 664, fade: true }),
+  address: (C) => {
+    const eh = C.errorBox.h * (1000 / C.errorBox.w);
+    return placeShot(C.errorBox, { x: 72, y: 244, w: 1000, z: 2 }) +
+      `<div class="arrow" style="left:740px;top:${244 + eh + 14}px"></div>` +
+      placeShot(C.addressCard, { x: 528, y: 244 + eh + 56, w: 1000, h: 900 - (244 + eh + 56), z: 3, fade: true });
+  },
+  bulk: (C, lang) => {
+    const labels = C.labels.slice(0, 3).map((f, i) => {
+      const { w, h } = pngSize(f);
+      const lw = 250, lh = (h / w) * lw;
+      return `<div class="shot" style="left:${1240 + i * 42}px;top:${282 + i * 58}px;width:${lw}px;height:${lh}px;z-index:${5 + i};border-radius:6px;transform:rotate(${(i - 1) * 2.2}deg)"><img src="${img(f)}" style="height:${lh}px"></div>`;
+    }).join('');
+    const tag = lang === 'en' ? `labels.pdf · ${C.labelCount} A6 labels` : `labels.pdf · ${C.labelCount} etichete A6`;
+    return placeShot(C.bulk, { x: 72, y: 236, w: 1120 }) + labels + `<div class="tag" style="left:1232px;top:${282 + 2 * 58 + 384}px;z-index:9">${esc(tag)}</div>`;
+  },
+  rules: (C) => placeShot(C.rules, { x: 72, y: 236, w: 1060, h: 664, fade: true }) + placeShot(C.mode, { x: 928, y: 486, w: 600, z: 3 }),
+  tracking: (C) => placeShot(C.deliveredTop, { x: 72, y: 244, w: 940 }) + placeShot(C.history, { x: 880, y: 380, w: 648, z: 3 }),
+  settings: (C) => placeShot(C.couriers, { x: 72, y: 236, w: 1060, h: 664, fade: true }) + placeShot(C.invoicing, { x: 928, y: 520, w: 600, z: 3 }),
+};
+
+function desktopHtml(scene, lang, C) {
+  const t = SCREENSHOTS.find((s) => s.scene === scene)[lang];
+  return caption(t) + SCENES[scene](C, lang);
+}
+
+function mobileHtml(m, lang, C) {
+  const t = m[lang];
+  const c = { 'm-dash': C.mDash, 'm-order': C.mOrder, 'm-delivered': C.mDelivered }[m.scene];
+  return `<div class="cap" data-fit style="left:60px;right:60px;top:70px;height:150px"><h1 style="font-size:50px">${esc(t.title)}</h1></div>` +
+    placeShot(c, { x: 60, y: 250, w: 780, radius: 28 });
+}
+
+function featureHtml(lang, C) {
+  const t = FEATURE[lang];
+  return `<div style="position:absolute;inset:0;background:${BRAND.cobalt}"></div>
+  <div style="position:absolute;left:84px;top:96px;display:flex;align-items:center;gap:18px">
+    <svg viewBox="0 0 32 32" width="64" height="64"><rect width="32" height="32" rx="7.5" fill="#fff"/>${ICON_PATHS(32, 1, BRAND.cobalt)}</svg>
+    <span style="font-size:44px;font-weight:800;color:#fff;letter-spacing:-.02em">Expedo</span></div>
+  <div data-fit style="position:absolute;left:84px;top:230px;width:560px;height:440px">
+    <h1 style="font-size:58px;line-height:1.08;font-weight:800;color:#fff;letter-spacing:-.025em">${esc(t.title)}</h1>
+    <div style="width:96px;height:8px;background:${BRAND.yellow};border-radius:4px;margin:30px 0 26px"></div>
+    <p style="font-size:26px;line-height:1.35;color:rgba(255,255,255,.9);font-weight:500">${esc(t.sub)}</p></div>
+  ${placeShot(C.processed, { x: 690, y: 120, w: 830, radius: 16 })}`;
+}
+
+// ------------------------------------------------------------------ icon
+// The favicon mark (isometric parcel, 32-unit grid) redrawn for 1200 px: thicker strokes, round joins,
+// a yellow lid so it still reads as a parcel at 64 px, and a light/dark side for depth. No text.
+function ICON_PATHS(size, f = 0.9, stroke = '#fff') {
+  // f = 1 reproduces the favicon proportions (parcel 18/32 of the tile high); smaller = more padding.
+  const s = (size / 32) * f;
+  const c = size / 2;
+  const pt = (x, y) => `${(c + (x - 16) * s).toFixed(2)},${(c + (y - 16) * s).toFixed(2)}`;
+  const sw = (2.4 * s).toFixed(2);
+  return `
+  <path d="M${pt(8, 11)}L${pt(16, 15)}L${pt(16, 25)}L${pt(8, 21)}Z" fill="${stroke}" fill-opacity=".10"/>
+  <path d="M${pt(24, 11)}L${pt(16, 15)}L${pt(16, 25)}L${pt(24, 21)}Z" fill="#0b1a4d" fill-opacity=".22"/>
+  <path d="M${pt(8, 11)}L${pt(16, 7)}L${pt(24, 11)}L${pt(16, 15)}Z" fill="${BRAND.yellow}"/>
+  <path d="M${pt(8, 11)}L${pt(16, 7)}L${pt(24, 11)}L${pt(24, 21)}L${pt(16, 25)}L${pt(8, 21)}Z" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>
+  <path d="M${pt(8, 11)}L${pt(16, 15)}L${pt(24, 11)}M${pt(16, 15)}L${pt(16, 25)}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"/>`;
+}
+function iconSvg({ size = 1200, rounded = false } = {}) {
+  const r = rounded ? size * 0.2237 : 0;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2553e6"/><stop offset="1" stop-color="${BRAND.cobalt}"/></linearGradient></defs>
+  <rect width="${size}" height="${size}" rx="${r}" fill="url(#g)"/>${ICON_PATHS(size, 0.92)}
+</svg>`;
+}
+async function buildIcon(browser) {
+  const out = ensureDir(join(HERE, 'icon'));
+  writeFileSync(join(out, 'expedo-icon.svg'), iconSvg());
+  writeFileSync(join(out, 'expedo-icon-rounded.svg'), iconSvg({ rounded: true }));
+  const page = await browser.newPage({ viewport: { width: 1200, height: 1200 }, deviceScaleFactor: 1 });
+  const files = [];
+  for (const [name, size, rounded] of [['expedo-icon-1200.png', 1200, false], ['expedo-icon-512.png', 512, false], ['expedo-icon-256.png', 256, false], ['expedo-icon-128.png', 128, false], ['expedo-icon-64.png', 64, false], ['expedo-icon-rounded-512.png', 512, true], ['expedo-icon-rounded-64.png', 64, true]]) {
+    await page.setViewportSize({ width: size, height: size });
+    await page.setContent(`<html><body style="margin:0;background:transparent">${iconSvg({ size, rounded })}</body></html>`);
+    const f = join(out, name);
+    await page.screenshot({ path: f, omitBackground: true, clip: { x: 0, y: 0, width: size, height: size } });
+    files.push(f);
+  }
+  // Preview sheet: how it reads at listing sizes, on light and dark.
+  await page.setViewportSize({ width: 900, height: 300 });
+  await page.setContent(`<html><body style="margin:0;display:flex;font-family:sans-serif">
+    ${['#ffffff', '#16191f'].map((bg) => `<div style="flex:1;background:${bg};display:flex;align-items:center;justify-content:center;gap:28px">
+      ${[160, 96, 64, 32].map((s) => `<div style="width:${s}px;height:${s}px;border-radius:${s * 0.2237}px;overflow:hidden">${iconSvg({ size: s })}</div>`).join('')}</div>`).join('')}</body></html>`);
+  await page.screenshot({ path: join(out, 'icon-preview.png') });
+  await page.close();
+  return files;
+}
+
+// ------------------------------------------------------------------ PNG optimisation (lossless) via Pillow
+function optimizePngs(files) {
+  const script = `
+import sys
+from PIL import Image
+for f in sys.argv[1:]:
+    im = Image.open(f)
+    im.load()
+    if im.mode == 'RGBA' and im.getextrema()[3][0] == 255:
+        im = im.convert('RGB')
+    im.save(f, optimize=True)
+`;
+  execFileSync('python3', ['-c', script, ...files]);
+}
+
+// ------------------------------------------------------------------ screens: desktop, mobile, feature
+async function buildScreens(browser) {
+  for (const d of ['screenshots', 'feature']) rmSync(join(HERE, d), { recursive: true, force: true });
+  const capDir = ensureDir(join(TMP, 'captures'));
+  for (const f of readdirSync(capDir)) rmSync(join(capDir, f), { force: true });
+  await startServer();
+  await stageDemo();
+  const C = await captureAll(browser, capDir);
+  await stopServer();
+  const out = [];
+  for (const lang of ['en', 'ro']) {
+    for (const s of SCREENSHOTS) out.push(await renderHtml(browser, desktopHtml(s.scene, lang, C), join(HERE, 'screenshots', lang, `${s.id}.png`), { width: 1600, height: 900 }));
+    for (const m of MOBILE) out.push(await renderHtml(browser, mobileHtml(m, lang, C), join(HERE, 'screenshots', lang, 'mobile', `${m.id}.png`), { width: 900, height: 1600 }));
+    out.push(await renderHtml(browser, featureHtml(lang, C), join(HERE, 'feature', `feature-${lang}.png`), { width: 1600, height: 900 }));
+  }
+  copyFileSync(join(capDir, 'labels.pdf'), join(HERE, 'screenshots', 'labels-sample.pdf'));
+  return out;
+}
+
+// ------------------------------------------------------------------ screencast for review (1920x1080, English captions)
+async function buildScreencast(browser) {
+  const { recordScreencast } = await import('./screencast.mjs');
+  await startServer();
+  await stageDemo();
+  const file = await recordScreencast({ browser, BASE, TMP, HERE, api, orderByName, routeFonts, fontFaceCss, BRAND, ICON_PATHS, pngSize, log });
+  await stopServer();
+  return file;
+}
+
+// ------------------------------------------------------------------ copy docs (generated from copy.mjs, with limit checks)
+function checkLimits() {
+  const errs = [];
+  for (const [lang, c] of Object.entries(COPY)) {
+    const chk = (field, v, lim) => { if (v.length > lim) errs.push(`${lang}.${field}: ${v.length} > ${lim}`); };
+    chk('appName', c.appName, LIMITS.appName);
+    for (const a of c.appNameAlternatives || []) chk('appNameAlternative', a, LIMITS.appName);
+    chk('subtitle', c.subtitle, LIMITS.subtitle);
+    chk('introduction', c.introduction, LIMITS.introduction);
+    chk('details', c.details, LIMITS.details);
+    [...c.features, ...c.featuresPending].forEach((f, i) => chk(`feature[${i}]`, f, LIMITS.feature));
+    if (c.searchTerms.length > LIMITS.searchTerms) errs.push(`${lang}.searchTerms: ${c.searchTerms.length} terms`);
+  }
+  if (INTEGRATIONS.recommendedSix.length > LIMITS.integrations) errs.push('integrations > 6');
+  if (errs.length) throw new Error(`copy over limits:\n${errs.join('\n')}`);
+}
+
+function writeCopyDocs() {
+  checkLimits();
+  const n = (s) => `(${s.length}/${''})`;
+  void n;
+  for (const lang of ['en', 'ro']) {
+    const c = COPY[lang];
+    const L = lang === 'en';
+    const cnt = (s, lim) => `\`${s.length}/${lim}\``;
+    const md = `# Expedo listing copy, ${L ? 'English (primary listing)' : 'Romanian (translated listing)'}
+
+Generated by \`node marketing/listing/build.mjs copy\` from \`copy.mjs\`; edit there, not here.
+Counts are characters as typed in the Partner Dashboard (limits in REQUIREMENTS.md).
+
+## App name ${cnt(c.appName, LIMITS.appName)}
+
+${c.appName}
+${c.appNameAlternatives ? `\nAlternatives (must stay "similar" to the TOML name \`Expedo\`, req. 4.1.1): ${c.appNameAlternatives.map((a) => `"${a}" ${cnt(a, LIMITS.appName)}`).join(', ')}\n` : ''}
+## App card subtitle ${cnt(c.subtitle, LIMITS.subtitle)}
+
+${c.subtitle}
+
+## App introduction ${cnt(c.introduction, LIMITS.introduction)}
+
+${c.introduction}
+
+## App details ${cnt(c.details, LIMITS.details)}
+
+${c.details}
+
+## Feature list (max ${LIMITS.feature} characters each)
+
+${c.features.map((f) => `- ${f} ${cnt(f, LIMITS.feature)}`).join('\n')}
+
+${L ? 'Add only after it is live in the app' : 'De adăugat doar după ce e live în aplicație'}:
+${c.featuresPending.map((f) => `- ${f} ${cnt(f, LIMITS.feature)}`).join('\n')}
+
+## Search terms (max ${LIMITS.searchTerms}, one idea each)
+
+${c.searchTerms.map((s) => `- ${s}`).join('\n')}
+
+## Screenshot alt text
+
+${SCREENSHOTS.map((s) => `- \`${lang}/${s.id}.png\`: ${s[lang].alt}`).join('\n')}
+${MOBILE.map((s) => `- \`${lang}/mobile/${s.id}.png\`: ${s[lang].alt}`).join('\n')}
+
+## Feature image alt text
+
+- \`feature-${lang}.png\`: ${FEATURE[lang].alt}
+
+## Screenshot captions (already on the images)
+
+${SCREENSHOTS.map((s) => `- **${s[lang].title}.** ${s[lang].sub}`).join('\n')}
+`;
+    writeFileSync(join(HERE, `LISTING-COPY.${lang}.md`), md);
+  }
+  log('wrote LISTING-COPY.en.md / LISTING-COPY.ro.md');
+}
+
+// ------------------------------------------------------------------ main
+async function main() {
+  ensureDir(TMP);
+  if (want('copy')) writeCopyDocs();
+  if (!(want('icon') || want('screens') || want('video'))) return;
+  ensureFonts();
+  const { chromium } = await loadPlaywright();
+  const browser = await chromium.launch({ executablePath: existsSync(CHROMIUM) ? CHROMIUM : undefined });
+  const produced = [];
+  try {
+    if (want('icon')) produced.push(...await buildIcon(browser));
+    if (want('screens')) produced.push(...await buildScreens(browser));
+    if (want('video')) await buildScreencast(browser);
+  } finally {
+    await browser.close();
+    await stopServer();
+  }
+  const pngs = produced.filter((f) => f.endsWith('.png'));
+  if (pngs.length) optimizePngs(pngs);
+  for (const f of produced) log(`${(statSync(f).size / 1024).toFixed(0).padStart(6)} KB  ${f.replace(HERE + '/', '')}`);
+}
+
+main().catch(async (e) => { console.error(e); await stopServer(); process.exit(1); });
