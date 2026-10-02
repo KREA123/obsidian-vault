@@ -1378,7 +1378,7 @@ ro: {
   remNew: "Sună la bancă",
   notesInit: [["Nume pentru pisică: Pufu", 1], ["Cadou pentru tata: termos", 1]],
   noteNew: "Idee de breloc", noteNew2: "Baterii pentru telecomandă",
-  replay: "Redă din nou", pickup: "Hei!", homeClaude: "Claude te așteaptă", homeFocus: t => `Focus · ${t}`,
+  replay: "Redă din nou", pickup: "Hei!", homeClaude: "Claude cere voie · ține = da", homeFocus: t => `Focus · ${t}`,
   /* AI modes (ARCHITECTURE D5) */
   aiH: "AI-ul tău (Setări › AI)", aiHint: "SOUL merge și fără AI: notițele, alarmele și mementourile se fac pe device. Cu Claude-ul sau ChatGPT-ul tău, AI-ul face lucruri pentru tine.",
   aiModes: { none: "Fără AI", claude: "Claude-ul tău", chatgpt: "ChatGPT-ul tău", api: "Cheia ta API" },
@@ -1474,7 +1474,7 @@ en: {
   remNew: "Call the bank",
   notesInit: [["Cat name: Fluff", 1], ["Gift for dad: thermos", 1]],
   noteNew: "Keychain idea", noteNew2: "Batteries for the remote",
-  replay: "Play again", pickup: "Hey!", homeClaude: "Claude is waiting", homeFocus: t => `Focus · ${t}`,
+  replay: "Play again", pickup: "Hey!", homeClaude: "Claude asks · hold = yes", homeFocus: t => `Focus · ${t}`,
   aiH: "Your AI (Settings › AI)", aiHint: "SOUL works with no AI: notes, alarms and reminders happen on the device. With your own Claude or ChatGPT, the AI does things for you.",
   aiModes: { none: "No AI", claude: "Your Claude", chatgpt: "Your ChatGPT", api: "Your API key" },
   aiShort: { none: "No AI", claude: "Claude", chatgpt: "ChatGPT", api: "API key" },
@@ -1696,13 +1696,14 @@ const $ = s => document.querySelector(s);
 const screen = $("#screen"), cards = $("#cards"), pillEl = $("#pill"), dotsEl = $("#dots"), pebble = $("#pebble");
 const soul = new Soul($("#face"), BIRTH.roll.design);
 const RING = ["home", "talk", "weather", "reminders", "alarms", "notes", "focus", "timer", "claude", "diary", "translate", "music", "soul", "games", "settings"];
-const OVERLAY = ["today", "voice", "msg", "memory", "about", "aimode", "dial", "alarmsum", "ring"];
-const PARENT = { memory: "settings", about: "settings", aimode: "settings", alarmsum: "alarms" };
+const OVERLAY = ["today", "voice", "msg", "memory", "about", "aimode", "mysoul", "dial", "alarmsum", "ring", "birth", "bname", "bai", "bhold"];
+const PARENT = { memory: "settings", about: "settings", aimode: "settings", mysoul: "settings", alarmsum: "alarms" };
 const LAYOUT = {
   home: { k: 1, cy: 0 }, talk: { k: 0.62, cy: -0.11 }, today: { k: 0.25, cy: -0.35 },
   focus: { k: 0.28, cy: -0.34 }, card: { k: 0.3, cy: -0.33 },
   listen: { k: 0.7, cy: -0.1 }, answer: { k: 0.42, cy: -0.26 }, about: { k: 0.34, cy: -0.3 },
   kb: { k: 0.2, cy: -0.414 }, kbdict: { k: 0.46, cy: 0.04 }, dial: { k: 0.19, cy: -0.268 }, alarmsum: { k: 0.17, cy: -0.3 }, ring: { k: 0.44, cy: -0.2 },
+  birth: { k: 0.8, cy: -0.07 }, bname: { k: 0.3, cy: -0.31 }, bai: { k: 0.22, cy: -0.36 }, bhold: { k: 0.62, cy: -0.12 }, mysoul: { k: 0.5, cy: -0.18 },
   sleep: { k: 0.74, cy: -0.07 }, chg: { k: 0.5, cy: -0.15 }, game: { k: 0.4, cy: 0 }, apps: { k: 0.46, cy: -0.21 }, cc: { k: 0.2, cy: -0.33 }
 };
 const S = {
@@ -1814,6 +1815,8 @@ const unpen = s => String(s).replace(/^[✎+⏰]\s*/, "");
 /* ---------------------------------------------------------------- what it says: one renderer per screen */
 function cardHTML(v) {
   const L = T();
+  if (BOOT_STEPS.includes(v)) return bootHTML(v);
+  if (v === "mysoul") return mySoulHTML();
   switch (v) {
     case "home": {
       let tag = "";
@@ -1884,16 +1887,20 @@ function cardHTML(v) {
       <div class="ctrls" style="margin-top:18px"><span class="cb" data-act="prev" role="button" aria-label="prev">${lg("prev", 30)}</span><span class="cb big" data-act="play" role="button" aria-label="play">${lg(M.play ? "pause" : "play", 32)}</span><span class="cb" data-act="next" role="button" aria-label="next">${lg("next", 30)}</span></div>
       <div class="mt" style="margin-top:22px"><span data-live="mt">${mmss(M.pos * 214)}</span><span>3:34</span></div></div>`;
     }
-    case "settings":
-      return lbl(L.settings) + `<div class="set" style="top:120px">
-        <div data-act="bright"><span>${L.setBright}</span><b>${Math.round(S.bright * 100)}%</b></div>
-        <div data-act="snd"><span>${L.setSnd}</span><b class="${AU.on ? "" : "dim"}">${AU.on ? L.on : L.off}</b></div>
+    case "settings": {
+      const R = BIRTH.roll;
+      return lbl(L.settings) + `<div class="set" style="top:104px">
+        <div data-act="mysoul"><span>${L.mySoul}</span><b style="color:${rarityOf(R.rarity).color}">${esc(R.design.name.length > 13 ? R.design.name.slice(0, 12) + "…" : R.design.name)} ›</b></div>
         <div data-act="ai"><span>${L.setAi}</span><b class="${S.ai === "none" ? "dim" : ""}" style="${S.ai === "none" ? "" : "color:var(--amber)"}">${esc(L.aiShort[S.ai])} ›</b></div>
+        <div data-act="bigtext" role="switch" aria-checked="${S.big}"><span>${L.setBig}</span><b class="${S.big ? "" : "dim"}">${S.big ? L.big : L.normal}</b></div>
+        <div data-act="snd" role="switch" aria-checked="${AU.on}"><span>${L.setSnd}</span><b class="${AU.on ? "" : "dim"}">${AU.on ? L.on : L.off}</b></div>
         <div data-act="mem"><span>${L.setMem}</span><b class="dim">${L.setMemV(S.memWiped ? 0 : S.memCount)} ›</b></div>
         <div data-act="about"><span>${L.setAbout}</span><b class="dim">${L.setAboutV} ›</b></div></div>`;
+    }
     case "aimode":
-      return lbl(L.aimT) + `<div class="set" style="top:130px">${["none", "claude", "chatgpt", "api"].map(m =>
-        `<div data-act="aim" data-m="${m}" role="radio" aria-checked="${S.ai === m}"><span${S.ai === m ? ' style="color:var(--amber);font-weight:600"' : ""}>${esc(L.aiModes[m])}</span><b style="color:var(--amber)">${S.ai === m ? lg("check", 24) : ""}</b></div>`).join("")}</div>`;
+      return lbl(L.aimT) + `<div class="set" style="top:122px">${["claude", "api", "chatgpt", "none"].map(m =>
+        `<div data-act="aim" data-m="${m}" role="radio" aria-checked="${S.ai === m}"><span${S.ai === m ? ' style="color:var(--amber);font-weight:600"' : ""}>${S.ai === m ? lg("check", 20) + " " : ""}${esc(L.aiModes[m])}</span><b class="${m === "none" ? "dim" : ""}" style="${m === "claude" && BRAIN.sample ? "color:var(--mint)" : ""}">${esc(aiTagNow(m))}</b></div>`).join("")}</div>` +
+        ((S.ai === "api" && BRAIN.keys.anthropic) || (S.ai === "chatgpt" && BRAIN.keys.openai) ? `<svg class="rim" viewBox="0 0 466 466"><g data-act="key-forget" role="button"><path class="hit" d="${arcD(116, 64, 200)}"/>${rimTxt("rB", esc(L.keyForget), "amber")}</g></svg>` : "");
     case "dial": return dialHTML();
     case "alarmsum": return alarmSumHTML();
     case "ring": {
@@ -1911,15 +1918,15 @@ function cardHTML(v) {
         <div class="chips" style="flex-direction:column;align-items:center;gap:0">${wordBtn("reply", L.reply1, "", ' data-r="1"')}${wordBtn("reply", L.reply2, "", ' data-r="2"')}</div></div>`;
     case "voice": {
       const V = S.voice; if (!V) return "";
-      if (V.phase === "listen") return lbl(L.listen, "ice") + `<div class="c" style="top:318px"><div class="t2" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>`;
-      if (V.phase === "think") return lbl(L.thinking(aiName()), "amber") + `<div class="c" style="top:318px;gap:14px"><div class="t3" style="font-size:24px">${qo(esc(V.p.q))}</div><div class="tool fade-in">→ ${esc(V.p.tool)}</div></div>`;
-      const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips;
-      if (V.kind === "typed") return `<div class="c fade-in" style="top:176px;gap:12px;left:52px;right:52px"><div class="dtag">${esc(S.ai === "none" ? L.localTag : L.demoTag(L.aiModes[S.ai]))}</div>
-        <div class="t1" style="font-size:${V.p.a.length > 44 ? 27 : 31}px">${esc(V.p.a)}</div>
-        <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div><div class="tool">→ ${esc(V.p.tool)}</div></div>`;
-      return `<div class="c fade-in" style="top:${V.kind === "tr" ? 196 : 206}px;gap:14px">${V.kind === "tr" ? `<div class="t3" style="font-size:21px">${esc(V.p.q)}</div>` : ""}
-        <div class="t1" style="font-size:${V.kind === "tr" ? 30 : 32}px">${esc(V.p.a)}</div>
+      if (V.phase === "listen") return lbl(L.listen, "ice") + `<div class="c" style="top:318px"><div class="t2" data-live="heard" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>` + (V.sim && V.kind !== "tr" ? rimBot(esc(V.micErr || !SRC ? L.simMic : L.demoMic), "") : "");
+      if (V.phase === "think") return lbl(L.thinking(V.kind === "tr" ? "SOUL" : S.ai === "none" ? "SOUL" : aiName()), "amber") + `<div class="c" style="top:316px;gap:14px"><div class="t3" style="font-size:23px;max-width:300px">${qo(esc(V.p.q.length > 70 ? V.p.q.slice(0, 68) + "…" : V.p.q))}</div></div>` + rimBot(esc(V.src || ""), "amber");
+      const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips || [], a = String(V.p.a || ""), fs = a.length > 150 ? 20 : a.length > 90 ? 23 : a.length > 44 ? 27 : 31;
+      if (V.kind === "tr") return `<div class="c fade-in" style="top:196px;gap:14px"><div class="t3" style="font-size:21px">${esc(V.p.q)}</div><div class="t1" style="font-size:30px">${esc(a)}</div>
         <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div></div>`;
+      return `<div class="c fade-in" style="top:172px;gap:10px;left:58px;right:58px"><div class="dtag" style="${V.err ? "" : "color:var(--ice)"}">${esc(V.src || "")}</div>
+        ${V.err ? `<div class="aerr" role="alert">${esc(V.err)}</div>` : ""}
+        <div class="t1" data-live="say" style="font-size:${fs}px">${esc(a)}</div>
+        ${chips.length ? `<div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div>` : ""}${V.p.tool ? `<div class="tool">→ ${esc(V.p.tool)}</div>` : ""}</div>`;
     }
   }
   return "";
@@ -1930,12 +1937,12 @@ let curCard = null, NAV = null;
 function layoutFor(v) {
   if (v === "voice") { const V = S.voice; return V && V.phase === "answer" ? LAYOUT.answer : LAYOUT.listen; }
   if (v === "games" && S.game.run) return LAYOUT.game;
-  if (["home", "talk", "today", "focus", "dial", "alarmsum", "ring", "apps"].includes(v)) return LAYOUT[v];
+  if (["home", "talk", "today", "focus", "dial", "alarmsum", "ring", "apps", "birth", "bname", "bai", "bhold", "mysoul"].includes(v)) return LAYOUT[v];
   return LAYOUT.card;
 }
 function applyFaceState() {
   const v = S.view;
-  soul.layDirect = false;
+  soul.layDirect = false; soul.levelExt = null;
   if (S.kb && !S.sleeping) {
     soul.lay = Object.assign({ cx: 0 }, S.kb.dict ? LAYOUT.kbdict : LAYOUT.kb);
     soul.st = S.kb.dict ? "listen" : "idle"; soul.alert = false; return;
@@ -1946,16 +1953,26 @@ function applyFaceState() {
   else if (S.chgShow && v === "home") lay = Object.assign({ cx: 0 }, LAYOUT.chg);
   if (screen.classList.contains("cc-on") && !S.sleeping) lay = Object.assign({ cx: 0 }, LAYOUT.cc);
   soul.lay = lay;
-  /* one light at a time: the eyes take the colour of the state (ice = listening, amber = Claude / AI at work, cream = everything else) */
-  soul.tint = S.sleeping ? PAL.cream : v === "voice" && S.voice && S.voice.phase === "listen" ? PAL.ice
-    : (v === "voice" && S.voice && S.voice.phase === "think" && S.ai !== "none") || (v === "claude" && S.claude.pending) || (v === "ring" && S.ringWake) ? PAL.amber : PAL.cream;
+  /* the eyes say the state first; the rim carries one light (ice = listening, amber = Claude / needs you, mint = done) */
+  const pend = !!S.claude.pending, V = S.voice;
+  soul.alert = (pend && v !== "voice" && !BOOT.on) || (v === "ring" && S.ringWake);
   if (S.sleeping) { soul.st = "sleep"; return; }
-  if (v === "voice") soul.st = S.voice.phase === "listen" ? "listen" : S.voice.phase === "think" ? "think" : S.voice.speaking ? "speak" : "idle";
+  if (BOOT.on) { soul.st = BOOT.step === "hold" && BOOT.holding ? "listen" : "idle"; return; }
+  if (v === "voice" && V) soul.st = V.phase === "listen" ? "listen" : V.phase === "think" ? "think" : V.speaking ? "speak" : "idle";
+  else if (S.chgShow) { soul.st = "charge"; soul.levelExt = S.batt.lvl / 100; }
+  else if (pend && ["claude", "home", "today"].includes(v)) soul.st = "wait";                 // Claude needs you: wide eyes, looking at you
   else if (v === "focus" && S.focus.run) soul.st = "focus";
-  else if (v === "claude" && !S.claude.pending) soul.st = "busy";
+  else if (v === "claude") soul.st = "busy";                                                 // Claude is working: the reading scan
   else if (v === "ring") soul.st = S.ringWake ? "idle" : "sleep";
+  else if (v === "home" && S.batt.lvl < 15 && !S.batt.chg) soul.st = "low";
   else soul.st = "idle";
-  soul.alert = (!!S.claude.pending && v !== "voice") || (v === "ring" && S.ringWake);
+  announce();
+}
+/* screen readers hear what the eyes show */
+let lastSaid = "";
+function announce() {
+  const L = T(), st = soul.st, m = { listen: L.listen, think: L.thinking(S.ai === "none" ? "SOUL" : aiName()), wait: L.claudePill, error: L.errs.upstream, low: L.battery + " " + Math.round(S.batt.lvl) + "%" }[st] || "";
+  if (m === lastSaid) return; lastSaid = m; const el = $("#srsay"); if (el) el.textContent = m;
 }
 /* where am I: after every move the orbit shows on the lower rim for a moment (previous · CURRENT · next), then gives the rim back to the app */
 function renderDots(nav) {
@@ -2056,7 +2073,10 @@ function hap(kind = "light", noVisual) {
   pebble.classList.remove("tick"); void pebble.offsetWidth; pebble.classList.add("tick");
 }
 
-/* ---------------------------------------------------------------- voice pipeline (scripted) */
+/* ---------------------------------------------------------------- voice: hold the glass, speak, let go
+   A real microphone (Web Speech API) where the browser allows it; otherwise a demo phrase is "heard" so the rhythm stays the same.
+   What was heard goes to the brain you picked (Settings › AI): Claude through claude.ai, your own key, or the on-device rules. */
+const SRC = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 function nextPhrase(kind) {
   const L = T();
   if (kind === "note") return L.notePhrase;
@@ -2065,49 +2085,61 @@ function nextPhrase(kind) {
 }
 function startVoice(kind, preset) {
   if (S.sleeping) return;
-  cancel("voice"); cancel("answer");
-  let p = preset || nextPhrase(kind);
-  if (S.ai === "none") { const L = T(); p = Object.assign({}, p, { a: L.offVoice, chips: [["warn", L.offChip]], tool: "offline", fx: null }); }
-  S.voice = { kind, p, phase: "listen", shown: "", i: 0, speaking: false, idx: preset ? preset._i : null };
+  cancel("voice"); cancel("answer"); aiAbort(); micStop();
+  const V = S.voice = { kind, p: null, phase: "listen", shown: "", speaking: false, sim: true };
   go("voice", "fade");
+  if (S.ai === "none" && kind !== "note") { simListen(V, preset || nextPhrase(kind)); return; }
+  if (!preset && SRC && kind !== "tr" && micStart(V)) return;
+  simListen(V, preset || nextPhrase(kind));
+}
+function simListen(V, p) {
+  V.sim = true; V.p = Object.assign({}, p); V.i = 0;
   const total = p.q.length, step = Math.max(28, 1300 / total);
-  const type = () => {
-    if (!S.voice || S.voice.phase !== "listen") return;
-    S.voice.i++; S.voice.shown = p.q.slice(0, S.voice.i);
-    const t2 = curCard && curCard.querySelector(".t2");
-    if (t2) t2.innerHTML = esc(S.voice.shown) + '<span class="caret"></span>';
-    if (S.voice.i < total) after(step, type, "voice");
-  };
+  const type = () => { if (S.voice !== V || V.phase !== "listen") return; V.i++; V.shown = p.q.slice(0, V.i); showHeard(V); if (V.i < total) after(step, type, "voice"); };
   after(250, type, "voice");
 }
+function showHeard(V) { const el = curCard && curCard.querySelector('[data-live="heard"]'); if (el) el.innerHTML = esc(V.shown) + '<span class="caret"></span>'; }
+let rec = null;
+function micStart(V) {
+  try {
+    const r = rec = new SRC(); r.lang = LANG === "ro" ? "ro-RO" : "en-US"; r.interimResults = true; r.continuous = true;
+    V.sim = false; V.mic = true;
+    r.onresult = e => { if (S.voice !== V) return; let s = ""; for (let i = 0; i < e.results.length; i++) s += e.results[i][0].transcript; V.shown = s.trim(); showHeard(V); };
+    r.onerror = e => { if (rec === r) rec = null; if (S.voice !== V || V.phase !== "listen" || V.shown) return; V.micErr = e && e.error || "mic"; V.mic = false; simListen(V, nextPhrase(V.kind)); };
+    r.onend = () => { if (rec === r) rec = null; const f = V.onEnd; V.onEnd = null; if (f) f(); };
+    r.start(); return true;
+  } catch (e) { rec = null; V.mic = false; return false; }
+}
+function micStop() { if (rec) { const r = rec; rec = null; try { r.abort(); } catch (e) {} } }
 function endListen() {
   const V = S.voice; if (!V || V.phase !== "listen") return;
-  cancel("voice");
-  V.shown = V.p.q; V.phase = "think"; refresh();
-  after(RM ? 500 : 1400, answer, "voice");
+  cancel("voice"); sfx("soft");
+  if (!V.sim) {
+    const done = () => { if (S.voice === V && V.phase === "listen") heard(V, V.shown); };
+    if (rec) { V.onEnd = done; try { rec.stop(); } catch (e) {} after(1400, done, "voice"); } else done();
+    return;
+  }
+  heard(V, V.p.q);
 }
+function heard(V, text) {
+  const L = T(); text = String(text || "").trim(); V.shown = text;
+  if (!text) { S.voice = null; soul.react("error"); showPill({ kind: "amber", text: L.noHear, dur: 2200 }); go(RING.includes(S.ret) ? S.ret : "home", "fade"); return; }
+  if (V.kind === "tr") { V.phase = "think"; refresh(); after(RM ? 400 : 1100, answer, "voice"); return; }
+  if (S.ai === "none" && V.kind !== "note") { V.p = Object.assign({}, V.p, { a: L.offVoice, chips: [["warn", L.offChip]], tool: "offline" }); V.phase = "think"; refresh(); after(RM ? 300 : 700, answer, "voice"); return; }
+  if (V.kind === "note") { aiAsk(text, "notes", { kind: "note", pre: { say: L.aiNote, actions: [{ type: "note.create", text }], src: L.srcLocal } }); return; }
+  aiAsk(text, S.ret, { kind: "ask" });
+}
+/* a reply is ready: run its actions, then say it */
 function answer() {
   const V = S.voice; if (!V) return;
-  V.phase = "answer"; V.speaking = true; refresh();
-  after(1700, () => { if (S.voice === V) { V.speaking = false; applyFaceState(); soul.react("happy", 2.2); } }, "voice");
-  if (V.kind === "ask") S.lastQA = V.p.q;
+  V.phase = "answer"; V.speaking = !V.err; refresh();
+  const talk = RM ? 400 : clamp(String(V.p.a || "").length * 42, 900, 3200);
+  after(talk, () => { if (S.voice === V) { V.speaking = false; applyFaceState(); if (V.face) soul.react(V.face); } }, "voice");
+  if (V.kind === "ask" || V.kind === "typed") S.lastQA = V.p.q;
   if (V.kind === "tr") S.tr.last = { q: V.p.q, a: V.p.a };
-  const fx = V.p.fx;
-  if (fx === "rem") { if (!S.rems.find(r => r.key === "new")) { S.rems.forEach(x => x.fresh = false); S.rems.push({ time: "17:00", key: "new", done: false, fresh: true }); } addDiary("rem"); }
-  const A = V.p.args;
-  if (fx === "remT") { addRem(A.h, A.m, A.text, A.day); addDiary("remT"); }
-  if (fx === "noteT") { addNote(A.text); addDiary("noteT"); }
-  if (fx === "alarmT") { addAlarm(A.h, A.m, A.label); addDiary("alarmT"); }
-  if (fx === "note" || fx === "note2") {
-    const key = fx === "note" ? "new" : "new2";
-    if (!S.notes.find(n => n.key === key)) { const n = { key, sync: false, fresh: true }; S.notes.push(n); after(2600, () => { n.sync = true; if (S.view === "notes") refresh(); }, "sync"); }
-    addDiary(fx);
-  }
-  if (fx === "msg") addDiary("msg");
-  if (fx === "light") addDiary("light");
-  if (fx === "focus") { S.focus = { run: true, left: 1500, total: 1500, done: false }; addDiary("focus"); }
-  const dest = fx === "focus" ? "focus" : V.kind === "note" ? "notes" : V.kind === "tr" ? "translate" : S.ret;
-  after(fx === "focus" ? 3400 : 6500, () => { if (S.view === "voice") { S.voice = null; go(RING.includes(dest) ? dest : "home", "fade"); } }, "answer");
+  if (V.p.fx === "msg" || V.p.fx === "light") addDiary(V.p.fx);
+  const focus = (V.p.actions || []).some(a => a.type === "focus.start"), dest = focus ? "focus" : V.kind === "note" ? "notes" : V.kind === "tr" ? "translate" : S.ret;
+  after(focus ? 3400 : Math.max(6500, talk + 4200), () => { if (S.view === "voice" && S.voice === V) { S.voice = null; go(RING.includes(dest) ? dest : "home", "fade"); } }, "answer");
 }
 function runPhrase(i) {
   const p = T().phrases[i];
@@ -2117,11 +2149,230 @@ function runPhrase(i) {
   after(Math.max(1500, p.q.length * 45 + 700), endListen, "voice");
 }
 
+/* ================================================================ the brain: who answers when you talk to SOUL
+   none    → the on-device rules (times, alarms, reminders, timers; everything else is kept in Notes)
+   claude  → Claude, through claude.ai's `sample` capability (the viewer's own Claude; works in the published artifact)
+   api     → your Anthropic API key, straight from this page to api.anthropic.com (key kept on this device only)
+   chatgpt → your OpenAI API key, straight to api.openai.com (optional)
+   Every brain answers in the same small JSON protocol, validated strictly before SOUL acts on it:
+     {"say": string, "face"?: string, "actions"?: [ {type: "alarm.set" | "timer.start" | "reminder.create" | "note.create" | "focus.start", ...} ]} */
+const BRAIN = { sample: undefined, keys: { anthropic: "", openai: "" }, remember: false, model: "claude-opus-5-5", oaModel: "gpt-4o-mini" };
+try { for (const k of ["anthropic", "openai"]) { const v = localStorage.getItem("soulos-key-" + k); if (v) { BRAIN.keys[k] = v; BRAIN.remember = true; } } } catch (e) {}
+const brainReady = (async () => {
+  try { BRAIN.sample = window.claude && typeof window.claude.use === "function" ? await window.claude.use("sample") : null; } catch (e) { BRAIN.sample = null; }
+  if (BRAIN.sample === undefined) BRAIN.sample = null;
+  return BRAIN.sample;
+})();
+brainReady.then(() => { try { renderAiSeg(); if (S.view === "aimode" || S.view === "talk" || S.view === "bai") refresh(); } catch (e) {} });
+function setKey(kind, v, remember) {
+  v = String(v || "").trim(); BRAIN.keys[kind] = v; if (remember != null) BRAIN.remember = !!remember;
+  try { if (v && BRAIN.remember) localStorage.setItem("soulos-key-" + kind, v); else localStorage.removeItem("soulos-key-" + kind); } catch (e) {}
+}
+const keyOk = (kind, v) => kind === "anthropic" ? /^sk-ant-[A-Za-z0-9_\-]{16,}$/.test(v) : /^sk-[A-Za-z0-9_\-]{16,}$/.test(v);
+function brainLabel() {
+  const L = T();
+  return S.ai === "none" ? L.srcLocal : S.ai === "claude" ? (BRAIN.sample ? L.srcLive : "Claude") : S.ai === "api" ? L.srcKey : L.srcGpt;
+}
+/* the standing instructions + what the device knows right now */
+function brainRules() {
+  const L = T(), d = new Date();
+  const al = S.alarms.map(a => `${hm(a.h, a.m)} ${daysStr(a.days)} "${alarmLabel(a)}" ${a.on ? "on" : "off"}`).join("; ") || "none";
+  const rm = S.rems.filter(r => !r.done).map(r => `${r.time}${r.day ? " tomorrow" : ""} "${remText(r)}"`).slice(0, 5).join("; ") || "none";
+  const cd = S.tm.cd.run ? `${Math.ceil(S.tm.cd.left / 60)} min left` : "none";
+  return `You are ${soulName()}, a SOUL: a small round companion device with two living eyes on a round 466 px screen, held in one hand. You answer on that screen, so keep it short: one or two plain sentences, at most 200 characters, no markdown, no emoji, no lists. Reply in ${LANG === "ro" ? "Romanian" : "English"} unless the user writes in another language.
+Right now: ${d.toLocaleString(LANG === "ro" ? "ro-RO" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}. Alarms: ${al}. Reminders: ${rm}. Countdown timer: ${cd}. Notes: ${S.notes.length}.
+You can act on the device. Reply with ONLY one JSON object and nothing else:
+{"say": "<what you say>", "face": "<optional, one of: happy, love, wink, excited, thinking, confused, sad, surprised, smug, shy>", "actions": [<zero to three actions>]}
+The only actions (24-hour times, exactly these keys):
+{"type": "alarm.set", "time": "HH:MM", "label": "<up to 40 chars>", "repeat": "once" | "daily" | "weekdays" | "weekend"}
+{"type": "timer.start", "minutes": <1-180>}
+{"type": "reminder.create", "time": "HH:MM", "day": "today" | "tomorrow", "text": "<up to 80 chars>"}
+{"type": "note.create", "text": "<up to 300 chars>"}
+{"type": "focus.start", "minutes": <5-120>}
+Add an action only when the user asks for one, and confirm it in "say". You cannot send messages, browse, call or control other devices; if asked, say so briefly.`;
+}
+/* strict validation: unknown types, extra keys, bad times or out-of-range numbers are dropped (and counted) */
+const ACTION_SPEC = {
+  "alarm.set": { req: ["time"], opt: ["label", "repeat"] },
+  "timer.start": { req: ["minutes"], opt: [] },
+  "reminder.create": { req: ["time", "text"], opt: ["day"] },
+  "note.create": { req: ["text"], opt: [] },
+  "focus.start": { req: ["minutes"], opt: [] }
+};
+const FACES = ["happy", "love", "wink", "excited", "thinking", "confused", "sad", "surprised", "smug", "shy"];
+const cleanStr = (v, max) => typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : null;
+const timeOk = v => typeof v === "string" && /^([01]?\d|2[0-3]):[0-5]\d$/.test(v.trim());
+const normTime = v => { const [h, m] = v.trim().split(":"); return pad2(+h) + ":" + m; };
+function validAction(a) {
+  if (!a || typeof a !== "object" || Array.isArray(a)) return null;
+  const sp = ACTION_SPEC[a.type]; if (!sp) return null;
+  const keys = Object.keys(a).filter(k => k !== "type");
+  if (keys.some(k => !sp.req.includes(k) && !sp.opt.includes(k)) || sp.req.some(k => a[k] == null)) return null;
+  const o = { type: a.type };
+  if ("time" in a) { if (!timeOk(a.time)) return null; o.time = normTime(a.time); }
+  if ("minutes" in a) { const n = a.minutes; const lim = a.type === "focus.start" ? [5, 120] : [1, 180]; if (typeof n !== "number" || !isFinite(n) || n < lim[0] || n > lim[1]) return null; o.minutes = Math.round(n); }
+  if ("text" in a) { const s = cleanStr(a.text, a.type === "note.create" ? 300 : 80); if (!s) return null; o.text = s; }
+  if ("label" in a) { const s = cleanStr(a.label, 40); if (s == null) return null; if (s) o.label = s; }
+  if ("repeat" in a) { if (!["once", "daily", "weekdays", "weekend"].includes(a.repeat)) return null; o.repeat = a.repeat; }
+  if ("day" in a) { if (!["today", "tomorrow"].includes(a.day)) return null; o.day = a.day; }
+  return o;
+}
+function parseReply(raw) {
+  const s = String(raw == null ? "" : raw).trim();
+  let o = null;
+  try { o = JSON.parse(s); } catch (e) {
+    const f = s.match(/```(?:json)?\s*([\s\S]*?)```/); const body = f ? f[1] : s, a = body.indexOf("{"), b = body.lastIndexOf("}");
+    if (a >= 0 && b > a) try { o = JSON.parse(body.slice(a, b + 1)); } catch (e2) {}
+  }
+  if (!o || typeof o !== "object" || Array.isArray(o) || typeof o.say !== "string" || !o.say.trim()) {
+    const plain = cleanStr(s.replace(/[{}"\[\]`]/g, " "), 280);
+    return { say: plain || "…", actions: [], face: null, rejected: Array.isArray(o && o.actions) ? o.actions.length : 0, loose: true };
+  }
+  const list = Array.isArray(o.actions) ? o.actions : o.actions == null ? [] : [o.actions];
+  const actions = list.slice(0, 3).map(validAction).filter(Boolean);
+  return { say: cleanStr(o.say, 280), face: FACES.includes(o.face) ? o.face : null, actions, rejected: list.length - actions.length };
+}
+/* the "say" of a JSON reply that is still streaming in */
+function sayPartial(raw) {
+  const m = /"say"\s*:\s*"/.exec(raw); if (!m) return "";
+  let out = "", i = m.index + m[0].length;
+  for (; i < raw.length; i++) {
+    const c = raw[i];
+    if (c === '"') break;
+    if (c === "\\") { const n = raw[++i]; if (n === undefined) break; out += n === "n" ? " " : n === "t" ? " " : n === "u" ? (raw.length >= i + 5 ? String.fromCharCode(parseInt(raw.substr(i + 1, 4), 16) || 32) : "") : n; if (n === "u") i += 4; }
+    else out += c;
+  }
+  return out;
+}
+const sampleCode = c => ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(c) ? "not_granted"
+  : ["rate_limited", "refused", "cancelled", "session_expired"].includes(c) ? (c === "session_expired" ? "session" : c) : "upstream";
+async function brainAsk(text, o = {}) {
+  const sys = brainRules(), hist = S.chat.slice(-8);
+  if (typeof navigator !== "undefined" && navigator.onLine === false && S.ai !== "none") throw { code: "offline" };
+  let raw = "";
+  const stream = full => { const s = sayPartial(full); if (s && o.onText) o.onText(s); };
+  if (S.ai === "claude") {
+    const sm = BRAIN.sample === undefined ? await brainReady : BRAIN.sample;
+    if (!sm) throw { code: "no_capability" };
+    try { raw = (await sm([{ role: "user", content: sys }, ...hist, { role: "user", content: text }], { signal: o.signal, cache: false, modelTier: "quick", onText: u => stream(u.text) })).text; }
+    catch (e) { throw { code: sampleCode(e && e.code) }; }
+  } else if (S.ai === "api") raw = await anthropicCall(sys, hist, text, o.signal);
+  else if (S.ai === "chatgpt") raw = await openaiCall(sys, hist, text, o.signal);
+  else throw { code: "upstream" };
+  const r = parseReply(raw);
+  S.chat.push({ role: "user", content: text }, { role: "assistant", content: String(raw).slice(0, 1200) });
+  if (S.chat.length > 12) S.chat.splice(0, S.chat.length - 12);
+  r.src = brainLabel();
+  return r;
+}
+async function httpJSON(url, init) {
+  let res;
+  try { res = await fetch(url, init); }
+  catch (e) { throw { code: e && e.name === "AbortError" ? "cancelled" : "network" }; }
+  let j = null; try { j = await res.json(); } catch (e) {}
+  if (res.status === 401 || res.status === 403) throw { code: "bad_key" };
+  if (res.status === 429) throw { code: "rate_limited" };
+  if (!res.ok) throw { code: "upstream", status: res.status };
+  return j || {};
+}
+async function anthropicCall(sys, hist, text, signal) {
+  const key = BRAIN.keys.anthropic; if (!key) throw { code: "no_key" };
+  const j = await httpJSON("https://api.anthropic.com/v1/messages", { method: "POST", signal,
+    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true", "anthropic-beta": "server-side-fallback-2026-07-01" },
+    body: JSON.stringify({ model: BRAIN.model, max_tokens: 1024, output_config: { effort: "low" }, fallbacks: "default", system: sys, messages: [...hist, { role: "user", content: text }] }) });
+  if (j.stop_reason === "refusal") throw { code: "refused" };
+  return (j.content || []).filter(b => b && b.type === "text").map(b => b.text).join("");
+}
+async function openaiCall(sys, hist, text, signal) {
+  const key = BRAIN.keys.openai; if (!key) throw { code: "no_key" };
+  const j = await httpJSON("https://api.openai.com/v1/chat/completions", { method: "POST", signal,
+    headers: { "content-type": "application/json", authorization: "Bearer " + key },
+    body: JSON.stringify({ model: BRAIN.oaModel, response_format: { type: "json_object" }, messages: [{ role: "system", content: sys }, ...hist, { role: "user", content: text }] }) });
+  return (((j.choices || [])[0] || {}).message || {}).content || "";
+}
+/* the on-device rules: work with no AI, and catch what they can when the AI is unreachable */
+function localAct(text) {
+  const L = T(), f = text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  let r = f.match(/\b(timer|minutar|countdown|cronometreaza)\b[^\d]*(\d{1,3})\s*(min|minute|minutes|minut)?/) || f.match(/(\d{1,3})\s*(min|minute|minutes|minut)\w*\s+(timer|minutar|countdown)/);
+  if (r) { const n = +(r[2] && /^\d/.test(r[2]) ? r[2] : r[1]); if (n >= 1 && n <= 180) return { say: L.localTimer(n), actions: [{ type: "timer.start", minutes: n }] }; }
+  const tm = parseTime(text);
+  if (tm && tm.alarm) return { say: L.aiAlarm(hm(tm.h, tm.m)), actions: [{ type: "alarm.set", time: hm(tm.h, tm.m), label: cleanLabel(text).slice(0, 40) || L.labelDef }] };
+  if (tm) return { say: L.aiRem(hm(tm.h, tm.m), tm.day), actions: [{ type: "reminder.create", time: hm(tm.h, tm.m), day: tm.day ? "tomorrow" : "today", text: (cleanLabel(text) || L.remDef).slice(0, 80) }] };
+  return null;
+}
+function localReply(text) {
+  const L = T(), a = localAct(text);
+  if (a) return Object.assign(a, { say: S.ai === "none" ? L.offLocal : a.say, src: L.srcLocal });
+  return { say: L.offAsk, actions: [{ type: "note.create", text: text.slice(0, 300) }], src: L.srcLocal };
+}
+/* the scripted demo answers (only for the panel's example phrases, when no real AI is reachable) */
+function cannedFor(text) {
+  const L = T(), p = L.phrases.find(x => x.q.toLowerCase() === String(text).toLowerCase()); if (!p) return null;
+  const act = { rem: [{ type: "reminder.create", time: "17:00", day: "today", text: L.remNew }], note: [{ type: "note.create", text: L.noteNew }], focus: [{ type: "focus.start", minutes: 25 }] }[p.fx] || [];
+  return { say: p.a, actions: act, chips: act.length ? [] : p.chips, fx: p.fx, tool: p.tool };
+}
+const DAYSET = { once: [0, 0, 0, 0, 0, 0, 0], daily: [1, 1, 1, 1, 1, 1, 1], weekdays: [1, 1, 1, 1, 1, 0, 0], weekend: [0, 0, 0, 0, 0, 1, 1] };
+function runActions(list) {
+  const L = T(), out = [];
+  for (const a of list || []) {
+    const [h, m] = a.time ? a.time.split(":").map(Number) : [0, 0];
+    if (a.type === "alarm.set") { addAlarm(h, m, a.label || L.labelDef, DAYSET[a.repeat || "once"].map(Boolean)); addDiary("alarmT"); out.push(["ok", L.chipAlarm(a.time)]); }
+    else if (a.type === "reminder.create") { addRem(h, m, a.text, a.day === "tomorrow" ? 1 : 0); addDiary("remT"); out.push(["ok", L.chipRem(a.time)]); }
+    else if (a.type === "note.create") { addNote(a.text); addDiary("noteT"); out.push(["ok", L.chipNote]); }
+    else if (a.type === "timer.start") { Object.assign(S.tm.cd, { total: a.minutes * 60, left: a.minutes * 60, run: true, done: false }); S.tm.mode = "cd"; tmSec = -1; out.push(["ok", L.chipTimer(a.minutes)]); }
+    else if (a.type === "focus.start") { S.focus = { run: true, left: a.minutes * 60, total: a.minutes * 60, done: false }; addDiary("focus"); out.push(["ok", L.chipFocus(a.minutes)]); }
+  }
+  return out;
+}
+/* ask: typed or spoken, the same path. The eyes think until the first words arrive, then talk. */
+let AIQ = null;
+function aiAbort() { if (AIQ) { const q = AIQ; AIQ = null; try { q.ctl.abort(); } catch (e) {} } }
+function aiAsk(text, origin, o = {}) {
+  const L = T();
+  cancel("voice"); cancel("answer"); aiAbort(); micStop();
+  addDiary("aiT");
+  const V = S.voice = { kind: o.kind || "typed", p: { q: text, a: "", chips: [], tool: "" }, phase: "think", shown: text, speaking: false, src: brainLabel() };
+  if (S.view !== "voice") go("voice", "fade"); else refresh();
+  if (origin) S.ret = origin;
+  hap("light");
+  const t0 = performance.now(), minThink = RM ? 0 : 700;
+  const land = r => after(Math.max(0, minThink - (performance.now() - t0)), () => finish(V, r), "voice");
+  if (o.pre) { land(o.pre); return; }
+  if (S.ai === "none") { land(localReply(text)); return; }
+  const q = AIQ = { ctl: new AbortController() };
+  brainAsk(text, { signal: q.ctl.signal, onText: say => {
+    if (S.voice !== V || AIQ !== q) return;
+    if (V.phase === "think") { V.phase = "answer"; V.speaking = true; V.p.a = say; refresh(); }
+    else { V.p.a = say; const el = curCard && curCard.querySelector('[data-live="say"]'); if (el) el.textContent = say; }
+  } }).then(r => { if (AIQ !== q) return; AIQ = null; land(r); },
+    e => { if (AIQ !== q) return; AIQ = null; if (e && e.code === "cancelled") return; fail(V, e, text); });
+}
+function finish(V, r) {
+  if (S.voice !== V) return;
+  const L = T(), chips = (r.chips || []).slice().concat(runActions(r.actions));
+  if (r.rejected) chips.push(["warn", L.rejected(r.rejected)]);
+  V.p = Object.assign(V.p, { a: r.say, chips, actions: r.actions || [], tool: r.tool || (r.actions || []).map(a => a.type).join(" · "), fx: r.fx });
+  V.src = r.src || V.src; V.err = r.err || null;
+  V.face = r.err ? null : (r.actions && r.actions.length) ? "approve" : r.face || "happy";
+  if (r.actions && r.actions.length) { sfx("chime"); hap("double"); }
+  answer();
+  if (["home", "alarms", "notes", "reminders", "timer", "today"].includes(S.ret) && r.actions && r.actions.length) S.coach = false;
+}
+function fail(V, e, text) {
+  if (S.voice !== V) return;
+  const L = T(), code = e && e.code || "upstream", msg = (L.errs[code] || L.errs.upstream);
+  soul.react("error"); sfx("miss"); hap("double");
+  const demo = cannedFor(text), loc = demo || localAct(text);
+  if (loc) finish(V, Object.assign(loc, { src: demo ? L.srcDemo : L.srcLocal, err: msg }));
+  else finish(V, { say: msg, actions: [], err: msg, src: V.src });
+}
+
 /* ---------------------------------------------------------------- Claude permission */
 function claudeArrive() {
   if (S.claude.pending) return;
   if (S.view === "voice" || S.sleeping) { after(4000, claudeArrive, "claude"); return; }
   S.claude.pending = { cmd: "npm run build" };
+  soul.react("shocked"); soul.lookAt(0, -0.95, 0.9);                                // the eyes jump, glance at the rim where it lands, then look at you
   if (!S.dnd) buzz();
   if (S.view !== "claude") showPill({ kind: "amber", text: T().claudePill, act: "claude", dur: 5000, incoming: true });
   if (S.view === "claude" || S.view === "home" || S.view === "today") refresh();
@@ -2130,8 +2381,8 @@ function claudeDecide(ok) {
   if (!S.claude.pending) return;
   S.claude.pending = null; soul.prog = 0;
   hidePill();
-  if (ok) { soul.react("happy", 2.2); hap("double"); showPill({ kind: "mint", text: T().approved, dur: 2200 }); addDiary("ok"); }
-  else { soul.react("nope"); showPill({ text: T().denied, dur: 2000 }); addDiary("no"); }
+  if (ok) { soul.react("approve"); soul.flash(PAL.mint, 1.2); hap("double"); sfx("chime"); showPill({ kind: "mint", text: T().approved, dur: 2200 }); addDiary("ok"); }
+  else { soul.react("deny"); hap("heavy", true); sfx("close"); showPill({ text: T().denied, dur: 2000 }); addDiary("no"); }
   refresh();
 }
 
@@ -2534,28 +2785,8 @@ function kbDictStop() {
 
 /* ---------------------------------------------------------------- typing flows: AI, notes, reminders, alarms */
 function openTypeAI(origin) {
-  kbOpen({ ctx: origin === "talk" ? "talk" : "claude", action: "send", onDone: t => aiSend(t, origin),
-    onTime: (t, tm) => { const r = aiReply(t, true); r.args = Object.assign({}, tm, { text: cleanLabel(t) || T().remDef }); if (tm.alarm) { r.fx = "alarmT"; r.args.label = cleanLabel(t) || T().labelDef; } aiSend(t, origin, r); } });
-}
-function aiSend(text, origin, pre) {
-  const r = pre || aiReply(text);
-  cancel("voice"); cancel("answer");
-  S.lastQA = text; addDiary("aiT");
-  S.voice = { kind: "typed", p: Object.assign({ q: text }, r), phase: "think", shown: text, speaking: false };
-  go("voice", "fade"); S.ret = origin;
-  after(RM ? 500 : 1700, answer, "voice");
-}
-function aiReply(text, forceLocal) {
-  const L = T(), f = text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""), n = aiName(), tm = parseTime(text), off = S.ai === "none" || forceLocal;
-  const isRem = /amint|remind|memento|nu uita|don'?t forget/.test(f);
-  if (tm && tm.alarm) { const t = hm(tm.h, tm.m); return { a: off ? L.offLocal : L.aiAlarm(t), chips: [["ok", L.chipAlarm(t)]], tool: "alarm.set", fx: "alarmT", args: { h: tm.h, m: tm.m, label: cleanLabel(text) || L.labelDef } }; }
-  if (tm) { const t = hm(tm.h, tm.m); return { a: off ? L.offLocal : L.aiRem(t, tm.day), chips: [["ok", L.chipRem(t)]], tool: "reminder.create", fx: "remT", args: { h: tm.h, m: tm.m, day: tm.day, text: cleanLabel(text) || L.remDef } }; }
-  if (off) return { a: L.offAsk, chips: [["ok", L.chipNoteSaved]], tool: "note.create · outbox", fx: "noteT", args: { text } };
-  if (isRem) return { a: L.aiRem("18:00", 0), chips: [["ok", L.chipRem("18:00")]], tool: "reminder.create", fx: "remT", args: { h: 18, m: 0, day: 0, text: cleanLabel(text) || L.remDef } };
-  if (/rezum|sum up|summar|ziua mea|my day/.test(f)) return { a: L.aiDay, chips: [["ok", L.chipDay]], tool: "note.create", fx: "noteT", args: { text: L.dayNote } };
-  if (/urmeaz|what'?s next|\bnext\b/.test(f)) return { a: L.aiNext, chips: [["ok", L.chipRem("14:45")]], tool: "reminder.create", fx: "remT", args: { h: 14, m: 45, day: 0, text: L.nextRemText } };
-  if (/\bnot(e|eaza|ita)\b|cumpar|\bbuy\b|\bidee|\bidea/.test(f)) return { a: L.aiNote, chips: [["ok", L.chipNote]], tool: "note.create", fx: "noteT", args: { text } };
-  return { a: L.aiGeneric(n), chips: [["ok", L.chipNoteSaved]], tool: "note.create", fx: "noteT", args: { text } };
+  kbOpen({ ctx: origin === "talk" ? "talk" : "claude", action: "send", onDone: t => aiAsk(t, origin, { kind: "typed" }),
+    onTime: (t, tm) => { const r = localAct(t) || localReply(t); r.src = T().srcLocal; aiAsk(t, origin, { kind: "typed", pre: r }); } });
 }
 function addNote(text) { const n = { key: uid("t"), text, sync: false, fresh: true }; S.notes.forEach(x => x.fresh = false); S.notes.push(n); S.notePage = 0; after(2600, () => { n.sync = true; if (S.view === "notes") refresh(); }, "sync"); return n; }
 function addRem(h, m, text, day) {
@@ -2694,13 +2925,107 @@ function ringEnd(snooze) {
   else { showPill({ kind: "mint", text: L.goodMorning, dur: 2200 }); soul.react("happy", 2.2); }
   go("home", "down");
 }
-function setAi(m) {
+function setAi(m, quiet) {
   if (!["none", "claude", "chatgpt", "api"].includes(m)) return;
+  if (S.ai !== m) S.chat = [];
   S.ai = m; try { localStorage.setItem("soulos-ai", m); } catch (e) {}
   const L = T();
   soul.react(m === "none" ? "shy" : "wake");
-  showPill({ kind: m === "none" ? "" : "mint", text: L.aimPill(L.aiModes[m]), dur: 1800 });
+  if (!quiet) showPill({ kind: m === "none" ? "" : "mint", text: L.aimPill(L.aiModes[m]), dur: 1800 });
   refresh(); renderAiSeg(); if (S.kb) kbRender();
+}
+
+/* ================================================================ first boot: it is born (its eyes), you name it, pick its brain, learn "hold the glass"
+   Four short steps, each one tap; the side button skips, swipe ↓ goes back a step. */
+const BOOT = { on: false, step: null, reveal: false, holding: false, learned: false };
+let BORN = false; try { BORN = localStorage.getItem("soulos-born") === "1"; } catch (e) {}
+const BOOT_STEPS = ["birth", "bname", "bai", "bhold"];
+function bootStart() {
+  cancel("msg"); cancel("claude"); cancel("boot"); aiAbort(); micStop();
+  if (S.kb) kbBack(true); if (S.cc) ccClose(true); hidePill(); S.voice = null; S.claude.pending = null; soul.prog = 0;
+  if (S.sleeping) { S.sleeping = false; aodEl.classList.remove("on"); screen.classList.remove("asleep"); }
+  Object.assign(BOOT, { on: true, step: "birth", reveal: false, holding: false, learned: false });
+  soul.hide(); go("birth", "fade"); syncPanel();
+  after(RM ? 150 : 1700, bootReveal, "boot");
+}
+function bootReveal() {
+  if (!BOOT.on || BOOT.step !== "birth" || BOOT.reveal) return;
+  cancel("boot"); BOOT.reveal = true; soul.react("hello"); sfx("wake"); hap("double");
+  const k = BIRTH.roll.rarity; if (["epic", "legendary", "mythic"].includes(k)) after(1300, () => soul.react("excited", 1.8), "boot");
+  refresh();
+}
+function bootGo(step, dir = "left") { BOOT.step = step; go(step, dir); }
+function bootNext() { const i = BOOT_STEPS.indexOf(BOOT.step); if (i < BOOT_STEPS.length - 1) bootGo(BOOT_STEPS[i + 1]); else bootDone(); }
+function bootBack() { const i = BOOT_STEPS.indexOf(BOOT.step); if (i > 0) bootGo(BOOT_STEPS[i - 1], "right"); else soul.react("wink"); }
+function bootDone(skip) {
+  if (!BOOT.on) return;
+  cancel("boot"); BOOT.on = false; BOOT.step = null; BORN = true;
+  try { localStorage.setItem("soulos-born", "1"); localStorage.setItem("soulos-chip", BIRTH.chip); } catch (e) {}
+  S.coach = true; go("home", "fade"); soul.react(skip ? "wink" : "happy"); syncPanel(); demoTimers();
+}
+function bootPickAi(m) {
+  const need = m === "api" ? "anthropic" : m === "chatgpt" ? "openai" : null;
+  setAi(m, true);
+  if (need && !BRAIN.keys[need]) { askKey(need, () => bootNext()); return; }
+  after(RM ? 0 : 450, bootNext, "boot");
+}
+function bootHold(on) {
+  if (on) { BOOT.holding = true; sfx("listen"); hap("light"); applyFaceState(); refresh(); return; }
+  if (!BOOT.holding) return;
+  BOOT.holding = false; BOOT.learned = true; applyFaceState(); soul.react("approve"); sfx("chime"); hap("double"); refresh();
+  after(RM ? 300 : 1700, () => bootDone(), "boot");
+}
+function bootHTML(v) {
+  const L = T(), R = BIRTH.roll, d = R.design, rar = rarityOf(R.rarity);
+  switch (v) {
+    case "birth":
+      if (!BOOT.reveal) return rimTop(`SOUL M · CHIP ${esc(chipFmt(BIRTH.chip))}`, "", "") + `<div class="c" style="top:300px"><div class="t3 bwait">${esc(L.bWaking)}</div></div>`;
+      return rimTop(`${esc(d.num || "#" + d.n)} · ${esc(d.name)}`, "cream", "") +
+        `<div class="c fade-in" style="top:322px;gap:6px"><div class="brar" style="color:${rar.color}">${esc(rar.name)} · ${esc(L.oneIn(Math.round(1 / R.odds)))}</div>${wordBtn("boot-next", L.bHello, "", "", "")}</div>` +
+        rimBot(esc(L.bBorn), "");
+    case "bname":
+      return lbl(L.bNameT) + `<div class="c" style="top:150px;gap:14px"><div class="t1">${esc(L.bNameQ)}</div>
+        <div class="chips">${L.kbChips.name.map(c => wordBtn("boot-name", c[1], "", ` data-n="${esc(c[1])}"`)).join("")}</div>${wordBtn("boot-type", L.bTypeName, "ice", "", "pen")}</div>` + rimBot(esc(L.bSkip), "");
+    case "bai":
+      return lbl(L.bAiT) + `<div class="c" style="top:118px;gap:2px"><div class="t2" style="font-size:24px">${esc(L.bAiQ)}</div></div>
+        <div class="set bset" style="top:166px">${["claude", "api", "chatgpt", "none"].map(m => `<div data-act="boot-ai" data-m="${m}" role="button"><span${S.ai === m ? ' style="color:var(--amber)"' : ""}>${esc(L.aiModes[m])}</span><b class="${m === "none" ? "dim" : ""}" style="${m === "claude" && BRAIN.sample ? "color:var(--mint)" : ""}">${esc(aiTagNow(m))}</b></div>`).join("")}</div>`;
+    case "bhold":
+      return lbl(L.bHoldT, BOOT.learned ? "mint" : BOOT.holding ? "ice" : "") + `<div class="c" style="top:300px;gap:8px">
+        <div class="t1" style="font-size:30px;${BOOT.learned ? "color:var(--mint)" : ""}">${esc(BOOT.learned ? L.bHoldDone : BOOT.holding ? L.listen : L.bHoldQ)}</div>
+        <div class="t3" style="font-size:20px">${esc(BOOT.learned ? L.bHoldDone2 : L.bHoldHint)}</div></div>` + (BOOT.learned || BOOT.holding ? "" : `<div class="bpulse" aria-hidden="true"></div>`);
+  }
+  return "";
+}
+/* the brain's one-line status, as shown wherever you pick it */
+function aiTagNow(m) {
+  const L = T();
+  if (m === "claude") return BRAIN.sample ? L.tagLive : BRAIN.sample === null ? L.tagNoCap : L.aiTag.claude;
+  if (m === "api") return BRAIN.keys.anthropic ? L.tagKeySet : L.tagNeedKey;
+  if (m === "chatgpt") return BRAIN.keys.openai ? L.tagKeySet : L.tagNeedKey;
+  return L.aiTag.none;
+}
+/* pasting a key on the round keyboard: shown masked, kept in memory (or on this device if you tick "remember" in the panel) */
+function askKey(kind, then) {
+  const L = T();
+  kbOpen({ ctx: "key", action: "save", mask: true, keyKind: kind, onDone: t => {
+    t = t.replace(/\s+/g, "");
+    if (!keyOk(kind, t)) { soul.react("error"); sfx("miss"); showPill({ kind: "amber", text: L.keyBad, dur: 2600 }); if (S.view === "bai" || S.view === "aimode") refresh(); return; }
+    setKey(kind, t); soul.react("approve"); showPill({ kind: "mint", text: L.keySaved, dur: 2200 }); renderAiSeg(); refresh(); if (then) then();
+  } });
+}
+/* Settings › My SOUL: this unit's eyes, rolled at birth from its chip id */
+function mySoulHTML() {
+  const L = T(), R = BIRTH.roll, d = R.design, rar = rarityOf(R.rarity);
+  return lbl(L.mySoul) + `<div class="c" style="top:226px;gap:8px"><div class="t1" style="font-size:36px">${esc(d.name)}</div>
+    <div class="brar" style="color:${rar.color}">${esc(rar.name)} · ${esc(d.num || "#" + d.n)} / ${DESIGNS.length}</div>
+    <div class="msub">${esc(L.oneIn(Math.round(1 / R.odds)))} · ${esc(L.chipW)} ${esc(chipFmt(BIRTH.chip))}</div>
+    ${wordBtn("rebirth", L.rebirth, "", "", "reset")}</div>`;
+}
+function rebirth() {
+  const L = T(); birthFrom(newChip());
+  try { localStorage.setItem("soulos-chip", BIRTH.chip); } catch (e) {}
+  soul.setDesign(BIRTH.roll.design); after(RM ? 0 : 160, () => soul.react(["epic", "legendary", "mythic"].includes(BIRTH.roll.rarity) ? "excited" : "hello"), "look");
+  sfx("wake"); hap("double"); showPill({ kind: "mint", text: L.reborn(BIRTH.roll.design.name), dur: 2400 }); refresh();
 }
 
 /* ---------------------------------------------------------------- input: gestures */
@@ -2709,7 +3034,7 @@ function holdStart() {
   if (S.sleeping) { wake(); return; }
   const v = S.view;
   if (S.cc || v === "apps" || (v === "games" && S.game.run)) return;
-  if (v === "claude" && S.claude.pending) { hold = { kind: "approve", p: 0 }; soul.progCol = PAL.mint; return; }
+  if (S.claude.pending && (v === "claude" || v === "home" || v === "today" || (S.pill && S.pill.act === "claude"))) { hold = { kind: "approve", p: 0 }; soul.progCol = PAL.mint; hap("light"); return; }   // Claude asks: hold = yes, wherever the amber ring shows
   if (v === "memory" && !S.memWiped) { hold = { kind: "wipe", p: 0 }; soul.progCol = PAL.amber; return; }
   if (["dial", "alarmsum", "ring", "aimode"].includes(v)) return;
   if (S.micMute) { showPill({ kind: "amber", text: T().micMuted, dur: 2200 }); soul.react("nope"); hap("double"); return; }
@@ -2752,7 +3077,7 @@ function tap(target) {
   }
 }
 function doubleTap() {
-  if (S.view === "claude" && S.claude.pending) { claudeDecide(false); return; }
+  if (S.claude.pending && ["claude", "home", "today"].includes(S.view)) { claudeDecide(false); return; }
   if (S.view === "home" || S.view === "talk") { soul.react("laugh"); sfx("laugh"); S.soul.boops++; }
 }
 function act(a, el) {
@@ -2953,7 +3278,7 @@ screen.addEventListener("pointerdown", e => {
   ptr.prsEl = pressOn(e.target);
   if (!S.sleeping && !ptr.pill) ripple(p);
   cancel("hold");
-  if (!ptr.pan) after(380, () => { if (ptr && !ptr.moved && !ptr.pill) { ptr.held = true; pressOff(ptr); holdStart(); } }, "hold");
+  if (!ptr.pan) after(380, () => { if (ptr && !ptr.moved && (!ptr.pill || (S.pill && S.pill.act === "claude"))) { ptr.held = true; pressOff(ptr); holdStart(); } }, "hold");
 });
 screen.addEventListener("pointermove", e => {
   const b = screen.getBoundingClientRect();
