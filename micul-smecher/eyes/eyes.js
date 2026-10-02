@@ -33,7 +33,7 @@
   function rng(seed) { let a = seed >>> 0 || 1; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   function hex2rgb(h) { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map((c) => c + c).join(''); const n = parseInt(h.slice(0, 6), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
   const rgba = (c, a) => { const [r, g, b] = hex2rgb(c); return 'rgba(' + r + ',' + g + ',' + b + ',' + clamp(a, 0, 1).toFixed(3) + ')'; };
-  function mixHex(a, b, t) { const A = hex2rgb(a), B = hex2rgb(b); return '#' + A.map((v, i) => ('0' + Math.round(lerp(v, B[i], t)).toString(16)).slice(-2)).join(''); }
+  function mixHex(a, b, t) { const A = hex2rgb(a), B = hex2rgb(b); t = clamp(t, 0, 1); return '#' + A.map((v, i) => ('0' + Math.round(clamp(lerp(v, B[i], t), 0, 255)).toString(16)).slice(-2)).join(''); }
   const hsl = (h, s, l) => 'hsl(' + (((h % 360) + 360) % 360).toFixed(1) + ',' + s + '%,' + l + '%)';
   const clone = (o) => JSON.parse(JSON.stringify(o));
   function merge(a, b) {
@@ -253,9 +253,10 @@
         this.gazeT = this.look ? this.look.slice() : [this.base[0] + m[0], this.base[1] + m[1]];
       } else {
         if (this.randomMood && !this.reaction && t > this.nextRandom) {
-          const pick = RANDOM_POOL[Math.floor(r() * RANDOM_POOL.length)];
+          const pool = this.moodPool || RANDOM_POOL, ev = this.moodEvery || [3.2, 6.7];
+          const pick = pool[Math.floor(r() * pool.length)];
           this.react(pick, MOODS[pick] ? 2.2 + r() * 1.5 : null);
-          this.nextRandom = t + 3.2 + r() * 3.5;
+          this.nextRandom = t + ev[0] + r() * (ev[1] - ev[0]);
         }
         this._gaze(dt);
         if (t > this.nextBlink) {
@@ -418,7 +419,7 @@
   function drawPupilShape(ctx, d, type, px, py, prx, pry, color, t, side, rig) {
     ctx.fillStyle = color;
     switch (type) {
-      case 'slit': ctx.beginPath(); ctx.ellipse(px, py, prx * clamp(0.42 * (rig ? rig.slitW : 1), 0.3, 1.05), pry * 1.08, 0, 0, TAU); ctx.fill(); return { gx: 0.4 };
+      case 'slit': ctx.beginPath(); ctx.ellipse(px, py, prx * clamp(0.5 * ((rig && rig.slitW) || 1), 0.3, 1.05), pry * 1.08, 0, 0, TAU); ctx.fill(); return { gx: 0.4 };
       case 'plus': { const w = Math.min(prx, pry) * 0.62; rrect(ctx, px - prx, py - w / 2, prx * 2, w, w / 2); ctx.fill(); rrect(ctx, px - w / 2, py - pry, w, pry * 2, w / 2); ctx.fill(); return { gx: 0.55, gy: 0.2, gs: 0.6 }; }
       case 'star': starPath(ctx, px, py, Math.max(prx, pry) * 1.12, 5, 0.5, Math.sin(t * 1.2) * 0.15); ctx.fill(); return { gs: 0.7 };
       case 'heart': heartPath(ctx, px, py + pry * 0.05, Math.max(prx, pry) * 1.15, side * 0.08); ctx.fill(); return { gx: -0.4, gy: -0.3, gs: 0.7 };
@@ -493,16 +494,18 @@
           }
           ctx.restore();
         } else if (fx.indexOf('folk') >= 0) {
-          ctx.fillStyle = d.folkBase || '#FFF6E6'; ctx.beginPath(); ctx.ellipse(px, py, prx * 1.12, pry * 1.02, 0, 0, TAU); ctx.fill();
-          const n = 9, cell = (Math.min(prx, pry) * 1.9) / n;
-          ctx.lineCap = 'round'; ctx.lineWidth = cell * 0.3;
+          const fr = Math.min(prx, pry);
+          ctx.fillStyle = pc; ctx.beginPath(); ctx.arc(px, py, fr * 1.08, 0, TAU); ctx.fill();
+          ctx.fillStyle = d.folkBase || '#FFF6E6'; ctx.beginPath(); ctx.arc(px, py, fr * 0.9, 0, TAU); ctx.fill();
+          const n = 9, cell = (fr * 1.62) / n;
+          ctx.lineCap = 'round'; ctx.lineWidth = cell * 0.42;
           for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
             const ch = MOTIF[j][i]; if (ch === '.') continue;
-            const x = px + (i - 4) * cell, y = py + (j - 4) * cell, q = cell * 0.34;
+            const x = px + (i - 4) * cell, y = py + (j - 4) * cell, q = cell * 0.36;
             ctx.strokeStyle = ch === '1' ? pc : d.folkThread || '#141414';
             ctx.beginPath(); ctx.moveTo(x - q, y - q); ctx.lineTo(x + q, y + q); ctx.moveTo(x + q, y - q); ctx.lineTo(x - q, y + q); ctx.stroke();
           }
-          info = { gs: 0.55 };
+          info = { gs: 0.5, gx: 0.55, gy: -0.62 };
         } else info = drawPupilShape(ctx, d, P.type, px, py, prx, pry, pc, t, side, rig);
         if (d.glint && !info.none) {
           const gs = Math.min(prx, pry) * (d.glint.size || 1) * (info.gs || 1);
@@ -632,6 +635,11 @@
       ctx.moveTo(x + 0.01 * D * k, y - 0.05 * D * k); ctx.lineTo(x - 0.03 * D * k, y + 0.006 * D * k); ctx.lineTo(x - 0.002 * D * k, y + 0.006 * D * k);
       ctx.lineTo(x - 0.012 * D * k, y + 0.05 * D * k); ctx.lineTo(x + 0.03 * D * k, y - 0.008 * D * k); ctx.lineTo(x + 0.002 * D * k, y - 0.008 * D * k); ctx.closePath(); ctx.fill();
     }
+    if ((d.fx || []).indexOf('halo') >= 0) for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * TAU + t * 0.25, tw = 0.5 + 0.5 * Math.sin(t * 2.2 + i * 1.7);
+      ctx.fillStyle = d.haloColor || '#FFD23A';
+      sparkPath(ctx, cx + Math.cos(a) * D * 0.43, cy + Math.sin(a) * D * 0.43, D * (0.008 + 0.01 * tw), a); ctx.fill();
+    }
     if ((d.fx || []).indexOf('glitter') >= 0) for (let i = 0; i < 6; i++) {
       const per = 2 + h01(i + 1) * 2, p = ((t + h01(i) * per) % per) / per, a = Math.sin(p * PI);
       const ang = h01(i * 3) * TAU, rr = 0.24 + 0.2 * h01(i * 5);
@@ -676,6 +684,8 @@
     const ctx = canvas.getContext('2d');
     const rig = new Rig(opts.seed != null ? opts.seed : hashStr(d.id || d.name) ^ 0x5eed, opts.mode);
     rig.randomMood = !!opts.randomMood;
+    if (opts.moodPool) rig.moodPool = opts.moodPool;
+    if (opts.moodEvery) { rig.moodEvery = opts.moodEvery; rig.nextRandom = opts.moodEvery[0] * (0.3 + rig.r()); }
     rig.onChange = opts.onChange;
     const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const inst = {
@@ -698,6 +708,7 @@
       setHetero(v) { opts.hetero = !!v; return inst; },
       setRandomMood(v) { rig.randomMood = !!v; rig.nextRandom = rig.t + 0.5; return inst; },
       setLevel(v) { rig.levelExt = v == null ? null : clamp(v, 0, 1); return inst; },
+      hide() { rig.reaction = null; rig._snap({ scale: 0 }); return inst; },
       pause(v) { inst._paused = v !== false; return inst; },
       step(dt) { rig.update(dt); return inst; },
       resize() {

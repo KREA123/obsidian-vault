@@ -43,6 +43,8 @@ The canvas is sized from its CSS box (with devicePixelRatio and a ResizeObserver
 | `hetero` | `true` | `false` uses the left pupil colour for both eyes. |
 | `interactive` | `true` | The eyes follow the pointer over the canvas; a tap makes it smile. |
 | `randomMood` | `false` | Plays a random reaction every few seconds. |
+| `moodPool` | all | The expression names `randomMood` picks from. |
+| `moodEvery` | `[3.2, 6.7]` | Seconds between random moods, as `[min, max]`. |
 | `seed` | from the design | Seeds the idle behaviour. |
 | `speed` | `1` | Time multiplier. |
 | `manual` | `false` | No auto loop or resize; call `step(dt)` and `draw()` yourself (used for video export). |
@@ -62,6 +64,7 @@ The canvas is sized from its CSS box (with devicePixelRatio and a ResizeObserver
 | `setHetero(bool)` | Turns heterochromia on or off. |
 | `setRandomMood(bool)` | Turns random mood mode on or off. |
 | `setLevel(0..1 \| null)` | Drives `listening` (pupil pulse) and `charging` (fill level) from real data; `null` = synthetic. |
+| `hide()` | Snaps the eyes to nothing; follow with `react('hello')` to pop them in. |
 | `pause(bool)` | Pauses or resumes this instance. |
 | `step(dt)` | Advances the animation by `dt` seconds. |
 | `draw()` | Renders the current frame. |

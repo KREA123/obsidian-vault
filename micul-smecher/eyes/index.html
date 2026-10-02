@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SOUL Eye Collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a collector's binder. A tight grid of live glass discs on near-black; rarity is the only colour outside the eyes. */
+:root{
+  --ground:#0a0a0b;
+  --panel:#141416;
+  --panel2:#1b1b1e;
+  --line:#28282c;
+  --text:#f1efe9;
+  --muted:#8f8d95;
+  --cream:#FFF0C8;
+  --display:"Bricolage Grotesque", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r-common:#C9C4B8; --r-uncommon:#5CFFB0; --r-rare:#3FA9FF; --r-epic:#B57BFF; --r-legendary:#FFC23A; --r-mythic:#FF4F9A;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font:15px/1.5 var(--display);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:26px 60px;display:flex;flex-direction:column;gap:22px}
+.top{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:center}
+@media (max-width:820px){.top{grid-template-columns:1fr}}
+.eyebrow{font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(34px,6vw,64px);line-height:.95;font-weight:800;letter-spacing:-.03em;margin:10px 0 12px;text-wrap:balance}
+h1 em{font-style:normal;color:var(--cream)}
+.lede{color:var(--muted);max-width:52ch;margin:0 0 16px}
+.birth{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:700 15px/1 var(--display);border-radius:99px;padding:15px 22px;cursor:pointer;border:1px solid var(--cream);background:var(--cream);color:#15120c}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line);font-weight:500}
+.btn:focus-visible,.chip:focus-visible,.card:focus-visible,.rb:focus-visible,input:focus-visible{outline:2px solid var(--cream);outline-offset:2px}
+.chipid{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chipid label{font:400 11px/1.3 var(--mono);color:var(--muted)}
+.chipid input{font:500 13px/1 var(--mono);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:190px;max-width:100%}
+.odds{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.odds div{padding:12px 10px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px;min-width:0}
+.odds div:last-child{border-right:0}
+.odds b{font:700 22px/1 var(--display);font-variant-numeric:tabular-nums}
+.odds span{font:500 10px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.odds i{font:400 10.5px/1.2 var(--mono);font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width:520px){.odds{grid-template-columns:repeat(3,minmax(0,1fr))}.odds div:nth-child(3){border-right:0}.odds div:nth-child(-n+3){border-bottom:1px solid var(--line)}}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;position:sticky;top:env(safe-area-inset-top,0px);background:var(--ground);padding-block:10px;z-index:5;border-bottom:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12.5px/1 var(--display);color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:9px 12px;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.chip .dot{width:8px;height:8px;border-radius:50%}
+.chip small{font:400 10.5px/1 var(--mono);color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--text);background:var(--panel2)}
+.count{font:400 11px/1 var(--mono);color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+@media (max-width:420px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
+.card{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:6px;padding:8px 8px 10px;border-radius:16px;border:1px solid transparent;min-width:0}
+.card:hover{background:var(--panel);border-color:var(--line)}
+.card canvas{width:100%;aspect-ratio:1;max-width:100%;display:block}
+.meta{display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding-inline:4px;min-width:0}
+.meta b{font:600 13px/1.2 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.meta span{font:400 10.5px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.pill{display:inline-flex;align-items:center;gap:6px;font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:6px 8px;border-radius:99px;border:1px solid currentColor;width:max-content}
+.card .pill{margin-inline:4px;padding:4px 6px;font-size:9px}
+/* big view */
+dialog{border:0;padding:0;background:transparent;color:var(--text);max-width:min(1060px,calc(100vw - 24px));width:100%;max-height:calc(100dvh - 24px)}
+dialog::backdrop{background:rgba(5,5,6,.86)}
+.view{background:var(--panel);border:1px solid var(--line);border-radius:22px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);overflow:auto;max-height:calc(100dvh - 24px)}
+@media (max-width:760px){.view{grid-template-columns:1fr}}
+.view .stage{padding:18px;display:flex;align-items:center;justify-content:center;background:var(--ground)}
+.view .stage canvas{width:100%;max-width:460px;aspect-ratio:1;display:block}
+.side{padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.side h2{font:800 32px/1 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+.side .num{font:500 12px/1 var(--mono);color:var(--muted)}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font:400 12px/1.4 var(--mono);color:var(--muted)}
+.facts dd{margin:0;color:var(--text)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-2px;margin-right:4px;border:1px solid rgba(255,255,255,.2)}
+.rx{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:5px}
+.rb{font:500 12px/1.1 var(--display);color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 8px;cursor:pointer;text-align:left}
+.rb:hover{border-color:#4c4b52}
+.rb[aria-pressed="true"]{background:var(--cream);color:#15120c;border-color:var(--cream)}
+.x{position:absolute;top:12px;right:12px;font:500 20px/1 var(--display);width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer}
+/* birth reveal */
+.reveal{background:var(--ground);border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;position:relative;max-width:560px;margin-inline:auto}
+.reveal .stagewrap{position:relative;width:min(100%,420px);aspect-ratio:1}
+.reveal canvas{position:absolute;inset:0;width:100%;height:100%}
+.reveal .card2{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;transition:opacity .4s, transform .5s cubic-bezier(.2,1.4,.4,1)}
+.reveal .card2.hidden{opacity:0;transform:translateY(14px)}
+.reveal h3{font:800 34px/1 var(--display);margin:0;letter-spacing:-.02em}
+.reveal p{margin:0;color:var(--muted);font:400 12px/1.4 var(--mono)}
+.reveal .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+@media (prefers-reduced-motion: reduce){.reveal .card2{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="top">
+    <div>
+      <div class="eyebrow">SOUL · eye collection · v1</div>
+      <h1><span id="total">120</span> pairs of eyes.<br><em>Yours is chosen at birth.</em></h1>
+      <p class="lede">Every SOUL is born with one pair, rolled once from its chip ID and kept for life. Same flat language, same 31 expressions, different souls. Tap any pair to play with it.</p>
+      <div class="birth">
+        <button class="btn" id="b-birth">Birth a SOUL</button>
+        <div class="chipid">
+          <input id="chip" value="34:85:18:A1:B2:C3" aria-label="Chip ID (MAC address)" spellcheck="false">
+          <button class="btn ghost" id="b-chip">Roll this chip ID</button>
+        </div>
+      </div>
+    </div>
+    <div class="odds" id="odds" aria-label="Drop rates"></div>
+  </section>
+
+  <div class="bar">
+    <div class="chips" id="filters" role="group" aria-label="Filter by rarity"></div>
+    <div class="count" id="count"></div>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<dialog id="dlg" aria-label="Eye pair">
+  <div class="view" style="position:relative">
+    <div class="stage"><canvas id="big"></canvas></div>
+    <div class="side">
+      <div><div class="num" id="v-num"></div><h2 id="v-name"></h2></div>
+      <div id="v-pill"></div>
+      <dl class="facts" id="v-facts"></dl>
+      <div class="eyebrow">Expressions · moods hold, reactions play once</div>
+      <div class="rx" id="v-rx"></div>
+    </div>
+    <button class="x" id="v-close" aria-label="Close">×</button>
+  </div>
+</dialog>
+
+<dialog id="birth" aria-label="Birth a SOUL">
+  <div class="reveal">
+    <div class="stagewrap"><canvas id="fxc"></canvas><canvas id="bc"></canvas></div>
+    <div class="card2 hidden" id="bcard">
+      <div id="b-pill"></div>
+      <h3 id="b-name"></h3>
+      <p id="b-meta"></p>
+      <div class="row"><button class="btn" id="b-again">Birth another</button><button class="btn ghost" id="b-open">See all its moods</button><button class="btn ghost" id="b-close">Close</button></div>
+    </div>
+  </div>
+</dialog>
+
+<script src="eyes.js"></script>
+<script src="designs.js"></script>
+<script>
+(function(){
+'use strict';
+const E=window.SoulEyes, DB=window.SOUL_DESIGNS, ALL=DB.designs;
+const RAR=Object.fromEntries(E.RARITIES.map(r=>[r.key,r]));
+const oneIn=o=>'1 in '+Math.round(1/o).toLocaleString('en');
+const pill=(k)=>`<span class="pill" style="color:${RAR[k].color}">${RAR[k].name}</span>`;
+document.getElementById('total').textContent=ALL.length;
+// odds table
+document.getElementById('odds').innerHTML=E.RARITIES.map(r=>`<div><span style="color:${r.color}">${r.name}</span><b>${(r.rate*100).toFixed(r.rate<.01?1:(r.rate<.1?1:0))}%</b><i>${DB.counts[r.key]} pairs</i></div>`).join('');
+// grid
+const grid=document.getElementById('grid'), cards=[];
+const GALLERY_POOL=['happy','wink','surprised','smirk','love','thinking','suspicious','shy','excited','laugh','confused','smug'];
+ALL.forEach(d=>{
+  const b=document.createElement('button');b.className='card';b.id='d-'+d.id;b.dataset.r=d.rarity;
+  b.setAttribute('aria-label',`${d.num} ${d.name}, ${RAR[d.rarity].name}`);
+  b.innerHTML=`<canvas></canvas><div class="meta"><b></b><span>${d.num}</span></div>${pill(d.rarity)}`;
+  b.querySelector('b').textContent=d.name;
+  grid.appendChild(b);
+  const eyes=E.createEyes(b.querySelector('canvas'),d,{fit:.9,interactive:false,randomMood:true,moodPool:GALLERY_POOL,moodEvery:[5,14],seed:d.n*97+3});
+  b.addEventListener('click',()=>openView(d));
+  cards.push({b,d,eyes});
+});
+// filters
+const filters=document.getElementById('filters'), count=document.getElementById('count');
+let active='all';
+const mk=(key,label,color,n)=>{const c=document.createElement('button');c.className='chip';c.id='f-'+key;c.setAttribute('aria-pressed',String(key==='all'));
+  c.innerHTML=(color?`<span class="dot" style="background:${color}"></span>`:'')+`<span>${label}</span><small>${n}</small>`;
+  c.addEventListener('click',()=>{active=key;[...filters.children].forEach(x=>x.setAttribute('aria-pressed',String(x===c)));apply()});filters.appendChild(c)};
+mk('all','All',null,ALL.length);E.RARITIES.forEach(r=>mk(r.key,r.name,r.color,DB.counts[r.key]));
+function apply(){let n=0;for(const c of cards){const on=active==='all'||c.d.rarity===active;c.b.hidden=!on;if(on)n++}count.textContent=`showing ${n} of ${ALL.length}`}
+apply();
+
+// big view
+const dlg=document.getElementById('dlg'), big=document.getElementById('big');
+let bigEyes=null, cur=null;
+const rxBox=document.getElementById('v-rx'), rxBtns=[];
+for(const x of E.EXPRESSIONS){const b=document.createElement('button');b.className='rb';b.id='vx-'+x.name;b.textContent=x.label;b.setAttribute('aria-pressed','false');
+  b.addEventListener('click',()=>{bigEyes.setRandomMood(false);bigEyes.setExpression(x.name);rxBtns.forEach(o=>o.setAttribute('aria-pressed',String(o===b&&x.kind==='mood')))});rxBox.appendChild(b);rxBtns.push(b)}
+const rnd=document.createElement('button');rnd.className='rb';rnd.id='vx-random';rnd.textContent='Random mood';rnd.setAttribute('aria-pressed','false');
+rnd.addEventListener('click',()=>{const on=rnd.getAttribute('aria-pressed')!=='true';bigEyes.setRandomMood(on);rxBtns.forEach(o=>o.setAttribute('aria-pressed','false'));rnd.setAttribute('aria-pressed',String(on))});rxBox.appendChild(rnd);
+function openView(d){
+  cur=d;
+  document.getElementById('v-num').textContent=d.num+' · '+(d.family==='special'?'special':d.shapeName+' family');
+  document.getElementById('v-name').textContent=d.name;
+  document.getElementById('v-pill').innerHTML=pill(d.rarity);
+  const sw=c=>`<span class="sw" style="background:${c}"></span>${c}`;
+  document.getElementById('v-facts').innerHTML=
+    `<dt>Odds</dt><dd>${oneIn(d.odds)} SOULs</dd><dt>Shape</dt><dd>${d.shapeName}</dd><dt>Pupils</dt><dd>${d.pupil.type}${d.pupil.L!==d.pupil.R?' · heterochromia':''}</dd>`+
+    `<dt>Whites</dt><dd>${sw(d.white)}${d.whiteR?' '+sw(d.whiteR):''}</dd><dt>Pupil L / R</dt><dd>${sw(d.pupil.L)} ${sw(d.pupil.R)}</dd>`+
+    (d.fx&&d.fx.length?`<dt>Effects</dt><dd>${d.fx.join(', ')}</dd>`:'');
+  rxBtns.forEach(o=>o.setAttribute('aria-pressed','false'));rnd.setAttribute('aria-pressed','false');
+  if(!dlg.open) dlg.showModal();
+  if(!bigEyes) bigEyes=E.createEyes(big,d,{fit:.92,seed:5});
+  else {bigEyes.setDesign(d,{instant:true});bigEyes.setRandomMood(false);bigEyes.setExpression('neutral');}
+  bigEyes.resize(); bigEyes.react('hello');
+}
+document.getElementById('v-close').addEventListener('click',()=>dlg.close());
+dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+
+// birth a SOUL
+const bd=document.getElementById('birth'), bc=document.getElementById('bc'), fxc=document.getElementById('fxc'), fx=fxc.getContext('2d');
+const bcard=document.getElementById('bcard');
+let bEyes=null, rolled=null, t0=0, raf=0;
+const ORDER=E.RARITIES.map(r=>r.key);
+function sizeFx(){const dpr=Math.min(2,devicePixelRatio||1);fxc.width=fxc.clientWidth*dpr;fxc.height=fxc.clientHeight*dpr}
+function birth(result,label){
+  rolled=result; bcard.classList.add('hidden');
+  if(!bd.open) bd.showModal();
+  sizeFx();
+  if(!bEyes) bEyes=E.createEyes(bc,result.design,{fit:.78,seed:9,interactive:true});
+  else bEyes.setDesign(result.design,{instant:true});
+  bEyes.resize(); bEyes.setExpression('neutral'); bEyes.hide();
+  const d=result.design;
+  document.getElementById('b-pill').innerHTML=pill(d.rarity);
+  document.getElementById('b-name').textContent=d.name;
+  document.getElementById('b-meta').textContent=`${d.num} · ${oneIn(d.odds)} SOULs${label?' · '+label:''}`;
+  t0=performance.now(); cancelAnimationFrame(raf); popped=false; raf=requestAnimationFrame(fxFrame);
+}
+let popped=false;
+const TIER_STEP=.38;
+function fxFrame(now){
+  const t=Math.max(0,(now-t0)/1000), W=fxc.width, cx=W/2, cy=W/2, R=W*.78/2;
+  const ti=ORDER.indexOf(rolled.design.rarity);
+  const charge=TIER_STEP*(ti+1)+.5;          // rarer pulls charge longer
+  fx.clearRect(0,0,W,W);
+  if(t<charge){
+    // the glass charges up, climbing through the tiers it passes
+    const lvl=Math.min(ti,Math.floor((t)/TIER_STEP)), col=E.RARITIES[lvl].color, k=(t%TIER_STEP)/TIER_STEP;
+    for(let i=0;i<3;i++){const p=((t*1.6+i/3)%1);fx.strokeStyle=col;fx.globalAlpha=(1-p)*.9;fx.lineWidth=W*.012*(1-p);
+      fx.beginPath();fx.arc(cx,cy,R*(1.32-.3*p),0,Math.PI*2);fx.stroke()}
+    fx.globalAlpha=1;fx.lineWidth=W*.018;fx.strokeStyle=col;fx.lineCap='round';
+    fx.beginPath();fx.arc(cx,cy,R*1.1,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,t/charge));fx.stroke();
+    const sh=Math.min(1,t/charge)*(2+ti*1.2); bc.style.transform=`translate(${Math.sin(t*70)*sh}px,${Math.cos(t*53)*sh*.6}px)`; void k;
+  } else {
+    bc.style.transform='';
+    if(!popped){popped=true;bEyes.react('hello');setTimeout(()=>bcard.classList.remove('hidden'),650)}
+    const q=t-charge, col=RAR[rolled.design.rarity].color;
+    // burst rings
+    for(let i=0;i<2;i++){const p=Math.min(1,(q-i*.12)/.9);if(p<=0||p>=1)continue;fx.strokeStyle=col;fx.globalAlpha=1-p;fx.lineWidth=W*.03*(1-p);
+      fx.beginPath();fx.arc(cx,cy,R*(1.05+.5*(1-Math.pow(1-p,3))),0,Math.PI*2);fx.stroke()}
+    fx.globalAlpha=1;
+    // flat confetti for rare and up
+    if(ti>=2){const n=12+ti*8;for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+i,sp=(.35+.5*((i*37%11)/11))*W,p=Math.min(1,q/1.6);
+      const x=cx+Math.cos(a)*sp*(1-Math.pow(1-p,3)),y=cy+Math.sin(a)*sp*(1-Math.pow(1-p,3))+p*p*W*.25;
+      fx.globalAlpha=1-p;fx.fillStyle=i%3?col:'#FFF0C8';fx.save();fx.translate(x,y);fx.rotate(q*6+i);fx.fillRect(-W*.008,-W*.004,W*.016,W*.008);fx.restore()}fx.globalAlpha=1}
+    // a calm halo that stays
+    fx.strokeStyle=col;fx.globalAlpha=.55;fx.lineWidth=W*.006;fx.beginPath();fx.arc(cx,cy,R*1.1,0,Math.PI*2);fx.stroke();fx.globalAlpha=1;
+    if(q>2.5) return;
+  }
+  raf=requestAnimationFrame(fxFrame);
+}
+document.getElementById('b-birth').addEventListener('click',()=>birth(E.rollRandom(ALL)));
+document.getElementById('b-again').addEventListener('click',()=>birth(E.rollRandom(ALL)));
+document.getElementById('b-chip').addEventListener('click',()=>{const v=document.getElementById('chip').value;birth(E.rollFromChipId(ALL,v),'chip '+v.toUpperCase())});
+document.getElementById('b-close').addEventListener('click',()=>bd.close());
+document.getElementById('b-open').addEventListener('click',()=>{bd.close();openView(rolled.design)});
+bd.addEventListener('click',e=>{if(e.target===bd)bd.close()});
+})();
+</script>
+</body>
+</html>

@@ -1,12 +1,3281 @@
 {
-  "version": 1,
-  "note": "SOUL eye designs. Each entry is a design spec for SoulEyes.createEyes(). The collection is appended here.",
-  "designs": [
-    {"id":"original","n":1,"name":"Original","rarity":"common","family":"egg","white":"#FFF0C8","pupil":{"type":"round","L":"#2440FF","R":"#FF5A1F"}},
-    {"id":"spearmint","n":2,"name":"Spearmint","rarity":"uncommon","family":"egg","white":"#3DFFC8","pupil":{"type":"round","L":"#FF1F8F","R":"#6A2BFF"}},
-    {"id":"lemon-pop","n":3,"name":"Lemon Pop","rarity":"rare","family":"egg","white":"#F0FF2E","pupil":{"type":"round","L":"#7A2BFF","R":"#FF2E5B"}},
-    {"id":"lilac-cat","n":4,"name":"Lilac Cat","rarity":"epic","family":"egg","white":"#C79BFF","pupil":{"type":"slit","L":"#FFEE2E","R":"#FFEE2E"}},
-    {"id":"coral","n":5,"name":"Coral","rarity":"rare","family":"egg","white":"#FF6B6B","pupil":{"type":"round","L":"#14E6FF","R":"#1B2BFF"}},
-    {"id":"pool-party","n":6,"name":"Pool Party","rarity":"legendary","family":"egg","white":"#2BD9FF","pupil":{"type":"round","L":"#FFE14A","R":"#FF3FA4"}}
-  ]
+ "version": 1,
+ "count": 120,
+ "counts": {
+  "common": 48,
+  "uncommon": 30,
+  "rare": 20,
+  "epic": 12,
+  "legendary": 7,
+  "mythic": 3
+ },
+ "rates": {
+  "common": 0.5,
+  "uncommon": 0.25,
+  "rare": 0.15,
+  "epic": 0.07,
+  "legendary": 0.025,
+  "mythic": 0.005
+ },
+ "designs": [
+  {
+   "id": "original",
+   "n": 1,
+   "num": "#001",
+   "name": "Original",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#FF5A1F"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "tangerine-dream",
+   "n": 2,
+   "num": "#002",
+   "name": "Tangerine Dream",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF9A3D",
+   "pupil": {
+    "type": "round",
+    "L": "#1B2BFF",
+    "R": "#6A2BFF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "bucharest-night",
+   "n": 3,
+   "num": "#003",
+   "name": "Bucharest Night",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#7FC8FF",
+   "pupil": {
+    "type": "round",
+    "L": "#FFE14A",
+    "R": "#FF3FA4"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "mint-condition",
+   "n": 4,
+   "num": "#004",
+   "name": "Mint Condition",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#3DFFC8",
+   "pupil": {
+    "type": "round",
+    "L": "#6A2BFF",
+    "R": "#6A2BFF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "lemonade-stand",
+   "n": 5,
+   "num": "#005",
+   "name": "Lemonade Stand",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#F0FF2E",
+   "pupil": {
+    "type": "round",
+    "L": "#FF2E5B",
+    "R": "#FF2E5B"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "bubblegum-bus",
+   "n": 6,
+   "num": "#006",
+   "name": "Bubblegum Bus",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FF8AD8",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#2440FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "pistachio",
+   "n": 7,
+   "num": "#007",
+   "name": "Pistachio",
+   "rarity": "common",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#A8FF3D",
+   "pupil": {
+    "type": "round",
+    "L": "#7A2BFF",
+    "R": "#FF2E5B"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "swimming-pool",
+   "n": 8,
+   "num": "#008",
+   "name": "Swimming Pool",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#2BD9FF",
+   "pupil": {
+    "type": "round",
+    "L": "#FFE14A",
+    "R": "#FFE14A"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "peach-crate",
+   "n": 9,
+   "num": "#009",
+   "name": "Peach Crate",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFB38A",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#00A35C"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "milk-tooth",
+   "n": 10,
+   "num": "#010",
+   "name": "Milk Tooth",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "round",
+    "L": "#111111",
+    "R": "#111111"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "lilac-hour",
+   "n": 11,
+   "num": "#011",
+   "name": "Lilac Hour",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#C79BFF",
+   "pupil": {
+    "type": "round",
+    "L": "#FFE14A",
+    "R": "#14E6FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "coral-snorkel",
+   "n": 12,
+   "num": "#012",
+   "name": "Coral Snorkel",
+   "rarity": "common",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#FF6B6B",
+   "pupil": {
+    "type": "round",
+    "L": "#14E6FF",
+    "R": "#14E6FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "sunday-toast",
+   "n": 13,
+   "num": "#013",
+   "name": "Sunday Toast",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFD23A",
+   "pupil": {
+    "type": "pebble",
+    "L": "#5A2A10",
+    "R": "#5A2A10",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "ski-lift",
+   "n": 14,
+   "num": "#014",
+   "name": "Ski Lift",
+   "rarity": "common",
+   "family": "tall",
+   "shape": {
+    "type": "egg",
+    "rx": 0.13,
+    "ry": 0.215,
+    "spacing": 0.158,
+    "y": 0,
+    "egg": 0.06,
+    "lean": 0.1
+   },
+   "shapeName": "tall",
+   "white": "#7FC8FF",
+   "pupil": {
+    "type": "round",
+    "L": "#FF5A1F",
+    "R": "#FF5A1F"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "rose-petal",
+   "n": 15,
+   "num": "#015",
+   "name": "Rose Petal",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF9EBB",
+   "pupil": {
+    "type": "pebble",
+    "L": "#5A0E5E",
+    "R": "#5A0E5E",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "lime-soda",
+   "n": 16,
+   "num": "#016",
+   "name": "Lime Soda",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#A8FF3D",
+   "pupil": {
+    "type": "round",
+    "L": "#FF1F8F",
+    "R": "#2440FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "arcade-token",
+   "n": 17,
+   "num": "#017",
+   "name": "Arcade Token",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFD23A",
+   "pupil": {
+    "type": "round",
+    "L": "#6A2BFF",
+    "R": "#FF2E5B"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "tram-41",
+   "n": 18,
+   "num": "#018",
+   "name": "Tram 41",
+   "rarity": "common",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#FF4B4B",
+   "pupil": {
+    "type": "round",
+    "L": "#FFE14A",
+    "R": "#FFE14A"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "snow-day",
+   "n": 19,
+   "num": "#019",
+   "name": "Snow Day",
+   "rarity": "common",
+   "family": "tall",
+   "shape": {
+    "type": "egg",
+    "rx": 0.13,
+    "ry": 0.215,
+    "spacing": 0.158,
+    "y": 0,
+    "egg": 0.06,
+    "lean": 0.1
+   },
+   "shapeName": "tall",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#2440FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "watermelon",
+   "n": 20,
+   "num": "#020",
+   "name": "Watermelon",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF6B8A",
+   "pupil": {
+    "type": "pebble",
+    "L": "#0E7A3A",
+    "R": "#0E7A3A",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "blue-raspberry",
+   "n": 21,
+   "num": "#021",
+   "name": "Blue Raspberry",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#5C8BFF",
+   "pupil": {
+    "type": "round",
+    "L": "#FFE14A",
+    "R": "#FF9A3D"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "matcha-latte",
+   "n": 22,
+   "num": "#022",
+   "name": "Matcha Latte",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#B8F07A",
+   "pupil": {
+    "type": "round",
+    "L": "#3A2A10",
+    "R": "#3A2A10"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "highlighter",
+   "n": 23,
+   "num": "#023",
+   "name": "Highlighter",
+   "rarity": "common",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#E8FF3A",
+   "pupil": {
+    "type": "round",
+    "L": "#FF1F8F",
+    "R": "#FF1F8F"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "flamingo-float",
+   "n": 24,
+   "num": "#024",
+   "name": "Flamingo Float",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF8AD8",
+   "pupil": {
+    "type": "round",
+    "L": "#14E6FF",
+    "R": "#FFE14A"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "apricot-jam",
+   "n": 25,
+   "num": "#025",
+   "name": "Apricot Jam",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FF9A3D",
+   "pupil": {
+    "type": "pebble",
+    "L": "#5A0E5E",
+    "R": "#5A0E5E",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "glacier",
+   "n": 26,
+   "num": "#026",
+   "name": "Glacier",
+   "rarity": "common",
+   "family": "tall",
+   "shape": {
+    "type": "egg",
+    "rx": 0.13,
+    "ry": 0.215,
+    "spacing": 0.158,
+    "y": 0,
+    "egg": 0.06,
+    "lean": 0.1
+   },
+   "shapeName": "tall",
+   "white": "#BDF4FF",
+   "pupil": {
+    "type": "round",
+    "L": "#1B2BFF",
+    "R": "#6A2BFF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "sherbet",
+   "n": 27,
+   "num": "#027",
+   "name": "Sherbet",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFC38A",
+   "pupil": {
+    "type": "round",
+    "L": "#FF1F8F",
+    "R": "#2440FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "pea-pod",
+   "n": 28,
+   "num": "#028",
+   "name": "Pea Pod",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#7CFF8A",
+   "pupil": {
+    "type": "round",
+    "L": "#111111",
+    "R": "#111111"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "grape-soda",
+   "n": 29,
+   "num": "#029",
+   "name": "Grape Soda",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#B57BFF",
+   "pupil": {
+    "type": "round",
+    "L": "#F0FF2E",
+    "R": "#F0FF2E"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "neon-taxi",
+   "n": 30,
+   "num": "#030",
+   "name": "Neon Taxi",
+   "rarity": "common",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#FFD23A",
+   "pupil": {
+    "type": "round",
+    "L": "#111111",
+    "R": "#111111"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "cotton-candy",
+   "n": 31,
+   "num": "#031",
+   "name": "Cotton Candy",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFB3E6",
+   "pupil": {
+    "type": "round",
+    "L": "#2BD9FF",
+    "R": "#B57BFF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "danube-blue",
+   "n": 32,
+   "num": "#032",
+   "name": "Danube Blue",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#3FA9FF",
+   "pupil": {
+    "type": "round",
+    "L": "#FFF0C8",
+    "R": "#FFF0C8"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "pumpkin-patch",
+   "n": 33,
+   "num": "#033",
+   "name": "Pumpkin Patch",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF7A1A",
+   "pupil": {
+    "type": "pebble",
+    "L": "#1A1A1A",
+    "R": "#1A1A1A",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "spring-onion",
+   "n": 34,
+   "num": "#034",
+   "name": "Spring Onion",
+   "rarity": "common",
+   "family": "tall",
+   "shape": {
+    "type": "egg",
+    "rx": 0.13,
+    "ry": 0.215,
+    "spacing": 0.158,
+    "y": 0,
+    "egg": 0.06,
+    "lean": 0.1
+   },
+   "shapeName": "tall",
+   "white": "#C6FF5C",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#FF2E5B"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "marshmallow",
+   "n": 35,
+   "num": "#035",
+   "name": "Marshmallow",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFF6EC",
+   "pupil": {
+    "type": "pebble",
+    "L": "#FF5A1F",
+    "R": "#FF5A1F",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "fizzy-cola",
+   "n": 36,
+   "num": "#036",
+   "name": "Fizzy Cola",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF4B4B",
+   "pupil": {
+    "type": "round",
+    "L": "#FFF0C8",
+    "R": "#14E6FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "banana-boat",
+   "n": 37,
+   "num": "#037",
+   "name": "Banana Boat",
+   "rarity": "common",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#FFF27A",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#2440FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "morning-glory",
+   "n": 38,
+   "num": "#038",
+   "name": "Morning Glory",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#9FB4FF",
+   "pupil": {
+    "type": "round",
+    "L": "#FF1F8F",
+    "R": "#FF1F8F"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "kiwi-slice",
+   "n": 39,
+   "num": "#039",
+   "name": "Kiwi Slice",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#B8FF5C",
+   "pupil": {
+    "type": "round",
+    "L": "#3A2A10",
+    "R": "#FF2E5B"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "sea-breeze",
+   "n": 40,
+   "num": "#040",
+   "name": "Sea Breeze",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#5CFFE6",
+   "pupil": {
+    "type": "pebble",
+    "L": "#1B2BFF",
+    "R": "#1B2BFF",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "strawberry-milk",
+   "n": 41,
+   "num": "#041",
+   "name": "Strawberry Milk",
+   "rarity": "common",
+   "family": "tall",
+   "shape": {
+    "type": "egg",
+    "rx": 0.13,
+    "ry": 0.215,
+    "spacing": 0.158,
+    "y": 0,
+    "egg": 0.06,
+    "lean": 0.1
+   },
+   "shapeName": "tall",
+   "white": "#FFB3C8",
+   "pupil": {
+    "type": "round",
+    "L": "#D0102E",
+    "R": "#D0102E"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "cucumber",
+   "n": 42,
+   "num": "#042",
+   "name": "Cucumber",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#9BFFB0",
+   "pupil": {
+    "type": "round",
+    "L": "#7A2BFF",
+    "R": "#7A2BFF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "traffic-cone",
+   "n": 43,
+   "num": "#043",
+   "name": "Traffic Cone",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FF8A2A",
+   "pupil": {
+    "type": "round",
+    "L": "#14E6FF",
+    "R": "#2440FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "pastel-de-nata",
+   "n": 44,
+   "num": "#044",
+   "name": "Pastel de Nata",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFE08A",
+   "pupil": {
+    "type": "pebble",
+    "L": "#8A3A0A",
+    "R": "#8A3A0A",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "polar-bear",
+   "n": 45,
+   "num": "#045",
+   "name": "Polar Bear",
+   "rarity": "common",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#F4FAFF",
+   "pupil": {
+    "type": "round",
+    "L": "#111111",
+    "R": "#3FA9FF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "sour-candy",
+   "n": 46,
+   "num": "#046",
+   "name": "Sour Candy",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#D6FF2E",
+   "pupil": {
+    "type": "round",
+    "L": "#FF2E5B",
+    "R": "#7A2BFF"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "blue-hour",
+   "n": 47,
+   "num": "#047",
+   "name": "Blue Hour",
+   "rarity": "common",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#7FA8FF",
+   "pupil": {
+    "type": "round",
+    "L": "#FFF0C8",
+    "R": "#FFE14A"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "hot-chocolate",
+   "n": 48,
+   "num": "#048",
+   "name": "Hot Chocolate",
+   "rarity": "common",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFC9A0",
+   "pupil": {
+    "type": "round",
+    "L": "#4A1E08",
+    "R": "#4A1E08"
+   },
+   "odds": 0.01042
+  },
+  {
+   "id": "cat-cafe",
+   "n": 49,
+   "num": "#049",
+   "name": "Cat Café",
+   "rarity": "uncommon",
+   "family": "cat",
+   "shape": {
+    "type": "almond",
+    "rx": 0.185,
+    "ry": 0.15,
+    "spacing": 0.205,
+    "y": 0.01,
+    "q": 0.55,
+    "flick": 0.2,
+    "lean": 0.05
+   },
+   "shapeName": "almond",
+   "white": "#F0FF2E",
+   "pupil": {
+    "type": "slit",
+    "L": "#111111",
+    "R": "#111111",
+    "rx": 0.5,
+    "ry": 0.62,
+    "inset": 0.05,
+    "travel": 0.4
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "alley-cat",
+   "n": 50,
+   "num": "#050",
+   "name": "Alley Cat",
+   "rarity": "uncommon",
+   "family": "cat",
+   "shape": {
+    "type": "almond",
+    "rx": 0.185,
+    "ry": 0.15,
+    "spacing": 0.205,
+    "y": 0.01,
+    "q": 0.55,
+    "flick": 0.2,
+    "lean": 0.05
+   },
+   "shapeName": "almond",
+   "white": "#A8FF3D",
+   "pupil": {
+    "type": "slit",
+    "L": "#111111",
+    "R": "#111111",
+    "rx": 0.5,
+    "ry": 0.62,
+    "inset": 0.05,
+    "travel": 0.4
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "siamese",
+   "n": 51,
+   "num": "#051",
+   "name": "Siamese",
+   "rarity": "uncommon",
+   "family": "cat",
+   "shape": {
+    "type": "almond",
+    "rx": 0.185,
+    "ry": 0.15,
+    "spacing": 0.205,
+    "y": 0.01,
+    "q": 0.55,
+    "flick": 0.2,
+    "lean": 0.05
+   },
+   "shapeName": "almond",
+   "white": "#7FC8FF",
+   "pupil": {
+    "type": "slit",
+    "L": "#10184A",
+    "R": "#10184A",
+    "rx": 0.5,
+    "ry": 0.62,
+    "inset": 0.05,
+    "travel": 0.4
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "tabby-orange",
+   "n": 52,
+   "num": "#052",
+   "name": "Tabby Orange",
+   "rarity": "uncommon",
+   "family": "cat",
+   "shape": {
+    "type": "almond",
+    "rx": 0.185,
+    "ry": 0.15,
+    "spacing": 0.205,
+    "y": 0.01,
+    "q": 0.55,
+    "flick": 0.2,
+    "lean": 0.05
+   },
+   "shapeName": "almond",
+   "white": "#FF9A3D",
+   "pupil": {
+    "type": "slit",
+    "L": "#2A0E00",
+    "R": "#2A0E00",
+    "rx": 0.5,
+    "ry": 0.62,
+    "inset": 0.05,
+    "travel": 0.4
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "night-panther",
+   "n": 53,
+   "num": "#053",
+   "name": "Night Panther",
+   "rarity": "uncommon",
+   "family": "cat",
+   "shape": {
+    "type": "almond",
+    "rx": 0.185,
+    "ry": 0.15,
+    "spacing": 0.205,
+    "y": 0.01,
+    "q": 0.55,
+    "flick": 0.2,
+    "lean": 0.05
+   },
+   "shapeName": "almond",
+   "white": "#C6FF5C",
+   "pupil": {
+    "type": "slit",
+    "L": "#5A0E5E",
+    "R": "#5A0E5E",
+    "rx": 0.5,
+    "ry": 0.62,
+    "inset": 0.05,
+    "travel": 0.4
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "dewdrop",
+   "n": 54,
+   "num": "#054",
+   "name": "Dewdrop",
+   "rarity": "uncommon",
+   "family": "drop",
+   "shape": {
+    "type": "drop",
+    "rx": 0.165,
+    "ry": 0.195,
+    "spacing": 0.19,
+    "y": 0.01,
+    "lean": 0.24
+   },
+   "shapeName": "drop",
+   "white": "#BDF4FF",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#2440FF"
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "rain-boots",
+   "n": 55,
+   "num": "#055",
+   "name": "Rain Boots",
+   "rarity": "uncommon",
+   "family": "drop",
+   "shape": {
+    "type": "drop",
+    "rx": 0.165,
+    "ry": 0.195,
+    "spacing": 0.19,
+    "y": 0.01,
+    "lean": 0.24
+   },
+   "shapeName": "drop",
+   "white": "#FFE14A",
+   "pupil": {
+    "type": "round",
+    "L": "#FF2E5B",
+    "R": "#2440FF"
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "teardrop-teal",
+   "n": 56,
+   "num": "#056",
+   "name": "Teardrop Teal",
+   "rarity": "uncommon",
+   "family": "drop",
+   "shape": {
+    "type": "drop",
+    "rx": 0.165,
+    "ry": 0.195,
+    "spacing": 0.19,
+    "y": 0.01,
+    "lean": 0.24
+   },
+   "shapeName": "drop",
+   "white": "#2BFFE0",
+   "pupil": {
+    "type": "pebble",
+    "L": "#6A2BFF",
+    "R": "#6A2BFF",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "gumdrop",
+   "n": 57,
+   "num": "#057",
+   "name": "Gumdrop",
+   "rarity": "uncommon",
+   "family": "drop",
+   "shape": {
+    "type": "drop",
+    "rx": 0.165,
+    "ry": 0.195,
+    "spacing": 0.19,
+    "y": 0.01,
+    "lean": 0.24
+   },
+   "shapeName": "drop",
+   "white": "#FF8AD8",
+   "pupil": {
+    "type": "round",
+    "L": "#FFF0C8",
+    "R": "#FFE14A"
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "sugar-cube",
+   "n": 58,
+   "num": "#058",
+   "name": "Sugar Cube",
+   "rarity": "uncommon",
+   "family": "squircle",
+   "shape": {
+    "type": "squircle",
+    "n": 3.6,
+    "rx": 0.155,
+    "ry": 0.172,
+    "spacing": 0.185,
+    "y": 0.005,
+    "lean": 0.06
+   },
+   "shapeName": "squircle",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "round",
+    "L": "#FF5A1F",
+    "R": "#2440FF"
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "pixel-pal",
+   "n": 59,
+   "num": "#059",
+   "name": "Pixel Pal",
+   "rarity": "uncommon",
+   "family": "squircle",
+   "shape": {
+    "type": "squircle",
+    "n": 3.6,
+    "rx": 0.155,
+    "ry": 0.172,
+    "spacing": 0.185,
+    "y": 0.005,
+    "lean": 0.06
+   },
+   "shapeName": "squircle",
+   "white": "#A8FF3D",
+   "pupil": {
+    "type": "plus",
+    "L": "#111111",
+    "R": "#111111",
+    "rx": 0.4,
+    "ry": 0.4
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "tile-floor",
+   "n": 60,
+   "num": "#060",
+   "name": "Tile Floor",
+   "rarity": "uncommon",
+   "family": "squircle",
+   "shape": {
+    "type": "squircle",
+    "n": 3.6,
+    "rx": 0.155,
+    "ry": 0.172,
+    "spacing": 0.185,
+    "y": 0.005,
+    "lean": 0.06
+   },
+   "shapeName": "squircle",
+   "white": "#3FA9FF",
+   "pupil": {
+    "type": "round",
+    "L": "#FFE14A",
+    "R": "#FFE14A"
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "toaster",
+   "n": 61,
+   "num": "#061",
+   "name": "Toaster",
+   "rarity": "uncommon",
+   "family": "squircle",
+   "shape": {
+    "type": "squircle",
+    "n": 3.6,
+    "rx": 0.155,
+    "ry": 0.172,
+    "spacing": 0.185,
+    "y": 0.005,
+    "lean": 0.06
+   },
+   "shapeName": "squircle",
+   "white": "#FFB38A",
+   "pupil": {
+    "type": "ring",
+    "L": "#2A2A2A",
+    "R": "#2A2A2A",
+    "rx": 0.44,
+    "ry": 0.48
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "post-it",
+   "n": 62,
+   "num": "#062",
+   "name": "Post-it",
+   "rarity": "uncommon",
+   "family": "squircle",
+   "shape": {
+    "type": "squircle",
+    "n": 3.6,
+    "rx": 0.155,
+    "ry": 0.172,
+    "spacing": 0.185,
+    "y": 0.005,
+    "lean": 0.06
+   },
+   "shapeName": "squircle",
+   "white": "#FFF27A",
+   "pupil": {
+    "type": "pebble",
+    "L": "#FF1F8F",
+    "R": "#2440FF",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "half-moon-bay",
+   "n": 63,
+   "num": "#063",
+   "name": "Half Moon Bay",
+   "rarity": "uncommon",
+   "family": "crescent",
+   "shape": {
+    "type": "crescent",
+    "rx": 0.172,
+    "ry": 0.185,
+    "spacing": 0.195,
+    "y": 0.02,
+    "dip": 0.36,
+    "lean": 0.06
+   },
+   "shapeName": "crescent",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#FF5A1F"
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "sleepy-lemon",
+   "n": 64,
+   "num": "#064",
+   "name": "Sleepy Lemon",
+   "rarity": "uncommon",
+   "family": "crescent",
+   "shape": {
+    "type": "crescent",
+    "rx": 0.172,
+    "ry": 0.185,
+    "spacing": 0.195,
+    "y": 0.02,
+    "dip": 0.36,
+    "lean": 0.06
+   },
+   "shapeName": "crescent",
+   "white": "#F0FF2E",
+   "pupil": {
+    "type": "round",
+    "L": "#7A2BFF",
+    "R": "#7A2BFF"
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "lagoon-lid",
+   "n": 65,
+   "num": "#065",
+   "name": "Lagoon Lid",
+   "rarity": "uncommon",
+   "family": "crescent",
+   "shape": {
+    "type": "crescent",
+    "rx": 0.172,
+    "ry": 0.185,
+    "spacing": 0.195,
+    "y": 0.02,
+    "dip": 0.36,
+    "lean": 0.06
+   },
+   "shapeName": "crescent",
+   "white": "#2BD9FF",
+   "pupil": {
+    "type": "round",
+    "L": "#FF1F8F",
+    "R": "#FF1F8F"
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "bullseye",
+   "n": 66,
+   "num": "#066",
+   "name": "Bullseye",
+   "rarity": "uncommon",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "ring",
+    "L": "#FF2E5B",
+    "R": "#FF2E5B",
+    "rx": 0.44,
+    "ry": 0.48
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "target-practice",
+   "n": 67,
+   "num": "#067",
+   "name": "Target Practice",
+   "rarity": "uncommon",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "ring",
+    "L": "#2440FF",
+    "R": "#FF2E5B",
+    "rx": 0.44,
+    "ry": 0.48
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "saturn-ring",
+   "n": 68,
+   "num": "#068",
+   "name": "Saturn Ring",
+   "rarity": "uncommon",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFB38A",
+   "pupil": {
+    "type": "ring",
+    "L": "#6A2BFF",
+    "R": "#6A2BFF",
+    "rx": 0.44,
+    "ry": 0.48
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "ladybug",
+   "n": 69,
+   "num": "#069",
+   "name": "Ladybug",
+   "rarity": "uncommon",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF4B4B",
+   "pupil": {
+    "type": "double",
+    "L": "#111111",
+    "R": "#111111",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "domino",
+   "n": 70,
+   "num": "#070",
+   "name": "Domino",
+   "rarity": "uncommon",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "double",
+    "L": "#111111",
+    "R": "#111111",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "bubble-tea",
+   "n": 71,
+   "num": "#071",
+   "name": "Bubble Tea",
+   "rarity": "uncommon",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFD6A8",
+   "pupil": {
+    "type": "double",
+    "L": "#3A1E08",
+    "R": "#3A1E08",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "moonbeam",
+   "n": 72,
+   "num": "#072",
+   "name": "Moonbeam",
+   "rarity": "uncommon",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#BDF4FF",
+   "pupil": {
+    "type": "crescent",
+    "L": "#2440FF",
+    "R": "#2440FF",
+    "rx": 0.44,
+    "ry": 0.5
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "croissant",
+   "n": 73,
+   "num": "#073",
+   "name": "Croissant",
+   "rarity": "uncommon",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFD23A",
+   "pupil": {
+    "type": "crescent",
+    "L": "#8A3A0A",
+    "R": "#8A3A0A",
+    "rx": 0.44,
+    "ry": 0.5
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "midnight-snack",
+   "n": 74,
+   "num": "#074",
+   "name": "Midnight Snack",
+   "rarity": "uncommon",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#C79BFF",
+   "pupil": {
+    "type": "crescent",
+    "L": "#111111",
+    "R": "#FFE14A",
+    "rx": 0.44,
+    "ry": 0.5
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "odd-socks",
+   "n": 75,
+   "num": "#075",
+   "name": "Odd Socks",
+   "rarity": "uncommon",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "round",
+    "L": "#2440FF",
+    "R": "#FF5A1F"
+   },
+   "whiteR": "#2BD9FF",
+   "odds": 0.008333
+  },
+  {
+   "id": "two-scoops",
+   "n": 76,
+   "num": "#076",
+   "name": "Two Scoops",
+   "rarity": "uncommon",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFB3E6",
+   "pupil": {
+    "type": "pebble",
+    "L": "#5A2A10",
+    "R": "#5A2A10",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "whiteR": "#B8F07A",
+   "odds": 0.008333
+  },
+  {
+   "id": "split-decision",
+   "n": 77,
+   "num": "#077",
+   "name": "Split Decision",
+   "rarity": "uncommon",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#F0FF2E",
+   "pupil": {
+    "type": "round",
+    "L": "#7A2BFF",
+    "R": "#111111"
+   },
+   "whiteR": "#FF8AD8",
+   "odds": 0.008333
+  },
+  {
+   "id": "pebble-beach",
+   "n": 78,
+   "num": "#078",
+   "name": "Pebble Beach",
+   "rarity": "uncommon",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#BDB8AE",
+   "pupil": {
+    "type": "pebble",
+    "L": "#2440FF",
+    "R": "#2440FF",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "odds": 0.008333
+  },
+  {
+   "id": "starstruck",
+   "n": 79,
+   "num": "#079",
+   "name": "Starstruck",
+   "rarity": "rare",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "star",
+    "L": "#FFB800",
+    "R": "#FFB800",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "wish-upon",
+   "n": 80,
+   "num": "#080",
+   "name": "Wish Upon",
+   "rarity": "rare",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#2440FF",
+   "pupil": {
+    "type": "star",
+    "L": "#FFE14A",
+    "R": "#FFE14A",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "shooting-star",
+   "n": 81,
+   "num": "#081",
+   "name": "Shooting Star",
+   "rarity": "rare",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#B57BFF",
+   "pupil": {
+    "type": "star",
+    "L": "#F0FF2E",
+    "R": "#FFFFFF",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "gold-medal",
+   "n": 82,
+   "num": "#082",
+   "name": "Gold Medal",
+   "rarity": "rare",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FF4B4B",
+   "pupil": {
+    "type": "star",
+    "L": "#FFD23A",
+    "R": "#FFD23A",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "smitten",
+   "n": 83,
+   "num": "#083",
+   "name": "Smitten",
+   "rarity": "rare",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "heart",
+    "L": "#FF2E63",
+    "R": "#FF2E63",
+    "rx": 0.4,
+    "ry": 0.4
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "valentine-tram",
+   "n": 84,
+   "num": "#084",
+   "name": "Valentine Tram",
+   "rarity": "rare",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FF8AD8",
+   "pupil": {
+    "type": "heart",
+    "L": "#D0102E",
+    "R": "#D0102E",
+    "rx": 0.4,
+    "ry": 0.4
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "crush-soda",
+   "n": 85,
+   "num": "#085",
+   "name": "Crush Soda",
+   "rarity": "rare",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#2BD9FF",
+   "pupil": {
+    "type": "heart",
+    "L": "#FF2E63",
+    "R": "#FF2E63",
+    "rx": 0.4,
+    "ry": 0.4
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "puppy-love",
+   "n": 86,
+   "num": "#086",
+   "name": "Puppy Love",
+   "rarity": "rare",
+   "family": "wide",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#FFF6EC",
+   "pupil": {
+    "type": "heart",
+    "L": "#FF2E63",
+    "R": "#B57BFF",
+    "rx": 0.4,
+    "ry": 0.4
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "crown-jewel",
+   "n": 87,
+   "num": "#087",
+   "name": "Crown Jewel",
+   "rarity": "rare",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "diamond",
+    "L": "#6A2BFF",
+    "R": "#14A0FF",
+    "rx": 0.38,
+    "ry": 0.48
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "card-shark",
+   "n": 88,
+   "num": "#088",
+   "name": "Card Shark",
+   "rarity": "rare",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FF4B4B",
+   "pupil": {
+    "type": "diamond",
+    "L": "#111111",
+    "R": "#111111",
+    "rx": 0.38,
+    "ry": 0.48
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "harlequin",
+   "n": 89,
+   "num": "#089",
+   "name": "Harlequin",
+   "rarity": "rare",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFD23A",
+   "pupil": {
+    "type": "diamond",
+    "L": "#FF2E5B",
+    "R": "#2440FF",
+    "rx": 0.38,
+    "ry": 0.48
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "first-aid",
+   "n": 90,
+   "num": "#090",
+   "name": "First Aid",
+   "rarity": "rare",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "plus",
+    "L": "#FF2E5B",
+    "R": "#FF2E5B",
+    "rx": 0.4,
+    "ry": 0.4
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "swiss-army",
+   "n": 91,
+   "num": "#091",
+   "name": "Swiss Army",
+   "rarity": "rare",
+   "family": "squircle",
+   "shape": {
+    "type": "squircle",
+    "n": 3.6,
+    "rx": 0.155,
+    "ry": 0.172,
+    "spacing": 0.185,
+    "y": 0.005,
+    "lean": 0.06
+   },
+   "shapeName": "squircle",
+   "white": "#FF4B4B",
+   "pupil": {
+    "type": "plus",
+    "L": "#FFFFFF",
+    "R": "#FFFFFF",
+    "rx": 0.4,
+    "ry": 0.4
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "pharmacy-green",
+   "n": 92,
+   "num": "#092",
+   "name": "Pharmacy Green",
+   "rarity": "rare",
+   "family": "squircle",
+   "shape": {
+    "type": "squircle",
+    "n": 3.6,
+    "rx": 0.155,
+    "ry": 0.172,
+    "spacing": 0.185,
+    "y": 0.005,
+    "lean": 0.06
+   },
+   "shapeName": "squircle",
+   "white": "#3DFFC8",
+   "pupil": {
+    "type": "plus",
+    "L": "#0E7A3A",
+    "R": "#0E7A3A",
+    "rx": 0.4,
+    "ry": 0.4
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "neon-sign",
+   "n": 93,
+   "num": "#093",
+   "name": "Neon Sign",
+   "rarity": "rare",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF4FD8",
+   "pupil": {
+    "type": "round",
+    "L": "#FF4FD8",
+    "R": "#2BD9FF"
+   },
+   "fx": [
+    "outline"
+   ],
+   "odds": 0.0075
+  },
+  {
+   "id": "wireframe",
+   "n": 94,
+   "num": "#094",
+   "name": "Wireframe",
+   "rarity": "rare",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#2BD9FF",
+   "pupil": {
+    "type": "pebble",
+    "L": "#2BD9FF",
+    "R": "#2BD9FF",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "fx": [
+    "outline"
+   ],
+   "odds": 0.0075
+  },
+  {
+   "id": "dragonfruit",
+   "n": 95,
+   "num": "#095",
+   "name": "Dragonfruit",
+   "rarity": "rare",
+   "family": "cat",
+   "shape": {
+    "type": "almond",
+    "rx": 0.185,
+    "ry": 0.15,
+    "spacing": 0.205,
+    "y": 0.01,
+    "q": 0.55,
+    "flick": 0.2,
+    "lean": 0.05
+   },
+   "shapeName": "almond",
+   "white": "#FF4FD8",
+   "pupil": {
+    "type": "slit",
+    "L": "#F4F4F4",
+    "R": "#F4F4F4",
+    "rx": 0.5,
+    "ry": 0.62,
+    "inset": 0.05,
+    "travel": 0.4
+   },
+   "whiteR": "#A8FF3D",
+   "odds": 0.0075
+  },
+  {
+   "id": "eclipse",
+   "n": 96,
+   "num": "#096",
+   "name": "Eclipse",
+   "rarity": "rare",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "crescent",
+    "L": "#111111",
+    "R": "#111111",
+    "rx": 0.44,
+    "ry": 0.5
+   },
+   "whiteR": "#FFD23A",
+   "odds": 0.0075
+  },
+  {
+   "id": "hypno-toad",
+   "n": 97,
+   "num": "#097",
+   "name": "Hypno Toad",
+   "rarity": "rare",
+   "family": "egg",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#A8FF3D",
+   "pupil": {
+    "type": "spiral",
+    "L": "#5A0E5E",
+    "R": "#5A0E5E",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "lollipop",
+   "n": 98,
+   "num": "#098",
+   "name": "Lollipop",
+   "rarity": "rare",
+   "family": "round",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFB3E6",
+   "pupil": {
+    "type": "spiral",
+    "L": "#FF2E63",
+    "R": "#2440FF",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "odds": 0.0075
+  },
+  {
+   "id": "opal",
+   "n": 99,
+   "num": "#099",
+   "name": "Opal",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#E6F6FF",
+   "pupil": {
+    "type": "round",
+    "L": "#6A2BFF",
+    "R": "#FF4FD8"
+   },
+   "fx": [
+    "shimmer"
+   ],
+   "odds": 0.005833
+  },
+  {
+   "id": "pearl-diver",
+   "n": 100,
+   "num": "#100",
+   "name": "Pearl Diver",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#F4F0FF",
+   "pupil": {
+    "type": "pebble",
+    "L": "#10184A",
+    "R": "#10184A",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "fx": [
+    "shimmer"
+   ],
+   "odds": 0.005833
+  },
+  {
+   "id": "champagne",
+   "n": 101,
+   "num": "#101",
+   "name": "Champagne",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFE6A8",
+   "pupil": {
+    "type": "star",
+    "L": "#7A2BFF",
+    "R": "#7A2BFF",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "fx": [
+    "shimmer",
+    "glitter"
+   ],
+   "glitterColor": "#FFE6A8",
+   "odds": 0.005833
+  },
+  {
+   "id": "disco-ball",
+   "n": 102,
+   "num": "#102",
+   "name": "Disco Ball",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "squircle",
+    "n": 3.6,
+    "rx": 0.155,
+    "ry": 0.172,
+    "spacing": 0.185,
+    "y": 0.005,
+    "lean": 0.06
+   },
+   "shapeName": "squircle",
+   "white": "#E8E8F0",
+   "pupil": {
+    "type": "diamond",
+    "L": "#FF1F8F",
+    "R": "#2BD9FF",
+    "rx": 0.38,
+    "ry": 0.48
+   },
+   "fx": [
+    "glitter",
+    "shimmer"
+   ],
+   "odds": 0.005833
+  },
+  {
+   "id": "fairy-dust",
+   "n": 103,
+   "num": "#103",
+   "name": "Fairy Dust",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "drop",
+    "rx": 0.165,
+    "ry": 0.195,
+    "spacing": 0.19,
+    "y": 0.01,
+    "lean": 0.24
+   },
+   "shapeName": "drop",
+   "white": "#FFB3E6",
+   "pupil": {
+    "type": "round",
+    "L": "#6A2BFF",
+    "R": "#2440FF"
+   },
+   "fx": [
+    "glitter"
+   ],
+   "glitterColor": "#FFE6F6",
+   "odds": 0.005833
+  },
+  {
+   "id": "firefly",
+   "n": 104,
+   "num": "#104",
+   "name": "Firefly",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#C6FF5C",
+   "pupil": {
+    "type": "round",
+    "L": "#111111",
+    "R": "#111111"
+   },
+   "fx": [
+    "glitter"
+   ],
+   "glitterColor": "#E8FF9A",
+   "odds": 0.005833
+  },
+  {
+   "id": "northern-lights",
+   "n": 105,
+   "num": "#105",
+   "name": "Northern Lights",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#5CFFB0",
+   "pupil": {
+    "type": "round",
+    "L": "#10184A",
+    "R": "#10184A"
+   },
+   "fx": [
+    "aurora"
+   ],
+   "auroraColors": [
+    "#5CFFB0",
+    "#3FD9FF",
+    "#B07BFF"
+   ],
+   "odds": 0.005833
+  },
+  {
+   "id": "tropical-sunset",
+   "n": 106,
+   "num": "#106",
+   "name": "Tropical Sunset",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.19,
+    "ry": 0.142,
+    "spacing": 0.205,
+    "y": 0.01,
+    "egg": 0.03,
+    "lean": 0.06
+   },
+   "shapeName": "wide",
+   "white": "#FF9A3D",
+   "pupil": {
+    "type": "pebble",
+    "L": "#2A0E3A",
+    "R": "#2A0E3A",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "fx": [
+    "aurora"
+   ],
+   "auroraColors": [
+    "#FFD23A",
+    "#FF5A8A",
+    "#FF9A3D"
+   ],
+   "odds": 0.005833
+  },
+  {
+   "id": "laser-show",
+   "n": 107,
+   "num": "#107",
+   "name": "Laser Show",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FF1F8F",
+   "pupil": {
+    "type": "ring",
+    "L": "#14E6FF",
+    "R": "#F0FF2E",
+    "rx": 0.44,
+    "ry": 0.48
+   },
+   "fx": [
+    "outline",
+    "glitter"
+   ],
+   "glitterColor": "#14E6FF",
+   "odds": 0.005833
+  },
+  {
+   "id": "vortex",
+   "n": 108,
+   "num": "#108",
+   "name": "Vortex",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#14E6FF",
+   "pupil": {
+    "type": "spiral",
+    "L": "#111111",
+    "R": "#111111",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "fx": [
+    "shimmer"
+   ],
+   "odds": 0.005833
+  },
+  {
+   "id": "ie-cobalt",
+   "n": 109,
+   "num": "#109",
+   "name": "Ie Cobalt",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "round",
+    "L": "#1F4FBF",
+    "R": "#1F4FBF",
+    "rx": 0.56,
+    "ry": 0.56
+   },
+   "fx": [
+    "folk"
+   ],
+   "folkThread": "#0A1A40",
+   "odds": 0.005833
+  },
+  {
+   "id": "ie-rosie",
+   "n": 110,
+   "num": "#110",
+   "name": "Ie Roșie",
+   "rarity": "epic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#F4F4F4",
+   "pupil": {
+    "type": "round",
+    "L": "#C8102E",
+    "R": "#C8102E",
+    "rx": 0.56,
+    "ry": 0.56
+   },
+   "fx": [
+    "folk"
+   ],
+   "folkThread": "#141414",
+   "odds": 0.005833
+  },
+  {
+   "id": "brushed-alu",
+   "n": 111,
+   "num": "#111",
+   "name": "Brushed Alu",
+   "rarity": "legendary",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#D8DCE2",
+   "pupil": {
+    "type": "round",
+    "L": "#111111",
+    "R": "#2440FF"
+   },
+   "fx": [
+    "chrome",
+    "shimmer"
+   ],
+   "odds": 0.003571
+  },
+  {
+   "id": "rose-chrome",
+   "n": 112,
+   "num": "#112",
+   "name": "Rose Chrome",
+   "rarity": "legendary",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#F2B8C0",
+   "pupil": {
+    "type": "pebble",
+    "L": "#5A0E5E",
+    "R": "#5A0E5E",
+    "rx": 0.44,
+    "ry": 0.46
+   },
+   "fx": [
+    "chrome"
+   ],
+   "odds": 0.003571
+  },
+  {
+   "id": "midas-touch",
+   "n": 113,
+   "num": "#113",
+   "name": "Midas Touch",
+   "rarity": "legendary",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFD23A",
+   "pupil": {
+    "type": "star",
+    "L": "#3A1E00",
+    "R": "#3A1E00",
+    "rx": 0.42,
+    "ry": 0.42
+   },
+   "fx": [
+    "chrome",
+    "glitter"
+   ],
+   "glitterColor": "#FFE6A8",
+   "odds": 0.003571
+  },
+  {
+   "id": "prism-party",
+   "n": 114,
+   "num": "#114",
+   "name": "Prism Party",
+   "rarity": "legendary",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FF6B6B",
+   "pupil": {
+    "type": "round",
+    "L": "#111111",
+    "R": "#111111"
+   },
+   "fx": [
+    "rainbow"
+   ],
+   "odds": 0.003571
+  },
+  {
+   "id": "night-over-sibiu",
+   "n": 115,
+   "num": "#115",
+   "name": "Night Over Sibiu",
+   "rarity": "legendary",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "round",
+    "L": "#0B1240",
+    "R": "#0B1240",
+    "rx": 0.52,
+    "ry": 0.56
+   },
+   "fx": [
+    "starfield",
+    "glitter"
+   ],
+   "odds": 0.003571
+  },
+  {
+   "id": "deep-field",
+   "n": 116,
+   "num": "#116",
+   "name": "Deep Field",
+   "rarity": "legendary",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#B8C8FF",
+   "pupil": {
+    "type": "round",
+    "L": "#05081F",
+    "R": "#2A0640",
+    "rx": 0.5,
+    "ry": 0.56
+   },
+   "fx": [
+    "starfield"
+   ],
+   "odds": 0.003571
+  },
+  {
+   "id": "altita",
+   "n": 117,
+   "num": "#117",
+   "name": "Altiță",
+   "rarity": "legendary",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "round",
+    "L": "#C8102E",
+    "R": "#C8102E",
+    "rx": 0.56,
+    "ry": 0.56
+   },
+   "fx": [
+    "folk",
+    "shimmer"
+   ],
+   "folkThread": "#D9A21A",
+   "odds": 0.003571
+  },
+  {
+   "id": "genesis",
+   "n": 118,
+   "num": "#118",
+   "name": "Genesis",
+   "rarity": "mythic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#FFF0C8",
+   "pupil": {
+    "type": "round",
+    "L": "#0B1240",
+    "R": "#2A0A00",
+    "rx": 0.5,
+    "ry": 0.56
+   },
+   "fx": [
+    "shimmer",
+    "halo",
+    "starfield"
+   ],
+   "glint": {
+    "color": "#FFD23A",
+    "size": 1.25
+   },
+   "odds": 0.001667
+  },
+  {
+   "id": "aurora-borealis",
+   "n": 119,
+   "num": "#119",
+   "name": "Aurora Borealis",
+   "rarity": "mythic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.163,
+    "ry": 0.2,
+    "spacing": 0.19,
+    "y": 0.005,
+    "egg": 0.09,
+    "lean": 0.13
+   },
+   "shapeName": "egg",
+   "white": "#5CFFB0",
+   "pupil": {
+    "type": "round",
+    "L": "#05081F",
+    "R": "#05081F",
+    "rx": 0.5,
+    "ry": 0.55
+   },
+   "fx": [
+    "aurora",
+    "starfield",
+    "glitter"
+   ],
+   "auroraColors": [
+    "#5CFFB0",
+    "#2BD9FF",
+    "#B57BFF",
+    "#FF6BD0"
+   ],
+   "odds": 0.001667
+  },
+  {
+   "id": "sanziana",
+   "n": 120,
+   "num": "#120",
+   "name": "Sânziana",
+   "rarity": "mythic",
+   "family": "special",
+   "shape": {
+    "type": "egg",
+    "rx": 0.172,
+    "ry": 0.172,
+    "spacing": 0.193,
+    "y": 0.005,
+    "egg": 0,
+    "lean": 0
+   },
+   "shapeName": "round",
+   "white": "#FFE08A",
+   "pupil": {
+    "type": "round",
+    "L": "#C8102E",
+    "R": "#C8102E",
+    "rx": 0.56,
+    "ry": 0.56
+   },
+   "fx": [
+    "chrome",
+    "folk",
+    "halo"
+   ],
+   "folkThread": "#D9A21A",
+   "folkBase": "#FFF6E6",
+   "odds": 0.001667
+  }
+ ]
 }
