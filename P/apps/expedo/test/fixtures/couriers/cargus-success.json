@@ -1,0 +1,556 @@
+{
+  "_source": "Cargus publishes no test subscription key (docs ch.1: the Ocp-Apim key is issued only after a portal subscription is approved by an administrator), so no live run was possible. Bodies: (a) counties + pudoPoints: VERBATIM real API responses that the OFFICIAL Cargus WooCommerce plugin 1.6.0 caches and ships in admin/locations/counties.json and admin/locations/pudo_locations.json (https://downloads.wordpress.org/plugin/cargus.1.6.0.zip, sha1 5a28a75877db9603caa6c4de1c23a63592aee8e8; written by admin/class-cargus-cron.php from GET Counties / GET PudoPoints); 3 of 1966 PUDO rows kept (one with StreetName, two with an empty StreetName, as 638 rows have). (b) everything else: \"Technical Documentation API Cargus\" V3 2.3.2 (https://www.cargus.ro/wp-content/uploads/DocumentationAPIV3-2.3.2-EN.pdf): LoginUser returns the token (3.1; plugins json_decode it to a string), Localities fields (4.3), pick-up point = the documented Sender object of the 9.7/9.8 examples (commas the PDF misses restored), Awbs POST returns the generated barcode (9.2; PrestaShop module stores it as a scalar; 9.7/9.8 show alphanumeric BarCode \"URGC10875236\"), DELETE Awbs returns true/false (9.5), AwbDocuments returns base64 (9.9), AwbTrace/WithRedirect fields Code/Type/MeasuredWeight/VolumetricWeight/ConfirmationName/Observation/ResponseCode/Event[Date,Description,LocalityName] (9.10) + EventId (9.12); dates in the docs format \"2019-10-24T12:33:12.035Z\". In (b) field names are the documented ones; ids, descriptions and dates of localities/trace events are illustrative (the PDF has no response samples for them).",
+  "loginUser": {
+    "endpoint": "POST /LoginUser",
+    "body": "eyJhbGciOiJIUzI1NiJ9.placeholder-token-from-docs-3.1"
+  },
+  "counties": {
+    "endpoint": "GET /Counties?countryId=1",
+    "body": [
+      {
+        "CountyId": 3,
+        "Name": "Alba",
+        "Abbreviation": "AB"
+      },
+      {
+        "CountyId": 4,
+        "Name": "Arad",
+        "Abbreviation": "AR"
+      },
+      {
+        "CountyId": 5,
+        "Name": "Arges",
+        "Abbreviation": "AG"
+      },
+      {
+        "CountyId": 6,
+        "Name": "Bacau",
+        "Abbreviation": "BC"
+      },
+      {
+        "CountyId": 7,
+        "Name": "Bihor",
+        "Abbreviation": "BH"
+      },
+      {
+        "CountyId": 8,
+        "Name": "Bistrita-Nasaud",
+        "Abbreviation": "BN"
+      },
+      {
+        "CountyId": 9,
+        "Name": "Botosani",
+        "Abbreviation": "BT"
+      },
+      {
+        "CountyId": 10,
+        "Name": "Braila",
+        "Abbreviation": "BR"
+      },
+      {
+        "CountyId": 11,
+        "Name": "Brasov",
+        "Abbreviation": "BV"
+      },
+      {
+        "CountyId": 12,
+        "Name": "Buzau",
+        "Abbreviation": "BZ"
+      },
+      {
+        "CountyId": 13,
+        "Name": "Calarasi",
+        "Abbreviation": "CL"
+      },
+      {
+        "CountyId": 14,
+        "Name": "Caras-Severin",
+        "Abbreviation": "CS"
+      },
+      {
+        "CountyId": 15,
+        "Name": "Cluj",
+        "Abbreviation": "CJ"
+      },
+      {
+        "CountyId": 16,
+        "Name": "Constanta",
+        "Abbreviation": "CT"
+      },
+      {
+        "CountyId": 17,
+        "Name": "Covasna",
+        "Abbreviation": "CV"
+      },
+      {
+        "CountyId": 18,
+        "Name": "Dambovita",
+        "Abbreviation": "DB"
+      },
+      {
+        "CountyId": 19,
+        "Name": "Dolj",
+        "Abbreviation": "DJ"
+      },
+      {
+        "CountyId": 20,
+        "Name": "Galati",
+        "Abbreviation": "GL"
+      },
+      {
+        "CountyId": 21,
+        "Name": "Giurgiu",
+        "Abbreviation": "GR"
+      },
+      {
+        "CountyId": 22,
+        "Name": "Gorj",
+        "Abbreviation": "GJ"
+      },
+      {
+        "CountyId": 23,
+        "Name": "Harghita",
+        "Abbreviation": "HR"
+      },
+      {
+        "CountyId": 24,
+        "Name": "Hunedoara",
+        "Abbreviation": "HD"
+      },
+      {
+        "CountyId": 25,
+        "Name": "Ialomita",
+        "Abbreviation": "IL"
+      },
+      {
+        "CountyId": 26,
+        "Name": "Iasi",
+        "Abbreviation": "IS"
+      },
+      {
+        "CountyId": 27,
+        "Name": "Ilfov",
+        "Abbreviation": "IF"
+      },
+      {
+        "CountyId": 28,
+        "Name": "Maramures",
+        "Abbreviation": "MM"
+      },
+      {
+        "CountyId": 29,
+        "Name": "Mehedinti",
+        "Abbreviation": "MH"
+      },
+      {
+        "CountyId": 30,
+        "Name": "Mures",
+        "Abbreviation": "MS"
+      },
+      {
+        "CountyId": 31,
+        "Name": "Neamt",
+        "Abbreviation": "NT"
+      },
+      {
+        "CountyId": 32,
+        "Name": "Olt",
+        "Abbreviation": "OT"
+      },
+      {
+        "CountyId": 33,
+        "Name": "Prahova",
+        "Abbreviation": "PH"
+      },
+      {
+        "CountyId": 34,
+        "Name": "Salaj",
+        "Abbreviation": "SJ"
+      },
+      {
+        "CountyId": 35,
+        "Name": "Satu Mare",
+        "Abbreviation": "SM"
+      },
+      {
+        "CountyId": 36,
+        "Name": "Sibiu",
+        "Abbreviation": "SB"
+      },
+      {
+        "CountyId": 37,
+        "Name": "Suceava",
+        "Abbreviation": "SV"
+      },
+      {
+        "CountyId": 38,
+        "Name": "Teleorman",
+        "Abbreviation": "TR"
+      },
+      {
+        "CountyId": 39,
+        "Name": "Timis",
+        "Abbreviation": "TM"
+      },
+      {
+        "CountyId": 40,
+        "Name": "Tulcea",
+        "Abbreviation": "TL"
+      },
+      {
+        "CountyId": 41,
+        "Name": "Valcea",
+        "Abbreviation": "VL"
+      },
+      {
+        "CountyId": 42,
+        "Name": "Vaslui",
+        "Abbreviation": "VS"
+      },
+      {
+        "CountyId": 43,
+        "Name": "Vrancea",
+        "Abbreviation": "VN"
+      },
+      {
+        "CountyId": 44,
+        "Name": "Bucuresti",
+        "Abbreviation": "B"
+      },
+      {
+        "CountyId": 307,
+        "Name": "Necunoscut",
+        "Abbreviation": "NN"
+      },
+      {
+        "CountyId": 308,
+        "Name": "International Polonia",
+        "Abbreviation": "PL"
+      }
+    ]
+  },
+  "localities": {
+    "endpoint": "GET /Localities?countryId=1&countyId={id}",
+    "byCounty": {
+      "27": [
+        {
+          "LocalityId": 29445916,
+          "Name": "Tunari",
+          "ParentId": 150,
+          "ParentName": "BUCURESTI",
+          "ExtraKm": 0,
+          "InNetwork": true,
+          "CountyId": 27,
+          "CountryId": 1,
+          "CodPostal": "077180",
+          "MaxHour": "17:00"
+        },
+        {
+          "LocalityId": 29445920,
+          "Name": "Voluntari",
+          "ParentId": 150,
+          "ParentName": "BUCURESTI",
+          "ExtraKm": 0,
+          "InNetwork": true,
+          "CountyId": 27,
+          "CountryId": 1,
+          "CodPostal": "077190",
+          "MaxHour": "17:00"
+        }
+      ],
+      "44": [
+        {
+          "LocalityId": 150,
+          "Name": "BUCURESTI",
+          "ParentId": 150,
+          "ParentName": "BUCURESTI",
+          "ExtraKm": 0,
+          "InNetwork": true,
+          "CountyId": 44,
+          "CountryId": 1,
+          "CodPostal": "",
+          "MaxHour": "17:00"
+        }
+      ]
+    }
+  },
+  "pickupLocations": {
+    "endpoint": "GET /PickupLocations",
+    "body": [
+      {
+        "LocationId": 1005962049,
+        "Name": "ECOM TEST",
+        "CountyId": 0,
+        "CountyName": "Ilfov",
+        "LocalityId": 29445916,
+        "LocalityName": "Tunari",
+        "StreetId": 0,
+        "StreetName": "",
+        "BuildingNumber": "",
+        "AddressText": "nr: 32; Sos centura nr 32",
+        "ContactPerson": "Ionut Petraru",
+        "PhoneNumber": "",
+        "CodPostal": "string",
+        "Email": ""
+      }
+    ]
+  },
+  "pudoPoints": {
+    "endpoint": "GET /PudoPoints",
+    "body": [
+      {
+        "Id": 114141,
+        "Symbol": "SGO114141",
+        "Name": "Punct 11 Iunie 14",
+        "LocationId": 1,
+        "CountyId": 44,
+        "County": "Bucuresti",
+        "CityId": 150,
+        "City": "BUCURESTI",
+        "StreetId": 5,
+        "StreetName": "11 Iunie",
+        "ZoneId": 7073,
+        "PostalCode": "030167",
+        "Entrance": "",
+        "Floor": "",
+        "Apartment": "",
+        "Sector": "",
+        "Address": "BUCURESTI, Strada 11 Iunie, Nr. 14, Cod postal. 030167",
+        "AddressDescription": "Punct 11 Iunie este gestionat de Cargus cu adresa in Bucuresti, punct de reper: intrarea din bulevardul Regina Maria, 100m pe partea dreapta.\r\n\r\n-\r\n\r\nRidică un colet cu ușurință din punctele Cargus Ship&Go!\r\nCurierul a ajuns la tine când tu nu erai acasă? Nici o problemă. Curierul va lăsa coletul pentru tine la cel mai apropiat punct Cargus Ship&Go.\r\nPoți redirecționa cu un singur click coletul catre un punct Ship&Go sau poți comanda livrarea direct în Punctul Cargus Ship&Go ales sau in Locker Cargus Ship&Go.\r\n",
+        "AdditionalAddressInfo": "",
+        "Longitude": 26.09588,
+        "Latitude": 44.42288,
+        "PointType": 3,
+        "OpenHoursMoStart": "08:30",
+        "OpenHoursMoEnd": "17:00",
+        "OpenHoursTuStart": "08:30",
+        "OpenHoursTuEnd": "17:00",
+        "OpenHoursWeStart": "08:30",
+        "OpenHoursWeEnd": "17:00",
+        "OpenHoursThStart": "08:30",
+        "OpenHoursThEnd": "17:00",
+        "OpenHoursFrStart": "08:30",
+        "OpenHoursFrEnd": "17:00",
+        "OpenHoursSaStart": "",
+        "OpenHoursSaEnd": "",
+        "OpenHoursSuStart": "",
+        "OpenHoursSuEnd": "",
+        "LunchBreakMoStart": "",
+        "LunchBreakMoEnd": "",
+        "LunchBreakTuStart": "",
+        "LunchBreakTuEnd": "",
+        "LunchBreakWeStart": "",
+        "LunchBreakWeEnd": "",
+        "LunchBreakThStart": "",
+        "LunchBreakThEnd": "",
+        "LunchBreakFrStart": "12:30",
+        "LunchBreakFrEnd": "13:00",
+        "LunchBreakSaStart": "",
+        "LunchBreakSaEnd": "",
+        "LunchBreakSuStart": "",
+        "LunchBreakSuEnd": "",
+        "StreetNo": "14",
+        "PhoneNumber": "",
+        "ServiceCOD": true,
+        "PaymentType": 7,
+        "Email": "",
+        "MainPicture": "https://media.cargus.ro/pp/114141.png",
+        "AcceptedPaymentType": {
+          "Cash": true,
+          "Card": true,
+          "Online": true
+        }
+      },
+      {
+        "Id": 229937,
+        "Symbol": "SGN-PP405999",
+        "Name": "Punct Doinei 19 Targu Lapus",
+        "LocationId": 19,
+        "CountyId": 28,
+        "County": "Maramures",
+        "CityId": 515,
+        "City": "Targu Lapus",
+        "StreetId": null,
+        "StreetName": "",
+        "ZoneId": 2514,
+        "PostalCode": "435600",
+        "Entrance": "",
+        "Floor": "",
+        "Apartment": "",
+        "Sector": "",
+        "Address": "Targu Lapus, STR DOINEI NR 19 AP 9, Nr. n/a, Cod postal. 435600",
+        "AddressDescription": "Punct Doinei 19 este punct partener Cargus cu adresa in Targu Lapus, punct de reper: magazin partener PayPoint.\n\n-\n\nRidică un colet cu ușurință din punctele Cargus Ship&Go!\nCurierul a ajuns la tine când tu nu erai acasă? Nici o problemă. Curierul va lăsa coletul pentru tine la cel mai apropiat punct Cargus Ship&Go.\nPoți redirecționa cu un singur click coletul catre un punct Ship&Go sau poți comanda livrarea direct în Punctul Cargus Ship&Go ales sau in Locker Cargus Ship&Go.",
+        "AdditionalAddressInfo": "",
+        "Longitude": 23.865067,
+        "Latitude": 47.45141233,
+        "PointType": 3,
+        "OpenHoursMoStart": "07:00",
+        "OpenHoursMoEnd": "22:00",
+        "OpenHoursTuStart": "07:00",
+        "OpenHoursTuEnd": "22:00",
+        "OpenHoursWeStart": "07:00",
+        "OpenHoursWeEnd": "22:00",
+        "OpenHoursThStart": "07:00",
+        "OpenHoursThEnd": "22:00",
+        "OpenHoursFrStart": "07:00",
+        "OpenHoursFrEnd": "22:00",
+        "OpenHoursSaStart": "08:00",
+        "OpenHoursSaEnd": "22:00",
+        "OpenHoursSuStart": "08:00",
+        "OpenHoursSuEnd": "22:00",
+        "LunchBreakMoStart": "",
+        "LunchBreakMoEnd": "",
+        "LunchBreakTuStart": "",
+        "LunchBreakTuEnd": "",
+        "LunchBreakWeStart": "",
+        "LunchBreakWeEnd": "",
+        "LunchBreakThStart": "",
+        "LunchBreakThEnd": "",
+        "LunchBreakFrStart": "",
+        "LunchBreakFrEnd": "",
+        "LunchBreakSaStart": "",
+        "LunchBreakSaEnd": "",
+        "LunchBreakSuStart": "",
+        "LunchBreakSuEnd": "",
+        "StreetNo": "n/a",
+        "PhoneNumber": "",
+        "ServiceCOD": true,
+        "PaymentType": 5,
+        "Email": "",
+        "MainPicture": "",
+        "AcceptedPaymentType": {
+          "Cash": true,
+          "Card": false,
+          "Online": true
+        }
+      },
+      {
+        "Id": 230819,
+        "Symbol": "SGI230819",
+        "Name": "Punct Bulevardul Pipera nr. 36",
+        "LocationId": 103,
+        "CountyId": 27,
+        "County": "Ilfov",
+        "CityId": 530,
+        "City": "Voluntari",
+        "StreetId": 33826,
+        "StreetName": "Pipera",
+        "ZoneId": 9249,
+        "PostalCode": "077190",
+        "Entrance": "",
+        "Floor": "",
+        "Apartment": "",
+        "Sector": "",
+        "Address": "Voluntari, Bulevard Pipera, Nr. 36, Cod postal. 077190",
+        "AddressDescription": "Punct Bulevardul Pipera nr. 36 este punct partener Cargus cu adresa in Voluntari, punct de reper: La Fourchette\n \n-\n \nRidică un colet cu ușurință din punctele Cargus Ship&Go!\nCurierul a ajuns la tine când tu nu erai acasă? Nici o problemă. Curierul va lăsa coletul pentru tine la cel mai apropiat punct Cargus Ship&Go.\nPoți redirecționa cu un singur click coletul catre un punct Ship&Go sau poți comanda livrarea direct în Punctul Cargus Ship&Go ales sau in Locker Cargus Ship&Go.",
+        "AdditionalAddressInfo": "",
+        "Longitude": 26.1366527108301,
+        "Latitude": 44.5046961530127,
+        "PointType": 2,
+        "OpenHoursMoStart": "",
+        "OpenHoursMoEnd": "",
+        "OpenHoursTuStart": "11:00",
+        "OpenHoursTuEnd": "19:00",
+        "OpenHoursWeStart": "11:00",
+        "OpenHoursWeEnd": "19:00",
+        "OpenHoursThStart": "11:00",
+        "OpenHoursThEnd": "19:00",
+        "OpenHoursFrStart": "11:00",
+        "OpenHoursFrEnd": "19:00",
+        "OpenHoursSaStart": "10:00",
+        "OpenHoursSaEnd": "19:00",
+        "OpenHoursSuStart": "",
+        "OpenHoursSuEnd": "",
+        "LunchBreakMoStart": "",
+        "LunchBreakMoEnd": "",
+        "LunchBreakTuStart": "",
+        "LunchBreakTuEnd": "",
+        "LunchBreakWeStart": "",
+        "LunchBreakWeEnd": "",
+        "LunchBreakThStart": "",
+        "LunchBreakThEnd": "",
+        "LunchBreakFrStart": "",
+        "LunchBreakFrEnd": "",
+        "LunchBreakSaStart": "",
+        "LunchBreakSaEnd": "",
+        "LunchBreakSuStart": "",
+        "LunchBreakSuEnd": "",
+        "StreetNo": "36",
+        "PhoneNumber": "",
+        "ServiceCOD": true,
+        "PaymentType": 6,
+        "Email": "",
+        "MainPicture": "https://media.cargus.ro/pp/230819.png",
+        "AcceptedPaymentType": {
+          "Cash": false,
+          "Card": true,
+          "Online": true
+        }
+      }
+    ]
+  },
+  "awbsPostNumeric": {
+    "endpoint": "POST /Awbs",
+    "body": 804419419
+  },
+  "awbsPostAlphanumeric": {
+    "endpoint": "POST /Awbs",
+    "body": "URGC10875236"
+  },
+  "awbDocuments": {
+    "endpoint": "GET /AwbDocuments?barCodes=[804419419]&type=PDF&format=1&printMainOnce=1",
+    "body": "JVBERi0xLjQKJSBwbGFjZWhvbGRlciBsYWJlbCBieXRlcwolJUVPRgo="
+  },
+  "deleteAwb": {
+    "endpoint": "DELETE /Awbs?barCode=804419419",
+    "body": true
+  },
+  "deleteAwbRefused": {
+    "endpoint": "DELETE /Awbs?barCode=804419419 (has a checkpoint / does not exist)",
+    "body": false
+  },
+  "awbTrace": {
+    "endpoint": "GET /AwbTrace/WithRedirect?barCode=[804419419,804418863]",
+    "body": [
+      {
+        "Code": "804419419",
+        "Type": 1,
+        "MeasuredWeight": 1,
+        "VolumetricWeight": 0,
+        "ConfirmationName": "Test Expedo",
+        "Observation": "",
+        "ResponseCode": "",
+        "Event": [
+          {
+            "Date": "2019-10-24T08:10:00.000Z",
+            "EventId": 1,
+            "Description": "Expeditie preluata de curier",
+            "LocalityName": "Tunari"
+          },
+          {
+            "Date": "2019-10-25T07:00:00.000Z",
+            "EventId": 4,
+            "Description": "In livrare",
+            "LocalityName": "Bucuresti"
+          },
+          {
+            "Date": "2019-10-25T10:33:12.035Z",
+            "EventId": 21,
+            "Description": "Confirmat",
+            "LocalityName": "Bucuresti"
+          }
+        ]
+      },
+      {
+        "Code": "804418863",
+        "Type": 1,
+        "MeasuredWeight": 0,
+        "VolumetricWeight": 0,
+        "ConfirmationName": "",
+        "Observation": "",
+        "ResponseCode": "",
+        "Event": []
+      }
+    ]
+  }
+}

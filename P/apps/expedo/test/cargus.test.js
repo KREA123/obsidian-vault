@@ -527,3 +527,85 @@ describe('cargus: live error shapes and hardening', () => {
     assert.equal(r.at, '2026-07-01T09:30:00.000Z');
   });
 });
+
+// ---- success shapes: official WP plugin's cached API bodies + docs V3 2.3.2 (see _source in the fixture) ----
+
+const OKC = JSON.parse(readFileSync(new URL('./fixtures/couriers/cargus-success.json', import.meta.url), 'utf8'));
+const okRoutes = (extra = []) => [
+  ...extra,
+  { method: 'POST', url: '/LoginUser', reply: { body: OKC.loginUser.body } },
+  { url: '/Counties?countryId=1', reply: { body: OKC.counties.body } },
+  { url: /\/Localities\?countryId=1&countyId=(\d+)/, reply: ({ url }) => ({ body: OKC.localities.byCounty[url.match(/countyId=(\d+)/)[1]] || [] }) },
+  { url: '/PickupLocations', reply: { body: OKC.pickupLocations.body } },
+  { url: '/PudoPoints', reply: { body: OKC.pudoPoints.body } },
+  { method: 'POST', url: '/Awbs', reply: { body: OKC.awbsPostNumeric.body } },
+];
+
+describe('cargus: documented success bodies', () => {
+  test('LoginUser string token → Bearer; PickupLocations (documented Sender shape) → pick-up points', async () => {
+    const { ctx, calls } = makeCtx(okRoutes(), { settings: { pickupPointId: '' } });
+    const conn = await cargus.testConnection(ctx);
+    assert.equal(conn.ok, true);
+    assert.deepEqual(conn.info.pickupPoints, [{ id: '1005962049', name: 'ECOM TEST', address: 'nr: 32; Sos centura nr 32, Tunari, Ilfov' }]);
+    assert.equal(calls.find((c) => c.url.endsWith('/PickupLocations')).headers.Authorization, `Bearer ${OKC.loginUser.body}`);
+  });
+
+  test('real Counties list (44 rows) + Localities fields → București and Voluntari resolve to their ids', async () => {
+    const { ctx, calls } = makeCtx(okRoutes(), { settings: { pickupPointId: '' } });
+    const res = await cargus.createShipment(ctx, shipment({
+      reference: 'EXPEDO-TEST',
+      recipient: { name: 'Test Expedo', contactPerson: 'Test Expedo', phone: '0700000000', county: 'Ilfov', countyCode: 'IF', city: 'Voluntari', street: 'Str. Test 1', zip: '077190' },
+    }));
+    assert.equal(res.awb, '804419419'); // POST Awbs answers the bare barcode (a JSON number)
+    const p = awbCall(calls).json;
+    assert.equal(p.Sender.LocationId, 1005962049); // the only pick-up point is used when none is set
+    assert.deepEqual([p.Recipient.CountyId, p.Recipient.CountyName, p.Recipient.LocalityId, p.Recipient.LocalityName], [27, 'Ilfov', 29445920, 'Voluntari']);
+    assert.equal(p.BankRepayment, 149.9);
+    const buc = makeCtx(okRoutes());
+    await cargus.createShipment(buc.ctx, shipment({ recipient: { county: 'București', countyCode: 'B', city: 'București Sector 3', sector: 3, zip: '030167' } }));
+    assert.equal(awbCall(buc.calls).json.Recipient.LocalityId, 150);
+  });
+
+  test('alphanumeric barcode (docs 9.7/9.8 "URGC10875236") is accepted; error texts are not', async () => {
+    const toVoluntari = () => shipment({ recipient: { county: 'Ilfov', countyCode: 'IF', city: 'Voluntari', zip: '077190' } });
+    const { ctx } = makeCtx(okRoutes([{ method: 'POST', url: '/Awbs', reply: { body: OKC.awbsPostAlphanumeric.body } }]));
+    assert.equal((await cargus.createShipment(ctx, toVoluntari())).awb, 'URGC10875236');
+    for (const text of ['Error', 'Failed to authenticate!', 'Invalid']) {
+      const bad = makeCtx(okRoutes([{ method: 'POST', url: '/Awbs', reply: { body: text } }]));
+      await assert.rejects(cargus.createShipment(bad.ctx, toVoluntari()), (e) => e instanceof ProcessingError && !e.message.includes('URGC'), text);
+    }
+  });
+
+  test('AwbDocuments base64 → PDF Buffer; DELETE true ok, false refused', async () => {
+    const { ctx, calls } = makeCtx(okRoutes([
+      { url: '/AwbDocuments', reply: { body: OKC.awbDocuments.body } },
+      { method: 'DELETE', url: '/Awbs?barCode=804419419', reply: { body: OKC.deleteAwb.body } },
+    ]));
+    const pdf = await cargus.getLabel(ctx, '804419419', { format: 'A6' });
+    assert.equal(pdf.subarray(0, 5).toString('latin1'), '%PDF-');
+    assert.match(calls.find((c) => c.url.includes('/AwbDocuments')).url, /barCodes=%5B804419419%5D&type=PDF&format=1/);
+    await cargus.cancelShipment(ctx, '804419419');
+    const refused = makeCtx(okRoutes([{ method: 'DELETE', url: '/Awbs?barCode=', reply: { body: OKC.deleteAwbRefused.body } }]));
+    await assert.rejects(cargus.cancelShipment(refused.ctx, '804419419'), (e) => e.code === 'CANCEL_REFUSED');
+  });
+
+  test('AwbTrace/WithRedirect documented fields → delivered (EventId 21) / created (no events)', async () => {
+    const { ctx } = makeCtx(okRoutes([{ url: '/AwbTrace/WithRedirect', reply: { body: OKC.awbTrace.body } }]));
+    const res = await cargus.track(ctx, ['804419419', '804418863']);
+    assert.deepEqual(res, [
+      { awb: '804419419', status: 'delivered', statusText: 'Confirmat', at: '2019-10-25T10:33:12.035Z', codCollected: true },
+      { awb: '804418863', status: 'created', statusText: 'AWB emis', at: undefined, codCollected: false },
+    ]);
+  });
+
+  test('real PudoPoints rows: full Address used even when StreetName is empty; București/Ilfov filters', async () => {
+    const { ctx } = makeCtx(okRoutes());
+    const all = await cargus.listLockers(ctx, {});
+    assert.equal(all.length, 3);
+    for (const l of all) assert.ok(l.address.length > 20, `address too short: ${l.address}`);
+    assert.deepEqual((await cargus.listLockers(ctx, { county: 'Maramureș', city: 'Târgu Lăpuș' })).map((l) => [l.id, l.address]),
+      [['229937', 'Targu Lapus, STR DOINEI NR 19 AP 9, Nr. n/a, Cod postal. 435600']]);
+    assert.deepEqual((await cargus.listLockers(ctx, { county: 'București', city: 'București' })).map((l) => l.id), ['114141']);
+    assert.deepEqual((await cargus.listLockers(ctx, { county: 'Ilfov', city: 'Voluntari' })).map((l) => l.id), ['230819']);
+  });
+});

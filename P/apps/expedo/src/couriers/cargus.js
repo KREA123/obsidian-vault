@@ -385,7 +385,9 @@ function extractBarcode(body) {
   if (typeof body === 'number') return String(body);
   if (typeof body === 'string') {
     const t = body.replace(/^"|"$/g, '').trim();
-    return /^\d{6,}$/.test(t) ? t : null;
+    // Digits as a rule; the docs V3 2.3.2 (9.7 / 9.8) also show alphanumeric barcodes ("BarCode": "URGC10875236").
+    // An error text ("Failed to authenticate!", "Error") never matches: letters prefix + at least 6 digits only.
+    return /^[A-Z]{0,6}\d{6,}$/i.test(t) ? t : null;
   }
   const first = Array.isArray(body) ? body[0] : body;
   if (first && typeof first === 'object') {
@@ -486,7 +488,11 @@ const adapter = {
       list = asArray(body).map((p) => ({
         id: String(p.Id),
         name: p.Name,
-        address: [[p.StreetName, p.StreetNo].filter(Boolean).join(' '), p.City, p.County].filter(Boolean).join(', '),
+        // Real PudoPoints rows (official WP plugin 1.6.0 ships them in admin/locations/pudo_locations.json):
+        // 638 of 1966 have an empty StreetName, but every row has the full `Address`
+        // ("Targu Lapus, STR DOINEI NR 19 AP 9, Nr. n/a, Cod postal. 435600").
+        address: String(p.Address || '').trim()
+          || [[p.StreetName, p.StreetNo].filter(Boolean).join(' '), p.City, p.County].filter(Boolean).join(', '),
         city: p.City,
         county: p.County,
         cod: p.ServiceCOD !== false,

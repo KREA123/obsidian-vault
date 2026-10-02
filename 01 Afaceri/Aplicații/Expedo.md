@@ -31,6 +31,11 @@ Ce face, pentru fiecare comandă:
 - **Revizuire independentă a codului:** peste 40 de bug-uri reparate (mod de probă vs live, ramburs pe comenzi deja plătite, dubluri la întreruperi, securitate).
 - Mod de probă, reguli, procesare în masă, etichete într-un PDF, listă de picking, export ramburs.
 
+**Verificat fără conturi ale noastre (02.10.2026, 396 de teste):**
+- **FAN Courier: testat cap-coadă pe contul public de test al FAN** — AWB real creat (ramburs, Cont Colector), etichetă PDF, urmărire, anulare. Au ieșit 3 bug-uri, reparate.
+- **Sameday, GLS, DPD, Cargus, SmartBill, FGO, Oblio:** nu publică cont de test; Expedo e verificat pe răspunsurile oficiale din documentații și din modulele lor oficiale (SDK Sameday, plugin Cargus, spec SmartBill, plugin Oblio, PDF FGO). Bug-uri reale găsite și reparate (ex. SmartBill ar fi pus „Taxare inversă” la neplătitori de TVA; 638 de puncte Ship & Go Cargus fără stradă).
+- FGO are mediu de test gratuit (testuat.fgo.ro/inregistrare), dar cere un cont pe firmă.
+
 **Ce poate confirma doar un cont real** (vezi [[Expedo — cereri conturi de test]]):
 - Răspunsurile reușite ale fiecărui curier (AWB creat, etichetă, urmărire) și ale programelor de facturare (factură emisă).
 - Detalii marcate `VERIFY` în cod: coduri de status la Cargus/Sameday/GLS, câteva câmpuri FGO/SmartBill/Oblio.

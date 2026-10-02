@@ -1,0 +1,188 @@
+{
+  "_source": "Success bodies built field-for-field from the OFFICIAL DPD Romania \"Web API Documentation\", https://api.dpd.ro/api/docs/ (fetched 2026-10-02): 2.1.1.2 CreateShipmentResponse + 3.5.1 CreatedShipmentParcel + 3.6 ShipmentPrice; 2.1.2.2 CancelShipmentResponse (\"Cancel response is an empty JSON, if the shipment is successfully cancelled\"); 2.1.5.2 ShipmentInformationResponse + 3.26 Shipment; 2.2.1.2 PrintResponse (application/pdf bytes, or application/json Error); 2.3.1.2 TrackResponse + 3.9 TrackedParcel + 3.9.1 TrackedParcelOperation (datetime \"yyyy-MM-ddTHH:mm:ssZ\", section 1.4); 2.7.2.2 GetContractClientsResponse + 3.25 Client; 2.9.1.2 ServicesResponse + 3.27 CourierService; operation codes/descriptions from 4.1 Appendix 1. DPD publishes no JSON response examples and no public test account (doc 1.3: \"To get a test account please send us an e-mail\"), so values are illustrative; every field name and type is the documented one.",
+  "createShipment": {
+    "endpoint": "POST /v1/shipment",
+    "body": {
+      "id": "80912345678",
+      "parcels": [
+        {
+          "seqNo": 1,
+          "id": "80912345678"
+        },
+        {
+          "seqNo": 2,
+          "id": "80912345679"
+        }
+      ],
+      "price": {
+        "amount": 18,
+        "vat": 3.42,
+        "total": 21.42,
+        "currency": "RON",
+        "details": {
+          "net": {
+            "amount": 18,
+            "vatPercent": 0.19
+          }
+        },
+        "amountLocal": 18,
+        "vatLocal": 3.42,
+        "totalLocal": 21.42,
+        "currencyLocal": "RON",
+        "currencyExchangeRateUnit": 1,
+        "currencyExchangeRate": 1,
+        "detailsLocal": {
+          "net": {
+            "amount": 18,
+            "vatPercent": 0.19
+          }
+        }
+      },
+      "pickupDate": "2026-10-02",
+      "deliveryDeadline": "2026-10-03T19:00:00+0300"
+    }
+  },
+  "shipmentInfo": {
+    "endpoint": "POST /v1/shipment/info",
+    "body": {
+      "shipments": [
+        {
+          "id": "80912345678",
+          "ref1": "EXPEDO-TEST",
+          "content": {
+            "parcelsCount": 2,
+            "totalWeight": 2,
+            "contents": "Test",
+            "package": "BOX",
+            "parcels": [
+              {
+                "seqNo": 1,
+                "id": "80912345678"
+              },
+              {
+                "seqNo": 2,
+                "id": "80912345679"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "printContentType": "application/pdf",
+  "cancelShipment": {
+    "endpoint": "POST /v1/shipment/cancel",
+    "body": {}
+  },
+  "track": {
+    "endpoint": "POST /v1/track",
+    "body": {
+      "parcels": [
+        {
+          "parcelId": "80912345678",
+          "operations": [
+            {
+              "dateTime": "2026-10-02T09:10:00+0300",
+              "operationCode": 148,
+              "description": "Shipment data received"
+            },
+            {
+              "dateTime": "2026-10-02T17:30:00+0300",
+              "operationCode": 39,
+              "description": "Courier Pick-up",
+              "place": "Cluj-Napoca"
+            },
+            {
+              "dateTime": "2026-10-03T08:05:00+0300",
+              "operationCode": 12,
+              "description": "Out for Delivery",
+              "place": "Bucuresti"
+            },
+            {
+              "dateTime": "2026-10-03T12:41:00+0300",
+              "operationCode": -14,
+              "description": "Delivered",
+              "place": "Bucuresti",
+              "consignee": "Test Expedo"
+            },
+            {
+              "dateTime": "2026-10-03T12:42:00+0300",
+              "operationCode": 1134,
+              "description": "Notification sent for parcel in office/locker"
+            }
+          ]
+        },
+        {
+          "parcelId": "80912345680",
+          "operations": [
+            {
+              "dateTime": "2026-10-03T14:00:00+0300",
+              "operationCode": 44,
+              "description": "Unsuccessful Delivery",
+              "exceptionCodes": [
+                "19"
+              ]
+            }
+          ]
+        },
+        {
+          "parcelId": "80912345681",
+          "operations": []
+        },
+        {
+          "parcelId": "80900000000",
+          "operations": [],
+          "error": {
+            "context": "",
+            "message": "Parcel not found",
+            "id": "EE20261002000000",
+            "code": 1
+          }
+        }
+      ]
+    }
+  },
+  "contractClients": {
+    "endpoint": "POST /v1/client/contract",
+    "body": {
+      "clients": [
+        {
+          "clientId": 77001234000,
+          "clientName": "TEST EXPEDO SRL",
+          "objectName": "Depozit Test",
+          "contactName": "Test Expedo",
+          "address": {
+            "fullAddressString": "mun. CLUJ-NAPOCA [400001] str. TEST No 1",
+            "siteAddressString": "mun. CLUJ-NAPOCA [400001], jud. CLUJ",
+            "localAddressString": "mun. CLUJ-NAPOCA [400001] str. TEST No 1"
+          },
+          "email": "test@example.invalid",
+          "privatePerson": false
+        }
+      ]
+    }
+  },
+  "services": {
+    "endpoint": "POST /v1/services",
+    "body": {
+      "services": [
+        {
+          "id": 2505,
+          "name": "DPD STANDARD",
+          "nameEn": "DPD STANDARD",
+          "cargoType": "PARCEL",
+          "requireParcelWeight": false,
+          "requireParcelSize": false
+        },
+        {
+          "id": 2412,
+          "name": "PALLET ONE RO",
+          "nameEn": "PALLET ONE RO",
+          "cargoType": "PALLET",
+          "requireParcelWeight": true,
+          "requireParcelSize": true
+        }
+      ]
+    }
+  }
+}

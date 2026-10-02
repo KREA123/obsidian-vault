@@ -291,3 +291,54 @@ test('parcel map per account; COD and declared value rounded; tracking URL is th
   assert.equal(req.service.additionalServices.declaredValue.amount, 10.01);
   assert.equal(dpd.trackingUrl('80012345678'), 'https://services.dpd.ro/tracking/?shipmentNumber=80012345678&language=ro');
 });
+
+// ---- success shapes built from the official DPD Web API documentation (see _source in the fixture) ----
+
+const DOC = JSON.parse(readFileSync(new URL('./fixtures/couriers/dpd-success.json', import.meta.url), 'utf8'));
+
+test('documented success: CreateShipmentResponse → awb = id, price = total; parcels remembered for print', async () => {
+  const pdf = Buffer.from('%PDF-1.4\n%%EOF');
+  const { ctx, calls } = fakeCtx({
+    routes: {
+      '/location/site/csv/:id': sitesRoute,
+      '/shipment': () => ({ body: DOC.createShipment.body }),
+      '/print': () => ({ body: pdf }),
+      '/shipment/cancel': () => ({ body: DOC.cancelShipment.body }),
+    },
+  });
+  const res = await dpd.createShipment(ctx, shipment({ reference: 'EXPEDO-TEST', parcels: 2 }));
+  assert.equal(res.awb, '80912345678');
+  assert.equal(res.price, 21.42);
+  assert.equal(await dpd.getLabel(ctx, res.awb, { format: 'A6' }), pdf);
+  const print = calls.find((c) => c.path === '/print');
+  assert.deepEqual(print.json.parcels, [{ parcel: { id: '80912345678' } }, { parcel: { id: '80912345679' } }]);
+  assert.equal(print.json.paperSize, 'A6');
+  assert.equal(print.opts.responseType, 'buffer');
+  await dpd.cancelShipment(ctx, res.awb); // documented success = empty JSON object
+  assert.deepEqual(calls.find((c) => c.path === '/shipment/cancel').json.shipmentId, '80912345678');
+});
+
+test('documented success: label without cached parcels → ShipmentInformationResponse content.parcels', async () => {
+  const { ctx, calls } = fakeCtx({ routes: { '/shipment/info': () => ({ body: DOC.shipmentInfo.body }), '/print': () => ({ body: Buffer.from('%PDF-1.4') }) } });
+  await dpd.getLabel(ctx, '80912345678');
+  assert.deepEqual(calls.find((c) => c.path === '/print').json.parcels.map((p) => p.parcel.id), ['80912345678', '80912345679']);
+});
+
+test('documented success: TrackResponse → statuses, informational 1134 skipped, per-parcel error omitted', async () => {
+  const { ctx } = fakeCtx({ routes: { '/track': () => ({ body: DOC.track.body }) } });
+  const res = await dpd.track(ctx, ['80912345678', '80912345680', '80912345681', '80900000000']);
+  assert.deepEqual(res, [
+    { awb: '80912345678', status: 'delivered', statusText: 'Delivered', at: '2026-10-03T09:41:00.000Z', codCollected: true },
+    { awb: '80912345680', status: 'failed_attempt', statusText: 'Unsuccessful Delivery', at: '2026-10-03T11:00:00.000Z' },
+    { awb: '80912345681', status: 'created', statusText: 'AWB emis', at: undefined },
+  ]);
+});
+
+test('documented success: contract clients and services', async () => {
+  const { ctx } = fakeCtx({ routes: { '/client/contract': () => ({ body: DOC.contractClients.body }), '/services': () => ({ body: DOC.services.body }) } });
+  const conn = await dpd.testConnection(ctx);
+  assert.equal(conn.ok, true);
+  assert.match(conn.message, /77001234000 \(Depozit Test\)/);
+  assert.deepEqual(await dpd.listPickupPoints(ctx), [{ id: '77001234000', name: 'Depozit Test', address: 'mun. CLUJ-NAPOCA [400001] str. TEST No 1' }]);
+  assert.deepEqual(await dpd.listServices(ctx), [{ id: '2505', name: 'DPD STANDARD' }, { id: '2412', name: 'PALLET ONE RO' }]);
+});
