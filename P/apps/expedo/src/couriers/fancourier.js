@@ -434,7 +434,7 @@ export default {
     if (!awbs?.length) return [];
     const clientId = clientIdOf(ctx);
     const out = [];
-    for (const group of chunk(awbs, 50)) {
+    for (const group of chunk([...new Set(awbs.map(String))], 50)) {
       const q = new URLSearchParams({ clientId: String(clientId), language: 'ro' });
       for (const a of group) q.append('awb[]', a);
       const res = await api(ctx, '/reports/awb/tracking', { query: q.toString() });

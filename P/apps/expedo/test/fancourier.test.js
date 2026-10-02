@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { ProcessingError, authError } from '../src/core/errors.js';
-import fan, { mapFanEvent, pickService, resolveFanLocality } from '../src/couriers/fancourier.js';
+import fan, { mapFanEvent, pickService, resolveFanLocality, tokenKey } from '../src/couriers/fancourier.js';
 
 // ---- fake ctx: routes ctx.http calls to handlers, emulating src/lib/http.js error handling
 function fakeCtx({ routes, settings = {}, credentials = { username: 'shop', password: 'secret' } }) {
@@ -278,4 +279,74 @@ test('FAN event table', () => {
     S46: 'out_for_delivery', S38: 'created', ZZ: 'unknown',
   };
   for (const [id, st] of Object.entries(cases)) assert.equal(mapFanEvent(id), st, id);
+});
+
+// ---- live-check regressions (fixtures from the real API, invalid credentials) ----------------
+
+const LIVE = JSON.parse(readFileSync(new URL('./fixtures/couriers/fancourier.json', import.meta.url), 'utf8'));
+const liveLocalities = () => ({ body: LIVE.localitiesSample.body });
+
+test('live: real 401 from /login → AUTH_FAILED (testConnection and createShipment)', async () => {
+  const bad = () => ({ status: LIVE.loginBadCredentials.status, body: LIVE.loginBadCredentials.body });
+  const { ctx } = fakeCtx({ routes: { 'POST /login': bad } });
+  await assert.rejects(fan.testConnection(ctx), (e) => e.code === 'AUTH_FAILED' && !e.retryable);
+  const { ctx: ctx2 } = fakeCtx({ routes: { ...baseRoutes(), 'POST /login': bad } });
+  await assert.rejects(fan.createShipment(ctx2, shipment()), (e) => e.code === 'AUTH_FAILED');
+});
+
+test('live: 401 on an authenticated route with a cached token → re-login once, then AUTH_FAILED', async () => {
+  let logins = 0;
+  const { ctx } = fakeCtx({
+    routes: {
+      'POST /login': () => (++logins === 1 ? okLogin() : { status: 401, body: LIVE.loginBadCredentials.body }),
+      'GET /reports/branches': () => ({ status: 401, body: LIVE.authenticatedRouteBadToken.body }),
+    },
+  });
+  await assert.rejects(fan.listPickupPoints(ctx), (e) => e.code === 'AUTH_FAILED');
+  assert.equal(logins, 2);
+});
+
+test('live: Laravel 422 {"status":"fail","data":{"errors":{...}}} is mapped by field', async () => {
+  const body = { status: 'fail', message: 'The given data was invalid.', data: { errors: { 'shipments.0.recipient.address.locality': ['The selected locality is invalid.'] } } };
+  const { ctx } = fakeCtx({ routes: baseRoutes({ 'POST /intern-awb': () => ({ status: 422, body }) }) });
+  await assert.rejects(fan.createShipment(ctx, shipment()), (e) => e.code === 'ADDRESS_CITY_NOT_FOUND' && e.field === 'shippingAddress.city');
+  // Unknown field: generic, but FAN's own words reach the merchant.
+  const { ctx: ctx2 } = fakeCtx({ routes: baseRoutes({ 'POST /intern-awb': () => ({ status: 422, body: LIVE.validationError.body }) }) });
+  await assert.rejects(fan.createShipment(ctx2, shipment()), (e) => e.code === 'COURIER_REJECTED' && /The per page must be a number/.test(e.hint));
+});
+
+test('live: localities are public — fetched without a token; "Name (Commune)" spelling sent as FAN has it', async () => {
+  const { ctx, calls } = fakeCtx({ routes: baseRoutes({ 'GET /reports/localities': liveLocalities }) });
+  const r = { ...shipment().recipient, county: 'Hunedoara', countyCode: 'HD', city: 'Merișor', zip: '' };
+  await fan.createShipment(ctx, shipment({ recipient: r }));
+  assert.equal(calls.find((c) => c.path === '/reports/localities').opts.headers?.Authorization, undefined);
+  assert.equal(lastJson(calls, '/intern-awb').shipments[0].recipient.address.locality, 'Merisor (Bucuresci)');
+
+  await assert.rejects(fan.createShipment(ctx, shipment({ recipient: { ...r, city: 'Alun' } })), (e) => {
+    assert.equal(e.code, 'ADDRESS_CITY_NOT_FOUND');
+    assert.equal(e.hint.split('?')[0], 'Ai vrut: Alun (Bosorod), Alun (Bunila)');
+    return true;
+  });
+  await fan.createShipment(ctx, shipment({ recipient: { ...r, city: 'Alun, com. Bunila' } }));
+  assert.equal(lastJson(calls, '/intern-awb').shipments[0].recipient.address.locality, 'Alun (Bunila)');
+  // "Voluntari" typed with county București: FAN's Voluntari is in Ilfov, never "Bucuresti".
+  await fan.createShipment(ctx, shipment({ recipient: { ...r, county: 'București', countyCode: 'B', city: 'Voluntari' } }));
+  assert.deepEqual(lastJson(calls, '/intern-awb').shipments[0].recipient.address, { county: 'Ilfov', locality: 'Voluntari', street: r.street, streetNo: '', zipCode: '' });
+});
+
+test('COD: only RON (FAN has no currency field), rounded to bani', async () => {
+  const { ctx, calls } = fakeCtx({ routes: baseRoutes() });
+  await assert.rejects(fan.createShipment(ctx, shipment({ cod: 50, currency: 'EUR' })), (e) => e.code === 'COD_CURRENCY_UNSUPPORTED');
+  assert.equal(calls.filter((c) => c.path === '/intern-awb').length, 0);
+  await fan.createShipment(ctx, shipment({ cod: 149.89999999999 }));
+  assert.equal(lastJson(calls, '/intern-awb').shipments[0].info.cod, 149.9);
+});
+
+test('token cache is per account', async () => {
+  const { ctx, calls } = fakeCtx({ routes: { ...baseRoutes(), 'POST /login': ({ opts }) => ({ body: { status: 'success', data: { token: `T-${opts.body.get('username')}` } } }) } });
+  await fan.createShipment(ctx, shipment());
+  await fan.createShipment({ ...ctx, credentials: { username: 'other', password: 'x' } }, shipment());
+  const awbs = calls.filter((c) => c.path === '/intern-awb').map((c) => c.opts.headers.Authorization);
+  assert.deepEqual(awbs, ['Bearer T-shop', 'Bearer T-other']);
+  assert.notEqual(tokenKey(ctx), tokenKey({ credentials: { username: 'shop', password: 'changed' } }));
 });

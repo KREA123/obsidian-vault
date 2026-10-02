@@ -178,7 +178,8 @@ function throwGlsErrors(list, raw, ctx) {
   if (isAuthErrorInfo(first)) {
     const e = glsAuthError(first, raw);
     // Every further call with the same password counts as another failed login → lockout. Stop here.
-    if (ctx) cacheSet(ctx, authFailKey(ctx), { message: e.message, hint: e.hint, details: first }, AUTH_FAIL_TTL);
+    // (Only login failures: 15/27 are "not authorized for this parcel / client", not a bad password.)
+    if (ctx && [-1, 14].includes(code)) cacheSet(ctx, authFailKey(ctx), { message: e.message, hint: e.hint, details: first }, AUTH_FAIL_TTL);
     throw e;
   }
   if (code === 1000 || code === 1001) {
@@ -219,9 +220,10 @@ function toBuffer(labels) {
 
 // ---------------------------------------------------------------- nomenclator (ZIP ↔ locality)
 
-// MasterDataService/GetLocations (added to the doc 2026-03): GZIP-compressed JSON list of
-// { Name, ZipCode, ... } per country. VERIFY: availability for RO accounts. When the call fails we
-// simply skip the local check and let PrintLabels validate.
+// MasterDataService/GetLocations (added to the doc 2026-03, present in the live WSDL): GZIP-compressed JSON
+// list of { Name, ZipCode, ... } per country, returned as Data (byte array). Live check with invalid
+// credentials: production drops the connection, test answers 502 — VERIFY with a real account. When the
+// call fails we simply skip the local check (remembered for 6 h) and let PrintLabels validate.
 const LOCATIONS_OFF_KEY = 'gls:locations:RO:unavailable';
 
 async function loadLocations(ctx) {
@@ -580,7 +582,8 @@ export default {
         }
       } catch (err) {
         if (err?.code === 'AUTH_FAILED') throw err;
-        // Batch method is new (2026-03); fall back to one call per parcel. VERIFY: availability on RO.
+        // Batch method is new (2026-03; in the live RO WSDL); fall back to one call per parcel.
+        // VERIFY: its answer for real parcels / unknown parcel numbers with a real account.
         ctx.log?.('gls: GetParcelListStatuses failed, falling back to GetParcelStatuses', { err: err?.message });
         parcels = [];
         for (const awb of group) {

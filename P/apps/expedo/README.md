@@ -21,7 +21,7 @@ Expedo preia comenzile din Shopify și face restul: verifică adresa, generează
 - **Curieri:** Cargus, Sameday (inclusiv easybox), FAN Courier (inclusiv FANbox), GLS, DPD.
 - **Facturare:** SmartBill, FGO, Oblio.
 
-Integrările sunt scrise după documentația oficială, dar **nu au fost încă testate pe conturi reale** (n-avem datele de conectare aici). Locurile nesigure sunt marcate în cod cu `// VERIFY:`. Primul pas la fiecare: „Testează conexiunea” din Setări, apoi o comandă în modul de probă, apoi una reală.
+Integrările sunt scrise după documentația oficială și verificate pe serverele reale cu date de conectare greșite intenționat (adrese, autentificare, erori). **Răspunsurile reușite (AWB creat, factură emisă) nu au fost încă văzute pe un cont real** (n-avem datele de conectare aici). Locurile nesigure sunt marcate în cod cu `// VERIFY:`. Primul pas la fiecare: „Testează conexiunea” din Setări, apoi o comandă în modul de probă, apoi una reală.
 
 ## Pornire rapidă (demo, fără Shopify)
 
@@ -55,3 +55,11 @@ npm test
 - `src/shopify/` — OAuth, token exchange pentru aplicația din admin, webhook-uri, GraphQL Admin API (2026-07).
 - `src/worker.js` — sarcini în fundal (procesare automată, urmărire colete la 30 min, resincronizare la 15 min), salvate în baza de date, deci nu se pierd la repornire.
 - `public/` — interfața (HTML + JS simplu). Merge în adminul Shopify (App Bridge) și separat, cu parolă (`ADMIN_PASSWORD`).
+
+## Test pe un magazin de dezvoltare
+
+```bash
+SHOPIFY_API_KEY=... SHOPIFY_API_SECRET=... node scripts/e2e-devstore.mjs <magazin>.myshopify.com
+```
+
+Aplicația trebuie creată în Dev Dashboard de aceeași organizație ca magazinul, instalată pe el și cu acces la datele clienților (Partners → API access requests). Scriptul creează 3 comenzi de test și verifică tot fluxul în Shopify, fără e-mailuri către clienți. Magazinele proprii se pot lega și permanent prin `SHOPIFY_OWN_STORES`.

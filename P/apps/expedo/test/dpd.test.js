@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import dpd, { mapDpdOperation, parseCsv, compactSites, buildShipmentRequest, parseDpdDate, parcelsKey } from '../src/couriers/dpd.js';
 
@@ -249,4 +250,44 @@ test('DPD operation table and helpers', () => {
   assert.equal(parseDpdDate('2026-01-10T10:00:00+0200'), '2026-01-10T08:00:00.000Z');
   assert.deepEqual(parseCsv('a,"b, c","d ""q"""\n1,2,3\r\n'), [['a', 'b, c', 'd "q"'], ['1', '2', '3']]);
   assert.deepEqual(compactSites('1,642,,s.,v.,X,X,M,M,R,R,123')[0], [1, 'X', 'M', 'R', '123', 's.']);
+});
+
+// ---- live-check regressions (fixtures from the real API, invalid credentials) ----------------
+
+const LIVE = JSON.parse(readFileSync(new URL('./fixtures/couriers/dpd.json', import.meta.url), 'utf8'));
+
+test('live: HTTP 200 {"error":{code:1,"Nu s-a putut găsi utilizatorul..."}} → AUTH_FAILED (RO, EN, no user)', async () => {
+  for (const name of ['authErrorRo', 'authErrorEn', 'wrongUsernameFormat']) {
+    const { ctx } = fakeCtx({ routes: { '/client/contract': () => ({ body: LIVE[name].body }) } });
+    await assert.rejects(dpd.testConnection(ctx), (e) => e.code === 'AUTH_FAILED' && !e.retryable && e.provider === 'dpd', name);
+  }
+  const { ctx } = fakeCtx({ routes: { '/location/office': () => ({ body: LIVE.authErrorList.body }) } });
+  await assert.rejects(dpd.listLockers(ctx, { city: 'Cluj-Napoca' }), (e) => e.code === 'AUTH_FAILED');
+});
+
+test('live: site CSV answered with the JSON auth error → AUTH_FAILED, not "nomenclator unavailable"', async () => {
+  const { ctx, calls, store } = fakeCtx({ routes: { '/location/site/csv/:id': () => ({ body: JSON.stringify(LIVE.siteCsvAuthError.body) }), '/shipment': shipmentOk } });
+  await assert.rejects(dpd.createShipment(ctx, shipment()), (e) => e.code === 'AUTH_FAILED');
+  assert.equal(calls.filter((c) => c.path === '/shipment').length, 0);
+  assert.equal([...store.keys()].some((k) => k.includes('unavailable')), false);
+});
+
+test('a recipient error mentioning a name is not mistaken for an auth error', async () => {
+  const body = { error: { code: 100, message: 'Numele utilizatorului destinatar este invalid', component: '$.recipient.clientName', id: 'x' } };
+  const { ctx } = fakeCtx({ routes: { '/location/site/csv/:id': sitesRoute, '/shipment': () => ({ body }) } });
+  await assert.rejects(dpd.createShipment(ctx, shipment()), (e) => e.code === 'ADDRESS_NAME_INVALID');
+});
+
+test('no shipment id and no error → not retried blindly (duplicate risk)', async () => {
+  const { ctx } = fakeCtx({ routes: { '/location/site/csv/:id': sitesRoute, '/shipment': () => ({ body: {} }) } });
+  await assert.rejects(dpd.createShipment(ctx, shipment()), (e) => e.code === 'COURIER_REJECTED' && e.retryable === false);
+});
+
+test('parcel map per account; COD and declared value rounded; tracking URL is the redirect target', () => {
+  const a = { credentials: { userName: 'a', password: 'p' } };
+  assert.notEqual(parcelsKey(a, '1'), parcelsKey({ credentials: { userName: 'b', password: 'p' } }, '1'));
+  const req = buildShipmentRequest(shipment({ cod: 149.89999999, declaredValue: 10.005 }), {}, { siteId: 1 });
+  assert.equal(req.service.additionalServices.cod.amount, 149.9);
+  assert.equal(req.service.additionalServices.declaredValue.amount, 10.01);
+  assert.equal(dpd.trackingUrl('80012345678'), 'https://services.dpd.ro/tracking/?shipmentNumber=80012345678&language=ro');
 });

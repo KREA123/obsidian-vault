@@ -23,26 +23,23 @@ Ce face, pentru fiecare comandă:
 
 ## 2. Stadiu
 
-**Gata (verificat în modul demo, 214 teste automate trec):**
+**Gata și verificat (02.10.2026, 341 de teste automate trec):**
 - Fluxul complet: comenzi din Shopify, verificare adresă, AWB, factură, expediere în Shopify, urmărire, ramburs încasat.
-- **Modul de probă:** rulează pe comenzi reale cu curier și facturare de test. Nu se emite nimic real și Shopify nu se atinge.
-- Reguli de alegere a curierului (ex. easybox → Sameday).
-- Procesare în masă, etichete într-un singur PDF, listă de picking, export ramburs (CSV).
-- Reîncercare automată la erori temporare. Nu dă niciodată AWB sau factură dublă.
-- Integrări scrise:
-  - curieri: Cargus, Sameday, FAN Courier, GLS, DPD;
-  - facturare: SmartBill, FGO, Oblio.
+- **Testat pe magazinul de test dexters-laboratory** (aplicația „Expedo test” din Dev Dashboard): citirea comenzilor, adresa, ramburs, TVA (inclusiv magazine cu prețuri fără TVA), firmă cu CUI, marcare expediată cu AWB, etichete, marcare plătită, anulare expediere, fără dubluri. Comenzile de test au eticheta „expedo-e2e”.
+- **Serverele reale ale curierilor și facturării** verificate cu date de conectare greșite intenționat: adresele, autentificarea și erorile lor reale sunt înțelese corect. Peste 30 de reparații pe baza răspunsurilor reale (ex. GLS blochează contul după 5 parole greșite → Expedo se oprește după prima).
+- **FGO:** mesajele lor de eroare nu pomenesc „hash”; reîncercarea fără diacritice e reparată. Listele de județe și localități FGO se potrivesc.
+- **Revizuire independentă a codului:** peste 40 de bug-uri reparate (mod de probă vs live, ramburs pe comenzi deja plătite, dubluri la întreruperi, securitate).
+- Mod de probă, reguli, procesare în masă, etichete într-un PDF, listă de picking, export ramburs.
 
-**Netestat:**
-- Integrările **nu au fost încercate pe conturi reale**, pentru că nu avem datele de conectare.
-- Locurile nesigure sunt marcate în cod cu `VERIFY`.
-- FGO: documentația lor actuală cere JSON, nu formular. Ăsta e un motiv probabil (neconfirmat) pentru eroarea „hash” de la MI-DA.
+**Ce poate confirma doar un cont real** (vezi [[Expedo — cereri conturi de test]]):
+- Răspunsurile reușite ale fiecărui curier (AWB creat, etichetă, urmărire) și ale programelor de facturare (factură emisă).
+- Detalii marcate `VERIFY` în cod: coduri de status la Cargus/Sameday/GLS, câteva câmpuri FGO/SmartBill/Oblio.
 
 **Lipsește:**
-- Server cu disc persistent (Render Starter + disc).
-- Aplicația creată în Shopify Dev Dashboard și accesul la datele clienților (nume, adresă, telefon).
-- Test pe MundiShop: întâi în modul de probă, apoi live, cu Cargus + SmartBill.
-- Validare: ≥5 comercianți care ar plăti, dacă vrem s-o vindem în Shopify App Store (vezi [[Aplicații#Cum alegem o aplicație]]).
+- Conturi de test la curieri și facturare (e-mailurile sunt gata).
+- Server cu disc persistent (Render Starter + disc) și aplicația publică în Dev Dashboard.
+- Pentru App Store: politică de confidențialitate, termeni, ștergerea datelor vechi, criptarea comenzilor salvate (răspunsurile „No” din formularul Shopify de protecția datelor).
+- Validare: ≥5 comercianți care ar plăti (vezi [[Aplicații#Cum alegem o aplicație]]).
 
 ## 3. Tehnic
 

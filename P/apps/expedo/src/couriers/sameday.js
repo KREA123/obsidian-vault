@@ -30,7 +30,7 @@ export const PROD_URL = 'https://api.sameday.ro';
 export const SANDBOX_URL = 'https://sameday-api.demo.zitec.com';
 const DAY = 24 * 60 * 60;
 const NOMENCLATOR_TTL = 7 * DAY;
-const PAGE_SIZE = 500; // VERIFY: max countPerPage accepted by the API (SDK default is 50)
+const PAGE_SIZE = 500; // the official SDK itself requests 500/page (GetStatusSync); VERIFY on geolocation/lockers
 
 // Service codes are stable; numeric ids differ per account, so we resolve ids via /api/client/services.
 export const SERVICE_CODES = {
@@ -386,7 +386,9 @@ export function buildAwbForm(ctx, shipment, { pickupPointId, contactPersonId, se
   const r = shipment.recipient;
   const n = Math.max(1, Math.round(Number(shipment.parcels) || 1));
   const total = Math.max(0.1, Number(shipment.weightKg) || 1);
-  const per = Math.round((total / n) * 100) / 100;
+  // Per-parcel weights that add up exactly to the total (Sameday's SDK sends packageWeight = Σ parcels).
+  const per = Math.floor((total / n) * 100) / 100;
+  const first = Math.round((total - per * (n - 1)) * 100) / 100;
   const dims = shipment.dimensionsCm || {};
   const openPackage = Boolean(shipment.openPackage ?? ctx.settings?.openPackage ?? false) && !shipment.lockerId;
   const company = (r.company || '').trim();
@@ -425,7 +427,7 @@ export function buildAwbForm(ctx, shipment, { pickupPointId, contactPersonId, se
     thirdPartyPickup: 0,
     serviceTaxes: openPackage ? ['OPCG'] : undefined, // codes, as the official plugin sends them
     awbRecipient,
-    parcels: Array.from({ length: n }, () => ({ weight: per, width: dims.width, length: dims.length, height: dims.height })),
+    parcels: Array.from({ length: n }, (_, i) => ({ weight: i === 0 ? first : per, width: dims.width, length: dims.length, height: dims.height })),
     observation: [shipment.contents, shipment.notes].filter(Boolean).join(' | ').slice(0, 250) || undefined,
     clientInternalReference: shipment.reference || undefined,
     lockerLastMile: shipment.lockerId ? Number(shipment.lockerId) || shipment.lockerId : undefined,
@@ -457,7 +459,8 @@ async function mapLimit(items, limit, fn) {
 const adapter = {
   id: PROVIDER,
   name: NAME,
-  trackingUrl: (awb) => `https://sameday.ro/#awb=${encodeURIComponent(awb)}`, // VERIFY: public tracking URL format
+  // VERIFY: sameday.ro answers non-browser clients with a Cloudflare challenge (403), so the page could not be checked.
+  trackingUrl: (awb) => `https://sameday.ro/#awb=${encodeURIComponent(awb)}`,
 
   credentialFields: [
     { key: 'username', label: 'Utilizator API Sameday', type: 'text', required: true,

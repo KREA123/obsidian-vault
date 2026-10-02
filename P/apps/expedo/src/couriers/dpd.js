@@ -174,7 +174,8 @@ export function compactSites(csvText) {
     .map((r) => [Number(r[iId]), r[iName], r[iMun] || '', r[iReg] || '', r[iPost] || '', r[iType] || '']);
 }
 
-const SITES_OFF_KEY = 'dpd:sites:642:unavailable';
+// Whether the CSV export is allowed depends on the account, so the "unavailable" flag is per account.
+const sitesOffKey = (ctx) => `dpd:sites:642:unavailable:${accountKey(ctx.credentials?.userName, ctx.credentials?.password)}`;
 
 async function loadSites(ctx) {
   return cached(ctx, 'dpd:sites:642', NOMENCLATOR_TTL, async () => {
@@ -204,12 +205,12 @@ async function findSites(ctx, recipient) {
 
 export async function resolveDpdSite(ctx, recipient) {
   let sites;
-  if (!(await cacheGet(ctx, SITES_OFF_KEY))) {
+  if (!(await cacheGet(ctx, sitesOffKey(ctx)))) {
     try {
       sites = await loadSites(ctx);
     } catch (err) {
       if (err?.code === 'AUTH_FAILED') throw err;
-      await cacheSet(ctx, SITES_OFF_KEY, true, 6 * 60 * 60); // do not retry the export on every order
+      await cacheSet(ctx, sitesOffKey(ctx), true, 6 * 60 * 60); // do not retry the export on every order
       ctx.log?.('dpd: site CSV unavailable, using findSite', { err: err?.message });
     }
   }
@@ -392,7 +393,7 @@ export default {
   async track(ctx, awbs) {
     if (!awbs?.length) return [];
     const out = [];
-    for (const group of chunk(awbs, 10)) { // API limit: 10 parcels per request
+    for (const group of chunk([...new Set(awbs.map(String))], 10)) { // API limit (docs): up to 10 parcels per request
       const body = await call(ctx, '/track', { parcels: group.map((id) => ({ id: String(id) })), lastOperationOnly: false });
       for (const p of body?.parcels || []) {
         if (!p?.parcelId || p.error) continue;

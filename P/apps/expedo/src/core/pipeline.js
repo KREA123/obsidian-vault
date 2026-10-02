@@ -340,7 +340,8 @@ export function invoiceIdempotencyKey(store, orderName, n = 0) {
  * the answer was lost. Retrying automatically could make a second one, so it becomes a manual check.
  */
 function ambiguousTimeout(e, what, where) {
-  if (e.code !== 'PROVIDER_TIMEOUT') return e;
+  // A dropped connection can also happen after the provider received the request.
+  if (e.code !== 'PROVIDER_TIMEOUT' && e.code !== 'PROVIDER_UNREACHABLE') return e;
   return new ProcessingError({
     ...e.toJSON(),
     retryable: false,

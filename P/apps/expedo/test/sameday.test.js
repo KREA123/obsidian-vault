@@ -1,5 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import { TrackingStatus } from '../src/couriers/contract.js';
 import sameday, { mapSamedayStatus, mapAwbError, toForm, tokenTtl, tokenKey, PROD_URL, SANDBOX_URL } from '../src/couriers/sameday.js';
@@ -443,4 +444,72 @@ describe('sameday label / cancel / track', () => {
     assert.deepEqual(await sameday.listServices(ctx), [{ id: '7', name: '24H (24)', code: '24' }, { id: '15', name: 'Locker NextDay (LN)', code: 'LN' }]);
     assert.deepEqual(await sameday.listPickupPoints(ctx), [{ id: '4455', name: 'Depozit MundiShop', address: 'Str. Fabricii 10, Chiajna, Ilfov', default: true }]);
   });
+});
+
+// ---- live-check regressions (fixtures from the real API, invalid credentials) ----------------
+
+const LIVE = JSON.parse(readFileSync(new URL('./fixtures/couriers/sameday.json', import.meta.url), 'utf8'));
+
+describe('sameday: live error shapes and hardening', () => {
+  test('real 403 {"error":{"code":403,"message":"Invalid credentials."}} on authenticate → AUTH_FAILED (prod and demo)', async () => {
+    for (const settings of [{}, { sandbox: true }]) {
+      const sample = LIVE.authenticateBadCredentials;
+      const { ctx } = makeCtx(baseRoutes([{ method: 'POST', url: '/api/authenticate', reply: { status: sample.status, body: sample.body } }]), { settings });
+      await assert.rejects(sameday.testConnection(ctx), (e) => e.code === 'AUTH_FAILED' && !e.retryable && /Sameday/.test(e.message));
+    }
+  });
+
+  test('real 401 on an API call with a stale token → one re-login; still 401 → AUTH_FAILED', async () => {
+    const { ctx, calls } = makeCtx(baseRoutes([{ url: '/api/client/pickup-points', reply: { status: 401, body: LIVE.apiBadToken.body } }]));
+    await assert.rejects(sameday.listPickupPoints(ctx), (e) => e.code === 'AUTH_FAILED');
+    assert.equal(calls.filter((c) => c.url.endsWith('/api/authenticate')).length, 2);
+  });
+
+  test('Cloudflare HTML 403 in front of the API is a transient outage, not bad credentials', async () => {
+    const html = LIVE.cloudflareChallenge.body;
+    const a = makeCtx(baseRoutes([{ method: 'POST', url: '/api/authenticate', reply: { status: 403, body: html } }]));
+    await assert.rejects(sameday.testConnection(a.ctx), (e) => e.code === 'PROVIDER_DOWN' && e.retryable === true);
+    const b = makeCtx(baseRoutes([{ url: '/api/client/pickup-points', reply: { status: 403, body: html } }]));
+    await assert.rejects(sameday.listPickupPoints(b.ctx), (e) => e.code === 'PROVIDER_DOWN' && e.retryable === true);
+  });
+
+  test('real 404 for an unknown AWB on DELETE → treated as already cancelled', async () => {
+    const { ctx } = makeCtx(baseRoutes([{ method: 'DELETE', url: '/api/awb/1SDY1', reply: { status: 404, body: LIVE.deleteUnknownAwb.body } }]));
+    await sameday.cancelShipment(ctx, '1SDY1');
+  });
+
+  test('token, services and pickup points are cached per account (two accounts in one store)', async () => {
+    const { ctx, calls } = makeCtx(baseRoutes([
+      { method: 'POST', url: '/api/authenticate', reply: ({ opts }) => ({ body: { token: `tok-${opts.headers['X-AUTH-USERNAME']}`, expire_at: inTwoDays() } }) },
+    ]));
+    await sameday.listPickupPoints(ctx);
+    const other = { ...ctx, credentials: { username: 'second', password: 'x' } };
+    await sameday.listPickupPoints(other);
+    const pp = calls.filter((c) => c.url.includes('/api/client/pickup-points'));
+    assert.equal(pp.length, 2, 'second account must not reuse the first account pickup points');
+    assert.equal(pp[0].headers['X-AUTH-TOKEN'], 'tok-mundishop');
+    assert.equal(pp[1].headers['X-AUTH-TOKEN'], 'tok-second');
+    assert.notEqual(tokenKey(ctx), tokenKey({ ...ctx, credentials: { username: 'mundishop', password: 'changed' } }));
+    assert.notEqual(tokenKey(ctx), tokenKey({ ...ctx, settings: { sandbox: true } }));
+  });
+
+  test('COD and insured value rounded to bani; statusDate with +0200 parsed', async () => {
+    const { ctx, calls } = makeCtx(baseRoutes());
+    await sameday.createShipment(ctx, shipment({ cod: 149.89999999999, declaredValue: 10.005 }));
+    const f = awbForm(calls);
+    assert.equal(f.get('cashOnDelivery'), '149.9');
+    assert.equal(f.get('insuredValue'), '10.01');
+    const t = makeCtx(baseRoutes([{ url: '/api/client/awb/A1/status', reply: { body: { expeditionSummary: { delivered: true }, expeditionStatus: { statusId: 9, statusLabel: 'Livrat', statusDate: '2019-02-26T12:37:28+0200' } } } }]));
+    const [r] = await sameday.track(t.ctx, ['A1']);
+    assert.equal(r.at, '2019-02-26T10:37:28.000Z');
+  });
+});
+
+test('sameday: per-parcel weights add up exactly to packageWeight', async () => {
+  const { ctx, calls } = makeCtx(baseRoutes());
+  await sameday.createShipment(ctx, shipment({ weightKg: 1, parcels: 3 }));
+  const f = awbForm(calls);
+  const ws = [0, 1, 2].map((i) => Number(f.get(`parcels[${i}][weight]`)));
+  assert.deepEqual(ws, [0.34, 0.33, 0.33]);
+  assert.equal(Math.round(ws.reduce((a, b) => a + b, 0) * 100) / 100, Number(f.get('packageWeight')));
 });

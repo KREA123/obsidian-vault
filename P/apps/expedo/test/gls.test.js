@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { ProcessingError, authError } from '../src/core/errors.js';
@@ -303,4 +304,84 @@ test('nomenclator outage is remembered (no repeated GetLocations waits)', async 
   await gls.createShipment(ctx, shipment());
   assert.equal(calls.filter((c) => c.method === 'GetLocations').length, 1);
   assert.equal(calls.filter((c) => c.method === 'PrintLabels').length, 2);
+});
+
+// ---- live-check regressions (fixtures from the real API, invalid credentials) ----------------
+
+const LIVE = JSON.parse(readFileSync(new URL('./fixtures/couriers/gls.json', import.meta.url), 'utf8'));
+const live = (name) => () => ({ status: LIVE[name].status, body: LIVE[name].body });
+
+test('live: HTTP 200 + ErrorCode -1 "Unauthorized." → AUTH_FAILED on every method', async () => {
+  const { ctx } = fakeCtx({ routes: { GetParcelList: live('getParcelListUnauthorized') } });
+  await assert.rejects(gls.testConnection(ctx), (e) => e.code === 'AUTH_FAILED' && !e.retryable);
+
+  const { ctx: c2, store } = fakeCtx({ routes: { GetPrintedLabels: live('getPrintedLabelsUnauthorized'), DeleteLabels: live('deleteLabelsUnauthorized') } });
+  store.set(parcelKey(c2, '500'), { parcelIds: [9000] });
+  await assert.rejects(gls.getLabel(c2, '500', {}), (e) => e.code === 'AUTH_FAILED');
+
+  const { ctx: c3, store: s3 } = fakeCtx({ routes: { DeleteLabels: live('deleteLabelsUnauthorized') } });
+  s3.set(parcelKey(c3, '500'), { parcelIds: [9000] });
+  await assert.rejects(gls.cancelShipment(c3, '500'), (e) => e.code === 'AUTH_FAILED');
+
+  const { ctx: c4 } = fakeCtx({ routes: { GetLocations: () => ({ status: 502, body: '<html>502 Bad Gateway</html>' }), PrintLabels: live('printLabelsLocked') } });
+  await assert.rejects(gls.createShipment(c4, shipment()), (e) => {
+    assert.equal(e.code, 'AUTH_FAILED');
+    assert.match(e.message, /blocat temporar.*până la 11:13/);
+    return true;
+  });
+});
+
+test('after one rejected login no further GLS calls are made (protects the account from lockout)', async () => {
+  const { ctx, calls } = fakeCtx({ routes: { GetParcelList: live('getParcelListUnauthorized'), GetParcelListStatuses: live('getParcelListStatusesBadCredentials') } });
+  await assert.rejects(gls.testConnection(ctx), (e) => e.code === 'AUTH_FAILED');
+  await assert.rejects(gls.track(ctx, ['1', '2', '3']), (e) => e.code === 'AUTH_FAILED');
+  await assert.rejects(gls.testConnection(ctx), (e) => e.code === 'AUTH_FAILED');
+  assert.equal(calls.length, 1);
+  // Fixed password → different account key → calls go out again.
+  const fixed = { ...ctx, credentials: { ...ctx.credentials, password: 'Corecta!' }, http: fakeCtx({ routes: { GetParcelList: () => ({ body: { GetParcelListErrors: [], PrintDataInfoList: [] } }) } }).ctx.http };
+  assert.equal((await gls.testConnection(fixed)).ok, true);
+});
+
+test('track with bad credentials: the silent empty batch is double-checked, one probe, then AUTH_FAILED', async () => {
+  const { ctx, calls } = fakeCtx({ routes: { GetParcelListStatuses: live('getParcelListStatusesBadCredentials'), GetParcelStatuses: live('getParcelStatusesUnauthorized') } });
+  await assert.rejects(gls.track(ctx, ['111', '222', '333']), (e) => e.code === 'AUTH_FAILED');
+  assert.deepEqual(calls.map((c) => c.method), ['GetParcelListStatuses', 'GetParcelStatuses']);
+});
+
+test('track: unknown / non-GLS AWBs are omitted, never reported as "created"', async () => {
+  const { ctx, calls } = fakeCtx({
+    routes: {
+      GetParcelListStatuses: () => ({ status: 404, body: 'Endpoint not found' }),
+      GetParcelStatuses: (json) => (json.ParcelNumber === 10
+        ? { body: { ParcelNumber: 10, GetParcelStatusErrors: [], ParcelStatusList: [{ StatusCode: '5', StatusDate: '/Date(1700000000000)/', StatusDescription: 'Livrat' }] } }
+        : { body: { ...LIVE.getParcelStatusesUnauthorized.body, GetParcelStatusErrors: [{ ErrorCode: 2, ErrorDescription: 'Parcel not found.' }] } }),
+    },
+  });
+  const res = await gls.track(ctx, ['10', '99', '1ONB2412', '10']);
+  assert.deepEqual(res.map((r) => [r.awb, r.status]), [['10', 'delivered']]);
+  assert.deepEqual(calls.filter((c) => c.method === 'GetParcelStatuses').map((c) => c.json.ParcelNumber), [10, 99]);
+});
+
+test('track: empty batch for real parcels (batch unusable) → per-parcel fallback', async () => {
+  const { ctx } = fakeCtx({
+    routes: {
+      GetParcelListStatuses: () => ({ body: { GetParcelListStatusesErrors: [], ParcelList: [] } }),
+      GetParcelStatuses: (json) => ({ body: { ParcelNumber: json.ParcelNumber, GetParcelStatusErrors: [], ParcelStatusList: [{ StatusCode: '1', StatusDate: '/Date(1700000000000)/', StatusDescription: 'Predat' }] } }),
+    },
+  });
+  const res = await gls.track(ctx, ['10', '20']);
+  assert.deepEqual(res.map((r) => [r.awb, r.status]), [['10', 'picked_up'], ['20', 'picked_up']]);
+});
+
+test('PrintLabels without a parcel number is not retried blindly (would duplicate the label)', async () => {
+  const { ctx } = fakeCtx({ routes: { GetLocations: locationsBody, PrintLabels: () => ({ body: { Labels: null, PrintLabelsErrorList: [], PrintLabelsInfoList: [] } }) } });
+  await assert.rejects(gls.createShipment(ctx, shipment()), (e) => e.code === 'COURIER_REJECTED' && e.retryable === false);
+});
+
+test('parcel map is per environment and account; COD rounded', async () => {
+  const { ctx } = fakeCtx({ routes: {} });
+  assert.notEqual(parcelKey(ctx, '1'), parcelKey({ ...ctx, settings: { ...ctx.settings, sandbox: true } }, '1'));
+  assert.notEqual(parcelKey(ctx, '1'), parcelKey({ ...ctx, credentials: { username: 'b@x.ro', password: 'p' } }, '1'));
+  const p = buildParcel(shipment({ cod: 199.98999999 }), ctx.settings, { clientNumber: 1, zip: '400114', city: 'Cluj-Napoca' });
+  assert.equal(p.CODAmount, 199.99);
 });
