@@ -1,0 +1,38 @@
+{
+  "_note": "Captured 2026-10-02 against the real endpoints with deliberately invalid credentials (user \"expedo-probe\", password \"invalid\"); nothing was created. Error ids sanitized.",
+  "loginBadSubscriptionKey": {
+    "request": "POST https://urgentcargus.azure-api.net/api/LoginUser",
+    "status": 401,
+    "headers": {
+      "www-authenticate": "AzureApiManagementKey realm=\"https://urgentcargus.azure-api.net/\",name=\"Ocp-Apim-Subscription-Key\",type=\"header\""
+    },
+    "body": {
+      "statusCode": 401,
+      "message": "Access denied due to invalid subscription key. Make sure to provide a valid key for an active subscription."
+    }
+  },
+  "loginMissingSubscriptionKey": {
+    "request": "POST /api/LoginUser (no Ocp-Apim-Subscription-Key)",
+    "status": 401,
+    "body": {
+      "statusCode": 401,
+      "message": "Access denied due to missing subscription key. Make sure to include subscription key when making requests to an API."
+    }
+  },
+  "authenticatedEndpointBadKey": {
+    "request": "GET /api/PickupLocations (bad key, bad bearer)",
+    "status": 401,
+    "body": {
+      "statusCode": 401,
+      "message": "Access denied due to invalid subscription key. Make sure to provide a valid key for an active subscription."
+    }
+  },
+  "unknownOperation": {
+    "request": "GET /api/LoginUser, GET /api/AwbDocuments?barCodes=1 (no type)",
+    "status": 404,
+    "body": {
+      "statusCode": 404,
+      "message": "Resource not found"
+    }
+  }
+}

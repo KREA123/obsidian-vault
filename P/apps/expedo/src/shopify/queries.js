@@ -23,8 +23,8 @@ fragment OrderFields on Order {
   totalOutstandingSet { ...Money }
   shippingAddress { ...Addr }
   billingAddress { ...Addr }
-  shippingLines(first: 5, includeRemovals: false) { nodes { title code source originalPriceSet { ...Money } discountedPriceSet { ...Money } taxLines { rate } } }
-  lineItems(first: 100) { nodes { id name title variantTitle sku quantity currentQuantity requiresShipping isGiftCard originalUnitPriceSet { ...Money } discountAllocations { allocatedAmountSet { ...Money } } taxLines { rate } } }
+  shippingLines(first: 5, includeRemovals: false) { nodes { title code source originalPriceSet { ...Money } discountedPriceSet { ...Money } taxLines { rate priceSet { ...Money } } } }
+  lineItems(first: 100) { nodes { id name title variantTitle sku quantity currentQuantity requiresShipping isGiftCard originalUnitPriceSet { ...Money } discountAllocations { allocatedAmountSet { ...Money } } taxLines { rate priceSet { ...Money } } } }
   fulfillmentOrders(first: 10) { nodes { id status assignedLocation { name } } }
 }`;
 

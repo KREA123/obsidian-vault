@@ -1,0 +1,66 @@
+{
+  "_note": "Captured 2026-10-02 against the real endpoints with deliberately invalid credentials (user \"expedo-probe\", password \"invalid\"); nothing was created. Error ids sanitized.",
+  "authErrorRo": {
+    "request": "POST https://api.dpd.ro/v1/client/contract {userName, password, language:\"RO\"}",
+    "status": 200,
+    "body": {
+      "error": {
+        "context": "",
+        "message": "Nu s-a putut găsi utilizatorul pentru autentificare! (EE20261002000000000SAMPLE)",
+        "id": "EE20261002000000000SAMPLE",
+        "code": 1
+      }
+    }
+  },
+  "authErrorEn": {
+    "request": "POST /v1/client/contract, language \"EN\"",
+    "status": 200,
+    "body": {
+      "error": {
+        "context": "",
+        "message": "Unable to find user to authenticate! (EE20261002000000000SAMPLE)",
+        "id": "EE20261002000000000SAMPLE",
+        "code": 1
+      }
+    }
+  },
+  "authErrorList": {
+    "request": "POST /v1/location/site {countryId:642,name:\"CLUJ\"}",
+    "status": 200,
+    "body": {
+      "error": {
+        "context": "",
+        "message": "Nu s-a putut găsi utilizatorul pentru autentificare! (EE20261002000000000SAMPLE)",
+        "id": "EE20261002000000000SAMPLE",
+        "code": 1
+      },
+      "sites": []
+    }
+  },
+  "wrongUsernameFormat": {
+    "request": "POST /v1/location/country without userName",
+    "status": 200,
+    "body": {
+      "error": {
+        "context": "",
+        "message": "Wrong username format (EE20261002000000000SAMPLE)",
+        "id": "EE20261002000000000SAMPLE",
+        "code": 1
+      },
+      "countries": []
+    }
+  },
+  "siteCsvAuthError": {
+    "request": "POST /v1/location/site/csv/642 (Accept: text/csv) - JSON error, not CSV",
+    "status": 200,
+    "contentType": "application/json;charset=UTF-8",
+    "body": {
+      "error": {
+        "context": "",
+        "message": "Nu s-a putut găsi utilizatorul pentru autentificare! (EE20261002000000000SAMPLE)",
+        "id": "EE20261002000000000SAMPLE",
+        "code": 1
+      }
+    }
+  }
+}

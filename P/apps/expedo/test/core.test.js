@@ -205,3 +205,18 @@ test('mapper: current totals after edits, COD never re-collects paid orders, bar
   const plan = planOrder(manual, withDefaults({ courier: { default: 'cargus' } }), {});
   assert.ok(plan.issues.some((i) => i.code === 'PAYMENT_UNKNOWN'));
 });
+
+test('mapper: stores with prices excluding VAT get gross prices (ramburs and invoice match what the customer pays)', () => {
+  const net = {
+    ...gqlOrder,
+    taxesIncluded: false,
+    totalPriceSet: money(242.0), currentTotalPriceSet: money(242.0), totalOutstandingSet: money(242.0),
+    shippingLines: { nodes: [{ ...gqlOrder.shippingLines.nodes[0], originalPriceSet: money(20), discountedPriceSet: money(20), taxLines: [{ rate: 0.21, priceSet: money(4.2) }] }] },
+    lineItems: { nodes: [{ ...gqlOrder.lineItems.nodes[0], quantity: 2, currentQuantity: 2, originalUnitPriceSet: money(90), discountAllocations: [], taxLines: [{ rate: 0.21, priceSet: money(37.8) }] }] },
+  };
+  const o = mapOrder(net);
+  assert.equal(o.lines[0].unitPrice, 108.9);
+  assert.equal(o.shippingLines[0].price, 24.2);
+  assert.equal(o.codAmount, 242);
+  assert.ok(Math.abs(o.lines[0].unitPrice * 2 + o.shippingLines[0].price - o.total) < 0.01);
+});

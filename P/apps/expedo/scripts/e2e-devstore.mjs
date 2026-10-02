@@ -51,6 +51,7 @@ const fixtures = [
     order: {
       email: `e2e-cod-${runId}@example.com`,
       currency: 'RON',
+      taxesIncluded: true,
       financialStatus: 'PENDING',
       lineItems: [line('Set construcție Castelul Fermecat', 'E2E-1', 249.9, 1)],
       shippingLines: [{ title: 'Livrare prin curier', priceSet: money(25) }],
@@ -72,13 +73,14 @@ const fixtures = [
       transactions: [{ kind: 'SALE', status: 'SUCCESS', gateway: 'manual', amountSet: money(164.8) }],
       tags: ['expedo-e2e'],
     },
-    expect: { paymentMethod: 'card', codAmount: 0, phone: '0745123456', county: 'Cluj' },
+    expect: { paymentMethod: 'card', codAmount: 0, phone: '0745123456', county: 'Cluj', grossMatchesTotal: true },
   },
   {
     label: 'firmă cu CUI în atribute, ramburs',
     order: {
       email: `e2e-b2b-${runId}@example.com`,
       currency: 'RON',
+      taxesIncluded: true,
       financialStatus: 'PENDING',
       lineItems: [line('Joc de societate Aventura', 'E2E-3', 129, 3)],
       shippingLines: [{ title: 'Livrare prin curier', priceSet: money(25) }],
@@ -104,8 +106,13 @@ for (const f of fixtures) {
 // 2. import via Expedo + mapping
 store.settings = { ...store.settings, courier: { default: 'cargus' }, invoicing: { provider: 'smartbill' } };
 db.saveStoreSettings(store.id, store.settings);
-const listed = await shopify.listOrders({ search: 'tag:expedo-e2e', max: 50 });
-check('Interogarea de comenzi (ORDERS_QUERY) merge', listed.length >= created.length, `${listed.length} comenzi cu eticheta expedo-e2e`);
+// Shopify's search index lags a few seconds behind orderCreate.
+let listed = [];
+for (let i = 0; i < 10 && listed.length < created.length; i++) {
+  if (i) await new Promise((r) => setTimeout(r, 3000));
+  listed = (await shopify.listOrders({ search: 'tag:expedo-e2e', max: 50 })).filter((o) => created.some((c) => c.gid === o.shopifyId));
+}
+check('Interogarea de comenzi (ORDERS_QUERY) merge', listed.length === created.length, `${listed.length}/${created.length} comenzi noi găsite după etichetă`);
 
 for (const c of created) {
   const o = await shopify.getOrder(c.gid);
@@ -120,6 +127,10 @@ for (const c of created) {
   check(`${c.name} produse și transport`, o.lines.length === c.order.lineItems.length && o.shippingLines.length === 1, `${o.lines.length} linii, transport ${o.shippingLines[0]?.price}`);
   check(`${c.name} TVA preluat (21%)`, o.lines.every((l) => l.vatRate === 21), o.lines.map((l) => l.vatRate).join(','));
   check(`${c.name} are fulfillment order deschis`, o.fulfillmentOrders.some((f) => f.status === 'OPEN'), o.fulfillmentOrders.map((f) => f.status).join(','));
+  if (c.expect.grossMatchesTotal) {
+    const sum = o.lines.reduce((t, l) => t + l.unitPrice * l.quantity, 0) + o.shippingLines.reduce((t, x) => t + x.price, 0);
+    check(`${c.name} prețuri fără TVA în magazin → sume cu TVA în Expedo`, Math.abs(sum - o.total) < 0.05, `linii+transport ${sum.toFixed(2)} / total Shopify ${o.total}`);
+  }
   if (c.expect.company) check(`${c.name} firmă + CUI detectate`, o.company?.vatCode === c.expect.company, JSON.stringify(o.company));
   c.orderId = row.id;
 }

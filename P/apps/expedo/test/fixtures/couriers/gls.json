@@ -1,0 +1,94 @@
+{
+  "_note": "Captured 2026-10-02 against the real endpoints with deliberately invalid credentials (user \"expedo-probe\", password \"invalid\"); nothing was created. Error ids sanitized.",
+  "getParcelStatusesUnauthorized": {
+    "request": "POST https://api.mygls.ro/ParcelService.svc/json/GetParcelStatuses (also api.test.mygls.ro)",
+    "status": 200,
+    "body": {
+      "ClientReference": null,
+      "DeliveryCountryCode": null,
+      "DeliveryZipCode": null,
+      "GetParcelStatusErrors": [
+        {
+          "ClientReferenceList": [],
+          "ErrorCode": -1,
+          "ErrorDescription": "Unauthorized.",
+          "ParcelIdList": []
+        }
+      ],
+      "POD": null,
+      "ParcelNumber": 0,
+      "ParcelStatusList": [],
+      "Weight": null
+    }
+  },
+  "getParcelListUnauthorized": {
+    "request": "POST .../GetParcelList",
+    "status": 200,
+    "body": {
+      "GetParcelListErrors": [
+        {
+          "ClientReferenceList": [],
+          "ErrorCode": -1,
+          "ErrorDescription": "Unauthorized.",
+          "ParcelIdList": []
+        }
+      ],
+      "PrintDataInfoList": []
+    }
+  },
+  "getPrintedLabelsUnauthorized": {
+    "request": "POST .../GetPrintedLabels",
+    "status": 200,
+    "body": {
+      "GetPrintedLabelsErrorList": [
+        {
+          "ClientReferenceList": [],
+          "ErrorCode": -1,
+          "ErrorDescription": "Unauthorized.",
+          "ParcelIdList": []
+        }
+      ],
+      "Labels": null,
+      "PrintDataInfoList": []
+    }
+  },
+  "deleteLabelsUnauthorized": {
+    "request": "POST .../DeleteLabels",
+    "status": 200,
+    "body": {
+      "DeleteLabelsErrorList": [
+        {
+          "ClientReferenceList": [],
+          "ErrorCode": -1,
+          "ErrorDescription": "Unauthorized.",
+          "ParcelIdList": []
+        }
+      ],
+      "SuccessfullyDeletedList": []
+    }
+  },
+  "printLabelsLocked": {
+    "request": "POST .../PrintLabels (after ~5 failed logins in a row)",
+    "status": 200,
+    "body": {
+      "Labels": null,
+      "PrintLabelsErrorList": [
+        {
+          "ClientReferenceList": [],
+          "ErrorCode": -1,
+          "ErrorDescription": "Too many failed login attempts. Your account has been locked until 11:13. Please try logging in later.",
+          "ParcelIdList": []
+        }
+      ],
+      "PrintLabelsInfoList": []
+    }
+  },
+  "getParcelListStatusesBadCredentials": {
+    "request": "POST .../GetParcelListStatuses (bad credentials: NO error reported)",
+    "status": 200,
+    "body": {
+      "GetParcelListStatusesErrors": [],
+      "ParcelList": []
+    }
+  }
+}

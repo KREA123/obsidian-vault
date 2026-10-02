@@ -43,6 +43,9 @@ export function mapOrder(o) {
   const attributes = o.customAttributes || [];
   const ship = o.shippingAddress || o.billingAddress || {};
   const lineVat = (tl) => (tl?.length ? round2(tl.reduce((s, t) => s + Number(t.rate || 0), 0) * 100) : null);
+  // Stores whose prices exclude VAT: Shopify adds the tax on top. Everything downstream (ramburs,
+  // invoices) works with what the customer pays, so add the line's tax back into the price.
+  const addedTax = (tl) => (o.taxesIncluded === false ? (tl || []).reduce((s, t) => s + money(t.priceSet), 0) : 0);
 
   const lines = (o.lineItems?.nodes || [])
     .filter((li) => (li.currentQuantity ?? li.quantity) > 0)
@@ -59,7 +62,7 @@ export function mapOrder(o) {
         sku: li.sku || '',
         quantity: qty,
         originalUnitPrice: unit,
-        unitPrice: round4((unit * qty - scaledDiscount) / qty),
+        unitPrice: round4((unit * qty - scaledDiscount + addedTax(li.taxLines) * (li.quantity ? qty / li.quantity : 1)) / qty),
         vatRate: lineVat(li.taxLines),
         requiresShipping: li.requiresShipping !== false,
         isGiftCard: !!li.isGiftCard,
@@ -70,7 +73,7 @@ export function mapOrder(o) {
     title: s.title,
     code: s.code || '',
     source: s.source || '',
-    price: money(s.discountedPriceSet ?? s.originalPriceSet),
+    price: round2(money(s.discountedPriceSet ?? s.originalPriceSet) + addedTax(s.taxLines)),
     vatRate: lineVat(s.taxLines),
   }));
 

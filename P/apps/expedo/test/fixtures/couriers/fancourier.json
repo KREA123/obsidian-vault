@@ -1,0 +1,446 @@
+{
+  "_note": "Captured 2026-10-02 against the real endpoints with deliberately invalid credentials (user \"expedo-probe\", password \"invalid\"); nothing was created. Error ids sanitized.",
+  "loginBadCredentials": {
+    "request": "POST https://api.fancourier.ro/login (form username/password)",
+    "status": 401,
+    "body": {
+      "status": "error",
+      "message": "These credentials do not match our records."
+    }
+  },
+  "loginMissingFields": {
+    "request": "POST /login (empty body)",
+    "status": 422,
+    "body": {
+      "status": "fail",
+      "message": "The username field is required.",
+      "data": {
+        "errors": {
+          "username": [
+            "The username field is required."
+          ],
+          "password": [
+            "The password field is required."
+          ]
+        }
+      }
+    }
+  },
+  "authenticatedRouteBadToken": {
+    "request": "GET /reports/branches, Authorization: Bearer invalid",
+    "status": 401,
+    "body": {
+      "message": "These credentials do not match our records."
+    }
+  },
+  "internAwbBadToken": {
+    "request": "POST /intern-awb, no token",
+    "status": 401,
+    "body": {
+      "status": "error",
+      "message": "These credentials do not match our records."
+    }
+  },
+  "validationError": {
+    "request": "GET /reports/streets?perPage=abc (public route, same Laravel validation format)",
+    "status": 422,
+    "body": {
+      "status": "fail",
+      "message": "The per page must be a number.",
+      "data": {
+        "errors": {
+          "perPage": [
+            "The per page must be a number."
+          ]
+        }
+      }
+    }
+  },
+  "localitiesSample": {
+    "request": "GET /reports/localities (public, 13834 rows, no paging) - subset",
+    "status": 200,
+    "body": {
+      "status": "success",
+      "data": [
+        {
+          "id": 25559,
+          "name": "Alun (Bosorod)",
+          "county": "Hunedoara",
+          "agency": "Hateg",
+          "exteriorKm": 27,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 25560,
+          "name": "Alun (Bunila)",
+          "county": "Hunedoara",
+          "agency": "Hunedoara",
+          "exteriorKm": 32,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 48
+        },
+        {
+          "id": 25549,
+          "name": "Merisor (Bucuresci)",
+          "county": "Hunedoara",
+          "agency": "Deva",
+          "exteriorKm": 54,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 48
+        },
+        {
+          "id": 12814,
+          "name": "Rovina (Bucuresci)",
+          "county": "Hunedoara",
+          "agency": "Deva",
+          "exteriorKm": 51,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 48
+        },
+        {
+          "id": 12682,
+          "name": "Bucuresci",
+          "county": "Hunedoara",
+          "agency": "Deva",
+          "exteriorKm": 47,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 48
+        },
+        {
+          "id": 23980,
+          "name": "C.A. Rosetti",
+          "county": "Buzau",
+          "agency": "Buzau",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 15
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 25135,
+          "name": "C.A. Rosetti",
+          "county": "Tulcea",
+          "agency": "Tulcea",
+          "exteriorKm": 100,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 48
+        },
+        {
+          "id": 24015,
+          "name": "Lunca (C.A. Rosetti)",
+          "county": "Buzau",
+          "agency": "Buzau",
+          "exteriorKm": 39,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 48
+        },
+        {
+          "id": 24811,
+          "name": "I. L. Caragiale",
+          "county": "Dambovita",
+          "agency": "Targoviste",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 15
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 11,
+          "name": "Bucuresti",
+          "county": "Bucuresti",
+          "agency": "Bucuresti",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 19
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 271,
+          "name": "Floresti",
+          "county": "Cluj",
+          "agency": "Floresti",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 17
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 14975,
+          "name": "Floresti",
+          "county": "Prahova",
+          "agency": "Ploiesti",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 15
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 19,
+          "name": "Cluj-Napoca",
+          "county": "Cluj",
+          "agency": "Cluj-Napoca",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 17
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 11476,
+          "name": "Voluntari",
+          "county": "Ilfov",
+          "agency": "Bucuresti",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 18
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 11338,
+          "name": "1 Decembrie",
+          "county": "Ilfov",
+          "agency": "Bucuresti",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 18
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 26658,
+          "name": "Popesti-Leordeni",
+          "county": "Ilfov",
+          "agency": "Bucuresti",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 18
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 11358,
+          "name": "Chiajna",
+          "county": "Ilfov",
+          "agency": "Bucuresti",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 18
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 11447,
+          "name": "Rosu",
+          "county": "Ilfov",
+          "agency": "Bucuresti",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 18
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 24,
+          "name": "Deva",
+          "county": "Hunedoara",
+          "agency": "Deva",
+          "exteriorKm": 0,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 17
+            },
+            "weekend": {
+              "first": 9,
+              "second": 14
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 12669,
+          "name": "Bosorod",
+          "county": "Hunedoara",
+          "agency": "Hateg",
+          "exteriorKm": 22,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 24
+        },
+        {
+          "id": 12684,
+          "name": "Bunila",
+          "county": "Hunedoara",
+          "agency": "Hunedoara",
+          "exteriorKm": 31,
+          "pickupHours": {
+            "weekday": {
+              "first": 9,
+              "second": 14
+            },
+            "weekend": {
+              "first": null,
+              "second": null
+            }
+          },
+          "estimatedDeliveryTime": 48
+        }
+      ]
+    }
+  }
+}

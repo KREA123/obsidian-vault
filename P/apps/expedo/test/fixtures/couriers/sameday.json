@@ -1,0 +1,38 @@
+{
+  "_note": "Captured 2026-10-02 against the real endpoints with deliberately invalid credentials (user \"expedo-probe\", password \"invalid\"); nothing was created. Error ids sanitized.",
+  "authenticateBadCredentials": {
+    "request": "POST https://api.sameday.ro/api/authenticate (also sameday-api.demo.zitec.com), X-AUTH-USERNAME/X-AUTH-PASSWORD invalid, body remember_me=1",
+    "status": 403,
+    "body": {
+      "error": {
+        "code": 403,
+        "message": "Invalid credentials."
+      }
+    }
+  },
+  "apiBadToken": {
+    "request": "GET /api/client/pickup-points, X-AUTH-TOKEN invalid",
+    "status": 401,
+    "body": {
+      "error": {
+        "code": 401,
+        "message": "Invalid credentials."
+      }
+    }
+  },
+  "deleteUnknownAwb": {
+    "request": "DELETE https://api.sameday.ro/api/awb/1SDY1",
+    "status": 404,
+    "body": {
+      "error": {
+        "code": 404,
+        "message": "Couldn't determine an AWB/parcel with `1SDY1` number."
+      }
+    }
+  },
+  "cloudflareChallenge": {
+    "request": "GET https://sameday.ro/ (same CDN as api.sameday.ro: server cloudflare, cf-mitigated: challenge)",
+    "status": 403,
+    "body": "<!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></head><body></body></html>"
+  }
+}

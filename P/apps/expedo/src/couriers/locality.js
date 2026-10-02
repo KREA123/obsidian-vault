@@ -236,6 +236,20 @@ export function matchLocality(q, candidates, opts = {}) {
     if (n.length >= 4 && typed.includes(` ${n} `)) put(byName, compactKey(n), c);
   }
   if (byName.size === 1) return resolveSameName([...byName.values()][0], q, 'contains', opts);
+  if (byName.size > 1) {
+    // "Sat Alun Comuna Bunila": the village whose commune was typed too ("Alun (Bunila)", parent Bunila)...
+    const strong = [...new Set([...byName.values()].flat())].filter((c) => disambiguateByParent([c], q.city));
+    if (strong.length === 1) return { match: strong[0], via: 'contains+parent' };
+    // ...or, without commune data, the name that is not the one after "com." (the village, not its commune).
+    const commune = typed.match(/ (?:com|comuna) (.*)$/)?.[1];
+    if (commune) {
+      const rest = [...byName.entries()].filter(([, list]) => {
+        const n = normalizeText(String(list[0].name).replace(/\(.*?\)/g, ' '));
+        return !` ${commune}`.includes(` ${n} `);
+      });
+      if (rest.length === 1) return resolveSameName(rest[0][1], q, 'contains', opts);
+    }
+  }
 
   // 4. One-letter typo on a reasonably long name ("Bucurest", "Constana") — opt-in.
   const qk = compactKey(base);

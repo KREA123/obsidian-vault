@@ -1,5 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import { TrackingStatus } from '../src/couriers/contract.js';
 import cargus, { mapCargusEvent, mapAwbError, pickService, tokenCacheKey } from '../src/couriers/cargus.js';
@@ -464,5 +465,65 @@ describe('cargus label / cancel / track', () => {
     assert.equal(l[0].address, 'Fabricii 1, Cluj-Napoca, Cluj');
     await cargus.listLockers(ctx, { county: 'Ilfov' });
     assert.equal(calls.filter((c) => c.url.endsWith('/PudoPoints')).length, 1);
+  });
+});
+
+// ---- live-check regressions (fixtures from the real API, invalid credentials) ----------------
+
+const LIVE = JSON.parse(readFileSync(new URL('./fixtures/couriers/cargus.json', import.meta.url), 'utf8'));
+
+describe('cargus: live error shapes and hardening', () => {
+  test('real APIM 401 for a bad / missing subscription key → AUTH_FAILED about the Primary key, not retried', async () => {
+    for (const sample of [LIVE.loginBadSubscriptionKey, LIVE.loginMissingSubscriptionKey]) {
+      const { ctx, calls } = makeCtx(baseRoutes([{ method: 'POST', url: '/LoginUser', reply: { status: sample.status, body: sample.body } }]));
+      await assert.rejects(cargus.testConnection(ctx), (e) => {
+        assert.equal(e.code, 'AUTH_FAILED');
+        assert.equal(e.retryable, false);
+        assert.match(e.message, /Primary key/);
+        return true;
+      });
+      assert.equal(calls.length, 1);
+    }
+    // Same answer on an authenticated call with a cached token: no re-login loop.
+    const { ctx, calls } = makeCtx(baseRoutes([{ url: '/PickupLocations', reply: { status: 401, body: LIVE.authenticatedEndpointBadKey.body } }]));
+    ctx.cache.set(tokenCacheKey(ctx), 'cached-token-xxxxxxxx', 3600);
+    await assert.rejects(cargus.listPickupPoints(ctx), (e) => e.code === 'AUTH_FAILED' && /Primary key/.test(e.message));
+    assert.equal(calls.filter((c) => c.url.endsWith('/LoginUser')).length, 0);
+  });
+
+  test('token cache key differs per account (key, user, password) and never contains the secrets', () => {
+    const k = (credentials) => tokenCacheKey({ credentials });
+    const base = { subscriptionKey: 'sub-1', username: 'shop', password: 'p1' };
+    assert.notEqual(k(base), k({ ...base, subscriptionKey: 'sub-2' }));
+    assert.notEqual(k(base), k({ ...base, username: 'shop2' }));
+    assert.notEqual(k(base), k({ ...base, password: 'p2' }));
+    assert.ok(!/sub-1|p1|shop/.test(k(base)));
+  });
+
+  test('two accounts in one store do not share a token', async () => {
+    const routes = baseRoutes([{ method: 'POST', url: '/LoginUser', reply: ({ opts }) => ({ body: `tok-for-${opts.json.UserName}-xxxxxxxx` }) }]);
+    const { ctx, calls } = makeCtx(routes);
+    await cargus.listPickupPoints(ctx);
+    const other = { ...ctx, credentials: { subscriptionKey: 'sub-key-999', username: 'second-account', password: 'x' } };
+    await cargus.listPickupPoints(other);
+    const pl = calls.filter((c) => c.url.endsWith('/PickupLocations'));
+    assert.equal(pl[0].headers.Authorization, 'Bearer tok-for-mundishop-xxxxxxxx');
+    assert.equal(pl[1].headers.Authorization, 'Bearer tok-for-second-account-xxxxxxxx');
+  });
+
+  test('COD in another currency is refused (Cargus has no currency field); amounts rounded to bani', async () => {
+    const { ctx, calls } = makeCtx(baseRoutes());
+    await assert.rejects(cargus.createShipment(ctx, shipment({ cod: 49.9, currency: 'EUR' })), (e) => e.code === 'COD_CURRENCY_UNSUPPORTED');
+    assert.equal(awbCall(calls), undefined);
+    await cargus.createShipment(ctx, shipment({ cod: 149.89999999999, declaredValue: 99.999 }));
+    assert.equal(awbCall(calls).json.BankRepayment, 149.9);
+    assert.equal(awbCall(calls).json.DeclaredValue, 100);
+  });
+
+  test('zone-less AwbTrace dates are Bucharest time, not the server zone', async () => {
+    const trace = [{ Code: '111', Event: [{ Date: '2026-07-01T12:30:00', EventId: 21, Description: 'Confirmat' }] }];
+    const { ctx } = makeCtx(baseRoutes([{ url: '/AwbTrace/WithRedirect', reply: { body: trace } }]));
+    const [r] = await cargus.track(ctx, ['111']);
+    assert.equal(r.at, '2026-07-01T09:30:00.000Z');
   });
 });
