@@ -582,8 +582,9 @@ scene(b(48), b(56), root => {
   P(F.el, FR.x + FR.w/2, FR.y + FR.h/2 + (1 - ein)*120, { o: Math.min(1, .55 + ein*2) * (1 - ex), s: 1 + ex*.04 });
   const tbl = RC('orders_attention', 'table');
   const iss = U(RC('orders_attention','issue0'), RC('orders_attention','issue' + (s.n - 1)));
-  const a = V ? F.fit(U(iss, R(400, 250, 640, 40)), 30, 2) : F.fit(U(tbl, R(250, 210, 1160, 10)), 30, 1.5);
-  const z2 = V ? F.fit(iss, 24, 1.8) : F.fit(U(iss, R(250, 300, 1000, 10)), 30, 1.7);
+  const lv = R(tbl.x, iss.y - 62, Math.min(780, iss.x + iss.w - tbl.x + 10), iss.h + 84);   // order, customer and the issue lines
+  const a = V ? F.fit(lv, 20, 2) : F.fit(U(tbl, R(250, 210, 1160, 10)), 30, 1.5);
+  const z2 = V ? F.fit(lv, 12, 2) : F.fit(U(iss, R(250, 300, 1000, 10)), 30, 1.7);
   F.cam(...kf(lt, [[0, a[0], a[1] + 30, a[2]*.94], [.6, ...a], [3.9, ...z2]], sio));
   s.marks.forEach((ms, i) => ms.forEach((m, j) => { const r = M.orders_attention.rects['msg' + i][j];
     markSet(m, R(r[0], r[1], r[2], r[3]), seg(lt, .6 + i*.75 + j*.25, .95 + i*.75 + j*.25)); }));
@@ -770,7 +771,7 @@ scene(b(88), b(100), root => {
   s.cls = M.dtrack.li || [];                                  // timeline items, newest first (classes: success / info / …)
   s.lis = s.cls.map(() => mk('div', 'mark', s.F.over));
   s.ringLiv = mk('div', 'ring', s.F.over);
-  s.FR2 = V ? { x:60, y:820, w:960, h:620 } : { x:820, y:240, w:1000, h:560 };
+  s.FR2 = V ? { x:60, y:860, w:960, h:430 } : { x:820, y:280, w:1000, h:480 };
   s.F2 = new Frame(root, s.FR2.w, s.FR2.h, ['dash_after']);
   // live counter over the "COD collected (30 days)" stat (Inter 700 24px, tabular, like the app), formatted like the UI
   s.ci = M.codStat ?? 4;

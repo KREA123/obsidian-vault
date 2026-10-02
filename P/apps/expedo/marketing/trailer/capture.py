@@ -99,28 +99,29 @@ def app_db(script, **params):
     return json.loads(r.stdout.strip().splitlines()[-1]) if r.stdout.strip() else None
 
 def setup_locality_error(name):
-    """The customer typed "Eforie"; Cargus only has "Eforie Nord" / "Eforie Sud" → the real adapter error, from the app's code."""
-    js = """
-      import { matchLocality, localityError } from '%s/src/couriers/locality.js';
+    """The customer typed "Eforie"; Cargus only has "Eforie Nord" / "Eforie Sud" → the real adapter error, from the app's
+    own code. Works with both error styles: text messages (older builds) and catalog keys rendered per language (i18n)."""
+    r = app_db("""
+      const L = await import(P.app + '/src/couriers/locality.js');
+      const E = await import(P.app + '/src/core/errors.js');
       const CT = ['Constanta','Mangalia','Medgidia','Navodari','Ovidiu','Eforie Nord','Eforie Sud','Techirghiol','Cumpana',
         'Valu lui Traian','Lumina','Agigea','Mamaia-Sat','Corbu','Tuzla','23 August','Costinesti','Murfatlar','Basarabi',
         'Poarta Alba','Mihail Kogalniceanu','Cernavoda','Harsova','Negru Voda'].map((name, i) => ({ id: i + 1, name }));
       const q = { city: 'Eforie', county: 'Constanta', zip: '' };
-      const e = localityError({ provider: 'cargus', providerName: 'Cargus', city: q.city, county: q.county, result: matchLocality(q, CT, { fuzzy: true }) });
-      console.log(JSON.stringify(e.toJSON()));
-    """ % APP
-    err = json.loads(subprocess.run(['node', '--input-type=module', '-e', js], capture_output=True, text=True, check=True, cwd=APP).stdout)
-    oid = app_db("""
+      const e = L.localityError({ provider: 'cargus', providerName: 'Cargus', city: q.city, county: q.county, result: L.matchLocality(q, CT, { fuzzy: true }) });
       const row = db.getDb().prepare('SELECT id, store_id FROM orders WHERE name = ?').get(P.name);
       const o = db.getOrder(row.id), d = o.data;
       for (const k of ['shippingAddress', 'billingAddress'])
         Object.assign(d[k], { city: 'Eforie', province: 'Constanța', provinceCode: 'CT', address1: 'Str. Tudor Vladimirescu nr. 12', zip: '' });
-      db.updateOrder(row.id, { data: d, last_error: { ...P.err, step: 'awb', at: new Date().toISOString() }, status: 'needs_attention' });
-      db.logEvent(row.store_id, row.id, 'error', 'awb', P.err.message, { hint: P.err.hint, code: P.err.code, details: P.err.details });
-      console.log(JSON.stringify(row.id));
-    """, name=name, err=err)
-    print('locality error on', name, ':', err['message'], '|', err['hint'])
-    return oid, err
+      db.updateOrder(row.id, { data: d, last_error: { ...e.toJSON(), step: 'awb', at: new Date().toISOString() }, status: 'needs_attention' });
+      // the same event the pipeline logs when a step fails (core/pipeline.js fail())
+      const msg = E.errorMessage ? E.errorMessage(e) : e.message, hint = E.errorHint ? E.errorHint(e) : e.hint;
+      db.logEvent(row.store_id, row.id, 'error', 'awb', msg, { hint, code: e.code, details: e.details });
+      const txt = e.render ? e.render(P.lang) : { message: e.message, hint: e.hint };
+      console.log(JSON.stringify({ id: row.id, message: txt.message, hint: txt.hint }));
+    """, name=name, app=str(APP), lang=(ARGS.locale or 'en')[:2])
+    print('locality error on', name, ':', r['message'], '|', r['hint'])
+    return r['id'], r
 
 def age_awb(awb, minutes):
     """Moves the test courier's issue time of one AWB back, so the next tracking check sees the next status."""

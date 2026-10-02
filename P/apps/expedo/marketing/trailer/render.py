@@ -71,7 +71,7 @@ def video(lang, lay):
     [pr.join() for pr in procs]
     out = HERE / OUT[(lang, lay)]
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', str(outdir / 'f%05d.jpg'),
-                    '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-tune', 'animation', '-pix_fmt', 'yuv420p',
+                    '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', '-tune', 'animation', '-pix_fmt', 'yuv420p',
                     '-movflags', '+faststart', '-r', str(FPS), str(out)], check=True)
     print('wrote', out, out.stat().st_size // 1024, 'KB')
 
