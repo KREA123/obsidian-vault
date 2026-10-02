@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { ProcessingError, authError } from '../src/core/errors.js';
-import gls, { glsPasswordBytes, mapGlsStatus, parseGlsDate, buildParcel } from '../src/couriers/gls.js';
-import { splitStreet, toIntlPhone } from '../src/couriers/ro-nomenclator.js';
+import gls, { glsPasswordBytes, mapGlsStatus, parseGlsDate, buildParcel, parcelKey } from '../src/couriers/gls.js';
 
 function fakeCtx({ routes, settings = {}, credentials = { username: 'shop@example.ro', password: 'Parola123!' } }) {
   const calls = [];
@@ -107,7 +106,7 @@ test('createShipment: parcel payload (COD, reference, addresses, services, date)
   const res = await gls.createShipment(ctx, shipment());
   assert.equal(res.awb, '50012345670');
   assert.deepEqual(res.raw.parcelIds, [9000]);
-  assert.deepEqual(store.get('gls:parcel:50012345670').parcelIds, [9000]);
+  assert.deepEqual(store.get(parcelKey(ctx, '50012345670')).parcelIds, [9000]);
 
   const req = calls.find((c) => c.method === 'PrintLabels').json;
   assert.equal(req.WebshopEngine, 'Shopify');
@@ -136,7 +135,8 @@ test('prepaid order has no COD fields; SMS + insurance + Saturday services', () 
   assert.equal(p.CODAmount, 0);
   assert.equal(p.CODReference, undefined);
   assert.deepEqual(p.ServiceList.map((s) => s.Code), ['FDS', 'FSS', 'INS', 'SAT']);
-  assert.equal(p.ServiceList.find((s) => s.Code === 'INS').INSParameter.Value, '500');
+  // Live WSDL: INSParameter is ServiceParameterDecimal → a JSON number (a string would not deserialize).
+  assert.strictEqual(p.ServiceList.find((s) => s.Code === 'INS').INSParameter.Value, 500);
   assert.equal(p.ServiceList.find((s) => s.Code === 'FSS').FSSParameter.Value, '+40722123456');
 });
 
@@ -239,12 +239,12 @@ test('getLabel without cache falls back to GetParcelList lookup', async () => {
 
 test('cancelShipment: DeleteLabels by ParcelId; refusal mapped', async () => {
   const { ctx, calls, store } = fakeCtx({ routes: { DeleteLabels: () => ({ body: { DeleteLabelsErrorList: [], SuccessfullyDeletedList: [{ ParcelId: 9000 }] } }) } });
-  store.set('gls:parcel:500', { parcelIds: [9000] });
+  store.set(parcelKey(ctx, '500'), { parcelIds: [9000] });
   await gls.cancelShipment(ctx, '500');
   assert.deepEqual(calls[0].json.ParcelIdList, [9000]);
 
   const { ctx: ctx2, store: store2 } = fakeCtx({ routes: { DeleteLabels: () => ({ body: { DeleteLabelsErrorList: [{ ErrorCode: 6, ErrorDescription: 'Parcel with this ID has different status than PRINTED' }] } }) } });
-  store2.set('gls:parcel:500', { parcelIds: [9000] });
+  store2.set(parcelKey(ctx2, '500'), { parcelIds: [9000] });
   await assert.rejects(gls.cancelShipment(ctx2, '500'), (e) => e.code === 'CANCEL_REFUSED');
 });
 
@@ -295,13 +295,6 @@ test('GLS status table', () => {
   for (const [code, st] of Object.entries(cases)) assert.equal(mapGlsStatus(code), st, code);
   assert.equal(mapGlsStatus('99'), null);
   assert.equal(parseGlsDate('/Date(1598911199000+0200)/'), '2020-08-31T21:59:59.000Z');
-});
-
-test('helpers: street split and phone', () => {
-  assert.deepEqual(splitStreet('Bd. Unirii 15A'), { street: 'Bd. Unirii', number: '15', info: 'A' });
-  assert.deepEqual(splitStreet('Aleea Teiului bl. A3 sc. 2'), { street: 'Aleea Teiului bl. A3 sc. 2', number: '', info: '' });
-  assert.equal(toIntlPhone('0722 123 456'), '+40722123456');
-  assert.equal(toIntlPhone('+40722123456'), '+40722123456');
 });
 
 test('nomenclator outage is remembered (no repeated GetLocations waits)', async () => {

@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import fan, { mapFanEvent, pickService, resolveFanLocality } from '../src/couriers/fancourier.js';
-import { cityVariants, roLocalToIso } from '../src/couriers/ro-nomenclator.js';
 
 // ---- fake ctx: routes ctx.http calls to handlers, emulating src/lib/http.js error handling
 function fakeCtx({ routes, settings = {}, credentials = { username: 'shop', password: 'secret' } }) {
@@ -279,10 +278,4 @@ test('FAN event table', () => {
     S46: 'out_for_delivery', S38: 'created', ZZ: 'unknown',
   };
   for (const [id, st] of Object.entries(cases)) assert.equal(mapFanEvent(id), st, id);
-});
-
-test('helpers: city variants and Bucharest time zone', () => {
-  assert.deepEqual(cityVariants({ city: 'Sector 2', county: 'București' }), ['bucuresti sector 2', 'sector 2', 'bucuresti sectorul 2', 'bucuresti']);
-  assert.deepEqual(cityVariants({ city: 'Sat Florești, Cluj', county: 'Cluj' }), ['floresti']);
-  assert.equal(roLocalToIso('2024-01-15 12:00:00'), '2024-01-15T10:00:00.000Z');
 });

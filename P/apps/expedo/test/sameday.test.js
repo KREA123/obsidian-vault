@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import { TrackingStatus } from '../src/couriers/contract.js';
-import sameday, { mapSamedayStatus, mapAwbError, toForm, tokenTtl, PROD_URL, SANDBOX_URL } from '../src/couriers/sameday.js';
+import sameday, { mapSamedayStatus, mapAwbError, toForm, tokenTtl, tokenKey, PROD_URL, SANDBOX_URL } from '../src/couriers/sameday.js';
 
 // ---- fakes ---------------------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ describe('sameday auth', () => {
     const { ctx, calls } = makeCtx(baseRoutes([
       { url: '/api/client/pickup-points', reply: () => (n++ === 0 ? { status: 401, body: { code: 401, message: 'Invalid token' } } : { body: page(PICKUP_POINTS) }) },
     ]));
-    ctx.cache.set('sameday:prod:token:mundishop', 'old', 3600);
+    ctx.cache.set(tokenKey(ctx), 'old', 3600);
     const pts = await sameday.listPickupPoints(ctx);
     assert.equal(pts.length, 1);
     assert.equal(calls.filter((c) => c.url.endsWith('/api/authenticate')).length, 1);

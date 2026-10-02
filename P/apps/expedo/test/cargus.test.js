@@ -2,8 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { ProcessingError, authError } from '../src/core/errors.js';
 import { TrackingStatus } from '../src/couriers/contract.js';
-import cargus, { mapCargusEvent, mapAwbError, pickService } from '../src/couriers/cargus.js';
-import { matchLocality, classifyStatusText, normalizePhoneRO, cleanCityName, detectSector } from '../src/couriers/ro-helpers.js';
+import cargus, { mapCargusEvent, mapAwbError, pickService, tokenCacheKey } from '../src/couriers/cargus.js';
 
 // ---- fakes ---------------------------------------------------------------------------------
 
@@ -138,7 +137,7 @@ describe('cargus auth', () => {
     const { ctx, calls } = makeCtx(baseRoutes([
       { url: '/PickupLocations', reply: () => (n++ === 0 ? { status: 401, body: 'Failed to authenticate!' } : { body: [] }) },
     ]));
-    ctx.cache.set('cargus:token:mundishop', 'stale-token-xxxxxxxx', 3600);
+    ctx.cache.set(tokenCacheKey(ctx), 'stale-token-xxxxxxxx', 3600);
     const points = await cargus.listPickupPoints(ctx);
     assert.deepEqual(points, []);
     assert.equal(calls.filter((c) => c.url.endsWith('/LoginUser')).length, 1);
@@ -465,36 +464,5 @@ describe('cargus label / cancel / track', () => {
     assert.equal(l[0].address, 'Fabricii 1, Cluj-Napoca, Cluj');
     await cargus.listLockers(ctx, { county: 'Ilfov' });
     assert.equal(calls.filter((c) => c.url.endsWith('/PudoPoints')).length, 1);
-  });
-});
-
-// ---- shared helpers ------------------------------------------------------------------------
-
-describe('ro-helpers', () => {
-  test('cleanCityName / detectSector / normalizePhoneRO', () => {
-    assert.equal(cleanCityName('Mun. Cluj-Napoca'), 'cluj napoca');
-    assert.equal(cleanCityName('Sat Roșu, Com. Chiajna'), 'rosu');
-    assert.equal(cleanCityName('Voluntari (Ilfov)'), 'voluntari');
-    assert.equal(detectSector({ city: 'București, Sectorul 4' }), 4);
-    assert.equal(detectSector({ city: 'Bucuresti', zip: '061344', bucharest: true }), 6);
-    assert.equal(detectSector({ city: 'Bucuresti', zip: '400001', bucharest: true }), undefined);
-    assert.equal(normalizePhoneRO('+40 (722) 123-456'), '0722123456');
-    assert.equal(normalizePhoneRO('0040722123456'), '0722123456');
-    assert.equal(normalizePhoneRO('722123456'), '0722123456');
-  });
-
-  test('matchLocality handles "contains" (county appended) and rejects unrelated names', () => {
-    const cands = LOCALITIES[13].map((l) => ({ id: l.LocalityId, name: l.Name, postalCode: l.CodPostal }));
-    assert.equal(matchLocality({ city: 'Turda, jud. Cluj', county: 'Cluj' }, cands).match.id, 5482);
-    assert.equal(matchLocality({ city: 'Apahida Cluj', county: 'Cluj' }, cands).match.id, 5481);
-    const r = matchLocality({ city: 'Gherla', county: 'Cluj' }, cands);
-    assert.equal(r.notFound, true);
-  });
-
-  test('classifyStatusText checks negatives before positives', () => {
-    assert.equal(classifyStatusText('Colet nelivrat'), TrackingStatus.FAILED_ATTEMPT);
-    assert.equal(classifyStatusText('Coletul a fost livrat cu succes'), TrackingStatus.DELIVERED);
-    assert.equal(classifyStatusText('Retur livrat la expeditor'), TrackingStatus.RETURNED);
-    assert.equal(classifyStatusText('Ramburs returnat expeditorului'), TrackingStatus.DELIVERED);
   });
 });

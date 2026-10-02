@@ -37,7 +37,7 @@ import {
 
 const PROVIDER = 'GLS';
 const ID = 'gls';
-const WEBSHOP_ENGINE = 'Shopify'; // VERIFY: free text "webshop engine" required by PrintLabels since 2025-02
+const WEBSHOP_ENGINE = 'Shopify'; // free text; the live WSDL has WebshopEngine on every request (APIRequestBase)
 const PARCEL_MAP_TTL = 120 * 24 * 60 * 60;
 
 // GLS StatusCode (Appendix G) → normalized status. `null` = informational, ignored when picking the
@@ -547,9 +547,21 @@ export default {
   },
 
   async track(ctx, awbs) {
-    if (!awbs?.length) return [];
+    // GLS parcel numbers are digits; anything else cannot be a GLS parcel (missing AWBs are omitted).
+    const wanted = [...new Set((awbs || []).map((a) => String(a).trim()).filter((a) => /^\d{1,15}$/.test(a)))];
+    if (!wanted.length) return [];
     const out = [];
-    for (const group of chunk(awbs, 100)) {
+    const single = async (awb) => {
+      const body = await call(ctx, 'ParcelService', 'GetParcelStatuses', { ParcelNumber: Number(awb), ReturnPOD: false, LanguageIsoCode: 'RO' });
+      const errs = body.GetParcelStatusErrors;
+      // Auth errors stop everything (each further call is another failed login → lockout).
+      if (Array.isArray(errs) && errs.length) {
+        if (isAuthErrorInfo(errs[0])) throwGlsErrors(errs, body, ctx);
+        return null; // e.g. unknown parcel number
+      }
+      return { ParcelNumber: Number(body.ParcelNumber) || Number(awb), ParcelStatusList: body.ParcelStatusList || [] };
+    };
+    for (const group of chunk(wanted, 100)) {
       let parcels;
       try {
         const body = await call(ctx, 'ParcelService', 'GetParcelListStatuses', {
@@ -560,24 +572,32 @@ export default {
           throwGlsErrors(body.GetParcelListStatusesErrors, body, ctx);
         }
         parcels = body.ParcelList || [];
+        if (!parcels.length) {
+          // Live: with bad credentials the batch method answers an empty list and NO error. Ask about one
+          // parcel with the single method, which does report "Unauthorized." / lockout.
+          const probe = await single(group[0]);
+          if (probe?.ParcelStatusList?.length) throw new Error('batch method returned nothing for a known parcel');
+        }
       } catch (err) {
         if (err?.code === 'AUTH_FAILED') throw err;
         // Batch method is new (2026-03); fall back to one call per parcel. VERIFY: availability on RO.
         ctx.log?.('gls: GetParcelListStatuses failed, falling back to GetParcelStatuses', { err: err?.message });
         parcels = [];
         for (const awb of group) {
-          const body = await call(ctx, 'ParcelService', 'GetParcelStatuses', { ParcelNumber: Number(awb), ReturnPOD: false, LanguageIsoCode: 'RO' });
-          if (body.ParcelStatusList) parcels.push({ ParcelNumber: body.ParcelNumber ?? awb, ParcelStatusList: body.ParcelStatusList });
+          const p = await single(awb);
+          if (p) parcels.push(p);
         }
       }
       for (const p of parcels) {
-        if (p?.ParcelNumber == null) continue;
+        const awb = String(p?.ParcelNumber ?? '');
+        if (!group.includes(awb)) continue; // ParcelNumber 0 (error answer) or not asked for
+        if (out.some((o) => o.awb === awb)) continue;
         const events = [...(p.ParcelStatusList || [])]
           .sort((a, b) => (Date.parse(parseGlsDate(a.StatusDate) || 0) || 0) - (Date.parse(parseGlsDate(b.StatusDate) || 0) || 0));
         const last = latestMeaningful(events, (e) => mapGlsStatus(e.StatusCode));
         const status = last ? last.status : S.CREATED;
         out.push({
-          awb: String(p.ParcelNumber),
+          awb,
           status,
           statusText: last ? String(last.event.StatusDescription || '').trim() : 'Etichetă emisă',
           at: last ? parseGlsDate(last.event.StatusDate) : undefined,

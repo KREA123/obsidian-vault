@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ProcessingError, authError } from '../src/core/errors.js';
-import dpd, { mapDpdOperation, parseCsv, compactSites, buildShipmentRequest, parseDpdDate } from '../src/couriers/dpd.js';
+import dpd, { mapDpdOperation, parseCsv, compactSites, buildShipmentRequest, parseDpdDate, parcelsKey } from '../src/couriers/dpd.js';
 
 function fakeCtx({ routes, settings = {}, credentials = { userName: 'api_shop', password: 'pw' } }) {
   const calls = [];
@@ -71,7 +71,7 @@ test('createShipment payload: site, COD cash, OBPD, reference, private person', 
   const res = await dpd.createShipment(ctx, shipment());
   assert.equal(res.awb, '80012345678');
   assert.equal(res.price, 21.42);
-  assert.deepEqual(store.get('dpd:parcels:80012345678'), ['80012345678']);
+  assert.deepEqual(store.get(parcelsKey(ctx, '80012345678')), ['80012345678']);
   const req = calls.find((c) => c.path === '/shipment').json;
   assert.deepEqual(req.sender, { clientId: 123456789 });
   assert.deepEqual(req.recipient, {

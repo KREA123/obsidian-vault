@@ -1,9 +1,9 @@
 import { ProcessingError, authError } from '../core/errors.js';
 import { TrackingStatus as S } from './contract.js';
+import { findLocality, norm, normCounty } from './locality.js';
 import {
-  NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, bufferToJson, norm, normCounty,
-  resolveLocality, latestMeaningful,
-} from './ro-nomenclator.js';
+  NOMENCLATOR_TTL, cached, cacheGet, cacheSet, chunk, isPdf, bufferToJson, latestMeaningful, accountKey, money,
+} from './util.js';
 
 // DPD Romania — Web API v1 (https://api.dpd.ro/v1), JSON over POST.
 // Source: https://api.dpd.ro/api/docs/ (Web API Documentation) and the official request examples
@@ -12,6 +12,17 @@ import {
 // No session: userName + password go in every JSON body. Errors usually come back as HTTP 200 with
 // { error: { code, message, context, component } }.
 // The AWB is the shipment id, which is also the id of the first parcel.
+//
+// Live check 2026-10 (invalid userName/password) on /client/contract, /location/country, /location/site,
+// /location/site/csv/642 (POST JSON or GET query), /services, /shipment, /shipment/info, /print, /track,
+// /location/office, /shipment/cancel — all HTTP 200 application/json:
+//   {"error":{"context":"","message":"Nu s-a putut găsi utilizatorul pentru autentificare! (EE2026…)",
+//             "id":"EE2026…","code":1}}            (language EN: "Unable to find user to authenticate!")
+//   no userName at all → message "Wrong username format (EE…)". List methods add their empty list
+//   ("countries":[], "sites":[], "services":[], "offices":[]). Unknown path → HTML 404 page.
+// Code 1 is "General Error" in Appendix 3 (there is no auth-specific code), so auth is detected from the
+// message. Docs (api.dpd.ro/api/docs): track ≤ 10 parcels per call; print paperSize A4 | A6 | A4_4xA6;
+// the error `component` is a JSONPath like "$.recipient.address.siteId".
 
 const PROVIDER = 'DPD';
 const ID = 'dpd';
@@ -70,8 +81,13 @@ const AUTH_RE = /(user ?name|utilizator|parol|password|autentific|authenticat|lo
 function dpdError(err, raw) {
   const code = Number(err?.code);
   const text = `${err?.message || ''} ${err?.context || ''} ${err?.component || ''}`;
-  // VERIFY: DPD has no dedicated auth error code in Appendix 3; detected from the message.
-  if (AUTH_RE.test(err?.message || '') && !/recipient|destinatar|sender\.|expeditor/i.test(text)) return authError(PROVIDER, raw);
+  // Confirmed live: auth failures are code 1 (General Error) with "Nu s-a putut găsi utilizatorul pentru
+  // autentificare!" / "Wrong username format". VERIFY: the message for an existing user with a wrong password.
+  if ((code === 1 || !code) && AUTH_RE.test(err?.message || '') && !/recipient|destinatar|sender\.|expeditor/i.test(text)) {
+    const e = authError(PROVIDER, raw);
+    e.provider = ID;
+    return e;
+  }
   const component = String(err?.component || err?.context || '');
   const mk = (c, message, field, hint = 'Corectează datele comenzii și reîncearcă.') =>
     new ProcessingError({ code: c, message, hint, field, provider: ID, details: raw });
@@ -186,8 +202,6 @@ async function findSites(ctx, recipient) {
   return [...seen.values()];
 }
 
-const describeSite = (r) => `${r[1]}${r[2] && norm(r[2]) !== norm(r[1]) ? ` (${r[2]})` : ''}`;
-
 export async function resolveDpdSite(ctx, recipient) {
   let sites;
   if (!(await cacheGet(ctx, SITES_OFF_KEY))) {
@@ -200,13 +214,14 @@ export async function resolveDpdSite(ctx, recipient) {
     }
   }
   if (!sites) sites = await findSites(ctx, recipient);
-  const hit = resolveLocality(sites, recipient, {
+  // Same-named villages are told apart by postal code, then by the commune (municipality) typed.
+  const hit = findLocality(sites, recipient, {
     nameOf: (r) => r[1],
     countyOf: (r) => r[3],
     zipOf: (r) => r[4],
-    describe: describeSite,
-    provider: PROVIDER,
-    providerId: ID,
+    parentOf: (r) => r[2],
+    provider: ID,
+    providerName: PROVIDER,
   });
   return { siteId: hit[0], siteName: hit[1] };
 }
@@ -240,13 +255,13 @@ export function buildShipmentRequest(shipment, settings, { siteId }) {
   if (settings.senderPhone) sender.phone1 = { number: String(settings.senderPhone).replace(/[^\d+]/g, '') };
 
   const additionalServices = {};
-  if (shipment.cod > 0) {
-    additionalServices.cod = { amount: Number(shipment.cod.toFixed(2)), processingType: 'CASH', ...(shipment.currency && shipment.currency !== 'RON' ? { currencyCode: shipment.currency } : {}) };
+  if (money(shipment.cod) > 0) {
+    additionalServices.cod = { amount: money(shipment.cod), processingType: 'CASH', ...(shipment.currency && shipment.currency !== 'RON' ? { currencyCode: shipment.currency } : {}) };
     const open = shipment.openPackage ?? truthy(settings.openPackage);
     // OBPD = options before payment; only meaningful with COD. VERIFY: return service/payer per contract.
     if (open) additionalServices.obpd = { option: 'OPEN', returnShipmentServiceId: serviceId, returnShipmentPayer: 'SENDER' };
   }
-  if (shipment.declaredValue > 0) additionalServices.declaredValue = { amount: Number(shipment.declaredValue) };
+  if (money(shipment.declaredValue) > 0) additionalServices.declaredValue = { amount: money(shipment.declaredValue) };
 
   const req = {
     ...(Object.keys(sender).length ? { sender } : {}),
@@ -274,16 +289,17 @@ export function buildShipmentRequest(shipment, settings, { siteId }) {
   return req;
 }
 
-const parcelsKey = (awb) => `dpd:parcels:${awb}`;
+/** AWB → parcel ids, per account (two DPD accounts in one store must not mix them up). */
+export const parcelsKey = (ctx, awb) => `dpd:parcels:${accountKey(ctx.credentials?.userName, ctx.credentials?.password)}:${awb}`;
 
 async function parcelIdsFor(ctx, awb) {
-  const hit = await cacheGet(ctx, parcelsKey(awb));
+  const hit = await cacheGet(ctx, parcelsKey(ctx, awb));
   if (Array.isArray(hit) && hit.length) return hit;
   try {
     const body = await call(ctx, '/shipment/info', { shipmentIds: [String(awb)] });
     const ids = (body?.shipments?.[0]?.content?.parcels || []).map((p) => String(p.id)).filter(Boolean);
     if (ids.length) {
-      await cacheSet(ctx, parcelsKey(awb), ids, PARCELS_TTL);
+      await cacheSet(ctx, parcelsKey(ctx, awb), ids, PARCELS_TTL);
       return ids;
     }
   } catch (err) {
@@ -297,7 +313,9 @@ async function parcelIdsFor(ctx, awb) {
 export default {
   id: ID,
   name: PROVIDER,
-  trackingUrl: (awb) => `https://tracking.dpd.ro/?shipmentNumber=${encodeURIComponent(awb)}&language=ro`,
+  // tracking.dpd.ro/?shipmentNumber=… answers 301 to this URL (live check); the page itself sits behind a
+  // Cloudflare browser check, so only a real browser sees the content.
+  trackingUrl: (awb) => `https://services.dpd.ro/tracking/?shipmentNumber=${encodeURIComponent(awb)}&language=ro`,
 
   credentialFields: [
     { key: 'userName', label: 'Utilizator API DPD', type: 'text', required: true, help: 'Primit de la DPD pentru integrare (nu e același cu contul de pe site, de obicei).' },
@@ -338,10 +356,11 @@ export default {
     const req = buildShipmentRequest(shipment, settings, { siteId });
     const body = await call(ctx, '/shipment', req);
     if (!body?.id) {
-      throw new ProcessingError({ code: 'COURIER_REJECTED', message: 'DPD nu a emis AWB-ul.', hint: 'Reîncearcă; dacă se repetă, verifică setările DPD.', retryable: true, provider: ID, details: body });
+      // Not retryable: without an id we cannot tell whether DPD created it; a blind retry may duplicate it.
+      throw new ProcessingError({ code: 'COURIER_REJECTED', message: 'DPD nu a emis AWB-ul.', hint: 'Verifică în contul DPD dacă expedierea a fost creată înainte să reîncerci, ca să nu se dubleze.', retryable: false, provider: ID, details: body });
     }
     const parcelIds = (body.parcels || []).map((p) => String(p.id)).filter(Boolean);
-    if (parcelIds.length) await cacheSet(ctx, parcelsKey(body.id), parcelIds, PARCELS_TTL);
+    if (parcelIds.length) await cacheSet(ctx, parcelsKey(ctx, body.id), parcelIds, PARCELS_TTL);
     return { awb: String(body.id), price: body.price?.total, raw: body };
   },
 
