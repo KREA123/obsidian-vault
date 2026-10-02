@@ -1,4 +1,5 @@
 import { ProcessingError, authError } from '../core/errors.js';
+import { bucharestDay } from './ro-time.js';
 
 // SmartBill Cloud API V1 — https://api.smartbill.ro/ (OpenAPI spec: https://api.smartbill.ro/smartbill-api-spec.yaml,
 // last updated 2026-09). Basic auth "email:token", company CIF in body (companyVatCode) or query (cif).
@@ -11,7 +12,18 @@ import { ProcessingError, authError } from '../core/errors.js';
 //  - Prices are WITHOUT VAT unless isTaxIncluded:true — we always send gross prices + isTaxIncluded:true.
 //  - taxName must match a VAT rate configured in the account (GET /tax), so we map percentage → name from /tax.
 //  - GET /invoice/pdf: do NOT send Accept: application/pdf (406). Missing invoice → 502 with HTML body.
-//  - No idempotency key exists in V1: a timed-out create may still have issued the invoice.
+//  - No idempotency key exists in V1: a timed-out create may still have issued the invoice. We read the series'
+//    nextNumber before creating; after an ambiguous failure (timeout, 5xx, dropped connection) an unchanged
+//    nextNumber proves nothing was issued (safe to retry), otherwise the merchant must check before retrying.
+//
+// Live-checked 2026-10-02 against ws.smartbill.ro with invalid credentials (test/fixtures/invoicing/live-responses.json):
+//  - Bad e-mail/token (or no Authorization header) → HTTP 401 JSON {successfully:false, errorText:"Autentificare
+//    esuata. Va rugam verificati datele si incercati din nou.", ...} on every V1 path (GET /tax, GET /series,
+//    POST /invoice/v2, GET /invoice/pdf, PUT /invoice/cancel, POST /invoice/reverse, POST /payment, DELETE /invoice).
+//  - Request-shape errors are checked BEFORE auth and have no errorText: {status, type:'invalid_request_error',
+//    errors:[{code, message, param?}]} — 400 json_mapping_error (param set), 404 resource_not_found,
+//    405 method_not_allowed, 406 invalid_accept_header (Accept: application/pdf on /invoice/pdf), 415 invalid_content_type.
+//  - A malformed Basic header gives HTTP 500 with an HTML Tomcat page (we always send valid base64).
 
 const PROVIDER = 'SmartBill';
 const BASE = 'https://ws.smartbill.ro/SBORO/api';
@@ -52,7 +64,7 @@ const vatPayer = (ctx) => ctx.settings?.vatPayer !== false;
 
 /** București needs "Sector N" as city for e-Factura (SPV). Derive it from the city text or the postal code. */
 function bucharestSector(client) {
-  const m = fold(client.city).match(/sector(?:ul)?\s*([1-6])\b/i);
+  const m = fold(client.city).match(/sector(?:ul)?\s*([1-6])\b/i) || fold(client.address).match(/sector(?:ul)?\s*([1-6])\b/i);
   if (m) return Number(m[1]);
   const z = String(client.zip ?? '').trim().match(/^0([1-6])\d{4}$/);
   return z ? Number(z[1]) : null;
@@ -128,6 +140,11 @@ const RULES = [
     message: `SmartBill: ${msg}`,
     hint: 'Factura are deja o factură de stornare în SmartBill. Nu e nevoie de altă acțiune.',
   })],
+  [/incasata sau stornata in totalitate/i, (msg) => ({
+    code: 'INVOICE_ALREADY_PAID',
+    message: `SmartBill: ${msg}`,
+    hint: 'Factura e deja încasată integral (sau stornată) în SmartBill. Nu mai e nimic de înregistrat.',
+  })],
   [/nu este ultimul din serie/i, (msg) => ({
     code: 'INVOICE_NOT_LAST',
     message: `SmartBill: ${msg}`,
@@ -171,10 +188,12 @@ function mapHttpError(status, body) {
     if (body.errorText) return mapErrorText(body.errorText, body, { status });
     if (body.type === 'invalid_request_error' && Array.isArray(body.errors)) {
       // A field name/type we sent is wrong — our bug, not the merchant's.
-      const params = body.errors.map((e) => e.param || e.code).filter(Boolean).join(', ');
+      // Only json_mapping_error names a field (param); 404/405/406/415 carry just code + message.
+      const params = body.errors.map((e) => e.param).filter(Boolean).join(', ');
+      const codes = body.errors.map((e) => e.code).filter(Boolean).join(', ');
       return new ProcessingError({
         code: 'PROVIDER_REJECTED',
-        message: `SmartBill a respins structura cererii${params ? ` (câmp: ${params})` : ''}.`,
+        message: `SmartBill a respins structura cererii${params ? ` (câmp: ${params})` : codes ? ` (${codes}, HTTP ${status})` : ''}.`,
         hint: 'Este o eroare a integrării, nu a comenzii. Trimite-ne detaliile din jurnal.',
         provider: PROVIDER,
         details: body,
@@ -206,7 +225,8 @@ async function call(ctx, method, path, { query, json, responseType, headers } = 
 
 /** VAT rates configured in the SmartBill account: [{ name, percentage }]. Empty list for non-VAT payers. */
 async function taxes(ctx) {
-  const key = `smartbill:tax:${cif(ctx)}`;
+  // Per account AND company: two SmartBill accounts (or a changed token owner) must not share a cached list.
+  const key = `smartbill:tax:${clean(ctx.credentials?.email).toLowerCase()}:${cif(ctx)}`;
   const cached = ctx.cache?.get(key);
   if (cached) return cached;
   let list;
@@ -240,7 +260,10 @@ async function taxFor(ctx, rate) {
 function clientPayload(c) {
   const isCompany = Boolean(c.isCompany && c.vatCode);
   let city = clean(c.city);
+  let county = clean(c.county);
   if (isBucharest(c)) {
+    // The spec: when county is "Bucuresti", city must be "Sector 1".."Sector 6" or e-Factura fails in SPV.
+    county = 'Bucuresti';
     const s = bucharestSector(c);
     if (s) city = `Sector ${s}`;
   }
@@ -252,7 +275,7 @@ function clientPayload(c) {
     isTaxPayer: isCompany ? /^RO/i.test(noSpaces(c.vatCode)) : false,
     address: clean(c.address),
     city,
-    county: clean(c.county),
+    county,
     country: clean(c.country) || 'Romania',
     saveToDb: false,
   };
@@ -263,9 +286,24 @@ function clientPayload(c) {
 }
 
 const PAID_TYPE = { card: 'Card online', transfer: 'Ordin plata', other: 'Alta incasare' };
+// InvoiceRequest.currency enum from the spec; anything else is a 400 json_mapping_error with no useful text.
+const CURRENCIES = new Set(['RON', 'EUR', 'USD', 'GBP', 'CAD', 'AUD', 'CHF', 'TRY', 'CZK', 'DKK', 'HUF', 'MDL', 'SEK', 'NOK', 'JPY',
+  'EGP', 'PLN', 'RUB', 'AED', 'BRL', 'CNY', 'HRK', 'INR', 'KRW', 'MXN', 'NZD', 'RSD', 'THB', 'UAH', 'XDR', 'ZAR']);
+
+/** What the invoice will total: each line rounded to 2 decimals, then summed (how invoicing software totals). */
+const invoiceTotal = (lines) => round(lines.reduce((s, l) => s + round(Number(l.quantity) * Number(l.unitPrice), 2), 0), 2);
 
 async function invoicePayload(ctx, invoice) {
   const s = ctx.settings || {};
+  const currency = clean(invoice.currency || 'RON').toUpperCase();
+  if (!CURRENCIES.has(currency)) {
+    throw new ProcessingError({
+      code: 'INVOICE_CURRENCY_INVALID',
+      message: `SmartBill nu acceptă moneda ${currency}.`,
+      hint: 'Emite factura manual în SmartBill sau schimbă moneda magazinului.',
+      provider: PROVIDER,
+    });
+  }
   const useStock = Boolean(s.useStock && clean(s.warehouseName));
   const prec = Math.min(4, Math.max(2, ...invoice.lines.map((l) => decimals(l.unitPrice))));
   const products = [];
@@ -274,7 +312,7 @@ async function invoicePayload(ctx, invoice) {
     const p = {
       name: clean(l.name),
       measuringUnitName: l.unit || 'buc',
-      currency: invoice.currency || 'RON',
+      currency,
       quantity: negative ? -Math.abs(Number(l.quantity)) : Number(l.quantity),
       price: Math.abs(Number(l.unitPrice)),
       isTaxIncluded: true,
@@ -297,7 +335,7 @@ async function invoicePayload(ctx, invoice) {
     issueDate: invoice.issueDate,
     seriesName: clean(s.series),
     isDraft: false,
-    currency: invoice.currency || 'RON',
+    currency,
     language: s.language || invoice.language || 'RO',
     precision: prec,
     products,
@@ -312,7 +350,9 @@ async function invoicePayload(ctx, invoice) {
   }
   if (invoice.paid && s.markPaid !== false) {
     body.payment = {
-      value: round(invoice.total, 2),
+      // Sum of the rounded line totals = what SmartBill will show as total, so the invoice ends up fully paid
+      // (invoice.total can differ by a cent when unit prices carry 4 decimals).
+      value: invoiceTotal(invoice.lines),
       type: PAID_TYPE[invoice.paymentMethod] || 'Card online',
       isCash: false,
     };

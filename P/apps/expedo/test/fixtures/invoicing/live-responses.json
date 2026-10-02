@@ -1,0 +1,104 @@
+{
+  "_note": "Responses captured 2026-10-02 from the real endpoints with deliberately invalid credentials (nothing can be issued). Sanitized: cookies/session ids dropped; bodies verbatim except FGO stack traces shortened.",
+  "smartbill": {
+    "auth401": {
+      "request": "GET https://ws.smartbill.ro/SBORO/api/tax?cif=RO12345678 (Basic auth with a non-existent e-mail:token; same body for /series, POST /invoice/v2, GET /invoice/pdf, PUT /invoice/cancel, POST /invoice/reverse, POST /payment, DELETE /invoice and with no Authorization header at all)",
+      "status": 401,
+      "contentType": "application/json",
+      "body": {"key":"!.oresp@&","successfully":false,"errorText":"Autentificare esuata. Va rugam verificati datele si incercati din nou.","errorCode":"0","message":"","id":"","documentNumber":"","auxDocumentNumber":"","auxData":{},"operationExecuted":false,"nextStep":"","cooldown":0,"needsConsent":false,"validationInfo":{"productsWithNegativeProfit":0,"documentsWithNegativeProfit":0,"firstDateWithNegativeProfit":null},"messageList":[],"validationMessages":{"productsWithNegativeProfit":0,"documentsWithNegativeProfit":0,"firstDateWithNegativeProfit":null}}
+    },
+    "unknownPath404": {
+      "request": "GET https://ws.smartbill.ro/SBORO/api/nonexistent-path (checked before auth)",
+      "status": 404,
+      "body": {"status":404,"type":"invalid_request_error","instance":"/SBORO/api/nonexistent-path","errors":[{"code":"resource_not_found","message":"The requested resource was not found.","docUrl":"https://api.smartbill.ro/#v3-error-invalid_request_error"}]}
+    },
+    "acceptPdf406": {
+      "request": "GET /invoice/pdf with Accept: application/pdf (checked before auth)",
+      "status": 406,
+      "body": {"status":406,"type":"invalid_request_error","instance":"/SBORO/api/invoice/pdf","errors":[{"code":"invalid_accept_header","message":"The requested resource is not available in the requested format.","docUrl":"https://api.smartbill.ro/#v3-error-invalid_request_error"}]}
+    },
+    "unknownField400": {
+      "request": "POST /invoice/v2 {companyVatCode, fooBar} (checked before auth)",
+      "status": 400,
+      "body": {"status":400,"type":"invalid_request_error","instance":"/SBORO/api/invoice/v2","errors":[{"code":"json_mapping_error","message":"Unrecognized property: fooBar.","docUrl":"https://api.smartbill.ro/#v3-error-invalid_request_error","param":"fooBar"}]}
+    },
+    "formBody415": {
+      "request": "POST /invoice/v2 with application/x-www-form-urlencoded",
+      "status": 415,
+      "body": {"status":415,"type":"invalid_request_error","instance":"/SBORO/api/invoice/v2","errors":[{"code":"invalid_content_type","message":"The requested media type is not supported.","docUrl":"https://api.smartbill.ro/#v3-error-invalid_request_error"}]}
+    },
+    "getOnPost405": {
+      "request": "GET /invoice/v2",
+      "status": 405,
+      "body": {"status":405,"type":"invalid_request_error","instance":"/SBORO/api/invoice/v2","errors":[{"code":"method_not_allowed","message":"The HTTP method is not allowed for the requested resource.","docUrl":"https://api.smartbill.ro/#v3-error-invalid_request_error"}]}
+    },
+    "malformedBasic500": {
+      "request": "GET /tax with 'Authorization: Basic !!!'",
+      "status": 500,
+      "contentType": "text/html",
+      "bodyStart": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" ...><title>Error report</title>"
+    }
+  },
+  "fgo": {
+    "prodUnknownCui": {
+      "request": "POST https://api.fgo.ro/v1/factura/emitere (JSON, CodUnic '1', random Hash); same for factura/getstatus and for a form-encoded POST",
+      "status": 200,
+      "body": {"Success":false,"Message":"Combinatia utilizator/companie nu este autorizata pentru utilizare API. Verificati starea acestuia in Setari -> Utilizatori [1]."}
+    },
+    "testUnknownCui": {
+      "request": "POST https://api-testuat.fgo.ro/v1/factura/emitere (JSON, CodUnic '1' and the docs' sample CodUnic '2864518', wrong Hash); also prod emitere with an empty JSON body",
+      "status": 200,
+      "body": {"Success":false,"Message":"Codul unic nu exista sau nu este asociat."}
+    },
+    "testGetstatusUnknownCui500": {
+      "request": "POST https://api-testuat.fgo.ro/v1/factura/getstatus (CodUnic '1', wrong Hash)",
+      "status": 500,
+      "body": {"Success":false,"Message":"System.Exception: Codul unic nu exista sau nu este asociat.\r\n   at Fgo.PublicApi.Controllers.FacturaController.<GetStatus>d__14.MoveNext()\r\n--- End of stack trace from previous location where exception was thrown ---\r\n   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()"}
+    },
+    "prodGeneric500": {
+      "request": "POST https://api.fgo.ro/v1/factura/getstatus with invalid JSON, or without CodUnic",
+      "status": 500,
+      "body": {"Success":false,"Message":"Ne pare rau, a intervenit o eroare"}
+    },
+    "getOnPost": {
+      "request": "GET https://api.fgo.ro/v1/factura/emitere",
+      "status": 200,
+      "body": {"Success":false,"Message":"Aceasta metoda trebuie apelata folosind HTTP POST."}
+    },
+    "localitiesWithoutCounty": {
+      "request": "GET https://api.fgo.ro/v1/nomenclator/localitati",
+      "status": 200,
+      "body": {"Success":false,"Message":"Este necesar sa transmiteti parametrul judet pentru listarea localitatilor. Exemplu: nomenclator/localitati?judet=Iasi"}
+    },
+    "localitiesUnknownCounty": { "request": "GET /nomenclator/localitati?judet=XX", "status": 200, "body": {"Success":false} },
+    "localitiesB": {
+      "request": "GET https://api.fgo.ro/v1/nomenclator/localitati?judet=B (same with judet=Bucuresti, and on api-testuat)",
+      "status": 200,
+      "body": {"Success":true,"List":[{"Nume":"Sector-4"},{"Nume":"Sector-1"},{"Nume":"Sector-3"},{"Nume":"Bucuresti"},{"Nume":"Sector-2"},{"Nume":"Sector-5"},{"Nume":"Sector-6"}]}
+    },
+    "localitiesIFExcerpt": {
+      "request": "GET https://api.fgo.ro/v1/nomenclator/localitati?judet=IF (excerpt, 105 entries in total)",
+      "status": 200,
+      "body": {"Success":true,"List":[{"Nume":"Afumati"},{"Nume":"Chiajna"},{"Nume":"Popesti-Leordeni"},{"Nume":"Voluntari"},{"Nume":"Pipera Voluntari"},{"Nume":"Bragadiru"}]}
+    },
+    "localitiesBNExcerpt": {
+      "request": "GET https://api.fgo.ro/v1/nomenclator/localitati?judet=BN (excerpt, 254 entries in total)",
+      "status": 200,
+      "body": {"Success":true,"List":[{"Nume":"Bistrita"},{"Nume":"Bistrita-Bargaului"},{"Nume":"Bistrita Bargaului Fabrici"},{"Nume":"Nasaud"}]}
+    },
+    "tipincasareProd": { "request": "GET https://api.fgo.ro/v1/nomenclator/tipincasare", "status": 200, "body": {"Success":true,"List":[{"Nume":"Banca"},{"Nume":"Retur Casa"},{"Nume":"Bon"},{"Nume":"Chitanta"}]} },
+    "tipincasareTest": { "request": "GET https://api-testuat.fgo.ro/v1/nomenclator/tipincasare", "status": 200, "body": {"Success":true,"List":[{"Nume":"Banca"},{"Nume":"Retur Casa"},{"Nume":"Voucher"},{"Nume":"Bon"},{"Nume":"Plata Speciala"},{"Nume":"Chitanta"}]} }
+  },
+  "oblio": {
+    "tokenBadClient": {
+      "request": "POST https://www.oblio.eu/api/authorize/token client_id=<unknown e-mail>&client_secret=<random> (form or JSON body)",
+      "status": 400,
+      "body": {"error":"invalid_client","error_description":"The client credentials are invalid"}
+    },
+    "tokenNoCredentials": { "request": "POST /api/authorize/token with no body", "status": 400, "body": {"error":"invalid_client","error_description":"Client credentials were not found in the headers or body"} },
+    "noAuthHeader": { "request": "GET https://www.oblio.eu/api/nomenclature/companies without Authorization (same for POST /docs/invoice)", "status": 401, "body": {"status":401,"statusMessage":"Authorization header not detected"} },
+    "invalidToken": { "request": "Bearer <random> on GET /nomenclature/companies, /nomenclature/series, /docs/invoice, POST /docs/invoice, PUT /docs/invoice/collect, PUT /docs/invoice/cancel", "status": 401, "body": {"status":401,"statusMessage":"The access token provided is invalid"} },
+    "malformedAuth": { "request": "Authorization: <token without Bearer>", "status": 401, "body": {"status":400,"statusMessage":"Malformed auth header"} },
+    "unknownPath": { "request": "GET https://www.oblio.eu/api/nonexistent (with Bearer)", "status": 200, "contentType": "text/html", "bodyStart": "<!doctype html>\n<html lang=\"ro\" translate=\"no\">\n\t<head>\n\t\t<meta charset=\"utf-8\">\n\t\t<title>Pagina inexistenta</title>" }
+  }
+}

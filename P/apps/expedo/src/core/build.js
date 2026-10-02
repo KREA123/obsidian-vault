@@ -124,6 +124,8 @@ export function buildInvoice(order, plan, settings) {
   }
 
   const total = round2(lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0));
+  const shippingCharged = (order.shippingLines || []).reduce((s, l) => s + (Number(l.price) || 0), 0);
+  const expected = round2((Number(order.total) || 0) - (inv.includeShipping ? 0 : shippingCharged));
   const company = order.company;
   const today = bucharestDate();
   return {
@@ -152,7 +154,8 @@ export function buildInvoice(order, plan, settings) {
     paymentMethod: order.paymentMethod,
     mentions: `Comanda ${order.name}`,
     sendEmail: !!inv.sendEmail,
-    // Gift-card redemptions, rounding etc. make the sum differ from what Shopify charged.
-    mismatch: Math.abs(total - order.total) > 0.05 ? round2(order.total - total) : 0,
+    // Gift-card redemptions, order edits, rounding etc. make the sum differ from what Shopify charged.
+    // Without the shipping line on the invoice, compare against the total minus shipping.
+    mismatch: Math.abs(total - expected) > 0.05 ? round2(expected - total) : 0,
   };
 }

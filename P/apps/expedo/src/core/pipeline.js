@@ -171,23 +171,62 @@ function fail(store, orderId, step, err) {
  * steps: ['awb', 'invoice', 'fulfill']
  */
 export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 'fulfill'], force = false } = {}) {
+  const existing = db.getOrder(orderId);
+  if (!existing || existing.store_id !== store.id) return { ok: false, error: { code: 'ORDER_NOT_FOUND', message: 'Comanda nu există.' } };
+  const busy = { ok: false, error: { code: 'ORDER_BUSY', message: 'Comanda e deja în procesare.', hint: 'Încearcă din nou în câteva minute.' } };
   const lockKey = `${store.id}:${orderId}`;
-  if (locks.has(lockKey)) return { ok: false, error: { message: 'Comanda e deja în procesare.' } };
+  if (locks.has(lockKey)) return busy;
   locks.add(lockKey);
+  let claimed = false;
   try {
+    // The in-memory lock covers this process; the claim in the database covers other processes and
+    // runs interrupted by a crash (the claim is never released, so we know the run did not finish).
+    const claim = db.claimOrder(orderId, { takeOver: force || !!existing.awb });
+    if (claim === 'busy') return busy;
+    if (claim === 'stale') {
+      const e = fail(store, orderId, 'awb', new ProcessingError({
+        code: 'PROCESSING_INTERRUPTED',
+        message: 'Procesarea anterioară a comenzii s-a întrerupt înainte să se termine.',
+        hint: 'Verifică în contul curierului dacă s-a creat deja un AWB pentru comanda asta, apoi apasă „Generează AWB” ca să reiei.',
+      }));
+      db.updateOrder(orderId, { status: 'needs_attention' });
+      return { ok: false, error: e.toJSON() };
+    }
+    claimed = true;
+    if (claim === 'taken_over' && !existing.awb) {
+      db.logEvent(store.id, orderId, 'warning', 'awb', 'O procesare anterioară s-a întrerupt; am reluat-o. Verifică la curier să nu existe un AWB în plus.');
+    }
+
     const { plan, skipTag } = validateOrder(store, orderId);
     let order = db.getOrder(orderId);
     const settings = storeSettings(store);
     const test = isTestMode(store);
+    const held = skipTag || plan.hold || !!order.overrides.hold;
+    const refuse = (code, message, hint) => ({ ok: false, error: { code, message, hint } });
 
+    if (order.data.cancelledAt) {
+      // Status stays derived ('cancelled', or 'needs_attention' when an AWB exists); nothing to record.
+      return refuse('ORDER_CANCELLED', order.awb
+        ? `Comanda a fost anulată în Shopify, dar are AWB ${order.awb}.`
+        : 'Comanda e anulată în Shopify.', order.awb ? 'Anulează AWB-ul dacă nu a plecat coletul. Nu se mai facturează și nu se marchează expediată.' : 'Nu se mai expediază.');
+    }
+    if (!test && ((order.awb && order.test_mode) || (order.invoice_number && order.invoice_test))) {
+      // Finishing it now would e.g. send the customer a TEST AWB from Shopify, or pair a real AWB with a test invoice.
+      return refuse('TEST_DATA', 'Comanda are AWB sau factură de probă, făcute în modul de probă.',
+        'Apasă „Șterge datele de probă” în pagina comenzii, apoi procesează din nou ca să se facă AWB și factură reale.');
+    }
+    if (!order.awb && order.data.fulfillmentStatus === 'FULFILLED' && steps.includes('awb')) {
+      return refuse('ALREADY_FULFILLED', 'Comanda e deja marcată ca expediată în Shopify.',
+        'Dacă totuși îți trebuie AWB, anulează expedierea în Shopify, apoi apasă „Reîncarcă din Shopify”.');
+    }
     if (plan.blocking && !order.awb) {
       const first = plan.issues.find((i) => i.level === 'error');
       const e = fail(store, orderId, 'validate', new ProcessingError({ code: first.code, message: first.message, hint: first.hint, field: first.field }));
       db.updateOrder(orderId, { status: 'needs_attention' });
       return { ok: false, error: e.toJSON() };
     }
-    if (!force && (skipTag || plan.hold || order.overrides.hold) && !order.awb) {
-      return { ok: false, error: { message: 'Comanda e în așteptare (etichetă sau regulă).' } };
+    if (!force && held && !order.awb) {
+      return refuse('ORDER_ON_HOLD', 'Comanda e în așteptare (etichetă sau regulă).', 'Deschide comanda și procesează-o manual.');
     }
     db.updateOrder(orderId, { last_error: null });
 
@@ -205,7 +244,7 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
         db.logEvent(store.id, orderId, 'success', 'awb', `AWB ${res.awb} generat la ${realAdapter.name}${test ? ' (probă)' : ''}.`,
           { cod: shipment.cod, weightKg: shipment.weightKg, parcels: shipment.parcels, rules: plan.matchedRules });
       } catch (err) {
-        const e = fail(store, orderId, 'awb', err);
+        const e = fail(store, orderId, 'awb', ambiguousTimeout(toProcessingError(err, plan.courier), 'AWB-ul', 'curierului'));
         db.updateOrder(orderId, { status: 'needs_attention' });
         if (e.retryable) enqueue(store.id, 'process_order', { orderId }, { runAt: new Date(Date.now() + 5 * 60_000).toISOString(), key: `process:${orderId}` });
         return { ok: false, error: e.toJSON() };
@@ -221,17 +260,17 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
         // After a storno the order is invoiced again; FGO/Oblio would reject the same key as a duplicate.
         const previous = db.getDb().prepare(`SELECT COUNT(*) c FROM events WHERE order_id = ? AND step = 'invoice' AND level = 'success' AND message LIKE 'Factura % emisă%'`).get(orderId).c;
         invoice.idempotencyKey = previous ? `${order.name}-${previous + 1}` : order.name;
-        if (invoice.mismatch && settings.invoicing.includeShipping) {
-          db.logEvent(store.id, orderId, 'warning', 'invoice', `Totalul facturii diferă de totalul din Shopify cu ${invoice.mismatch.toFixed(2)} lei (card cadou, rotunjiri?). Verifică factura.`);
+        if (invoice.mismatch) {
+          db.logEvent(store.id, orderId, 'warning', 'invoice', `Totalul facturii diferă de totalul din Shopify cu ${invoice.mismatch.toFixed(2)} lei (card cadou, comandă editată, rotunjiri?). Verifică factura.`);
         }
         const res = await adapter.createInvoice(ctx, invoice);
         order = db.updateOrder(orderId, {
           invoice_provider: invoicer, invoice_series: res.series, invoice_number: String(res.number),
-          invoice_url: res.url || null, invoice_at: new Date().toISOString(), test_mode: test || order.test_mode,
+          invoice_url: res.url || null, invoice_at: new Date().toISOString(), invoice_test: test,
         });
         db.logEvent(store.id, orderId, 'success', 'invoice', `Factura ${res.series} ${res.number} emisă în ${realAdapter.name}${test ? ' (probă)' : ''}.`);
       } catch (err) {
-        const e = fail(store, orderId, 'invoice', err);
+        const e = fail(store, orderId, 'invoice', ambiguousTimeout(toProcessingError(err, invoicer), 'factura', 'programului de facturare'));
         db.updateOrder(orderId, { status: 'needs_attention' });
         return { ok: false, error: e.toJSON(), partial: true };
       }
@@ -244,7 +283,13 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
         try {
           const shopify = getShopify(store);
           const fresh = await shopify.getOrder(order.shopify_id);
-          if (fresh) order = db.updateOrder(orderId, { data: fresh });
+          if (fresh) {
+            db.upsertOrder(store.id, fresh);
+            order = db.getOrder(orderId);
+          }
+          if (order.data.cancelledAt) {
+            throw new ProcessingError({ code: 'ORDER_CANCELLED', message: 'Comanda a fost anulată în Shopify între timp; nu a fost marcată ca expediată.', hint: 'Anulează AWB-ul dacă nu a plecat coletul.', provider: 'shopify' });
+          }
           const courier = getCourier(order.courier);
           const f = await shopify.fulfill(order.data, {
             awb: order.awb, company: courier.name, url: courier.trackingUrl(order.awb), notifyCustomer: settings.fulfillment.notifyCustomer,
@@ -268,12 +313,28 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
     }
 
     order = db.getOrder(orderId);
-    db.updateOrder(orderId, { status: deriveStatus(order) });
+    db.updateOrder(orderId, { status: deriveStatus(order, { blocking: plan.blocking, hold: held }) });
     return { ok: true, awb: order.awb, invoice: order.invoice_number ? `${order.invoice_series} ${order.invoice_number}` : null };
   } finally {
+    if (claimed) db.releaseOrder(orderId);
     locks.delete(lockKey);
   }
 }
+
+/**
+ * A timeout while creating an AWB / invoice is ambiguous: the provider may have created it and only
+ * the answer was lost. Retrying automatically could make a second one, so it becomes a manual check.
+ */
+function ambiguousTimeout(e, what, where) {
+  if (e.code !== 'PROVIDER_TIMEOUT') return e;
+  return new ProcessingError({
+    ...e.toJSON(),
+    retryable: false,
+    hint: `Nu am primit răspuns la timp; e posibil ca ${what} să fi fost creat(ă) totuși. Verifică în contul ${where} înainte să încerci din nou.`,
+  });
+}
+
+const realInTest = (store, wasTest) => !wasTest && isTestMode(store);
 
 export async function cancelAwb(store, orderId) {
   const order = db.getOrder(orderId);
@@ -281,25 +342,37 @@ export async function cancelAwb(store, orderId) {
   if ([TrackingStatus.PICKED_UP, TrackingStatus.IN_TRANSIT, TrackingStatus.OUT_FOR_DELIVERY, TrackingStatus.DELIVERED].includes(order.tracking_status)) {
     throw new ProcessingError({ code: 'AWB_ALREADY_MOVING', message: `Coletul a plecat deja (${order.tracking_text}). AWB-ul nu se mai poate anula.`, hint: 'Sună la curier pentru retur sau redirecționare.' });
   }
-  const { adapter, ctx, realAdapter } = order.test_mode ? { adapter: mockCourier, ctx: { cache: db.storeCache(store.id), http: request }, realAdapter: getCourier(order.courier) } : providerContext(store, 'courier', order.courier);
-  await adapter.cancelShipment(ctx, order.awb);
-  if (order.fulfillment_id && !order.test_mode) {
-    await getShopify(store).cancelFulfillment(order.fulfillment_id).catch((err) =>
-      db.logEvent(store.id, orderId, 'warning', 'fulfill', `AWB anulat, dar expedierea din Shopify nu s-a putut anula: ${toProcessingError(err).message}`));
+  if (realInTest(store, order.test_mode)) {
+    // Cancelling it would also cancel the fulfillment in Shopify, which test mode never touches.
+    throw new ProcessingError({ code: 'REAL_AWB_IN_TEST_MODE', message: `AWB-ul ${order.awb} e real, dar magazinul e acum în modul de probă.`, hint: 'Treci pe live ca să-l anulezi (se anulează la curier și în Shopify), sau anulează-l din contul curierului.' });
   }
-  db.logEvent(store.id, orderId, 'success', 'awb', `AWB ${order.awb} anulat la ${realAdapter?.name || order.courier}.`);
-  const updated = db.updateOrder(orderId, {
-    awb: null, awb_at: null, tracking_status: null, tracking_text: null, tracking_at: null, fulfillment_id: null, fulfilled_at: null, shipping_cost: null, last_error: null,
+  const { adapter, ctx, realAdapter } = existingProviderContext(store, 'courier', order.courier, order.test_mode);
+  // Already cancelled at the courier (e.g. from their website): only clean up here.
+  if (order.tracking_status !== TrackingStatus.CANCELLED) await adapter.cancelShipment(ctx, order.awb);
+  let data = order.data;
+  if (order.fulfillment_id && !order.test_mode) {
+    try {
+      await getShopify(store).cancelFulfillment(order.fulfillment_id);
+      data = { ...data, fulfillmentStatus: 'UNFULFILLED' };
+    } catch (err) {
+      db.logEvent(store.id, orderId, 'warning', 'fulfill', `AWB anulat, dar expedierea din Shopify nu s-a putut anula: ${toProcessingError(err).message}`, { hint: 'Anulează expedierea manual în Shopify, apoi apasă „Reîncarcă din Shopify”.' });
+    }
+  }
+  db.logEvent(store.id, orderId, 'success', 'awb', `AWB ${order.awb} anulat la ${realAdapter?.name || order.courier}${order.test_mode ? ' (probă)' : ''}.`);
+  db.updateOrder(orderId, {
+    awb: null, awb_at: null, tracking_status: null, tracking_text: null, tracking_at: null, fulfillment_id: null, fulfilled_at: null,
+    shipping_cost: null, last_error: null, test_mode: false, cod_amount: order.data.codAmount || 0, data,
   });
-  db.updateOrder(orderId, { status: deriveStatus(updated) });
+  validateOrder(store, orderId);
 }
 
 export async function stornoInvoice(store, orderId) {
   const order = db.getOrder(orderId);
   if (!order.invoice_number) throw new ProcessingError({ code: 'NO_INVOICE', message: 'Comanda nu are factură.' });
-  const { adapter, ctx, realAdapter } = order.test_mode
-    ? { adapter: mockInvoicer, ctx: { cache: db.storeCache(store.id) }, realAdapter: getInvoicer(order.invoice_provider) }
-    : providerContext(store, 'invoicing', order.invoice_provider);
+  if (realInTest(store, order.invoice_test)) {
+    throw new ProcessingError({ code: 'REAL_INVOICE_IN_TEST_MODE', message: `Factura ${order.invoice_series} ${order.invoice_number} e reală, dar magazinul e acum în modul de probă.`, hint: 'Treci pe live ca s-o stornezi, sau stornează-o din programul de facturare.' });
+  }
+  const { adapter, ctx, realAdapter } = existingProviderContext(store, 'invoicing', order.invoice_provider, order.invoice_test);
   const ref = { series: order.invoice_series, number: order.invoice_number };
   let message;
   if (adapter.stornoInvoice) {
@@ -309,22 +382,48 @@ export async function stornoInvoice(store, orderId) {
     await adapter.cancelInvoice(ctx, ref);
     message = `Factura ${ref.series} ${ref.number} a fost anulată.`;
   }
-  db.logEvent(store.id, orderId, 'success', 'invoice', `${message} (${realAdapter?.name})`);
-  db.updateOrder(orderId, { invoice_series: null, invoice_number: null, invoice_url: null, invoice_at: null });
+  db.logEvent(store.id, orderId, 'success', 'invoice', `${message} (${realAdapter?.name}${order.invoice_test ? ', probă' : ''})`);
+  db.updateOrder(orderId, { invoice_series: null, invoice_number: null, invoice_url: null, invoice_at: null, invoice_test: false });
+}
+
+/**
+ * Drops the test AWB / invoice made in test mode, so the order can be processed for real after
+ * going live. Only test data is touched; real AWBs and invoices are never removed here.
+ */
+export async function resetTestData(store, orderId) {
+  const order = db.getOrder(orderId);
+  const fields = {};
+  const parts = [];
+  if (order.awb && order.test_mode) {
+    await mockCourier.cancelShipment({ cache: db.storeCache(store.id) }, order.awb);
+    Object.assign(fields, {
+      awb: null, awb_at: null, tracking_status: null, tracking_text: null, tracking_at: null, fulfillment_id: null, fulfilled_at: null,
+      shipping_cost: null, cod_collected_at: null, cod_amount: order.data.codAmount || 0, test_mode: false,
+    });
+    parts.push(`AWB ${order.awb}`);
+  }
+  if (order.invoice_number && order.invoice_test) {
+    Object.assign(fields, { invoice_provider: null, invoice_series: null, invoice_number: null, invoice_url: null, invoice_at: null, invoice_test: false });
+    parts.push(`factura ${order.invoice_series} ${order.invoice_number}`);
+  }
+  if (!parts.length) throw new ProcessingError({ code: 'NO_TEST_DATA', message: 'Comanda nu are AWB sau factură de probă.' });
+  db.updateOrder(orderId, { ...fields, last_error: null });
+  db.logEvent(store.id, orderId, 'info', 'reset', `Datele de probă au fost șterse (${parts.join(', ')}). Comanda poate fi procesată din nou.`);
+  validateOrder(store, orderId);
 }
 
 /** One PDF with the labels of all given orders, in order. Orders without AWB are skipped. */
 export async function mergedLabels(store, orderIds, format) {
   const settings = storeSettings(store);
+  const fmt = ['A4', 'A6'].includes(format) ? format : null;
   const out = await PDFDocument.create();
   const skipped = [];
   for (const id of orderIds) {
     const order = db.getOrder(id);
-    if (!order?.awb || order.store_id !== store.id) { if (order) skipped.push(order.name); continue; }
-    const { adapter, ctx } = order.test_mode
-      ? { adapter: mockCourier, ctx: { cache: db.storeCache(store.id) } }
-      : providerContext(store, 'courier', order.courier);
-    const pdf = await adapter.getLabel(ctx, order.awb, { format: format || ctx.settings?.labelFormat || settings.courier.labelFormat });
+    if (!order || order.store_id !== store.id) continue;
+    if (!order.awb) { skipped.push(order.name); continue; }
+    const { adapter, ctx } = existingProviderContext(store, 'courier', order.courier, order.test_mode);
+    const pdf = await adapter.getLabel(ctx, order.awb, { format: fmt || ctx.settings?.labelFormat || settings.courier.labelFormat });
     const src = await PDFDocument.load(pdf);
     for (const p of await out.copyPages(src, src.getPageIndices())) out.addPage(p);
     db.logEvent(store.id, id, 'info', 'label', `Eticheta AWB ${order.awb} a fost descărcată.`);
@@ -335,10 +434,8 @@ export async function mergedLabels(store, orderIds, format) {
 
 export async function invoicePdf(store, orderId) {
   const order = db.getOrder(orderId);
-  if (!order?.invoice_number) throw new ProcessingError({ code: 'NO_INVOICE', message: 'Comanda nu are factură.' });
-  const { adapter, ctx } = order.test_mode
-    ? { adapter: mockInvoicer, ctx: { cache: db.storeCache(store.id) } }
-    : providerContext(store, 'invoicing', order.invoice_provider);
+  if (!order?.invoice_number || order.store_id !== store.id) throw new ProcessingError({ code: 'NO_INVOICE', message: 'Comanda nu are factură.' });
+  const { adapter, ctx } = existingProviderContext(store, 'invoicing', order.invoice_provider, order.invoice_test);
   return adapter.getPdf(ctx, { series: order.invoice_series, number: order.invoice_number });
 }
 
@@ -358,8 +455,8 @@ export async function trackStore(store) {
     let results;
     try {
       const { adapter, ctx } = courierId === 'mock'
-        ? { adapter: mockCourier, ctx: { cache: db.storeCache(store.id), settings: {} } }
-        : providerContext(store, 'courier', courierId);
+        ? existingProviderContext(store, 'courier', list[0].courier, true)
+        : existingProviderContext(store, 'courier', courierId, false);
       results = [];
       for (let i = 0; i < list.length; i += 50) results.push(...await adapter.track(ctx, list.slice(i, i + 50).map((o) => o.awb)));
     } catch (err) {
@@ -371,11 +468,14 @@ export async function trackStore(store) {
       if (!order || (order.tracking_status === r.status && order.tracking_text === r.statusText)) continue;
       changed++;
       let updated = db.updateOrder(order.id, { tracking_status: r.status, tracking_text: r.statusText || TRACKING_LABELS[r.status], tracking_at: r.at || new Date().toISOString() });
-      db.logEvent(store.id, order.id, r.status === TrackingStatus.FAILED_ATTEMPT || r.status === TrackingStatus.RETURNING ? 'warning' : 'info', 'tracking',
+      db.logEvent(store.id, order.id, r.status === TrackingStatus.FAILED_ATTEMPT || r.status === TrackingStatus.RETURNING || r.status === TrackingStatus.CANCELLED ? 'warning' : 'info', 'tracking',
         `${TRACKING_LABELS[r.status] || r.status}${r.statusText && r.statusText !== TRACKING_LABELS[r.status] ? `: ${r.statusText}` : ''}`);
       if (r.status === TrackingStatus.DELIVERED) await onDelivered(store, updated);
-      if (r.status === TrackingStatus.RETURNED || r.status === TrackingStatus.RETURNING) {
+      if ((r.status === TrackingStatus.RETURNED || r.status === TrackingStatus.RETURNING) && order.tracking_status !== TrackingStatus.RETURNING) {
         db.logEvent(store.id, order.id, 'warning', 'tracking', 'Coletul se întoarce. Când ajunge, verifică produsele și stornează factura din pagina comenzii.');
+      }
+      if (r.status === TrackingStatus.CANCELLED) {
+        db.logEvent(store.id, order.id, 'warning', 'tracking', 'Curierul raportează AWB-ul ca anulat. Apasă „Anulează AWB” ca să poți genera altul.');
       }
       updated = db.getOrder(order.id);
       db.updateOrder(order.id, { status: deriveStatus(updated) });
@@ -386,23 +486,27 @@ export async function trackStore(store) {
 
 async function onDelivered(store, order) {
   const settings = storeSettings(store);
+  const test = isTestMode(store);
   if (order.cod_amount > 0 && !order.cod_collected_at) {
     db.updateOrder(order.id, { cod_collected_at: new Date().toISOString() });
-    db.logEvent(store.id, order.id, 'success', 'cod', `Ramburs de ${order.cod_amount.toFixed(2)} lei încasat de curier.`);
+    db.logEvent(store.id, order.id, 'success', 'cod', `Ramburs de ${order.cod_amount.toFixed(2)} lei încasat de curier${order.test_mode ? ' (probă)' : ''}.`);
     if (settings.fulfillment.registerCodPayment && order.invoice_number) {
-      try {
-        const { adapter, ctx } = order.test_mode
-          ? { adapter: mockInvoicer, ctx: {} }
-          : providerContext(store, 'invoicing', order.invoice_provider);
-        if (adapter.registerPayment) {
-          await adapter.registerPayment(ctx, { series: order.invoice_series, number: order.invoice_number, amount: order.cod_amount, date: new Date().toISOString().slice(0, 10), method: 'cod', reference: order.awb || order.name });
-          db.logEvent(store.id, order.id, 'success', 'invoice', `Încasarea a fost înregistrată pe factura ${order.invoice_series} ${order.invoice_number}.`);
+      if (realInTest(store, order.invoice_test)) {
+        db.logEvent(store.id, order.id, 'info', 'invoice', `Încasarea nu a fost înregistrată pe factura ${order.invoice_series} ${order.invoice_number}: magazinul e în modul de probă. Înregistreaz-o manual.`);
+      } else {
+        try {
+          const { adapter, ctx } = existingProviderContext(store, 'invoicing', order.invoice_provider, order.invoice_test);
+          if (adapter.registerPayment) {
+            await adapter.registerPayment(ctx, { series: order.invoice_series, number: order.invoice_number, amount: order.cod_amount, date: bucharestDate(), method: 'cod', reference: order.awb || order.name });
+            db.logEvent(store.id, order.id, 'success', 'invoice', `Încasarea a fost înregistrată pe factura ${order.invoice_series} ${order.invoice_number}.`);
+          }
+        } catch (err) {
+          db.logEvent(store.id, order.id, 'warning', 'invoice', `Încasarea nu s-a putut înregistra: ${toProcessingError(err).message}`);
         }
-      } catch (err) {
-        db.logEvent(store.id, order.id, 'warning', 'invoice', `Încasarea nu s-a putut înregistra: ${toProcessingError(err).message}`);
       }
     }
-    if (settings.fulfillment.markCodPaidOnDelivery && !order.test_mode && !order.paid_marked_at) {
+    // Shopify is never touched in test mode, nor for a test AWB.
+    if (settings.fulfillment.markCodPaidOnDelivery && !order.test_mode && !test && !order.paid_marked_at) {
       try {
         await getShopify(store).markAsPaid(order.shopify_id);
         db.updateOrder(order.id, { paid_marked_at: new Date().toISOString() });
