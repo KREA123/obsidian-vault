@@ -61,10 +61,10 @@ Unde cauți, pe site-urile facultăților (pagina departamentului → listă de 
 - [ ] Cere-i: CV Europass semnat, lista publicațiilor cu DOI, copii ale certificărilor (ex. certificat de abilitare, certificări IEEE/IPC/EMC, atestat de expert evaluator) și o adeverință de vechime/experiență.
 - [ ] Întreabă același departament (sau un alt laborator) și de **o scrisoare de colaborare**: acces la laborator/camera anecoică, sprijin pentru antenă, recrutarea studentului. Ne ajută la criteriul 2.3d și poate conta ca una dintre scrisorile de la 4.2.
 
-## Pasul 6 — Echipa (nominalizată la depunere!) · **până la T−3 săpt.**
+## Pasul 6 — Echipa (nominalizată la depunere!) · modele: `draft/Fisa_post_*.docx`, `draft/Declaratie_disponibilitate_MODEL.docx`, e-mail: `draft/Email_UPB_expert_si_echipa.md` · **până la T−3 săpt.**
 - [ ] **Coordonator tehnic/științific**: embedded/electronică, **≥ 5 ani** (ideal cu doctorat), part-time ~50 h/lună, **34 €/h brut**. Semnează CV + declarație de disponibilitate + fișa de post.
 - [ ] **Inginer embedded/firmware**: studii superioare în domeniu, **≥ 2 ani** experiență, ~80 h/lună, **25 €/h brut**. Aceleași documente.
-- [ ] **Student ≤ 24 ani**, înmatriculat (UPB ETTI/ACS; îl poți găsi prin coordonator sau prin expert), ~60 h/lună, **12 €/h brut**. Documente: **adeverință de student 2026–2027**, copie CI (vârsta), fișă de post, declarație/angajament.
+- [ ] **Student ≤ 24 ani** (✅ îl ai, 02.10.2026; îmi trebuie actele lui), înmatriculat (UPB ETTI/ACS; îl poți găsi prin coordonator sau prin expert), ~60 h/lună, **12 €/h brut**. Documente: **adeverință de student 2026–2027**, copie CI (vârsta), fișă de post, declarație/angajament.
 - [ ] **Tu**: CV Europass (manager de proiect + experiența CD SOUL), fișă de post.
 - [ ] Toți semnează **CV-ul și fișa de post** (cerință din ghid). Diplomele și certificările se scanează.
 
