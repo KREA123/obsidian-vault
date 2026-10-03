@@ -746,11 +746,11 @@ async function glass() {
     alert: __soul.soul.alert, view: __soul.S.view, sleeping: __soul.S.sleeping }));
   let s0 = await st(), vis = await visibleUi();
   ok(s0.view === "home" && !s0.ui && s0.aura < 0.02 && s0.sring < 0.02 && vis.length === 0, `glass standby = the eyes alone on black (ui ${s0.ui}, aura ${s0.aura}, status ring ${s0.sring}, visible ${JSON.stringify(vis)})`);
-  // a touch peeks: the clock capsule fades in over the aura
+  // a touch peeks: the clock capsule fades in, over pure black (behind the eyes it is always black)
   const b = await page.locator("#screen").boundingBox();
   await page.mouse.click(b.x + b.width / 2, b.y + b.height * 0.7); await sleep(500);
   const s1 = await st(), clock = await ev(() => { const c = document.querySelector('#cards .card:last-child [data-live="clock"]'); return c ? parseFloat(getComputedStyle(c.closest("svg")).opacity) : 0; });
-  ok(s1.peek && s1.ui && s1.aura > 0.9 && clock > 0.9, `glass a touch on the face shows the clock capsule and the aura (peek ${s1.peek}, aura ${s1.aura}, clock ${clock})`);
+  ok(s1.peek && s1.ui && s1.aura < 0.02 && clock > 0.9, `glass a touch on the face shows the clock capsule over black, no aura (peek ${s1.peek}, aura ${s1.aura}, clock ${clock})`);
   await sleep(4600);
   const s2 = await st(); vis = await visibleUi();
   ok(!s2.peek && !s2.ui && s2.aura < 0.02 && vis.length === 0, `glass after ${await ev(() => __soul.PEEK_MS)} ms idle it fades back to the eyes alone (${JSON.stringify(vis)})`);
@@ -759,7 +759,14 @@ async function glass() {
   await ev(() => __soul.uiSync()); await sleep(600);
   const s3 = await st();
   ok(!s3.ui && !s3.alert && (await ev(() => __soul.soul.st)) === "wait", `glass a pending Claude request in standby: no rim ring, wide eyes looking at you (alert ${s3.alert}, mood ${await ev(() => __soul.soul.st)})`);
-  await ev(() => { __soul.S.claude.pending = null; });
+  // a notification over the eyes: a glass capsule on black, no aura, no state wash
+  await ev(() => { __soul.S.claude.pending = null; __soul.showPill({ incoming: true, who: "Ana", text: "Home for dinner at 6?" }); }); await sleep(600);
+  const sN = await st();
+  ok(sN.view === "home" && sN.aura < 0.02, `glass a notification over the eyes keeps the background black (aura ${sN.aura}, pill ${await ev(() => !!__soul.S.pill)})`);
+  await ev(() => { __soul.S.pill = null; document.getElementById("pill").classList.remove("show"); __soul.cancel("pill"); __soul.uiSync(); });
+  // listening / thinking / answering on the face: black
+  await ev(() => __soul.go("voice", "fade")); await sleep(700);
+  ok((await st()).aura < 0.02, `glass the voice states on the face keep the background black (aura ${(await st()).aura})`);
   // an app: the aura rises, glass panels carry the words; idle → back to the eyes
   await ev(() => __soul.go("settings", "left")); await sleep(700);
   const g = await ev(() => { const el = document.querySelector("#cards .card:last-child .set"), cs = getComputedStyle(el); return { bg: cs.backgroundImage, sh: cs.boxShadow, r: parseFloat(cs.borderTopLeftRadius) }; });
@@ -768,7 +775,8 @@ async function glass() {
   const tone = async () => ev(() => document.getElementById("screen").dataset.tone || "");
   await ev(() => { __soul.S.claude.pending = { cmd: "npm test" }; __soul.go("claude", "left"); }); await sleep(600);
   const sheet = await ev(() => !!document.querySelector("#cards .card:last-child .gl.sheet.amber"));
-  ok(sheet && (await tone()) === "amber", `glass Claude's ask: a glass sheet with an amber glow, amber aura (${await tone()})`);
+  const sC = await st();
+  ok(sheet && sC.aura < 0.02, `glass Claude's ask over the eyes: a glass sheet with an amber glow on black, no aura (aura ${sC.aura}, tone ${await tone()})`);
   await ev(() => { __soul.S.claude.pending = null; __soul.go("alarms", "left"); }); await sleep(500);
   await ev(() => { __soul.S.lastAct = performance.now() - __soul.APP_IDLE_MS - 500; }); await sleep(900);
   const s5 = await st();
@@ -781,6 +789,18 @@ async function glass() {
   // the eyes engine draws on a transparent canvas: black where there are no eyes, so standby stays pure black
   const px = await ev(() => { const c = document.getElementById("face"), x = c.getContext("2d").getImageData(4, c.height / 2, 1, 1).data; return x[3]; });
   ok(px === 0, `glass the eye canvas is transparent outside the eyes (alpha ${px})`);
+  // and what is under it on a face moment is pure black: the pixels around the eyes during a peek / a notification
+  // equal the standby ones (the drawn device's own glass reflection is in both)
+  const bgPx = async () => ev(async b64 => { const im = new Image(); im.src = "data:image/png;base64," + b64; await im.decode(); const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const x = c.getContext("2d"); x.drawImage(im, 0, 0);
+    return [[0.08, 0.5], [0.92, 0.5], [0.5, 0.25], [0.3, 0.8], [0.7, 0.8], [0.85, 0.3]].map(([fx, fy]) => { const d = x.getImageData(Math.round(fx * im.width), Math.round(fy * im.height), 1, 1).data; return d[0] + d[1] + d[2]; }); }, (await page.locator("#screen").screenshot()).toString("base64"));
+  await ev(() => { __soul.go("home", "fade"); }); await sleep(4800);
+  const pxStandby = await bgPx();
+  await ev(() => __soul.peek()); await sleep(700);
+  const pxPeek = await bgPx();
+  await ev(() => __soul.showPill({ incoming: true, who: "Ana", text: "Home for dinner at 6?" })); await sleep(700);
+  const pxPill = await bgPx();
+  const dmax = Math.max(...pxPeek.map((v, k) => Math.abs(v - pxStandby[k])), ...pxPill.map((v, k) => Math.abs(v - pxStandby[k])));
+  ok(dmax <= 6, `glass behind the eyes on a peek / a notification the pixels stay standby-black (standby ${pxStandby}, peek ${pxPeek}, pill ${pxPill})`);
   ok(errs.length === 0, `glass zero page errors ${errs.join(" | ")}`);
   await browser.close();
 }

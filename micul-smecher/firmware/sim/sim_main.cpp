@@ -886,7 +886,7 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
   hc.base = base;
   hc.allowPlainWs = true;  // loopback test cloud only
   hc.deviceId = CloudLink::deviceId(gMac);
-  hc.fw = "1.4.0-sim";
+  hc.fw = "1.4.1-sim";
   hc.hw = "lcd28";
   hc.session.prefs.fw = hc.fw;
   hc.session.prefs.hw = hc.hw;

@@ -533,10 +533,13 @@ html{overscroll-behavior-x:none}
 @keyframes au2{to{transform:translate(-52px,40px) scale(.9)}}
 @keyframes au3{to{transform:translate(-40px,-30px) scale(1.18)}}
 @keyframes au4{to{transform:translate(36px,24px) scale(1.08)}}
-.screen.ui #aura{opacity:1}
+/* Behind the eyes it is always pure black, like the renders: the aura rises only on an OS screen, never on a
+   face moment (standby, a peek, a notification or Claude's ask over the eyes, listening / thinking / answering,
+   ringing, sleep, the first-boot hello). On a screen it waits until the eyes have stepped back, and leaves first. */
+.screen.aura #aura{opacity:1;transition-delay:.2s}
 /* the eyes step back when a screen opens (the layout springs scale and lift them; here they dim a touch) */
 #face{transition:filter .3s ease}
-.screen.ui #face{filter:brightness(.9) saturate(.95)}
+.screen.aura #face{filter:brightness(.9) saturate(.95)}
 /* standby: the home card carries nothing until you touch it ("peek"), then fades back */
 .card[data-v="home"]>*{opacity:0!important;transition:opacity .32s ease;animation:none!important}
 .screen.peek .card[data-v="home"]>*{opacity:1!important;transition-duration:.18s}
@@ -4268,11 +4271,19 @@ function peek(ms = PEEK_MS) {
   after(ms, () => { screen.classList.remove("peek"); applyFaceState(); }, "peek");
   applyFaceState();
 }
+/* a face moment: the eyes are what is shown, so behind them stays pure black (glass capsules sit on black) */
+function faceMoment() {
+  const v = S.view;
+  return S.sleeping || v === "home" || v === "voice" || v === "ring" || S.chgShow || !!(S.kb && S.kb.dict) ||
+    (!!S.claude.pending && v === "claude") || (BOOT.on && (BOOT.step === "birth" || BOOT.step === "bhold"));
+}
 /* the glass layer: on whenever something is shown; its tint follows the state (ice listening, amber needs you, mint done) */
 function uiSync() {
   const v = S.view, V = S.voice, pk = screen.classList.contains("peek");
   const ui = !S.sleeping && (v !== "home" || pk || !!S.pill || S.cc || !!S.kb || BOOT.on || S.chgShow);
   if (screen.classList.contains("ui") !== ui) screen.classList.toggle("ui", ui);
+  const au = ui && !faceMoment();
+  if (screen.classList.contains("aura") !== au) screen.classList.toggle("aura", au);
   let tone = "";
   if ((v === "voice" && V && V.phase === "listen") || (S.kb && S.kb.dict) || (BOOT.on && BOOT.holding && !BOOT.learned)) tone = "ice";
   else if ((S.claude.pending && ["claude", "home", "today"].includes(v)) || v === "ring" || (S.pill && S.pill.kind === "amber")) tone = "amber";
@@ -4285,7 +4296,7 @@ function parallaxAim(nx, ny) { PAR.tx = clamp(-nx, -1, 1) * 12; PAR.ty = clamp(-
 document.addEventListener("pointermove", e => { const b = screen.getBoundingClientRect(); if (!b.width) return; parallaxAim((e.clientX - b.left - b.width / 2) / b.width, (e.clientY - b.top - b.height / 2) / b.height); }, { passive: true });
 window.addEventListener("deviceorientation", e => { if (e.gamma != null) parallaxAim(e.gamma / 30, (e.beta - 45) / 30); }, { passive: true });
 function parallaxFrame(dt) {
-  if (RM || !screen.classList.contains("ui")) return;
+  if (RM || !screen.classList.contains("aura")) return;
   const nx = approach(PAR.x, PAR.tx, 4, dt), ny = approach(PAR.y, PAR.ty, 4, dt);
   if (Math.abs(nx - PAR.x) < 0.02 && Math.abs(ny - PAR.y) < 0.02) return;
   PAR.x = nx; PAR.y = ny; screen.style.setProperty("--px", nx.toFixed(1) + "px"); screen.style.setProperty("--py", ny.toFixed(1) + "px");

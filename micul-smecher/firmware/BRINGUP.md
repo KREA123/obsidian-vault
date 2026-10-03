@@ -134,22 +134,24 @@ Current (USB meter, 5 V in; estimates for the whole board, backlight dominates):
       `[power] deep sleep for N s`. Press **BOOT** → it wakes. A touch wakes it only if the GT911 INT
       line idles high (the firmware checks before arming it) — note whether touch-wake works.
 
-## 4b · SoulOS 5 Glass (firmware 1.4.0, 3 min)
+## 4b · SoulOS 5 Glass (firmware 1.4.x, 3 min)
 
 What should happen (pictures: `sim/shots/glass/soulos-glass-sheet-device.png`; design: `../os/DESIGN-GLASS.md`):
 
 - [ ] **Standby = the eyes alone.** After boot, and whenever nobody touches it, the glass is pure black with the
       two eyes on it: no clock, no rings, no hint words. Check the black is really black on this IPS panel (no
       grey wash outside the eyes; if there is, note the backlight level).
-- [ ] **A touch peeks.** Tap the face: the aura fades in (~0.3 s) behind the eyes, a glass capsule with the time
-      and battery sits on the top rim, a hint on the bottom; 4 s later it all fades back to the eyes.
+- [ ] **A touch peeks.** Tap the face: a glass capsule with the time and battery sits on the top rim, a hint on
+      the bottom, all **on black** (behind the eyes it is always black, 1.4.1); 4 s later they fade out.
+- [ ] **Never an aura behind the eyes.** Notifications, Claude's ask, listening / thinking / the answer, ringing:
+      glass capsules and sheets on pure black. The aura only appears on OS screens, ~0.2 s after the eyes step back.
 - [ ] **Screens are glass.** Swipe to the launcher, open Alarms, Settings, the keyboard: words on frosted panels
       over the aura, a lighter rim at the top-left of each panel. Look for **banding** in the dark aura (it is
       dithered; if you see steps, note where) and for panels that look grey-flat instead of frosted.
 - [ ] **Idle goes back.** Leave Settings open: after 15 s it returns to the eyes alone (not while typing, on the
       dial, while ringing, with a running timer on screen or a pairing code shown).
-- [ ] **Tone.** Hold the glass to talk: the aura's top glow turns ice after ~0.4 s (it is built in the
-      background in ~11 frames, then swapped in); a Claude request: an amber capsule for 5 s, the eyes stay wide.
+- [ ] **Tone.** On an OS screen the aura's top glow follows the state (built in the background in ~11 frames,
+      then swapped in); a Claude request in standby: an amber capsule on black for 5 s, the eyes stay wide.
 - [ ] **Drift / tilt.** On a screen, tilt it slowly: the aura leans a few px (repaints at most 4×/s); the frame
       rate must not drop under the cap (`F` overlay).
 - [ ] The log prints `psram` ~2 MB lower than with 1.3.0 (the four Glass buffers). If `GlassLayer::begin` could not

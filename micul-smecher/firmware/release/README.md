@@ -1,12 +1,16 @@
 # SOUL M install image
 
-`SOUL-2.8C-install.bin` — SoulOS firmware 1.4.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+`SOUL-2.8C-install.bin` — SoulOS firmware 1.4.1 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
 (ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
 (`partitions.csv`: Arduino's `default_16MB` + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
 - built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings,
   `pio check -e lcd28` clean
-- size 2,248,576 B · sha256 `49df784195f9ba8bc5722a512f7a8e8562105037ff25605501362489c4e0b593`
+- size 2,248,688 B · sha256 `ad529066a79329ede869f836bab077c160fd0937a7e7737854feadd13501df5a`
+- 1.4.1: behind the eyes it is **always pure black**, like the renders. The aura rises only on OS screens
+  (launcher, Today, Alarms, dial, timer, notes, settings, keyboard…), 0.2 s after the eyes step back; never on a
+  face moment (standby, the touch peek, a notification or Claude's ask over the eyes, listening / thinking /
+  answering, ringing, the first-boot hello, asleep), where the glass capsules sit on black.
 - 1.4.0: **SoulOS 5 · Glass** (`../../os/DESIGN-GLASS.md`). Standby is the eyes alone on true black: no clock,
   no rim rings, no hints (a pending Claude request shows as a 5 s amber capsule, then only in the eyes). A touch on
   the face peeks for 4 s (time · battery in a glass capsule on the rim); any screen left alone for 15 s goes back

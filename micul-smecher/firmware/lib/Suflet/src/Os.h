@@ -257,6 +257,11 @@ class Os {
   // back to the eyes. uiOn() = the aura and the glass are showing.
   static constexpr float kPeekS = 4.0f, kAppIdleS = 15.0f;
   bool uiOn() const;
+  // A face moment: the eyes are what is shown (home, a peek or a notification over the eyes, listening /
+  // thinking / answering, ringing, Claude's ask, the first-boot hello, asleep). Behind the eyes it is then
+  // always pure black: the aura only rises on an OS screen. auraOn() = uiOn() and not a face moment.
+  bool faceMoment() const;
+  bool auraOn() const { return uiOn() && !faceMoment(); }
   bool peeking() const { return peekT_ > 0; }
   GlassTone glassTone() const;
   static int appCount();

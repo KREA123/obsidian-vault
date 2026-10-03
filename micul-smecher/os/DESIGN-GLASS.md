@@ -12,12 +12,19 @@ The eyes engine (`eyes/eyes.js`, `EyeRender.cpp`) is not touched: the glass is b
 
 ## 1 · States
 
+**The rule (founder, 2026-10-03): behind the eyes it is always pure black, like the renders.** The aura only rises
+on an OS screen, never on a *face moment*: standby, the peek, a notification or Claude's ask over the eyes,
+listening / thinking / answering, ringing, the first-boot hello and hold steps, charging, asleep. On a face moment
+the glass capsules and sheets sit on black (their frost is black, so they read as a white fill + the lit edge).
+Opening a screen from the eyes, the aura waits ~0.2 s for them to step back; going back to the eyes it leaves first.
+Web: `faceMoment()` → class `aura`; device: `Os::faceMoment()` / `Os::auraOn()`.
+
 | State | What is on the glass | Enters | Leaves |
 |---|---|---|---|
 | **Standby** | Eyes only, true black (`#000`). No aura, no status ring, no clock, no rim light (a pending Claude request is shown by the eyes: wide, looking at you). | Boot done; any screen left alone for `APP_IDLE_MS`; home after `PEEK_MS` | a touch, the wheel/crown, an event (notification, alarm, charger) |
-| **Peek** | Standby + the aura + one glass capsule on the top rim (time · date · status) + the home hint/tag; the battery/Claude rim marks. | a touch on the face in standby | `PEEK_MS` = 4 s without a touch |
-| **Screen** | The eyes step back (scale down to the top, -10 % brightness), the aura rises behind them, the screen's words sit on glass. | opening anything | side button / swipe ↓ / `APP_IDLE_MS` = 15 s idle (except while listening, typing, a running timer, the dial, ringing, a game) |
-| **Event** | A notification capsule slides along the rim over the aura; the charger shows a mint glass dial. | the event | its own timer |
+| **Peek** | Standby (still black) + one glass capsule on the top rim (time · date · status) + the home hint/tag; the battery/Claude rim marks. | a touch on the face in standby | `PEEK_MS` = 4 s without a touch |
+| **Screen** | The eyes step back (scale down to the top, -10 % brightness), then the aura rises behind the screen, the screen's words sit on glass. | opening anything | side button / swipe ↓ / `APP_IDLE_MS` = 15 s idle (except while listening, typing, a running timer, the dial, ringing, a game) |
+| **Event** | A notification capsule slides along the rim, over black when the eyes are showing; the charger shows a mint glass dial. | the event | its own timer |
 | **Asleep** | The sleeping eyes only (dimmed); no always-on clock. | 45 s idle, face down | a touch, pick-up |
 
 ## 2 · The aura
@@ -76,7 +83,7 @@ fill + edge) and look alike.
 | Settings / AI picker | one glass sheet (radius 30), rows split by 1 px hairlines; the chosen brain in an amber glass lens |
 | Launcher (the orbit) | the app names ride a glass band on the lower rim; the chosen one sits in a brighter glass lens; its live fact in a glass card in the middle |
 | Keyboard | glass keycaps (radius 14), the field a glass capsule, suggestions in glass pills, ✓/↑ glass orbs with a glow |
-| Claude's ask | a glass sheet with an amber glow (the command in mono), amber aura, "hold = yes · 2× = no" on an amber rim capsule |
+| Claude's ask | a glass sheet with an amber glow (the command in mono), on black (it is a face moment), "hold = yes · 2× = no" on an amber rim capsule |
 | Answers, messages, About | a glass card |
 | Notifications | a glass capsule that slides along the top rim (bottom rim while the keyboard is up), tinted edge per kind |
 | Alarm dial, Focus | a glass annulus (the track) with the ticks on it; the knob a dark glass orb |
@@ -101,7 +108,7 @@ Hierarchy: one big thing per screen (34–104 px), one secondary line (20–24 p
 - Peek fades in in 180 ms, out in 320 ms.
 - `prefers-reduced-motion`: no drift, no parallax.
 
-## 7 · Device implementation (firmware v1.4.0)
+## 7 · Device implementation (firmware v1.4.1)
 
 - `Glass.h/.cpp`: `GlassLayer` owns two PSRAM buffers of (W + 2M)² RGB565 (M = 12 px margin for the
   drift/tilt translate): the **aura** and the **frosted** aura (~1 MB at 480 px), plus a second pair to build a new

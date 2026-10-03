@@ -1484,6 +1484,19 @@ bool Os::uiOn() const {
   return peekT_ > 0 || toastLeft_ > 0 || claude_.passkey != 0;
 }
 
+bool Os::faceMoment() const {
+  if (asleep_) return true;
+  switch (view_) {
+    case View::Home:
+    case View::Talk:
+    case View::Answer:
+    case View::Ringing: return true;
+    case View::Claude: return claude_.prompt;
+    case View::Boot: return bootStep_ == BootStep::Birth || bootStep_ == BootStep::Hold;
+    default: return false;
+  }
+}
+
 GlassTone Os::glassTone() const {
   if (listening_) return GlassTone::Ice;
   if (view_ == View::Ringing && !timerRinging_) return GlassTone::Amber;
@@ -1515,7 +1528,9 @@ bool Os::idleReturns() const {
 void Os::glassUpdate(float dt, const Brain& brain) {
   GlassLayer& G = glass();
   asleep_ = brain.mode() == Mode::Asleep || brain.mode() == Mode::Off;
-  const bool on = uiOn();
+  // the aura (never behind the eyes on a face moment); when a screen opens from the eyes it waits 0.2 s for
+  // them to step back, so it never rises behind the big eyes
+  const bool on = auraOn() && (auraLevel_ > 0 || viewT_ >= 0.2f);
   G.setTone(glassTone());
   if (G.step() && G.on()) invalidate();  // a new tone: built in the background over ~8 frames, then swapped in
   if (on && !G.on()) {

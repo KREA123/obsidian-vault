@@ -798,8 +798,13 @@ static void test_os_glass_standby_is_the_eyes_alone_and_a_touch_peeks() {
   d.tap(233, 330);
   TEST_ASSERT_TRUE(d.os.peeking() && d.os.uiOn());
   d.run(0.5f);
-  TEST_ASSERT_TRUE(glass().on());
-  TEST_ASSERT_TRUE(litOutsideEyes(d) > 20000);  // the aura + the clock capsule
+  // behind the eyes it is always black: the clock capsule sits on black, no aura
+  TEST_ASSERT_TRUE(d.os.faceMoment());
+  TEST_ASSERT_FALSE(glass().on());
+  const int lit = litOutsideEyes(d);
+  TEST_ASSERT_TRUE(lit > 500 && lit < 40000);  // the capsule (+ its hint), not a full-screen aura (~180k px)
+  TEST_ASSERT_EQUAL_UINT16(0, d.fb[240 * 480 + 20]);
+  TEST_ASSERT_EQUAL_UINT16(0, d.fb[300 * 480 + 460]);
   d.run(Os::kPeekS + 0.6f);
   TEST_ASSERT_FALSE(d.os.peeking());
   TEST_ASSERT_FALSE(glass().on());
@@ -811,7 +816,7 @@ static void test_os_glass_screens_go_back_to_the_eyes_when_left_alone() {
   d.render = true;
   d.os.go(View::Settings);
   d.run(1.0f);
-  TEST_ASSERT_TRUE(d.os.uiOn() && glass().on());
+  TEST_ASSERT_TRUE(d.os.uiOn() && d.os.auraOn() && glass().on());
   TEST_ASSERT_EQUAL_UINT16(glass().auraAt(20, 240), d.fb[240 * 480 + 20]);  // the aura is behind the screen
   d.run(Os::kAppIdleS + 1.0f);
   TEST_ASSERT_EQUAL_INT((int)View::Home, (int)d.os.view());
@@ -852,10 +857,51 @@ static void test_os_glass_tone_follows_the_state_and_claude_in_standby_shows_onl
   TEST_ASSERT_EQUAL_INT((int)GlassTone::Mint, (int)d.os.glassTone());
 }
 
+// behind the eyes it is always pure black: face moments never show the aura, OS screens do
+static void test_os_glass_never_behind_the_eyes() {
+  Dev d(true);
+  d.render = true;
+  d.run(1.0f);
+  d.os.toast("Ana: home for dinner at 6?", Rgb::hex(0xFFF6E4));  // a notification over the eyes
+  d.run(0.6f);
+  TEST_ASSERT_TRUE(d.os.uiOn());
+  TEST_ASSERT_FALSE(d.os.auraOn());
+  TEST_ASSERT_FALSE(glass().on());
+  TEST_ASSERT_EQUAL_UINT16(0, d.fb[240 * 480 + 20]);
+  const View face[] = {View::Talk, View::Answer, View::Ringing};
+  for (View v : face) {
+    d.os.go(v);
+    d.run(0.8f);
+    TEST_ASSERT_TRUE(d.os.faceMoment());
+    TEST_ASSERT_FALSE(glass().on());
+  }
+  ClaudeInfo ci;  // Claude's ask, on its screen: an amber glass sheet over black
+  ci.linked = ci.prompt = true;
+  ci.tool = "Bash";
+  d.os.setClaude(ci);
+  d.os.go(View::Claude);
+  d.run(0.8f);
+  TEST_ASSERT_FALSE(d.os.auraOn());
+  TEST_ASSERT_FALSE(glass().on());
+  ci.prompt = false;
+  d.os.setClaude(ci);
+  d.run(0.1f);
+  TEST_ASSERT_TRUE(d.os.auraOn());  // Claude working, nothing asked: an OS screen
+  // opening a screen from the eyes: the aura waits for them to step back, then rises
+  d.os.go(View::Home);
+  d.run(1.0f);
+  d.os.go(View::Settings);
+  d.run(0.1f);
+  TEST_ASSERT_FALSE(glass().on());
+  d.run(0.6f);
+  TEST_ASSERT_TRUE(glass().on());
+}
+
 void runOsTests() {
   RUN_TEST(test_os_glass_standby_is_the_eyes_alone_and_a_touch_peeks);
   RUN_TEST(test_os_glass_screens_go_back_to_the_eyes_when_left_alone);
   RUN_TEST(test_os_glass_tone_follows_the_state_and_claude_in_standby_shows_only_the_eyes);
+  RUN_TEST(test_os_glass_never_behind_the_eyes);
   RUN_TEST(test_os_first_boot_birth_name_brain_hold);
   RUN_TEST(test_os_boot_brain_step_opens_the_setup_portal_when_a_key_is_missing);
   RUN_TEST(test_os_swipe_opens_the_orbit_and_back_is_one_level);
