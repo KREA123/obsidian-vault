@@ -275,6 +275,16 @@ async def openai_responses(request: Request) -> JSONResponse:
 
 # ===================================================================== app ==
 
+async def models(request: Request) -> JSONResponse:
+    """GET /v1/models: the free call SOUL's /me makes to check a pasted key (both APIs use this path)."""
+    key = request.headers.get("x-api-key") or request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+    if _key_kind(key) in ("bad", "missing"):
+        return JSONResponse({"type": "error", "error": {"type": "authentication_error", "message": "invalid x-api-key"}},
+                            status_code=401)
+    return JSONResponse({"data": [{"id": "claude-haiku-4-5", "type": "model"}, {"id": "gpt-6-luna", "object": "model"}],
+                         "has_more": False})
+
+
 def create_app() -> Starlette:
     async def requests_(request: Request) -> JSONResponse:
         return JSONResponse(request.app.state.rec.all())
@@ -286,6 +296,7 @@ def create_app() -> Starlette:
     app = Starlette(routes=[
         Route("/v1/messages", anthropic_messages, methods=["POST"]),
         Route("/v1/responses", openai_responses, methods=["POST"]),
+        Route("/v1/models", models, methods=["GET"]),
         Route("/openai/v1/responses", openai_responses, methods=["POST"]),
         Route("/__fake/requests", requests_, methods=["GET"]),
         Route("/__fake/reset", reset, methods=["POST"]),

@@ -88,3 +88,5 @@ actualizat: 2026-09-25
 - [[micul-smecher/investors/poc-1.1/dosar/02-PUNCTAJ|02 · Punctajul ETF — cum luăm maximul și cât e realist]] — `investors/poc-1.1/dosar/02-PUNCTAJ.md`
 - [[micul-smecher/investors/poc-1.1/dosar/03-NUCLEU-PROIECT|03 · Nucleul proiectului SOUL-PoC]] — `investors/poc-1.1/dosar/03-NUCLEU-PROIECT.md`
 - [[micul-smecher/investors/poc-1.1/dosar/04-CE-TREBUIE-SA-FACA-ANDU|04 · Ce trebuie să faci tu, Andu (în ordine)]] — `investors/poc-1.1/dosar/04-CE-TREBUIE-SA-FACA-ANDU.md`
+
+- [[SOUL — Cereri parteneriat Anthropic și OpenAI]] — emailuri: Claude cu contul omului, Sign in with ChatGPT

@@ -64,6 +64,8 @@ ENV_VARS: List[Dict[str, Any]] = [
     {"name": "SOUL_TRIAL_TURNS", "secret": False, "prod": False, "doc": "trial turns of an unpaired factory unit (default 30) [E]"},
     {"name": "SOUL_B2_DAILY_CAP_MICRO", "secret": False, "prod": False, "doc": "per-device daily spend cap on the owner's own key, micro-USD (default 500000)"},
     {"name": "SOUL_BRAIN_A_KILL", "secret": False, "prod": False, "doc": "`1` moves brain A to the offline rules fleet-wide (spend emergency)"},
+    {"name": "SOUL_BUILTIN_AI", "secret": False, "prod": False, "doc": "`1` turns on brain A (AI inside SOUL on SOUL's own keys, billed to SOUL). Default `0`: founder decision of 3 Oct 2026, SOUL includes no AI paid by us"},
+    {"name": "SOUL_KEY_CHECK", "secret": False, "prod": False, "doc": "`0` skips the live check (GET /v1/models) of keys pasted on /me; they are saved as unverified"},
     {"name": "SUFLET_TZ", "secret": False, "prod": False, "doc": "server time zone for interpreting turns (default Europe/Bucharest)"},
     {"name": "SUFLET_API_TOKEN", "secret": True, "prod": False, "doc": "dev only: enables /v1/dev/*; production refuses to start when set"},
     {"name": "SOUL_PUBLIC_SCHEME", "secret": False, "prod": False, "doc": "dev only: `http` for a loopback test server; production is https only"},
@@ -184,7 +186,8 @@ def _dev_token_check(authorization: str = Header(default="")) -> None:
 def create_app(*, service: Optional[SoulService] = None, gateway: Optional[gateway_mod.Gateway] = None,
                mailer: Optional[Mailer] = None, public_host: Optional[str] = None, scheme: Optional[str] = None,
                db_path: Optional[str] = None, clock: Callable[[], float] = time.time,
-               cimd_fetch: Optional[Callable[[str], dict]] = None) -> FastAPI:
+               cimd_fetch: Optional[Callable[[str], dict]] = None,
+               key_check: Optional[Callable[[str, str], str]] = None) -> FastAPI:
     """The production composition: device routes + connector, one SoulService, one Gateway, one lifespan."""
     env = os.environ.get("SOUL_ENV", "dev")
     if env in ("production", "pilot"):
@@ -197,7 +200,7 @@ def create_app(*, service: Optional[SoulService] = None, gateway: Optional[gatew
     gateway_mod.set_gateway(gw)
     mailer = mailer if mailer is not None else mailer_from_env()
     remote = create_remote_app(service, gw, public_host=public_host, scheme=scheme, db_path=db_path, mailer=mailer,
-                               clock=clock, cimd_fetch=cimd_fetch)
+                               clock=clock, cimd_fetch=cimd_fetch, key_check=key_check)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):

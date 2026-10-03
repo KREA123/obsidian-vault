@@ -827,9 +827,10 @@ _BASE_HTML = """<!doctype html>
 <html lang="{{ lang }}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ title }} · SOUL</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/soul-web.css">
-</head><body><main>
-<h1>SOUL</h1>
+</head><body class="soul"><main>
+<header class="top"><a href="/me" class="home">{{ wordmark|safe }}</a></header>
 {% block body %}{% endblock %}
 </main>
 <script src="/static/soul-consent.js"></script>
@@ -992,7 +993,9 @@ SECURITY_HEADERS = {
 
 def _page(name: str, lang: str, status: int = 200, **ctx) -> HTMLResponse:
     lang = _l(lang)
-    body = _ENV.get_template(name).render(lang=lang, t=_T[lang], **ctx)
+    from .web_me import WORDMARK
+
+    body = _ENV.get_template(name).render(lang=lang, t=_T[lang], wordmark=WORDMARK, **ctx)
     return HTMLResponse(body, status_code=status, headers=SECURITY_HEADERS)
 
 
@@ -1009,8 +1012,15 @@ def _lang_of(request: Request, *candidates: Optional[str]) -> str:
 
 
 def _safe_next(nxt: Optional[str]) -> str:
+    """Where sign-in may return: the consent request, or one of the phone pages (/pair, /me)."""
     nxt = nxt or ""
-    return nxt if re.fullmatch(r"/consent\?req=rq_[A-Za-z0-9_-]{1,64}", nxt) else "/login/done"
+    if re.fullmatch(r"/consent\?req=rq_[A-Za-z0-9_-]{1,64}", nxt):
+        return nxt
+    if re.fullmatch(r"/(pair|me|me/connect-claude|me/connect-chatgpt|me/signin-chatgpt)", nxt):
+        return nxt
+    if re.fullmatch(r"/(pair/brain|me/connect-claude|me/signin-chatgpt)\?d=soul-[0-9a-f]{12}", nxt):
+        return nxt
+    return "/login/done"
 
 
 def client_ip(request: Request) -> str:
@@ -1270,7 +1280,8 @@ def _metadata_routes(rc: RemoteContext, cimd_supported: bool) -> List[Route]:
 def create_remote_app(service: Optional[SoulService] = None, gateway: Any = None, *,
                       public_host: Optional[str] = None, scheme: str = "https", db_path: Optional[str] = None,
                       mailer: Optional[Mailer] = None, cimd_fetch: Optional[Callable[[str], dict]] = None,
-                      clock: Callable[[], float] = time.time, extra_allowed_hosts: Optional[List[str]] = None):
+                      clock: Callable[[], float] = time.time, extra_allowed_hosts: Optional[List[str]] = None,
+                      key_check: Optional[Callable[[str, str], str]] = None):
     """The remote connector app (Starlette, with its lifespan). `gateway` defaults to `suflet_ai.gateway`."""
     host = (public_host or os.environ.get("SOUL_PUBLIC_HOST", "")).strip().lower()
     if not host or "/" in host:
@@ -1304,7 +1315,11 @@ def create_remote_app(service: Optional[SoulService] = None, gateway: Any = None
                                                      allowed_origins=[f"{scheme}://{h}" for h in hosts]),
         host=host)
     # ours first: Starlette takes the first matching route, so these override the SDK's metadata
-    app.router.routes[0:0] = _metadata_routes(rc, cimd_fetch is not None) + _web_routes(rc)
+    from .web_me import me_routes
+
+    # the phone pages first: their brand stylesheet replaces the plain one of the consent pages
+    app.router.routes[0:0] = (_metadata_routes(rc, cimd_fetch is not None)
+                              + me_routes(rc, SECURITY_HEADERS, client_ip, key_check) + _web_routes(rc))
     app.add_middleware(RequestContextMiddleware)
     app.state.soul = rc
     return app

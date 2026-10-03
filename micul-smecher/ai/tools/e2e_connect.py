@@ -164,6 +164,43 @@ class Browser:
                                                         "code": code, "lang": "en", "first_name": self.first_name})
         assert r.status_code == 303, r.text[:300]
 
+    # ---- the phone pages: /pair (the QR on SOUL lands here) and /me ----
+    async def pair_page(self) -> str:
+        """GET /pair, signing in by email code first if needed; returns the signed-in page."""
+        r = await self.http.get("/pair")
+        assert r.status_code == 200, r.text[:300]
+        if 'id="signin"' in r.text:
+            await self.sign_in("/login?next=%2Fpair&lang=en")
+            r = await self.http.get("/pair")
+        assert 'name="code"' in r.text, r.text[:300]
+        return r.text
+
+    async def pair_claim(self, code: str) -> str:
+        """Type the code shown on SOUL into /pair; returns the pid of the claim (SOUL must still get a tap)."""
+        page = await self.pair_page()
+        r = await self.http.post("/pair/claim", data={"csrf": _hidden(page, "csrf"), "code": code})
+        assert r.status_code == 303 and r.headers["location"].startswith("/pair/wait?pid="), (r.status_code, r.text[:300])
+        return r.headers["location"].split("pid=")[1]
+
+    async def pair_wait(self, pid: str, timeout: float = 15.0) -> str:
+        """Poll /pair/wait until SOUL's owner tapped Yes; returns the brain page path (/pair/brain?d=soul-…)."""
+        end = time.time() + timeout
+        while time.time() < end:
+            r = await self.http.get(f"/pair/wait?pid={pid}")
+            if r.status_code == 303:
+                return r.headers["location"]
+            assert r.status_code == 200, r.text[:300]
+            await asyncio.sleep(0.2)
+        raise AssertionError("SOUL was not paired in time (no tap?)")
+
+    async def choose(self, page: str, brain: str, nxt: str = "") -> httpx2.Response:
+        """Pick a brain on /pair/brain (or /me): the form for `brain` (+ `next`)."""
+        action = re.search(r'action="(/me/devices/soul-[0-9a-f]{12}/brain)"', page).group(1)
+        data = {"csrf": _hidden(page, "csrf"), "brain": brain}
+        if nxt:
+            data["next"] = nxt
+        return await self.http.post(action, data=data)
+
     async def consent_page(self, authorize_url: str) -> str:
         u = urlparse(authorize_url)
         r = await self.http.get(u.path + "?" + u.query)
