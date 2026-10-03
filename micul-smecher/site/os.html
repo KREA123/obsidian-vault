@@ -503,6 +503,161 @@ details.fold[open]>summary::after{content:"–"}
 @media (hover:none) and (pointer:coarse),(max-width:600px){.keys{display:none}}
 html{overscroll-behavior-x:none}
 
+/* ================= SoulOS 5 · design language "Glass" (tokens and rules: os/DESIGN-GLASS.md) =================
+   Standby is the eyes alone on true black: no clock, no rings, no hints. Touch it and the eyes step back,
+   a slow aura of SOUL's colours rises behind them and the words sit on frosted glass. Idle, it all fades back
+   to the eyes. Glass = a translucent white fill over the (already blurred) aura + a 1 px edge that catches the
+   light at the top-left + a soft drop shadow; the device builds the same thing from a pre-blurred buffer. */
+.screen{
+  --g-fill-hi:rgba(255,255,255,.15); --g-fill-lo:rgba(255,255,255,.06); --g-fill-on:rgba(255,255,255,.24);
+  --g-edge:inset 1.25px 1.25px 0 -.25px rgba(255,255,255,.46),inset -1px -1px 0 rgba(255,255,255,.07),inset 0 0 0 1px rgba(255,255,255,.07);
+  --g-shadow:0 18px 34px -16px rgba(0,0,0,.8),0 3px 10px -3px rgba(0,0,0,.4);
+  --g-r-card:30px; --g-r-row:22px; --g-r-key:14px;
+  --g-ink:#FFF6E4; --g-dim:rgba(255,244,222,.66); --g-faint:rgba(255,244,222,.42);
+  --au-ember:255,138,61; --au-night:39,71,184; --au-lilac:154,127,224; --acc:255,179,71;
+  --g-in:220ms; --px:0px; --py:0px}
+.screen[data-tone="ice"]{--acc:127,178,255}
+.screen[data-tone="amber"]{--acc:255,162,58}
+.screen[data-tone="mint"]{--acc:127,227,192}
+/* the aura: deep near-black with three big soft glows + one for the state; it drifts slowly and leans with the tilt */
+#aura{position:absolute;inset:-28px;pointer-events:none;opacity:0;transition:opacity .42s ease;background:#05050A;
+  transform:translate3d(var(--px),var(--py),0);will-change:opacity}
+#aura i{position:absolute;border-radius:50%;will-change:transform}
+#aura .a1{left:-40px;top:250px;width:360px;height:360px;background:radial-gradient(circle,rgba(var(--au-ember),.5),rgba(var(--au-ember),.16) 42%,rgba(var(--au-ember),0) 70%);animation:au1 27s ease-in-out infinite alternate}
+#aura .a2{left:200px;top:-70px;width:400px;height:400px;background:radial-gradient(circle,rgba(var(--au-night),.72),rgba(var(--au-night),.24) 45%,rgba(var(--au-night),0) 70%);animation:au2 33s ease-in-out infinite alternate}
+#aura .a3{left:250px;top:270px;width:280px;height:280px;background:radial-gradient(circle,rgba(var(--au-lilac),.42),rgba(var(--au-lilac),.12) 45%,rgba(var(--au-lilac),0) 70%);animation:au3 23s ease-in-out infinite alternate}
+#aura .a4{left:70px;top:-10px;width:330px;height:300px;background:radial-gradient(circle,rgba(var(--acc),.4),rgba(var(--acc),.12) 46%,rgba(var(--acc),0) 70%);transition:background .6s ease;animation:au4 19s ease-in-out infinite alternate}
+#aura::after{content:"";position:absolute;inset:0;opacity:.07;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes au1{to{transform:translate(46px,-38px) scale(1.12)}}
+@keyframes au2{to{transform:translate(-52px,40px) scale(.9)}}
+@keyframes au3{to{transform:translate(-40px,-30px) scale(1.18)}}
+@keyframes au4{to{transform:translate(36px,24px) scale(1.08)}}
+.screen.ui #aura{opacity:1}
+/* the eyes step back when a screen opens (the layout springs scale and lift them; here they dim a touch) */
+#face{transition:filter .3s ease}
+.screen.ui #face{filter:brightness(.9) saturate(.95)}
+/* standby: the home card carries nothing until you touch it ("peek"), then fades back */
+.card[data-v="home"]>*{opacity:0!important;transition:opacity .32s ease;animation:none!important}
+.screen.peek .card[data-v="home"]>*{opacity:1!important;transition-duration:.18s}
+#aod{display:none}
+
+/* the glass itself */
+.gl,.chip.btn,.list li,.set,.addb,.tog,.cb,.tb,.dok,.opv,.wg,.ccb,.kk,.kf,.ks.b,.ks.ctx,.ks.tm,.ks.un,.kcall,.ktray,.gtile,.wxh,.seg2,.tpre,.smood,.ccv{
+  background:linear-gradient(155deg,var(--g-fill-hi),var(--g-fill-lo) 64%);box-shadow:var(--g-edge),var(--g-shadow)}
+.gl{position:absolute;border-radius:var(--g-r-card)}
+.gl.amber{box-shadow:var(--g-edge),inset 0 0 0 1px rgba(255,179,71,.28),0 0 46px -8px rgba(255,162,58,.55),var(--g-shadow)}
+.gl.mint{box-shadow:var(--g-edge),inset 0 0 0 1px rgba(201,242,228,.24),0 0 40px -10px rgba(127,227,192,.45),var(--g-shadow)}
+.gl.ice{box-shadow:var(--g-edge),inset 0 0 0 1px rgba(159,198,255,.26),0 0 40px -10px rgba(127,178,255,.45),var(--g-shadow)}
+.prs{scale:.95;opacity:.9}
+.chip.btn.prs,.list li.prs,.kk.on,.cb.prs,.tb.prs,.ccb.prs{background:linear-gradient(155deg,var(--g-fill-on),rgba(255,255,255,.1) 64%)}
+/* the rim: titles sit in a glass capsule that follows the round edge */
+.rim .gcap{fill:url(#gF);stroke:url(#gE);stroke-width:1.1;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+.rim .gcap.amber{stroke:rgba(255,179,71,.6);filter:drop-shadow(0 0 12px rgba(255,162,58,.5))}
+.rim .gcap.mint{stroke:rgba(201,242,228,.55);filter:drop-shadow(0 0 12px rgba(127,227,192,.4))}
+.rim .gcap.ice{stroke:rgba(159,198,255,.6);filter:drop-shadow(0 0 12px rgba(127,178,255,.45))}
+.rim text{fill:var(--g-dim)}
+.rim .say{fill:var(--g-ink)}
+.rim .amber{fill:var(--amber)}.rim .mint{fill:var(--mint)}.rim .ice{fill:var(--ice)}.rim .cream{fill:var(--g-ink)}
+.t1{color:var(--g-ink)}
+.t3{color:var(--g-dim)}
+/* actions: glass capsules (no more underlines) */
+.chips{gap:12px 14px}
+.chip.btn{min-height:50px;padding:0 22px;border-radius:999px;font-size:22px;font-weight:540;color:var(--g-ink)}
+.chip.btn::after{display:none}
+.chip.btn.ok{color:var(--mint);box-shadow:var(--g-edge),inset 0 0 0 1px rgba(201,242,228,.22),0 0 26px -8px rgba(127,227,192,.5),var(--g-shadow)}
+.chip.btn.warn{color:var(--amber);box-shadow:var(--g-edge),inset 0 0 0 1px rgba(255,179,71,.26),0 0 26px -8px rgba(255,162,58,.5),var(--g-shadow)}
+.chip.btn.ice{color:var(--ice)}
+.chip:not(.btn){background:none}
+/* lists: each row a glass slab */
+.list{gap:8px}
+.list li{border-radius:var(--g-r-row);padding:0 16px;min-height:58px}
+.list li.col{padding:10px 16px}
+.list li.new::before{left:-12px}
+.alist li{min-height:66px}
+.ainfo b{font-size:36px}
+/* toggles: a glass track with a light inside */
+.tog{min-width:0;width:62px;height:34px;padding:0 5px;border-radius:999px;justify-content:flex-start;gap:0;font-size:0;letter-spacing:0;color:var(--faint);transition:background .2s}
+.tog i{width:24px;height:24px;border-radius:50%;background:rgba(255,244,222,.28);box-shadow:inset 1px 1px 0 rgba(255,255,255,.4),0 2px 6px rgba(0,0,0,.4);transition:transform .22s var(--spring),background .2s}
+.tog.on{background:linear-gradient(155deg,rgba(127,227,192,.38),rgba(127,227,192,.14))}
+.tog.on i{transform:translateX(28px);background:var(--mint);box-shadow:0 0 12px rgba(127,227,192,.8),inset 1px 1px 0 #fff}
+/* settings: one glass sheet, rows split by hairlines */
+.set{border-radius:var(--g-r-card);padding:6px 20px}
+.set div{position:relative}
+.set div+div::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:rgba(255,255,255,.08)}
+.set span{color:var(--g-ink)}
+.set.tight div{height:44px}
+.set.tight span{font-size:23px}
+.set.two{padding:8px 16px}
+.set.two div{height:54px}
+.set.two .sel{margin:0 -10px;padding:0 10px;border-radius:18px;background:linear-gradient(155deg,rgba(255,179,71,.24),rgba(255,179,71,.08));box-shadow:inset 1px 1px 0 rgba(255,214,150,.4)}
+.set.two .sel::before,.set.two .sel+div::before{display:none}
+/* round controls: glass orbs */
+.addb{width:58px;height:58px;top:100px;border-radius:50%;gap:0}
+.addb small{display:none}
+.cb{border-radius:50%;width:60px;height:60px}
+.cb.big{width:84px;height:84px;box-shadow:var(--g-edge),inset 0 0 0 1px rgba(255,240,200,.3),0 0 30px -8px rgba(255,240,200,.4),var(--g-shadow)}
+.tb{box-shadow:var(--g-edge),var(--g-shadow)}
+.tb.go{box-shadow:var(--g-edge),inset 0 0 0 1px rgba(201,242,228,.35),0 0 26px -8px rgba(127,227,192,.6),var(--g-shadow)}
+.tb.stop{box-shadow:var(--g-edge),inset 0 0 0 1px rgba(255,179,71,.35),0 0 26px -8px rgba(255,162,58,.6),var(--g-shadow)}
+.dok{width:72px;height:72px;left:197px;border-radius:50%;box-shadow:var(--g-edge),inset 0 0 0 1px rgba(201,242,228,.3),0 0 30px -8px rgba(127,227,192,.6),var(--g-shadow)}
+.dok svg{padding:0;box-shadow:none}
+/* launcher: the app names ride a glass band on the lower rim; the chosen one shows in a glass lens */
+.opv{left:96px;right:96px;top:250px;height:118px;border-radius:40px;padding:0 18px}
+.opv b{color:var(--g-ink)}
+/* Today: glass cards */
+.wg{border-radius:var(--g-r-card)}
+/* Control */
+.ccb{border-radius:24px;margin:4px;height:86px}
+.ccb.on{background:linear-gradient(155deg,rgba(127,227,192,.3),rgba(127,227,192,.1))}
+.ccb.on.ice{background:linear-gradient(155deg,rgba(127,178,255,.3),rgba(127,178,255,.1))}
+.ccv{padding:10px 14px;border-radius:20px;top:116px}
+/* weather, timer, soul, games */
+.wxh{left:86px;right:86px;padding:12px 10px;border-radius:24px}
+.seg2{left:120px;right:120px;top:112px;height:44px;border-radius:999px;padding:0 6px;gap:0;align-items:center}
+.seg2 span{flex:1;height:34px;border-radius:999px}
+.seg2 span.on{box-shadow:none;background:rgba(255,255,255,.16);color:var(--g-ink)}
+.tpre{left:84px;right:84px;padding:4px 8px;border-radius:999px;gap:2px}
+.tpre span{border-radius:999px;min-width:48px;height:44px}
+.tpre span.on{box-shadow:none;background:linear-gradient(155deg,rgba(255,179,71,.34),rgba(255,179,71,.12));color:var(--amber)}
+.smood{padding:0 22px;border-radius:999px}
+.gtile{border-radius:44px}
+/* cards made of words (answers, Claude's ask, a message) */
+.gcard{padding:22px 24px;border-radius:var(--g-r-card)}
+.sheet{padding:24px 22px 20px;border-radius:36px}
+/* keyboard: glass keycaps on the aura, the field a glass capsule */
+.kf{left:76px;right:76px;top:50px;height:76px;padding:0 18px 8px;border-radius:26px}
+.kk{border-radius:var(--g-r-key);height:44px;color:var(--g-ink)}
+.kk::after{display:none}
+.kk.fn{color:var(--g-dim)}
+.kk.sp::before{display:none}
+.kk.send,.kk.save{background:none;box-shadow:none}
+.kk.send svg,.kk.save svg{width:40px;height:40px;padding:8px;background:linear-gradient(155deg,var(--g-fill-hi),var(--g-fill-lo));box-shadow:var(--g-edge),0 0 22px -6px currentColor}
+.kk.lock{box-shadow:var(--g-edge),inset 0 -2px 0 var(--cream)}
+.kbk::before{display:none}
+.ks.b,.ks.ctx,.ks.tm,.ks.un{border-radius:999px}
+.ks.ctx span,.ks.tm span,.ks.un span{box-shadow:none;padding:0}
+.ksep{display:none}
+.kcall{border-radius:22px;height:62px}
+.kcall::before{display:none}
+.ktray{background:linear-gradient(155deg,rgba(40,38,52,.92),rgba(22,20,30,.92));box-shadow:var(--g-edge),0 14px 30px rgba(0,0,0,.6)}
+.ktray b.sel{background:var(--cream);color:#120d05}
+/* dial */
+.ddig span.a{box-shadow:inset 0 -3px 0 -1px rgba(255,240,200,.9)}
+.wd{border-radius:50%}
+.wd.on{background:linear-gradient(155deg,var(--g-fill-hi),var(--g-fill-lo));box-shadow:var(--g-edge)}
+/* charging */
+.chg-c{padding:18px 28px;border-radius:34px;left:120px;right:120px;background:linear-gradient(155deg,rgba(127,227,192,.2),rgba(127,227,192,.06));box-shadow:var(--g-edge),0 0 40px -10px rgba(127,227,192,.5)}
+/* notifications: a glass capsule that slides along the rim */
+.pill .gcap{fill:url(#gF);stroke:url(#gE);stroke-width:1.1;filter:drop-shadow(0 8px 12px rgba(0,0,0,.55))}
+.pill.amber .gcap{stroke:rgba(255,179,71,.7);filter:drop-shadow(0 0 14px rgba(255,162,58,.55))}
+.pill.mint .gcap{stroke:rgba(201,242,228,.6);filter:drop-shadow(0 0 14px rgba(127,227,192,.45))}
+.pill text{fill:var(--g-ink)}
+.orb .gband{fill:url(#gF);stroke:url(#gE);stroke-width:1.1;filter:drop-shadow(0 10px 16px rgba(0,0,0,.5))}
+.orb .glens{fill:rgba(255,255,255,.12);stroke:rgba(255,255,255,.4);stroke-width:1;transition:d .2s}
+.orb .ow .m{fill:var(--g-dim)}
+@media (prefers-reduced-motion: reduce){#aura i{animation:none!important}#aura{transform:none}}
+
 @media (prefers-reduced-motion: reduce){.card,.pill,.pebble{transition:none!important;animation:none!important}.fade-in,.coach,.wxbody.wxin,.opv.flip{animation:none}
   .rip,.wx-rays,.wx-cloud,.wx-rain line,.gtile svg{animation:none!important}[data-act],.ccb,.tdots i{transition:none!important}}
 </style>
@@ -521,6 +676,7 @@ html{overscroll-behavior-x:none}
       <div class="body" aria-hidden="true"></div>
       <div class="glass" id="glass">
         <div class="screen" id="screen" tabindex="0" role="application" aria-label="SOUL screen">
+          <div id="aura" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>
           <canvas id="face" aria-hidden="true"></canvas>
           <div id="aod" aria-hidden="true"><b data-live="aod"></b><small id="aodd"></small></div>
           <div id="cards"></div>
@@ -2090,11 +2246,11 @@ class Soul {
   }
   draw() {
     const S = this.S, ctx = this.ctx; if (!S) return;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.clearRect(0, 0, S, S);   /* SoulOS 5: transparent, so the aura shows under the eyes */
     const L = this.layS, D = S * L.k, cx = S / 2 + (L.cx || 0) * S, cy = S / 2 + L.cy * S;
     if (D > 2) { ctx.save(); EYES.render(ctx, this.rig, this.design, cx, cy, D, { glass: false, sheen: false }); ctx.restore(); }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const B = this.dim; if (B < 0.995) { ctx.globalAlpha = 1 - B; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S); ctx.globalAlpha = 1; }
+    const B = this.dim; if (B < 0.995) { ctx.globalCompositeOperation = "source-atop"; ctx.globalAlpha = 1 - B; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, S, S); ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; }   // dims the eyes only (the canvas stays transparent elsewhere)
     /* the rim: one light at a time */
     const R = S / 2, t = this.t, f = this.f, ring = (c, a, w, a0 = 0, a1 = TAU, blur = 0.04) => {
       ctx.globalAlpha = a; ctx.strokeStyle = rgba(c, 1); ctx.lineWidth = w; ctx.lineCap = "round"; ctx.shadowColor = rgba(c, 0.6); ctx.shadowBlur = S * blur;
@@ -2215,10 +2371,24 @@ const lg = (k, s = 24, w = s >= 60 ? 2.5 : 2, st = "") => `<svg class="lg" viewB
 /* rim words: #rT runs clockwise over the top (text outside the path), #rB runs left→right through 6 o'clock (text inside) */
 const arcPath = (r, span, top) => { const a0 = (top ? -90 - span / 2 : 90 + span / 2) * Math.PI / 180, a1 = (top ? -90 + span / 2 : 90 - span / 2) * Math.PI / 180;
   return `M${(233 + r * Math.cos(a0)).toFixed(2)} ${(233 + r * Math.sin(a0)).toFixed(2)}A${r} ${r} 0 1 ${top ? 1 : 0} ${(233 + r * Math.cos(a1)).toFixed(2)} ${(233 + r * Math.sin(a1)).toFixed(2)}`; };
-function rimDefs() { return `<path id="rT" d="${arcPath(198, 250, 1)}"/><path id="rB" d="${arcPath(201, 250, 0)}"/><path id="rO" d="${arcPath(203, 250, 0)}"/><path id="rP" d="${arcPath(197, 250, 1)}"/>`; }
+function rimDefs() { return `<linearGradient id="gF" gradientUnits="userSpaceOnUse" x1="40" y1="20" x2="430" y2="450"><stop offset="0" stop-color="#fff" stop-opacity=".17"/><stop offset=".62" stop-color="#fff" stop-opacity=".065"/><stop offset="1" stop-color="#fff" stop-opacity=".09"/></linearGradient><linearGradient id="gE" gradientUnits="userSpaceOnUse" x1="60" y1="30" x2="410" y2="440"><stop offset="0" stop-color="#fff" stop-opacity=".62"/><stop offset=".38" stop-color="#fff" stop-opacity=".16"/><stop offset=".66" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity=".2"/></linearGradient><path id="rT" d="${arcPath(198, 250, 1)}"/><path id="rB" d="${arcPath(201, 250, 0)}"/><path id="rO" d="${arcPath(203, 250, 0)}"/><path id="rP" d="${arcPath(197, 250, 1)}"/>`; }
+/* SoulOS 5 · glass on the rim: a capsule bent along the circle (centre radius rm, half-width hw, from a0 to a1 degrees, 0 = 3 o'clock, clockwise) */
+function capD(rm, hw, a0, a1) {
+  const P = (r, a) => { const t = a * Math.PI / 180; return `${(233 + r * Math.cos(t)).toFixed(1)} ${(233 + r * Math.sin(t)).toFixed(1)}`; };
+  const ro = rm + hw, ri = rm - hw, lg = a1 - a0 > 180 ? 1 : 0;
+  return `M${P(ro, a0)} A${ro} ${ro} 0 ${lg} 1 ${P(ro, a1)} A${hw} ${hw} 0 0 1 ${P(ri, a1)} A${ri} ${ri} 0 ${lg} 0 ${P(ri, a0)} A${hw} ${hw} 0 0 1 ${P(ro, a0)}Z`;
+}
+/* how wide a rim label is, in degrees of half-span at radius r (mono caps ≈ 11.4 px a letter, the voice ≈ 13.5) */
+function rimSpan(inner, cls, r) {
+  const t = String(inner).replace(/<[^>]*>/g, "").replace(/&[a-z#0-9]+;/g, "x"), w = t.length * (/say/.test(cls) ? 13.2 : 11.4);
+  return clamp((w / 2 + 22) / r * 180 / Math.PI, 12, 80);
+}
+const toneOf = cls => (/amber|mint|ice/.exec(cls) || [""])[0];
 const rimTxt = (href, inner, cls = "", deg = 0, act = "") => `<g transform="rotate(${deg} 233 233)"${act}><text class="${cls}"><textPath href="#${href}" startOffset="50%" text-anchor="middle">${inner}</textPath></text></g>`;
-const rimTop = (inner, cls = "", box = "rimlbl") => `<svg class="rim ${box}" viewBox="0 0 466 466">${rimTxt("rT", inner, cls)}</svg>`;
-const rimBot = (inner, cls = "", box = "") => `<svg class="rim ${box}" viewBox="0 0 466 466">${rimTxt("rB", inner, cls)}</svg>`;
+const rimTop = (inner, cls = "", box = "rimlbl") => { const h = rimSpan(inner, cls, 204), cap = /rimlbl|clock/.test(box) ? `<path class="gcap ${toneOf(cls)}" d="${capD(204, 17, -90 - h, -90 + h)}"/>` : "";
+  return `<svg class="rim ${box}" viewBox="0 0 466 466">${cap}${rimTxt("rT", inner, cls)}</svg>`; };
+const rimBot = (inner, cls = "", box = "") => { const h = rimSpan(inner, cls, 192), cap = /say/.test(cls) ? `<path class="gcap ${toneOf(cls)}" d="${capD(192, 21, 90 - h, 90 + h)}"/>` : "";
+  return `<svg class="rim ${box}" viewBox="0 0 466 466">${cap}${rimTxt("rB", inner, cls)}</svg>`; };
 const lbl = (t, cls = "") => rimTop(esc(t), cls);
 const dateShort = () => new Date().toLocaleDateString(LANG === "ro" ? "ro-RO" : "en-GB", { weekday: "short", day: "numeric" }).replace(/[.,]/g, "");
 /* an arc on the rim (angles in degrees, 0 = 3 o'clock, clockwise) */
@@ -2278,13 +2448,13 @@ function cardHTML(v) {
     case "focus": {
       const F = S.focus, frac = F.left / F.total, C = 2 * Math.PI * 222;
       const sub = F.done ? L.focusDone : F.run ? L.focusRun : F.left < F.total ? L.focusPaused : L.focusTap;
-      return lbl(L.focus, F.done ? "mint" : "") + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(255,240,200,.1)" stroke-width="6"/>
+      return lbl(L.focus, F.done ? "mint" : "") + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true">${glassRing(214, 15)}
         <circle data-live="fring" cx="233" cy="233" r="222" fill="none" stroke="${F.done ? "#C9F2E4" : "#FFF0C8"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px ${F.done ? "rgba(201,242,228,.7)" : "rgba(255,240,200,.5)"})"/></svg>
         <div class="c" style="top:184px;gap:16px"><div class="fdig" data-live="fdig" style="${F.done ? "color:var(--mint)" : ""}">${mmss(F.left)}</div><div class="t3">${sub}</div></div>`;
     }
     case "claude": {
       const P = S.claude.pending;
-      if (P) return lbl(L.cAsk, "amber") + `<div class="c" style="top:128px;gap:12px"><span style="color:var(--amber)">${lg("claude", 50)}</span><div class="t3" style="font-size:20px">site · Bash</div><div class="cmd">${esc(P.cmd)}</div></div>` + rimBot(esc(L.cHint), "say amber");
+      if (P) return lbl(L.cAsk, "amber") + `<div class="c gl sheet amber" style="top:112px;left:76px;right:76px;gap:12px"><span style="color:var(--amber)">${lg("claude", 50)}</span><div class="t3" style="font-size:20px">site · Bash</div><div class="cmd">${esc(P.cmd)}</div></div>` + rimBot(esc(L.cHint), "say amber");
       return lbl("Claude") + `<div class="c" style="top:136px;gap:10px"><span style="color:var(--dim)">${lg("claude", 40)}</span><div class="t1">${L.cWorking}</div><div class="t3" style="font-size:20px">${L.cProj}</div>
         ${wordBtn("type-ai", unpen(S.ai === "none" ? L.typeOff : L.typeBtn(aiName())), "", ' data-o="claude" style="margin-top:4px"', "pen")}</div>`;
     }
@@ -2329,9 +2499,9 @@ function cardHTML(v) {
       if (S.memWiped) return lbl(L.memDone, "mint") + `<div class="c" style="top:210px"><div class="t2">${L.memEmpty}</div></div>`;
       return lbl(L.memT) + `<ul class="list" style="top:140px">${L.mem.map(m => `<li style="min-height:58px"><span class="tx" style="font-size:23px">${esc(m)}</span></li>`).join("")}</ul>` + rimBot(esc(L.memWipe), "amber");
     case "about":
-      return `<div class="c" style="top:130px;gap:14px;left:74px;right:74px"><span style="color:var(--dim)">${lg("about", 34)}</span><div class="t1">${L.aboutT}</div><div class="t3" style="font-size:21px;color:rgba(255,240,200,.75)">${L.aboutB}</div></div>`;
+      return `<div class="c gl gcard" style="top:110px;gap:12px;left:74px;right:74px"><span style="color:var(--dim)">${lg("about", 34)}</span><div class="t1">${L.aboutT}</div><div class="t3" style="font-size:21px;color:rgba(255,240,200,.75)">${L.aboutB}</div></div>`;
     case "msg":
-      return lbl(`${L.msgT} · ${L.msgFrom}`) + `<div class="c" style="top:156px;gap:18px"><div class="t1">${L.msgBody}</div>
+      return lbl(`${L.msgT} · ${L.msgFrom}`) + `<div class="c gl gcard" style="top:118px;gap:14px;left:74px;right:74px"><div class="t1">${L.msgBody}</div>
         <div class="chips" style="flex-direction:column;align-items:center;gap:0">${wordBtn("reply", L.reply1, "", ' data-r="1"')}${wordBtn("reply", L.reply2, "", ' data-r="2"')}</div></div>`;
     case "voice": {
       const V = S.voice; if (!V) return "";
@@ -2340,7 +2510,7 @@ function cardHTML(v) {
       const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips || [], a = String(V.p.a || ""), fs = a.length > 150 ? 20 : a.length > 90 ? 23 : a.length > 44 ? 27 : 31;
       if (V.kind === "tr") return `<div class="c fade-in" style="top:196px;gap:14px"><div class="t3" style="font-size:21px">${esc(V.p.q)}</div><div class="t1" style="font-size:30px">${esc(a)}</div>
         <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div></div>`;
-      return `<div class="c fade-in" style="top:172px;gap:10px;left:58px;right:58px"><div class="dtag" style="${V.err ? "" : "color:var(--ice)"}">${esc(V.src || "")}</div>
+      return `<div class="c gl gcard fade-in" style="top:150px;gap:10px;left:62px;right:62px"><div class="dtag" style="${V.err ? "" : "color:var(--ice)"}">${esc(V.src || "")}</div>
         ${V.err && V.err !== a ? `<div class="aerr" role="alert">${esc(V.err)}</div>` : ""}
         <div class="t1" data-live="say" style="font-size:${fs}px">${esc(a)}</div>
         ${chips.length ? `<div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div>` : ""}${V.p.tool ? `<div class="tool">→ ${esc(V.p.tool)}</div>` : ""}</div>`;
@@ -2362,7 +2532,7 @@ function applyFaceState() {
   soul.layDirect = false; soul.levelExt = null;
   if (S.kb && !S.sleeping) {
     soul.lay = Object.assign({ cx: 0 }, S.kb.dict ? LAYOUT.kbdict : LAYOUT.kb);
-    soul.st = S.kb.dict ? "listen" : "idle"; soul.alert = false; return;
+    soul.st = S.kb.dict ? "listen" : "idle"; soul.alert = false; uiSync(); return;
   }
   let lay = Object.assign({ cx: 0 }, layoutFor(v));
   if (S.pill && lay.k < 0.9 && lay.cy < -0.3) { lay.cy += 0.025; }        // the notification rides the top rim: the eyes duck a little under it
@@ -2372,7 +2542,8 @@ function applyFaceState() {
   soul.lay = lay;
   /* the eyes say the state first; the rim carries one light (ice = listening, amber = Claude / needs you, mint = done) */
   const pend = !!S.claude.pending, V = S.voice;
-  soul.alert = (pend && v !== "voice" && !BOOT.on) || (v === "ring" && S.ringWake);
+  soul.alert = (pend && v !== "voice" && !BOOT.on && !(v === "home" && !S.pill && !screen.classList.contains("peek"))) || (v === "ring" && S.ringWake);   // standby: the eyes alone say it (wide, looking at you)
+  uiSync();
   if (S.sleeping) { soul.st = "sleep"; return; }
   if (BOOT.on) { soul.st = BOOT.step === "bhold" && BOOT.holding ? "listen" : "idle"; return; }
   if (v === "voice" && V) soul.st = V.phase === "listen" ? "listen" : V.phase === "think" ? "think" : V.speaking ? "speak" : "idle";
@@ -2476,7 +2647,8 @@ function pillSVG(o) {
   const t = String(o.text), txt = t.length > 30 ? t.slice(0, 29) + "…" : t, who = o.who ? String(o.who).toUpperCase() : "";
   const w = txt.length * 11.6 + (who ? who.length * 12.5 + 14 : 0), half = clamp(w / 2 / 211 * 180 / Math.PI + 4, 12, 70);
   const low = !!S.kb, c = low ? 90 : -90;          // while the keyboard (and the eyes) hold the top, a note rides the lower rim
-  return `<svg viewBox="0 0 466 466" aria-hidden="false"><path class="ln" d="${arcD(c - half, c + half, 224)}"/><path class="hit" d="${arcD(c - half - 4, c + half + 4, 198)}"/>
+  const hh = half + 3, cap = low ? capD(192, 22, 90 - hh, 90 + hh) : capD(206, 22, -90 - hh, -90 + hh);
+  return `<svg viewBox="0 0 466 466" aria-hidden="false"><path class="gcap" d="${cap}"/><path class="hit" d="${arcD(c - half - 4, c + half + 4, 198)}"/>
     <text><textPath href="#${low ? "rB" : "rP"}" startOffset="50%" text-anchor="middle">${who ? `<tspan class="who">${esc(who)}</tspan><tspan dx="12">${esc(txt)}</tspan>` : esc(txt)}</textPath></text></svg>`;
 }
 function hidePill() { S.pill = null; pillEl.classList.remove("show"); screen.classList.remove("has-pill"); applyFaceState(); }
@@ -3247,11 +3419,13 @@ function editAlarm(id) {
 
 /* ---------------------------------------------------------------- Rim-Dial time picker (research/04 §13) */
 const DC = 233, DR = 205;
+/* a glass annulus: the dial's track (centre radius r, half-width hw) */
+const glassRing = (r, hw) => `<circle cx="233" cy="233" r="${r}" fill="none" stroke="url(#gF)" stroke-width="${2 * hw}" style="filter:drop-shadow(0 10px 16px rgba(0,0,0,.5))"/><circle cx="233" cy="233" r="${r + hw}" fill="none" stroke="url(#gE)" stroke-width="1.1"/><circle cx="233" cy="233" r="${r - hw}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>`;
 const dpos = (deg, r) => [DC + r * Math.cos(deg * Math.PI / 180), DC + r * Math.sin(deg * Math.PI / 180)];
 function dialHTML() {
   const L = T(), E = S.edit; if (!E) return "";
   const H = E.mode === "h", f1 = n => n.toFixed(1);
-  let g = `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="${DR}" fill="none" stroke="rgba(255,240,200,.1)" stroke-width="2"/>`;
+  let g = `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true">${glassRing(DR, 23)}`;
   if (H) {
     g += `<path d="M28 233 A${DR} ${DR} 0 0 1 438 233" fill="none" stroke="rgba(255,240,200,.4)" stroke-width="3"/><path d="M438 233 A${DR} ${DR} 0 0 1 28 233" fill="none" stroke="rgba(159,198,255,.45)" stroke-width="3"/>`;
   } else if (E.m > 0) {
@@ -3266,7 +3440,7 @@ function dialHTML() {
   }
   (H ? [0, 6, 12, 18] : [0, 15, 30, 45]).forEach(v => { const [x, y] = dpos(H ? 90 + 15 * v : -90 + 6 * v, DR); g += `<text x="${f1(x)}" y="${f1(y + 8)}" text-anchor="middle" font-family="Martian Mono,monospace" font-size="15" letter-spacing="1" fill="rgba(255,240,200,.6)">${H ? v : pad2(v)}</text>`; });
   const [kx, ky] = dpos(H ? 90 + 15 * E.h : -90 + 6 * E.m, DR);
-  g += `<circle cx="${f1(kx)}" cy="${f1(ky)}" r="27" fill="#000" stroke="#FFF0C8" stroke-width="2.5" style="filter:drop-shadow(0 0 8px rgba(255,240,200,.6))"/><text x="${f1(kx)}" y="${f1(ky + 8.5)}" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="25" font-weight="600" fill="#FFF0C8">${pad2(H ? E.h : E.m)}</text></svg>`;
+  g += `<circle cx="${f1(kx)}" cy="${f1(ky)}" r="27" fill="rgba(24,20,30,.9)" stroke="#FFF0C8" stroke-width="2.5" style="filter:drop-shadow(0 0 8px rgba(255,240,200,.6))"/><text x="${f1(kx)}" y="${f1(ky + 8.5)}" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="25" font-weight="600" fill="#FFF0C8">${pad2(H ? E.h : E.m)}</text></svg>`;
   if (E.kind === "rem") E.day = remDay(E);
   const nf = E.kind === "rem" ? (() => { const t = new Date(); t.setDate(t.getDate() + (E.day || 0)); t.setHours(E.h, E.m, 0, 0); return t; })() : nextFire(E);
   const [rh, rm] = nf && nf > Date.now() ? relParts(nf) : [0, 0];
@@ -3427,7 +3601,7 @@ function bootHTML(v) {
         <div class="chips">${L.kbChips.name.map(c => wordBtn("boot-name", c[1], "", ` data-n="${esc(c[1])}"`)).join("")}</div>${wordBtn("boot-type", L.bTypeName, "ice", "", "pen")}</div>` + rimBot(esc(L.bSkip), "");
     case "bai":
       return lbl(L.bAiT) + `<div class="c" style="top:118px;gap:2px"><div class="t2" style="font-size:24px">${esc(L.bAiQ)}</div></div>
-        <div class="set two" style="top:166px">${["claude", "api", "chatgpt", "none"].map(m => `<div data-act="boot-ai" data-m="${m}" role="button" class="${S.ai === m ? "sel" : ""}"><span>${esc(L.aiModes[m])}</span><b class="${m === "none" ? "dim" : ""}" style="${m === "claude" && BRAIN.sample ? "color:var(--mint)" : ""}">${esc(aiTagNow(m))}</b></div>`).join("")}</div>`;
+        <div class="set two" style="top:182px">${["claude", "api", "chatgpt", "none"].map(m => `<div data-act="boot-ai" data-m="${m}" role="button" class="${S.ai === m ? "sel" : ""}"><span>${esc(L.aiModes[m])}</span><b class="${m === "none" ? "dim" : ""}" style="${m === "claude" && BRAIN.sample ? "color:var(--mint)" : ""}">${esc(aiTagNow(m))}</b></div>`).join("")}</div>`;
     case "bhold":
       return lbl(L.bHoldT, BOOT.learned ? "mint" : BOOT.holding ? "ice" : "") + `<div class="c" style="top:300px;gap:8px">
         <div class="t1" style="font-size:30px;${BOOT.learned ? "color:var(--mint)" : ""}">${esc(BOOT.learned ? L.bHoldDone : BOOT.holding ? L.listen : L.bHoldQ)}</div>
@@ -3610,7 +3784,7 @@ function sideButton() {
 function wake() {
   if (!S.sleeping) return;
   S.sleeping = false; screen.style.opacity = ""; aodEl.classList.remove("on"); screen.classList.remove("asleep");
-  soul.react("wakeup"); hidePill(); go("home", "fade"); applyFaceState(); sfx("wake"); hap("light"); syncPanel();
+  soul.react("wakeup"); hidePill(); go("home", "fade"); peek(); applyFaceState(); sfx("wake"); hap("light"); syncPanel();
 }
 function goSleep(withPill) {
   if (S.ringing) return;
@@ -3620,7 +3794,7 @@ function goSleep(withPill) {
   S.voice = null; cancel("voice"); cancel("answer");
   if (S.game.run) gameEnd(true);
   go("home", "fade"); S.sleeping = true; hidePill(); applyFaceState();
-  aodEl.classList.add("on"); screen.classList.add("asleep"); updateAod(); sfx("sleep"); syncPanel();
+  screen.classList.remove("peek"); cancel("peek"); screen.classList.add("asleep"); sfx("sleep"); syncPanel();
   if (withPill) showPill({ text: T().dnd, dur: 1600 });
 }
 function imu(k) {
@@ -3717,6 +3891,7 @@ screen.addEventListener("pointerdown", e => {
   if (S.kb && kp) kbUp();                       // a second finger landed before the first lifted: commit the first key
   const p = to466(e), now = performance.now();
   ptr = { x: e.clientX, y: e.clientY, p0: p, target: e.target, held: false, id: e.pointerId, hist: [{ t: now, x: p.x, y: p.y }] };
+  if (S.view === "home" && !S.sleeping) peek();
   const pEl = e.target.closest && e.target.closest(".pill");
   if (pEl && S.pill) { ptr.pill = true; }
   if (!ptr.pill && !S.sleeping) {
@@ -4084,6 +4259,37 @@ function sfx(n) {
 
 /* ================================================================ small system helpers */
 function bumpIdle() { S.lastAct = performance.now(); }
+/* SoulOS 5 · standby is the eyes alone. A touch on the face "peeks": the clock capsule (and whatever the home
+   screen wants to say) fades in, then after PEEK_MS without a touch everything fades back to the eyes. */
+const PEEK_MS = 4000, APP_IDLE_MS = 15000;
+function peek(ms = PEEK_MS) {
+  if (S.view !== "home" || S.sleeping || BOOT.on) return;
+  screen.classList.add("peek"); cancel("peek");
+  after(ms, () => { screen.classList.remove("peek"); applyFaceState(); }, "peek");
+  applyFaceState();
+}
+/* the glass layer: on whenever something is shown; its tint follows the state (ice listening, amber needs you, mint done) */
+function uiSync() {
+  const v = S.view, V = S.voice, pk = screen.classList.contains("peek");
+  const ui = !S.sleeping && (v !== "home" || pk || !!S.pill || S.cc || !!S.kb || BOOT.on || S.chgShow);
+  if (screen.classList.contains("ui") !== ui) screen.classList.toggle("ui", ui);
+  let tone = "";
+  if ((v === "voice" && V && V.phase === "listen") || (S.kb && S.kb.dict) || (BOOT.on && BOOT.holding && !BOOT.learned)) tone = "ice";
+  else if ((S.claude.pending && ["claude", "home", "today"].includes(v)) || v === "ring" || (S.pill && S.pill.kind === "amber")) tone = "amber";
+  else if ((S.pill && S.pill.kind === "mint") || S.chgShow || (v === "focus" && S.focus.done) || (BOOT.on && BOOT.learned) || (v === "voice" && V && V.phase === "answer" && !V.err)) tone = "mint";
+  if ((screen.dataset.tone || "") !== tone) screen.dataset.tone = tone;
+}
+/* parallax: the aura leans a few pixels against the pointer / the phone's tilt (a cheap translate) */
+const PAR = { x: 0, y: 0, tx: 0, ty: 0 };
+function parallaxAim(nx, ny) { PAR.tx = clamp(-nx, -1, 1) * 12; PAR.ty = clamp(-ny, -1, 1) * 12; }
+document.addEventListener("pointermove", e => { const b = screen.getBoundingClientRect(); if (!b.width) return; parallaxAim((e.clientX - b.left - b.width / 2) / b.width, (e.clientY - b.top - b.height / 2) / b.height); }, { passive: true });
+window.addEventListener("deviceorientation", e => { if (e.gamma != null) parallaxAim(e.gamma / 30, (e.beta - 45) / 30); }, { passive: true });
+function parallaxFrame(dt) {
+  if (RM || !screen.classList.contains("ui")) return;
+  const nx = approach(PAR.x, PAR.tx, 4, dt), ny = approach(PAR.y, PAR.ty, 4, dt);
+  if (Math.abs(nx - PAR.x) < 0.02 && Math.abs(ny - PAR.y) < 0.02) return;
+  PAR.x = nx; PAR.y = ny; screen.style.setProperty("--px", nx.toFixed(1) + "px"); screen.style.setProperty("--py", ny.toFixed(1) + "px");
+}
 function idleOK() { const v = S.view; return !S.kb && !hold && !S.cc && !S.ringing && !S.game.run && !TOUR && !S.chgShow && !["voice", "ring", "dial", "alarmsum"].includes(v) && !(v === "focus" && S.focus.run) && !(v === "timer" && (S.tm.sw.run || S.tm.cd.run)); }
 const dimEl = $("#dimmer");
 function setBright(b) { S.bright = clamp(b, 0.15, 1); dimEl.style.opacity = ((1 - S.bright) * 0.8).toFixed(3); }
@@ -4105,7 +4311,7 @@ function orbMeasure(els) {
 }
 function launcherHTML() {
   const L = T();
-  return `<div class="orb"><svg viewBox="0 0 466 466">${ORB.map(v => `<g class="ow" data-act="open" data-app="${v}" role="button" aria-label="${esc(appName(v))}" style="opacity:0">
+  return `<div class="orb"><svg viewBox="0 0 466 466"><path class="gband" d="${capD(197, 27, 16, 164)}"/><path class="glens" d=""/>${ORB.map(v => `<g class="ow" data-act="open" data-app="${v}" role="button" aria-label="${esc(appName(v))}" style="opacity:0">
       <path class="hitw" d="${arcD(104, 76, 190)}"/><text class="m"><textPath href="#rO" startOffset="50%" text-anchor="middle">${esc(appName(v))}</textPath></text><text class="d" style="opacity:0"><textPath href="#rO" startOffset="50%" text-anchor="middle">${esc(appName(v))}</textPath></text></g>`).join("")}</svg>
     <div class="opv" data-act="open" data-app="${LN.near}" role="button" data-live="opv">${orbPreview(LN.near)}</div><i class="otick"></i></div>` +
     rimTop(`<tspan data-live="clock">${hhmm()}</tspan> · ${esc(L.apps)}`, "", "clock");
@@ -4188,6 +4394,8 @@ function launcherFrame(dt, force) {
     const r = a * Math.PI / 180; el._pos = [233 + 188 * Math.sin(r), 233 + 188 * Math.cos(r), 1];
   });
   const near = ORB[((Math.round(LN.rot) % ORB.length) + ORB.length) % ORB.length];
+  const lens = curCard._lens || (curCard._lens = curCard.querySelector(".glens"));       // the chosen word sits in a brighter glass lens
+  if (lens && lens._n !== near) { lens._n = near; const h = clamp(W[ORB.indexOf(near)].d / 2 + 5, 12, 40); lens.setAttribute("d", capD(197, 23, 90 - h, 90 + h)); }
   if (near !== LN.near) {
     LN.near = near; sfx("tick"); hap("light");
     const pv = curCard.querySelector('[data-live="opv"]');
@@ -4439,7 +4647,7 @@ function ccSlide(p) {
 const SR = { el: $("#sring"), bat: $("#sr-bat"), batg: $("#sr-batg"), cl: $("#sr-cl"), lvl: -1, chg: null, op: -1, a1: 146 };
 function statusFrame(t) {
   const v = S.view, hide = !!S.kb || S.chgShow || BOOT.on || v === "mysoul" || S.cc || ["focus", "dial", "ring", "voice", "alarmsum"].includes(v) || (v === "timer" && S.tm.mode === "cd") || (v === "games" && S.game.run);
-  const op = hide || v === "apps" || v === "today" ? 0 : S.sleeping ? 0.5 : v === "home" ? 1 : 0.4;
+  const op = hide || v === "apps" || v === "today" || S.sleeping ? 0 : v === "home" ? (screen.classList.contains("peek") ? 1 : 0) : 0.4;
   if (SR.op !== op) { SR.op = op; SR.el.style.opacity = op; }
   if (!op) return;
   const B = S.batt, lv = Math.round(B.lvl);
@@ -4466,7 +4674,7 @@ function chgShow() {
   chgEl.classList.add("on"); S.chgShow = true; applyFaceState(); aodEl.classList.remove("on");
   const arc = chgEl.querySelector(".chg-arc"); void arc.getBoundingClientRect();
   requestAnimationFrame(() => requestAnimationFrame(() => { arc.style.strokeDashoffset = (C * (1 - B.lvl / 100)).toFixed(1); }));
-  cancel("chg"); after(3600, () => { chgEl.classList.remove("on"); S.chgShow = false; applyFaceState(); if (S.sleeping) aodEl.classList.add("on"); }, "chg");
+  cancel("chg"); after(3600, () => { chgEl.classList.remove("on"); S.chgShow = false; applyFaceState(); }, "chg");
 }
 let battShown = -1;
 function battFrame(dt) {
@@ -4647,7 +4855,9 @@ function frame(ts) {
   // asleep: the screen dims and the eyes breathe; awake: brightness ramps back up
   const dimT = S.sleeping && !S.chgShow ? 0.5 + (RM ? 0 : 0.1 * Math.sin(ts / 1000 * TAU / 5.5)) : 1;
   soul.dim = approach(soul.dim, dimT, S.sleeping ? 2.5 : 4, dt);
+  if (!S.sleeping && S.view !== "home" && !BOOT.on && !S.pill && performance.now() - S.lastAct > APP_IDLE_MS && idleOK()) { const la = S.lastAct; go("home", "fade"); S.lastAct = la; }
   if (!S.sleeping && performance.now() - S.lastAct > 45000 && idleOK()) goSleep(false);
+  uiSync(); parallaxFrame(dt);
   soul.update(dt); soul.draw();
   requestAnimationFrame(frame);
 }
@@ -4663,10 +4873,10 @@ try { if (localStorage.getItem("soulos-big") === "1") setBig(true); } catch (e) 
 if (!BORN || /(^|[?&#])boot\b/.test(location.search + location.hash)) bootStart();
 else { go("home", "fade"); soul.react("intro"); demoTimers(); }
 requestAnimationFrame(frame);
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (curCard && S.view === "apps") { curCard._w = null; curCard._lkey = null; } });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (curCard && S.view === "apps") { curCard._w = null; curCard._lkey = null; if (curCard._lens) curCard._lens._n = null; } });
 setInterval(() => { const c = curCard && curCard.querySelector('[data-live="clock"]'); if (c) c.textContent = hhmm(); if (S.sleeping) updateAod(); }, 10000);
 setInterval(checkAlarms, 1000);
-window.__soul = { S, go, kbOpen, kbRender, setAi, ringAlarm, parseTime, candidates, cancel,
+window.__soul = { S, go, peek, uiSync, PEEK_MS, APP_IDLE_MS, kbOpen, kbRender, setAi, ringAlarm, parseTime, candidates, cancel,
   LN, TD, ORB, setBright, openApp, lnIcon, lnSpinTo, CCA, ccOpen, ccClose, plug, goSleep, wake, gameStart, gameCatch, tourRun, tourStop, showPill, stackGo, act, setSound, AU, ANIMS, get TOUR() { return TOUR; },
   soul, BOOT, BIRTH, BRAIN, bootStart, bootDone, parseReply, validAction, sayPartial, aiAsk, setKey, claudeArrive, rebirth, setBig, brainRules };   /* test hook (Playwright) */
 </script>
