@@ -91,7 +91,7 @@ struct AiConfig {
   std::string anthropicKey, openaiKey;
   std::string claudeModel = "claude-opus-5-5";
   std::string claudeEffort = "low";  // Opus 5.5 cannot disable thinking; low keeps answers quick
-  std::string openaiModel = "gpt-6.1-sol";
+  std::string openaiModel = "gpt-6-luna";  // docs/07 §1.3: the fast, cheap tier for a companion device
   std::string relayUrl, relayToken;  // e.g. https://soul.example.eu + Bearer token
   std::string deviceId;              // relay device id ([A-Za-z0-9_-]{1,64})
   bool useSchema = true;             // Claude structured outputs (output_config.format)

@@ -82,25 +82,66 @@ Size M from `../research/12-ecran-mai-mare.md`: a round **2.8" IPS, 480×480** (
 instead of the 1.75" AMOLED. Same OS, same library; only the board layer and the display
 geometry differ. On this disc a keyboard key is **~6.6 mm wide and ~7.9 mm tall** (6.7 mm if the lit disc is the full 71 mm; 4.1 × 4.9 mm on S).
 
-**Build and flash**
+**Flash without tools:** <https://espressif.github.io/esptool-js/> → Connect → address `0x0` →
+`release/SOUL-2.8C-install.bin` → Program (see `release/README.md`). **First 15 minutes on a board:
+[`BRINGUP.md`](BRINGUP.md)** (what to check, expected fps/current, the serial perf log).
+
+**Build, test, flash**
 ```bash
-pio run -e lcd28                    # build
-pio run -e lcd28 -t upload          # flash over the USB-C port (native USB, CDC serial)
-pio device monitor -b 115200        # "[board] LCD-2.8C 480x480, disc 70.1 mm, key pitch 6.6 mm"
-.pio/build/sim/program /tmp/out keyboard 0xC0FFEE 480   # the simulator at 480 px
+pio test -e native                  # 97 native tests (eyes parity, SoulOS flows, AI + SOUL Cloud protocols)
+pio run -e sim && .pio/build/sim/program /tmp/out all   # the simulator (stills: sim/shots/)
+pio check -e lcd28                  # cppcheck on our code (clean)
+pio run -e lcd28                    # build (-Wall -Wextra on our code: zero warnings)
+pio run -e lcd28 -t upload          # flash over USB-C (native USB, CDC serial)
+pio device monitor -b 115200        # '?' lists the serial commands; 'F' = perf overlay
 ```
 If the upload does not start: hold **BOOT**, tap **RESET**, release BOOT, upload again.
 
-Build size (2026-09-25): `lcd28` flash 913,806 B (13.9 % of the 6.25 MB app slot), static RAM 38,668 B;
-with both optional I2S parts 944,218 B / 38,812 B. At run time PSRAM holds three 460,800 B buffers
-(our Canvas, the push buffer, the panel's scanned framebuffer): ~1.4 MB of 8 MB.
+Build size (2026-10-03): `lcd28` flash ~1.99 MB (30 % of the 6.25 MB app slot), static RAM 76 KB (23 %).
+PSRAM holds our persistent canvas and the panel's two frame buffers (3 × 460,800 B ≈ 1.4 MB of 8 MB).
+
+**How it runs** (`src/main.cpp`)
+
+| Core | Task | What |
+|---|---|---|
+| 1 | the loop | touch, IMU, BLE (Hardware Buddy), Brain, SoulOS, the frame |
+| 0 | `soul-net` | Wi-Fi, setup portal, NTP, AI turns over HTTPS (Claude / OpenAI / SOUL Cloud fallback) |
+| 0 | `soul-cloud` | the SOUL Cloud WebSocket (docs/07 §6): pairing, pushes, turns, item/inbox sync |
+| 0 | LCD ISR | refills the two 10-line SRAM bounce buffers from the PSRAM frame buffer |
+
+The render loop never blocks on the network: it posts questions and polls answers. A frame redraws
+only what changed (`FrameComposer`: UI dirty rect ∪ last eyes rect into a persistent PSRAM canvas, then
+the eyes, then the rim rings at 12 Hz), copies the changed rectangle into the back frame buffer and
+swaps at the next frame boundary (`displayPresent`). No heap allocation per frame. The loop asks
+30 fps when something moves, 24 calm, 15/10 dozing, 4 with the screen off, and lowers its own cap
+if frames get expensive.
+
+**Wi-Fi and the AI.** Settings → Wi-Fi → *Set up from a phone*: SOUL scans, opens the WPA2 access point
+`SOUL-XXXX` (random 8-digit password) and shows a **join QR**; the captive page sets the Wi-Fi, the
+brain, the time zone and, under *Advanced*, an Anthropic or OpenAI key (NVS `soulkey`, never printed,
+only shown masked). Brains (Settings → AI): **SOUL Cloud** (pair with the 6-digit code + QR; the cloud
+holds the provider key), **your Claude key** (`claude-opus-5-5`, effort low, structured JSON output),
+**your OpenAI key** (`gpt-6-luna`), **No AI** (on-device RO/EN rules). Models can be changed from the
+portal or by SOUL Cloud's `config` message. Every brain falls back to the on-device rules when the
+network, the key or the allowance fails, and the eyes say what happened.
+
+**SOUL Cloud** (`lib/Suflet/src/CloudLink.*` transport-free + `src/cloud.*` on the device), contract
+`../docs/07-CONNECT-AI.md` §6: device id `soul-<12 hex>`, a 32-byte secret made once with the radio on
+(NVS `soulid/sec`), device token (`soulid/tok`), `wss://…/v1/device/ws` with Bearer + `soul.v1`, ping
+25 s, reconnect 1–60 s + jitter, close codes 4401/4403/4426/4429. Pushes (`note.create`,
+`reminder.create` with an absolute date, `alarm.set` with any weekday set, `timer.start`,
+`focus.start`, `answer.show` cards, `item.delete`) are validated, applied once (dedupe by seq and
+item id, refs persisted), acked, and greeted with surprised → happy eyes. Things made on SOUL go up as
+`item.add` (queued offline, NVS `soulid/outq`), "Ask my Claude" (Claude app) as `inbox.add`. The last
+seq is saved batched (10 pushes / 60 s / before sleep). Without a cloud address none of this runs and
+the direct-key and No-AI brains work alone.
 
 **What the board has** (Waveshare wiki, vendor ESP-IDF demo and schematic, read 2026-09-25)
 
 | Part | Details | Used by the firmware |
 |---|---|---|
 | MCU | ESP32-S3R8: 8 MB octal PSRAM, 16 MB flash | same `common_esp32` settings as S |
-| Display | ST7701, 16-bit RGB565 parallel (PCLK 41, DE 40, VSYNC 39, HSYNC 38, B 5/45/48/47/21, G 14/13/12/11/10/9, R 46/3/8/18/17), 18 MHz pixel clock | Arduino_GFX `Arduino_ESP32RGBPanel` + `Arduino_RGB_Display`, 10-line bounce buffer |
+| Display | ST7701, 16-bit RGB565 parallel (PCLK 41, DE 40, VSYNC 39, HSYNC 38, B 5/45/48/47/21, G 14/13/12/11/10/9, R 46/3/8/18/17), 18 MHz pixel clock | ESP-IDF `esp_lcd` RGB panel: 2 PSRAM frame buffers, 10-line SRAM bounce buffers, swap at the frame boundary |
 | Display init | 3-wire 9-bit SPI: MOSI 1, SCK 2, **CS = expander EXIO3, RESET = EXIO1** | the vendor's "2.8inch" init table, copied 1:1 into `src/board_lcd28.cpp` |
 | Backlight | GPIO6, PWM, active high (vendor: LEDC 5 kHz, 13 bit) | see "Backlight" below |
 | Touch | GT911 on I2C (SDA 15, SCL 7), INT 16, RESET = EXIO2, address 0x5D | raw register reads, single point |
@@ -116,9 +157,10 @@ The TF slot (CLK 2, CMD 1, D0 42, D3 = EXIO4) is not used; its CS is held high.
 
 **Backlight (IPS has no true black).** A black pixel still lets the backlight through, so the disc glows grey in a
 dark room. The firmware draws pure black everywhere it can and follows the face with the backlight:
-full while awake, **35 % at night** (22:00–07:00), at least 60 % while typing or setting an alarm,
-and **fully off (PWM 0) as soon as the eyes close** (asleep) or the Brain turns the display off.
-It fades up in ~0.3 s and down in ~0.8 s; the PWM curve is squared so the low end has fine steps.
+full while awake (70 % early/late), **35 % at night** (22:00–07:00), at least 60 % while typing or setting an
+alarm, a 6–18 % glow while the eyes sleep, and **fully off (PWM 0, panel sleep-in, slower pixel clock)**
+when the Brain turns the display off. It fades up in ~0.25 s and down in ~0.8 s on a gamma-2.2 curve.
+At night, docked or off for 10 minutes, it deep-sleeps until the next alarm, 07:00, BOOT or a touch.
 A touch wakes the face and the light comes back.
 
 **Alarm sound.** When an alarm rings the Brain startles awake and an `AlarmTone` pattern plays
@@ -162,17 +204,18 @@ Native tests cover the 480 px geometry: keyboard hit-testing (every key, the rim
 no holes, key size in mm), typing and the variant tray, rendering inside the bounds and inside the round glass,
 the Rim-Dial and the alarm tone pattern (61 tests).
 
-### Not verified on the hardware yet (TODO)
-Written from the vendor demo and schematic, compiled, not yet run on a physical 2.8C:
-- **Active diameter**: 70.13 mm is from the bare 2.8" 480×480 ST7701 panel drawing (Twoyas); Waveshare does not
-  state it. It only affects the mm numbers, not the layout.
-- **Orientation**: which edge is "up" relative to the USB port; fix with `-DSUFLET_ROTATION=90|180|270`
-  and, for touch, `TOUCH_MIRROR_X/Y` (the vendor uses no swap/mirror).
-- **IMU axes** (`IMU_MAP`) and the QMI8658 INT pins (not used; the firmware polls).
-- **Charge current**: the ETA6098 is set by R7 = 82 kΩ on ISET; check the datasheet against your cell before
-  leaving it charging unattended (the lesson from the 1.43). The battery % reads the cell through the charger,
-  so it reads high while charging; there is no USB-present signal on this board.
-- **Buzzer**: EXIO8 high = sound (vendor `Buzzer_On`), so it is treated as an active buzzer with its own pitch.
-- **Scan stability** with BLE busy: the 10-line bounce buffer is the vendor's option for this; if the picture
-  drifts, raise `LCD_BOUNCE_PX` or lower `LCD_PCLK_HZ`.
-- BLE pairing with Claude Desktop is the same code as on S.
+### Not verified on the hardware yet
+
+Everything compiles warning-free and the logic is tested on the PC; nothing has run on a physical 2.8C.
+The checklist is [`BRINGUP.md`](BRINGUP.md). Open risks:
+- **Panel timing / bounce buffers** (vendor values; drift → `LCD_BOUNCE_LINES`, `LCD_PCLK_HZ`).
+- **NVS writes stall the RGB DMA** (flash and PSRAM share the cache). The firmware restarts the panel at
+  the next VSYNC after each write and batches writes; the real fix is `CONFIG_SPIRAM_XIP_FROM_PSRAM` +
+  `CONFIG_LCD_RGB_ISR_IRAM_SAFE` (a pioarduino `custom_sdkconfig` rebuild of the framework, not done).
+- **Internal RAM with TLS + BLE**: mbedTLS allocates internally in this framework build; a SOUL Cloud
+  socket plus a direct HTTPS turn plus BLE is the peak. Watch `min` heap in the perf log.
+- **GT911 INT polarity** for touch-wake from deep sleep (armed only if the line idles high).
+- **SOUL Cloud** is tested against recorded frames only, not a live server; the `esp_transport_ws`
+  read semantics (opcode after a timeout) are from the IDF sources as remembered, not read here.
+- **Keys and the device secret sit in plain NVS** until production turns on flash + NVS encryption.
+- Orientation, IMU axes, charge current (R7 = 82 kΩ), buzzer polarity: see BRINGUP.md.

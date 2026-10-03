@@ -1,0 +1,40 @@
+# SOUL M install image
+
+`SOUL-2.8C-install.bin` — SoulOS firmware 1.0.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+(ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
+(`default_16MB.csv`) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
+
+- built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino)
+- size 2,091,552 B · sha256 `d8664b89d048d2d8b1aa8790a815ddc4b86202dba28656327f30a1d57645b24a`
+- byte-identical to PlatformIO's own `firmware.factory.bin` for the same build
+- no key, token or cloud address is compiled in: SOUL Cloud is off until you set its address
+
+## Flash from the browser (no tools)
+
+1. Chrome or Edge on a computer → <https://espressif.github.io/esptool-js/>
+2. Plug the board in with a USB-C **data** cable → **Connect** → pick the USB JTAG/serial port
+   (if none appears: hold **BOOT**, tap **RESET**, release BOOT, try again)
+3. **Flash Address** `0x0`, **File** `SOUL-2.8C-install.bin` → **Program** (about 1 minute)
+4. Press **RESET**. The chip id types out on the rim and the eyes open.
+
+## Flash from a terminal
+
+```bash
+esptool --chip esp32s3 write-flash 0x0 SOUL-2.8C-install.bin
+```
+
+## After flashing
+
+Wi-Fi, the AI (SOUL Cloud / your own Anthropic or OpenAI key / No AI) and the first checks:
+[`../BRINGUP.md`](../BRINGUP.md). The settings, alarms, notes and keys live in NVS and survive
+re-flashing this image (the partition table is the same); *Settings › Start over* re-runs the first boot.
+
+## Rebuild this image
+
+```bash
+pio run -e lcd28
+esptool --chip esp32s3 merge-bin -o release/SOUL-2.8C-install.bin --flash-mode dio --flash-freq 80m --flash-size 16MB \
+  0x0 .pio/build/lcd28/bootloader.bin 0x8000 .pio/build/lcd28/partitions.bin \
+  0xe000 ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin \
+  0x10000 .pio/build/lcd28/firmware.bin
+```

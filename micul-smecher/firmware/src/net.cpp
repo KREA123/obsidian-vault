@@ -70,7 +70,7 @@ void loadSecrets() {
   cfg.relayUrl = p.getString("cloud", "").c_str();
   cfg.relayToken = p.getString("ctoken", "").c_str();
   cfg.claudeModel = p.getString("cmodel", "claude-opus-5-5").c_str();
-  cfg.openaiModel = p.getString("omodel", "gpt-6.1-sol").c_str();
+  cfg.openaiModel = p.getString("omodel", "gpt-6-luna").c_str();
   cfg.mode = (AiMode)p.getUChar("mode", 0);
   p.end();
   cfg.deviceId = deviceId;
