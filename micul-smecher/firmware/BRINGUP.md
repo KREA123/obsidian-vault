@@ -215,6 +215,30 @@ serial monitor open: every step logs a `[net]` line.
 | Home back → SOUL leaves the hotspot (s) | |
 | Current while searching fast / slow (mA) | |
 
+## 4d · SOUL Memory and offline voice (firmware 1.6, 8 min)
+
+[`../docs/10-SOUL-MEMORY.md`](../docs/10-SOUL-MEMORY.md). Flash the 1.6 image **with its partition table**
+(`soulmem` + `model` replace the unused `spiffs`; NVS and the device key stay).
+
+- [ ] Boot log: `[memory] 0 facts (none stored yet), slot -1 seq 0, 128 KB partition` and
+      `[voice] offline commands: off (not built: env lcd28_voice)` (the standard image).
+- [ ] Type on the glass "remember that my sister is Ana": the answer says *Remembered: My sister is Ana*, the toast
+      offers undo; tap the toast → *Undone*. Say it again, wait 25 s: `[memory] saved 1 facts in N ms (ok, slot 0)`.
+      **N** (expected 50–90 ms) and **watch the panel during the write**: no tear, no roll (the VSYNC resync).
+- [ ] Settings › Memory (page 3): the fact on a glass slab; Search; open it; hold Forget. Serial `Y` lists the facts.
+- [ ] Power-cycle: the facts come back (`loaded`, slot / seq advance on each save, alternating 0 / 1).
+- [ ] Wi-Fi off (or No AI): "Ana's birthday is May 12", then "când e ziua Anei?" → "Ana își serbează ziua pe 12 mai…".
+      "what's my wifi password?" → refused.
+- [ ] With a key (Claude): ask something about Ana; serial shows the request; the answer knows she is your sister.
+- [ ] Paired: Settings › Memory › Backup on → `/me` shows "Memory backup: N facts"; Backup off → gone on `/me`.
+- [ ] **Offline voice** (`pio run -e lcd28_voice -t upload`, INMP441 fitted, then once:
+      `esptool --chip esp32s3 write-flash 0xcb0000 ~/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/esp_sr/srmodels.bin`):
+      boot log `[voice] ESP-SR MultiNet7 EN: 55 phrases in … ms, … KB PSRAM left, push-to-talk` (write down the PSRAM
+      left: it must stay ≥ 1 MB with the glass on). Hold the glass: "what time is it", "timer five minutes", "open
+      notes", "stop the timer", "tell me a joke" → `[voice] heard: …`, done with Wi-Fi off. Note misses in a quiet
+      room and at 1 m. Debug overlay (`F`): fps with the recogniser running (hold) and paused.
+- [ ] If `[voice] … off (PSRAM)`: the fallback works (hold = keyboard / cloud transcription as in 1.5).
+
 ## 5 · Wi-Fi and the AI (4 min)
 
 1. Settings → Wi-Fi → **Set up from a phone**. SOUL scans the networks first, then opens the access

@@ -1,12 +1,27 @@
 # SOUL M install image
 
-`SOUL-2.8C-install.bin` — SoulOS firmware 1.5.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+`SOUL-2.8C-install.bin` — SoulOS firmware 1.6.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
 (ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
-(`partitions.csv`: Arduino's `default_16MB` + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
+(`partitions.csv`: Arduino's `default_16MB` with the unused `spiffs` split into `soulmem` (128 KB, SOUL Memory) and `model` (3.2 MB, the optional speech models), + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
 - built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings,
-  `pio check -e lcd28` clean
-- size 2,275,392 B · sha256 `ca7317b9b47aff3291efb01281aa4386103aed6d4c58b8c700be25dc8a7ed4a4`
+  `pio check -e lcd28` clean; app 2,461,847 B of 6.25 MB, static RAM 114,180 B
+- size 2,574,624 B · sha256 `c141e7dfdee51acdb24959cc4b4cadd674d3c03ed0e50eab06a73be2ae7cb61d`
+- 1.6.0: **SOUL Memory** (`../../docs/10-SOUL-MEMORY.md`): what SOUL knows about its owner lives **on SOUL** (the new
+  `soulmem` partition, two CRC-checked copies, batched writes that wait for a quiet moment and resync the panel) and
+  goes with every question to whichever AI is connected (Claude / ChatGPT with your key, SOUL Cloud, your Claude Code
+  through SOUL Bridge): "the AI changes, the soul stays". Up to 512 typed facts; never passwords, PINs or card
+  numbers. The AI may propose `memory.remember` / `memory.forget`; you can say "remember that…" / "ține minte că…" /
+  "forget…"; offline, SOUL keeps birthdays, names and who is who by itself and answers "când e ziua Anei?".
+  *Remembered: … · tap to undo* on the rim. *Settings › Memory* (page 3): the facts on glass, search, hold to forget,
+  forget all, and the optional **encrypted backup** to your SOUL Cloud account (off by default; `/me` shows, exports and
+  deletes it). **Offline replies**: 222 hand-written lines (hello, thanks, jokes, "I'm sad"…) when there is no AI or
+  no internet. **Offline voice commands** are a separate build (`pio run -e lcd28_voice`, INMP441, ESP-SR MultiNet7,
+  39 English commands, push-to-talk; flash `srmodels.bin` at `0xcb0000` once): not in this image. Also in 1.6.0: the
+  **SoulOS apps** of the same day (Control, Today stack, Maps, Weather, Calendar, Music, Games, Focus, Breathe,
+  Habits, Stopwatch, World clock, Convert, Find phone, Device). 1.6.0 changes the partition table (flash this image at
+  0x0): NVS, the apps and the device key do not move, settings survive. Not yet run on the board:
+  [`../BRINGUP.md`](../BRINGUP.md) §4d.
 - 1.5.0: **SOUL on the go** (`../../docs/09-EVERYWHERE.md`). SOUL keeps up to **8 Wi-Fi networks** (home, work, the
   phone's hotspot, other) with a priority and roams by itself: it joins the best one in reach, moves back home from the
   hotspot (a look-around every 2 min on a second-choice or weak network), and when the link drops it searches fast
@@ -80,7 +95,7 @@ esptool --chip esp32s3 write-flash 0x0 SOUL-2.8C-install.bin
 Wi-Fi, the AI (SOUL Cloud with your account / your own Anthropic or OpenAI key / No AI) and the first checks:
 [`../BRINGUP.md`](../BRINGUP.md). The settings, alarms, notes and keys live in NVS and survive
 re-flashing this image (`nvs` did not move; 1.2.0 only added `soulid` at the end of flash, taken from the unused
-`spiffs`; 1.3.0 changes no partition, its paired computers live in NVS `soulbridge`; 1.5.0 keeps the saved networks in NVS `soulkey` `wifis`); *Settings › Start over* re-runs
+`spiffs`; 1.3.0 changes no partition, its paired computers live in NVS `soulbridge`; 1.5.0 keeps the saved networks in NVS `soulkey` `wifis`; 1.6.0 takes the unused `spiffs` for `soulmem` + `model`); *Settings › Start over* re-runs
 the first boot and keeps the device key.
 
 ## Rebuild this image
@@ -92,4 +107,10 @@ esptool --chip esp32s3 merge-bin -o release/SOUL-2.8C-install.bin --flash-mode d
   0x0 .pio/build/lcd28/bootloader.bin 0x8000 .pio/build/lcd28/partitions.bin \
   0xe000 ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin \
   0x10000 .pio/build/lcd28/firmware.bin
+```
+
+Offline voice commands (1.6, optional): `pio run -e lcd28_voice -t upload`, then the speech models once:
+
+```bash
+esptool --chip esp32s3 write-flash 0xcb0000 ~/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/esp_sr/srmodels.bin
 ```

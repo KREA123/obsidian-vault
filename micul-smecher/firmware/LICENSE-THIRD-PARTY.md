@@ -35,3 +35,10 @@ GFX Library for Arduino (BSD), SensorLib (MIT), ArduinoJson (MIT), Unity (MIT).
 Vendored with three small changes: the header name (ESP-IDF ships its own `qrcode.h`), compiled as C++ (no C `bool` typedef), `#pragma mark` lines turned into comments and an always-false unsigned `< 0` test removed (warning-free with -Wall -Wextra).
 https://github.com/ricmoo/QRCode — MIT License, Copyright (c) 2017 Richard Moore (full text at the top of the files).
 Used for the pairing QR and the setup Wi-Fi QR on the round screen.
+
+## Espressif ESP-SR — ESPRESSIF MIT License (only in the `lcd28_voice` build)
+The offline voice commands (`src/voice_sr.cpp`, docs/10-SOUL-MEMORY.md §7) link esp-sr 2.5.3 (AFE, WakeNet9,
+MultiNet7 English, flite g2p) as shipped precompiled in Arduino-ESP32 3.3 (`framework-arduinoespressif32-libs`), and
+use its `srmodels.bin` in the `model` partition. Copyright (c) Espressif Systems (Shanghai) Co. Ltd. The ESPRESSIF MIT
+License grants MIT-style rights **for use on Espressif Systems products only**; the notice must be kept in copies
+(https://github.com/espressif/esp-sr/blob/master/LICENSE). The default `lcd28` image does not contain it.

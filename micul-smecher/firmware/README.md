@@ -289,3 +289,14 @@ roaming by priority then signal, fast search after a drop (4 s → 20 s → 60 s
 (`/hotspot`, `/nets`), and the offline question queue (`AskQueue`: 5 questions, 6 h). Why and what comes next
 (BLE tether through a phone app, built-in LTE Cat-1 bis): [`../docs/09-EVERYWHERE.md`](../docs/09-EVERYWHERE.md).
 Simulator: `.pio/build/sim/program /tmp/out everywhere`.
+
+## SOUL Memory and offline voice (firmware 1.6, English)
+
+[`../docs/10-SOUL-MEMORY.md`](../docs/10-SOUL-MEMORY.md). `lib/Suflet/src/Memory.*`: the owner's facts ON the device
+(≤ 512 typed facts, RO/EN keyword + synonym ranking, the ~300-token "What SOUL knows about you" block in every AI
+request, `memory.remember` / `memory.forget` in the AI protocol, "remember that…" / "ține minte că…", offline answers
+such as "când e ziua Anei?", never a secret), kept in the new `soulmem` partition as two CRC-checked A/B copies with
+batched writes (`src/memory_store.*`); *Settings › Memory* and the undo toast in `OsMemory.cpp`; the optional encrypted
+backup to SOUL Cloud (off by default). Offline voice commands: `VoiceCommands.*` + `OsVoice.cpp` (39 English commands,
+55 phrases) on Espressif ESP-SR MultiNet7, `src/voice_sr.*`, build `pio run -e lcd28_voice` and flash `srmodels.bin`
+at `0xcb0000` once (the `model` partition). Offline personality lines: `Lines.*` (222). Serial: `Y` memory, `V` voice.
