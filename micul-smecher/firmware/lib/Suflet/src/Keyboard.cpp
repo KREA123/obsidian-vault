@@ -271,6 +271,7 @@ void Keyboard::refresh() {
 
 void Keyboard::autoShift() {
   if (shift_ == KbShift::Lock) return;
+  if (cfg_.verbatim) return;
   const uint32_t a = field_.last(0), b = field_.last(1);
   if (field_.empty() || (a == ' ' && (b == '.' || b == '?' || b == '!'))) shift_ = KbShift::Once;
 }
@@ -278,6 +279,7 @@ void Keyboard::autoShift() {
 // ---------------------------------------------------------------- editing ---
 
 void Keyboard::applyAuto() {
+  if (cfg_.verbatim) return;
   const std::string w = field_.currentWord();
   if (w.empty()) return;
   const std::string a = pred_.autoForm(w, field_.previousWords());
@@ -297,7 +299,7 @@ void Keyboard::typeChar(uint32_t cp) {
   if (cp == ' ') {
     // two spaces within 450 ms after a word: ". " and a capital (iOS)
     const uint32_t a = field_.last(0), b = field_.last(1);
-    if (t_ - lastSpaceT_ < 0.45f && a == ' ' && b && !TextField::isSeparator(b)) {
+    if (!cfg_.verbatim && t_ - lastSpaceT_ < 0.45f && a == ' ' && b && !TextField::isSeparator(b)) {
       field_.replaceTail(1, ". ");
       lastSpaceT_ = -10;
       auto_.active = false;

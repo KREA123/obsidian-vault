@@ -1,12 +1,29 @@
 # SOUL M install image
 
-`SOUL-2.8C-install.bin` — SoulOS firmware 1.4.1 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+`SOUL-2.8C-install.bin` — SoulOS firmware 1.5.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
 (ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
 (`partitions.csv`: Arduino's `default_16MB` + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
 - built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings,
   `pio check -e lcd28` clean
-- size 2,248,688 B · sha256 `ad529066a79329ede869f836bab077c160fd0937a7e7737854feadd13501df5a`
+- size 2,275,392 B · sha256 `ca7317b9b47aff3291efb01281aa4386103aed6d4c58b8c700be25dc8a7ed4a4`
+- 1.5.0: **SOUL on the go** (`../../docs/09-EVERYWHERE.md`). SOUL keeps up to **8 Wi-Fi networks** (home, work, the
+  phone's hotspot, other) with a priority and roams by itself: it joins the best one in reach, moves back home from the
+  hotspot (a look-around every 2 min on a second-choice or weak network), and when the link drops it searches fast
+  (every 4 s for 3 min, then every 20 s, then once a minute); picking SOUL up or asking something offline searches fast
+  again. At boot it tries the network that last worked before any scan (wake-polls). **Add my phone's hotspot**: in
+  *Settings › Wi-Fi* (iPhone: Personal Hotspot › Allow Others to Join + Maximize Compatibility; Android: hotspot name,
+  password, 2.4 GHz), typed on the round keyboard (names and passwords are typed verbatim: no auto-capital,
+  diacritics or ". "; an iPhone's ’ matches a typed '), or on the setup page (`/hotspot`), which now lists the saved
+  networks with first / normal / last and *forget*. After every join SOUL checks the internet
+  (`http://connectivitycheck.gstatic.com/generate_204`): a **hotel / train login page** (captive portal) or a hotspot
+  **without mobile data** is told apart from "online", said on the screen ("Wi-Fi needs a login: use the hotspot"),
+  and SOUL Cloud waits for real internet. **Offline**: after 20 s without internet the eyes get slightly heavier lids
+  and glance around now and then; the on-device rules still answer at once, and other questions are **kept (5 at
+  most, 6 h at most)** and sent one at a time once SOUL is back online ("You asked earlier"); a turn lost on the way
+  goes back in the queue (twice at most). The questions are kept in RAM: a restart or deep sleep loses them. 1.4's
+  single network moves into the new list as *Home* on first boot. 153 native tests (12 new), the simulator scene
+  `everywhere` (`../sim/shots/everywhere/`). Not yet run on the board: [`../BRINGUP.md`](../BRINGUP.md) §4c.
 - 1.4.1: behind the eyes it is **always pure black**, like the renders. The aura rises only on OS screens
   (launcher, Today, Alarms, dial, timer, notes, settings, keyboard…), 0.2 s after the eyes step back; never on a
   face moment (standby, the touch peek, a notification or Claude's ask over the eyes, listening / thinking /
@@ -63,7 +80,7 @@ esptool --chip esp32s3 write-flash 0x0 SOUL-2.8C-install.bin
 Wi-Fi, the AI (SOUL Cloud with your account / your own Anthropic or OpenAI key / No AI) and the first checks:
 [`../BRINGUP.md`](../BRINGUP.md). The settings, alarms, notes and keys live in NVS and survive
 re-flashing this image (`nvs` did not move; 1.2.0 only added `soulid` at the end of flash, taken from the unused
-`spiffs`; 1.3.0 changes no partition, its paired computers live in NVS `soulbridge`); *Settings › Start over* re-runs
+`spiffs`; 1.3.0 changes no partition, its paired computers live in NVS `soulbridge`; 1.5.0 keeps the saved networks in NVS `soulkey` `wifis`); *Settings › Start over* re-runs
 the first boot and keeps the device key.
 
 ## Rebuild this image

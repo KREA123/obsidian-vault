@@ -360,7 +360,7 @@ void cloudTask(void*) {
       drv.forgetToken();
       drv.reconnectNow();
     }
-    if (isOff || WiFi.status() != WL_CONNECTED) {
+    if (isOff || !netOnline()) {  // joined AND the internet answers: not on a hotel's login page
       vTaskDelay(pdMS_TO_TICKS(500));
       continue;
     }

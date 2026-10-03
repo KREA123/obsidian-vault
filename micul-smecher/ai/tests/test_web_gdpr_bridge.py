@@ -22,6 +22,9 @@ def test_wifi_help_is_public_and_bilingual(cloud):
     assert en.status_code == 200 and "5 seconds" in en.text and "2.4 GHz" in en.text and "192.168.4.1" in en.text
     assert "frame-ancestors 'none'" in en.headers["content-security-policy"]
     assert "5 secunde" in ro.text and "Parolă greșită" in ro.text
+    # on the go (docs/09): the phone's hotspot, step by step
+    assert "Maximize Compatibility" in en.text and "Allow Others to Join" in en.text and "2.4 GHz" in en.text
+    assert "Maximizează compatibilitatea" in ro.text and "Hotspot și tethering" in ro.text
 
 
 @pytest.mark.builtin_off

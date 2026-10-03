@@ -49,7 +49,7 @@
 #ifndef SUFLET_VOICE
 #define SUFLET_VOICE 0
 #endif
-#define FW_VERSION "1.4.1"
+#define FW_VERSION "1.5.0"
 
 using namespace suflet;
 
@@ -668,6 +668,11 @@ static void handleCmds() {
       case OsCmd::StartPortal: netStartPortal(); break;
       case OsCmd::StopPortal: netStopPortal(); break;
       case OsCmd::ForgetWifi: netForgetWifi(); break;
+      case OsCmd::AddWifi:  // the phone's hotspot, typed on SOUL
+        if (!netAddWifi(os.pendingWifi())) os.toast("Could not save that network", Rgb::hex(0xFFB347));
+        os.clearPendingWifi();
+        break;
+      case OsCmd::WifiKick: netWifiKick(); break;
       case OsCmd::SetKey:
         netSetKey(os.aiMode(), os.pendingKey());
         os.clearPendingKey();

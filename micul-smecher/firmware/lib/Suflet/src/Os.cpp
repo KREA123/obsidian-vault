@@ -13,7 +13,7 @@ using namespace eyes;
 
 static const Rgb kAmber = Rgb::hex(0xFFB347), kMint = Rgb::hex(0xC9F2E4), kRose = Rgb::hex(0xFF8FAB);
 
-enum KbCtx : int { KbTalk = 1, KbNote, KbNoteEdit, KbName, KbKey, KbAlarmLabel, KbInbox };
+enum KbCtx : int { KbTalk = 1, KbNote, KbNoteEdit, KbName, KbKey, KbAlarmLabel, KbInbox, KbWifiName, KbWifiPass };
 
 // item ids: 1.. per screen; rows use 100 + index
 enum : int {
@@ -33,6 +33,8 @@ enum : int {
   IdInbox,
   IdAccept,
   IdReject,
+  IdHotspot,      // Wi-Fi: "Add my phone's hotspot" (the how-to page)
+  IdHotspotType,  // ... "Type its name on SOUL"
   IdRow = 100,
 };
 
@@ -139,8 +141,15 @@ void Os::back() {
       go(View::Alarms);
       return;
     case View::NoteView: go(View::Notes); return;
-    case View::AiMode:
     case View::Wifi:
+      if (page_ == 1) {
+        page_ = 0;
+        invalidate();
+        return;
+      }
+      go(View::Settings);
+      return;
+    case View::AiMode:
     case View::MySoul:
     case View::About: go(View::Settings); return;
     case View::Bridge: go(View::AiMode); return;
@@ -239,6 +248,11 @@ bool Os::popAiJob(AiJob& j) {
   return true;
 }
 
+void Os::clearPendingWifi() {
+  for (char& c : pendingWifi_.pass) c = 0;
+  pendingWifi_ = WifiNet();
+}
+
 void Os::clearPendingKey() {
   // overwrite before freeing: the key should not linger in RAM
   for (char& c : pendingKey_) c = 0;
@@ -260,7 +274,11 @@ void Os::setNet(const NetInfo& n) {
                        n.trialLeft != net_.trialLeft || n.cloudHost != net_.cloudHost ||
                        n.bridgeOnline != net_.bridgeOnline || n.bridgePaired != net_.bridgePaired ||
                        n.bridgeName != net_.bridgeName || n.bridgeCode != net_.bridgeCode ||
-                       n.bridgeCmd != net_.bridgeCmd || n.bridgeLan != net_.bridgeLan || n.askState != net_.askState;
+                       n.bridgeCmd != net_.bridgeCmd || n.bridgeLan != net_.bridgeLan || n.askState != net_.askState ||
+                       n.captive != net_.captive || n.noInternet != net_.noInternet || n.searching != net_.searching ||
+                       n.saved != net_.saved || n.savedList != net_.savedList || n.wifiFail != net_.wifiFail ||
+                       n.linkUp != net_.linkUp || n.hotspot != net_.hotspot;
+  const bool wasCaptive = net_.captive, wasNoNet = net_.noInternet;
   const bool bridgeWas = net_.bridgeOnline;
   net_ = n;
   if (changed) invalidate();
@@ -271,7 +289,16 @@ void Os::setNet(const NetInfo& n) {
     face_.react(X_surprised, 1.2f);
     brainEvents_.push_back(Ev::AlarmDue);  // wakes the face
   }
-  if (netKnown_ && !was && n.connected && set_.booted) toast(tr("Wi-Fi connected", "Wi-Fi conectat"), kMint, 2.0f);
+  if (netKnown_ && !was && n.connected && set_.booted)
+    toast(askQ_.size() ? tr("Online again", "Din nou online") : n.hotspot ? tr("On your phone's hotspot", "Pe hotspotul telefonului")
+                                                                          : tr("Wi-Fi connected", "Wi-Fi conectat"),
+          kMint, 2.0f);
+  if (netKnown_ && set_.booted && n.captive && !wasCaptive)  // a hotel / train Wi-Fi with a login page
+    toast(tr("Wi-Fi needs a login: use the hotspot", "Wi-Fi cu login: folosește hotspotul"), kAmber, 5.0f);
+  if (netKnown_ && set_.booted && n.noInternet && !wasNoNet)
+    toast(n.hotspot ? tr("Your phone has no mobile data", "Telefonul n-are date mobile")
+                    : tr("Wi-Fi joined, but no internet", "Wi-Fi conectat, dar fără internet"),
+          kAmber, 4.0f);
   if (netKnown_ && !wasPaired && n.paired) {  // the account claimed this SOUL: greet the owner
     face_.react(X_love, 1.6f);
     reactAfter_ = X_happy;
@@ -331,6 +358,7 @@ void Os::motion(Ev e) {
       lookUntil_ = t_ + 1.5f;
       lookX_ = 0;
       lookY_ = -0.15f;
+      if (net_.saved > 0 && !net_.connected) pushCmd(OsCmd::WifiKick);  // the phone's hotspot may be on now
       break;
     case Ev::Shake:  // dismisses an answer or a toast (dizzy is the Brain's)
       if (view_ == View::Answer && !thinking_) back();
@@ -864,9 +892,22 @@ void Os::activate(int id) {
       }
       return;
     case View::Wifi:
-      if (id == IdSetup) pushCmd(OsCmd::StartPortal);
-      else if (id == IdStopSetup) pushCmd(OsCmd::StopPortal);
-      else if (id == IdType) openKeyboard(KbKey);
+      if (id == IdSetup) {
+        pushCmd(OsCmd::StartPortal);
+        page_ = 0;
+      } else if (id == IdStopSetup) {
+        pushCmd(OsCmd::StopPortal);
+      } else if (id == IdType) {
+        openKeyboard(KbKey);
+      } else if (id == IdHotspot) {
+        page_ = 1;  // how to switch the hotspot on (iPhone / Android), then type its name here or use the phone page
+        invalidate();
+      } else if (id == IdHotspotType) {
+        pendingWifi_ = WifiNet();
+        pendingWifi_.kind = WifiKind::Hotspot;
+        pendingWifi_.prio = wifiDefaultPrio(WifiKind::Hotspot);
+        openKeyboard(KbWifiName);
+      }
       return;
     case View::MySoul:
       if (id == IdName) openKeyboard(KbName, set_.name);
@@ -880,6 +921,8 @@ void Os::openKeyboard(int ctx, const std::string& initial) {
   c.uiLang = ro() ? Lang::Ro : Lang::En;
   c.action = ctx == KbTalk ? KbAction::Send : KbAction::Save;
   c.maxChars = ctx == KbNote || ctx == KbNoteEdit ? 300 : ctx == KbName ? 16 : ctx == KbKey ? 220 : 280;
+  // keys, network names and passwords are typed exactly: no auto-capital, no auto-diacritics, no ". "
+  c.verbatim = ctx == KbKey || ctx == KbWifiName || ctx == KbWifiPass;
   switch (ctx) {
     case KbTalk:
       c.placeholder = ro() ? "Întreabă ceva…" : "Ask something…";
@@ -899,6 +942,16 @@ void Os::openKeyboard(int ctx, const std::string& initial) {
       break;
     case KbKey:
       c.placeholder = aiMode() == AiMode::ChatGpt ? "sk-…" : "sk-ant-…";
+      break;
+    case KbWifiName:
+      c.maxChars = 32;
+      c.placeholder = ro() ? "Numele hotspotului…" : "Hotspot name…";
+      c.chips[0] = "iPhone";
+      c.chips[1] = "AndroidAP";
+      break;
+    case KbWifiPass:
+      c.maxChars = 63;
+      c.placeholder = ro() ? "Parola hotspotului…" : "Hotspot password…";
       break;
     case KbInbox:
       c.action = KbAction::Send;
@@ -963,6 +1016,26 @@ void Os::kbCommit(const std::string& text) {
         face_.react(X_wink, 1.4f);
         toast(tr("Left for your Claude: say \u201Ccheck my SOUL\u201D", "Lăsat lui Claude: spune-i \u201Evezi SOUL\u201D"), kMint, 4.5f);
       }
+      break;
+    case KbWifiName:
+      if (!text.empty() && text.size() <= 32) {
+        pendingWifi_.ssid = text;
+        openKeyboard(KbWifiPass);
+      }
+      break;
+    case KbWifiPass:
+      if (pendingWifi_.ssid.empty()) break;
+      if (!text.empty() && (text.size() < 8 || text.size() > 63)) {
+        toast(tr("A hotspot password has 8 to 63 characters", "Parola are între 8 și 63 de caractere"), kAmber, 3.5f);
+        face_.react(X_confused, 1.4f);
+        openKeyboard(KbWifiPass);
+        break;
+      }
+      pendingWifi_.pass = text;
+      pushCmd(OsCmd::AddWifi);
+      page_ = 0;
+      toast(tr("Saved: I'll join it when it's on", "Salvat: mă conectez când e pornit"), kMint, 3.5f);
+      face_.react(X_approve);
       break;
     case KbKey:
       if (keyLooksValid(aiMode(), text)) {
@@ -1037,9 +1110,27 @@ void Os::ask(const std::string& text) {
   }
   if (!net_.connected) {
     AiReply r;
-    if (localAct(text, now_, ro(), r)) runActions(r.actions, &chips_);
-    else r.say.clear();
-    showAnswer(r, AiErr::Offline, "");
+    if (localAct(text, now_, ro(), r)) {  // the on-device rules did it (an alarm, a timer, a note...)
+      runActions(r.actions, &chips_);
+      showAnswer(r, AiErr::Offline, "");
+      return;
+    }
+    // nothing the rules can do: kept for when SOUL is back online (capped, docs/09 §2)
+    askQ_.push(text, t_);
+    if (net_.saved > 0) pushCmd(OsCmd::WifiKick);
+    const std::string n = std::to_string(askQ_.size());
+    if (net_.captive)
+      r.say = tr("This Wi-Fi wants a login page I can't open. Your phone's hotspot works. I'll ask when I'm online (",
+                 "Wi-Fi-ul ăsta cere o pagină de login pe care n-o pot deschide. Hotspotul telefonului merge. Întreb când "
+                 "sunt online (") + n + tr(" waiting).", " în așteptare).");
+    else if (net_.saved == 0)
+      r.say = tr("I have no Wi-Fi yet: Settings \u203A Wi-Fi. I'll ask once I'm online (", "N-am Wi-Fi încă: Setări \u203A Wi-Fi. "
+                 "Întreb când sunt online (") + n + tr(" waiting).", " în așteptare).");
+    else
+      r.say = tr("No internet right now. I'll ask as soon as I'm back online (", "N-am internet acum. Întreb imediat ce revin "
+                 "online (") + n + tr(" waiting).", " în așteptare).");
+    showAnswer(r, AiErr::None, ro() ? "Fără internet · păstrat" : "Offline · kept");
+    face_.react(X_wink, 1.2f);
     return;
   }
   if (aiMode() == AiMode::Bridge && !net_.bridgeOnline) {  // the computer is off: the rules do what they can
@@ -1049,6 +1140,11 @@ void Os::ask(const std::string& text) {
     showAnswer(r, AiErr::BridgeOffline, ro() ? "Fără calculator · pe device" : "No computer · on the device");
     return;
   }
+  deferred_ = false;
+  sendJob(text);
+}
+
+void Os::sendJob(const std::string& text) {
   AiJob j;
   j.text = text;
   j.ctx = context();
@@ -1061,6 +1157,8 @@ void Os::ask(const std::string& text) {
   go(View::Answer);
 }
 
+bool Os::needsInternet() const { return set_.booted && aiMode() != AiMode::None; }
+
 void Os::aiResult(const AiOutcome& o) {
   if (!thinking_) return;  // cancelled
   thinking_ = false;
@@ -1070,6 +1168,16 @@ void Os::aiResult(const AiOutcome& o) {
                     : aiMode() == AiMode::Bridge  ? (ro() ? "Claude · calculatorul tău" : "Claude · your computer")
                                                   : "SOUL Cloud";
   const std::string question = history_.empty() ? std::string() : history_.back().text;
+  const bool wasDeferred = deferred_;
+  deferred_ = false;
+  if (o.err != AiErr::None && wasDeferred && deferredTries_ < 2 &&
+      (o.err == AiErr::Offline || o.err == AiErr::Network || o.err == AiErr::Timeout)) {
+    if (!history_.empty() && history_.back().user) history_.pop_back();
+    askQ_.push(deferredText_, t_, deferredTries_ + 1);  // the link dropped again: it waits for the next time
+    onT_ = 0;
+    showAnswer(AiReply(), o.err, src);
+    return;
+  }
   if (o.err != AiErr::None) {
     if (!history_.empty() && history_.back().user) history_.pop_back();
     // the on-device rules still do what they can (an alarm, a reminder, a timer)
@@ -1455,6 +1563,38 @@ void Os::update(float dt, Brain& brain) {
   }
   tickTimer(dt);
   tickReminders();
+  // on the go: how long without / with the internet, and the questions kept while offline
+  if (net_.connected) {
+    onT_ += dt;
+    offT_ = 0;
+  } else {
+    onT_ = 0;
+    offT_ += dt;
+  }
+  {
+    const bool brainReady = aiMode() == AiMode::Cloud    ? net_.cloudOnline
+                            : aiMode() == AiMode::Bridge ? net_.bridgeOnline
+                                                         : true;
+    const bool calm = view_ == View::Home || view_ == View::Launcher || view_ == View::Today ||
+                      (view_ == View::Answer && answerT_ > 3.0f && !acceptMode_);
+    AskQueue::Item it;
+    if (askQ_.size() && needsInternet() && net_.connected && onT_ > 3.0f && brainReady && calm && !thinking_ &&
+        !listening_ && !voiceWait_ && jobs_.empty() && !down_ && askQ_.pop(t_, it)) {
+      answerReturn_ = view_ == View::Answer ? answerReturn_ : view_;
+      if (answerReturn_ == View::Answer || answerReturn_ == View::Boot) answerReturn_ = View::Home;
+      chips_.clear();
+      turnChips_.clear();
+      cardTitle_.clear();
+      reply_ = AiReply();
+      lastErr_ = AiErr::None;
+      deferred_ = true;
+      deferredText_ = it.text;
+      deferredTries_ = it.tries;
+      sendJob(it.text);
+      toast(tr("You asked earlier", "Ai întrebat mai devreme"), kMint, 2.5f);
+      brainEvents_.push_back(Ev::AlarmDue);  // wakes the face for the answer
+    }
+  }
   // the clock on the rim
   const int minute = now_ ? (int)(now_ / 60) : -1;
   if (minute != lastMinute_) {
@@ -1596,6 +1736,16 @@ FaceInputs Os::faceInputs(const Brain& b) const {
   else if (claude_.busy) in.state = FaceState::Busy;
   else if (power_.charging) in.state = FaceState::Charge;
   else if (power_.batPct >= 0 && power_.batPct < 10) in.state = FaceState::Low;
+  else if (needsInternet() && net_.saved > 0 && offT_ > 20.0f && (view_ == View::Home || view_ == View::Launcher)) {
+    // no internet for a while: heavier lids, and now and then a glance around, looking for a signal
+    in.state = FaceState::Offline;
+    const float ph = fmodf(t_, 9.0f);
+    if (!in.look && ph < 1.6f) {
+      in.look = true;
+      in.lookX = 0.6f * sinf(ph / 1.6f * 6.2831853f);
+      in.lookY = -0.35f;
+    }
+  }
   // standby (home, nothing showing): no rim light, the eyes alone say it (wide, looking at you)
   in.alert = (claude_.prompt && uiOn()) || view_ == View::Ringing;
   in.progress = b.approveProgress();

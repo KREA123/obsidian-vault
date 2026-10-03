@@ -20,12 +20,18 @@
 
 #include "AiProtocol.h"
 #include "Os.h"
+#include "WifiRoam.h"
 
 void netBegin(const char* apName, const std::string& deviceId);
 suflet::NetInfo netInfo();  // a snapshot (thread-safe)
 void netStartPortal();
 void netStopPortal();
-void netForgetWifi();
+void netForgetWifi();  // every saved network
+// On the go (docs/09-EVERYWHERE.md): SOUL keeps up to 8 networks (home, work,
+// the phone's hotspot...) with a priority and roams between them by itself.
+bool netAddWifi(const suflet::WifiNet& n);  // false = invalid / busy; saved on the network task
+void netWifiKick();                         // search fast now (picked up, a question waits)
+bool netOnline();                           // joined AND the internet answers (not a login page)
 void netSetKey(suflet::AiMode mode, const std::string& key);
 void netForgetKeys();
 void netSetMode(suflet::AiMode mode);

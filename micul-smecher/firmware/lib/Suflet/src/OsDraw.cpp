@@ -38,6 +38,8 @@ enum : int {
   IdInbox,
   IdAccept,
   IdReject,
+  IdHotspot,
+  IdHotspotType,
   IdRow = 100,
 };
 
@@ -231,9 +233,17 @@ void Os::buildItems(std::vector<Item>& out) const {
       if (net_.bridgePaired || net_.bridgeOnline) add(IdForget, 306, 392, 150, 50, R ? "Uită" : "Forget", kAmber, 1, true);
       break;
     case View::Wifi:
-      if (net_.portal) add(IdStopSetup, 233, 404, 200, 50, R ? "Gata" : "Done", kCream, 1, true);
-      else add(IdSetup, 233, 300, 260, 56, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
-      if (net_.configured && !net_.portal) add(IdForget, 233, 384, 220, 50, R ? "Uită Wi-Fi (ține)" : "Forget Wi-Fi (hold)", kAmber, 0, true, kDim);
+      if (net_.portal) {
+        add(IdStopSetup, 233, 404, 200, 50, R ? "Gata" : "Done", kCream, 1, true);
+      } else if (page_ == 1) {  // the phone's hotspot: how-to, then type it here or use the phone page
+        add(IdHotspotType, 233, 336, 280, 52, R ? "Scrie-l pe SOUL" : "Type it on SOUL", kCream, 1, true);
+        add(IdSetup, 233, 396, 260, 46, R ? "sau din telefon" : "or from the phone", kCream, 0, true, kDim);
+      } else {
+        add(IdHotspot, 233, 270, 300, 54, R ? "Adaugă hotspotul telefonului" : "Add my phone's hotspot", kAmber, 1, true);
+        add(IdSetup, 233, 330, 260, 50, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
+        if (net_.configured)
+          add(IdForget, 233, 392, 220, 46, R ? "Uită Wi-Fi (ține)" : "Forget Wi-Fi (hold)", kAmber, 0, true, kDim);
+      }
       break;
     case View::MySoul:
       add(IdName, 233, 312, 300, 56, set_.name, kCream, 2, false);
@@ -930,7 +940,7 @@ void Os::drawBridge(Canvas& cv) {
 
 void Os::drawWifi(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, "WI-FI", kCream, kDim);
+  if (net_.portal || page_ != 1) rimTop(cv, "WI-FI", kCream, kDim);
   if (net_.portal) {
     // the phone camera joins SOUL's own Wi-Fi from this QR (iOS 11+, Android 10+)
     textAt(cv, fonts::small(), 233, 124, R ? "Scanează cu camera telefonului" : "Scan with your phone's camera", kCream, kDim);
@@ -938,11 +948,57 @@ void Os::drawWifi(Canvas& cv) {
     textAt(cv, fonts::text(), 233, 306, net_.apName + (net_.apPass.empty() ? std::string() : "  \u00B7  " + net_.apPass), kAmber);
     textAt(cv, fonts::small(), 233, 338, (R ? "apoi deschide " : "then open ") + net_.portalUrl.substr(7), kCream, kDim);
     textAt(cv, fonts::small(), 233, 364, (R ? "S-a închis? Deschide " : "Page closed? Open ") + net_.portalUrl.substr(7), kCream, kFaint);
+  } else if (page_ == 1) {
+    // the phone's hotspot (docs/09 §1): what to switch on, per phone
+    rimTop(cv, R ? "HOTSPOT" : "PHONE HOTSPOT", kAmber, kDim);
+    glassPanel(cv, 56, 108, 410, 300, 30, gs());
+    const char* body[2] = {
+        R ? "iPhone: Hotspot personal › Permite altora + Maximizează compatibilitatea. Ține ecranul deschis până mă conectez."
+          : "iPhone: Personal Hotspot › Allow Others to Join + Maximize Compatibility. Keep it open until I join.",
+        R ? "Android: Hotspot › nume, parolă, 2,4 GHz." : "Android: Hotspot › name, password, 2.4 GHz."};
+    float y = 138;
+    for (int k = 0; k < 2; ++k) {
+      std::string lines[5];
+      const int n = wrapLines(fonts::small(), body[k], g_.s(320), lines, 5);
+      for (int i = 0; i < n; ++i, y += 25) textAt(cv, fonts::small(), 233, y, lines[i], kCream, k ? kDim : 1.0f);
+      y += 10;
+    }
   } else {
-    glassPanel(cv, 80, 140, 386, 232, 30, gs());
-    textAt(cv, fonts::text(), 233, 168, net_.connected ? (R ? "Conectat" : "Connected") : net_.connecting ? (R ? "Mă conectez…" : "Connecting…") : (R ? "Neconectat" : "Not connected"),
-           net_.connected ? kMint : kCream);
-    if (net_.configured) textAt(cv, fonts::small(), 233, 206, net_.ssid + (net_.connected ? "  ·  " + net_.ip : std::string()), kCream, kDim);
+    // where SOUL is: online / looking for a network / a login page / no internet, and what it knows
+    glassPanel(cv, 70, 128, 396, 236, 30, gs());
+    std::string st;
+    Rgb c = kCream;
+    if (net_.captive) {
+      st = R ? "Wi-Fi cu pagină de login" : "Wi-Fi wants a login page";
+      c = kAmber;
+    } else if (net_.noInternet) {
+      st = net_.hotspot ? (R ? "Telefonul n-are date" : "The phone has no data") : (R ? "Fără internet" : "No internet");
+      c = kAmber;
+    } else if (net_.connected) {
+      st = net_.hotspot ? (R ? "Pe hotspotul telefonului" : "On the phone's hotspot") : (R ? "Conectat" : "Connected");
+      c = kMint;
+    } else if (net_.saved == 0 && !net_.configured) {
+      st = R ? "Niciun Wi-Fi salvat" : "No Wi-Fi saved";
+    } else if (net_.wifiFail == 2) {
+      st = R ? "Parolă greșită" : "Wrong password";
+      c = kAmber;
+    } else if (net_.linkUp || net_.connecting) {
+      st = R ? "Mă conectez…" : "Connecting…";
+    } else {
+      st = R ? "Caut o rețea cunoscută…" : "Looking for a known network…";
+    }
+    textAt(cv, fonts::text(), 233, 158, st, c);
+    std::string sub;
+    if (net_.captive) sub = R ? "Folosește hotspotul telefonului" : "Use your phone's hotspot";
+    else if (net_.wifiFail == 2 && !net_.failSsid.empty()) sub = net_.failSsid;
+    else if (net_.linkUp || net_.connected) sub = net_.ssid + (net_.ip.empty() ? std::string() : "  ·  " + net_.ip);
+    else if (!net_.savedList.empty()) sub = (R ? "Știu: " : "I know: ") + net_.savedList;
+    if (!sub.empty()) textAt(cv, fonts::small(), 233, 196, ellipsize(fonts::small(), sub, g_.s(300)), kCream, kDim);
+    if (askQ_.size()) {
+      char b[48];
+      snprintf(b, sizeof b, R ? "%d întrebări așteaptă internetul" : "%d questions wait for the internet", askQ_.size());
+      textAt(cv, fonts::small(), 233, 224, askQ_.size() == 1 ? (R ? "1 întrebare așteaptă internetul" : "1 question waits for the internet") : std::string(b), kAmber, kDim);
+    }
   }
   buildItems(items_);
   drawItems(cv, items_);
@@ -985,7 +1041,7 @@ void Os::drawAbout(Canvas& cv) {
   std::string lines[5];
   const int n = wrapLines(fonts::small(), body, g_.s(320), lines, 5);
   for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 210 + i * 27, lines[i], kCream, kDim);
-  rimBottom(cv, "SoulOS 1.4 · " + std::string(viewName(view_)), kCream, kFaint);
+  rimBottom(cv, "SoulOS 1.5 · " + std::string(viewName(view_)), kCream, kFaint);
 }
 
 

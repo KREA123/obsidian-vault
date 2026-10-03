@@ -47,6 +47,7 @@ struct KbConfig {
   const char* placeholder = "";
   const char* chips[3] = {nullptr, nullptr, nullptr};  // context chips for an empty field
   const char* undoLabel = "\xE2\x86\xB6 Undo";         // "↶ Undo"
+  bool verbatim = false;  // a key, a network name, a password: no auto-capital, auto-diacritics or ". "
 };
 
 class Keyboard {

@@ -12,8 +12,10 @@
 #include <freertos/semphr.h>
 #include <time.h>
 
+#include <atomic>
 #include <vector>
 
+#include "WifiRoam.h"
 #include "board.h"
 #include "cloud.h"
 
@@ -25,6 +27,10 @@ using namespace suflet;
 #ifndef SUFLET_VOICE
 #define SUFLET_VOICE 0
 #endif
+// the internet check after every join (docs/09 §1.3): plain HTTP, answers 204 when the internet is there
+#ifndef SUFLET_PROBE_URL
+#define SUFLET_PROBE_URL "http://connectivitycheck.gstatic.com/generate_204"
+#endif
 
 namespace {
 
@@ -35,7 +41,7 @@ SemaphoreHandle_t mtx = nullptr;
 QueueHandle_t jobs = nullptr;
 NetInfo info;
 std::string apName, apPass, deviceId;
-bool portalWanted = false, portalUp = false, reconnect = false, forget = false;
+bool portalWanted = false, portalUp = false, forget = false;
 bool answerReady = false;
 AiOutcome answer;
 std::string portalName;
@@ -43,8 +49,20 @@ bool portalNameReady = false;
 volatile bool busy = false;
 
 // secrets and Wi-Fi (loaded on the network task; never printed)
-std::string ssid, pass, tz = SUFLET_DEFAULT_TZ;
+std::string tz = SUFLET_DEFAULT_TZ;
 AiConfig cfg;
+
+// On the go (docs/09-EVERYWHERE.md): the saved networks and the roamer. Owned by
+// the network task; other tasks hand it networks through `adds` under the lock.
+WifiBook book;
+WifiRoamer roamer;
+std::vector<WifiNet> adds;               // networks typed on SOUL, waiting for the network task
+std::vector<ScanHit> portalHits;         // the portal's scan: answers the roamer while the access point is up
+std::atomic<bool> kickWanted{false};     // search fast now (OsCmd::WifiKick)
+std::atomic<bool> online{false};         // joined AND the internet answers (cloud.cpp waits for it)
+std::atomic<int> discReason{0};          // the last disconnect reason from the Wi-Fi driver (event task)
+std::string joinedSsid;                  // the SSID joined now, as on the air
+std::string lastGood;                    // the saved network that last reached the internet (NVS "wlast")
 
 DNSServer dns;
 WebServer server(80);
@@ -59,11 +77,37 @@ void wipe(std::string& s) {
   s.clear();
 }
 
+void saveBook() {
+  const std::string b = book.save();
+  Preferences p;
+  p.begin("soulkey", false);
+  p.putBytes("wifis", b.data(), b.size());
+  p.remove("ssid");  // 1.4: one network in "ssid" / "pass", moved into the book
+  p.remove("pass");
+  p.end();
+  soulFlashWritten();
+}
+
 void loadSecrets() {
   Preferences p;
   p.begin("soulkey", true);
-  ssid = p.getString("ssid", "").c_str();
-  pass = p.getString("pass", "").c_str();
+  bool migrate = false;
+  {
+    const size_t n = p.getBytesLength("wifis");
+    std::string b(n, '\0');
+    if (n) p.getBytes("wifis", &b[0], n);
+    if (!n || !book.load(b)) {
+      WifiNet old;  // firmware 1.4 kept one network: it becomes "Home"
+      old.ssid = p.getString("ssid", "").c_str();
+      old.pass = p.getString("pass", "").c_str();
+      old.kind = WifiKind::Home;
+      old.prio = wifiDefaultPrio(WifiKind::Home);
+      migrate = book.add(old) >= 0;
+      wipe(old.pass);
+    }
+    wipe(b);
+  }
+  lastGood = p.getString("wlast", "").c_str();
   tz = p.getString("tz", SUFLET_DEFAULT_TZ).c_str();
   cfg.anthropicKey = p.getString("claude", "").c_str();
   cfg.openaiKey = p.getString("openai", "").c_str();
@@ -74,16 +118,40 @@ void loadSecrets() {
   p.end();
   cfg.deviceId = deviceId;
   cloudSetBase(cfg.relayUrl);
+  if (migrate) saveBook();
+}
+
+std::string savedList() {  // the names, best first: "Home · Ana’s iPhone"
+  std::vector<int> ix;
+  for (int i = 0; i < book.count(); ++i) ix.push_back(i);
+  for (size_t a = 1; a < ix.size(); ++a)
+    for (size_t b = a; b > 0 && book.at(ix[b]).prio > book.at(ix[b - 1]).prio; --b) std::swap(ix[b], ix[b - 1]);
+  std::string o;
+  for (int i : ix) o += (o.empty() ? "" : " \u00B7 ") + book.at(i).ssid;
+  return o;
 }
 
 void publish() {  // what the UI may know (never the secrets themselves)
   Lock l;
-  info.configured = !ssid.empty();
-  info.ssid = ssid;
-  info.connected = WiFi.status() == WL_CONNECTED;
-  info.connecting = info.configured && !info.connected;
-  info.ip = info.connected ? WiFi.localIP().toString().c_str() : "";
-  info.rssi = info.connected ? WiFi.RSSI() : 0;
+  const bool link = WiFi.status() == WL_CONNECTED;
+  const NetState st = roamer.state();
+  const int cur = roamer.current();
+  info.configured = book.count() > 0;
+  info.saved = book.count();
+  info.savedList = savedList();
+  info.linkUp = link;
+  info.connected = link && (st == NetState::Online || st == NetState::Checking);
+  info.connecting = st == NetState::Joining || st == NetState::Checking;
+  info.searching = st == NetState::Searching;
+  info.captive = link && st == NetState::Captive;
+  info.noInternet = link && st == NetState::NoInternet;
+  info.hotspot = cur >= 0 && cur < book.count() && book.at(cur).kind == WifiKind::Hotspot;
+  info.ssid = link ? joinedSsid : (cur >= 0 && cur < book.count() ? book.at(cur).ssid : std::string());
+  info.ip = link ? WiFi.localIP().toString().c_str() : "";
+  info.rssi = link ? WiFi.RSSI() : 0;
+  info.wifiFail = (int)roamer.lastFail();
+  info.failSsid = roamer.lastFailNet() >= 0 && roamer.lastFailNet() < book.count() ? book.at(roamer.lastFailNet()).ssid : "";
+  online = info.connected && st == NetState::Online;
   info.portal = portalUp;
   info.apName = apName;
   info.apPass = portalUp ? apPass : std::string();
@@ -232,11 +300,13 @@ std::string scanned;  // the networks around, scanned before the access point st
 std::string scanOptions() {
   if (!scanned.empty()) return scanned;
   std::string o;
+  portalHits.clear();
   const int n = WiFi.scanNetworks(false, false);
-  for (int i = 0; i < n && i < 20; ++i) {
+  for (int i = 0; i < n; ++i) {
     const std::string s = WiFi.SSID(i).c_str();
     if (s.empty()) continue;
-    o += "<option value=\"" + htmlEsc(s) + "\">" + htmlEsc(s) + " (" + std::to_string(WiFi.RSSI(i)) + " dBm)</option>";
+    portalHits.push_back({s, (int)WiFi.RSSI(i)});
+    if (i < 20) o += "<option value=\"" + htmlEsc(s) + "\">" + htmlEsc(s) + " (" + std::to_string(WiFi.RSSI(i)) + " dBm)</option>";
   }
   WiFi.scanDelete();
   scanned = o;
@@ -245,10 +315,39 @@ std::string scanOptions() {
 
 const char* kStyle =
     "<style>body{font-family:system-ui,sans-serif;background:#000;color:#FFF0C8;max-width:30em;margin:auto;padding:1em}"
-    "h1{font-weight:600}label{display:block;margin:.9em 0 .2em;color:#c8bd9e}input,select{width:100%;box-sizing:border-box;"
+    "h1{font-weight:600}h2{font-weight:600;font-size:1.1em;margin-top:1.6em}label{display:block;margin:.9em 0 .2em;color:#c8bd9e}"
+    "input,select{width:100%;box-sizing:border-box;"
     "padding:.7em;border-radius:.5em;border:1px solid #555;background:#111;color:#FFF0C8;font-size:1em}"
-    "button{margin-top:1.2em;width:100%;padding:.9em;border:0;border-radius:2em;background:#FFB347;color:#000;font-size:1.05em;"
-    "font-weight:600}small{color:#8a8270}.r{display:flex;gap:.6em;align-items:center}.r input{width:auto}</style>";
+    "button,.btn{display:block;text-align:center;text-decoration:none;margin-top:1.2em;width:100%;padding:.9em;border:0;"
+    "border-radius:2em;background:#FFB347;color:#000;font-size:1.05em;font-weight:600;box-sizing:border-box}"
+    "small{color:#8a8270}.r{display:flex;gap:.6em;align-items:center}.r input{width:auto}"
+    ".net{display:flex;gap:.5em;align-items:center;padding:.5em 0;border-bottom:1px solid #222}.net b{flex:1}"
+    ".net select{width:auto}.net input{width:auto}.card{border:1px solid #333;border-radius:.8em;padding:.2em 1em;margin:1em 0}"
+    "li{margin:.5em 0}</style>";
+
+const char* kKindNames[4] = {"Home", "Work", "My phone's hotspot", "Other"};
+
+std::string kindOptions(int sel) {
+  std::string o;
+  for (int k = 0; k < 4; ++k)
+    o += "<option value=\"" + std::to_string(k) + "\"" + (k == sel ? " selected" : "") + ">" + kKindNames[k] + "</option>";
+  return o;
+}
+
+std::string prioOptions(int prio) {
+  static const int v[3] = {9, 5, 2};
+  static const char* const n[3] = {"first", "normal", "last"};
+  const int sel = prio >= 7 ? 0 : prio >= 4 ? 1 : 2;
+  std::string o;
+  for (int k = 0; k < 3; ++k)
+    o += "<option value=\"" + std::to_string(v[k]) + "\"" + (k == sel ? " selected" : "") + ">" + n[k] + "</option>";
+  return o;
+}
+
+std::string head(const char* title) {
+  return std::string("<!doctype html><html><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\">"
+                     "<title>") + title + "</title>" + kStyle + "</head><body>";
+}
 
 void pageRoot() {
   const std::string opts = scanOptions();
@@ -260,16 +359,31 @@ void pageRoot() {
     const int m = order[i];
     mode += "<option value=\"" + std::to_string(m) + "\"" + ((int)cfg.mode == m ? " selected" : "") + ">" + modes[m] + "</option>";
   }
+  std::string nets;
+  for (int i = 0; i < book.count(); ++i) {
+    const WifiNet& n = book.at(i);
+    const std::string k = std::to_string(i);
+    nets += "<div class=net><b>" + htmlEsc(n.ssid) + "<br><small>" + kKindNames[(int)n.kind] +
+            (n.pass.empty() ? std::string(" · open") : std::string()) +
+            (joinedSsid == n.ssid && WiFi.status() == WL_CONNECTED ? " · joined now" : "") + "</small></b><select name=p" + k +
+            " aria-label=priority>" + prioOptions(n.prio) + "</select><label class=r><input type=checkbox name=f" + k +
+            ">forget</label></div>";
+  }
   std::string page =
-      "<!doctype html><html><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\">"
-      "<title>SOUL setup</title>" + std::string(kStyle) +
-      "</head><body><h1>SOUL setup</h1><form method=post action=/save>"
-      "<label>Wi-Fi network</label><select name=ssid><option value=\"\">" +
-      (ssid.empty() ? std::string("choose…") : "keep: " + htmlEsc(ssid)) + "</option>" + opts +
-      "</select><label>or type its name</label><input name=ssid2 autocomplete=off>"
-      "<label>Wi-Fi password</label><input name=pass type=password autocomplete=off placeholder=\"" +
-      (pass.empty() ? std::string("") : "unchanged") +
-      "\"><label>Who helps SOUL think?</label><select name=mode>" + mode +
+      head("SOUL setup") + "<h1>SOUL setup</h1>"
+      "<h2>Wi-Fi networks SOUL knows</h2>" +
+      (book.count() ? "<form method=post action=/nets>" + nets +
+                          "<button>Save the order</button></form><p><small>SOUL joins the one marked <b>first</b> when it is "
+                          "in reach, else the next it finds, and moves back by itself.</small></p>"
+                    : std::string("<p><small>None yet.</small></p>")) +
+      "<a class=btn href=/hotspot>Add my phone's hotspot (SOUL on the go)</a>"
+      "<h2>Add a Wi-Fi network</h2><form method=post action=/save>"
+      "<label>Wi-Fi network</label><select name=ssid><option value=\"\">choose…</option>" + opts +
+      "</select><label>or type its name</label><input name=ssid2 autocomplete=off maxlength=32>"
+      "<label>Wi-Fi password <small>(empty for an open network)</small></label><input name=pass type=password autocomplete=off>"
+      "<label>It is…</label><select name=kind>" + kindOptions(0) + "</select>"
+      "<button>Add this network</button></form>"
+      "<h2>Who helps SOUL think?</h2><form method=post action=/save><select name=mode>" + mode +
       "</select><details" + std::string(cfg.mode == AiMode::Claude || cfg.mode == AiMode::ChatGpt ? " open" : "") +
       "><summary>Advanced: an API key kept on this SOUL</summary><label>Anthropic API key <small>" + (cfg.anthropicKey.empty() ? std::string("not set") : "set: " + htmlEsc(maskKey(cfg.anthropicKey))) +
       "</small></label><input name=claude type=password autocomplete=off placeholder=\"sk-ant-…\">"
@@ -281,8 +395,55 @@ void pageRoot() {
       "<div class=r><input type=checkbox name=forget id=f><label for=f>Forget the stored API keys</label></div>"
       "<button>Save</button></form><p><small>With SOUL Cloud, keys and your account live at the cloud's account page, "
       "not here. Keys typed above are kept on this SOUL only and are sent only to the AI you chose. "
-      "This page never shows them back.</small></p></body></html>";
+      "This page never shows them back, nor any Wi-Fi password.</small></p></body></html>";
   server.send(200, "text/html; charset=utf-8", page.c_str());
+}
+
+// SOUL on the go: the phone's hotspot, step by step (docs/09 §1)
+void pageHotspot() {
+  std::string page =
+      head("SOUL on the go") + "<h1>SOUL on the go</h1><p>Away from your Wi-Fi, SOUL uses your phone's hotspot. Save it once; "
+      "SOUL then joins it by itself whenever it is on, and goes back to your home Wi-Fi when you are home.</p>"
+      "<div class=card><h2>iPhone</h2><ol>"
+      "<li><b>Settings › Personal Hotspot</b>: turn on <b>Allow Others to Join</b>.</li>"
+      "<li>Turn on <b>Maximize Compatibility</b> (SOUL only speaks 2.4 GHz Wi-Fi).</li>"
+      "<li>The hotspot's name is your iPhone's name (<b>Settings › General › About › Name</b>, e.g. “Ana’s iPhone”); "
+      "the password is on the Personal Hotspot screen.</li>"
+      "<li>Out and about: if SOUL does not join within a minute, open <b>Settings › Personal Hotspot</b> and keep that screen "
+      "open for a few seconds (iPhone then shows the hotspot to new devices), and pick SOUL up: it looks again right away.</li></ol></div>"
+      "<div class=card><h2>Android</h2><ol>"
+      "<li><b>Settings › Network &amp; internet › Hotspot &amp; tethering › Wi-Fi hotspot</b> (the names differ a little by brand).</li>"
+      "<li>Note the <b>hotspot name</b> and <b>password</b>; set the band to <b>2.4 GHz</b> (or “2.4 and 5 GHz” / “Extend compatibility”).</li>"
+      "<li>Turn off <b>Turn off hotspot automatically</b> if you want SOUL to stay online while your phone is in your pocket.</li></ol></div>"
+      "<form method=post action=/save><input type=hidden name=kind value=2>"
+      "<label>Hotspot name <small>(exactly as on the phone; a ’ or ' both work)</small></label><input name=ssid2 autocomplete=off maxlength=32 required>"
+      "<label>Hotspot password</label><input name=pass type=password autocomplete=off minlength=8 maxlength=63 required>"
+      "<button>Save my hotspot</button></form>"
+      "<p><small>Your phone's data plan pays for what SOUL sends: a typed question and its answer are a few tens of KB; "
+      "a spoken one about 100 KB. Hotel or train Wi-Fi with a login page does not work for SOUL (it cannot click “I agree”): "
+      "use the hotspot there.</small></p><p><a href=/>Back to setup</a></p></body></html>";
+  server.send(200, "text/html; charset=utf-8", page.c_str());
+}
+
+void bookEdited() {  // after any change to the saved networks: store, re-plan, search fast
+  saveBook();
+  roamer.bookChanged(millis(), WiFi.status() == WL_CONNECTED ? joinedSsid : std::string());
+}
+
+void pageNets() {
+  for (int i = book.count() - 1; i >= 0; --i) {
+    const std::string k = std::to_string(i);
+    if (server.hasArg(("f" + k).c_str())) {
+      book.remove(i);
+      continue;
+    }
+    const int p = server.arg(("p" + k).c_str()).toInt();
+    if (p >= 1 && p <= 9) book.setPrio(i, (uint8_t)p);
+  }
+  bookEdited();
+  server.sendHeader("Location", "http://192.168.4.1/");
+  server.send(303, "text/plain", "");
+  publish();
 }
 
 void pageSave() {
@@ -290,21 +451,27 @@ void pageSave() {
   p.begin("soulkey", false);
   std::string s = server.arg("ssid2").c_str();
   if (s.empty()) s = server.arg("ssid").c_str();
-  if (!s.empty() && s.size() <= 32) {
-    ssid = s;
-    p.putString("ssid", ssid.c_str());
-    std::string pw = server.arg("pass").c_str();
-    if (!pw.empty() && pw.size() <= 63) {
-      pass = pw;
-      p.putString("pass", pass.c_str());
-    }
-    wipe(pw);
-    reconnect = true;
+  bool netAdded = false, netBad = false;
+  if (!s.empty()) {
+    WifiNet n;
+    n.ssid = s;
+    n.pass = server.arg("pass").c_str();
+    const int k = server.hasArg("kind") ? server.arg("kind").toInt() : 0;
+    n.kind = (WifiKind)(k >= 0 && k <= 3 ? k : 3);
+    n.prio = wifiDefaultPrio(n.kind);
+    const int i = book.find(s);
+    if (i >= 0) n.prio = book.at(i).prio;  // re-typed: keep its place
+    netAdded = book.add(n) >= 0;
+    netBad = !netAdded;
+    wipe(n.pass);
+    if (netAdded) bookEdited();
   }
-  const int mode = server.arg("mode").toInt();
-  if (mode >= 0 && mode <= 3) {
-    cfg.mode = (AiMode)mode;
-    p.putUChar("mode", (uint8_t)mode);
+  if (server.hasArg("mode")) {
+    const int mode = server.arg("mode").toInt();
+    if (mode >= 0 && mode <= 3) {
+      cfg.mode = (AiMode)mode;
+      p.putUChar("mode", (uint8_t)mode);
+    }
   }
   std::string k = server.arg("claude").c_str();
   if (keyLooksValid(AiMode::Claude, k)) {
@@ -318,11 +485,13 @@ void pageSave() {
     p.putString("openai", k.c_str());
   }
   wipe(k);
-  const std::string url = server.arg("cloud").c_str();
-  if (url.empty() || url.compare(0, 8, "https://") == 0) {
-    cfg.relayUrl = url;
-    p.putString("cloud", url.c_str());
-    cloudSetBase(url);
+  if (server.hasArg("cloud")) {
+    const std::string url = server.arg("cloud").c_str();
+    if (url.empty() || url.compare(0, 8, "https://") == 0) {
+      cfg.relayUrl = url;
+      p.putString("cloud", url.c_str());
+      cloudSetBase(url);
+    }
   }
   p.remove("ctoken");  // rev. 1's shared cloud token: never stored again (§6.16)
   const std::string z = server.arg("tz").c_str();
@@ -344,10 +513,12 @@ void pageSave() {
     portalName = nm.substr(0, 16);
     portalNameReady = true;
   }
-  server.send(200, "text/html; charset=utf-8",
-              (std::string("<!doctype html><meta charset=utf-8><meta name=viewport content=\"width=device-width\">") + kStyle +
-               "<h1>Saved</h1><p>SOUL is joining your Wi-Fi now. You can close this page and go back to your usual Wi-Fi.</p>")
-                  .c_str());
+  const char* msg = netBad    ? "<h1>Not saved</h1><p>A Wi-Fi name has 1 to 32 characters and a password 8 to 63 (or none for an "
+                                "open network). SOUL keeps 8 networks at most: forget one first.</p><p><a href=/>Back</a></p>"
+                    : netAdded ? "<h1>Saved</h1><p>SOUL knows this network now and joins it whenever it is in reach. You can add "
+                                 "another one, or close this page and go back to your usual Wi-Fi.</p><p><a href=/>Back to setup</a></p>"
+                               : "<h1>Saved</h1><p>You can close this page and go back to your usual Wi-Fi.</p><p><a href=/>Back</a></p>";
+  server.send(200, "text/html; charset=utf-8", (head("SOUL setup") + msg + "</body></html>").c_str());
   publish();
 }
 
@@ -364,6 +535,8 @@ void portalStart() {
   dns.start(53, "*", WiFi.softAPIP());
   server.on("/", HTTP_GET, pageRoot);
   server.on("/save", HTTP_POST, pageSave);
+  server.on("/nets", HTTP_POST, pageNets);
+  server.on("/hotspot", HTTP_GET, pageHotspot);
   server.onNotFound([] {  // captive portal: every URL leads to the form
     server.sendHeader("Location", "http://192.168.4.1/");
     server.send(302, "text/plain", "");
@@ -382,13 +555,137 @@ void portalStop() {
   portalUp = false;
 }
 
-void connectSta() {
-  if (ssid.empty()) return;
-  WiFi.mode(portalUp ? WIFI_AP_STA : WIFI_STA);
-  WiFi.setSleep(true);  // modem sleep between beacons (also required with BLE)
-  WiFi.setAutoReconnect(true);
-  WiFi.begin(ssid.c_str(), pass.c_str());
-  Serial.printf("[net] joining Wi-Fi \"%s\"\n", ssid.c_str());
+// ------------------------------------------------------------ roaming ---
+// The WifiRoamer (lib/Suflet/src/WifiRoam.*) decides; this does it with the
+// ESP32 driver: async scans, joins, the internet check (docs/09 §2).
+
+bool scanRunning = false, timeStarted = false;
+
+esp_err_t onProbe(esp_http_client_event_t* e) {
+  if (e->event_id == HTTP_EVENT_ON_DATA && e->user_data) *(size_t*)e->user_data += (size_t)e->data_len;
+  return ESP_OK;
+}
+
+// GET http://connectivitycheck.gstatic.com/generate_204, redirects not followed:
+// 204 = online, a page or a redirect = a login page (captive portal), nothing = no internet.
+// Plain HTTP on purpose: a login page can only answer an unencrypted request.
+int probeInternet(size_t& bodyLen) {
+  bodyLen = 0;
+  esp_http_client_config_t c = {};
+  c.url = SUFLET_PROBE_URL;
+  c.method = HTTP_METHOD_GET;
+  c.timeout_ms = 6000;
+  c.disable_auto_redirect = true;
+  c.event_handler = onProbe;
+  c.user_data = &bodyLen;
+  esp_http_client_handle_t h = esp_http_client_init(&c);
+  if (!h) return -1;
+  const esp_err_t e = esp_http_client_perform(h);
+  const int status = e == ESP_OK ? esp_http_client_get_status_code(h) : -1;
+  esp_http_client_cleanup(h);
+  return status;
+}
+
+JoinFail failFromReason(int r) {
+  switch (r) {
+    case WIFI_REASON_AUTH_FAIL:
+    case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+    case WIFI_REASON_HANDSHAKE_TIMEOUT: return JoinFail::BadPassword;
+    case WIFI_REASON_NO_AP_FOUND:
+    case WIFI_REASON_NO_AP_FOUND_W_COMPATIBLE_SECURITY: return JoinFail::NotFound;
+    default: return JoinFail::Other;
+  }
+}
+
+void roamStep() {
+  const uint32_t now = millis();
+  {  // networks typed on SOUL (the phone's hotspot)
+    std::vector<WifiNet> add;
+    {
+      Lock l;
+      add.swap(adds);
+    }
+    if (!add.empty()) {
+      for (WifiNet& n : add) {
+        const int i = book.find(n.ssid);
+        if (i >= 0) n.prio = book.at(i).prio;
+        if (book.add(n) < 0) Serial.println("[net] could not save the network (invalid or 8 already saved)");
+        wipe(n.pass);
+      }
+      bookEdited();
+    }
+  }
+  if (kickWanted.exchange(false)) roamer.kick(now);
+  const bool link = WiFi.status() == WL_CONNECTED;
+  static bool wasLink = false;
+  if (wasLink && !link) Serial.printf("[net] link lost (\"%s\"): searching\n", joinedSsid.c_str());
+  wasLink = link;
+  if (roamer.state() == NetState::Joining && !link) {  // the driver gave up on this join: why
+    const int r = discReason.exchange(0);
+    if (r && r != WIFI_REASON_ASSOC_LEAVE) {
+      roamer.joinFailed(now, failFromReason(r));
+      Serial.printf("[net] join failed: reason %d\n", r);
+    }
+  }
+  if (scanRunning) {
+    const int16_t n = WiFi.scanComplete();
+    if (n == WIFI_SCAN_RUNNING) return;
+    scanRunning = false;
+    std::vector<ScanHit> hits;
+    for (int i = 0; i < n; ++i) {
+      const std::string s = WiFi.SSID(i).c_str();
+      if (!s.empty()) hits.push_back({s, (int)WiFi.RSSI(i)});
+    }
+    WiFi.scanDelete();
+    roamer.scanDone(now, hits);
+  }
+  const RoamCmd c = roamer.tick(now, link, link ? (int)WiFi.RSSI() : 0);
+  switch (c.kind) {
+    case RoamCmd::Scan:
+      if (portalUp) {  // a scan would drop the phone on SOUL's access point: the portal's own scan answers
+        roamer.scanDone(now, portalHits);
+      } else if (WiFi.scanNetworks(true, false, false, 120) == WIFI_SCAN_FAILED) {
+        roamer.scanDone(now, std::vector<ScanHit>());
+      } else {
+        scanRunning = true;
+      }
+      break;
+    case RoamCmd::Join: {
+      const WifiNet& n = book.at(c.net);
+      WiFi.mode(portalUp ? WIFI_AP_STA : WIFI_STA);
+      WiFi.setSleep(true);  // modem sleep between beacons (also required with BLE)
+      WiFi.setAutoReconnect(false);  // the roamer decides where to go
+      if (link) WiFi.disconnect(false);
+      discReason = 0;
+      joinedSsid = c.ssid;
+      WiFi.begin(c.ssid.c_str(), n.pass.empty() ? nullptr : n.pass.c_str());
+      timeStarted = false;
+      Serial.printf("[net] joining \"%s\" (%s, priority %d)\n", c.ssid.c_str(), wifiKindName(n.kind, false), n.prio);
+      break;
+    }
+    case RoamCmd::Probe: {
+      size_t len = 0;
+      const int st = probeInternet(len);
+      roamer.probed(millis(), classifyProbe(st, len));
+      const int cur = roamer.current();
+      if (roamer.state() == NetState::Online && cur >= 0 && book.at(cur).ssid != lastGood) {
+        lastGood = book.at(cur).ssid;  // written only when it changes (flash writes glitch the RGB panel)
+        Preferences p;
+        p.begin("soulkey", false);
+        p.putString("wlast", lastGood.c_str());
+        p.end();
+        soulFlashWritten();
+      }
+      Serial.printf("[net] internet check on \"%s\": %d (%u B) -> %s\n", joinedSsid.c_str(), st, (unsigned)len,
+                    netStateName(roamer.state()));
+      break;
+    }
+    case RoamCmd::Leave:
+      WiFi.disconnect(false);
+      joinedSsid.clear();
+      break;
+    default: break;
+  }
 }
 
 // ------------------------------------------------------------- voice ---
@@ -455,8 +752,13 @@ void transcribe(VoiceJob* v) {
 void netTask(void*) {
   loadSecrets();
   WiFi.persistent(false);  // we keep the credentials ourselves
-  connectSta();
-  bool timeStarted = false;
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(false);
+  WiFi.onEvent(
+      [](arduino_event_id_t, arduino_event_info_t i) { discReason = (int)i.wifi_sta_disconnected.reason; },
+      ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+  roamer.setBook(&book);
+  roamer.preferFirst(book.find(lastGood));
   uint32_t lastPublish = 0;
   for (;;) {
     if (portalWanted && !portalUp) portalStart();
@@ -465,25 +767,15 @@ void netTask(void*) {
       dns.processNextRequest();
       server.handleClient();
     }
-    if (forget) {
+    if (forget) {  // every saved network
       forget = false;
-      WiFi.disconnect(true);
-      wipe(pass);
-      ssid.clear();
-      Preferences p;
-      p.begin("soulkey", false);
-      p.remove("ssid");
-      p.remove("pass");
-      p.end();
-      soulFlashWritten();
-    }
-    if (reconnect) {
-      reconnect = false;
       WiFi.disconnect(false);
-      connectSta();
-      timeStarted = false;
+      joinedSsid.clear();
+      while (book.count()) book.remove(0);
+      bookEdited();
     }
-    if (!timeStarted && WiFi.status() == WL_CONNECTED) {
+    roamStep();
+    if (!timeStarted && online) {
       configTzTime(tz.c_str(), "pool.ntp.org", "time.cloudflare.com");
       timeStarted = true;
     }
@@ -541,6 +833,16 @@ NetInfo netInfo() {
 void netStartPortal() { portalWanted = true; }
 void netStopPortal() { portalWanted = false; }
 void netForgetWifi() { forget = true; }
+void netWifiKick() { kickWanted = true; }
+bool netOnline() { return online; }
+
+bool netAddWifi(const WifiNet& n) {
+  if (n.ssid.empty() || n.ssid.size() > 32 || (!n.pass.empty() && (n.pass.size() < 8 || n.pass.size() > 63))) return false;
+  Lock l;
+  if (adds.size() >= 4) return false;
+  adds.push_back(n);
+  return true;
+}
 
 void netSetKey(AiMode mode, const std::string& key) {
   Preferences p;
@@ -712,5 +1014,5 @@ void netFactoryReset() {
   wipe(cfg.anthropicKey);
   wipe(cfg.openaiKey);
   wipe(cfg.relayToken);
-  wipe(pass);
+  // the saved networks were in "soulkey" too; the device restarts right after (ESP.restart)
 }

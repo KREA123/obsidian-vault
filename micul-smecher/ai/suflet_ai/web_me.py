@@ -221,6 +221,23 @@ _T: Dict[str, Dict[str, str]] = {
         "through it: use a phone hotspot or a home network.",
         wifi_more="Nothing helps? Restart the router, keep SOUL within a few metres of it, and try again. The setup "
                   "network closes by itself 60 s after a success or after 15 minutes.",
+        go_title="Take SOUL with you: your phone's hotspot",
+        go_lead="SOUL remembers up to 8 Wi-Fi networks (home, work, your phone's hotspot) and moves between them by "
+        "itself. Save your hotspot once; away from home SOUL joins it whenever it is on, and goes back to your home "
+        "Wi-Fi when you are back.",
+        go_add="On SOUL: <b>Settings › Wi-Fi › Add my phone's hotspot › Type it on SOUL</b> (the name, then the "
+        "password). Or on the setup page (<b>http://192.168.4.1/hotspot</b>).",
+        go_iphone="iPhone", go_iphone_b="<li><b>Settings › Personal Hotspot</b>: turn on <b>Allow Others to Join</b>.</li>"
+        "<li>Turn on <b>Maximize Compatibility</b>: SOUL only speaks 2.4 GHz Wi-Fi.</li>"
+        "<li>The hotspot's name is your iPhone's name (<b>Settings › General › About › Name</b>); the password is on "
+        "the Personal Hotspot screen. A ' typed on SOUL matches the iPhone's ’.</li>"
+        "<li>If SOUL does not join within a minute, open <b>Settings › Personal Hotspot</b> and keep it on screen for a "
+        "few seconds, and pick SOUL up: it looks again right away.</li>",
+        go_android="Android", go_android_b="<li><b>Settings › Network &amp; internet › Hotspot &amp; tethering › Wi-Fi "
+        "hotspot</b> (names differ a little by brand).</li><li>Note the <b>name</b> and <b>password</b>; choose the "
+        "<b>2.4 GHz</b> band (or “2.4 and 5 GHz”).</li><li>Turn off <b>Turn off hotspot automatically</b> to keep SOUL "
+        "online while the phone is in your pocket.</li>",
+        go_data="Your phone's plan pays for SOUL's data: a typed question and its answer are a few tens of KB.",
         privacy="Your data",
     ),
     "ro": dict(
@@ -337,6 +354,23 @@ _T: Dict[str, Dict[str, str]] = {
         "nu poate trece de ea: folosește hotspotul telefonului sau o rețea de acasă.",
         wifi_more="Nu merge nimic? Repornește routerul, ține SOUL la câțiva metri de el și încearcă din nou. Rețeaua "
                   "de configurare se închide singură la 60 s după succes sau după 15 minute.",
+        go_title="Ia SOUL cu tine: hotspotul telefonului",
+        go_lead="SOUL ține minte până la 8 rețele Wi-Fi (acasă, birou, hotspotul telefonului) și trece singur de la una "
+        "la alta. Salvează hotspotul o dată; departe de casă SOUL se conectează la el ori de câte ori e pornit și revine "
+        "la Wi-Fi-ul de acasă când ajungi.",
+        go_add="Pe SOUL: <b>Setări › Wi-Fi › Adaugă hotspotul telefonului › Scrie-l pe SOUL</b> (numele, apoi parola). "
+        "Sau pe pagina de configurare (<b>http://192.168.4.1/hotspot</b>).",
+        go_iphone="iPhone", go_iphone_b="<li><b>Configurări › Hotspot personal</b>: pornește <b>Permite altora să se "
+        "conecteze</b>.</li><li>Pornește <b>Maximizează compatibilitatea</b>: SOUL merge doar pe Wi-Fi 2,4 GHz.</li>"
+        "<li>Numele hotspotului e numele iPhone-ului (<b>Configurări › General › Despre › Nume</b>); parola e pe ecranul "
+        "Hotspot personal. Un ' scris pe SOUL se potrivește cu ’ de pe iPhone.</li><li>Dacă SOUL nu se conectează într-un "
+        "minut, deschide <b>Configurări › Hotspot personal</b> și ține ecranul deschis câteva secunde, apoi ridică SOUL: "
+        "caută din nou imediat.</li>",
+        go_android="Android", go_android_b="<li><b>Setări › Rețea și internet › Hotspot și tethering › Hotspot Wi-Fi</b> "
+        "(numele diferă puțin de la o marcă la alta).</li><li>Notează <b>numele</b> și <b>parola</b>; alege banda "
+        "<b>2,4 GHz</b> (sau „2,4 și 5 GHz”).</li><li>Oprește <b>Oprire automată hotspot</b> ca SOUL să rămână online cu "
+        "telefonul în buzunar.</li>",
+        go_data="Datele lui SOUL se plătesc din abonamentul telefonului: o întrebare scrisă și răspunsul au câteva zeci de KB.",
         privacy="Datele tale",
     ),
 }
@@ -602,6 +636,12 @@ _WIFI = """{% extends "base" %}{% block body %}
 <div class="card"><h3>{{ t.wifi_e3 }}</h3><p class="small">{{ t.wifi_e3b }}</p></div>
 <div class="card"><h3>{{ t.wifi_e4 }}</h3><p class="small">{{ t.wifi_e4b }}</p></div>
 <p class="small">{{ t.wifi_more }}</p>
+<h2 id="hotspot">{{ t.go_title }}</h2>
+<p>{{ t.go_lead }}</p>
+<p>{{ t.go_add|safe }}</p>
+<div class="card"><h3>{{ t.go_iphone }}</h3><ol class="steps">{{ t.go_iphone_b|safe }}</ol></div>
+<div class="card"><h3>{{ t.go_android }}</h3><ol class="steps">{{ t.go_android_b|safe }}</ol></div>
+<p class="small">{{ t.go_data }}</p>
 <p><a class="btn" href="/me">{{ t.back_me }}</a></p>
 {% endblock %}"""
 

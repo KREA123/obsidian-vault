@@ -1426,6 +1426,7 @@ void runOsTests();
 void runCloudTests();
 void runBridgeTests();
 void runGlassTests();
+void runWifiTests();
 
 int main(int, char**) {
   UNITY_BEGIN();
@@ -1500,5 +1501,6 @@ int main(int, char**) {
   runCloudTests();
   runBridgeTests();
   runGlassTests();
+  runWifiTests();
   return UNITY_END();
 }

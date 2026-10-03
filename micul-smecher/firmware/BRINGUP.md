@@ -1,6 +1,6 @@
 # SOUL M bring-up: the first 15 minutes on a real 2.8C
 
-*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0. Nothing below has run on a board yet: every line
+*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0 (§4b: 1.4.x, §4c: 1.5.0). Nothing below has run on a board yet: every line
 is either "verified on the PC" (native tests, the simulator) or "expected, check it". This page is the
 checklist that turns the second kind into the first. Write the numbers you measure into the table at
 the end and commit them.*
@@ -175,6 +175,45 @@ A new tone (aura) costs ~50 M instructions in all, spread over 11 frames (3 low-
 slices of 64 rows of ~4.2 M); the old tone stays on screen until the swap. Scaling 1.3.0's estimates
 (§4) by these ratios: keyboard frames ~11–18 ms, screens ~8–14 ms at 30 fps, standby unchanged; the adaptive
 cap lowers the rate if a frame costs more. **Measure** on the board with `F` and note real numbers here.
+
+
+## 4c · On the go: several networks, the phone's hotspot, hotel Wi-Fi (firmware 1.5.0, 10 min)
+
+What should happen (pictures: `sim/shots/everywhere/`; design and numbers: `../docs/09-EVERYWHERE.md`). Keep the
+serial monitor open: every step logs a `[net]` line.
+
+- [ ] **Upgrade keeps the old network.** Flash 1.5.0 over 1.4.x: SOUL joins the same Wi-Fi without asking;
+      *Settings › Wi-Fi* shows "Connected" and the setup page lists it as *Home*. Log: `[net] joining "…" (Home, priority 8)`
+      then `[net] internet check on "…": 204 (0 B) -> online`.
+- [ ] **Add the phone's hotspot on SOUL.** *Settings › Wi-Fi › Add my phone's hotspot › Type it on SOUL*: the name, then
+      the password. The first letter must **not** turn into a capital. iPhone: Personal Hotspot › Allow Others to Join,
+      **Maximize Compatibility on** (SOUL is 2.4 GHz only). Type the name with a plain ' (the iPhone uses ’): it must still join.
+- [ ] **Walk out.** Switch the home router off (or walk out of range). Expected: `link lost`, then scans every ~4 s;
+      with the hotspot on, SOUL joins it in **< 10 s** (write the time below); toast "On your phone's hotspot".
+      Note how long it takes when the iPhone's hotspot screen is **closed** (iPhone stops showing the hotspot to new
+      devices after a while; opening Settings › Personal Hotspot shows it again).
+- [ ] **Come home.** Router back on: within ~2 min SOUL leaves the hotspot for home (`[net] joining "home"`).
+- [ ] **Phone without data.** Turn mobile data off on the phone while SOUL is on its hotspot: "The phone has no data"
+      in *Settings › Wi-Fi* within ~30 s; SOUL Cloud closes, the rules still answer.
+- [ ] **Hotel / captive Wi-Fi.** Join a guest network with a login page (or a router with a captive-portal test page)
+      from the setup page: the check logs `302` or `200 (… B) -> captive`; toast "Wi-Fi needs a login: use the hotspot";
+      if the hotspot is saved and on, SOUL moves to it within ~30 s.
+- [ ] **Wrong password.** Save a network with a wrong password: "Wrong password" + its name on the Wi-Fi page; SOUL
+      does not retry it until the network is saved again (or 30 min pass).
+- [ ] **Questions kept offline.** With no network, hold the glass / type "what is the capital of Peru?": "No internet
+      right now. I'll ask as soon as I'm back online (1 waiting)". "Wake me at 7" still sets the alarm at once.
+      Turn the hotspot on: ~3 s after "Online again" the answer comes by itself ("You asked earlier").
+- [ ] **Offline eyes.** 20 s without internet on the home face: slightly heavier lids and a glance left-right about
+      every 9 s; back online they open again. Not in *No AI* mode.
+- [ ] **Battery.** With the hotspot gone for 10 min, the scans slow down to once a minute (the log shows the gap). Note
+      the current with the USB meter while it searches fast (expected +40–80 mA average for the first 3 min).
+
+| 1.5.0 measurement | Value |
+|---|---|
+| Hotspot appears → SOUL online (s) | |
+| … with the iPhone hotspot screen closed (s) | |
+| Home back → SOUL leaves the hotspot (s) | |
+| Current while searching fast / slow (mA) | |
 
 ## 5 · Wi-Fi and the AI (4 min)
 

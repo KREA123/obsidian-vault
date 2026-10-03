@@ -572,12 +572,81 @@ std::vector<Scenario> scenarios() {
          s.run(0.6f);
          s.mark();
          s.os.go(View::Wifi);
-         s.tap(233, 300, 0.6f);  // set up from a phone
+         s.tap(233, 330, 0.6f);  // set up from a phone
          s.mark();
          s.os.go(View::Home);
          s.run(55.0f, false);  // the 1 min timer rings
          s.run(0.6f);
          s.mark();
+       }},
+      {"everywhere", "On the go: home Wi-Fi lost, the hotspot saved on SOUL, a question kept offline, a hotel login page, back online", true,
+       [](Sim& s) {
+         s.aiServer = [](const AiJob& j) {
+           return std::make_pair(200, claudeBody(std::string("{\"say\":\"") +
+                                                 (j.text.find("train") != std::string::npos ? "The 18:40 to Brasov is on time."
+                                                                                            : "Hi! I'm here.") +
+                                                 "\",\"face\":\"happy\",\"actions\":[]}"));
+         };
+         s.net.saved = 1;
+         s.net.savedList = "Acasa";
+         s.net.linkUp = true;
+         s.os.setNet(s.net);
+         s.run(1.0f);
+         // out of the door: home is gone, SOUL looks for a network it knows
+         s.net.connected = s.net.linkUp = false;
+         s.net.searching = true;
+         s.net.ssid.clear();
+         s.net.ip.clear();
+         s.os.setNet(s.net);
+         s.run(12.0f, false);
+         s.tap(233, 330, 0.3f);  // somebody walks by: awake
+         s.run(10.0f, false);
+         s.run(1.4f);
+         s.mark();  // 01 standby offline: heavier lids, a glance around now and then
+         s.tap(233, 330, 0.3f);
+         s.os.go(View::Wifi);
+         s.run(0.6f);
+         s.mark();  // 02 Wi-Fi: looking for a known network
+         s.tap(233, 270, 0.6f);
+         s.mark();  // 03 the phone's hotspot: how to switch it on (iPhone / Android)
+         s.tap(233, 336, 0.5f);
+         s.type("ana iphone");
+         s.typeDone();
+         s.run(0.4f);
+         s.mark();  // 04 its password on the round keyboard
+         s.type("pinecone");
+         s.typeDone();
+         s.run(0.6f);
+         s.net.saved = 2;
+         s.net.savedList = "Acasa \u00B7 ana iphone";
+         s.os.setNet(s.net);
+         s.run(0.6f);
+         s.mark();  // 05 saved: "I'll join it when it's on"
+         s.os.go(View::Home);
+         s.run(0.4f);
+         s.os.ask("is my train on time?");
+         s.run(1.0f);
+         s.mark();  // 06 offline: the question is kept
+         // a hotel Wi-Fi with a login page
+         s.net.linkUp = s.net.captive = true;
+         s.net.searching = false;
+         s.net.ssid = "Hotel Guest";
+         s.os.setNet(s.net);
+         s.os.go(View::Wifi);
+         s.run(1.2f);
+         s.mark();  // 07 "Wi-Fi wants a login page": try the hotspot
+         // the hotspot comes on: online, the kept question goes out by itself
+         s.net.captive = false;
+         s.net.connected = s.net.hotspot = true;
+         s.net.ssid = "Ana\u2019s iPhone";
+         s.net.ip = "172.20.10.4";
+         s.os.setNet(s.net);
+         s.run(1.0f);
+         s.mark();  // 08 on the phone's hotspot
+         s.os.go(View::Home);
+         s.run(4.5f);
+         s.mark();  // 09 "You asked earlier": the answer
+         s.run(2.0f);
        }},
       {"glass", "SoulOS 5 Glass: standby = the eyes alone; touch, apps, keyboard, Claude, alarms, settings on frosted glass", true,
        [](Sim& s) {
@@ -886,7 +955,7 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
   hc.base = base;
   hc.allowPlainWs = true;  // loopback test cloud only
   hc.deviceId = CloudLink::deviceId(gMac);
-  hc.fw = "1.4.1-sim";
+  hc.fw = "1.5.0-sim";
   hc.hw = "lcd28";
   hc.session.prefs.fw = hc.fw;
   hc.session.prefs.hw = hc.hw;

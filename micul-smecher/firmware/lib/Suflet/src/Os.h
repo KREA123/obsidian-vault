@@ -35,6 +35,7 @@
 #include "Keyboard.h"
 #include "SoulFace.h"
 #include "TimePicker.h"
+#include "WifiRoam.h"
 
 namespace suflet {
 
@@ -87,6 +88,8 @@ enum class OsCmd : uint8_t {
   SaveCloudRefs,  // saveCloudRefs(): which cloud item ids made which local items
   BridgePair,     // SOUL Bridge on the home network: a new 6-digit pairing code (the device's LAN server)
   BridgeForget,   // SOUL Bridge on the home network: forget every paired computer
+  AddWifi,        // pendingWifi(): a network typed on SOUL (the phone's hotspot), saved next to the others
+  WifiKick,       // search fast for a saved network now (a question waits, the hotspot was just switched on)
   Count
 };
 
@@ -129,6 +132,17 @@ struct NetInfo {
   bool bridgeOnline = false, bridgePaired = false, bridgeLan = false;  // bridgeLan: SOUL listens on the LAN
   std::string bridgeName, bridgeCode, bridgeCmd;  // bridgeCode: 8 (cloud) or 6 (LAN) characters
   int askState = 0;  // a turn on the computer: 0 none, 1 waiting for it, 2 Claude is thinking
+  // On the go (docs/09-EVERYWHERE.md): several saved networks, roaming, the internet check.
+  // `connected` = joined AND the internet answers (or is being checked); linkUp = joined at all.
+  bool linkUp = false;
+  bool captive = false;      // a login page (hotel, train, café Wi-Fi): SOUL cannot click through it
+  bool noInternet = false;   // joined, but nothing gets out (a phone hotspot without mobile data)
+  bool searching = false;    // looking for one of the saved networks
+  bool hotspot = false;      // the network joined now is the phone's hotspot
+  int saved = 0;             // how many networks SOUL knows
+  std::string savedList;     // their names, best first ("Home · Ana’s iPhone")
+  int wifiFail = 0;          // the last failure: 0 none, 1 not found, 2 wrong password, 3 timeout, 4 other
+  std::string failSsid;      // ... on this network
 };
 
 struct ClaudeInfo {
@@ -214,6 +228,9 @@ class Os {
   bool popCloudOut(CloudOut& o);
   const std::string& pendingKey() const { return pendingKey_; }
   void clearPendingKey();
+  const WifiNet& pendingWifi() const { return pendingWifi_; }  // OsCmd::AddWifi
+  void clearPendingWifi();
+  int queuedAsks() const { return askQ_.size(); }  // questions waiting for the internet
   FaceInputs faceInputs(const Brain& b) const;
   SoulFace& face() { return face_; }
   // Draw the UI layer (below the eyes) under the canvas clip.
@@ -414,6 +431,15 @@ class Os {
   bool listening_ = false, voiceWait_ = false;
   View voiceFrom_ = View::Home;
   std::string pendingKey_;
+  WifiNet pendingWifi_;  // the hotspot typed on SOUL: name, then password
+  // on the go: questions asked with no internet, sent when SOUL is back online (capped)
+  AskQueue askQ_;
+  float offT_ = 0, onT_ = 0;  // how long SOUL has been without / with the internet
+  bool deferred_ = false;     // the turn in flight is a queued question
+  std::string deferredText_;
+  int deferredTries_ = 0;
+  void sendJob(const std::string& text);
+  bool needsInternet() const;  // the brain picked needs the internet (not No AI)
 
   // timer
   bool timerRun_ = false, timerPaused_ = false, timerRinging_ = false, timerFocus_ = false;

@@ -279,3 +279,13 @@ The checklist is [`BRINGUP.md`](BRINGUP.md). Open risks:
   the IDF sources as remembered. First board test: serial `K`, then watch `[cloud]` lines while pairing.
 - **Keys and the device key sit in plain NVS** until production turns on flash + NVS encryption.
 - Orientation, IMU axes, charge current (R7 = 82 kΩ), buzzer polarity: see BRINGUP.md.
+
+## SOUL on the go (firmware 1.5.0, English)
+
+`lib/Suflet/src/WifiRoam.*` (hardware-free, 12 native tests in `test/test_suflet/test_wifi.cpp`) and the driver in
+`src/net.cpp`: up to 8 saved Wi-Fi networks (Home / Work / Phone hotspot / Other, priority 1–9, NVS `soulkey/wifis`),
+roaming by priority then signal, fast search after a drop (4 s → 20 s → 60 s), an internet check after every join
+(`generate_204`: online / captive login page / no internet), the hotspot typed on SOUL or on the setup page
+(`/hotspot`, `/nets`), and the offline question queue (`AskQueue`: 5 questions, 6 h). Why and what comes next
+(BLE tether through a phone app, built-in LTE Cat-1 bis): [`../docs/09-EVERYWHERE.md`](../docs/09-EVERYWHERE.md).
+Simulator: `.pio/build/sim/program /tmp/out everywhere`.

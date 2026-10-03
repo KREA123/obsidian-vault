@@ -20,7 +20,8 @@
 
 namespace suflet {
 
-enum class FaceState : uint8_t { Idle, Listen, Think, Speak, Error, Busy, Wait, Low, Charge, Sleep };
+// Offline: no internet for a while (docs/09): the eyes glance around now and then, looking for a signal
+enum class FaceState : uint8_t { Idle, Listen, Think, Speak, Error, Busy, Wait, Low, Charge, Sleep, Offline };
 
 struct FaceLayoutT {
   float k = 1, cx = 0, cy = 0;  // scale of the face and its centre offset, as fractions of the screen
