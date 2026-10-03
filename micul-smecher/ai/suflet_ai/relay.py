@@ -411,6 +411,8 @@ class Relay:
             brain = "cloud"
         if brain == "none":
             return "none", None, None, None
+        if brain == "bridge":  # turns go to the owner's computer (gateway); here only as a fallback
+            return "bridge", None, None, "bridge_offline"
         if brain in ("claude", "chatgpt"):
             prov = "anthropic" if brain == "claude" else "openai"
             key = self._user_key(account, prov) if account else None
@@ -516,6 +518,36 @@ class Relay:
                     reply["allowance"] = {"left": t["left"], "unit": "turns"}
         if note:
             reply["note"] = note
+        return {"reply": reply, "seqs": seqs}
+
+    def answer_bridge(self, device_id: str, state: str, ask: dict, text: str, actions: List[dict]) -> dict:
+        """The owner's Claude Code answered on their computer (SOUL Bridge, docs/08 §4): run its actions through
+        the dispatcher like any brain's (validated, stored, pushed with origin `turn`), build the `reply`."""
+        device = self.store.get_device(device_id)
+        if device is None:
+            raise ValueError("unknown device")
+        q = str(ask.get("text", "")).strip()
+        lang = ask.get("lang") if ask.get("lang") in ("ro", "en") else detect_lang(q)
+        conv = ask.get("conv") if isinstance(ask.get("conv"), str) and ask["conv"].startswith("c_") else None
+        conv = conv or "c_" + b64u(secrets.token_bytes(12))
+        ctx = _Ctx(device=device_id, text=q[:2000], now=self.device_now(self.soul, device), lang=lang,
+                   dispatcher=self.soul.dispatcher, mode="bridge")
+        for a in (actions or [])[:5]:
+            if isinstance(a, dict) and isinstance(a.get("type"), str):
+                ctx.run(a["type"], a.get("args") if isinstance(a.get("args"), dict) else {}, "bridge")
+        seqs = self._push_actions(device_id, ctx)
+        say = (text or "").strip()[:400]
+        self.convs.append(conv, device_id, "user", q)
+        if say:
+            self.convs.append(conv, device_id, "assistant", say)
+        ok = [r for (_, _, r) in ctx.calls if r.ok]
+        reply: Dict[str, Any] = {
+            "v": 1, "t": "reply", "re": ask.get("id"), "conv": conv, "say": say,
+            "face": "happy" if ok else ("confused" if ctx.calls else ""), "chips": [], "provider": "claude",
+            "brain": "bridge", "seqs": seqs,
+        }
+        if len(ctx.calls) > len(ok):
+            reply["note"] = "invalid"  # some actions failed validation: the answer still shows
         return {"reply": reply, "seqs": seqs}
 
     def _rollback(self, device_id: str, ctx: _Ctx) -> None:

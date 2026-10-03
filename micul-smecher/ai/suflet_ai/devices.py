@@ -68,7 +68,7 @@ EVENTS_DAYS = 30
 DEFAULT_TZ = "Europe/Bucharest"
 DEFAULT_QUIET = ("22:00", "07:00")  # [E] product default until the owner sets it
 
-BRAINS = ("cloud", "claude", "chatgpt", "direct", "none")
+BRAINS = ("cloud", "claude", "chatgpt", "direct", "none", "bridge")  # bridge: the owner's Claude Code (docs/08)
 VOICES = ("claude", "chatgpt")
 
 

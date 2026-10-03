@@ -40,6 +40,7 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Request, WebSocket
 from fastapi.responses import JSONResponse
 
+from .bridge_hub import BridgeError, BridgeHub
 from .config import builtin_ai_enabled, default_brain
 from .devices import (BRAINS, DEFAULT_TZ, VOICES, DeviceCtx, DeviceStore, GatewayError, check_device_id, posix_tz)
 from .relay import DEFAULT_CLAUDE_MODEL, DEFAULT_OPENAI_MODEL, Relay
@@ -51,6 +52,7 @@ PROTO_VERSIONS = (1,)
 LIMITS = {"ask_per_min": 20, "ask_per_day": 600, "frames_per_s": 2}
 HELLO_TIMEOUT = 10.0
 ASK_TIMEOUT = 25.0
+BRIDGE_ASK_TIMEOUT = 120.0  # a turn answered by the owner's own Claude Code on a computer (docs/08 §4)
 RELAY_BUDGET = ASK_TIMEOUT - 3.0   # the relay stops calling the model after this, so it answers inside ASK_TIMEOUT
 TICK = 15.0
 # device -> cloud frame limit (§6.4), in UTF-8 bytes. 2000 characters of note text (§6.8) can take 8000 bytes
@@ -187,6 +189,11 @@ class Gateway:
         self.on_connectors: List[Callable[[str, bool], None]] = []
         self.models = {"claude": os.environ.get("SOUL_B1_CLAUDE_MODEL", DEFAULT_CLAUDE_MODEL),
                        "openai": os.environ.get("SOUL_B1_OPENAI_MODEL", DEFAULT_OPENAI_MODEL)}
+        # SOUL Bridge, cloud transport (/v1/bridge): the owner's Claude Code answers turns of brain "bridge"
+        self.bridges = BridgeHub(self.store, clock=self.clock, notify_device=self.control,
+                                 answer_timeout=BRIDGE_ASK_TIMEOUT)
+        self.store.on_unpair.append(lambda dev, reason, old, erase: self.bridges.revoke_device(dev))
+        self._bridge_tasks: Set[asyncio.Task] = set()
 
     def __repr__(self) -> str:
         return f"Gateway({self.store!r}, online={len(self.conns)})"
@@ -403,7 +410,7 @@ class Gateway:
     def _queue(self, device_id: str, msg: dict) -> None:
         with self._lock:
             q = self._control[device_id]
-            if msg["t"] in ("inbox.state", "config"):  # a newer one replaces the old one
+            if msg["t"] in ("inbox.state", "config", "bridge.state", "bridge.code"):  # a newer one replaces the old one
                 for old in [m for m in q if m["t"] == msg["t"] and (m["t"] != "config" or m.keys() <= msg.keys())]:
                     q.remove(old)
             q.append(msg)
@@ -564,6 +571,9 @@ class Gateway:
         # long-poll: queued control messages and pushes come with the next poll
         if state == "paired":
             await s.out({"v": 1, "t": "inbox.state", **self.store.inbox_counts(dev)})
+            bst = self.bridges.state_msg(dev)
+            if bst["paired"] or (self.store.get_device(dev) or {}).get("brain") == "bridge":
+                await s.out(bst)
         else:  # the code again (a rebooted device lost it), or the pending pair.confirm if not just drained
             for pm in self._pairing_msgs(dev, resend=not any(cm["t"] == "pair.confirm" for cm in drained)):
                 await s.out(pm)
@@ -583,10 +593,82 @@ class Gateway:
             if wait is not None:
                 await s.out(_err("rate_limited", "too many questions, try in a minute", mid, retry_ms=wait))
                 return
-        if isinstance(s, Conn):
+        if self._bridge_turn(s):
+            await self._start_bridge_ask(s, m, mid)
+        elif isinstance(s, Conn):
             s.spawn(self._run_ask(s, m, mid))
         else:
             await self._run_ask(s, m, mid)
+
+    # ------------------------------------------------------- bridge turns --
+    def _bridge_turn(self, s: Session) -> bool:
+        """Does this device's brain hand turns to the owner's computer (SOUL Bridge, docs/08 §4)?"""
+        if self.store.device_state(s.ctx) != "paired":
+            return False
+        return (self.store.get_device(s.ctx.device_id) or {}).get("brain") == "bridge"
+
+    def _to_device(self, s: Session, msg: dict) -> Awaitable[None]:
+        """Send to the device now if it has a socket, else queue for its next poll (a bridge turn outlives
+        the long-poll `send` that carried the question)."""
+        if isinstance(s, Conn):
+            return s.out(msg)
+        conn = self.conns.get(s.ctx.device_id)
+        if conn is not None and conn.replay_done:
+            return conn.out(msg)
+        self._queue(s.ctx.device_id, msg)
+
+        async def _noop() -> None:
+            return None
+        return _noop()
+
+    async def _start_bridge_ask(self, s: Session, m: dict, mid: str) -> None:
+        await s.out({"v": 1, "t": "ask.state", "re": mid, "state": "waiting"})
+        if not self.bridges.online(s.ctx.device_id):  # at once: SOUL answers with its offline rules
+            await s.out(_err("bridge_offline", "your computer is offline: open Start SOUL", mid))
+            return
+        task = asyncio.ensure_future(self._run_bridge_ask(s, m, mid))
+        if isinstance(s, Conn):
+            s.tasks.add(task)
+            task.add_done_callback(s.tasks.discard)
+        else:
+            self._bridge_tasks.add(task)
+            task.add_done_callback(self._bridge_tasks.discard)
+
+    async def _run_bridge_ask(self, s: Session, m: dict, mid: str) -> None:
+        dev = s.ctx.device_id
+        d = self.store.get_device(dev) or {}
+        lang = m.get("lang") if m.get("lang") in ("ro", "en") else (d.get("lang") or "ro")
+        tz = d.get("tz") or DEFAULT_TZ
+        try:
+            now_local = self.relay.device_now(self.soul, d).strftime("%Y-%m-%dT%H:%M")
+        except Exception:  # noqa: BLE001
+            now_local = None
+
+        async def on_state(state: str) -> None:
+            await self._to_device(s, {"v": 1, "t": "ask.state", "re": mid, "state": state})
+
+        try:
+            ans = await self.bridges.ask(dev, m, lang, on_state, now_local=now_local, tz=tz)
+        except BridgeError as e:
+            if e.code != "cancelled":
+                await self._to_device(s, _err(e.code, e.msg, mid))
+            return
+        if mid in s.aborted:
+            return
+        loop = asyncio.get_running_loop()
+        try:
+            res = await loop.run_in_executor(self._relay_pool, functools.partial(
+                self.relay.answer_bridge, dev, "paired", m, ans.text, ans.actions))
+        except Exception:  # noqa: BLE001
+            log.exception("bridge answer failed")
+            await self._to_device(s, _err("upstream", "the answer could not be applied", mid))
+            return
+        if res.get("seqs"):
+            self.notify(dev)
+            conn = s if isinstance(s, Conn) else self.conns.get(dev)
+            if conn is not None and conn.replay_done:
+                await self._flush(conn)
+        await self._to_device(s, res["reply"])
 
     async def _run_ask(self, s: Session, m: dict, mid: str) -> None:
         dev = s.ctx.device_id
@@ -629,6 +711,36 @@ class Gateway:
     async def _h_abort(self, s: Session, m: dict) -> None:
         if isinstance(m.get("re"), str):
             s.aborted.append(m["re"][:24])
+            await self.bridges.cancel(m["re"][:24])
+
+    async def _h_bridge_code(self, s: Session, m: dict) -> None:
+        """Settings > AI > My Claude on my computer, on SOUL: a one-time code for `soul-bridge pair`."""
+        if not await self._require_paired(s, m):
+            return
+        try:
+            c = self.bridges.pair_code(s.ctx.device_id)
+        except BridgeError as e:
+            await s.out(_err(e.code, e.msg, m.get("id")))
+            return
+        await s.out({"v": 1, "t": "bridge.code", **c})
+        await s.out(self.bridges.state_msg(s.ctx.device_id))
+
+    async def _h_bridge_forget(self, s: Session, m: dict) -> None:
+        """A touch on SOUL: forget every paired computer (their tokens die, a connected bridge is closed)."""
+        if self.store.device_state(s.ctx) != "paired":
+            return
+        self.bridges.revoke_device(s.ctx.device_id)
+        await s.out(self.bridges.state_msg(s.ctx.device_id))
+
+    async def _h_brain(self, s: Session, m: dict) -> None:
+        """The owner picked a brain on SOUL itself. Only the brains that need nothing from the account
+        page are accepted here (keys are set on /me): `bridge` and `none`."""
+        b = m.get("brain")
+        if b not in ("bridge", "none") or self.store.device_state(s.ctx) != "paired":
+            return
+        self.store.update_device(s.ctx.device_id, brain=b)
+        if b == "bridge":
+            await s.out(self.bridges.state_msg(s.ctx.device_id))
 
     async def _h_ack(self, s: Session, m: dict) -> None:
         if not _is_int(m.get("seq")) or not isinstance(m.get("ok"), bool):
@@ -786,6 +898,7 @@ class Gateway:
         "hello": _h_hello, "ask": _h_ask, "abort": _h_abort, "ack": _h_ack, "item.add": _h_item_add,
         "item.state": _h_item_state, "inbox.add": _h_inbox_add, "pair.ok": _h_pair, "pair.no": _h_pair,
         "connectors": _h_connectors, "sleep": _h_sleep, "status": _h_status, "event": _h_event,
+        "bridge.code.get": _h_bridge_code, "bridge.forget": _h_bridge_forget, "brain": _h_brain,
     }
 
     # ============================================================ WebSocket ==
@@ -1036,6 +1149,11 @@ def build_router(get_gw: Callable[[], Gateway]) -> APIRouter:
     @r.websocket("/v1/device/ws")
     async def ws(websocket: WebSocket):
         await get_gw().ws_endpoint(websocket)
+
+    @r.websocket("/v1/bridge")
+    async def bridge_ws(websocket: WebSocket):
+        """SOUL Bridge on the owner's computer (docs/08 §4): bridge token, or a pairing code from SOUL."""
+        await get_gw().bridges.ws_endpoint(websocket, _client_ip(websocket))
 
     return r
 
