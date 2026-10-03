@@ -7,9 +7,10 @@ The eye engine for SOUL's round black glass: flat, bold, vector-only eyes with A
 | `eyes.js` | The engine. One classic script, no dependencies. In the browser it defines `window.SoulEyes`, in Node it uses `module.exports`. |
 | `designs.json` | Every eye design (the collection) as plain JSON specs. |
 | `designs.js` | The same data as `window.SOUL_DESIGNS`, for pages opened from disk (`file://` cannot fetch JSON). |
-| `one.html` | The signature pair: the 15 s loop, every expression, six colourways. |
+| `one.html` | The signature pair: the 15 s loop, every expression, six colourways, and **Motion** (a phone's sensors, or a desktop simulator: turn, tip, spin, tap). |
 | `index.html` | The collection gallery with a "Birth a SOUL" roll. |
 | `soul_eye_v2.mp4`, `.gif` | 1080×1080 60 fps render of the 15 s loop. |
+| `soul_eye_motion.mp4` | 1080×1080 demo of the motion behaviours, rendered by the firmware simulator (`firmware/tools/motion_clip.py`). |
 
 ## Quick start
 
@@ -49,6 +50,7 @@ The canvas is sized from its CSS box (with devicePixelRatio and a ResizeObserver
 | `speed` | `1` | Time multiplier. |
 | `manual` | `false` | No auto loop or resize; call `step(dt)` and `draw()` yourself (used for video export). |
 | `onChange` | `null` | `fn(name)`, called when the expression changes. |
+| `onMotion` | `null` | `fn(cue, eyes)`, called for each motion cue (see *Motion* below). |
 
 **Methods** (each returns the instance unless noted):
 
@@ -64,6 +66,8 @@ The canvas is sized from its CSS box (with devicePixelRatio and a ResizeObserver
 | `setHetero(bool)` | Turns heterochromia on or off. |
 | `setRandomMood(bool)` | Turns random mood mode on or off. |
 | `setLevel(0..1 \| null)` | Drives `listening` (pupil pulse) and `charging` (fill level) from real data; `null` = synthetic. |
+| `setMotion({ax, ay, az, gx?, gy?, gz?}, dt?)` | One IMU sample (see *Motion*). `null` turns motion off. |
+| `setOrientation({beta, gamma}, dt?)` | DeviceOrientation angles (degrees) when there is no accelerometer: gravity only. |
 | `hide()` | Snaps the eyes to nothing; follow with `react('hello')` to pop them in. |
 | `pause(bool)` | Pauses or resumes this instance. |
 | `step(dt)` | Advances the animation by `dt` seconds. |
@@ -71,13 +75,41 @@ The canvas is sized from its CSS box (with devicePixelRatio and a ResizeObserver
 | `resize()` | Re-reads the canvas size. |
 | `destroy()` | Removes listeners and observers and leaves the shared loop. |
 
-**Read-only:** `expression`, `mode`, `loopTime`, `design`.
+**Read-only:** `expression`, `mode`, `loopTime`, `design`, `motion` (the `Motion` object: `.pose`, `.active`).
 
 **Statics:**
 - `SoulEyes.EXPRESSIONS`: `[{name, label, kind: 'mood' | 'reaction'}]`
 - `MOODS`, `REACTIONS`, `RARITIES`
 - `roll(designs, seedHi, seedLo)`, `rollFromChipId(designs, 'A1B2C3D4E5F6')`, `rollRandom(designs)`
-- `render(ctx, rig, design, cx, cy, D, opts)` for custom compositing, `normalizeDesign(d)`, `VERSION`
+- `render(ctx, rig, design, cx, cy, D, opts)` for custom compositing (`opts.motion` = a `Motion` pose), `normalizeDesign(d)`, `VERSION`
+- `bindDeviceMotion(eyes, {flip?, onSample?})` → `{start(), stop(), flip, active, receiving}`; `Motion`, `PoseImu`, `TapDetector`, `NodDetector`, `MOTION_CUES`, `levelAngle`, `softClampRoll`
+
+### Motion
+
+SOUL M has a 6-axis IMU (QMI8658). Feed its samples and the eyes feel the world, the same way on the
+web and on the device (the firmware's `lib/Suflet/src/EyeMotion.cpp` is a line-by-line port, checked
+against this file by a parity trace in the native tests).
+
+```js
+// device frame: +x right, +y up (top of the glass), +z out of the glass. Accel in g (lying face up
+// reads 0,0,+1), gyro in rad/s (right-handed). Feed every sample, 60-200 Hz.
+eyes.setMotion({ ax, ay, az, gx, gy, gz });
+// a phone: maps DeviceMotion (m/s², deg/s, screen rotation, iOS sign) for you. Call in a tap (iOS asks).
+const imu = SoulEyes.bindDeviceMotion(eyes); await imu.start();
+```
+
+| Behaviour | What drives it | What the eyes do |
+|---|---|---|
+| Level keeping | roll of gravity in the glass plane (complementary filter: gyro + accel) | the pair counter-rotates to stay level, on a spring (k 80, ζ 0.5: a little lag and ~16 % overshoot); linear to ±120°, eased to ±150° at 180°; off when lying flat (gravity has no say in the plane); given up while too dizzy |
+| Marble pupils | "down" in the eyes' levelled frame against a 2 s neutral, + the gyro as inertia | pupils roll to the low side on an under-damped spring (the right eye a beat behind), then drift back; kept inside each design's pupil travel; halved while `lookAt` is active |
+| Spin → dizzy | a leaky bucket of the rotation rate (dead zone 0.8 rad/s, τ 1.3 s) | wobble + orbiting pupils in proportion; past 0.75 the `dizzy` mood (spiral pupils), then **ufff** (droopy lids, slow double blink, a sag) |
+| Orientation | gravity, with hysteresis and hold times | on its back → looks up at you (bigger pupils, 2.5 s); face down → grumble (`suspicious`), dimmed, lids half shut; upside down → `shocked`; held still in a hand (tremor, not a stand) → calm lids |
+| Gestures | accel spikes / gyro swings | double tap on the case → `approve`; nod (3 pitch swings) → `approve`; tilt left-right (3 roll/yaw swings) → `confused` |
+
+Cues (`onMotion`): `dizzyStart`, `ufff`, `onBack`, `faceDown`, `faceUp`, `upsideDown`, `upright`, `calm`,
+`tapTap`, `nodYes`, `nodNo`. On the device, `tapTap` / `nodYes` / `nodNo` also reach SoulOS as events
+(`Ev::TapTap`, `Ev::NodYes`, `Ev::NodNo`): with a Claude request open, a nod approves and a head shake denies.
+Without a sample the pose stays neutral and the eyes draw exactly as before.
 
 ### Expressions
 

@@ -1313,6 +1313,11 @@ void Os::update(float dt, Brain& brain) {
   }
   if (view_ == View::Boot && bootStep_ == BootStep::Birth && viewT_ < 2.0f) invalidate();  // the chip id types out
   if (set_.debug && (int)(t_ * 2) != (int)((t_ - dt) * 2)) invalidate(g_.rect(130, 400, 336, 460));
+  // the eyes' IMU gestures (double tap on the case, nod yes / no)
+  {
+    Ev me;
+    while (face_.pollEvent(me)) motion(me);
+  }
   // what the Brain hears
   brain.setAiLink(aiMode() != AiMode::None);
   for (Ev e : brainEvents_) brain.event(e);

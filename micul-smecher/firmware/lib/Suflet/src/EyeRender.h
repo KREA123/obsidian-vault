@@ -9,6 +9,7 @@
 // in front of the panel (eyes.js opts glass:false, as SoulOS uses it).
 #pragma once
 #include "Canvas.h"
+#include "EyeMotion.h"
 #include "EyeRig.h"
 #include "Raster.h"
 
@@ -23,6 +24,7 @@ struct RenderOpts {
   bool hetero = true;     // false: the left pupil colour for both eyes
   bool overlays = true;   // ? ! … zzz hearts tears …
   float alpha = 1;        // global fade (dim / sleep)
+  const MotionPose* motion = nullptr;  // IMU behaviours (level keeping, marble pupils, ...)
 };
 
 class EyeRenderer {

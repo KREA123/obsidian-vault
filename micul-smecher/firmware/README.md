@@ -21,7 +21,9 @@ python3 tools/frames_to_media.py /tmp/out ../media --mp4 --gif --sheet
 - `lib/Suflet/src/` — **sufletul, fără hardware** (C++17): `Canvas` (randare SDF anti-aliased),
   `Face` (ochi parametrici), `Brain` (dispoziție, atenție, reacții, moduri), `Personality`
   (semința din cip → nuanță, rarități, temperament), `Gestures` (tap/ținere/mângâiere, ridicare,
-  scuturare, cădere, ciocănit, orientare), `ClaudeLink` (protocolul Hardware Buddy al Claude Desktop).
+  scuturare, cădere, ciocănit, orientare), `EyeMotion` (ochii simt IMU-ul: rămân la nivel, pupile ca
+  niște bile, amețesc la rotire, dublu-tap pe carcasă, da/nu din cap — aceeași matematică ca `eyes.js`),
+  `ClaudeLink` (protocolul Hardware Buddy al Claude Desktop).
 - `src/` — placa: `main.cpp` (bucla, ecran cu randare parțială, touch, IMU, ceas, baterie, memorie
   NVS, comenzi seriale, bucla demo), `board.h` (pini), `ble_link.cpp` (Bluetooth securizat, adaptat
   din anthropics/claude-desktop-buddy, MIT).
@@ -37,7 +39,8 @@ Buddy…** → Connect → „Claude-Suflet-XXXX” → codul de 6 cifre de pe e
 - Panou SH8601 în loc de CO5300 → `-DSUFLET_PANEL_SH8601`.
 - Imagine rotită → `-DSUFLET_ROTATION=90|180|270`.
 - Touch oglindit → `TOUCH_MIRROR_X/Y` în `board.h`.
-- Axele IMU → `IMU_MAP` în `board.h` (comanda serială `i`: fața în sus ≈ (0,0,+1)).
+- Axele IMU → `IMU_MAP` în `board.h` (comanda serială `i`: fața în sus ≈ (0,0,+1); giroscopul pe
+  aceleași axe — BRINGUP.md §3b).
 
 ## Neverificat încă pe hardware
 Codul compilează pentru ambele plăci și logica e testată pe PC, dar placa fizică n-a fost încă în
@@ -88,8 +91,10 @@ geometry differ. On this disc a keyboard key is **~6.6 mm wide and ~7.9 mm tall*
 
 **Build, test, flash**
 ```bash
-pio test -e native                  # 97 native tests (eyes parity, SoulOS flows, AI + SOUL Cloud protocols)
+pio test -e native                  # 112 native tests (eyes + motion parity, SoulOS flows, AI + SOUL Cloud protocols)
 pio run -e sim && .pio/build/sim/program /tmp/out all   # the simulator (stills: sim/shots/)
+.pio/build/sim/program /tmp/out keys                     # drive the IMU from the keyboard: a/d turn, w/s tip,
+                                                         # q/e yaw, x spin, t tap, n nod, h shake, b/f/u/r poses
 pio check -e lcd28                  # cppcheck on our code (clean)
 pio run -e lcd28                    # build (-Wall -Wextra on our code: zero warnings)
 pio run -e lcd28 -t upload          # flash over USB-C (native USB, CDC serial)
@@ -97,7 +102,7 @@ pio device monitor -b 115200        # '?' lists the serial commands; 'F' = perf 
 ```
 If the upload does not start: hold **BOOT**, tap **RESET**, release BOOT, upload again.
 
-Build size (2026-10-03): `lcd28` flash ~1.99 MB (30 % of the 6.25 MB app slot), static RAM 76 KB (23 %).
+Build size (2026-10-03, 1.1.0): `lcd28` flash ~2.00 MB (31 % of the 6.25 MB app slot), static RAM 76 KB (23 %).
 PSRAM holds our persistent canvas and the panel's two frame buffers (3 × 460,800 B ≈ 1.4 MB of 8 MB).
 
 **How it runs** (`src/main.cpp`)

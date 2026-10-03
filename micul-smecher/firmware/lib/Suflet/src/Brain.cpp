@@ -407,6 +407,14 @@ void Brain::event(Ev e) {
     case Ev::ClaudePromptGone:
       promptActive_ = approveHold_ = false;
       break;
+    case Ev::NodYes:  // SOUL asked (a Claude request): a nod approves, a head shake denies
+    case Ev::NodNo:   // (the eyes already answered: approve / confused, from the motion layer)
+      if (promptActive_ && !deep) {
+        pushCue(e == Ev::NodYes ? Cue::ClaudeApprove : Cue::ClaudeDeny);
+        if (e == Ev::NodYes) pushCue(Cue::Click);
+        promptActive_ = approveHold_ = false;
+      }
+      break;
     case Ev::ClaudeLevelUp:
       start(Reaction::Celebrate);
       break;
@@ -425,6 +433,7 @@ void Brain::event(Ev e) {
     case Ev::TouchMove:
     case Ev::TouchUp:
     case Ev::TextCancel:
+    case Ev::TapTap:  // the eyes answer it (motion layer); it only counts as attention
     case Ev::None:
     case Ev::Count:
       break;

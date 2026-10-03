@@ -166,7 +166,10 @@ class Os {
   // ---- inputs -----------------------------------------------------------
   void touch(const TouchEv& e);  // raw touches (TouchMode::Text)
   void button(bool down);        // the side button (BOOT): press = back, hold 1.5 s = home
-  void motion(Ev e);             // PickUp, Shake, FaceDown, FaceUp...
+  void motion(Ev e);             // PickUp, Shake, FaceDown, FaceUp... and TapTap / NodYes / NodNo
+  // One IMU sample (device frame, accel in g, gyro in rad/s) for the eyes'
+  // motion behaviours; their gestures come back through motion(Ev).
+  void imu(float dt, const eyes::ImuSample& s) { face_.imu(dt, s); }
   void setClock(uint32_t localNow) { now_ = localNow; }
   void setNet(const NetInfo& n);
   void setClaude(const ClaudeInfo& c);

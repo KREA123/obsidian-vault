@@ -42,6 +42,10 @@ enum class Ev : uint8_t {
   TextCommit,  // the text input finished; the app reads the committed text
   TextCancel,
   AlarmDue,    // an alarm (or its snooze) is ringing now
+  // IMU gestures (EyeMotion, via SoulFace): answers when SOUL asks something
+  TapTap,  // double tap on the case: "yes?" / acknowledge
+  NodYes,  // nodded: yes
+  NodNo,   // tilted left-right: no
   Count
 };
 
@@ -53,7 +57,7 @@ inline const char* evName(Ev e) {
       "AiThinking",   "AiSpeakStart", "AiSpeakEnd",    "ClaudeUp",    "ClaudeDown",
       "ClaudeBusyStart", "ClaudeBusyEnd", "ClaudePrompt", "ClaudePromptGone", "ClaudeLevelUp",
       "ClaudeQuickApprove", "TouchDown",  "TouchMove",   "TouchUp",       "TextCommit",
-      "TextCancel",   "AlarmDue"};
+      "TextCancel",   "AlarmDue",     "TapTap",        "NodYes",      "NodNo"};
   static_assert(sizeof(kNames) / sizeof(kNames[0]) == (unsigned)Ev::Count, "event names");
   const unsigned i = (unsigned)e;
   return i < (unsigned)Ev::Count ? kNames[i] : "?";

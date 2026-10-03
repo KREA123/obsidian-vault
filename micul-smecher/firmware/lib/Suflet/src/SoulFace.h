@@ -13,7 +13,9 @@
 #pragma once
 #include "Brain.h"
 #include "Canvas.h"
+#include "EyeMotion.h"
 #include "EyeRender.h"
+#include "Events.h"
 #include "EyeRig.h"
 
 namespace suflet {
@@ -48,6 +50,20 @@ class SoulFace {
   void hide() { rig_.hide(); }
   void snapLayout(const FaceLayoutT& l);
 
+  // The IMU (EyeMotion): feed every sample, device frame (Gestures.h axes),
+  // accel in g, gyro in rad/s. The face answers the cues (level keeping,
+  // marble pupils, dizzy, orientation, gestures) like eyes.js setMotion();
+  // the gestures come out as events for SoulOS.
+  void imu(float dt, const eyes::ImuSample& s) {
+    if (motionOn) motion_.update(dt, s);
+  }
+  bool pollEvent(Ev& e) { return motionEv_.pop(e); }
+  const eyes::EyeMotion& motion() const { return motion_; }
+  const eyes::MotionPose& motionPose() const { return pose_; }
+  int motionCueCount() const { return cueN_; }  // how many cues so far, and the last one (logs)
+  eyes::MotionCue lastMotionCue() const { return lastCue_; }
+  bool motionOn = true;
+
   void update(float dt, const FaceInputs& in);
   // Draws the eyes and the rim rings; marks the canvas dirty where it drew.
   void render(Canvas& cv) {
@@ -73,6 +89,11 @@ class SoulFace {
   int moodFor(const FaceInputs& in) const;
   eyes::EyeRig rig_;
   eyes::EyeRenderer ren_{};
+  eyes::EyeMotion motion_;
+  eyes::MotionPose pose_;  // motion_'s pose, scaled down while the face is small above a screen
+  EvQueue<8> motionEv_{};
+  int cueN_ = 0;
+  eyes::MotionCue lastCue_ = eyes::MotionCue::None;
   int design_ = 0, pendingDesign_ = -1;
   float swapIn_ = 0;
   int W_ = 0, H_ = 0;

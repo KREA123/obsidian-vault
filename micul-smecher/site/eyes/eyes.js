@@ -1,4 +1,4 @@
-/*! SOUL eyes engine v2.1 — flat graphic eyes for SOUL's round glass.
+/*! SOUL eyes engine v2.2 — flat graphic eyes for SOUL's round glass.
  *
  *   const eyes = SoulEyes.createEyes(canvas, design, opts)
  *   eyes.setExpression('happy')   // a mood (holds) or a reaction (plays once, then returns)
@@ -6,6 +6,9 @@
  *   eyes.lookAt(x, y)             // -1..1 each; lookAt(null) = back to idle glances
  *   eyes.blink(2)                 // 1 or 2 (double blink)
  *   eyes.setDesign(design)        // swaps while the eyes are shut
+ *   eyes.setMotion({ax,ay,az,gx,gy,gz})  // an IMU sample (g, rad/s): level keeping, marble
+ *                                 // pupils, spin -> dizzy, orientation, double tap, nods
+ *   SoulEyes.bindDeviceMotion(eyes).start()  // a phone's sensors drive it (in a tap: iOS asks)
  *   eyes.destroy()
  *
  * Vector only (canvas 2D fills), no blur. Deterministic: the rig only advances
@@ -18,7 +21,7 @@
   else root.SoulEyes = E;
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
-  const VERSION = '2.1.0';
+  const VERSION = '2.2.0';
   const TAU = Math.PI * 2, PI = Math.PI;
 
   // ------------------------------------------------------------ utils
@@ -300,6 +303,279 @@
     }
   }
 
+  // ------------------------------------------------------------ motion (IMU)
+  // Level keeping, marble pupils, spin -> dizzy, orientation and gestures from an
+  // accelerometer (+ gyro). The same math as the firmware (lib/Suflet/src/EyeMotion.cpp):
+  // keep the two in step. Device frame: +x right, +y up (to the top of the glass),
+  // +z out of the glass; accel in g (lying face up reads 0,0,+1), gyro in rad/s.
+  const MOTION_CUES = ['none', 'dizzyStart', 'ufff', 'onBack', 'faceDown', 'faceUp', 'upsideDown', 'upright', 'calm', 'tapTap', 'nodYes', 'nodNo'];
+  const wrapPi = (a) => { a = (a + PI) % TAU; if (a <= 0) a += TAU; return a - PI; };
+  // the canvas rotation that keeps the eyes level, and how much to trust it (0 flat .. 1 upright)
+  function levelAngle(gx, gy, gz) {
+    const planar = Math.hypot(gx, gy), n = Math.hypot(gx, gy, gz);
+    return { angle: Math.atan2(gx, gy), weight: smooth((planar / (n > 1e-6 ? n : 1e-6) - 0.3) / 0.3) };
+  }
+  function softClampRoll(a) { // linear to +-120 deg, eased to +-150 deg at 180
+    const k0 = 2.0943951, L = 2.6179939, m = Math.abs(a);
+    if (m <= k0) return a;
+    const u = clamp((m - k0) / (PI - k0), 0, 1), v = k0 + (L - k0) * (1 - (1 - u) * (1 - u));
+    return a < 0 ? -v : v;
+  }
+  const approach = (v, t, rate, dt) => v + (t - v) * (1 - Math.exp(-rate * dt));
+  class TapDetector { // two short accel spikes on the case
+    constructor() { this.tapG = 0.25; this.maxTapS = 0.07; this.minGapS = 0.09; this.maxGapS = 0.5; this.quietS = 0.22; this.aboveT = 0; this.since1 = 10; this.since2 = 10; this.above = false; this.n = 0; }
+    update(hp, dt, busy) {
+      this.since1 += dt; this.since2 += dt;
+      if (busy) { this.n = 0; this.above = false; return false; }
+      if (!this.above) { if (hp > this.tapG) { this.above = true; this.aboveT = 0; } }
+      else {
+        this.aboveT += dt;
+        if (hp < this.tapG * 0.5) {
+          this.above = false;
+          if (this.aboveT <= this.maxTapS) {
+            const gap = this.since1 - this.aboveT;
+            if (this.n === 1 && gap < this.minGapS) { /* the same tap ringing */ }
+            else if (this.n === 1 && gap <= this.maxGapS) { this.n = 2; this.since2 = this.aboveT; }
+            else if (this.n === 2) this.n = 0;
+            else { this.n = 1; this.since1 = this.aboveT; }
+          } else this.n = 0;
+        }
+      }
+      if (this.n === 1 && this.since1 > this.maxGapS + this.maxTapS) this.n = 0;
+      if (this.n === 2 && !this.above && this.since2 >= this.quietS) { this.n = 0; return true; }
+      return false;
+    }
+  }
+  class NodDetector { // +1 nod (pitch), -1 tilt left-right (roll / yaw), 0 nothing
+    constructor() { this.rate = 1.3; this.dom = 1.6; this.swings = 3; this.windowS = 1.6; this.gapS = 0.7; this.coolS = 1.2; this.cool = 0; this.in = [false, false]; this.n = [0, 0]; this.last = [0, 0]; this.age = [10, 10]; this.span = [0, 0]; }
+    update(gx, gy, gz, dt) {
+      this.cool -= dt;
+      const r = [gx, Math.abs(gy) > Math.abs(gz) ? gy : gz], o = [Math.max(Math.abs(gy), Math.abs(gz)), Math.abs(gx)];
+      for (let c = 0; c < 2; c++) {
+        this.age[c] += dt; this.span[c] += dt;
+        const a = Math.abs(r[c]), sg = r[c] > 0 ? 1 : -1;
+        if (this.in[c] && (a < this.rate * 0.4 || sg !== this.last[c])) this.in[c] = false; // the swing is over (or turned)
+        if (!this.in[c] && a > this.rate && a > this.dom * o[c]) {
+          this.in[c] = true;
+          if (this.n[c] === 0 || this.age[c] > this.gapS || sg === this.last[c]) { this.n[c] = 1; this.span[c] = 0; } else this.n[c]++;
+          this.last[c] = sg; this.age[c] = 0;
+          if (this.n[c] >= this.swings && this.span[c] <= this.windowS && this.cool <= 0) { this.n = [0, 0]; this.cool = this.coolS; return c === 0 ? 1 : -1; }
+        }
+      }
+      return 0;
+    }
+  }
+  // a device pose -> what its IMU reads (simulators, tests). roll: turned in the glass plane
+  // (+ = counter-clockwise as you look at it); pitch: top toward you (+90 face down, -90 on its
+  // back); yaw: turned to its right. Upright facing you = 0, 0, 0.
+  class PoseImu {
+    constructor() { this.m = null; this.lin = [0, 0, 0]; }
+    sample(roll, pitch, yaw, dt) {
+      const cr = Math.cos(roll), sr = Math.sin(roll), cp = Math.cos(pitch), sp = Math.sin(pitch), cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const Rz = [cr, -sr, 0, sr, cr, 0, 0, 0, 1], Rx = [1, 0, 0, 0, cp, -sp, 0, sp, cp], Ry = [cy, 0, sy, 0, 1, 0, -sy, 0, cy];
+      const mul = (A, B) => { const o = []; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) o.push(A[i * 3] * B[j] + A[i * 3 + 1] * B[3 + j] + A[i * 3 + 2] * B[6 + j]); return o; };
+      const n = mul(Ry, mul(Rx, Rz)), m = this.m || n, d = [];
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) d.push(m[i] * n[j] + m[3 + i] * n[3 + j] + m[6 + i] * n[6 + j]);
+      const k = dt > 0 ? 0.5 / dt : 0;
+      this.m = n;
+      return { ax: n[3] + this.lin[0], ay: n[4] + this.lin[1], az: n[5] + this.lin[2], gx: (d[7] - d[5]) * k, gy: (d[2] - d[6]) * k, gz: (d[3] - d[1]) * k, gyro: true };
+    }
+  }
+  class Motion {
+    constructor() { this.reset(); }
+    reset() {
+      this.marbleGain = 2.4; this.marbleGyro = 8; this.spinMild = 2.5; this.spinStrong = 7;
+      this.active = false; this.t = 0;
+      this.g = [0, 1, 0]; this.n = [0, 1]; this.lp = [0, 1, 0]; this.bias = [0, 0, 0];
+      this.rollValid = false; this.rollU = 0; this.rollT = 0; this.roll = 0; this.rollV = 0; this.prevRollU = 0;
+      this.mx = [0, 0]; this.my = [0, 0]; this.mvx = [0, 0]; this.mvy = [0, 0]; this.mtx = 0; this.mty = 0; this.fx = 0; this.fy = 0;
+      this.spin = 0; this.dizzy = 0; this.peak = 0; this.wNoGyro = 0; this.strong = false;
+      this.onBack = false; this.faceDown = false; this.upside = false; this.calm = false;
+      this.backT = 0; this.downT = 0; this.upsT = 0; this.calmT = 0; this.lookLeft = 0; this.gyroLP = 0; this.dynLP = 0;
+      this.tap = new TapDetector(); this.nod = new NodDetector();
+      this.lid = 0; this.dim = 1; this.pupil = 1; this.look = 0;
+      this.pose = { roll: 0, px: 0, py: 0, pxR: 0, pyR: 0, lid: 0, pupil: 1, dim: 1, look: 0, dizzy: 0 };
+      this.q = [];
+      return this;
+    }
+    _springs(dt) {
+      const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
+      const kR = 80, cR = 2 * Math.sqrt(kR) * 0.5, kM = [60, 48], cM = [2 * 7.745967 * 0.35, 2 * 6.928203 * 0.32];
+      for (let i = 0; i < n; i++) {
+        this.rollV += (kR * (this.rollT - this.roll) - cR * this.rollV) * h; this.roll += this.rollV * h;
+        for (let e = 0; e < 2; e++) {
+          this.mvx[e] += (kM[e] * (this.mtx - this.mx[e]) - cM[e] * this.mvx[e] + this.fx) * h;
+          this.mvy[e] += (kM[e] * (this.mty - this.my[e]) - cM[e] * this.mvy[e] + this.fy) * h;
+          this.mx[e] += this.mvx[e] * h; this.my[e] += this.mvy[e] * h;
+        }
+      }
+    }
+    // one IMU sample {ax, ay, az, gx, gy, gz, gyro}; feed every sample (60-200 Hz)
+    update(dt, s) {
+      if (!(dt > 0)) return this;
+      if (dt > 0.1) dt = 0.1;
+      const gyro = s.gyro !== false && s.gx != null;
+      const a = [+s.ax || 0, +s.ay || 0, s.az == null ? 1 : +s.az], am = Math.hypot(a[0], a[1], a[2]);
+      const g = this.g, nn = this.n, lp = this.lp, bias = this.bias;
+      if (!this.active) {
+        if (am < 0.3) return this;
+        for (let i = 0; i < 3; i++) g[i] = lp[i] = a[i] / am;
+        const L0 = levelAngle(g[0], g[1], g[2]);
+        this.rollValid = Math.hypot(g[0], g[1]) > 0.2;
+        this.rollU = this.prevRollU = this.rollValid ? L0.angle : 0;
+        this.roll = this.rollT = this.rollValid ? softClampRoll(this.rollU) * L0.weight : 0;
+        const c0 = Math.cos(this.roll), s0 = Math.sin(this.roll); // "down" in the eyes' frame, as step 4
+        nn[0] = -g[0] * c0 + g[1] * s0; nn[1] = g[0] * s0 + g[1] * c0;
+        this.active = true;
+      }
+      this.t += dt; if (this.t > 3600) this.t -= 3600;
+      // 1. gravity ("up" in the device frame): gyro prediction + accel correction
+      const w = [0, 0, 0];
+      if (gyro) {
+        w[0] = s.gx - bias[0]; w[1] = s.gy - bias[1]; w[2] = s.gz - bias[2];
+        const cx = g[1] * w[2] - g[2] * w[1], cy = g[2] * w[0] - g[0] * w[2], cz = g[0] * w[1] - g[1] * w[0];
+        g[0] += cx * dt; g[1] += cy * dt; g[2] += cz * dt;
+      }
+      if (am > 0.3) {
+        const trust = clamp(1 - Math.abs(am - 1) / 0.5, 0, 1), tau = gyro ? 0.45 : 0.07, k = dt / (tau + dt) * trust;
+        for (let i = 0; i < 3; i++) g[i] += (a[i] / am - g[i]) * k;
+      }
+      const gn = Math.hypot(g[0], g[1], g[2]);
+      if (gn > 1e-6) for (let i = 0; i < 3; i++) g[i] /= gn;
+      let hp2 = 0, dyn2 = 0;
+      for (let i = 0; i < 3; i++) {
+        const h = a[i] - lp[i]; hp2 += h * h; lp[i] += h * (dt / (0.08 + dt));
+        const d = a[i] - g[i]; dyn2 += d * d;
+      }
+      const hp = Math.sqrt(hp2), dyn = Math.sqrt(dyn2), wm = Math.hypot(w[0], w[1], w[2]);
+      this.gyroLP += (wm - this.gyroLP) * (dt / (0.3 + dt));
+      this.dynLP += (dyn - this.dynLP) * (dt / (0.3 + dt));
+      if (gyro && this.dynLP < 0.03 && wm < 0.15) { const kb = dt / (3 + dt); bias[0] += (s.gx - bias[0]) * kb; bias[1] += (s.gy - bias[1]) * kb; bias[2] += (s.gz - bias[2]) * kb; }
+      // 2. level keeping (unwrapped, so it can pass 180 deg without a jump)
+      const planar = Math.hypot(g[0], g[1]), L = levelAngle(g[0], g[1], g[2]);
+      if (planar > 0.2) {
+        if (!this.rollValid) { this.rollU = this.prevRollU = L.angle; this.rollValid = true; }
+        else {
+          this.rollU += wrapPi(L.angle - wrapPi(this.rollU));
+          if (this.rollU > PI + 0.6) this.rollU -= TAU; else if (this.rollU < -PI - 0.6) this.rollU += TAU;
+        }
+      } else this.rollValid = false;
+      // too dizzy to keep up: the eyes turn with the glass, and swing back level when it stops
+      const keep = 1 - smooth((this.dizzy - 0.3) / 0.5);
+      this.rollT = this.rollValid ? softClampRoll(this.rollU) * L.weight * keep : 0;
+      // 3. spin -> dizzy (accel only: the roll rate stands in for the gyro)
+      let wSpin = wm;
+      if (!gyro) { const rr = this.rollValid ? Math.abs(wrapPi(this.rollU - this.prevRollU)) / dt : 0; this.wNoGyro += (rr - this.wNoGyro) * (dt / (0.1 + dt)); wSpin = this.wNoGyro; }
+      this.prevRollU = this.rollU;
+      this.spin += Math.max(0, wSpin - 0.8) * dt; this.spin -= this.spin * dt / (1.3 + dt);
+      const dzT = clamp((this.spin - this.spinMild) / (this.spinStrong - this.spinMild), 0, 1.2);
+      this.dizzy = approach(this.dizzy, dzT, dzT > this.dizzy ? 5 : 0.9, dt);
+      if (this.dizzy > this.peak) this.peak = this.dizzy;
+      if (!this.strong && this.dizzy > 0.75) { this.strong = true; this.q.push('dizzyStart'); }
+      if (this.peak > 0.45 && this.dizzy < 0.15) { this.peak = 0; this.strong = false; this.q.push('ufff'); }
+      // 4. marble pupils: "down" in the eyes' own (levelled) frame against a slow neutral:
+      // tipping the glass, or the eyes not level yet, rolls them to the low side; the gyro as inertia
+      {
+        const c = Math.cos(this.roll), sn = Math.sin(this.roll), dx = -g[0], dy = g[1];
+        const ex0 = dx * c + dy * sn, ey0 = -dx * sn + dy * c, kn = dt / (2.2 + dt);
+        nn[0] += (ex0 - nn[0]) * kn; nn[1] += (ey0 - nn[1]) * kn;
+        let ex = (ex0 - nn[0]) * this.marbleGain, ey = (ey0 - nn[1]) * this.marbleGain;
+        const m = Math.hypot(ex, ey);
+        if (m > 1e-6) { const k = Math.tanh(m) / m; ex *= k; ey *= k; }
+        this.mtx = ex; this.mty = ey;
+        const ix = -w[1] * this.marbleGyro, iy = -w[0] * this.marbleGyro;
+        this.fx = ix * c + iy * sn; this.fy = -ix * sn + iy * c;
+      }
+      this._springs(dt);
+      // 5. orientation
+      const gz = g[2], gy = g[1];
+      const backNow = gz > (this.onBack ? 0.8 : 0.9);
+      this.backT = backNow ? this.backT + dt : 0;
+      if (!this.onBack && this.backT > 0.35) { this.onBack = true; this.lookLeft = 2.5; this.q.push('onBack'); }
+      else if (this.onBack && !backNow) this.onBack = false;
+      this.lookLeft -= dt;
+      const downNow = gz < (this.faceDown ? -0.6 : -0.8);
+      this.downT = downNow ? this.downT + dt : 0;
+      if (!this.faceDown && this.downT > 0.5) { this.faceDown = true; this.q.push('faceDown'); }
+      else if (this.faceDown && !downNow) { this.faceDown = false; this.q.push('faceUp'); }
+      const upsNow = gy < (this.upside ? -0.5 : -0.75);
+      this.upsT = upsNow ? this.upsT + dt : 0;
+      if (!this.upside && this.upsT > 0.25) { this.upside = true; this.q.push('upsideDown'); }
+      else if (this.upside && !upsNow) { this.upside = false; this.q.push('upright'); }
+      const held = gyro && this.gyroLP > 0.012 && this.gyroLP < 0.3 && this.dynLP < 0.06 && Math.abs(gz) < 0.9;
+      this.calmT = held ? this.calmT + dt : 0;
+      if (!this.calm && this.calmT > 1.5) { this.calm = true; this.q.push('calm'); }
+      else if (this.calm && (this.gyroLP > 0.6 || this.dynLP > 0.15 || this.gyroLP < 0.006 || Math.abs(gz) > 0.95)) this.calm = false;
+      // 6. gestures
+      if (this.tap.update(hp, dt, wm > 2.5)) this.q.push('tapTap');
+      if (gyro && this.dizzy < 0.3) { const r = this.nod.update(w[0], w[1], w[2], dt); if (r > 0) this.q.push('nodYes'); else if (r < 0) this.q.push('nodNo'); }
+      // 7. the pose
+      const lookUp = this.onBack && this.lookLeft > 0;
+      this.lid = approach(this.lid, this.faceDown ? 0.5 : this.calm ? 0.14 : 0, 6, dt);
+      this.dim = approach(this.dim, this.faceDown ? 0.4 : 1, 4, dt);
+      this.look = approach(this.look, lookUp ? 1 : 0, 7, dt);
+      this.pupil = approach(this.pupil, lookUp ? 1.12 : this.calm ? 1.07 : 1, 5, dt);
+      const P = this.pose, mw = 1 - 0.7 * this.look, orbit = this.dizzy * 0.55, ph = this.t * 8.5;
+      P.roll = this.roll + this.dizzy * 0.16 * Math.sin(this.t * 7.3);
+      P.px = this.mx[0] * mw + orbit * Math.cos(ph); P.py = this.my[0] * mw + orbit * 0.8 * Math.sin(ph);
+      P.pxR = this.mx[1] * mw + orbit * Math.cos(ph - 0.5); P.pyR = this.my[1] * mw + orbit * 0.8 * Math.sin(ph - 0.5);
+      P.lid = this.lid; P.dim = this.dim; P.pupil = this.pupil; P.look = this.look; P.dizzy = this.dizzy;
+      return this;
+    }
+    poll() { return this.q.length ? this.q.shift() : null; }
+    // the face's answer to a cue (the same on the device): one-shots that keep the mood they return to
+    apply(cue, rig) {
+      const back = () => (rig.reaction ? rig.reaction.back : MOODS[rig.mood] ? rig.mood : 'neutral');
+      const once = (name, hold) => { const b = back(); rig.react(name, hold); if (rig.reaction && MOODS[b]) rig.reaction.back = b; };
+      switch (cue) {
+        case 'dizzyStart': if ((rig.reaction ? rig.reaction.name : rig.mood) !== 'dizzy') once('dizzy', 30); break;
+        case 'ufff': once('bored', 1.1); rig.blink(2, 1.6); rig.s.bob.v += 0.35; rig.s.sy.v -= 1.2; break;
+        case 'onBack': rig.blink(1); rig.hop(); break;
+        case 'faceDown': once('suspicious', 0.9); break;
+        case 'faceUp': rig.blink(2); break;
+        case 'upsideDown': once('shocked', 0); break;
+        case 'upright': rig.blink(1); break;
+        case 'calm': rig.blink(1, 2.2); break;
+        case 'tapTap': case 'nodYes': once('approve', 0); break;
+        case 'nodNo': once('confused', 1.2); break;
+      }
+    }
+  }
+  // DeviceMotion -> eyes.setMotion (phones). start() must run in a tap (iOS asks for permission).
+  function bindDeviceMotion(eyes, o) {
+    o = o || {};
+    const nav = typeof navigator !== 'undefined' ? navigator : {};
+    const ios = /iPad|iPhone|iPod/.test(nav.userAgent || '') || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
+    let last = 0, on = false, seen = false;
+    const b = {
+      flip: o.flip != null ? o.flip : ios ? -1 : 1, // iOS reports accelerationIncludingGravity with the opposite sign
+      get active() { return on; }, get receiving() { return seen; },
+      handler(e) {
+        const g = e.accelerationIncludingGravity;
+        if (!g || g.x == null) return;
+        seen = true;
+        const now = e.timeStamp || performance.now(), dt = last ? clamp((now - last) / 1000, 0.001, 0.1) : 0.016; last = now;
+        const ang = ((typeof screen !== 'undefined' && screen.orientation && screen.orientation.angle) || (typeof window !== 'undefined' && window.orientation) || 0) * PI / 180;
+        const c = Math.cos(ang), s = Math.sin(ang), k = b.flip / 9.81;
+        const rot = (x, y) => [x * c - y * s, x * s + y * c];
+        const A = rot(g.x * k, g.y * k), r = e.rotationRate, smp = { ax: A[0], ay: A[1], az: g.z * k, gyro: !!(r && r.alpha != null) };
+        if (smp.gyro) { const D = PI / 180, G = rot(r.beta * D, r.gamma * D); smp.gx = G[0]; smp.gy = G[1]; smp.gz = r.alpha * D; }
+        eyes.setMotion(smp, dt);
+        if (o.onSample) o.onSample(smp);
+      },
+      async start() {
+        if (typeof window === 'undefined' || !('DeviceMotionEvent' in window)) return false;
+        const DME = window.DeviceMotionEvent;
+        if (typeof DME.requestPermission === 'function') { try { if ((await DME.requestPermission()) !== 'granted') return false; } catch (err) { return false; } }
+        if (!on) { window.addEventListener('devicemotion', b.handler); on = true; }
+        return true;
+      },
+      stop() { if (on && typeof window !== 'undefined') window.removeEventListener('devicemotion', b.handler); on = false; last = 0; eyes.setMotion(null); },
+    };
+    b.handler = b.handler.bind(b);
+    return b;
+  }
+
   // ------------------------------------------------------------ drawing
   function drawGlass(ctx, cx, cy, D, opt) {
     const R = D / 2;
@@ -361,11 +637,11 @@
     return { x, y, rx, ry, b, side, sq, k };
   }
 
-  function silhouette(rig, d, g, D) {
+  function silhouette(rig, d, g, D, mo) {
     const s = rig.s, E = d.shape, side = g.side, L = side < 0;
     const { rx, ry, b } = g;
     const lean = -side * (E.lean || 0), cl = Math.cos(lean), sl = Math.sin(lean);
-    const lid0 = clamp(L ? s.lidL.x : s.lidR.x, 0, 0.98), tilt = L ? s.tiltL.x : s.tiltR.x;
+    const lid0 = clamp((L ? s.lidL.x : s.lidR.x) + (mo ? mo.lid : 0), 0, 0.98), tilt = L ? s.tiltL.x : s.tiltR.x;
     const bb = clamp(b, 0, 1);
     const lid = lid0 + (1 - lid0) * bb;
     const kT = Math.tan(tilt) * -side * (1 - bb);
@@ -463,10 +739,19 @@
     const L = side < 0;
     if (g.k <= 0.004) return g;
     if (g.ry > 0.3) {
-      const pts = silhouette(rig, d, g, D);
+      const mo = opt.motion;
+      const pts = silhouette(rig, d, g, D, mo);
       ctx.save(); ctx.translate(g.x, g.y);
       const body = new Path2D(); pts.forEach(([x, y], i) => (i ? body.lineTo(x, y) : body.moveTo(x, y))); body.closePath();
-      const G = L ? rig.pL : rig.pR, gx = G[0].x, gy = G[1].x;
+      const G = L ? rig.pL : rig.pR;
+      let gx = G[0].x, gy = G[1].x;
+      if (mo) { // motion: look up at you, then the marble roll, kept inside this design's pupil travel
+        gx *= 1 - mo.look; gy *= 1 - mo.look;
+        const mw = rig.look ? 0.5 : 1, tx = gx + (L ? mo.px : mo.pxR) * mw, ty = gy + (L ? mo.py : mo.pyR) * mw;
+        const tr = Math.max(P.travel, 0.05), bx = clamp((1 - 0.5 * P.rx - P.inset) / tr, 0.6, 1.3), by = clamp((0.96 - 0.5 * P.ry) / (tr * 0.78), 0.6, 1.3);
+        const e = Math.hypot(tx / bx, ty / by), lim = Math.max(1, Math.hypot(gx / bx, gy / by)), k = e > lim ? lim / e : 1;
+        gx = tx * k; gy = ty * k;
+      }
       if (fx.indexOf('outline') >= 0) {
         ctx.lineWidth = D * 0.022 * g.k; ctx.lineJoin = 'round'; ctx.strokeStyle = whiteFill(ctx, d, side, g, t, gx); ctx.stroke(body);
       } else { ctx.fillStyle = whiteFill(ctx, d, side, g, t, gx); ctx.fill(body); }
@@ -477,7 +762,7 @@
       }
       // pupil
       const pc = opt.hetero === false ? P.L : L ? P.L : P.R || P.L;
-      const ps = Math.max(0, L ? s.pupilL.x : s.pupilR.x);
+      const ps = Math.max(0, L ? s.pupilL.x : s.pupilR.x) * (mo ? mo.pupil : 1);
       const pulse = s.listen.x > 0.02 ? 1 + 0.28 * rig.level * clamp(s.listen.x, 0, 1) : 1;
       const wob = rig.gmode === 'wobble' ? Math.sin(t * 13 + side) * 0.025 : 0;
       const px = (-side * P.inset + gx * P.travel + wob) * g.rx, py = (gy * P.travel * 0.78 + 0.04) * g.ry;
@@ -518,7 +803,7 @@
       if (av > 0.01) {
         const k = Math.max(0, av), beat = rig.altType === 'heart' ? 1 + 0.09 * Math.pow(Math.max(0, Math.sin(t * TAU * 1.3)), 8) : 1;
         const col = rig.altType === 'heart' ? '#FF2E63' : rig.altType === 'star' ? '#FFD23A' : pc;
-        const ar = P.rx * g.rx * 1.05 * k * beat, ary = P.ry * g.ry * 0.95 * k * beat;
+        const ar = 0.42 * g.rx * 1.05 * k * beat, ary = 0.5 * g.ry * 0.95 * k * beat;
         const ax = px * 0.5, ay = py * 0.5 - g.ry * 0.03;
         const inf = drawPupilShape(ctx, d, rig.altType, ax, ay, ar, ary, col, t, side, rig);
         if (!inf.none && d.glint) { ctx.fillStyle = d.glint.color || '#FFF6E2'; superPath(ctx, ax - ar * 0.4, ay - ary * 0.45, ar * 0.17, ar * 0.11, -0.6, 2.6); ctx.fill(); }
@@ -540,7 +825,7 @@
   }
 
   function drawOverlays(ctx, rig, d, eyes, cx, cy, D) {
-    const s = rig.s, t = rig.t, ink = d.white;
+    const s = rig.s, t = rig.t, ink = d.white, GA = ctx.globalAlpha;
     const A = (v) => clamp(v, 0, 1);
     // blush: flat ovals with three little strokes
     if (s.blush.x > 0.02) for (const g of eyes) {
@@ -589,7 +874,7 @@
       ctx.save(); ctx.strokeStyle = ink; ctx.lineWidth = D * 0.013;
       for (let i = 0; i < 2; i++) {
         const p = (t * 0.36 + i * 0.5) % 1, x = cx + (0.3 + p * 0.05) * D, y = cy - (0.25 + p * 0.1) * D, z = D * (0.05 - i * 0.016) * (0.65 + 0.35 * p);
-        ctx.globalAlpha = Math.sin(p * PI) * A(s.zzz.x);
+        ctx.globalAlpha = GA * Math.sin(p * PI) * A(s.zzz.x);
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + z, y); ctx.lineTo(x, y + z); ctx.lineTo(x + z, y + z); ctx.stroke();
       }
       ctx.restore();
@@ -613,9 +898,9 @@
     }
     if (s.check.x > 0.02) {
       const k = clamp(s.check.x, 0, 1.3), x = cx, y = cy + 0.31 * D;
-      ctx.save(); ctx.strokeStyle = '#4DFFB0'; ctx.lineWidth = D * 0.026; ctx.globalAlpha = A(s.check.x);
+      ctx.save(); ctx.strokeStyle = '#4DFFB0'; ctx.lineWidth = D * 0.026; ctx.globalAlpha = GA * A(s.check.x);
       ctx.beginPath(); ctx.moveTo(x - 0.045 * D * k, y); ctx.lineTo(x - 0.012 * D * k, y + 0.03 * D * k); ctx.lineTo(x + 0.055 * D * k, y - 0.04 * D * k); ctx.stroke();
-      const p = (t % 1.2) / 1.2; ctx.lineWidth = D * 0.008; ctx.globalAlpha = A(s.check.x) * (1 - p) * 0.8;
+      const p = (t % 1.2) / 1.2; ctx.lineWidth = D * 0.008; ctx.globalAlpha = GA * A(s.check.x) * (1 - p) * 0.8;
       ctx.beginPath(); ctx.arc(cx, cy, D * (0.42 + 0.06 * p), 0, TAU); ctx.stroke(); ctx.restore();
     }
     if (s.listen.x > 0.02) {
@@ -623,7 +908,7 @@
       ctx.save(); ctx.strokeStyle = ink; ctx.lineWidth = D * 0.012;
       for (let i = 0; i < 3; i++) {
         const r = D * (0.05 + i * 0.035) * (0.9 + 0.2 * lv);
-        ctx.globalAlpha = a * (0.9 - i * 0.25) * (0.5 + 0.5 * lv);
+        ctx.globalAlpha = GA * a * (0.9 - i * 0.25) * (0.5 + 0.5 * lv);
         ctx.beginPath(); ctx.arc(cx + 0.34 * D, cy + 0.02 * D, r, -0.6, 0.6); ctx.stroke();
         ctx.beginPath(); ctx.arc(cx - 0.34 * D, cy + 0.02 * D, r, PI - 0.6, PI + 0.6); ctx.stroke();
       }
@@ -658,7 +943,9 @@
     const ox = shk * D * Math.sin(rig.t * TAU * rig.shakeF), oy = shk * D * 0.4 * Math.sin(rig.t * TAU * rig.shakeF * 1.3 + 1);
     const hopP = Math.abs(Math.sin(rig.t * TAU * 1.6));
     const by = -bnc * 0.03 * D * hopP;
-    ctx.translate(cx + ox, cy + oy + by); ctx.rotate(s.rot.x); ctx.translate(-cx, -cy);
+    const mo = opt.motion;
+    ctx.translate(cx + ox, cy + oy + by); ctx.rotate(s.rot.x + (mo ? mo.roll : 0)); ctx.translate(-cx, -cy); // + level keeping
+    if (mo && mo.dim < 1) ctx.globalAlpha = mo.dim;
     if (bnc > 0.01) { const sq = 1 + bnc * 0.06 * (hopP - 0.5); s.sy.x *= sq; s.sx.x /= sq; }
     const eyes = [drawEye(ctx, rig, d, -1, cx, cy, D, opt), drawEye(ctx, rig, d, 1, cx, cy, D, opt)];
     if (bnc > 0.01) { const sq = 1 + bnc * 0.06 * (hopP - 0.5); s.sy.x /= sq; s.sx.x *= sq; }
@@ -687,6 +974,8 @@
     if (opts.moodPool) rig.moodPool = opts.moodPool;
     if (opts.moodEvery) { rig.moodEvery = opts.moodEvery; rig.nextRandom = opts.moodEvery[0] * (0.3 + rig.r()); }
     rig.onChange = opts.onChange;
+    const motion = new Motion();
+    let motionLast = 0;
     const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const inst = {
       canvas, rig, _visible: true, _paused: false, _speed: opts.speed * (reduce ? 0.6 : 1),
@@ -708,6 +997,26 @@
       setHetero(v) { opts.hetero = !!v; return inst; },
       setRandomMood(v) { rig.randomMood = !!v; rig.nextRandom = rig.t + 0.5; return inst; },
       setLevel(v) { rig.levelExt = v == null ? null : clamp(v, 0, 1); return inst; },
+      // IMU: {ax, ay, az} in g (+ {gx, gy, gz} in rad/s), device frame: +x right, +y up, +z out of
+      // the glass (lying face up = 0,0,1). Feed every sample; dt defaults to the time since the last.
+      // null = off. Cues ('tapTap', 'nodYes', 'nodNo', 'dizzyStart', ...) go to opts.onMotion(cue).
+      setMotion(m, dt) {
+        if (m == null) { motion.reset(); opts.motion = null; motionLast = 0; return inst; }
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (dt == null) dt = motionLast ? clamp((now - motionLast) / 1000, 0.001, 0.1) : 1 / 60;
+        motionLast = now;
+        motion.update(dt, m);
+        if (motion.active) opts.motion = motion.pose;
+        for (let c = motion.poll(); c; c = motion.poll()) { motion.apply(c, rig); if (opts.onMotion) opts.onMotion(c, inst); }
+        return inst;
+      },
+      // DeviceOrientation angles (deg) when there is no accelerometer: gravity only
+      setOrientation(o, dt) {
+        if (o == null) return inst.setMotion(null);
+        const b = (o.beta || 0) * PI / 180, g = (o.gamma || 0) * PI / 180;
+        return inst.setMotion({ ax: -Math.cos(b) * Math.sin(g), ay: Math.sin(b), az: Math.cos(b) * Math.cos(g), gyro: false }, dt);
+      },
+      get motion() { return motion; },
       hide() { rig.reaction = null; rig._snap({ scale: 0 }); return inst; },
       pause(v) { inst._paused = v !== false; return inst; },
       step(dt) { rig.update(dt); return inst; },
@@ -778,5 +1087,6 @@
   return {
     VERSION, createEyes, render, Rig, normalizeDesign, DEFAULT_DESIGN, MOODS, REACTIONS, EXPRESSIONS, RANDOM_POOL,
     LOOP, SEGMENTS, RARITIES, roll, rollFromChipId, rollRandom, hashStr, drawGlass, heartPath, sparkPath,
+    Motion, PoseImu, TapDetector, NodDetector, MOTION_CUES, levelAngle, softClampRoll, bindDeviceMotion,
   };
 });

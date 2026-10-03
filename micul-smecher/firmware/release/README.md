@@ -1,11 +1,14 @@
 # SOUL M install image
 
-`SOUL-2.8C-install.bin` — SoulOS firmware 1.0.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+`SOUL-2.8C-install.bin` — SoulOS firmware 1.1.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
 (ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
 (`default_16MB.csv`) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
 - built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino)
-- size 2,091,552 B · sha256 `d8664b89d048d2d8b1aa8790a815ddc4b86202dba28656327f30a1d57645b24a`
+- size 2,100,688 B · sha256 `8e7d7b7899ce71fbfd42607241055d5aefaee8cb8bc18075ec23e7866f0f1148`
+- 1.1.0: the eyes feel the IMU (gyro + accel): level keeping, marble pupils, spin → dizzy → ufff,
+  on its back / face down / upside down / calm in a hand, double tap on the case, nod yes / shake no
+  (answers a Claude request). Check the IMU axes first: [`../BRINGUP.md`](../BRINGUP.md) §3b
 - byte-identical to PlatformIO's own `firmware.factory.bin` for the same build
 - no key, token or cloud address is compiled in: SOUL Cloud is off until you set its address
 

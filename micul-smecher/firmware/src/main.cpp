@@ -48,7 +48,7 @@
 #ifndef SUFLET_VOICE
 #define SUFLET_VOICE 0
 #endif
-#define FW_VERSION "1.0.0"
+#define FW_VERSION "1.1.0"
 
 using namespace suflet;
 
@@ -63,7 +63,7 @@ static float backlightNow = 0;
 static bool displayOn = true;
 
 static SensorQMI8658 imu;
-static bool imuOk = false;
+static bool imuOk = false, imuGyro = false;
 static SensorPCF85063 rtc;
 static bool rtcOk = false;
 #if TOUCH_CST9217
@@ -348,7 +348,8 @@ static void loadAll() {
 static void help() {
   Serial.println(
       "SOUL " FW_VERSION " serial commands:\n"
-      "  F   perf overlay on/off      p   perf line now        i  IMU raw   t  time\n"
+      "  F   perf overlay on/off      p   perf line now        i  IMU + eyes motion   t  time\n"
+      "  M   eyes motion (level keeping, marble pupils, dizzy, nods) on/off\n"
       "  T<local epoch>  set clock    P   personality + design U  unpair Claude\n"
       "  W   Wi-Fi setup portal       w   stop the portal      B  re-run first boot\n"
       "  e<name>  play an expression (e.g. elaugh)              D  demo loop on/off\n"
@@ -375,10 +376,22 @@ static void serialCommands() {
     switch (c) {
       case 'F': os.settings().debug = !os.settings().debug; break;
       case 'p': lastPerfMs = 0; break;
-      case 'i': {
-        float x = 0, y = 0, z = 0;
+      case 'M':
+        os.face().motionOn = !os.face().motionOn;
+        Serial.printf("eyes motion %s\n", os.face().motionOn ? "on" : "off");
+        break;
+      case 'i': {  // BRINGUP.md "IMU axes": face up ~ (0,0,+1), standing ~ (0,+1,0), turning left = +gz
+        float x = 0, y = 0, z = 0, gx = 0, gy = 0, gz = 0;
         if (imuOk) imu.getAccelerometer(x, y, z);
-        Serial.printf("accel raw %.2f %.2f %.2f  still %.1fs\n", x, y, z, motion.stillFor());
+        if (imuGyro) imu.getGyroscope(gx, gy, gz);
+        const eyes::EyeMotion& m = os.face().motion();
+        const eyes::MotionPose& p = m.pose();
+        Serial.printf("accel raw %.2f %.2f %.2f g  gyro %.1f %.1f %.1f dps%s  still %.1fs\n", x, y, z, gx, gy, gz,
+                      imuGyro ? "" : " (NO GYRO)", motion.stillFor());
+        Serial.printf("eyes: up %.2f %.2f %.2f  level %.0f deg  pupils %.2f %.2f  dizzy %.2f  bias %.3f %.3f %.3f%s%s%s%s\n",
+                      m.gravX(), m.gravY(), m.gravZ(), p.roll * 57.29578f, p.px, p.py, p.dizzy, m.gyroBias(0),
+                      m.gyroBias(1), m.gyroBias(2), m.onBack() ? "  on its back" : "", m.faceDown() ? "  face down" : "",
+                      m.upsideDown() ? "  upside down" : "", m.calm() ? "  calm" : "");
         break;
       }
       case 't':
@@ -491,6 +504,10 @@ void setup() {
   if (imuOk) {
     imu.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, SensorQMI8658::ACC_ODR_125Hz, SensorQMI8658::LPF_MODE_0);
     imu.enableAccelerometer();
+    // the gyro for the eyes' motion behaviours (level keeping, spin -> dizzy, nods)
+    imuGyro = imu.configGyroscope(SensorQMI8658::GYR_RANGE_1024DPS, SensorQMI8658::GYR_ODR_112_1Hz,
+                                  SensorQMI8658::LPF_MODE_3) &&
+              imu.enableGyroscope();
   }
   rtcOk = rtc.begin(Wire, I2C_SDA, I2C_SCL);
   Serial.printf("[board] %s %dx%d  [imu] %s  [rtc] %s  psram %u KB free\n", BOARD_NAME, kGeom.w, kGeom.h,
@@ -614,7 +631,7 @@ void loop() {
   TouchEv te;
   while (touch.poll(te)) os.touch(te);
 
-  // IMU at ~100 Hz
+  // IMU at ~100 Hz: the Brain's gestures (MotionDetector) and the eyes' motion (SoulFace)
   imuAcc += dt;
   while (imuOk && imuAcc >= 0.01f) {
     imuAcc -= 0.01f;
@@ -622,6 +639,17 @@ void loop() {
     if (imu.getAccelerometer(ax, ay, az)) {
       IMU_MAP(ax, ay, az, X, Y, Z);
       motion.update(X, Y, Z, 0.01f);
+      eyes::ImuSample s;
+      s.ax = X;
+      s.ay = Y;
+      s.az = Z;
+      float gx, gy, gz;
+      s.gyro = imuGyro && imu.getGyroscope(gx, gy, gz);
+      if (s.gyro) {  // deg/s -> rad/s, same axes as the accelerometer
+        constexpr float kRad = 0.017453293f;
+        IMU_MAP(gx * kRad, gy * kRad, gz * kRad, s.gx, s.gy, s.gz);
+      }
+      os.imu(0.01f, s);
     }
   }
   if (imuAcc > 0.05f) imuAcc = 0;

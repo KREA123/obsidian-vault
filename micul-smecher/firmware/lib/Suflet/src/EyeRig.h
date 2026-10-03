@@ -74,6 +74,8 @@ class EyeRig {
   void setBack(int moodExpr) {
     if (reaction_ && moodExpr >= 0 && moodExpr < kMoodCount) reactBack_ = moodExpr;
   }
+  // The mood the eyes are in, or return to after the playing reaction.
+  int backMood() const { return reaction_ ? reactBack_ : (mood_ >= 0 ? mood_ : (int)X_neutral); }
 
   void update(float dt);  // substeps at 240 Hz, like eyes.js update()
 

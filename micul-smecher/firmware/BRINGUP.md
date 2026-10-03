@@ -1,6 +1,6 @@
 # SOUL M bring-up: the first 15 minutes on a real 2.8C
 
-*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.0.0. Nothing below has run on a board yet: every line
+*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0. Nothing below has run on a board yet: every line
 is either "verified on the PC" (native tests, the simulator) or "expected, check it". This page is the
 checklist that turns the second kind into the first. Write the numbers you measure into the table at
 the end and commit them.*
@@ -60,7 +60,42 @@ If the port does not show up: hold **BOOT**, tap **RESET**, release BOOT, try ag
       swipe down or **BOOT** = back one level, hold BOOT 1.5 s = home.
 - [ ] **Alarm in 3 touches**: orbit → Alarms → `+ New` → drag the hour ring → let go → ✓.
 - [ ] Pick the board up → the eyes wake (IMU pick-up); shake → dizzy. If they react to the wrong
-      tilt, fix `IMU_MAP` in `board.h`.
+      tilt, fix `IMU_MAP` in `board.h` (next section).
+
+## 3b · IMU axes and the eyes' motion (3 min)
+
+The eyes keep level, roll their pupils, get dizzy and read nods from the QMI8658 (accel ±4 g at 125 Hz,
+gyro ±1024 dps at 112 Hz, both read at 100 Hz in the loop; `lib/Suflet/src/EyeMotion.*`, the same math
+as `eyes.js` Motion, unit-tested against it). It all hangs on one thing: the axes. The device frame is
+**+X right, +Y up (to the ring), +Z out of the glass**, as you look at the screen with the USB port at
+the bottom. Type `i` on the serial monitor in each pose:
+
+| Pose | accel (g) should read | gyro while you do it |
+|---|---|---|
+| Lying face up on the table | `0.00 0.00 +1.00` | ~0 (a few dps of offset is normal: it is learned at rest) |
+| Standing on its bottom edge (USB down) | `0.00 +1.00 0.00` | |
+| Standing on its right edge | `-1.00 0.00 0.00` | getting there from upright (turning it **clockwise** as you look at it): `gz` < 0 |
+| Tipping the top edge toward you | `ay` falls, `az` goes negative | `gx` > 0 |
+| Turning it to its right (yaw, like shaking your head) | | `gy` > 0 |
+
+- [ ] If an axis is swapped or flipped, set `IMU_MAP` in `board.h` (it maps accel **and** gyro, so
+      one fix covers both), e.g. `#define IMU_MAP(ax, ay, az, X, Y, Z) do { X = -(ay); Y = (ax); Z = (az); } while (0)`.
+      `[imu] ok` with `(NO GYRO)` in the `i` line = the gyro did not start; everything but nods and the
+      gyro part of dizzy still works from the accelerometer.
+- [ ] **Level keeping**: stand it up and turn it slowly in the glass plane: the eyes counter-rotate
+      and stay level with the floor (a little lag and overshoot). Past ~120° they ease to a stop at
+      150°; on its head → shocked. The `i` line shows `level NN deg`.
+- [ ] **Marble pupils**: tip it back and forth, left and right: the pupils roll to the low side and
+      drift back to the middle in ~2 s.
+- [ ] **Spin**: turn round on an office chair holding it (or spin it on the table): wobble, then
+      spiral pupils; stop → "ufff" (droopy lids, slow double blink).
+- [ ] **On its back** → it looks up at you; **face down** → a grumble, dim, then sleep (as before);
+      **in a hand, held still** → calmer lids (`calm` in the `i` line).
+- [ ] **Double tap** the back or the side of the case → the approve tick. If ordinary handling
+      triggers it, raise `TapDetector::tapG` (0.25 g); if firm taps do not, lower it to 0.18.
+- [ ] **Nod / shake** with a Claude request open (amber rim): nod = approve, tilt left-right = deny
+      (each needs three quick swings, so handling does not answer by accident).
+- [ ] `M` toggles the eyes' motion off/on if you need to compare.
 
 ## 4 · Performance and power (3 min)
 
@@ -149,13 +184,15 @@ run a command → SOUL's eyes go wide with an amber rim → hold the glass = app
 | NVS write: flicker only, or lasting shift? | |
 | Touch wakes from deep sleep? | |
 | Orientation / mirror flags needed | |
+| IMU_MAP needed? tap threshold that works | |
 
 ## What is verified where
 
 | | Verified on the PC | Needs the board |
 |---|---|---|
 | Eyes: designs, 31 expressions, spring rig, birth roll | native tests vs a node fixture from `eyes.js`; pixel parity vs the web engine (mean ≤ 0.96/255) | colours on the IPS panel |
-| SoulOS flows, gestures, alarms, notes, keyboard, pairing, pushes | 97 native tests, simulator stills (`sim/shots/`) | finger feel, touch calibration |
+| SoulOS flows, gestures, alarms, notes, keyboard, pairing, pushes | 112 native tests, simulator stills (`sim/shots/`) | finger feel, touch calibration |
+| Eyes' motion (level keeping, marble pupils, dizzy, orientation, double tap, nods) | filter / detector unit tests, a parity trace vs `eyes.js` Motion (`tools/gen_motion_fixture.js`), the simulator (`program out motion`, `program out keys`) | the IMU axes (§3b), tap threshold on the real case |
 | AI protocol (Claude / OpenAI / relay), offline rules | recorded API bodies, strict action validation | real TLS, real latency |
 | SOUL Cloud protocol v1 | frames in/out, push mapping, dedupe, close codes, backoff, auth | the WebSocket against a real server; TLS memory with BLE on |
 | QR codes (pairing, Wi-Fi join) | decoded from simulator frames with zxing | phone cameras at arm's length |

@@ -94,7 +94,24 @@ void SoulFace::update(float dt, const FaceInputs& in) {
     int e;
     float hold;
     reactionExpr(in.reaction, e, hold);
+    // the motion layer already answers being put face down (grumble, dim) and
+    // upside down (shocked): don't let the Brain's goodbye / confused fight it
+    if (motion_.active() && ((in.reaction == Reaction::GoodNight && motion_.gravZ() < -0.6f) ||
+                             (in.reaction == Reaction::Confused && motion_.gravY() < -0.5f)))
+      e = -1;
     if (e >= 0) rig_.react(e, hold);
+  }
+  // motion cues: the eyes answer (as eyes.js), the gestures go on to SoulOS
+  {
+    MotionCue c;
+    while (motion_.poll(c)) {
+      if (in.mode != Mode::Off) motion_.apply(c, rig_);
+      ++cueN_;
+      lastCue_ = c;
+      if (c == MotionCue::TapTap) motionEv_.push(Ev::TapTap);
+      if (c == MotionCue::NodYes) motionEv_.push(Ev::NodYes);
+      if (c == MotionCue::NodNo) motionEv_.push(Ev::NodNo);
+    }
   }
   // state edges: Claude needs you -> shocked first; done / error flashes
   if (in.state != lastState_) {
@@ -142,6 +159,13 @@ void SoulFace::update(float dt, const FaceInputs& in) {
       h -= s;
     }
   }
+  // the motion pose: level keeping and the dizzy wobble only while the eyes
+  // fill the glass (small above a screen they would swing over the UI)
+  if (motion_.active()) {
+    pose_ = motion_.pose();
+    const float k = lay_[0] < 0.55f ? 0.0f : (lay_[0] > 0.85f ? 1.0f : (lay_[0] - 0.55f) / 0.3f);
+    pose_.roll *= k * k * (3 - 2 * k);
+  }
   // the rim lights
   fListen_ = approach(fListen_, in.state == FaceState::Listen ? 1.0f : 0.0f, 10, dt);
   fAlert_ = approach(fAlert_, in.alert ? 1.0f : 0.0f, 10, dt);
@@ -170,6 +194,7 @@ void SoulFace::renderEyes(Canvas& cv) {
   RenderOpts o;
   o.hetero = hetero;
   o.alpha = dim;
+  if (motion_.active() && motionOn) o.motion = &pose_;
   if (D > 2) ren_.render(cv, rig_, kDesigns[design_], cx, cy, D, o);
 }
 

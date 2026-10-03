@@ -67,17 +67,45 @@ h1 span{color:var(--cream)}
 .rb[aria-pressed="true"]{background:var(--cream);color:#16130e;border-color:var(--cream)}
 .rb[aria-pressed="true"] small{color:#5a5040}
 @media (prefers-reduced-motion: reduce){.chip{transition:none}}
+/* motion: the stage turns with the simulated device; the eyes inside keep level */
+.stage.sim{cursor:grab;transform-style:preserve-3d;will-change:transform}
+.stage.sim.grab{cursor:grabbing}
+/* the body's port and side button, so you can see it turn */
+.stage .port,.stage .key{position:absolute;display:none;background:#5a5960;border-radius:99px}
+.stage.sim .port,.stage.sim .key{display:block}
+.stage .port{left:50%;bottom:3.2%;width:10%;height:1.6%;transform:translateX(-50%)}
+.stage .key{right:3.4%;top:30%;width:1.6%;height:9%;background:#8d8b92}
+.motion{width:min(100%,640px);display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:16px;padding:14px;background:linear-gradient(180deg,#121214,#0d0d0f)}
+.motion h2{font:500 11px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.motion h2 b{color:var(--cream);font-weight:500}
+.motion p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
+.mrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.msim{display:grid;grid-template-columns:132px 1fr;gap:14px;align-items:start;padding-bottom:18px}
+.msim[hidden]{display:none}
+.pad{width:132px;height:132px;border-radius:50%;border:1px solid var(--line);background:radial-gradient(circle at 50% 50%,#1d1d21 0,#141416 70%);position:relative;touch-action:none;cursor:crosshair}
+.pad::before,.pad::after{content:"";position:absolute;background:var(--line)}
+.pad::before{left:50%;top:10px;bottom:10px;width:1px}
+.pad::after{top:50%;left:10px;right:10px;height:1px}
+.pad i{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--cream);left:50%;top:50%;box-shadow:0 0 0 4px rgba(255,240,200,.15);pointer-events:none}
+.pad small{position:absolute;left:0;right:0;bottom:-20px;text-align:center;font:400 10px/1 var(--mono);color:var(--muted);letter-spacing:.04em}
+.mbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.read{display:flex;flex-wrap:wrap;gap:6px 14px;font:400 11px/1.4 var(--mono);color:var(--muted)}
+.read b{color:var(--text);font-weight:500}
+.cue{color:#16130e;background:var(--cream);border-radius:99px;padding:1px 8px;opacity:0;transition:opacity .5s}
+.cue.on{opacity:1;transition:none}
+@media (max-width:520px){.msim{grid-template-columns:1fr;justify-items:center}.mbtns{width:100%}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>SOUL <span>signature eyes</span></h1>
-    <div class="tag">v2.1 · 31 expressions</div>
+    <div class="tag">v2.2 · 31 expressions · motion</div>
   </header>
 
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="SOUL's eyes, animated, inside the round glass screen" role="img"></canvas>
+    <span class="port" aria-hidden="true"></span><span class="key" aria-hidden="true"></span>
   </div>
 
   <div class="controls">
@@ -91,6 +119,31 @@ h1 span{color:var(--cream)}
       <div class="cap"><span id="capL">0.0 s</span><span>hover the glass and it looks at you · tap for a smile</span></div>
     </div>
   </div>
+
+  <section class="motion" aria-label="Motion">
+    <h2><span>Motion · <b>turn it, tip it, spin it, tap it</b></span><span id="m-state">off</span></h2>
+    <p id="m-hint">On a phone, let it feel your phone: turn it and the eyes stay level, tip it and the pupils roll, spin round and they get dizzy, double-tap the back, nod for yes. On a desktop, the simulator: grab the glass and turn it (flick it to spin), drag the pad to tip it.</p>
+    <div class="mrow">
+      <button class="chip" id="m-phone" aria-pressed="false">Use this phone's motion</button>
+      <button class="chip" id="m-sim" aria-pressed="false">Simulator</button>
+      <button class="chip toggle" id="m-flip" aria-pressed="false" hidden>Flip axes</button>
+    </div>
+    <div class="msim" id="msim" hidden>
+      <div class="pad" id="pad" role="slider" aria-label="Tip the device: drag" aria-valuetext="upright"><i id="padDot"></i><small>drag to tip</small></div>
+      <div class="mbtns" role="group" aria-label="Moves">
+        <button class="rb" data-m="spin">Spin it<small>dizzy</small></button>
+        <button class="rb" data-m="tap">Double tap<small>yes?</small></button>
+        <button class="rb" data-m="nod">Nod<small>yes</small></button>
+        <button class="rb" data-m="shake">Shake head<small>no</small></button>
+        <button class="rb" data-m="back">On its back<small>looks up</small></button>
+        <button class="rb" data-m="down">Face down<small>grumbles</small></button>
+        <button class="rb" data-m="upside">Upside down<small>shocked</small></button>
+        <button class="rb" data-m="hand" aria-pressed="false">In a hand<small>calm</small></button>
+        <button class="rb" data-m="reset">Upright<small>reset</small></button>
+      </div>
+    </div>
+    <div class="read" aria-live="polite"><span>level <b id="r-level">0°</b></span><span>pupils <b id="r-pupils">0, 0</b></span><span>dizzy <b id="r-dizzy">0</b></span><span class="cue" id="r-cue"></span></div>
+  </section>
 
   <section class="rx" aria-label="Expressions">
     <h2><span>Moods hold · reactions play once</span><span id="now">now: idle</span></h2>
@@ -151,7 +204,7 @@ if(capture){
   return;
 }
 const now=document.getElementById('now');
-const eyes=E.createEyes(cv,COLOURWAYS[0],{mode:'loop',fit:.9,seed:7,onChange:n=>{const x=E.EXPRESSIONS.find(e=>e.name===n);now.textContent='now: '+(x?x.label.toLowerCase():n)}});
+const eyes=E.createEyes(cv,COLOURWAYS[0],{mode:'loop',fit:.9,seed:7,onMotion:c=>motionCue(c),onChange:n=>{const x=E.EXPRESSIONS.find(e=>e.name===n);now.textContent='now: '+(x?x.label.toLowerCase():n)}});
 // timeline
 const track=document.getElementById('track'),head=document.createElement('div');head.className='head';
 const segEls=E.SEGMENTS.map(([n,a,b])=>{const d=document.createElement('div');d.className='seg';d.style.width=((b-a)/E.LOOP*100)+'%';d.textContent=n;track.appendChild(d);return d});
@@ -181,6 +234,90 @@ hb.addEventListener('click',()=>{const v=hb.getAttribute('aria-pressed')!=='true
   E.SEGMENTS.forEach(([n,a,b],i)=>segEls[i].classList.toggle('on',on&&eyes.loopTime>=a&&eyes.loopTime<b));
   capL.textContent=on?eyes.loopTime.toFixed(1)+' s':'live';
   requestAnimationFrame(ui);
+})();
+// ---- motion: a phone's sensors, or the simulator (a device you turn, tip and spin)
+const stage=document.getElementById('stage'),mState=document.getElementById('m-state');
+const bPhone=document.getElementById('m-phone'),bSim=document.getElementById('m-sim'),bFlip=document.getElementById('m-flip');
+const msim=document.getElementById('msim'),pad=document.getElementById('pad'),padDot=document.getElementById('padDot');
+const rLevel=document.getElementById('r-level'),rPupils=document.getElementById('r-pupils'),rDizzy=document.getElementById('r-dizzy'),rCue=document.getElementById('r-cue');
+const CUE={dizzyStart:'dizzy!',ufff:'ufff',onBack:'looks up at you',faceDown:'grumble',faceUp:'up again',upsideDown:'shocked',upright:'upright',calm:'calm',tapTap:'double tap: yes?',nodYes:'nod: yes',nodNo:'shake: no'};
+let cueT=0;
+function motionCue(c){rCue.textContent=CUE[c]||c;rCue.classList.add('on');clearTimeout(cueT);cueT=setTimeout(()=>rCue.classList.remove('on'),1400)}
+function goLive(){if(eyes.mode==='loop'){eyes.setMode('live');bLoop.setAttribute('aria-pressed','false')}eyes.setRandomMood(false);bRand.setAttribute('aria-pressed','false')}
+let phone=null;
+const hasMotion='DeviceMotionEvent' in window, touchy=matchMedia('(pointer:coarse)').matches;
+if(!hasMotion)bPhone.hidden=true;
+bPhone.addEventListener('click',async()=>{
+  if(phone&&phone.active){phone.stop();phone=null;bPhone.setAttribute('aria-pressed','false');bFlip.hidden=true;mState.textContent='off';return}
+  stopSim();
+  phone=E.bindDeviceMotion(eyes);
+  const ok=await phone.start();
+  if(!ok){mState.textContent='no permission';phone=null;return}
+  goLive();bPhone.setAttribute('aria-pressed','true');bFlip.hidden=false;mState.textContent='phone: waiting…';
+  setTimeout(()=>{if(phone){if(phone.receiving)mState.textContent='phone: live';else{mState.textContent='no sensor data';document.getElementById('m-hint').textContent='This browser or frame is not sending motion data. Open one.html straight from the repo on the phone, or use the simulator.'}}},1200);
+});
+bFlip.addEventListener('click',()=>{if(!phone)return;phone.flip=-phone.flip;eyes.setMotion(null);bFlip.setAttribute('aria-pressed',String(phone.flip<0))});
+// the simulated device: roll (in the glass plane, + = counter-clockwise), pitch (+ = top toward you), yaw (+ = turned right)
+const D=Math.PI/180,sim={on:false,roll:0,pitch:0,yaw:0,tr:0,tp:0,ty:0,rollV:0,imu:null,nod:0,shake:0,hand:false,tap:[],t:0,last:0,drag:null};
+function startSim(){
+  if(phone){phone.stop();phone=null;bPhone.setAttribute('aria-pressed','false');bFlip.hidden=true}
+  goLive();Object.assign(sim,{on:true,roll:0,pitch:0,yaw:0,tr:0,tp:0,ty:0,rollV:0,imu:new E.PoseImu(),nod:0,shake:0,tap:[],last:0});
+  eyes.setMotion(null);msim.hidden=false;stage.classList.add('sim');bSim.setAttribute('aria-pressed','true');mState.textContent='simulator';
+  requestAnimationFrame(simTick);
+}
+function stopSim(){if(!sim.on)return;sim.on=false;msim.hidden=true;stage.classList.remove('sim','grab');stage.style.transform='';bSim.setAttribute('aria-pressed','false');eyes.setMotion(null);mState.textContent='off'}
+bSim.addEventListener('click',()=>sim.on?stopSim():startSim());
+function simTick(now){
+  if(!sim.on)return;
+  const dt=sim.last?Math.min(0.05,(now-sim.last)/1000):1/60;sim.last=now;sim.t+=dt;
+  if(!sim.drag){sim.roll+=sim.rollV*dt;sim.rollV*=Math.exp(-(Math.abs(sim.rollV)>5?0.7:2.2)*dt);if(Math.abs(sim.rollV)<0.05)sim.rollV=0;if(sim.rollV)sim.tr=sim.roll}
+  const k=1-Math.exp(-9*dt);
+  if(!sim.drag&&!sim.rollV)sim.roll+=(sim.tr-sim.roll)*k;
+  sim.pitch+=(sim.tp-sim.pitch)*k;sim.yaw+=(sim.ty-sim.yaw)*k;
+  let p=sim.pitch,y=sim.yaw;
+  if(sim.nod>0){sim.nod-=dt;p+=18*D*Math.sin((1-sim.nod)*2*Math.PI*2.2)}
+  if(sim.shake>0){sim.shake-=dt;y+=20*D*Math.sin((1-sim.shake)*2*Math.PI*2.2)}
+  sim.imu.lin[2]=0;
+  if(sim.tap.length&&sim.t>=sim.tap[0]){sim.tap.shift();sim.imu.lin[2]=-0.7;stage.animate([{translate:'0 6px'},{translate:'0 0'}],{duration:120})}
+  const s=sim.imu.sample(sim.roll,p,y,dt);
+  if(sim.hand){s.gx+=0.05*Math.sin(sim.t*57);s.gy+=0.04*Math.sin(sim.t*43+1);s.gz+=0.03*Math.sin(sim.t*71+2)}
+  eyes.setMotion(s,dt);
+  // what you see: the glass turns with the device (tipping is drawn at half angle so the eyes stay in view)
+  stage.style.transform='perspective(1600px) rotateY('+(y*0.5/D).toFixed(2)+'deg) rotateX('+(-p*0.45/D).toFixed(2)+'deg) rotate('+(-sim.roll/D).toFixed(2)+'deg)';
+  requestAnimationFrame(simTick);
+}
+// grab the glass and turn it; let go while turning = a spin
+const ang=(e)=>{const r=stage.getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))};
+stage.addEventListener('pointerdown',(e)=>{if(!sim.on)return;e.stopPropagation();stage.setPointerCapture(e.pointerId);stage.classList.add('grab');sim.drag={a:ang(e),t:performance.now(),v:0};sim.rollV=0},{capture:true});
+stage.addEventListener('pointermove',(e)=>{if(!sim.on)return;e.stopPropagation();if(!sim.drag)return;
+  const a=ang(e),now=performance.now();let da=a-sim.drag.a;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;
+  const dt=Math.max(1,now-sim.drag.t)/1000;sim.roll-=da;sim.tr=sim.roll;sim.drag.v=sim.drag.v*0.6+(-da/dt)*0.4;sim.drag.a=a;sim.drag.t=now},{capture:true});
+const endDrag=(e)=>{if(!sim.on||!sim.drag)return;e.stopPropagation();const v=performance.now()-sim.drag.t<80?sim.drag.v:0;sim.rollV=Math.max(-25,Math.min(25,Math.abs(v)>3?v:0));sim.drag=null;stage.classList.remove('grab')};
+stage.addEventListener('pointerup',endDrag,{capture:true});stage.addEventListener('pointercancel',endDrag,{capture:true});
+// the pad: tip it (x = turn left/right, y = top away/toward you)
+function padAt(e){const r=pad.getBoundingClientRect();let x=(e.clientX-r.left)/r.width*2-1,y=(e.clientY-r.top)/r.height*2-1;const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}
+  sim.ty=x*60*D;sim.tp=y*70*D;padDot.style.left=(50+x*50)+'%';padDot.style.top=(50+y*50)+'%';pad.setAttribute('aria-valuetext',Math.round(x*60)+'° turned, '+Math.round(-y*70)+'° tipped')}
+pad.addEventListener('pointerdown',(e)=>{pad.setPointerCapture(e.pointerId);padAt(e)});
+pad.addEventListener('pointermove',(e)=>{if(e.buttons)padAt(e)});
+function padTo(x,y){padDot.style.left=(50+x*50)+'%';padDot.style.top=(50+y*50)+'%'}
+document.querySelectorAll('.mbtns .rb').forEach((b)=>b.addEventListener('click',()=>{
+  if(!sim.on)startSim();
+  const m=b.dataset.m;
+  if(m==='spin'){sim.rollV=sim.rollV>=0?16:-16;sim.tr=sim.roll}
+  if(m==='tap')sim.tap=[sim.t+0.05,sim.t+0.3];
+  if(m==='nod')sim.nod=1;
+  if(m==='shake')sim.shake=1;
+  if(m==='back'){sim.tp=-90*D;sim.ty=0;padTo(0,0)}
+  if(m==='down'){sim.tp=90*D;sim.ty=0;padTo(0,0)}
+  if(m==='upside'){sim.rollV=0;sim.tr=sim.roll+Math.PI;sim.tp=0;padTo(0,0)}
+  if(m==='hand'){sim.hand=!sim.hand;b.setAttribute('aria-pressed',String(sim.hand));if(sim.hand){sim.tp=-25*D;padTo(0,-25/70)}}
+  if(m==='reset'){sim.rollV=0;sim.roll=Math.atan2(Math.sin(sim.roll),Math.cos(sim.roll));sim.tr=sim.tp=sim.ty=0;padTo(0,0)}
+}));
+if(touchy&&hasMotion)bPhone.classList.add('toggle');
+(function read(){
+  const m=eyes.motion,p=m.pose;
+  if(m.active){rLevel.textContent=Math.round(p.roll/D)+'°';rPupils.textContent=p.px.toFixed(2)+', '+p.py.toFixed(2);rDizzy.textContent=p.dizzy.toFixed(2)}
+  requestAnimationFrame(read);
 })();
 // colourways: the same design, each with its own little life
 const vars=document.getElementById('vars');

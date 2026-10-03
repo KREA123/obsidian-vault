@@ -3,6 +3,7 @@
 // fake clock and a fake network, and records what the 480 px glass shows.
 //
 //   .pio/build/sim/program <out_dir> [scenario|all] [chip-id hex] [466|480]
+//   .pio/build/sim/program <out_dir> keys ["key string"]   drive the IMU by hand (keysMode)
 //
 // Each scenario writes <out_dir>/<name>.rgb (raw RGB888 frames) + <name>.json
 // (frame count, fps, marked stills). tools/frames_to_media.py turns them
@@ -12,6 +13,7 @@
 // frame touches (the device numbers scale from these, see BRINGUP.md).
 #include <chrono>
 #include <cmath>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -23,12 +25,19 @@
 #include "Alarms.h"
 #include "CloudLink.h"
 #include "Brain.h"
+#include "EyeMotion.h"
 #include "EyeRig.h"
 #include "Frame.h"
 #include "Geometry.h"
 #include "Gestures.h"
 #include "Os.h"
 #include "Personality.h"
+
+#if defined(__unix__) || defined(__APPLE__)
+#include <termios.h>
+#include <unistd.h>
+#define SIM_TTY 1
+#endif
 
 using namespace suflet;
 
@@ -45,6 +54,7 @@ struct Recorder {
   FILE* f = nullptr;
   int frames = 0;
   std::vector<int> stills;
+  std::string extra;  // more JSON fields (",\"pose\":[...]")
   void open() {
     f = fopen((dir + "/" + name + ".rgb").c_str(), "wb");
     if (!f) {
@@ -70,8 +80,8 @@ struct Recorder {
     for (size_t i = 0; i < stills.size(); ++i) st += (i ? "," : "") + std::to_string(stills[i]);
     for (int i = 0; i < frames; ++i) body += i ? ",[0,0,0,0]" : "[0,0,0,0]";
     FILE* j = fopen((dir + "/" + name + ".json").c_str(), "wb");
-    fprintf(j, "{\"name\":\"%s\",\"w\":%d,\"h\":%d,\"fps\":%.0f,\"frames\":%d,\"caption\":\"%s\",\"stills\":[%s],\"body\":[%s]}\n",
-            name.c_str(), W, H, kFps, frames, caption, st.c_str(), body.c_str());
+    fprintf(j, "{\"name\":\"%s\",\"w\":%d,\"h\":%d,\"fps\":%.0f,\"frames\":%d,\"caption\":\"%s\",\"stills\":[%s],\"body\":[%s]%s}\n",
+            name.c_str(), W, H, kFps, frames, caption, st.c_str(), body.c_str(), extra.c_str());
     fclose(j);
   }
 };
@@ -113,6 +123,16 @@ struct Sim {
   double composeMs = 0;
   uint64_t changedPx = 0;
   int composed = 0;
+  // the device in space (EyeMotion): roll in the glass plane (+ = counter-clockwise),
+  // pitch (+ = top toward you, 90 = face down), yaw (+ = turned to its right), radians.
+  // Every frame the IMU is read 3 times (90 Hz) along the way from the last pose.
+  eyes::PoseImu imu;
+  float roll = 0, pitch = 0, yaw = 0, pRoll = 0, pPitch = 0, pYaw = 0;
+  float rollV = 0, rollFriction = 2.0f;  // a flick: spins on, slowing down
+  bool tremor = false;  // held in a hand
+  int tapNow = 0;       // a tap on the case this frame
+  double imuT = 0;
+  std::string poseJson;             // per recorded frame: [roll, pitch, yaw, tap]
 
   explicit Sim(bool booted) : brain(Personality::fromSeed(0xC0FFEE), 7) {
     const eyes::RollResult r = eyes::rollFromMac(gMac);
@@ -156,6 +176,31 @@ struct Sim {
       ++clock;
     }
     os.setClock(clock);
+    // the IMU
+    roll += rollV * dt;
+    rollV *= expf(-rollFriction * dt);
+    if (fabsf(rollV) < 0.05f) rollV = 0;
+    for (int k = 1; k <= 3; ++k) {
+      const float q = k / 3.0f, h = dt / 3;
+      imu.lin[2] = (tapNow && k == 1) ? -0.7f : 0.0f;
+      eyes::ImuSample smp = imu.sample(pRoll + (roll - pRoll) * q, pPitch + (pitch - pPitch) * q, pYaw + (yaw - pYaw) * q, h);
+      imuT += h;
+      if (tremor) {
+        smp.gx += 0.05f * (float)sin(imuT * 57);
+        smp.gy += 0.04f * (float)sin(imuT * 43 + 1);
+        smp.gz += 0.03f * (float)sin(imuT * 71 + 2);
+      }
+      motion.update(smp.ax, smp.ay, smp.az, h);  // the Brain's gestures, as on the device
+      os.imu(h, smp);
+    }
+    tapNow = 0;
+    pRoll = roll;
+    pPitch = pitch;
+    pYaw = yaw;
+    {
+      Ev me;
+      while (motion.poll(me)) os.motion(me);
+    }
     touch.update(finger, fx, fy, dt);
     TouchEv te;
     while (touch.poll(te)) os.touch(te);
@@ -213,7 +258,34 @@ struct Sim {
     composeMs += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
     changedPx += ch.empty() ? 0 : (uint64_t)ch.w() * ch.h();
     ++composed;
-    if (render && rec) rec->frame(cv);
+    if (render && rec) {
+      rec->frame(cv);
+      char b[160];
+      snprintf(b, sizeof b, "%s[%.4f,%.4f,%.4f,%d,%.3f,\"%s\"]", poseJson.empty() ? "" : ",", roll, pitch, yaw, lastTap,
+               os.face().motionPose().dizzy, label);
+      poseJson += b;
+      lastTap = 0;
+    }
+  }
+  int lastTap = 0;
+  const char* label = "";  // a caption for the demo clip (tools/motion_clip.py)
+  // ease the device to a pose over `s` seconds (smoothstep), then hold `hold`
+  void move(float r, float p, float y, float s, float hold = 0) {
+    const int n = (int)(s * kFps + 0.5f);
+    const float r0 = roll, p0 = pitch, y0 = yaw;
+    for (int i = 1; i <= n; ++i) {
+      float q = (float)i / n;
+      q = q * q * (3 - 2 * q);
+      roll = r0 + (r - r0) * q;
+      pitch = p0 + (p - p0) * q;
+      yaw = y0 + (y - y0) * q;
+      step(true);
+    }
+    run(hold);
+  }
+  void caseTap() {
+    tapNow = 1;
+    lastTap = 1;
   }
   void run(float s, bool render = true) {
     const int n = (int)(s * kFps + 0.5f);
@@ -490,7 +562,150 @@ std::vector<Scenario> scenarios() {
          s.run(0.6f);
          s.mark();
        }},
+      {"motion", "Motion: level keeping, marble pupils, a spin (dizzy, ufff), double tap, a nod", true,
+       [](Sim& s) {
+         constexpr float D = 3.14159265f / 180;
+         s.run(0.8f);
+         s.label = "Turn it: the eyes stay level";
+         s.move(50 * D, 0, 0, 0.7f, 0.5f);  // turned in the glass plane: the eyes stay level
+         s.mark();
+         s.move(-40 * D, 0, 0, 0.6f, 0.5f);
+         s.move(0, 0, 0, 0.5f, 0.2f);
+         s.label = "Spin it: dizzy";
+         s.rollV = 13.0f;  // spun round: two turns a second ...
+         s.rollFriction = 0.1f;
+         s.run(1.5f);
+         s.mark();  // dizzy: spiral pupils, the eyes give up keeping level
+         s.rollFriction = 2.5f;  // ... then it slows down
+         while (s.rollV != 0) s.step(true);
+         const float back = roundf(s.roll / 6.2831853f) * 6.2831853f;
+         s.label = "... ufff";
+         s.move(back, 0, 0, 0.6f, 0.0f);  // it comes to rest upright ...
+         s.roll = s.pRoll = 0;  // (same pose)
+         s.run(0.9f);
+         s.mark();  // ... ufff
+         s.label = "Tip it: marble pupils";
+         s.move(0, -35 * D, 12 * D, 0.5f, 0.4f);  // tipped back and to the side: marble pupils
+         s.mark();
+         s.label = "Double tap the case: yes?";
+         s.caseTap();
+         s.run(0.25f);
+         s.caseTap();
+         s.run(0.5f);
+         s.mark();  // double tap: yes!
+         s.label = "Nod: yes";
+         for (int i = 0; i < 24; ++i) {  // a nod
+           s.pitch = -35 * D + 18 * D * sinf(i / 30.0f * 6.2831853f * 2.2f);
+           s.step(true);
+         }
+         s.move(0, 0, 0, 0.6f, 0.6f);
+       }},
   };
+}
+
+// Keys: drive the device by hand. Live in a terminal (one key = one nudge), or
+// from a string of keys (one key per frame, '.' = nothing), e.g.
+//   program out keys "aaaaaaaa..........x..............................t.......t"
+//   a/d turn left/right (in the glass plane)   w/s tip top toward you / away
+//   q/e turn to its left/right (yaw)           x  flick: spin it
+//   t   tap the case (twice = double tap)      n  nod yes     h  shake no
+//   b   lay it on its back   f  face down      u  upside down r  upright, reset
+//   c   held in a hand (tremor) on/off         Esc / Ctrl-D: quit (live)
+static void keysMode(Sim& s, const char* script) {
+  constexpr float D = 3.14159265f / 180;
+  int nod = 0, shake = 0;
+  float tr = 0, tp = 0, ty = 0;  // where the hand is taking it (the device eases there)
+  auto key = [&](int c) {
+    switch (tolower(c)) {
+      case 'a': tr += 8 * D; break;
+      case 'd': tr -= 8 * D; break;
+      case 'w': tp += 8 * D; break;
+      case 's': tp -= 8 * D; break;
+      case 'q': ty -= 8 * D; break;
+      case 'e': ty += 8 * D; break;
+      case 'x':
+        s.rollV = 16;
+        s.rollFriction = 1.0f;
+        break;
+      case 't': s.caseTap(); break;
+      case 'n': nod = 30; break;
+      case 'h': shake = 30; break;
+      case 'b': tp = -90 * D; break;
+      case 'f': tp = 90 * D; break;
+      case 'u': tr = 180 * D; tp = 0; break;
+      case 'r':  // upright the short way round (a full turn reads the same)
+        s.roll = s.pRoll = remainderf(s.roll, 6.2831853f);
+        tr = tp = ty = 0;
+        s.rollV = 0;
+        break;
+      case 'c': s.tremor = !s.tremor; break;
+      default: break;
+    }
+  };
+  int lastCues = 0;
+  auto frame = [&](const char* script) {
+    if (s.rollV != 0) {  // spinning: the hand follows wherever it stops
+      tr = s.roll + s.rollV / kFps;
+    } else {
+      const float k = 1 - expf(-10.0f / kFps);
+      s.roll += (tr - s.roll) * k;
+      s.pitch += (tp - s.pitch) * k;
+      s.yaw += (ty - s.yaw) * k;
+    }
+    const float wig = 18 * D * sinf((30 - (nod > 0 ? nod : shake)) / 30.0f * 6.2831853f * 2.2f);
+    if (nod > 0) --nod;
+    if (shake > 0) --shake;
+    const float p0 = s.pitch, y0 = s.yaw;
+    if (nod > 0) s.pitch += wig;
+    if (shake > 0) s.yaw += wig;
+    s.step(true);
+    s.pitch = p0;
+    s.yaw = y0;
+    const eyes::MotionPose& p = s.os.face().motionPose();
+    const int n = s.os.face().motionCueCount();
+    if (script && n == lastCues) return;  // from a string: only what happened
+    printf("\r roll %5.0f pitch %4.0f yaw %4.0f | eyes level %5.0f deg  pupils %+.2f %+.2f  dizzy %.2f  lid %.2f dim %.2f%s %-12s",
+           s.roll / D, s.pitch / D, s.yaw / D, p.roll / D, p.px, p.py, p.dizzy, p.lid, p.dim, s.tremor ? " hand" : "",
+           n != lastCues ? eyes::motionCueName(s.os.face().lastMotionCue()) : "");
+    if (n != lastCues) printf("\n");
+    lastCues = n;
+    fflush(stdout);
+  };
+  if (script) {
+    for (const char* c = script; *c; ++c) {
+      if (*c != '.') key(*c);
+      frame(script);
+    }
+    printf("\n");
+    return;
+  }
+#ifdef SIM_TTY
+  termios old{}, raw{};
+  const bool tty = isatty(0) && tcgetattr(0, &old) == 0;
+  if (tty) {
+    raw = old;
+    raw.c_lflag &= ~(ICANON | ECHO);
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 0;
+    tcsetattr(0, TCSANOW, &raw);
+  }
+  fprintf(stderr, "keys: a/d turn  w/s tip  q/e yaw  x spin  t tap  n nod  h shake  b back  f face down  u upside down  r reset  c hand  Esc quit\n");
+  for (;;) {
+    unsigned char c;
+    bool quit = false;
+    while (read(0, &c, 1) == 1) {
+      if (c == 27 || c == 4) quit = true;
+      else key(c);
+    }
+    if (quit || (!tty && feof(stdin))) break;
+    frame(nullptr);
+    usleep((useconds_t)(1e6f / kFps));
+  }
+  if (tty) tcsetattr(0, TCSANOW, &old);
+  printf("\n");
+#else
+  fprintf(stderr, "keys: live mode needs a terminal; pass a key string\n");
+#endif
 }
 
 }  // namespace
@@ -515,6 +730,19 @@ int main(int argc, char** argv) {
   const eyes::RollResult r = eyes::rollFromMac(gMac);
   printf("chip %02X%02X%02X%02X%02X%02X: design #%03d %s (%s), 1 in %.0f\n", gMac[0], gMac[1], gMac[2], gMac[3], gMac[4],
          gMac[5], eyes::kDesigns[r.design].num, eyes::kDesigns[r.design].name, eyes::kRarityName[(int)r.rarity], 1.0 / r.odds);
+  if (which == "keys") {  // drive it by hand (see keysMode)
+    Recorder rec;
+    rec.dir = dir;
+    rec.name = "keys";
+    rec.open();
+    Sim s(true);
+    s.rec = &rec;
+    keysMode(s, argc > 3 && strlen(argv[3]) != 12 ? argv[3] : nullptr);
+    rec.extra = ",\"pose\":[" + s.poseJson + "]";
+    rec.close("Keys: the device driven by hand");
+    printf("keys: %d frames -> %s/keys.rgb\n", rec.frames, dir.c_str());
+    return 0;
+  }
   for (const Scenario& sc : scenarios()) {
     if (which != "all" && which != sc.name) continue;
     Recorder rec;
@@ -524,6 +752,7 @@ int main(int argc, char** argv) {
     Sim s(sc.booted);
     s.rec = &rec;
     sc.script(s);
+    rec.extra = ",\"pose\":[" + s.poseJson + "]";
     rec.close(sc.caption);
     printf("%-12s %4d frames  compose %.2f ms/frame on this PC, %.0f%% of the glass changed per frame  %s\n", sc.name,
            rec.frames, s.composeMs / (s.composed ? s.composed : 1),

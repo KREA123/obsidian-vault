@@ -312,7 +312,8 @@ void EyeRenderer::drawEye(Canvas& cv, const EyeRig& rig, const Design& d, float 
   if (g.ry > 0.3f) {
     // the silhouette (eyes.js silhouette(), 120 points)
     const float lean = -side * d.lean, cl = cosf(lean), sl = sinf(lean);
-    const float lid0 = clampf_(L ? rig.ch(Ch_lidL) : rig.ch(Ch_lidR), 0, 0.98f);
+    const MotionPose* mo = o.motion;
+    const float lid0 = clampf_((L ? rig.ch(Ch_lidL) : rig.ch(Ch_lidR)) + (mo ? mo->lid : 0.0f), 0, 0.98f);
     const float tilt = L ? rig.ch(Ch_tiltL) : rig.ch(Ch_tiltR);
     const float bb = clampf_(g.b, 0, 1);
     const float lid = lid0 + (1 - lid0) * bb;
@@ -380,7 +381,21 @@ void EyeRenderer::drawEye(Canvas& cv, const EyeRig& rig, const Design& d, float 
     p_.xf = X;
     p_.polygon(pts, N);
     ras_.cover(p_, body_);
-    const float gx = L ? rig.pupilL(0) : rig.pupilR(0), gy = L ? rig.pupilL(1) : rig.pupilR(1);
+    float gx = L ? rig.pupilL(0) : rig.pupilR(0), gy = L ? rig.pupilL(1) : rig.pupilR(1);
+    if (mo) {  // motion: look up at you, then the marble roll, kept inside this design's pupil travel
+      gx *= 1 - mo->look;
+      gy *= 1 - mo->look;
+      const float mw = rig.looking() ? 0.5f : 1.0f;
+      const float tx = gx + (L ? mo->px : mo->pxR) * mw, ty = gy + (L ? mo->py : mo->pyR) * mw;
+      const float tr = fmaxf(d.travel, 0.05f);
+      const float bx = clampf_((1 - 0.5f * d.prx - d.inset) / tr, 0.6f, 1.3f);
+      const float by = clampf_((0.96f - 0.5f * d.pry) / (tr * 0.78f), 0.6f, 1.3f);
+      const float e = sqrtf((tx / bx) * (tx / bx) + (ty / by) * (ty / by));
+      const float lim = fmaxf(1.0f, sqrtf((gx / bx) * (gx / bx) + (gy / by) * (gy / by)));
+      const float k = e > lim ? lim / e : 1.0f;
+      gx = tx * k;
+      gy = ty * k;
+    }
     // the white: solid, rainbow, chrome or aurora
     const Rgb col = hexc(L ? d.white : d.whiteR);
     Paint paint = Paint::solid(col);
@@ -433,7 +448,7 @@ void EyeRenderer::drawEye(Canvas& cv, const EyeRig& rig, const Design& d, float 
     }
     // the pupil
     const Rgb pc = hexc(!o.hetero ? d.pupilL : (L ? d.pupilL : d.pupilR));
-    const float ps = fmaxf(0, L ? rig.ch(Ch_pupilL) : rig.ch(Ch_pupilR));
+    const float ps = fmaxf(0, L ? rig.ch(Ch_pupilL) : rig.ch(Ch_pupilR)) * (mo ? mo->pupil : 1.0f);
     const float listen = rig.ch(Ch_listen);
     const float pulse = listen > 0.02f ? 1 + 0.28f * rig.level() * clampf_(listen, 0, 1) : 1;
     const float wob = rig.gazeMode() == GazeMode::Wobble ? sinf(t * 13 + side) * 0.025f : 0;
@@ -751,7 +766,10 @@ void EyeRenderer::render(Canvas& cv, const EyeRig& rig, const Design& d, float c
   const float oy = shk * D * 0.4f * (float)sin(td * kTau * rig.shakeF() * 1.3 + 1);
   const float hopP = fabsf((float)sin(td * kTau * 1.6));
   const float by = -bnc * 0.03f * D * hopP;
-  const Xform G = Xform::translate(cx + ox, cy + oy + by).rotated(rig.ch(Ch_rot)).translated(-cx, -cy);
+  const float roll = rig.ch(Ch_rot) + (o.motion ? o.motion->roll : 0.0f);  // + level keeping
+  const Xform G = Xform::translate(cx + ox, cy + oy + by).rotated(roll).translated(-cx, -cy);
+  RenderOpts oo = o;
+  if (o.motion) oo.alpha *= o.motion->dim;
   float sx = rig.ch(Ch_sx), sy = rig.ch(Ch_sy);
   if (bnc > 0.01f) {
     const float sq = 1 + bnc * 0.06f * (hopP - 0.5f);
@@ -759,9 +777,9 @@ void EyeRenderer::render(Canvas& cv, const EyeRig& rig, const Design& d, float c
     sx /= sq;
   }
   ras_.setDiscClip(cx, cy, D * 0.5f);  // eyes.js clips everything to the glass disc
-  drawEye(cv, rig, d, -1, cx, cy, D, sx, sy, G, o);
-  drawEye(cv, rig, d, 1, cx, cy, D, sx, sy, G, o);
-  if (o.overlays) overlays(cv, rig, d, cx, cy, D, G, o.alpha);
+  drawEye(cv, rig, d, -1, cx, cy, D, sx, sy, G, oo);
+  drawEye(cv, rig, d, 1, cx, cy, D, sx, sy, G, oo);
+  if (o.overlays) overlays(cv, rig, d, cx, cy, D, G, oo.alpha);
   ras_.clearDiscClip();
 }
 
