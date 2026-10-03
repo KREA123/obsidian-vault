@@ -46,3 +46,6 @@ Humane AI Pin (699 $ + 24 $/lună, ~10.000 vândute, cărămidă în 2025) · Ra
 
 ## Legat de
 [[Micul Șmecher]] · [[Viziunea — momentul iPhone]] · [[Repere e-commerce]]
+
+---
+Toată memoria SOUL: [[SOUL — Harta memoriei]] · starea: [[Micul Șmecher]] · pașii următori: [[De continuat — SOUL]]

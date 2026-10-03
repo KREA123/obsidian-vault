@@ -15,7 +15,7 @@ Regula de bază: **deciziile se iau pe date, nu pe păreri** — vezi [[JARVIS]]
 - [[KREA]] — agenția
 - [[Aplicații]] — Google Play, iOS, Shopify App Store
 - Clienți KREA: [[MI-DA PRO TRADE]] · [[SIGMALUX]] · [[Alți clienți KREA]]
-- [[Micul Șmecher]] — **SOUL**, AI-ul tău personal cu ochi vii (aluminiu, mărimea M, SoulOS) → toată memoria proiectului: [[SOUL — Harta memoriei]] · finanțare: [[Finanțare — PR BI PoC 1.1 pentru SOUL]]
+- [[Micul Șmecher]] — **SOUL**, companionul cu ochi vii pentru AI-ul tău (forma MĂRGĂRITAR, aluminiu, mărimea M, SoulOS) → toată memoria proiectului: [[SOUL — Harta memoriei]] · pașii următori: [[De continuat — SOUL]] · finanțare: [[Finanțare — PR BI PoC 1.1 pentru SOUL]]
 - Proiecte noi: [[PRIVATE PROPERTY]] · [[Gadget WISP]] (→ Micul Șmecher) · [[Solterra]]
 
 ## Parteneri

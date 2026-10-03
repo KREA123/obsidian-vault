@@ -2,10 +2,12 @@
 tip: afacere
 afacere: Micul Șmecher
 status: direcție în lucru (concept E)
-actualizat: 2026-09-24
+actualizat: 2026-10-03
 ---
 
 # Design produs v3 — SOUL (familia de forme, fără toartă)
+
+> **Actualizare 2026-10-03 — designul FINAL e MĂRGĂRITAR** (decizia lui Andu din 2026-09-26, după HOPA): mărimea **M ≈ 90 × 101 × 31,5 mm** (89,9 × 101,1 × 31,5), **aluminiu 6061** sablat + anodizat în **5 culori** (Argint, Grafit, Albastru noapte, Jar, Șampanie), sticlă neagră Ø74,3 cu teșitură de 45°, nimic altceva pe față, bază plată cu picior oval, difuzor în cusătura laterală, încărcare jos în capsula OU. Randări: `micul-smecher/renders/v9/` (CGI). Prototipul P0 printat e mai mare (≈ 112 × 125 × 31,6 mm după STL), pentru că placa Waveshare 2.8C are sticla Ø95,9 lipită: `micul-smecher/prototip/`, planșe `micul-smecher/blueprints/final/`. **Tot ce urmează mai jos (Ø64, plastic PC, concept E) e istoric.** Harta: [[SOUL — Harta memoriei]] · pași: [[De continuat — SOUL]].
 
 > **Actualizare 2026-09-24 seara:** cercul simplu Ø64 (concept E) a fost respins — „cerc mic și urat”. Mergem înapoi la **formele cu caracter**: piatra ovală în picioare (ca în prototipul SoulOS), norul, lacrima, amuleta — **mai mari**, **fără toartă**, corp lucios perlat (ieftin, injectat). Randări: `micul-smecher/renders/v4/`. Restul notei (strategia AirTag, husa, costurile) rămâne valabil.
 

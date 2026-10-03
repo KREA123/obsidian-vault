@@ -77,3 +77,6 @@ actualizat: 2026-09-24
 
 ## Legat de
 [[Micul Șmecher]] · [[Viziunea — momentul iPhone]] · [[Planul de bani Micul Șmecher]]
+
+---
+Toată memoria SOUL: [[SOUL — Harta memoriei]] · starea: [[Micul Șmecher]] · pașii următori: [[De continuat — SOUL]]

@@ -2,9 +2,11 @@
 tip: strategie
 afacere: Micul Șmecher
 status: activ
-actualizat: 2026-09-26
+actualizat: 2026-10-03
 ---
 # Viziunea — momentul iPhone
+
+> **Actualizare 2026-10-03:** forma finală e **MĂRGĂRITAR** (nu HOPA), mărimea M, aluminiu. „One more thing” rămâne „SOUL works with the AI you already have”, dar onest: **nu plătim noi AI** (decizia din 2026-10-03), iar abonamentul **Claude Pro/Max nu poate fi folosit de dispozitive terțe** (regula Anthropic). Concret: cheia proprie Anthropic/OpenAI, conectorul SOUL din aplicația Claude (orice plan), „Sign in with ChatGPT” după aprobarea OpenAI, SOUL Bridge (experimental) — vezi `micul-smecher/docs/07-CONNECT-AI.md` și `08-OWN-CLAUDE.md`. Filmul actual: trailerul v3 din `micul-smecher/trailer/`. Ochii din film: eyes v2 (`micul-smecher/eyes/`). Harta: [[SOUL — Harta memoriei]].
 
 > **Actualizare 2026-09-26 — inovația „Apple” pe designul final (SOUL M, aluminiu, HOPA).** Secțiunile de mai jos din 24 sep. (SUFLET, piatră mată, capac, 300 de bucăți) sunt istorie; valabil e ce scrie aici.
 

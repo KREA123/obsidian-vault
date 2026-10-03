@@ -2,10 +2,12 @@
 tip: finanțare
 afacere: Micul Șmecher
 program: PR BI P1/1.1/1/2026 — Proof of Concept
-actualizat: 2026-09-25
+actualizat: 2026-10-03
 ---
 
 # PR BI 1.1 „Proof of Concept” — ne încadrăm cu SOUL?
+
+> **Actualizare 2026-10-03:** placa de dovadă TRL 3 e acum **Waveshare ESP32-S3-Touch-LCD-2.8C** (SOUL M), nu 1.75; firmware-ul SoulOS 1.2.0 e gata de încărcat (`micul-smecher/firmware/release/`), iar materialele de arătat sunt randările v9, trailerul v3, site-ul v2 și Brand Package — toate în [[SOUL — Harta memoriei]]. Pașii fondatorului: [[De continuat — SOUL]].
 
 **Răspuns scurt: da, ne încadrăm pe fond, dar mai sunt câteva condiții de verificat și câteva lucruri de făcut până la depunere (~noiembrie 2026).** Grant **€50.000–200.000, până la 100%, de minimis**, prin **ARTEMIS DIGITAL S.R.L.**
 

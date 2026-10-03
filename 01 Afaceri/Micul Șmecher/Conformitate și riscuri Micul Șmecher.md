@@ -46,3 +46,6 @@ actualizat: 2026-09-24
 
 ## Legat de
 [[Micul Șmecher]] · [[Planul de bani Micul Șmecher]] · [[Produs și dezvoltare Micul Șmecher]]
+
+---
+Toată memoria SOUL: [[SOUL — Harta memoriei]] · starea: [[Micul Șmecher]] · pașii următori: [[De continuat — SOUL]]

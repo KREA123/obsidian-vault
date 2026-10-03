@@ -10,6 +10,8 @@ actualizat: 2026-10-03
 > - **ChatGPT:** login cu contul lui prin „Sign in with ChatGPT” (cere aprobarea OpenAI pentru aplicații comerciale) → email 2.
 > - **Claude:** abonamentul (Pro/Max) nu poate fi folosit de alte firme (regulile Anthropic). Azi: contul lui de Anthropic Console (cheie API, plătește la bucată) + conectorul din aplicația Claude. Cerem excepție/parteneriat → email 1.
 
+> **Status 2026-10-03: nicio confirmare în vault că au fost trimise** [neverificat] — pas fondator în [[De continuat — SOUL]]. La Anthropic adaugă și cererea pentru **canalul SOUL Bridge** (listare în pluginurile oficiale Claude Code + confirmare scrisă pentru uz personal pe Pro/Max) — `micul-smecher/docs/08-OWN-CLAUDE.md` §7.
+
 Trimite de pe adresa firmei, semnat ARTEMIS DIGITAL S.R.L. Atașează link-ul site-ului și trailerul.
 
 ---
@@ -43,7 +45,7 @@ Andu — Founder, ARTEMIS DIGITAL S.R.L.
 
 ## Email 2 — OpenAI („Sign in with ChatGPT” waitlist)
 
-Unde: pagina de developer pentru „Sign in with ChatGPT” (lansat 29.09.2026, înscriere pe waitlist pentru aplicații comerciale) — caută „Sign in with ChatGPT” în platform.openai.com/docs; dacă nu găsești formularul, scrie la developer support din platform.openai.com.
+Unde: **formularul de interes OpenAI: https://openai.com/form/sign-in-with-chatgpt-interest/** („Sign in with ChatGPT”, lansat 29.09.2026; aplicațiile plătite sau găzduite — SOUL e ambele — intră pe waitlist; linkul e verificat în `micul-smecher/docs/07-CONNECT-AI.md` §1.10, câmpurile formularului nu au fost citite). Textul de mai jos îl pui în câmpul de descriere.
 
 **Subject:** Waitlist request — SOUL hardware companion (Sign in with ChatGPT)
 

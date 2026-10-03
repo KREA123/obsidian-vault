@@ -62,3 +62,6 @@ AMOLED rotund 1,2–1,43″ €8–15 · ESP32-S3-WROOM-1 ~€3 · 2 microfoane 
 
 ## Legat de
 [[Micul Șmecher]] · [[Conformitate și riscuri Micul Șmecher]] · [[Planul de bani Micul Șmecher]]
+
+---
+Toată memoria SOUL: [[SOUL — Harta memoriei]] · starea: [[Micul Șmecher]] · pașii următori: [[De continuat — SOUL]]

@@ -82,3 +82,6 @@ PCB propriu cu modul ESP32-S3-WROOM (refolosim parte din dovezile radio Espressi
 
 ## Legat de
 [[Micul Șmecher]] · [[Viziunea — momentul iPhone]] · [[Produs și dezvoltare Micul Șmecher]] · [[Roadmap 1 milion €]]
+
+---
+Toată memoria SOUL: [[SOUL — Harta memoriei]] · starea: [[Micul Șmecher]] · pașii următori: [[De continuat — SOUL]]

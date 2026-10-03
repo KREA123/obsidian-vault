@@ -23,7 +23,10 @@ SPEC = [
     ('docs', ['*'], True),
     ('firmware', ['*'], True),
     ('ai', ['*'], True),
-    ('os', ['index.html', 'SPEC.md', 'ARCHITECTURE.md'], False),
+    ('os', ['index.html', 'SPEC.md', 'ARCHITECTURE.md', 'UX-REVIEW.md'], False),
+    ('eyes', ['*.js', '*.json', '*.html', '*.md'], False),   # SOUL eyes v2 engine + 120-design collection
+    ('bridge', ['*'], True),                       # SOUL Bridge (docs/08); node_modules excluded
+    ('tools', ['*.sh'], False),
     ('site', ['*'], True),                         # screenshots excluded below
     ('prototip', ['README*', 'COMANDA*', '*.md'], False),
     ('prototip/stl', ['*'], True),
@@ -31,9 +34,11 @@ SPEC = [
     ('prototip/cad', ['*.py', '*.json', '*.txt'], False),
     ('prototip/img', ['*.png'], True),
     ('blueprints', ['*.png', '*.svg', 'README.md'], True),
-    ('renders/v8', ['*.png', '*.gif', '*.mp4', 'README.md'], False),   # final design, size M
+    ('renders/v9', ['*.png', '*.gif', '*.mp4', 'README.md'], False),   # final design MĂRGĂRITAR, size M
+    ('renders/v8', ['README.md'], False),
     ('renders/v6', ['README.md'], False),          # CMF + hex colours
-    ('brand/logo', ['*'], True),
+    ('brand/logo', ['README.md'], False),           # superseded by the Brand Package below
+    ('brand/SOUL-Brand-Package', ['*'], True),     # logo in all formats, brand book PDF, colours, fonts
     ('research', ['*.md'], True),                  # so the links in docs/ work
     ('investors', ['*'], True),                    # incl. poc-1.1 official annexes
 ]
@@ -43,6 +48,7 @@ README = """# SOUL: complete package
 
 Start with **docs/00-START-HERE.md**. It explains what SOUL is, the state of every part, and a map of every file.
 
+- docs/07-CONNECT-AI.md: SOUL Cloud, pairing, the SOUL connector for Claude/ChatGPT; docs/08-OWN-CLAUDE.md: SOUL Bridge
 - docs/01-BOM.md + docs/BOM.csv: bill of materials (P0 prototype + Founders 00)
 - docs/02-MANUFACTURING.md: which file goes to which supplier, finishes, assembly, QC
 - docs/03-SOFTWARE.md: firmware, AI service, SoulOS prototype, landing page (build/run/test)
@@ -55,7 +61,8 @@ Folders:
 - site/ (landing page)
 - prototip/ (DIY P0: STL, STEP, CAD sources)
 - blueprints/final (SOUL M drawings) + older sheets
-- renders/v8 (final design, size M; CGI, not photos) · brand/logo (The Glass O)
+- renders/v9 (final design MĂRGĂRITAR, size M; CGI, not photos) · brand/SOUL-Brand-Package (The Glass O, brand book)
+- eyes/ (SOUL eyes v2 engine, 120 designs, 31 expressions) · bridge/ (SOUL Bridge, Node) · tools/ (repo sync)
 - research/ and investors/ (background)
 
 Files left out for size are listed in SKIPPED.txt. They are in the original vault folder micul-smecher/.
@@ -121,7 +128,7 @@ def main():
         lines = ['Files NOT in this zip (too large; > %d MB even compressed). Find them in the vault folder micul-smecher/:' % (MAX_DEFLATED >> 20), '']
         lines += ['%8.1f MB  %s' % (s / 1e6, r) for r, s in skipped] or ['(none)']
         lines += ['', 'Also excluded by rule: a raw .step when a .step.gz twin exists (gunzip it), firmware/.pio (build output), ai caches and data/, prototip/cad/cache,',
-                  'prototip/stl/assembly (fit-check meshes), prototip/step/plastic (print from the STLs), site/screenshots, os/screenshots, os/research, os/lang-mockups, cad/, media/, older renders (v4/v5), blueprints/src.']
+                  'prototip/stl/assembly (fit-check meshes), prototip/step/plastic (print from the STLs), site/screenshots, os/screenshots, os/research, os/lang-mockups, cad/, media/, older renders (v2-v8 images), trailer/, brand/logo sources (the Brand Package replaces them), eyes/ videos, blueprints/src.']
         if missing:
             lines += ['', 'Folders expected but missing when the zip was built: ' + ', '.join(missing)]
         z.writestr(PREFIX + 'SKIPPED.txt', '\n'.join(lines) + '\n')

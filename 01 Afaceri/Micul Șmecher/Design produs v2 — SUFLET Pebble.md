@@ -151,3 +151,6 @@ Cameră, proiector, SIM / 4G, ascultare permanentă sau cuvânt de trezire impli
 
 ## Legat de
 [[Micul Șmecher]] · [[Produs și dezvoltare Micul Șmecher]] · [[Viziunea — momentul iPhone]] · [[Planul de bani Micul Șmecher]] · [[Brand și lansare Micul Șmecher]] · [[Conformitate și riscuri Micul Șmecher]] · [[Piață și concurență Micul Șmecher]]
+
+---
+Toată memoria SOUL: [[SOUL — Harta memoriei]] · starea: [[Micul Șmecher]] · pașii următori: [[De continuat — SOUL]]

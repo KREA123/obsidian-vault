@@ -2,18 +2,37 @@
 tip: afacere
 afacere: Micul Șmecher
 status: activ
-actualizat: 2026-09-24
+actualizat: 2026-10-03
 ---
 
 ![[suflet_hero.png]]
 
 # Micul Șmecher — produsul SOUL
 
-> **Pe scurt:** o amuletă din sticlă mată cu doi ochi vii pe un ecran AMOLED rotund. E **vie și fără internet**, devine **AI-ul tău personal** când ții degetul pe „piatră” (Claude sau ChatGPT în spate) și **se leagă deja de Claude Code / Cowork** pe calculator. „Laboratoarele fac creierul. Noi facem corpul și sufletul.”
+> **Starea la 2026-10-03:** SOUL = obiect din **aluminiu** în forma **MĂRGĂRITAR**, mărimea **M** (≈ 90 × 101 × 31,5 mm, ecran rotund 2,8″, 5 culori), cu doi ochi vii (eyes v2) și **SoulOS**. Fiecare om își conectează **propriul AI** (nu plătim noi AI); merge și offline. Harta completă: **[[SOUL — Harta memoriei]]** · pașii următori: **[[De continuat — SOUL]]**.
+>
+> *Paragraful de mai jos e descrierea inițială (2026-09-24), păstrată ca istoric.*
+> **Pe scurt (24 sep.):** o amuletă din sticlă mată cu doi ochi vii pe un ecran AMOLED rotund. E **vie și fără internet**, devine **AI-ul tău personal** când ții degetul pe „piatră” (Claude sau ChatGPT în spate) și **se leagă deja de Claude Code / Cowork** pe calculator. „Laboratoarele fac creierul. Noi facem corpul și sufletul.”
 
 Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” și „Micul șmecher” v0.9.3).
 
-## Ce există deja (construit pe 2026-09-24)
+## Ce există acum (2026-10-03)
+| Piesă | Stare | Unde |
+|---|---|---|
+| Designul final MĂRGĂRITAR, mărimea M, aluminiu, 5 culori | ✅ randări v9 (CGI, nu poze) | `micul-smecher/renders/v9/` |
+| Prototipul P0 (printat 3D, ≈ 112 × 125 × 31,6 mm după STL [de măsurat]) | ✅ STL-uri de print + planșe; ⏳ de comandat și printat | `prototip/stl/plastic/`, `prototip/COMANDA.md`, `blueprints/final/` |
+| Electronica P0: Waveshare 2.8C (Alibaba ~140 lei [neverificat]) + LiPo 803450 (eMAG) | ⏳ de cumpărat | `prototip/COMANDA.md` |
+| Firmware **SoulOS 1.2.0** (ochii, IMU, portal Wi-Fi, Claude/OpenAI cu cheia omului, SOUL Cloud, BLE Hardware Buddy) | ✅ compilat + testat pe PC/simulator; ⏳ neîncărcat pe placă | `firmware/`, `firmware/BRINGUP.md`, `firmware/release/` |
+| SOUL Cloud (pairing, gateway, conector OAuth MCP, `/pair`, `/me`); AI inclus oprit | ✅ testat cu falsuri; ⏳ nedeployat, netestat cu claude.ai real | `ai/`, `docs/07-CONNECT-AI.md` |
+| SOUL Bridge (Claude Pro/Max prin Claude Code oficial) | 🧪 prototip, zonă gri de politică | `bridge/`, `docs/08-OWN-CLAUDE.md` |
+| Ochii v2: 120 de designuri, 31 de expresii, giroscop | ✅ | `eyes/` · https://claude.ai/artifact/M8CVFPvTN3FCj6fC9UbA3D |
+| SoulOS v4 (prototip web) | ✅ | `os/` · https://claude.ai/artifact/BFboeyYNYTUBrzsiB9uEfA |
+| Pagina de lansare v2 (listă de așteptare, demo) | ✅ | `site/` · https://claude.ai/artifact/WZtQ7JpCjpj6M3sfgJugHC |
+| Brand Package v1.0 + brand book | ✅ | `brand/SOUL-Brand-Package/` (+ `.zip`) |
+| Trailer v3 (47 s, 16:9 + 9:16); v4 oprit | ✅ | `trailer/` |
+| Pachetul complet | ✅ refăcut 2026-10-03 (~90 MB) | `dist/SOUL-package.zip` |
+
+## Ce exista pe 2026-09-24 (istoric)
 | Piesă | Stare | Unde |
 |---|---|---|
 | Firmware „Suflet” (ochi, dispoziție, 24 de reacții, personalitate unică din cip, rarități) | ✅ compilează pe ambele plăci, 24/24 teste | `micul-smecher/firmware/` |
@@ -32,7 +51,9 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 - [[Viziunea — momentul iPhone]] — ce lansăm, de ce e altceva, scenariul filmului de lansare
 - [[Planul de bani Micul Șmecher]] — fazele, cifrele pe bucată, scenarii, finanțare, filtrul celor 5 întrebări
 - [[Produs și dezvoltare Micul Șmecher]] — plăci, piese, ce cumperi azi, prototipul în 14 zile, drumul spre producție
-- [[Design produs v3 — SOUL amuleta]] — **direcția în lucru**: piatră-lentilă Ø64, fără toartă, husă separată, ieftină de făcut
+- [[De continuat — SOUL]] — **pașii următori** (fondator + Claude)
+- [[SOUL — Cereri parteneriat Anthropic și OpenAI]] — emailul către Anthropic și formularul „Sign in with ChatGPT”
+- [[Design produs v3 — SOUL amuleta]] — istoria designului (Ø64 → v4 → HOPA → **MĂRGĂRITAR**, final)
 - [[Design produs v2 — SUFLET Pebble]] — (abandonat) piatra de buzunar; funcțiile și bateria rămân utile
 - [[Brand și lansare Micul Șmecher]] — nume, carta companionului, mecanica de lansare, conținut
 - [[Conformitate și riscuri Micul Șmecher]] — CE, baterie, AI Act, Anthropic, pre-mortem
@@ -40,12 +61,11 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 
 ## Deciziile care îți aparțin (Andu)
 - [x] **Numele**: **SOUL** (ales de Andu, 2026-09-24) — urmează verificare EUIPO + domeniu înainte de orice cheltuială pe brand.
-- [ ] **Prețul Founders Desk Edition**: €119 (recomandat; la €99 rămân doar ~€33/bucată).
-- [ ] **Modelul AI** pentru voce: Claude Opus 5 (implicit) vs Sonnet 5 / Haiku 4.5 (mai ieftine, mai rapide) — după un test real de latență și cost.
-- [ ] **Firmă nouă** pentru proiect (SRL separat) — necesară pentru Startup Nation 2026 (250.000 lei) și pentru investitori.
-- [ ] Cumperi kitul de prototip (~€120, lista în [[Produs și dezvoltare Micul Șmecher]]).
+- [x] **Forma**: MĂRGĂRITAR (2026-09-26). **Fără Founders 00** (2026-09-26). **Fără AI inclus plătit de noi** (2026-10-03). **Firmă**: ARTEMIS DIGITAL S.R.L., fără firmă nouă (2026-09-25).
+- [ ] ~~Prețul Founders Desk Edition~~ — scos odată cu Founders 00; pe site „de la €249”, doar listă de așteptare.
+- [ ] Cumperi placa 2.8C + bateria și printezi P0 — vezi [[De continuat — SOUL]].
 
-## Următoarele 7 zile
+## Următoarele 7 zile (lista din 24 sep., depășită — valabilă e [[De continuat — SOUL]])
 1. Comanzi plăcile (1.43 pentru Claude Buddy, 1.75 pentru voce) + bateria + comutatorul.
 2. Primești → flash firmware (`pio run -e amoled143 -t upload`) → pairing cu Claude Desktop (Developer → Open Hardware Buddy).
 3. Filmezi 10 clipuri verticale reale (lista în [[Brand și lansare Micul Șmecher]]).
