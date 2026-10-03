@@ -44,6 +44,8 @@ from typing import Any, Callable, Deque, Dict, Iterable, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 from cryptography.exceptions import InvalidSignature
+
+from .config import default_brain
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
@@ -463,8 +465,8 @@ class DeviceStore:
 
     def trial(self, device_id: str, state: str) -> Optional[dict]:
         d = self.get_device(device_id)
-        if not d or state == "paired" or d["trial_total"] <= 0:
-            return None
+        if not d or state == "paired" or d["trial_total"] <= 0 or default_brain() != "cloud":
+            return None  # no trial without built-in AI (SOUL_BUILTIN_AI=0)
         return {"left": max(0, int(d["trial_left"])), "unit": "turns"}
 
     def use_trial(self, device_id: str) -> int:
@@ -841,8 +843,9 @@ class DeviceStore:
                             (ctx.device_id, ctx.pub_hash))
             self.db.execute("UPDATE device_keys SET state='bound' WHERE device_id=? AND pub_hash=?",
                             (ctx.device_id, ctx.pub_hash))
-            self.db.execute("UPDATE devices SET account_id=?, owner_name=?, owner_hint=?, brain='cloud' "
-                            "WHERE device_id=?", (r["account_id"], r["first_name"], r["hint"], ctx.device_id))
+            self.db.execute("UPDATE devices SET account_id=?, owner_name=?, owner_hint=?, brain=? "
+                            "WHERE device_id=?", (r["account_id"], r["first_name"], r["hint"], default_brain(),
+                                                  ctx.device_id))
             self.db.execute("INSERT OR REPLACE INTO device_members(device_id, account_id, role, created) "
                             "VALUES (?,?,?,?)", (ctx.device_id, r["account_id"], "owner", now))
             self.db.execute("UPDATE pair_claims SET state='paired' WHERE pid=?", (pid,))
@@ -858,8 +861,8 @@ class DeviceStore:
         with self.lock:
             d = self.db.execute("SELECT account_id FROM devices WHERE device_id=?", (device_id,)).fetchone()
             old = d["account_id"] if d else None
-            self.db.execute("UPDATE devices SET account_id=NULL, owner_name='', owner_hint='', brain='cloud', "
-                            "connectors_paused=0 WHERE device_id=?", (device_id,))
+            self.db.execute("UPDATE devices SET account_id=NULL, owner_name='', owner_hint='', brain=?, "
+                            "connectors_paused=0 WHERE device_id=?", (default_brain(), device_id))
             self.db.execute("DELETE FROM device_members WHERE device_id=?", (device_id,))
             self.db.execute("DELETE FROM outbox WHERE device_id=? AND acked_at IS NULL", (device_id,))
             self.db.execute("UPDATE pair_claims SET state='expired' WHERE device_id=? AND state='awaiting_device'",

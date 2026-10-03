@@ -24,3 +24,17 @@ class Settings:
 
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+
+
+def builtin_ai_enabled() -> bool:
+    """Brain A ("SOUL Cloud": Claude/ChatGPT inside SOUL on SOUL's own provider keys) is OFF by default.
+
+    Founder decision (3 Oct 2026): SOUL does not include an AI paid by us. Device turns are answered by the
+    owner's own API key (B2/B1) or the offline rules; the owner's own Claude/ChatGPT app reaches SOUL through
+    the connector. SOUL_BUILTIN_AI=1 turns the brain-A code path back on (tests, a future paid plan)."""
+    return os.environ.get("SOUL_BUILTIN_AI", "0") == "1"
+
+
+def default_brain() -> str:
+    """The brain a newly paired (or released) SOUL gets: `cloud` only with built-in AI, else `none`."""
+    return "cloud" if builtin_ai_enabled() else "none"

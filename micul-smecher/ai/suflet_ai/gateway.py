@@ -40,6 +40,7 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Request, WebSocket
 from fastapi.responses import JSONResponse
 
+from .config import builtin_ai_enabled, default_brain
 from .devices import (BRAINS, DEFAULT_TZ, VOICES, DeviceCtx, DeviceStore, GatewayError, check_device_id, posix_tz)
 from .relay import DEFAULT_CLAUDE_MODEL, DEFAULT_OPENAI_MODEL, Relay
 
@@ -478,9 +479,11 @@ class Gateway:
         paired = state == "paired"
         trial = self.store.trial(ctx.device_id, state)
         if paired:
-            brain = d.get("brain") or "cloud"
+            brain = d.get("brain") or default_brain()
+            if brain == "cloud" and not builtin_ai_enabled():
+                brain = "none"
         else:
-            brain = "cloud" if trial and trial["left"] > 0 else "none"
+            brain = "cloud" if builtin_ai_enabled() and trial and trial["left"] > 0 else "none"
         allowance = None
         if paired and brain == "cloud" and d.get("account_id"):
             allowance = self.relay.meter.allowance(d["account_id"])

@@ -40,7 +40,7 @@ import anthropic
 
 from . import prompts
 from .actions import ACTIONS, TOOL_TO_ACTION
-from .config import FALLBACK_BETA
+from .config import FALLBACK_BETA, builtin_ai_enabled, default_brain
 from .devices import DEFAULT_TZ, DeviceStore, b64u
 from .dispatcher import ActionResult
 from .providers.base import AskContext, AskResult, summarize
@@ -398,7 +398,10 @@ class Relay:
         """-> (brain, provider 'anthropic'|'openai'|None, key, note). brain is what the reply reports."""
         paired = state == "paired" and bool(device.get("account_id"))
         account = device.get("account_id") if paired else None
-        brain = device.get("brain") or "cloud"
+        brain = device.get("brain") or default_brain()
+        if brain in ("cloud", "direct") and not builtin_ai_enabled():
+            # no AI paid by SOUL (SOUL_BUILTIN_AI=0, the default): the offline rules answer, `no_key` says why
+            return "none", None, None, ("no_key" if paired else "unpaired")
         if not paired:
             t = self.store.trial(device["device_id"], state)
             if not t:
