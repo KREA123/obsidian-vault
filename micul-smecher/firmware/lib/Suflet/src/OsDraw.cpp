@@ -9,6 +9,7 @@
 #include <time.h>
 
 #include "Os.h"
+#include "QrImage.h"
 
 namespace suflet {
 
@@ -32,6 +33,7 @@ enum : int {
   IdName,
   IdLater,
   IdCenter,
+  IdInbox,
   IdRow = 100,
 };
 
@@ -216,12 +218,20 @@ void Os::buildItems(std::vector<Item>& out) const {
       break;
     }
     case View::Wifi:
-      if (net_.portal) add(IdStopSetup, 233, 384, 200, 50, R ? "Gata" : "Done", kCream, 1, true);
+      if (net_.portal) add(IdStopSetup, 233, 404, 200, 50, R ? "Gata" : "Done", kCream, 1, true);
       else add(IdSetup, 233, 300, 260, 56, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
       if (net_.configured && !net_.portal) add(IdForget, 233, 384, 220, 50, R ? "Uită Wi-Fi (ține)" : "Forget Wi-Fi (hold)", kAmber, 0, true, kDim);
       break;
     case View::MySoul:
       add(IdName, 233, 312, 300, 56, set_.name, kCream, 2, false);
+      break;
+    case View::Claude:
+      if (net_.relay && !claude_.passkey && !claude_.prompt)
+        add(IdInbox, 233, 396, 260, 52, R ? "Întreabă-l pe Claude ›" : "Ask my Claude ›", kCream, 1, true);
+      break;
+    case View::Pair:
+      if (!net_.configured || (!net_.connected && !net_.connecting))
+        add(IdSetup, 233, 330, 260, 56, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
       break;
     default: break;
   }
@@ -253,7 +263,20 @@ void Os::rimBottom(Canvas& cv, const std::string& s, Rgb c, float alpha) {
   cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(210), 1.5707963f, s.c_str(), c, alpha, true, 1.0f);
 }
 
-int Os::wrapLines(const Font& f, const std::string& s, float maxW, std::string* lines, int maxLines) const {
+int Os::wrapLines(const Font& f, const std::string& text, float maxW, std::string* lines, int maxLines) const {
+  if (text.find('\n') != std::string::npos) {  // paragraphs (cards: "1. flour\n2. eggs")
+    int n = 0;
+    size_t i = 0;
+    while (i <= text.size() && n < maxLines) {
+      size_t e = text.find('\n', i);
+      if (e == std::string::npos) e = text.size();
+      const std::string para = text.substr(i, e - i);
+      if (!para.empty()) n += wrapLines(f, para, maxW, lines + n, maxLines - n);
+      i = e + 1;
+    }
+    return n;
+  }
+  const std::string& s = text;
   int n = 0;
   std::string cur;
   size_t i = 0;
@@ -317,6 +340,7 @@ void Os::render(Canvas& cv) {
     case View::Wifi: drawWifi(cv); break;
     case View::MySoul: drawMySoul(cv); break;
     case View::About: drawAbout(cv); break;
+    case View::Pair: drawPair(cv); break;
     default: break;
   }
   if (view_ != View::Keyboard && view_ != View::Dial) drawToast(cv);
@@ -514,12 +538,17 @@ void Os::drawAnswer(Canvas& cv) {
     return;
   }
   rimTop(cv, answerSrc_, kCream, kFaint);
-  const bool big = reply_.say.size() <= 120;
+  const bool card = !cardTitle_.empty();
+  const bool big = !card && reply_.say.size() <= 120;
   const Font& f = big ? fontOf(1, set_.largeText) : fonts::small();
   const float lh = big ? 32.0f : 27.0f;
-  std::string lines[6];
-  const int n = reply_.say.empty() ? 0 : wrapLines(f, reply_.say, g_.s(big ? 330 : 350), lines, big ? 4 : 6);
+  std::string lines[7];
+  const int n = reply_.say.empty() ? 0 : wrapLines(f, reply_.say, g_.s(big ? 330 : 350), lines, big ? 4 : card ? 7 : 6);
   float y = 236;
+  if (card) {  // a card pushed by SOUL Cloud / your Claude: a title, then the text as written
+    textAt(cv, fonts::text(), 233, 196, ellipsize(fonts::text(), cardTitle_, g_.s(320)), kMint);
+    y = 232;
+  }
   if (lastErr_ != AiErr::None) {  // what went wrong, in one line that says what to do
     std::string el[3];
     const int m = wrapLines(fonts::text(), aiErrText(lastErr_, R), g_.s(320), el, 3);
@@ -669,6 +698,8 @@ void Os::drawClaude(Canvas& cv) {
     textAt(cv, fonts::small(), 233, 248, R ? "Hardware Buddy… › Conectează" : "Open Hardware Buddy… › Connect", kCream, kDim);
     textAt(cv, fonts::small(), 233, 290, claude_.bleName, kAmber);
     rimBottom(cv, R ? "aprobi cu degetul pe sticlă" : "approve with a finger on the glass", kCream, kFaint);
+    buildItems(items_);
+    drawItems(cv, items_);
     return;
   }
   textAt(cv, fonts::text(), 233, 176, claude_.busy ? (R ? "Claude lucrează" : "Claude is working") : (R ? "Conectat" : "Connected"), claude_.busy ? kAmber : kMint);
@@ -681,6 +712,8 @@ void Os::drawClaude(Canvas& cv) {
   snprintf(b, sizeof b, R ? "%lu aprobate · %lu refuzate" : "%lu approved · %lu denied", (unsigned long)claude_.approvals,
            (unsigned long)claude_.denials);
   textAt(cv, fonts::small(), 233, 300, b, kCream, kFaint);
+  buildItems(items_);
+  drawItems(cv, items_);
 }
 
 void Os::drawSettings(Canvas& cv) {
@@ -711,7 +744,13 @@ void Os::drawAiMode(Canvas& cv) {
       one[0].y -= 8;
       std::string st;
       switch (it.id - IdRow) {
-        case 0: st = net_.relay ? (R ? "conectat la cont" : "linked to your account") : (R ? "se leagă din telefon" : "link it from a phone"); break;
+        case 0:
+          st = !net_.relay ? (R ? "adresa se pune din telefon" : "set its address from a phone")
+               : net_.cloudUpdate ? (R ? "actualizează SOUL" : "update SOUL")
+               : net_.cloudRefused ? (R ? "SOUL nu e acceptat" : "this SOUL was refused")
+               : net_.paired ? (net_.owner.empty() ? std::string(R ? "legat de cont" : "paired") : (R ? "legat · " : "paired · ") + net_.owner)
+               : (R ? "atinge ca să-l legi" : "tap to pair it");
+          break;
         case 1: st = net_.keyClaude ? net_.maskClaude : (R ? "are nevoie de o cheie" : "needs a key"); break;
         case 2: st = net_.keyOpenai ? net_.maskOpenai : (R ? "are nevoie de o cheie" : "needs a key"); break;
         default: st = R ? "ore și minutare pe device" : "times and timers on the device"; break;
@@ -727,12 +766,12 @@ void Os::drawWifi(Canvas& cv) {
   const bool R = ro();
   rimTop(cv, "WI-FI", kCream, kDim);
   if (net_.portal) {
-    textAt(cv, fonts::small(), 233, 160, R ? "Pe telefon, intră pe Wi-Fi" : "On your phone, join the Wi-Fi", kCream, kDim);
-    textAt(cv, fonts::large(), 233, 200, net_.apName, kAmber);
-    if (!net_.apPass.empty()) textAt(cv, fonts::text(), 233, 236, (R ? "parola " : "password ") + net_.apPass, kAmber);
-    textAt(cv, fonts::small(), 233, 276, R ? "și deschide" : "and open", kCream, kDim);
-    textAt(cv, fonts::text(), 233, 306, net_.portalUrl.substr(7), kCream);
-    textAt(cv, fonts::small(), 233, 342, R ? "Wi-Fi, AI și cheia, într-o pagină" : "Wi-Fi, AI and key on one page", kCream, kFaint);
+    // the phone camera joins SOUL's own Wi-Fi from this QR (iOS 11+, Android 10+)
+    textAt(cv, fonts::small(), 233, 124, R ? "Scanează cu camera telefonului" : "Scan with your phone's camera", kCream, kDim);
+    if (!net_.apPass.empty()) drawQr(cv, "WIFI:T:WPA;S:" + net_.apName + ";P:" + net_.apPass + ";;", 233, 214, 150);
+    textAt(cv, fonts::text(), 233, 306, net_.apName + (net_.apPass.empty() ? std::string() : "  \u00B7  " + net_.apPass), kAmber);
+    textAt(cv, fonts::small(), 233, 338, (R ? "apoi deschide " : "then open ") + net_.portalUrl.substr(7), kCream, kDim);
+    textAt(cv, fonts::small(), 233, 364, (R ? "S-a închis? Deschide " : "Page closed? Open ") + net_.portalUrl.substr(7), kCream, kFaint);
   } else {
     textAt(cv, fonts::text(), 233, 168, net_.connected ? (R ? "Conectat" : "Connected") : net_.connecting ? (R ? "Mă conectez…" : "Connecting…") : (R ? "Neconectat" : "Not connected"),
            net_.connected ? kMint : kCream);
@@ -778,6 +817,83 @@ void Os::drawAbout(Canvas& cv) {
   const int n = wrapLines(fonts::small(), body, g_.s(320), lines, 5);
   for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 210 + i * 27, lines[i], kCream, kDim);
   rimBottom(cv, "SoulOS 1.0 · " + std::string(viewName(view_)), kCream, kFaint);
+}
+
+
+void Os::drawQr(Canvas& cv, const std::string& text, float cx, float cy, float maxPx) {
+  static QrImage qr;  // one at a time on screen; rebuilt only when the text changes
+  if (!qr.make(text)) return;
+  const int n = qr.size(), quiet = 3;
+  int mod = (int)(g_.s(maxPx) / (float)(n + 2 * quiet));
+  if (mod < 2) mod = 2;
+  const int total = (n + 2 * quiet) * mod;
+  const int x0 = (int)lroundf(g_.s(cx)) - total / 2, y0 = (int)lroundf(g_.s(cy)) - total / 2;
+  // dark modules on a light card: every phone camera reads that way round
+  cv.roundRect((float)x0, (float)y0, (float)(x0 + total), (float)(y0 + total), (float)mod * 1.5f, kCream, fade_);
+  const Rgb ink = pal::kBlack;  // over the fading card: appears with it
+  for (int y = 0; y < n; ++y)
+    for (int x = 0; x < n; ++x)
+      if (qr.at(x, y)) {
+        const int px = x0 + (quiet + x) * mod, py = y0 + (quiet + y) * mod;
+        cv.fillRect(Rect{px, py, px + mod, py + mod}, ink);
+      }
+}
+
+void Os::drawPair(Canvas& cv) {
+  const bool R = ro();
+  rimTop(cv, "SOUL CLOUD", kCream, kDim);
+  std::string id = "soul-";  // the device id, as the account page knows it
+  for (char c : birth_.chip)
+    if (c != ':') id += (char)(c >= 'A' && c <= 'F' ? c - 'A' + 'a' : c);
+  if (net_.cloudUpdate) {
+    textAt(cv, fonts::large(), 233, 196, R ? "Actualizează SOUL" : "Update SOUL", kAmber);
+    std::string l[3];
+    const int n = wrapLines(fonts::small(), R ? "SOUL Cloud cere o versiune nouă. Cheia ta și „Fără AI” merg în continuare."
+                                              : "SOUL Cloud needs a newer SOUL. Your own key and No AI still work.",
+                            g_.s(320), l, 3);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 240 + i * 27, l[i], kCream, kDim);
+    return;
+  }
+  if (net_.cloudRefused) {
+    textAt(cv, fonts::text(), 233, 196, R ? "SOUL Cloud nu mă acceptă" : "SOUL Cloud won't take me", kAmber);
+    textAt(cv, fonts::small(), 233, 236, R ? "Scrie-ne cu codul acesta:" : "Write to us with this id:", kCream, kDim);
+    textAt(cv, fonts::small(), 233, 264, id, kCream);
+    return;
+  }
+  if (net_.paired) {
+    textAt(cv, fonts::large(), 233, 192, R ? "Legat de cont" : "Paired", kMint);
+    if (!net_.owner.empty()) textAt(cv, fonts::text(), 233, 234, net_.owner, kCream);
+    std::string l[3];
+    const int n = wrapLines(fonts::small(), R ? "Claude-ul tău poate pune acum notițe, mementouri și alarme pe mine."
+                                              : "Your Claude can now put notes, reminders and alarms on me.",
+                            g_.s(320), l, 3);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 280 + i * 27, l[i], kCream, kDim);
+    rimBottom(cv, R ? "dezlegi din pagina contului" : "unpair from your account page", kCream, kFaint);
+    return;
+  }
+  if (!net_.configured || !net_.connected) {
+    textAt(cv, fonts::text(), 233, 200, R ? "Întâi Wi-Fi-ul" : "Wi-Fi first", kCream);
+    textAt(cv, fonts::small(), 233, 240, net_.connecting ? (R ? "mă conectez…" : "connecting…") : (R ? "apoi apare codul aici" : "then the code shows up here"),
+           kCream, kDim);
+    buildItems(items_);
+    drawItems(cv, items_);
+    return;
+  }
+  if (net_.pairCode.size() != 6) {
+    const float pulse = 0.55f + 0.35f * sinf(t_ * 3.0f);
+    textAt(cv, fonts::text(), 233, 200, net_.cloudOnline ? (R ? "Aștept codul…" : "Getting a code…") : (R ? "Mă conectez la SOUL Cloud…" : "Reaching SOUL Cloud…"),
+           kCream, pulse);
+    textAt(cv, fonts::small(), 233, 244, id, kCream, kFaint);
+    return;
+  }
+  textAt(cv, fonts::small(), 233, 146, R ? "Codul tău de legare" : "Your pairing code", kCream, kDim);
+  textAt(cv, fonts::digits(), 233, 204, net_.pairCode.substr(0, 3) + " " + net_.pairCode.substr(3), kAmber);
+  if (!net_.pairUrl.empty()) drawQr(cv, net_.pairUrl, 233, 330, 136);
+  std::string host = net_.pairUrl.size() > 8 ? net_.pairUrl.substr(8) : std::string();
+  host = host.substr(0, host.find('/'));
+  rimBottom(cv, host.empty() ? (R ? "scanează sau scrie codul în cont" : "scan, or type the code in your account")
+                             : (R ? "scanează sau: " : "scan, or: ") + host + "/pair",
+            kCream, kFaint);
 }
 
 }  // namespace suflet

@@ -2,11 +2,13 @@
 // (os/index.html, os/SPEC.md, os/UX-REVIEW.md), for the round 480 px glass.
 //
 //   first boot   birth (the chip id types out, the eyes open) -> name -> brain
-//                (No AI / Claude / ChatGPT / SOUL relay) -> "hold the glass"
+//                (SOUL Cloud / your Claude or OpenAI key / no AI) -> "hold the glass"
+//                (SOUL Cloud shows its pairing code + QR first, docs/07 §2.2)
 //   home         the face. tap = boop, 2x = laugh, hold = talk (or approve a
 //                Claude request), stroke = purr, swipe <-/-> = the orbit of
 //                apps, swipe up = Today
-//   apps         Talk, Alarms, Timer, Notes, Today, Claude, Settings (+ My SOUL)
+//   apps         Talk, Alarms, Timer, Notes, Today, Claude (+ "Ask my Claude"),
+//                Settings (+ AI, pairing, Wi-Fi with a join QR, My SOUL)
 //   back         swipe down (or ->) and the side button: always up one level
 //
 // The eyes are the UI: every state is said by the eyes first (SoulFace), then
@@ -22,6 +24,7 @@
 
 #include "AiProtocol.h"
 #include "Alarms.h"
+#include "CloudLink.h"
 #include "Brain.h"
 #include "Canvas.h"
 #include "Events.h"
@@ -52,6 +55,7 @@ enum class View : uint8_t {
   Wifi,
   MySoul,
   About,
+  Pair,      // SOUL Cloud: the 6-digit code + QR, then "paired with <owner>"
   Keyboard,  // the system keyboard (over any screen)
   Count
 };
@@ -77,6 +81,7 @@ enum class OsCmd : uint8_t {
   VoiceStop,    // stop and transcribe; the text comes back via voiceText()
   Restart,
   FactoryReset,
+  SaveCloudRefs,  // saveCloudRefs(): which cloud item ids made which local items
   Count
 };
 
@@ -103,6 +108,12 @@ struct NetInfo {
   int rssi = 0;
   bool keyClaude = false, keyOpenai = false, relay = false;  // what is configured (never the secrets)
   std::string maskClaude, maskOpenai;
+  // SOUL Cloud (relay = its address is set): the account link, never the token
+  bool cloudOnline = false;  // the socket is up and the cloud said welcome
+  bool paired = false;
+  bool cloudUpdate = false;  // the cloud wants a newer SOUL (close 4426)
+  bool cloudRefused = false; // the cloud refused this SOUL's identity (401/409)
+  std::string owner, pairCode, pairUrl;
 };
 
 struct ClaudeInfo {
@@ -125,6 +136,15 @@ struct BirthInfo {
 struct Note {
   std::string text;
   uint32_t t = 0;
+};
+
+// Something made on SOUL that SOUL Cloud should know about (item.add), or a
+// question left for the owner's own Claude (inbox.add, "Ask my Claude").
+struct CloudOut {
+  enum Kind : uint8_t { Item, Inbox } kind = Item;
+  AiAction act;
+  std::string text;
+  uint32_t created = 0;
 };
 
 struct Reminder {
@@ -153,6 +173,11 @@ class Os {
   void setPower(const PowerInfo& p) { power_ = p; }
   void setVoiceAvailable(bool v) { voice_ = v; }
   void aiResult(const AiOutcome& o);
+  // SOUL Cloud pushed something (docs/07 §2.6): apply it once. false + err
+  // for the ack (ok:false). Replays (an item id seen before) are ok, not re-applied.
+  bool cloudPush(const CloudPush& p, std::string& err);
+  // the account page changed a setting ("config")
+  void cloudConfig(const std::string& brain, const std::string& lang, const std::string& name);
   void voiceText(const std::string& text, AiErr err);  // a transcription (voice builds)
   void alarmDue(int index);      // an alarm rings now
   void update(float dt, Brain& brain);
@@ -160,6 +185,7 @@ class Os {
   // ---- outputs ----------------------------------------------------------
   bool popAiJob(AiJob& j);
   bool popCmd(OsCmd& c);
+  bool popCloudOut(CloudOut& o);
   const std::string& pendingKey() const { return pendingKey_; }
   void clearPendingKey();
   FaceInputs faceInputs(const Brain& b) const;
@@ -210,6 +236,8 @@ class Os {
   void loadNotes(const std::string& s);
   std::string saveReminders() const;
   void loadReminders(const std::string& s);
+  std::string saveCloudRefs() const;
+  void loadCloudRefs(const std::string& s);
 
   // debug overlay (filled by the device)
   struct Perf {
@@ -248,6 +276,10 @@ class Os {
   void addAlarm(int h, int m, uint8_t days, const std::string& label);
   void addNote(const std::string& text);
   void addReminder(int h, int m, bool tomorrow, const std::string& text);
+  void addReminderAt(uint32_t when, const std::string& text);
+  void outItem(const AiAction& a);
+  void showCard(const std::string& title, const std::string& body, const std::string& src);
+  bool needsSetup() const;  // the chosen brain lacks Wi-Fi / a key / a cloud address
   void tickTimer(float dt);
   void tickReminders();
   std::string tr(const char* en, const char* ro) const { return set_.lang == 1 ? ro : en; }
@@ -273,6 +305,8 @@ class Os {
   void drawWifi(Canvas& cv);
   void drawMySoul(Canvas& cv);
   void drawAbout(Canvas& cv);
+  void drawPair(Canvas& cv);
+  void drawQr(Canvas& cv, const std::string& text, float cx, float cy, float maxPx);
   void drawToast(Canvas& cv);
   void drawPerf(Canvas& cv);
   void rimTop(Canvas& cv, const std::string& s, Rgb c, float alpha = 1);
@@ -345,6 +379,23 @@ class Os {
   std::vector<Note> notes_;
   std::vector<Reminder> rems_;
   std::string reminderDue_;
+
+  // SOUL Cloud
+  struct CloudRef {
+    std::string id;     // the cloud's item_id
+    uint8_t kind = 0;   // 0 alarm, 1 reminder, 2 note
+    uint32_t k1 = 0, k2 = 0;  // alarm h<<16|m<<8|days + label hash; reminder when + text hash; note t + text hash
+  };
+  std::vector<CloudRef> refs_;
+  std::vector<CloudOut> outs_;
+  bool applyingCloud_ = false;
+  std::vector<std::string> turnChips_;  // pushes caused by the cloud turn being answered
+  View pairReturn_ = View::Settings;
+  bool pairedShown_ = false;
+  float pairDoneT_ = -1;
+  int reactAfter_ = -1;
+  float reactAfterT_ = 0;
+  std::string cardTitle_;
 
   // toast on the top rim
   std::string toast_;

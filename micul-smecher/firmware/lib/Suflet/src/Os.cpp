@@ -13,7 +13,7 @@ using namespace eyes;
 
 static const Rgb kAmber = Rgb::hex(0xFFB347), kMint = Rgb::hex(0xC9F2E4), kRose = Rgb::hex(0xFF8FAB);
 
-enum KbCtx : int { KbTalk = 1, KbNote, KbNoteEdit, KbName, KbKey, KbAlarmLabel };
+enum KbCtx : int { KbTalk = 1, KbNote, KbNoteEdit, KbName, KbKey, KbAlarmLabel, KbInbox };
 
 // item ids: 1.. per screen; rows use 100 + index
 enum : int {
@@ -30,6 +30,7 @@ enum : int {
   IdName,
   IdLater,
   IdCenter,
+  IdInbox,
   IdRow = 100,
 };
 
@@ -42,7 +43,7 @@ View Os::appView(int i) { return kApps[((i % appCount()) + appCount()) % appCoun
 const char* viewName(View v) {
   static const char* const k[] = {"boot",  "home",   "launcher", "today",    "talk",   "answer", "alarms",
                                   "dial",  "ringing", "timer",   "notes",    "note",   "claude", "settings",
-                                  "aimode", "wifi",  "mysoul",   "about",    "keyboard"};
+                                  "aimode", "wifi",  "mysoul",   "about",    "pair",   "keyboard"};
   static_assert(sizeof(k) / sizeof(k[0]) == (unsigned)View::Count, "view names");
   return (unsigned)v < (unsigned)View::Count ? k[(int)v] : "?";
 }
@@ -87,6 +88,8 @@ FaceLayoutT Os::layoutFor(View v) const {
     case View::Keyboard: l = {0.2f, 0, -0.414f}; break;
     case View::MySoul: l = {0.5f, 0, -0.12f}; break;
     case View::Timer: l = {0.28f, 0, -0.34f}; break;
+    case View::Pair: l = {0.2f, 0, -0.62f}; break;
+    case View::Wifi: l = net_.portal ? FaceLayoutT{0.16f, 0, -0.7f} : FaceLayoutT{0.3f, 0, -0.33f}; break;
     default: l = {0.3f, 0, -0.33f}; break;
   }
   return l;
@@ -134,6 +137,10 @@ void Os::back() {
     case View::Wifi:
     case View::MySoul:
     case View::About: go(View::Settings); return;
+    case View::Pair:
+      pairDoneT_ = -1;
+      go(pairReturn_ == View::Pair ? View::Settings : pairReturn_);
+      return;
     case View::Answer:
       go(answerReturn_ == View::Answer ? View::Home : answerReturn_);
       return;
@@ -191,6 +198,8 @@ void Os::toast(const std::string& text, Rgb color, float seconds) {
 }
 
 void Os::pushCmd(OsCmd c) {
+  for (int i = 0; i < cmdCount_; ++i)  // saving twice in one frame is one save
+    if (cmds_[(cmdHead_ + i) % 16] == c && c != OsCmd::SetKey) return;
   if (cmdCount_ == 16) return;
   cmds_[(cmdHead_ + cmdCount_) % 16] = c;
   ++cmdCount_;
@@ -201,6 +210,13 @@ bool Os::popCmd(OsCmd& c) {
   c = cmds_[cmdHead_];
   cmdHead_ = (cmdHead_ + 1) % 16;
   --cmdCount_;
+  return true;
+}
+
+bool Os::popCloudOut(CloudOut& o) {
+  if (outs_.empty()) return false;
+  o = outs_.front();
+  outs_.erase(outs_.begin());
   return true;
 }
 
@@ -220,13 +236,23 @@ void Os::clearPendingKey() {
 // ---------------------------------------------------------------- inputs ---
 
 void Os::setNet(const NetInfo& n) {
-  const bool was = net_.connected;
+  const bool was = net_.connected, wasPaired = net_.paired;
   const bool changed = n.connected != net_.connected || n.portal != net_.portal || n.ssid != net_.ssid ||
                        n.connecting != net_.connecting || n.keyClaude != net_.keyClaude ||
-                       n.keyOpenai != net_.keyOpenai || n.relay != net_.relay;
+                       n.keyOpenai != net_.keyOpenai || n.relay != net_.relay || n.cloudOnline != net_.cloudOnline ||
+                       n.paired != net_.paired || n.pairCode != net_.pairCode || n.pairUrl != net_.pairUrl ||
+                       n.owner != net_.owner || n.cloudUpdate != net_.cloudUpdate || n.cloudRefused != net_.cloudRefused ||
+                       n.apPass != net_.apPass;
   net_ = n;
   if (changed) invalidate();
   if (netKnown_ && !was && n.connected && set_.booted) toast(tr("Wi-Fi connected", "Wi-Fi conectat"), kMint, 2.0f);
+  if (netKnown_ && !wasPaired && n.paired) {  // the account claimed this SOUL: greet the owner
+    face_.react(X_love, 1.6f);
+    reactAfter_ = X_happy;
+    reactAfterT_ = 1.6f;
+    toast(n.owner.empty() ? tr("Paired!", "Legat de cont!") : tr("Hi, ", "Bună, ") + n.owner + "!", kMint, 3.0f);
+    if (view_ == View::Pair) pairDoneT_ = 2.6f;
+  }
   netKnown_ = true;
 }
 
@@ -588,12 +614,12 @@ void Os::activate(int id) {
           static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::None};
           set_.ai = (uint8_t)kModes[id - IdRow];
           pushCmd(OsCmd::SaveSettings);
-          const bool needs = (aiMode() == AiMode::Claude && !net_.keyClaude) ||
-                             (aiMode() == AiMode::ChatGpt && !net_.keyOpenai) ||
-                             (aiMode() == AiMode::Cloud && !net_.relay) ||
-                             (aiMode() != AiMode::None && !net_.configured);
-          if (needs && !net_.portal) pushCmd(OsCmd::StartPortal);
+          if (needsSetup() && !net_.portal) pushCmd(OsCmd::StartPortal);
           face_.react(aiMode() == AiMode::None ? X_smug : X_excited, 1.2f);
+          if (aiMode() == AiMode::Cloud && !needsSetup() && !net_.paired) {  // show the pairing code
+            pairReturn_ = View::Boot;
+            go(View::Pair);
+          }
         } else if (id == IdNext || id == IdLater) {
           bootNext();
         }
@@ -704,16 +730,33 @@ void Os::activate(int id) {
         pushCmd(OsCmd::SaveSettings);
         history_.clear();
         face_.react(aiMode() == AiMode::None ? X_smug : X_excited, 1.2f);
-        const bool needs = (aiMode() == AiMode::Claude && !net_.keyClaude) ||
-                           (aiMode() == AiMode::ChatGpt && !net_.keyOpenai) || (aiMode() == AiMode::Cloud && !net_.relay);
-        if (needs) {
+        if (needsSetup()) {
           toast(tr("Add it on your phone: Wi-Fi setup", "Pune-o din telefon: Wi-Fi"), kAmber, 3);
           if (!net_.portal) pushCmd(OsCmd::StartPortal);
           go(View::Wifi);
+        } else if (aiMode() == AiMode::Cloud && !net_.paired) {
+          pairReturn_ = View::AiMode;
+          go(View::Pair);
         }
       } else if (id == IdForget) {
         pushCmd(OsCmd::ForgetKeys);
         toast(tr("Keys forgotten", "Cheile au fost uitate"), kAmber);
+      }
+      return;
+    case View::Claude:
+      if (id == IdInbox) {
+        if (!net_.paired) {
+          pairReturn_ = View::Claude;
+          go(View::Pair);
+        } else {
+          openKeyboard(KbInbox);
+        }
+      }
+      return;
+    case View::Pair:
+      if (id == IdSetup) {
+        pushCmd(OsCmd::StartPortal);
+        go(View::Wifi);
       }
       return;
     case View::Wifi:
@@ -752,6 +795,14 @@ void Os::openKeyboard(int ctx, const std::string& initial) {
       break;
     case KbKey:
       c.placeholder = aiMode() == AiMode::ChatGpt ? "sk-…" : "sk-ant-…";
+      break;
+    case KbInbox:
+      c.action = KbAction::Send;
+      c.maxChars = 500;
+      c.placeholder = ro() ? "Întrebarea pentru Claude…" : "A question for your Claude…";
+      c.chips[0] = ro() ? "Planul de mâine?" : "Plan my tomorrow";
+      c.chips[1] = ro() ? "Rețetă rapidă" : "Quick recipe idea";
+      c.chips[2] = ro() ? "Explică-mi" : "Explain";
       break;
     default: break;
   }
@@ -796,6 +847,17 @@ void Os::kbCommit(const std::string& text) {
         pushCmd(OsCmd::SaveSettings);
         face_.react(X_happy, 1.2f);
         if (view_ == View::Boot && bootStep_ == BootStep::Name) bootNext();
+      }
+      break;
+    case KbInbox:
+      if (!text.empty()) {
+        CloudOut o;
+        o.kind = CloudOut::Inbox;
+        o.text = text;
+        o.created = now_;
+        if (outs_.size() < 50) outs_.push_back(o);
+        face_.react(X_wink, 1.4f);
+        toast(tr("Left for your Claude: say \u201Ccheck my SOUL\u201D", "Lăsat lui Claude: spune-i \u201Evezi SOUL\u201D"), kMint, 4.5f);
       }
       break;
     case KbKey:
@@ -849,6 +911,8 @@ void Os::ask(const std::string& text) {
   answerReturn_ = view_ == View::Answer || view_ == View::Keyboard ? View::Home : view_;
   if (answerReturn_ == View::Boot) answerReturn_ = View::Home;
   chips_.clear();
+  turnChips_.clear();
+  cardTitle_.clear();
   reply_ = AiReply();
   lastErr_ = AiErr::None;
   if (aiMode() == AiMode::None) {
@@ -890,11 +954,17 @@ void Os::aiResult(const AiOutcome& o) {
     AiReply r;
     if (localAct(question, now_, ro(), r)) runActions(r.actions, &chips_);
     else r.say.clear();
+    if (aiMode() == AiMode::Cloud && net_.relay && !net_.paired && (o.err == AiErr::NoKey || o.err == AiErr::BadKey) &&
+        r.actions.empty())
+      r.say = tr("Pair me with your account first: Settings \u203A AI \u203A SOUL Cloud.",
+                 "Leagă-mă întâi de cont: Setări \u203A AI \u203A SOUL Cloud.");
     showAnswer(r, o.err, src);
     return;
   }
   history_.push_back({false, o.raw.size() > 1200 ? o.raw.substr(0, 1200) : o.raw});
   while (history_.size() > 12) history_.erase(history_.begin());
+  chips_ = turnChips_;  // a cloud turn's actions arrived as pushes just before
+  turnChips_.clear();
   runActions(o.reply.actions, &chips_);
   showAnswer(o.reply, AiErr::None, src);
 }
@@ -918,6 +988,7 @@ void Os::voiceText(const std::string& text, AiErr err) {
 }
 
 void Os::showAnswer(const AiReply& r, AiErr err, const char* src) {
+  cardTitle_.clear();
   reply_ = r;
   lastErr_ = err;
   answerSrc_ = src ? src : "";
@@ -947,13 +1018,31 @@ void Os::runActions(const std::vector<AiAction>& acts, std::vector<std::string>*
         chip = tr("Alarm ", "Alarmă ") + hhmm(a.hour, a.minute);
         break;
       case AiAction::TimerStart:
-      case AiAction::FocusStart:
-        startTimer(a.minutes * 60, a.type == AiAction::FocusStart);
-        chip = (a.type == AiAction::FocusStart ? std::string("Focus ") : tr("Timer ", "Minutar ")) + std::to_string(a.minutes) + " min";
+      case AiAction::FocusStart: {
+        const int secs = a.seconds ? (int)a.seconds : a.minutes * 60;
+        startTimer(secs, a.type == AiAction::FocusStart);
+        chip = (a.type == AiAction::FocusStart ? std::string("Focus ") : tr("Timer ", "Minutar ")) +
+               (secs % 60 ? std::to_string(secs) + " s" : std::to_string(secs / 60) + " min");
         break;
+      }
       case AiAction::ReminderCreate:
-        addReminder(a.hour, a.minute, a.tomorrow, a.text);
-        chip = tr("Reminder ", "Memento ") + (a.tomorrow ? tr("tomorrow ", "mâine ") : std::string()) + hhmm(a.hour, a.minute);
+        if (a.when) {  // an absolute local date (SOUL Cloud): maybe days ahead
+          addReminderAt(a.when, a.text);
+          const uint32_t days = now_ && a.when / 86400 > now_ / 86400 ? a.when / 86400 - now_ / 86400 : 0;
+          char d[24] = "";
+          if (days == 1) {
+            snprintf(d, sizeof d, "%s", ro() ? "mâine " : "tomorrow ");
+          } else if (days > 1) {  // day.month
+            const time_t t = (time_t)a.when;
+            struct tm tm;
+            gmtime_r(&t, &tm);
+            snprintf(d, sizeof d, "%d.%02d ", tm.tm_mday, tm.tm_mon + 1);
+          }
+          chip = tr("Reminder ", "Memento ") + d + hhmm(a.hour, a.minute);
+        } else {
+          addReminder(a.hour, a.minute, a.tomorrow, a.text);
+          chip = tr("Reminder ", "Memento ") + (a.tomorrow ? tr("tomorrow ", "mâine ") : std::string()) + hhmm(a.hour, a.minute);
+        }
         break;
       case AiAction::NoteCreate:
         addNote(a.text);
@@ -980,8 +1069,26 @@ void Os::addAlarm(int h, int m, uint8_t days, const std::string& label) {
   a.days = days;
   a.enabled = true;
   a.setLabel(label.c_str());
-  alarms_->add(a, now_);
+  if (alarms_->add(a, now_) < 0) return;
   pushCmd(OsCmd::SaveAlarms);
+  AiAction o;
+  o.type = AiAction::AlarmSet;
+  o.hour = (uint8_t)h;
+  o.minute = (uint8_t)m;
+  o.days = days;
+  o.text = label;
+  outItem(o);
+}
+
+// made on SOUL (not pushed by the cloud): tell SOUL Cloud (item.add), if one is set
+void Os::outItem(const AiAction& a) {
+  if (applyingCloud_ || !net_.relay) return;
+  CloudOut o;
+  o.kind = CloudOut::Item;
+  o.act = a;
+  o.created = now_;
+  if (outs_.size() >= 50) outs_.erase(outs_.begin());
+  outs_.push_back(o);
 }
 
 void Os::addNote(const std::string& text) {
@@ -991,18 +1098,33 @@ void Os::addNote(const std::string& text) {
   notes_.insert(notes_.begin(), n);
   if (notes_.size() > 24) notes_.pop_back();
   pushCmd(OsCmd::SaveNotes);
+  AiAction o;
+  o.type = AiAction::NoteCreate;
+  o.text = text;
+  outItem(o);
 }
 
 void Os::addReminder(int h, int m, bool tomorrow, const std::string& text) {
   if (!now_) return;
   uint32_t when = localclock::dayStart(now_) + (uint32_t)h * 3600u + (uint32_t)m * 60u;
   if (tomorrow || when <= now_) when += 86400u;  // a time already passed moves to tomorrow
+  addReminderAt(when, text);
+}
+
+void Os::addReminderAt(uint32_t when, const std::string& text) {
   Reminder r;
   r.when = when;
   r.text = text.empty() ? tr("Reminder", "Memento") : text;
   rems_.push_back(r);
-  if (rems_.size() > 12) rems_.erase(rems_.begin());
+  if (rems_.size() > 24) rems_.erase(rems_.begin());
   pushCmd(OsCmd::SaveReminders);
+  AiAction o;
+  o.type = AiAction::ReminderCreate;
+  o.when = when;
+  o.hour = (uint8_t)(when % 86400 / 3600);
+  o.minute = (uint8_t)(when % 3600 / 60);
+  o.text = r.text;
+  outItem(o);
 }
 
 void Os::startTimer(int seconds, bool focus) {
@@ -1145,6 +1267,27 @@ void Os::update(float dt, Brain& brain) {
         }
       } else if (view_ == View::Settings && id == IdRow + 9) {
         restartBoot();
+      }
+    }
+  }
+  if (reactAfter_ >= 0) {
+    reactAfterT_ -= dt;
+    if (reactAfterT_ <= 0) {
+      face_.react(reactAfter_, 1.4f);
+      reactAfter_ = -1;
+    }
+  }
+  if (pairDoneT_ > 0) {  // paired: show "hi <owner>" a moment, then carry on
+    pairDoneT_ -= dt;
+    if (pairDoneT_ <= 0) {
+      pairDoneT_ = -1;
+      if (view_ == View::Pair) {
+        if (pairReturn_ == View::Boot) {
+          go(View::Boot);
+          bootNext();
+        } else {
+          back();
+        }
       }
     }
   }
@@ -1304,7 +1447,7 @@ std::string Os::saveReminders() const {
 void Os::loadReminders(const std::string& s) {
   rems_.clear();
   size_t i = 0;
-  while (i < s.size() && rems_.size() < 12) {
+  while (i < s.size() && rems_.size() < 24) {
     size_t e = s.find('\n', i);
     if (e == std::string::npos) e = s.size();
     const size_t tab = s.find('\t', i);
@@ -1313,6 +1456,212 @@ void Os::loadReminders(const std::string& s) {
       r.when = (uint32_t)strtoul(s.substr(i, tab - i).c_str(), nullptr, 10);
       r.text = s.substr(tab + 1, e - tab - 1);
       if (r.when) rems_.push_back(r);
+    }
+    i = e + 1;
+  }
+}
+
+
+// ------------------------------------------------------------ SOUL Cloud ---
+
+bool Os::needsSetup() const {
+  switch (aiMode()) {
+    case AiMode::Claude: return !net_.keyClaude || !net_.configured;
+    case AiMode::ChatGpt: return !net_.keyOpenai || !net_.configured;
+    case AiMode::Cloud: return !net_.relay || !net_.configured;
+    default: return false;
+  }
+}
+
+static uint32_t textHash(const std::string& s) { return hashStr(s.c_str()); }
+
+void Os::showCard(const std::string& title, const std::string& body, const std::string& src) {
+  AiReply r;
+  r.say = body;
+  showAnswer(r, AiErr::None, src.c_str());
+  cardTitle_ = title;
+  answerFor_ = 8.0f + (float)body.size() * 0.035f;  // a card stays longer: it is read, not heard
+  if (answerFor_ > 24) answerFor_ = 24;
+}
+
+bool Os::cloudPush(const CloudPush& p, std::string& err) {
+  const bool connector = p.source == "connector" || p.source == "shortcut" || p.source == "app";
+  const std::string src = connector ? tr("From your Claude", "De la Claude-ul tău") : std::string("SOUL Cloud");
+  const int hour = now_ ? localclock::hour(now_) : 12;
+  const bool night = hour >= 22 || hour < 7;
+  auto arrived = [&](const std::string& chip) {
+    if (thinking_ && p.source == "turn") {  // part of the answer being written: shown with it
+      turnChips_.push_back(chip);
+      return;
+    }
+    if (!night) brainEvents_.push_back(Ev::AlarmDue);  // wakes the face (not at night)
+    face_.react(X_surprised, 0.9f);  // surprised -> happy (docs/07 §4.3)
+    reactAfter_ = X_happy;
+    reactAfterT_ = 0.9f;
+    face_.flash(kMint, 1.2f);
+    toast(p.say.empty() ? chip : p.say, kMint, 4.0f);
+  };
+  switch (p.kind) {
+    case CloudPush::Act: {
+      if (!p.itemId.empty())
+        for (const CloudRef& r : refs_)
+          if (r.id == p.itemId) return true;  // a replay: already here
+      const AiAction& a = p.act;
+      CloudRef ref;
+      ref.id = p.itemId;
+      if (a.type == AiAction::AlarmSet && alarms_ && alarms_->count() >= Alarms::kMax) {
+        err = "full";
+        return false;
+      }
+      if (a.type == AiAction::ReminderCreate && (p.missed || (now_ && a.when <= now_))) {
+        // too late to ring: say it once, keep nothing
+        toast(tr("Missed: ", "Ratat: ") + a.text, kAmber, 6.0f);
+        face_.react(X_sad, 1.2f);
+        return true;
+      }
+      std::vector<std::string> chips;
+      applyingCloud_ = true;
+      runActions(std::vector<AiAction>(1, a), &chips);
+      applyingCloud_ = false;
+      switch (a.type) {
+        case AiAction::AlarmSet:
+          ref.kind = 0;
+          ref.k1 = (uint32_t)a.hour << 16 | (uint32_t)a.minute << 8 | a.days;
+          {
+            Alarm tmp;  // hash the label as stored (cut to 48 bytes)
+            tmp.setLabel((a.text.empty() ? tr("Alarm", "Alarmă") : a.text).c_str());
+            ref.k2 = textHash(tmp.label);
+          }
+          break;
+        case AiAction::ReminderCreate:
+          ref.kind = 1;
+          ref.k1 = a.when;
+          ref.k2 = textHash(a.text.empty() ? tr("Reminder", "Memento") : a.text);
+          break;
+        case AiAction::NoteCreate:
+          ref.kind = 2;
+          ref.k1 = now_;
+          ref.k2 = textHash(a.text);
+          break;
+        default: ref.id.clear(); break;  // timers and focus are not kept
+      }
+      if (!ref.id.empty()) {
+        refs_.push_back(ref);
+        if (refs_.size() > 48) refs_.erase(refs_.begin());
+        pushCmd(OsCmd::SaveCloudRefs);
+      }
+      arrived(chips.empty() ? std::string() : chips[0]);
+      return true;
+    }
+    case CloudPush::Card:
+      if (thinking_ && p.source == "turn") {
+        turnChips_.push_back(p.title.empty() ? tr("Card", "Card") : p.title);
+        return true;
+      }
+      if (!night) brainEvents_.push_back(Ev::AlarmDue);
+      face_.react(X_surprised, 0.9f);
+      reactAfter_ = X_happy;
+      reactAfterT_ = 0.9f;
+      showCard(p.title, p.body.empty() ? p.say : p.body, src);
+      return true;
+    case CloudPush::Delete: {
+      for (size_t i = 0; i < refs_.size(); ++i) {
+        const CloudRef r = refs_[i];
+        if (r.id != p.itemId) continue;
+        refs_.erase(refs_.begin() + (long)i);
+        pushCmd(OsCmd::SaveCloudRefs);
+        if (r.kind == 0 && alarms_) {
+          for (int k = 0; k < alarms_->count(); ++k) {
+            const Alarm& al = alarms_->at(k);
+            if (((uint32_t)al.hour << 16 | (uint32_t)al.minute << 8 | al.days) == r.k1 && textHash(al.label) == r.k2) {
+              alarms_->remove(k);
+              pushCmd(OsCmd::SaveAlarms);
+              break;
+            }
+          }
+        } else if (r.kind == 1) {
+          for (size_t k = 0; k < rems_.size(); ++k)
+            if (rems_[k].when == r.k1 && textHash(rems_[k].text) == r.k2) {
+              rems_.erase(rems_.begin() + (long)k);
+              pushCmd(OsCmd::SaveReminders);
+              break;
+            }
+        } else if (r.kind == 2) {
+          for (size_t k = 0; k < notes_.size(); ++k)
+            if (textHash(notes_[k].text) == r.k2) {
+              notes_.erase(notes_.begin() + (long)k);
+              pushCmd(OsCmd::SaveNotes);
+              break;
+            }
+        }
+        invalidate();
+        return true;
+      }
+      return true;  // already gone: deleting is idempotent
+    }
+    case CloudPush::Unsupported: err = "unsupported"; return false;
+    default: err = "invalid"; return false;
+  }
+}
+
+void Os::cloudConfig(const std::string& brain, const std::string& lang, const std::string& name) {
+  bool changed = false;
+  if (!brain.empty()) {
+    const AiMode m = brain == "none" ? AiMode::None : aiModeFrom(brain.c_str());
+    if ((brain == "none" || m != AiMode::None) && m != aiMode()) {
+      set_.ai = (uint8_t)m;
+      history_.clear();
+      changed = true;
+    }
+  }
+  if (lang == "ro" || lang == "en") {
+    const uint8_t l = lang == "ro" ? 1 : 0;
+    if (l != set_.lang) {
+      set_.lang = l;
+      changed = true;
+    }
+  }
+  if (!name.empty() && name != set_.name) {
+    snprintf(set_.name, sizeof set_.name, "%s", name.c_str());
+    changed = true;
+  }
+  if (!changed) return;
+  pushCmd(OsCmd::SaveSettings);
+  toast(tr("Settings updated from your account", "Setări schimbate din cont"), kMint, 3.0f);
+  invalidate();
+}
+
+// "kind\tk1\tk2\tid" per line
+std::string Os::saveCloudRefs() const {
+  std::string s;
+  for (const CloudRef& r : refs_) {
+    char b[48];
+    snprintf(b, sizeof b, "%u\t%lu\t%lu\t", (unsigned)r.kind, (unsigned long)r.k1, (unsigned long)r.k2);
+    s += b;
+    for (char c : r.id) s += (c == '\n' || c == '\t') ? '_' : c;
+    s += '\n';
+  }
+  return s;
+}
+
+void Os::loadCloudRefs(const std::string& s) {
+  refs_.clear();
+  size_t i = 0;
+  while (i < s.size() && refs_.size() < 48) {
+    size_t e = s.find('\n', i);
+    if (e == std::string::npos) e = s.size();
+    const std::string line = s.substr(i, e - i);
+    unsigned kind = 0;
+    unsigned long k1 = 0, k2 = 0;
+    int used = 0;
+    if (sscanf(line.c_str(), "%u\t%lu\t%lu\t%n", &kind, &k1, &k2, &used) == 3 && used > 0 && kind <= 2 &&
+        (size_t)used < line.size()) {
+      CloudRef r;
+      r.kind = (uint8_t)kind;
+      r.k1 = (uint32_t)k1;
+      r.k2 = (uint32_t)k2;
+      r.id = line.substr((size_t)used, 64);
+      refs_.push_back(r);
     }
     i = e + 1;
   }

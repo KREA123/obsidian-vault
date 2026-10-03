@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "CloudLink.h"
 #include "Frame.h"
 #include "Gestures.h"
 #include "Os.h"
@@ -92,6 +93,28 @@ struct Dev {
     }
     finger = false;
     run(0.4f);
+  }
+  void type(const char* text) {  // on the round keyboard, key by key
+    const char* p = text;
+    while (*p) {
+      const uint32_t cp = utf8::next(p);
+      float x, y;
+      if (!os.keyboard().keyCenter(utf8::lower(cp), x, y)) continue;
+      fx = x + 1;
+      fy = y + 2;
+      finger = true;
+      run(0.1f);
+      finger = false;
+      run(0.07f);
+    }
+    float x, y;
+    os.keyboard().keyCenter(KeyId::Done, x, y);
+    fx = x;
+    fy = y;
+    finger = true;
+    run(0.1f);
+    finger = false;
+    run(0.3f);
   }
   bool hasCmd(OsCmd want) {
     OsCmd c;
@@ -370,6 +393,142 @@ static void test_frame_pipeline_touches_little_of_the_glass_when_idle() {
   TEST_ASSERT_TRUE_MESSAGE(frac < 0.45, "idle frames should touch less than half the glass");
 }
 
+
+static NetInfo cloudNet(bool paired) {
+  NetInfo n;
+  n.configured = n.connected = true;
+  n.ssid = "home";
+  n.relay = n.cloudOnline = true;
+  n.paired = paired;
+  n.owner = paired ? "Ana" : "";
+  n.pairCode = paired ? "" : "482913";
+  n.pairUrl = paired ? "" : "https://soul.example.eu/pair?d=soul-c0ffee123456&c=482913";
+  return n;
+}
+
+static void test_os_cloud_pairing_shows_the_code_then_greets_the_owner() {
+  Dev d(true, AiMode::Claude);
+  d.os.setNet(cloudNet(false));
+  d.render = true;
+  d.os.go(View::AiMode);
+  d.run(0.3f);
+  d.tap(233, 150);  // SOUL Cloud
+  TEST_ASSERT_EQUAL_INT((int)AiMode::Cloud, (int)d.os.aiMode());
+  TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());
+  d.run(0.4f);
+  // the QR card is drawn under the code: light pixels around (233, 330) design px
+  int light = 0;
+  for (int y = (int)d.g.s(290); y < (int)d.g.s(370); y += 2)
+    for (int x = (int)d.g.s(193); x < (int)d.g.s(273); x += 2)
+      if (Rgb::from565(d.cv.at(x, y)).r > 200) ++light;
+  TEST_ASSERT_TRUE(light > 200);
+  d.os.setNet(cloudNet(true));  // the owner typed the code on the account page
+  d.run(0.5f);
+  TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());  // "Paired · Ana" for a moment
+  d.run(3.0f);
+  TEST_ASSERT_EQUAL_INT((int)View::AiMode, (int)d.os.view());
+}
+
+static void test_os_cloud_pushes_apply_once_and_can_be_deleted() {
+  Dev d(true, AiMode::Cloud);
+  d.os.setNet(cloudNet(true));
+  CloudLink link;
+  std::string err;
+  auto push = [&](const char* json) {
+    TEST_ASSERT_EQUAL_INT((int)CloudLink::Msg::Push, (int)link.feed(json, strlen(json)));
+    err.clear();
+    const bool ok = d.os.cloudPush(link.push, err);
+    d.run(0.1f);
+    return ok;
+  };
+  // a reminder from the Claude phone app, a week ahead
+  const char* rem = "{\"v\":1,\"t\":\"push\",\"seq\":412,\"action\":\"reminder.create\",\"args\":{\"when\":\"2026-10-03T18:00\","
+                    "\"text\":\"Call the bank\"},\"item_id\":\"r_412\",\"source\":\"connector\",\"say\":\"I'll remind you.\"}";
+  TEST_ASSERT_TRUE(push(rem));
+  TEST_ASSERT_EQUAL_INT(1, (int)d.os.reminders().size());
+  TEST_ASSERT_EQUAL_UINT32(parseLocalStamp("2026-10-03T18:00"), d.os.reminders()[0].when);
+  TEST_ASSERT_TRUE(push(rem));  // the same item again (a replay after a lost ack): not twice
+  TEST_ASSERT_EQUAL_INT(1, (int)d.os.reminders().size());
+  TEST_ASSERT_TRUE(d.hasCmd(OsCmd::SaveCloudRefs));
+
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":413,\"action\":\"alarm.set\",\"args\":{\"hhmm\":\"07:00\",\"days\":"
+                        "[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\"],\"label\":\"Gym\"},\"item_id\":\"a_413\",\"source\":\"turn\"}"));
+  TEST_ASSERT_EQUAL_INT(1, d.alarms.count());
+  TEST_ASSERT_EQUAL_INT(0x1F, d.alarms.at(0).days);
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":414,\"action\":\"note.create\",\"args\":{\"text\":\"buy batteries\"},"
+                        "\"item_id\":\"n_414\",\"source\":\"connector\"}"));
+  TEST_ASSERT_EQUAL_STRING("buy batteries", d.os.notes()[0].text.c_str());
+  CloudOut out;
+  TEST_ASSERT_FALSE(d.os.popCloudOut(out));  // pushed items are not echoed back as item.add
+
+  // the refs survive a restart: delete still finds them
+  const std::string refs = d.os.saveCloudRefs();
+  Dev d2(true, AiMode::Cloud);
+  d2.os.loadCloudRefs(refs);
+  TEST_ASSERT_EQUAL_STRING(refs.c_str(), d2.os.saveCloudRefs().c_str());
+
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":415,\"action\":\"item.delete\",\"args\":{\"item_id\":\"a_413\"}}"));
+  TEST_ASSERT_EQUAL_INT(0, d.alarms.count());
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":416,\"action\":\"item.delete\",\"args\":{\"item_id\":\"r_412\"}}"));
+  TEST_ASSERT_EQUAL_INT(0, (int)d.os.reminders().size());
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":417,\"action\":\"item.delete\",\"args\":{\"item_id\":\"n_414\"}}"));
+  TEST_ASSERT_EQUAL_INT(0, (int)d.os.notes().size());
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":418,\"action\":\"item.delete\",\"args\":{\"item_id\":\"gone\"}}"));
+
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":419,\"action\":\"timer.start\",\"args\":{\"seconds\":90}}"));
+  TEST_ASSERT_TRUE(d.os.timerLeft() >= 88 && d.os.timerLeft() <= 90);
+  // too late to ring: said once, not stored
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":420,\"action\":\"reminder.create\",\"args\":{\"when\":\"2026-09-20T08:00\","
+                        "\"text\":\"Pills\"},\"item_id\":\"r_420\",\"missed\":true}"));
+  TEST_ASSERT_EQUAL_INT(0, (int)d.os.reminders().size());
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":421,\"action\":\"answer.show\",\"args\":{\"title\":\"Pancakes\","
+                        "\"body\":\"1. flour\\n2. eggs\\n3. pan\"},\"source\":\"connector\"}"));
+  TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());
+  TEST_ASSERT_FALSE(push("{\"v\":1,\"t\":\"push\",\"seq\":422,\"action\":\"lights.on\",\"args\":{}}"));
+  TEST_ASSERT_EQUAL_STRING("unsupported", err.c_str());
+  TEST_ASSERT_FALSE(push("{\"v\":1,\"t\":\"push\",\"seq\":423,\"action\":\"alarm.set\",\"args\":{\"hhmm\":\"31:00\"}}"));
+  TEST_ASSERT_EQUAL_STRING("invalid", err.c_str());
+}
+
+static void test_os_cloud_items_made_on_soul_and_ask_my_claude_go_up() {
+  Dev d(true, AiMode::Cloud);
+  d.os.setNet(cloudNet(true));
+  d.os.go(View::Notes);
+  d.run(0.3f);
+  d.tap(233, 360);  // + New
+  d.type("milk");
+  CloudOut o;
+  TEST_ASSERT_TRUE(d.os.popCloudOut(o));
+  TEST_ASSERT_EQUAL_INT(CloudOut::Item, o.kind);
+  TEST_ASSERT_EQUAL_INT(AiAction::NoteCreate, o.act.type);
+  TEST_ASSERT_EQUAL_STRING("Milk", o.act.text.c_str());  // the keyboard capitalises a sentence
+
+  d.os.go(View::Claude);
+  d.run(0.3f);
+  d.tap(233, 396);  // Ask my Claude
+  TEST_ASSERT_EQUAL_INT((int)View::Keyboard, (int)d.os.view());
+  d.type("plan my day");
+  TEST_ASSERT_TRUE(d.os.popCloudOut(o));
+  TEST_ASSERT_EQUAL_INT(CloudOut::Inbox, o.kind);
+  TEST_ASSERT_EQUAL_STRING("Plan my day", o.text.c_str());
+  TEST_ASSERT_EQUAL_INT((int)View::Claude, (int)d.os.view());
+
+  // unpaired: the same word opens the pairing screen instead
+  d.os.setNet(cloudNet(false));
+  d.tap(233, 396);
+  TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());
+  d.os.back();
+  TEST_ASSERT_EQUAL_INT((int)View::Claude, (int)d.os.view());
+
+  // the account page changed the brain and the language
+  d.os.cloudConfig("chatgpt", "ro", "Bubu");
+  TEST_ASSERT_EQUAL_INT((int)AiMode::ChatGpt, (int)d.os.aiMode());
+  TEST_ASSERT_TRUE(d.os.ro());
+  TEST_ASSERT_EQUAL_STRING("Bubu", d.os.settings().name);
+  d.os.cloudConfig("none", "", "");
+  TEST_ASSERT_EQUAL_INT((int)AiMode::None, (int)d.os.aiMode());
+}
+
 void runOsTests() {
   RUN_TEST(test_os_first_boot_birth_name_brain_hold);
   RUN_TEST(test_os_boot_brain_step_opens_the_setup_portal_when_a_key_is_missing);
@@ -383,4 +542,7 @@ void runOsTests() {
   RUN_TEST(test_os_notes_settings_and_reminders_survive_a_restart);
   RUN_TEST(test_frame_pipeline_equals_a_full_redraw);
   RUN_TEST(test_frame_pipeline_touches_little_of_the_glass_when_idle);
+  RUN_TEST(test_os_cloud_pairing_shows_the_code_then_greets_the_owner);
+  RUN_TEST(test_os_cloud_pushes_apply_once_and_can_be_deleted);
+  RUN_TEST(test_os_cloud_items_made_on_soul_and_ask_my_claude_go_up);
 }

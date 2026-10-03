@@ -128,7 +128,7 @@ std::string CloudLink::status(int battery, int rssi, bool awake, const char* fw,
 }
 
 static std::string stamp(uint32_t t) {
-  char b[24];
+  char b[40];
   const uint32_t days = t / 86400;
   // civil from days (Howard Hinnant)
   const int z = (int)days + 719468, era = (z >= 0 ? z : z - 146096) / 146097;
@@ -217,6 +217,28 @@ AiErr CloudLink::errFromCode(const std::string& c) {
   return AiErr::Upstream;
 }
 
+// a card body keeps its lines ("1. flour\n2. eggs"); each line is cleaned
+static std::string cleanLines(const char* s, size_t maxCp, int maxLines) {
+  std::string out, line;
+  int n = 0;
+  size_t total = 0;
+  for (const char* p = s ? s : "";; ++p) {
+    if (*p == '\n' || *p == 0) {
+      const std::string c = cleanText(line.c_str(), maxCp);
+      if (!c.empty() && n < maxLines && total + c.size() <= maxCp * 4) {
+        if (n++) out += '\n';
+        out += c;
+        total += c.size();
+      }
+      line.clear();
+      if (!*p) break;
+    } else {
+      line += *p;
+    }
+  }
+  return out;
+}
+
 static const char* const kFaces[] = {"happy", "love", "wink", "excited", "thinking", "confused", "sad", "surprised", "smug", "shy"};
 
 static bool mapPush(const char* action, JsonVariantConst args, CloudPush& p) {
@@ -289,7 +311,7 @@ static bool mapPush(const char* action, JsonVariantConst args, CloudPush& p) {
   if (!strcmp(action, "answer.show")) {
     p.say = cleanText(args["say"] | "", 400);
     p.title = cleanText(args["title"] | "", 60);
-    p.body = cleanText(args["body"] | "", 600);
+    p.body = cleanLines(args["body"] | "", 600, 12);
     if (p.say.empty() && p.title.empty() && p.body.empty()) return false;
     p.kind = CloudPush::Card;
     return true;
@@ -356,7 +378,7 @@ CloudLink::Msg CloudLink::feed(const char* json, size_t n) {
     reply.note = cleanText(d["note"] | "", 120);
     if (d["card"].is<JsonObject>()) {
       reply.title = cleanText(d["card"]["title"] | "", 60);
-      reply.body = cleanText(d["card"]["body"] | "", 600);
+      reply.body = cleanLines(d["card"]["body"] | "", 600, 12);
     }
     for (JsonVariantConst s : d["seqs"].as<JsonArrayConst>())
       if (reply.seqs.size() < 8) reply.seqs.push_back(s.as<uint32_t>());
@@ -385,7 +407,7 @@ CloudLink::Msg CloudLink::feed(const char* json, size_t n) {
     if (push.say.empty()) push.say = sayTop;
     if (d["card"].is<JsonObject>() && push.title.empty()) {
       push.title = cleanText(d["card"]["title"] | "", 60);
-      push.body = cleanText(d["card"]["body"] | "", 600);
+      push.body = cleanLines(d["card"]["body"] | "", 600, 12);
     }
     return Msg::Push;
   }

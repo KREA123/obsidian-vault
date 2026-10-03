@@ -84,6 +84,7 @@ SOUL is a personal AI object you keep on your desk and hold in your hand. The pi
 | 04 | [04-COMPLIANCE.md](04-COMPLIANCE.md) | CE/RED, EN 18031, battery, WEEE/ANMAP, GPSR, AI Act, AI policies, trademark, GDPR, with owners, costs and order |
 | 05 | [05-LAUNCH-PLAN.md](05-LAUNCH-PLAN.md) | Week-by-week plan to Founders 00, costs, funding in 5 lines, one checklist |
 | 06 | [06-SUPPLIERS.md](06-SUPPLIERS.md) | Every supplier and contact link in one table |
+| 07 | [07-CONNECT-AI.md](07-CONNECT-AI.md) | How SOUL gets Claude/ChatGPT (SOUL Cloud, your API key, the SOUL connector for your own Claude/ChatGPT app, Hardware Buddy, offline), what is not possible, the device↔cloud protocol and the firmware contract |
 
 ## Map of every file (vault folder `micul-smecher/`)
 

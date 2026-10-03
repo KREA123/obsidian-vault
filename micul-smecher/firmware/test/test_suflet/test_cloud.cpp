@@ -270,6 +270,7 @@ static void test_cloud_pushes_map_to_actions() {
           "\"title\":\"Pancakes\",\"body\":\"1. flour\\n2. eggs\"},\"source\":\"connector\"}");
   TEST_ASSERT_EQUAL_INT(CloudPush::Card, c.push.kind);
   TEST_ASSERT_EQUAL_STRING("Pancakes", c.push.title.c_str());
+  TEST_ASSERT_EQUAL_STRING("1. flour\n2. eggs", c.push.body.c_str());  // the card keeps its lines
   TEST_ASSERT_EQUAL_STRING("Here are the steps", c.push.say.c_str());
 
   feed(c, "{\"v\":1,\"t\":\"push\",\"seq\":420,\"action\":\"item.delete\",\"args\":{\"item_id\":\"a_413\"}}");
