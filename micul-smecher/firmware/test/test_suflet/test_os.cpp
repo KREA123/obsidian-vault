@@ -776,7 +776,86 @@ static void test_os_bridge_is_picked_in_settings_and_shows_the_code() {
   TEST_ASSERT_TRUE(none);
 }
 
+
+// SoulOS 5 · Glass: standby is the eyes alone; a touch peeks; idle goes back to the eyes
+static int litOutsideEyes(Dev& d) {  // the UI layer alone (no eyes): anything that is not black
+  std::vector<uint16_t> ref(480 * 480, 0);
+  Canvas rc(480, 480, ref.data());
+  d.os.render(rc);
+  int lit = 0;
+  for (uint16_t v : ref)
+    if (v) ++lit;
+  return lit;
+}
+
+static void test_os_glass_standby_is_the_eyes_alone_and_a_touch_peeks() {
+  Dev d(true);
+  d.render = true;
+  d.run(1.5f);
+  TEST_ASSERT_FALSE(d.os.uiOn());
+  TEST_ASSERT_FALSE(glass().on());
+  TEST_ASSERT_EQUAL_INT(0, litOutsideEyes(d));  // no clock, no rings, no hints: black
+  d.tap(233, 330);
+  TEST_ASSERT_TRUE(d.os.peeking() && d.os.uiOn());
+  d.run(0.5f);
+  TEST_ASSERT_TRUE(glass().on());
+  TEST_ASSERT_TRUE(litOutsideEyes(d) > 20000);  // the aura + the clock capsule
+  d.run(Os::kPeekS + 0.6f);
+  TEST_ASSERT_FALSE(d.os.peeking());
+  TEST_ASSERT_FALSE(glass().on());
+  TEST_ASSERT_EQUAL_INT(0, litOutsideEyes(d));
+}
+
+static void test_os_glass_screens_go_back_to_the_eyes_when_left_alone() {
+  Dev d(true);
+  d.render = true;
+  d.os.go(View::Settings);
+  d.run(1.0f);
+  TEST_ASSERT_TRUE(d.os.uiOn() && glass().on());
+  TEST_ASSERT_EQUAL_UINT16(glass().auraAt(20, 240), d.fb[240 * 480 + 20]);  // the aura is behind the screen
+  d.run(Os::kAppIdleS + 1.0f);
+  TEST_ASSERT_EQUAL_INT((int)View::Home, (int)d.os.view());
+  d.run(0.6f);
+  TEST_ASSERT_FALSE(glass().on());
+  // but not while the keyboard is open, or a timer runs on its screen
+  d.os.openKeyboard(0);
+  d.run(Os::kAppIdleS + 1.0f);
+  TEST_ASSERT_EQUAL_INT((int)View::Keyboard, (int)d.os.view());
+}
+
+static void test_os_glass_tone_follows_the_state_and_claude_in_standby_shows_only_the_eyes() {
+  Dev d(true);
+  ClaudeInfo ci;
+  ci.linked = ci.prompt = true;
+  ci.tool = "Bash";
+  d.os.setClaude(ci);
+  d.brain.event(Ev::ClaudePrompt);
+  d.run(0.5f);
+  TEST_ASSERT_EQUAL_INT((int)GlassTone::Amber, (int)d.os.glassTone());  // the capsule on the rim, amber
+  TEST_ASSERT_TRUE(d.os.faceInputs(d.brain).alert);
+  d.run(5.0f);  // the capsule is gone: standby again, the eyes (wide, on you) say it alone
+  TEST_ASSERT_FALSE(d.os.uiOn());
+  TEST_ASSERT_FALSE(d.os.faceInputs(d.brain).alert);
+  TEST_ASSERT_EQUAL_INT((int)FaceState::Wait, (int)d.os.faceInputs(d.brain).state);
+  ci.prompt = false;
+  d.os.setClaude(ci);
+  d.os.go(View::Talk);
+  d.os.ask("what's up?");
+  AiJob job;
+  d.os.popAiJob(job);
+  AiOutcome o;
+  o.reply.say = "All good.";
+  o.raw = o.reply.say;
+  d.os.aiResult(o);  // an answer: done = mint
+  d.run(0.3f);
+  TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());
+  TEST_ASSERT_EQUAL_INT((int)GlassTone::Mint, (int)d.os.glassTone());
+}
+
 void runOsTests() {
+  RUN_TEST(test_os_glass_standby_is_the_eyes_alone_and_a_touch_peeks);
+  RUN_TEST(test_os_glass_screens_go_back_to_the_eyes_when_left_alone);
+  RUN_TEST(test_os_glass_tone_follows_the_state_and_claude_in_standby_shows_only_the_eyes);
   RUN_TEST(test_os_first_boot_birth_name_brain_hold);
   RUN_TEST(test_os_boot_brain_step_opens_the_setup_portal_when_a_key_is_missing);
   RUN_TEST(test_os_swipe_opens_the_orbit_and_back_is_one_level);

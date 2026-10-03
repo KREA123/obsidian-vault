@@ -579,6 +579,122 @@ std::vector<Scenario> scenarios() {
          s.run(0.6f);
          s.mark();
        }},
+      {"glass", "SoulOS 5 Glass: standby = the eyes alone; touch, apps, keyboard, Claude, alarms, settings on frosted glass", true,
+       [](Sim& s) {
+         s.aiServer = [](const AiJob&) {
+           return std::make_pair(200, claudeBody("{\"say\":\"Done: I'll wake you at 6:45. Sleep well!\",\"face\":\"happy\","
+                                                 "\"actions\":[{\"type\":\"alarm.set\",\"time\":\"06:45\",\"label\":\"Wake up\","
+                                                 "\"repeat\":\"weekdays\"}]}"));
+         };
+         s.run(2.0f);
+         s.mark();  // 01 standby: the eyes alone on black
+         s.tap(233, 330, 0.5f);
+         s.mark();  // 02 a touch peeks: clock capsule over the aura
+         s.run(4.6f);
+         s.swipe(330, 240, 150, 240, 0.7f);
+         s.mark();  // 03 launcher
+         s.os.go(View::Notes);
+         s.run(0.4f);
+         s.tap(233, 360, 0.6f);
+         s.type("buy figs for ana");
+         s.run(0.3f);
+         s.mark();  // 04 keyboard
+         s.typeDone();
+         s.os.go(View::Talk);
+         s.run(0.6f);
+         s.press(233, 260, 0.8f, 0.0f, true);  // 05 listening (ice)
+         s.finger = false;
+         s.run(0.3f);
+         s.os.go(View::Home);
+         s.run(0.5f);
+         s.os.ask("wake me at 6:45 on weekdays");
+         s.run(0.5f);
+         s.mark();  // 06 thinking
+         s.run(1.5f);
+         s.mark();  // 07 the answer, mint
+         s.os.go(View::Home);
+         s.run(0.6f);
+         s.claude.linked = true;
+         s.claude.prompt = true;
+         s.claude.tool = "Bash";
+         s.claude.hint = "npm run build";
+         s.os.setClaude(s.claude);
+         s.brain.event(Ev::ClaudePrompt);
+         s.run(1.0f);
+         s.mark();  // 08 Claude needs you: amber capsule on the rim
+         s.os.go(View::Claude);
+         s.run(0.6f);
+         s.mark();  // 09 the approval sheet
+         s.claude.prompt = false;
+         s.os.setClaude(s.claude);
+         s.os.go(View::Home);
+         s.run(5.5f);
+         s.os.toast("Ana: dinner at 8? I'll bring figs", Rgb::hex(0xFFF0C8), 4.0f);
+         s.run(0.6f);
+         s.mark();  // 10 a notification capsule
+         s.os.go(View::Alarms);
+         s.run(0.6f);
+         s.mark();  // 11 alarms
+         s.tap(233, 376, 0.8f);
+         s.mark();  // 12 the glass dial
+         s.tap(233, 350, 0.6f);
+         s.os.alarmDue(0);
+         s.run(1.2f);
+         s.mark();  // 13 ringing
+         s.os.go(View::Timer);
+         s.run(0.4f);
+         s.tap(233, 200, 1.4f);
+         s.mark();  // 14 timer
+         s.os.stopTimer();
+         s.os.go(View::Today);
+         s.run(0.6f);
+         s.mark();  // 15 today
+         s.os.go(View::Settings);
+         s.run(0.6f);
+         s.mark();  // 16 settings
+         s.os.go(View::AiMode);
+         s.run(0.6f);
+         s.mark();  // 17 AI
+         s.os.go(View::About);
+         s.run(0.6f);
+         s.mark();  // 18 about
+         s.os.go(View::Home);
+         s.run(2.0f);
+         s.mark();  // 19 back to the eyes alone
+       }},
+      {"glassboot", "SoulOS 5 Glass: first boot on glass", false,
+       [](Sim& s) {
+         s.run(2.2f);
+         s.mark();
+         s.tap(233, 250, 0.7f);
+         s.mark();
+         s.tap(233, 212, 0.7f);
+         s.mark();
+       }},
+      // frame-cost benches (callgrind: --toggle-collect='suflet::FrameComposer::compose*', see BRINGUP.md §4)
+      {"bench_standby", "Bench: standby, nobody touches it (10 s)", true, [](Sim& s) { s.run(10.0f); }},
+      {"bench_screen", "Bench: Settings open, nobody touches it (10 s)", true,
+       [](Sim& s) {
+         s.os.go(View::Settings);
+         s.run(10.0f);
+       }},
+      {"bench_typing", "Bench: typing on the round keyboard", true,
+       [](Sim& s) {
+         s.os.go(View::Notes);
+         s.run(0.4f);
+         s.tap(233, 360, 0.6f);
+         s.type("the quick brown fox jumps over the lazy dog and then some more words");
+         s.run(1.0f);
+       }},
+      {"bench_nav", "Bench: open and close screens every second (fades)", true,
+       [](Sim& s) {
+         for (int i = 0; i < 5; ++i) {
+           s.os.go(i % 2 ? View::Alarms : View::Settings);
+           s.run(1.0f);
+           s.os.go(View::Home);
+           s.run(1.0f);
+         }
+       }},
       {"motion", "Motion: level keeping, marble pupils, a spin (dizzy, ufff), double tap, a nod", true,
        [](Sim& s) {
          constexpr float D = 3.14159265f / 180;
@@ -770,7 +886,7 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
   hc.base = base;
   hc.allowPlainWs = true;  // loopback test cloud only
   hc.deviceId = CloudLink::deviceId(gMac);
-  hc.fw = "1.3.0-sim";
+  hc.fw = "1.4.0-sim";
   hc.hw = "lcd28";
   hc.session.prefs.fw = hc.fw;
   hc.session.prefs.hw = hc.hw;
@@ -1175,9 +1291,11 @@ int main(int argc, char** argv) {
     sc.script(s);
     rec.extra = ",\"pose\":[" + s.poseJson + "]";
     rec.close(sc.caption);
-    printf("%-12s %4d frames  compose %.2f ms/frame on this PC, %.0f%% of the glass changed per frame  %s\n", sc.name,
-           rec.frames, s.composeMs / (s.composed ? s.composed : 1),
-           100.0 * s.changedPx / ((double)W * H * (s.composed ? s.composed : 1)), sc.caption);
+    static uint32_t rebuilt = 0;
+    printf("%-12s %4d frames  compose %.2f ms/frame on this PC, %.0f%% of the glass changed per frame, %u aura builds  %s\n",
+           sc.name, rec.frames, s.composeMs / (s.composed ? s.composed : 1),
+           100.0 * s.changedPx / ((double)W * H * (s.composed ? s.composed : 1)), (unsigned)(glass().rebuilds - rebuilt), sc.caption);
+    rebuilt = glass().rebuilds;
   }
   return 0;
 }

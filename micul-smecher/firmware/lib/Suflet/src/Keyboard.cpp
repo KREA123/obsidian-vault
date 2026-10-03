@@ -1,5 +1,7 @@
 #include "Keyboard.h"
 
+#include "Glass.h"
+
 #include <math.h>
 #include <string.h>
 
@@ -11,11 +13,8 @@ namespace {
 
 // ---- look (research/04 §11) -------------------------------------------------
 constexpr Rgb kCream = pal::kEyeDay;
-constexpr Rgb kCapLetter = Rgb::hex(0x1A1813);
-constexpr Rgb kCapFn = Rgb::hex(0x26231B);
 constexpr Rgb kCapPressed = Rgb::hex(0x4A4434);
 constexpr Rgb kCallout = Rgb::hex(0x2E2A20);
-constexpr Rgb kSugBest = Rgb::hex(0x1D1B16);
 constexpr Rgb kAmber = Rgb::hex(0xFFB347);
 constexpr Rgb kInk = Rgb::hex(0x16130C);  // glyphs on amber / mint caps
 
@@ -689,7 +688,7 @@ void Keyboard::drawSuggestions(Canvas& cv) {
     const Suggestion& sg = sug_[i];
     if (sg.empty()) continue;
     const float x0 = S(kSlotX[i]), x1 = x0 + S(kSlotW[i]);
-    if (sg.bold || chips) cv.roundRect(x0 + S(2), S(137), x1 - S(2), S(179), S(20), kSugBest);
+    if (sg.bold || chips) glass().panel(cv, x0 + S(4), S(138), x1 - S(4), S(178), S(20), GlassStyle::plain());
     const std::string label = fitText(f, sg.label, SI(kSlotW[i]) - 14);
     const Rgb mint = pal::kMint;
     cv.drawText(f, (x0 + x1) * 0.5f, SI(kSugBase), label.c_str(), kCream, sg.bold || chips ? 1.0f : 0.72f,
@@ -709,10 +708,18 @@ void Keyboard::drawKey(Canvas& cv, int i) {
   const bool pressed = i == pressed_ && !tray_.open;
   const bool fn = k.id != KeyId::Char;
   const bool empty = field_.blank();
-  Rgb cap = pressed ? kCapPressed : (fn ? kCapFn : kCapLetter);
-  if (k.id == KeyId::Done && !empty) cap = cfg_.action == KbAction::Send ? kAmber : pal::kMint;
-  if (k.id == KeyId::Shift && shift_ != KbShift::Off && !pressed) cap = kCapPressed;
-  cv.roundRect(x0, y0, x1, y1, 9 * q, cap);
+  // a glass keycap (os/DESIGN-GLASS.md): frosted aura + fill + a rim lit from the top-left
+  GlassStyle st = GlassStyle::plain();
+  if (fn) {
+    st.fillTop = 0.11f;
+    st.fillBottom = 0.04f;
+  }
+  if (k.id == KeyId::Done && !empty) st = GlassStyle::accent(cfg_.action == KbAction::Send ? kAmber : pal::kMint, 0.4f, 0.82f);
+  if (pressed || (k.id == KeyId::Shift && shift_ != KbShift::Off)) st = st.pressed();
+  st.shadow = 0.35f;  // a short drop under each cap
+  st.shadowR = 4;
+  st.shadowDy = 2;
+  glass().panel(cv, x0, y0, x1, y1, 12 * q, st);
   const Font& tf = fonts::text();
   const Font& sf = fonts::small();
   switch (k.id) {
@@ -778,8 +785,10 @@ void Keyboard::drawKey(Canvas& cv, int i) {
 void Keyboard::drawCallout(Canvas& cv, const Key& k) {
   const float x = clampf(k.cx - S(29), S(30), S(378)), y = k.y0 - S(64);
   const float w = S(58), h = S(66);
-  cv.roundRect(x - 1.5f, y - 1.5f, x + w + 1.5f, y + h + 1.5f, S(13), kCream.scaled(0.35f));
-  cv.roundRect(x, y, x + w, y + h, S(12), kCallout);
+  GlassStyle st = GlassStyle::plain();  // a dark glass bubble, so the letter reads over the keys
+  st.tint = kCallout;
+  st.tintA = 0.7f;
+  glass().panel(cv, x, y, x + w, y + h, S(20), st);
   const uint32_t cp = layer_ == KbLayer::Abc && shift_ != KbShift::Off ? utf8::upper(k.cp) : k.cp;
   const Font& lf = fonts::large();
   cv.drawText(lf, x + w * 0.5f, baselineFor(lf, cp, y + h * 0.5f), cpStr(cp).c_str(), kCream, 1.0f, Align::Center);
@@ -789,8 +798,10 @@ void Keyboard::drawTray(Canvas& cv) {
   const float pitch = S(44);
   const float x0 = tray_.left - S(6), x1 = tray_.left + pitch * tray_.n + S(6), y0 = (float)tray_.top,
               y1 = tray_.top + S(62);
-  cv.roundRect(x0 - 1.5f, y0 - 1.5f, x1 + 1.5f, y1 + 1.5f, S(15), kCream.scaled(0.35f));
-  cv.roundRect(x0, y0, x1, y1, S(14), kCallout);
+  GlassStyle st = GlassStyle::plain();
+  st.tint = kCallout;
+  st.tintA = 0.75f;
+  glass().panel(cv, x0, y0, x1, y1, S(22), st);
   const Font& lf = fonts::large();
   for (int i = 0; i < tray_.n; ++i) {
     const float cx = tray_.left + pitch * i + pitch * 0.5f;
@@ -804,14 +815,19 @@ void Keyboard::drawTray(Canvas& cv) {
 
 void Keyboard::render(Canvas& cv) {
   const Rect b = bounds();
-  cv.fillRect(b, pal::kBlack);
-  cv.markDirty(b);
+  const Rect keep = cv.clipRect();  // everything (glass shadows included) stays inside bounds()
+  Rect c = cv.clip(b);
+  cv.setClip(c);
+  glass().background(cv, b);  // the aura (black when the glass is off)
+  cv.markDirty(c);
+  glass().panel(cv, S(76), S(62), S(390), S(130), S(26), GlassStyle::plain());  // the field: a glass capsule
   drawField(cv);
   drawSuggestions(cv);
   for (int i = 0; i < nKeys_; ++i) drawKey(cv, i);
   if (tray_.open) drawTray(cv);
   else if (pressed_ >= 0 && keys_[pressed_].id == KeyId::Char && zone_ == Zone::Key)
     drawCallout(cv, keys_[pressed_]);
+  cv.setClip(keep);
   changed_ = false;
 }
 

@@ -134,6 +134,46 @@ Current (USB meter, 5 V in; estimates for the whole board, backlight dominates):
       `[power] deep sleep for N s`. Press **BOOT** → it wakes. A touch wakes it only if the GT911 INT
       line idles high (the firmware checks before arming it) — note whether touch-wake works.
 
+## 4b · SoulOS 5 Glass (firmware 1.4.0, 3 min)
+
+What should happen (pictures: `sim/shots/glass/soulos-glass-sheet-device.png`; design: `../os/DESIGN-GLASS.md`):
+
+- [ ] **Standby = the eyes alone.** After boot, and whenever nobody touches it, the glass is pure black with the
+      two eyes on it: no clock, no rings, no hint words. Check the black is really black on this IPS panel (no
+      grey wash outside the eyes; if there is, note the backlight level).
+- [ ] **A touch peeks.** Tap the face: the aura fades in (~0.3 s) behind the eyes, a glass capsule with the time
+      and battery sits on the top rim, a hint on the bottom; 4 s later it all fades back to the eyes.
+- [ ] **Screens are glass.** Swipe to the launcher, open Alarms, Settings, the keyboard: words on frosted panels
+      over the aura, a lighter rim at the top-left of each panel. Look for **banding** in the dark aura (it is
+      dithered; if you see steps, note where) and for panels that look grey-flat instead of frosted.
+- [ ] **Idle goes back.** Leave Settings open: after 15 s it returns to the eyes alone (not while typing, on the
+      dial, while ringing, with a running timer on screen or a pairing code shown).
+- [ ] **Tone.** Hold the glass to talk: the aura's top glow turns ice after ~0.4 s (it is built in the
+      background in ~11 frames, then swapped in); a Claude request: an amber capsule for 5 s, the eyes stay wide.
+- [ ] **Drift / tilt.** On a screen, tilt it slowly: the aura leans a few px (repaints at most 4×/s); the frame
+      rate must not drop under the cap (`F` overlay).
+- [ ] The log prints `psram` ~2 MB lower than with 1.3.0 (the four Glass buffers). If `GlassLayer::begin` could not
+      get the memory, the screens fall back to black (the old look) and nothing else changes.
+
+Frame cost, callgrind instructions per composed frame on the PC (`--toggle-collect='suflet::FrameComposer::compose*'`,
+the sim's `bench_*` scenarios; the same counts were taken for 1.3.0 from the same scenarios):
+
+| Scenario | 1.3.0 | 1.4.0 | |
+|---|---|---|---|
+| Standby, nobody touches it (`bench_standby`) | 5.07 M | 5.06 M | same: standby draws no UI, the aura is off |
+| A screen open, idle (`bench_screen`, Settings) | 1.74 M | 2.45 M | +41 %: the drift/tilt repaint (≤ 4/s, full glass) |
+| Typing (`bench_typing`) | 3.53 M | 6.33 M | +79 %: 35 glass keycaps instead of flat caps |
+| Opening/closing screens every second (`bench_nav`) | 3.60 M | 5.56 M | +55 %: full repaints + the 0.3 s aura fades |
+| `home` (boop, laugh, look) | 2.72 M | 3.09 M | +14 %: the peek after the touch |
+| `launcher` (swipe, open Alarms, set one) | 3.61 M | 5.59 M | +55 % |
+| `talk` (keyboard, thinking, answer) | 4.09 M | 6.23 M | +52 % |
+| `claude` (working, asks, approve) | 4.61 M | 6.99 M | +52 % |
+
+A new tone (aura) costs ~50 M instructions in all, spread over 11 frames (3 low-res phases of ≤ 7 M, then 8
+slices of 64 rows of ~4.2 M); the old tone stays on screen until the swap. Scaling 1.3.0's estimates
+(§4) by these ratios: keyboard frames ~11–18 ms, screens ~8–14 ms at 30 fps, standby unchanged; the adaptive
+cap lowers the rate if a frame costs more. **Measure** on the board with `F` and note real numbers here.
+
 ## 5 · Wi-Fi and the AI (4 min)
 
 1. Settings → Wi-Fi → **Set up from a phone**. SOUL scans the networks first, then opens the access

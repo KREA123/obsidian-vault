@@ -1,12 +1,21 @@
 # SOUL M install image
 
-`SOUL-2.8C-install.bin` — SoulOS firmware 1.3.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+`SOUL-2.8C-install.bin` — SoulOS firmware 1.4.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
 (ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
 (`partitions.csv`: Arduino's `default_16MB` + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
-- built 2026-10-03 (night) from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings,
+- built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings,
   `pio check -e lcd28` clean
-- size 2,225,776 B · sha256 `523df2ce9d8ee1823489be91e441f134dfaf4aca30e82bbf12777a1c19029382`
+- size 2,248,576 B · sha256 `49df784195f9ba8bc5722a512f7a8e8562105037ff25605501362489c4e0b593`
+- 1.4.0: **SoulOS 5 · Glass** (`../../os/DESIGN-GLASS.md`). Standby is the eyes alone on true black: no clock,
+  no rim rings, no hints (a pending Claude request shows as a 5 s amber capsule, then only in the eyes). A touch on
+  the face peeks for 4 s (time · battery in a glass capsule on the rim); any screen left alone for 15 s goes back
+  to the eyes. Screens sit on a slow aura (ember, night blue, lilac + a state glow: ice listening, amber needs you,
+  mint done) and their words on frosted glass: rim capsules, glass pills instead of underlines, row slabs,
+  sheets, glass keycaps, a glass dial, notification capsules. Built from two PSRAM buffers (aura + frosted,
+  ~1 MB, + ~1 MB to build a new tone in the background), rendered at 1/4 resolution, blurred, dithered; the
+  drift and the IMU tilt only move the read window. Pictures: `../sim/shots/glass/soulos-glass-sheet-device.png`.
+  Frame cost and what to check on the board: [`../BRINGUP.md`](../BRINGUP.md) §4b. Not yet seen on the board.
 - 1.3.0: **My Claude on my computer** (SOUL Bridge, `../../docs/08-OWN-CLAUDE.md` §4) in *Settings › AI*: the owner's
   own Claude Code on a computer answers what is asked on SOUL — through SOUL Cloud (`soul-bridge pair XXXX-XXXX
   --cloud …`, any network) or on the home Wi-Fi (SOUL serves `ws://soul-xxxx.local:8765/bridge`, mDNS, a 6-digit

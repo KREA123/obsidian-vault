@@ -49,7 +49,7 @@
 #ifndef SUFLET_VOICE
 #define SUFLET_VOICE 0
 #endif
-#define FW_VERSION "1.3.0"
+#define FW_VERSION "1.4.0"
 
 using namespace suflet;
 

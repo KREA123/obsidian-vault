@@ -55,6 +55,9 @@ void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
   birth_ = b;
   kb_.setGeometry(g);
   tp_.setGeometry(g);
+  glass().begin(g.w, g.h);  // the aura + frosted buffers (PSRAM); without them the glass falls back to black
+  glass().setOn(false);
+  glass().setLevel(0);
   face_.begin(g.w, g.h);
   face_.setSeed(b.seed);
   face_.setDesign(b.design, true);
@@ -287,6 +290,11 @@ void Os::setClaude(const ClaudeInfo& c) {
   const bool changed = c.linked != claude_.linked || c.busy != claude_.busy || c.prompt != claude_.prompt ||
                        c.passkey != claude_.passkey || c.tool != claude_.tool || c.hint != claude_.hint ||
                        c.msg != claude_.msg;
+  // Claude needs you: a glass capsule on the rim for a few seconds (an event), then the eyes alone say it
+  if (c.prompt && !claude_.prompt) {
+    claude_ = c;
+    toast(tr("Claude needs you · hold = yes", "Claude te așteaptă · ține = da"), Rgb::hex(0xFFB347), 5.0f);
+  }
   claude_ = c;
   if (changed) invalidate();
 }
@@ -343,6 +351,11 @@ void Os::motion(Ev e) {
 }
 
 void Os::touch(const TouchEv& e) {
+  idleT_ = 0;
+  if (e.e == Ev::TouchDown && view_ == View::Home) {  // standby: a touch shows the clock for a moment
+    if (peekT_ <= 0) invalidate();
+    peekT_ = kPeekS;
+  }
   // the keyboard and the dial take the raw stream
   if (view_ == View::Keyboard) {
     kb_.touch(e);
@@ -1342,6 +1355,16 @@ void Os::update(float dt, Brain& brain) {
     toastLeft_ -= dt;
     if (toastLeft_ <= 0) invalidate();
   }
+  // SoulOS 5: the peek fades back to the eyes; a screen left alone goes back to them too
+  if (peekT_ > 0) {
+    peekT_ -= dt;
+    if (peekT_ <= 0 || view_ != View::Home) {
+      peekT_ = 0;
+      invalidate();
+    }
+  }
+  if (!down_) idleT_ += dt;
+  if (idleT_ > kAppIdleS && idleReturns()) home();
   if (view_ == View::Keyboard) {
     kb_.update(dt);
     setDirtyFromKeyboard();
@@ -1449,7 +1472,85 @@ void Os::update(float dt, Brain& brain) {
   brain.setAiLink(aiMode() != AiMode::None);
   for (Ev e : brainEvents_) brain.event(e);
   brainEvents_.clear();
+  glassUpdate(dt, brain);
   face_.update(dt, faceInputs(brain));
+}
+
+// ------------------------------------------------------------- glass ---
+
+bool Os::uiOn() const {
+  if (view_ != View::Home) return true;
+  if (asleep_) return false;
+  return peekT_ > 0 || toastLeft_ > 0 || claude_.passkey != 0;
+}
+
+GlassTone Os::glassTone() const {
+  if (listening_) return GlassTone::Ice;
+  if (view_ == View::Ringing && !timerRinging_) return GlassTone::Amber;
+  if (claude_.prompt && (view_ == View::Claude || view_ == View::Home || view_ == View::Today)) return GlassTone::Amber;
+  if (timerRinging_) return GlassTone::Mint;  // (a toast tints only its own capsule: no aura rebuild for it)
+  if (view_ == View::Answer && !thinking_ && lastErr_ == AiErr::None) return GlassTone::Mint;
+  return GlassTone::Default;
+}
+
+bool Os::idleReturns() const {
+  switch (view_) {
+    case View::Launcher:
+    case View::Today:
+    case View::Alarms:
+    case View::Notes:
+    case View::NoteView:
+    case View::Settings:
+    case View::AiMode:
+    case View::MySoul:
+    case View::About: return holdItem_ < 0;
+    case View::Wifi: return !net_.portal;
+    case View::Claude: return !claude_.prompt && !claude_.passkey;
+    case View::Talk: return !listening_ && !thinking_ && !voiceWait_;
+    case View::Timer: return !timerRun_;
+    default: return false;  // the keyboard, the dial, ringing, answers (their own timer), pairing codes, first boot
+  }
+}
+
+void Os::glassUpdate(float dt, const Brain& brain) {
+  GlassLayer& G = glass();
+  asleep_ = brain.mode() == Mode::Asleep || brain.mode() == Mode::Off;
+  const bool on = uiOn();
+  G.setTone(glassTone());
+  if (G.step() && G.on()) invalidate();  // a new tone: built in the background over ~8 frames, then swapped in
+  if (on && !G.on()) {
+    G.setOn(true);
+    auraLevel_ = 0;
+    G.setLevel(0);
+    invalidate();
+  }
+  const float target = on ? 1.0f : 0.0f;
+  if (auraLevel_ != target) {  // the aura fades in / out in ~300 ms (16 steps)
+    auraLevel_ += (target > auraLevel_ ? dt : -dt) / 0.3f;
+    auraLevel_ = auraLevel_ < 0 ? 0 : (auraLevel_ > 1 ? 1 : auraLevel_);
+    if (G.setLevel(auraLevel_)) invalidate();
+    if (!on && auraLevel_ <= 0 && G.on()) {
+      G.setOn(false);
+      invalidate();
+    }
+  }
+  // the read window: a slow drift + a lean against the tilt (the IMU), at most 4 times a second
+  const eyes::EyeMotion& m = face_.motion();
+  const float gv[3] = {m.gravX(), m.gravY(), m.gravZ()};
+  for (int i = 0; i < 3; ++i) {
+    if (!gravInit_) gLp_[i] = gv[i];
+    gLp_[i] += (gv[i] - gLp_[i]) * (dt / 2.5f > 1 ? 1 : dt / 2.5f);
+  }
+  gravInit_ = true;
+  offsetT_ += dt;
+  if (offsetT_ >= 0.25f && G.on()) {
+    offsetT_ = 0;
+    const float M = (float)GlassLayer::kMargin;
+    const float tx = clampf((gv[0] - gLp_[0]) * 40.0f, -0.5f * M, 0.5f * M);
+    const float ty = clampf(-(gv[1] - gLp_[1]) * 40.0f, -0.5f * M, 0.5f * M);
+    const float dx = 0.5f * M * sinf(t_ * 6.2831853f / 31.0f) + tx, dy = 0.5f * M * sinf(t_ * 6.2831853f / 37.0f + 1.0f) + ty;
+    if (G.setOffset((int)lroundf(dx), (int)lroundf(dy))) invalidate();
+  }
 }
 
 FaceInputs Os::faceInputs(const Brain& b) const {
@@ -1480,7 +1581,8 @@ FaceInputs Os::faceInputs(const Brain& b) const {
   else if (claude_.busy) in.state = FaceState::Busy;
   else if (power_.charging) in.state = FaceState::Charge;
   else if (power_.batPct >= 0 && power_.batPct < 10) in.state = FaceState::Low;
-  in.alert = claude_.prompt || view_ == View::Ringing;
+  // standby (home, nothing showing): no rim light, the eyes alone say it (wide, looking at you)
+  in.alert = (claude_.prompt && uiOn()) || view_ == View::Ringing;
   in.progress = b.approveProgress();
   if (power_.charging && power_.batPct >= 0) in.level = power_.batPct / 100.0f;
   if (view_ == View::Boot && bootStep_ == BootStep::Hold && !listening_) in.state = FaceState::Idle;

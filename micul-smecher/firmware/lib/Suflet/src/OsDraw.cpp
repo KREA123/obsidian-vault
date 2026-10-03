@@ -1,8 +1,10 @@
-// SoulOS on the device: what each screen shows. Design language "Orbit"
-// (os/SPEC.md §11): true black, one light at a time, words instead of
-// buttons (an action is a word with a line under it), the rim carries the
-// title, the clock and hints. Layout in design pixels of the 466 px disc,
-// scaled by DisplayGeometry to the 480 px panel.
+// SoulOS on the device: what each screen shows. Design language "Glass"
+// (os/DESIGN-GLASS.md, SoulOS 5): standby is the eyes alone on true black;
+// a screen shows the aura behind the eyes and its words on frosted glass
+// (Glass.h): titles in a glass capsule on the rim, actions as glass pills,
+// rows as glass slabs, sheets for lists. One light at a time (cream info,
+// ice listening, amber needs you, mint done). Layout in design pixels of the
+// 466 px disc, scaled by DisplayGeometry to the 480 px panel.
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -276,12 +278,47 @@ void Os::textAt(Canvas& cv, const Font& f, float x, float y, const std::string& 
   cv.drawText(f, g_.s(x), base, s.c_str(), c, alpha * fade_, a);
 }
 
+static constexpr float kHalfPi = 1.5707963f;
+
+// a glass capsule on the rim, as wide as the words + 15 px each side
+static void rimCapsule(Canvas& cv, const DisplayGeometry& g, const std::string& s, float r, bool top, const GlassStyle& st) {
+  const float span = Canvas::arcTextSpan(fonts::small(), r, s.c_str(), 1.0f) + g.s(30) / r;
+  const float a = top ? -kHalfPi : kHalfPi;
+  glass().capsuleArc(cv, g.cx(), g.cy(), r, g.s(16), a - span * 0.5f, a + span * 0.5f, st);
+}
+
 void Os::rimTop(Canvas& cv, const std::string& s, Rgb c, float alpha) {
-  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(212), -1.5707963f, s.c_str(), c, alpha, false, 1.0f);
+  if (toastLeft_ > 0 && !toast_.empty()) return;  // the notification capsule has the rim
+  if (s.empty()) return;
+  rimCapsule(cv, g_, s, g_.s(212), true, gs(alpha));
+  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(212), -kHalfPi, s.c_str(), c, alpha * fade_, false, 1.0f);
 }
 
 void Os::rimBottom(Canvas& cv, const std::string& s, Rgb c, float alpha) {
-  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(210), 1.5707963f, s.c_str(), c, alpha, true, 1.0f);
+  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(210), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
+}
+
+void Os::rimBottomCap(Canvas& cv, const std::string& s, Rgb c, float alpha, bool glow) {
+  rimCapsule(cv, g_, s, g_.s(208), false, glow ? gsAccent(c, 0.4f, 0.1f) : gs(alpha));
+  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(208), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
+}
+
+void Os::glassPanel(Canvas& cv, float x0, float y0, float x1, float y1, float r, const GlassStyle& st) {
+  glass().panel(cv, g_.s(x0), g_.s(y0), g_.s(x1), g_.s(y1), g_.s(r), st);
+}
+
+void Os::glassPill(Canvas& cv, float cx, float cy, float w, float h, Rgb c, bool pressed) {
+  const bool tone = c == kMint || c == kAmber || c == kIce;
+  GlassStyle st = tone ? gsAccent(c, 0.32f, 0.1f) : gs();
+  if (pressed) st = st.pressed();
+  glassPanel(cv, cx - w * 0.5f, cy - h * 0.5f, cx + w * 0.5f, cy + h * 0.5f, h * 0.5f, st);
+}
+
+// a glass track with a light in it (Alarms: on / off)
+void Os::glassToggle(Canvas& cv, float cx, float cy, bool on) {
+  glassPanel(cv, cx - 29, cy - 16, cx + 29, cy + 16, 16, on ? gsAccent(kMint, 0.3f, 0.3f) : gs());
+  const float kx = g_.s(on ? cx + 13 : cx - 13), ky = g_.s(cy);
+  cv.ellipse(kx, ky, g_.s(11.5f), g_.s(11.5f), on ? kMint : kCream, (on ? 1.0f : 0.32f) * fade_);
 }
 
 int Os::wrapLines(const Font& f, const std::string& text, float maxW, std::string* lines, int maxLines) const {
@@ -325,12 +362,12 @@ int Os::wrapLines(const Font& f, const std::string& text, float maxW, std::strin
 void Os::drawItems(Canvas& cv, const std::vector<Item>& items) {
   for (const Item& it : items) {
     const Font& f = fontOf(it.font, set_.largeText);
-    textAt(cv, f, it.x, it.y, it.label, it.color, it.alpha);
-    if (it.underline) {
-      const float w = (float)Canvas::measureText(f, it.label.c_str());
-      const float y = g_.s(it.y) + (f.ascent - f.descent) * 0.5f + 5;
-      cv.roundRect(g_.s(it.x) - w * 0.5f, y, g_.s(it.x) + w * 0.5f, y + 2.0f, 1.0f, it.color, it.alpha * fade_ * 0.9f);
+    if (it.underline) {  // an action: a glass pill (no more underlines)
+      const float tw = (float)Canvas::measureText(f, it.label.c_str()) / g_.k();
+      const float h = it.font >= 2 ? 56.0f : 48.0f, w = fmaxf(tw + 44.0f, h);
+      glassPill(cv, it.x, it.y, w, h, it.color, holdItem_ == it.id && it.id >= 0);
     }
+    textAt(cv, f, it.x, it.y, it.label, it.color, it.alpha);
     if (holdItem_ == it.id && it.id >= 0) {  // hold progress under the word
       const float w = g_.s(it.w) * 0.8f * (holdItemT_ > 1 ? 1 : holdItemT_);
       const float y = g_.s(it.y) + (f.ascent - f.descent) * 0.5f + 9;
@@ -340,7 +377,7 @@ void Os::drawItems(Canvas& cv, const std::vector<Item>& items) {
 }
 
 void Os::render(Canvas& cv) {
-  cv.fill(pal::kBlack);  // under the clip only
+  glass().background(cv);  // under the clip only: the aura while a screen is open, else true black
   switch (view_) {
     case View::Keyboard: kb_.render(cv); break;
     case View::Dial: tp_.render(cv); break;
@@ -372,9 +409,11 @@ void Os::render(Canvas& cv) {
 
 void Os::drawToast(Canvas& cv) {
   if (toastLeft_ <= 0 || toast_.empty()) return;
-  // over the top rim (it hides the title while it shows)
-  cv.fillRect(g_.rect(60, 0, 406, 62), pal::kBlack);
-  rimTop(cv, ellipsize(fonts::small(), toast_, g_.s(330)), toastColor_);
+  // a glass capsule along the top rim (the title steps aside while it shows)
+  const std::string s = ellipsize(fonts::small(), toast_, g_.s(330));
+  const bool tone = toastColor_ == kAmber || toastColor_ == kMint || toastColor_ == kIce;
+  rimCapsule(cv, g_, s, g_.s(212), true, tone ? GlassStyle::accent(toastColor_, 0.45f, 0.1f) : GlassStyle::plain());
+  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(212), -kHalfPi, s.c_str(), toastColor_, 1.0f, false, 1.0f);
 }
 
 void Os::drawPerf(Canvas& cv) {
@@ -421,6 +460,7 @@ void Os::drawBoot(Canvas& cv) {
     case BootStep::Name:
     case BootStep::Brain:
       buildItems(items_);
+      if (bootStep_ == BootStep::Brain) glassPanel(cv, 66, 160, 400, 346, 30, gs());
       drawItems(cv, items_);
       if (bootStep_ == BootStep::Brain) {
         if (aiMode() != AiMode::None) {
@@ -451,6 +491,15 @@ void Os::drawBoot(Canvas& cv) {
 
 void Os::drawHome(Canvas& cv) {
   const bool R = ro();
+  if (claude_.passkey) {  // pairing with Claude Desktop: the code has to be read (an event, not standby)
+    char b[12];
+    snprintf(b, sizeof b, "%06lu", (unsigned long)claude_.passkey);
+    glassPanel(cv, 128, 362, 338, 422, 30, gsAccent(kAmber, 0.4f, 0.08f));
+    textAt(cv, fonts::large(), 233, 392, b, kAmber);
+    rimBottom(cv, R ? "codul pentru Claude Desktop" : "pairing code for Claude Desktop", kCream, kDim);
+    return;
+  }
+  if (peekT_ <= 0) return;  // standby: the eyes alone, nothing else on the glass
   std::string top = clockText(now_);
   if (timerRun_) {
     const int s = timerLeft();
@@ -458,22 +507,26 @@ void Os::drawHome(Canvas& cv) {
     snprintf(b, sizeof b, "  ·  %d:%02d", s / 60, s % 60);
     top += b;
   }
+  if (power_.batPct >= 0) top += "  ·  " + std::to_string(power_.batPct) + "%";
   rimTop(cv, top, kCream, kDim);
-  if (claude_.passkey) {
-    char b[12];
-    snprintf(b, sizeof b, "%06lu", (unsigned long)claude_.passkey);
-    textAt(cv, fonts::large(), 233, 392, b, kAmber);
-    rimBottom(cv, R ? "codul pentru Claude Desktop" : "pairing code for Claude Desktop", kCream, kDim);
-  } else if (claude_.prompt) {
-    rimBottom(cv, R ? "Claude te așteaptă · ține = da · 2× = nu" : "Claude needs you · hold = yes · 2× = no", kAmber);
+  if (claude_.prompt) {
+    rimBottomCap(cv, R ? "Claude te așteaptă · ține = da · 2× = nu" : "Claude needs you · hold = yes · 2× = no", kAmber, 1, true);
   } else if (thinking_) {
     rimBottom(cv, R ? "mă gândesc…" : "thinking…", kAmber, kDim);
+  } else {
+    rimBottom(cv, R ? "glisează: aplicații · ține: vorbește" : "swipe: apps · hold: talk", kCream, kFaint);
   }
 }
 
 void Os::drawLauncher(Canvas& cv) {
   const bool R = ro();
   buildItems(items_);
+  glassPanel(cv, 88, 296, 378, 392, 44, gs());  // the lens: the chosen app and its live fact
+  for (const Item& it : items_)
+    if (it.id == IdRow || it.id == IdRow + 1) {
+      const float tw = (float)Canvas::measureText(fonts::small(), it.label.c_str()) / g_.k();
+      glassPill(cv, it.x, it.y, tw + 34, 40, kCream);
+    }
   drawItems(cv, items_);
   // one live fact under the word
   std::string fact;
@@ -527,8 +580,9 @@ void Os::drawToday(Canvas& cv) {
   if (power_.batPct >= 0) snprintf(b, sizeof b, "%s %d%%%s  ·  Wi-Fi %s", R ? "Baterie" : "Battery", power_.batPct, power_.charging ? "+" : "", wifi);
   else snprintf(b, sizeof b, "Wi-Fi %s", wifi);
   rows[n++] = b;
+  glassPanel(cv, 75, 268, 391, 292 + (n - 1) * 32 + 24, 28, gs());
   for (int i = 0; i < n; ++i)
-    textAt(cv, fonts::small(), 233, 292 + i * 32, ellipsize(fonts::small(), rows[i], g_.s(320)), i == 1 && claude_.prompt ? kAmber : kCream, i == 0 ? 1.0f : kDim);
+    textAt(cv, fonts::small(), 233, 292 + i * 32, ellipsize(fonts::small(), rows[i], g_.s(296)), i == 1 && claude_.prompt ? kAmber : kCream, i == 0 ? 1.0f : kDim);
 }
 
 void Os::drawTalk(Canvas& cv) {
@@ -567,17 +621,23 @@ void Os::drawAnswer(Canvas& cv) {
   const Font& f = big ? fontOf(1, set_.largeText) : fonts::small();
   const float lh = big ? 32.0f : 27.0f;
   std::string lines[7];
-  const int n = reply_.say.empty() ? 0 : wrapLines(f, reply_.say, g_.s(big ? 330 : 350), lines, big ? 4 : card ? 7 : 6);
+  const int n = reply_.say.empty() ? 0 : wrapLines(f, reply_.say, g_.s(big ? 320 : 330), lines, big ? 4 : card ? 7 : 6);
   float y = 236;
-  if (card) {  // a card pushed by SOUL Cloud / your Claude: a title, then the text as written
-    textAt(cv, fonts::text(), 233, 196, ellipsize(fonts::text(), cardTitle_, g_.s(320)), kMint);
-    y = 232;
-  }
+  if (card) y = 232;  // a card pushed by SOUL Cloud / your Claude: a title, then the text as written
   if (lastErr_ != AiErr::None) {  // what went wrong, in one line that says what to do
     std::string el[3];
-    const int m = wrapLines(fonts::text(), aiErrText(lastErr_, R), g_.s(320), el, 3);
-    for (int i = 0; i < m; ++i, y += 32) textAt(cv, fonts::text(), 233, y, el[i], kAmber);
-    y += 4;
+    y += wrapLines(fonts::text(), aiErrText(lastErr_, R), g_.s(320), el, 3) * 32 + 4;
+  }
+  {  // the glass card behind it all: from the title (or the first line) to the last chip
+    float h = n * lh + 6 + (acceptMode_ || cardHidden_ ? 30.0f : chips_.size() * 27.0f) + (reply_.rejected > 0 ? 27.0f : 0.0f);
+    const float top = (card ? 196.0f : 236.0f) - 30, bot = fminf(y + h + 2, 410);
+    glassPanel(cv, 60, top, 406, bot, 30, lastErr_ != AiErr::None ? gsAccent(kAmber, 0.25f, 0.05f) : gs());
+    if (card) textAt(cv, fonts::text(), 233, 196, ellipsize(fonts::text(), cardTitle_, g_.s(320)), kMint);
+    if (lastErr_ != AiErr::None) {
+      std::string el[3];
+      const int m = wrapLines(fonts::text(), aiErrText(lastErr_, R), g_.s(320), el, 3);
+      for (int i = 0; i < m; ++i) textAt(cv, fonts::text(), 233, (card ? 232 : 236) + i * 32, el[i], kAmber);
+    }
   }
   for (int i = 0; i < n; ++i, y += lh) textAt(cv, f, 233, y, lines[i], kCream, lastErr_ != AiErr::None ? kDim : 1.0f);
   y += 6;
@@ -623,10 +683,10 @@ void Os::drawAlarms(Canvas& cv) {
   for (const Item& it : items_) {
     if (it.id < IdRow) continue;
     const Alarm& a = alarms_->at(it.id - IdRow);
-    // time on the left of centre, the state word on the right, days + label under
-    textAt(cv, fonts::large(), 205, it.y - 8, it.label, kCream, it.alpha);
-    textAt(cv, fonts::small(), 318, it.y - 8, a.enabled ? (R ? "PORNIT" : "ON") : (R ? "OPRIT" : "OFF"), a.enabled ? kMint : kCream,
-           a.enabled ? 1 : kFaint);
+    // a glass slab: the time on the left of centre, a glass toggle on the right, days + label under
+    glassPanel(cv, 68, it.y - 30, 398, it.y + 30, 22, holdItem_ == it.id ? gs().pressed() : gs());
+    textAt(cv, fonts::large(), 190, it.y - 8, it.label, kCream, it.alpha);
+    glassToggle(cv, 330, it.y - 8, a.enabled);
     std::string sub = daysText(a.days, R);
     if (a.label[0]) sub += std::string(" · ") + a.label;
     textAt(cv, fonts::small(), 233, it.y + 20, ellipsize(fonts::small(), sub, g_.s(300)), kCream, kFaint);
@@ -649,6 +709,7 @@ void Os::drawRinging(Canvas& cv) {
   std::string label;
   if (timerRinging_) label = timerFocus_ ? (R ? "Focus gata" : "Focus done") : (R ? "Minutar gata" : "Timer done");
   else if (ringingAlarm_ >= 0 && alarms_ && ringingAlarm_ < alarms_->count()) label = alarms_->at(ringingAlarm_).label;
+  glass().band(cv, g_.cx(), g_.cy(), g_.s(212), g_.s(14), gsAccent(timerRinging_ ? kMint : kAmber, 0.3f, 0.06f));
   textAt(cv, fonts::digits(), 233, 300, clockText(now_), kCream);
   textAt(cv, fonts::text(), 233, 348, label, timerRinging_ ? kMint : kAmber);
   buildItems(items_);
@@ -674,11 +735,12 @@ void Os::drawTimer(Canvas& cv) {
     char b[16];
     snprintf(b, sizeof b, "%d:%02d", s / 60, s % 60);
     textAt(cv, fonts::digits(), 233, 262, b, timerPaused_ ? kAmber : kCream);
-    // progress on the rim (cream arc, from the top, clockwise)
+    // progress on the rim: a cream arc on a glass track, from the top, clockwise
+    glass().band(cv, g_.cx(), g_.cy(), g_.s(216), g_.s(13), gs());
     const float frac = timerTotal_ > 0 ? timerLeft_ / timerTotal_ : 0;
     if (frac > 0.002f) {
       const float a0 = -1.5707963f;
-      face_.raster().ring(cv, g_.cx(), g_.cy(), g_.s(226), g_.s(6), kCream, 0.85f * fade_, a0, a0 + 6.2831853f * frac);
+      face_.raster().ring(cv, g_.cx(), g_.cy(), g_.s(216), g_.s(6), kCream, 0.9f * fade_, a0, a0 + 6.2831853f * frac);
     }
   } else {
     textAt(cv, fonts::small(), 233, 316, R ? "minute · 25 = focus" : "minutes · 25 = focus", kCream, kFaint);
@@ -691,6 +753,8 @@ void Os::drawNotes(Canvas& cv) {
   rimTop(cv, R ? "NOTIȚE" : "NOTES", kCream, kDim);
   if (notes_.empty()) textAt(cv, fonts::small(), 233, 236, R ? "Nicio notiță încă" : "No notes yet", kCream, kDim);
   buildItems(items_);
+  for (const Item& it : items_)
+    if (it.id >= IdRow) glassPanel(cv, 68, it.y - 26, 398, it.y + 26, 22, holdItem_ == it.id ? gs().pressed() : gs());
   drawItems(cv, items_);
   if (notes_.size() > 3) rimBottom(cv, R ? "glisează în sus: mai vechi" : "swipe up: older", kCream, kFaint);
   else if (!notes_.empty()) rimBottom(cv, R ? "ține = șterge" : "hold = delete", kCream, kFaint);
@@ -701,7 +765,8 @@ void Os::drawNoteView(Canvas& cv) {
   rimTop(cv, R ? "NOTIȚĂ" : "NOTE", kCream, kDim);
   if (noteSel_ < 0 || noteSel_ >= (int)notes_.size()) return;
   std::string lines[7];
-  const int n = wrapLines(fonts::small(), notes_[noteSel_].text, g_.s(330), lines, 7);
+  const int n = wrapLines(fonts::small(), notes_[noteSel_].text, g_.s(310), lines, 7);
+  glassPanel(cv, 66, 124, 400, 150 + (n - 1) * 28 + 28, 30, gs());
   for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 150 + i * 28, lines[i], kCream);
   buildItems(items_);
   drawItems(cv, items_);
@@ -714,20 +779,23 @@ void Os::drawClaude(Canvas& cv) {
   if (claude_.passkey) {
     char b[12];
     snprintf(b, sizeof b, "%06lu", (unsigned long)claude_.passkey);
+    glassPanel(cv, 70, 150, 396, 300, 34, gsAccent(kAmber, 0.4f, 0.06f));
     textAt(cv, fonts::small(), 233, 180, R ? "Codul de pe ecran, în Claude:" : "Type this code in Claude:", kCream, kDim);
     textAt(cv, fonts::digits(), 233, 260, b, kAmber);
     return;
   }
   if (claude_.prompt) {
-    textAt(cv, fonts::small(), 233, 168, R ? "Claude cere voie" : "Claude asks", kAmber);
-    textAt(cv, fonts::large(), 233, 214, ellipsize(fonts::large(), claude_.tool, g_.s(330)), kCream);
     std::string lines[3];
-    const int n = wrapLines(fonts::small(), claude_.hint, g_.s(330), lines, 3);
+    const int n = wrapLines(fonts::small(), claude_.hint, g_.s(300), lines, 3);
+    glassPanel(cv, 70, 136, 396, 256 + n * 26 + 8, 36, gsAccent(kAmber, 0.5f, 0.07f));
+    textAt(cv, fonts::small(), 233, 168, R ? "Claude cere voie" : "Claude asks", kAmber);
+    textAt(cv, fonts::large(), 233, 214, ellipsize(fonts::large(), claude_.tool, g_.s(300)), kCream);
     for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 256 + i * 26, lines[i], kCream, kDim);
-    rimBottom(cv, R ? "ține = da · 2× = nu" : "hold = yes · 2× = no", kAmber);
+    rimBottomCap(cv, R ? "ține = da · 2× = nu" : "hold = yes · 2× = no", kAmber, 1, true);
     return;
   }
   if (!claude_.linked) {
+    glassPanel(cv, 70, 148, 396, 312, 32, gs());
     textAt(cv, fonts::text(), 233, 176, R ? "Neconectat" : "Not connected", kCream);
     textAt(cv, fonts::small(), 233, 222, "Claude Desktop › Developer ›", kCream, kDim);
     textAt(cv, fonts::small(), 233, 248, R ? "Hardware Buddy… › Conectează" : "Open Hardware Buddy… › Connect", kCream, kDim);
@@ -737,6 +805,7 @@ void Os::drawClaude(Canvas& cv) {
     drawItems(cv, items_);
     return;
   }
+  glassPanel(cv, 70, 148, 396, 324, 32, gs());
   textAt(cv, fonts::text(), 233, 176, claude_.busy ? (R ? "Claude lucrează" : "Claude is working") : (R ? "Conectat" : "Connected"), claude_.busy ? kAmber : kMint);
   if (!claude_.msg.empty()) {
     std::string lines[2];
@@ -760,8 +829,18 @@ void Os::drawSettings(Canvas& cv) {
       {"Luminozitate", "AI", "Wi-Fi", "Limba", "SOUL-ul meu", "Mărimea textului", "Despre", "Depanare", "Ecran stins noaptea",
        "Claude & ChatGPT pe mine", "De la capăt"}};
   buildItems(items_);
+  float top = 1e9f, bot = -1e9f;
+  for (const Item& it : items_)
+    if (it.id >= IdRow) {
+      top = fminf(top, it.y - 36);
+      bot = fmaxf(bot, it.y + 30);
+    }
+  if (bot > top) glassPanel(cv, 70, top, 396, bot, 30, gs());
   for (const Item& it : items_) {
     if (it.id < IdRow) continue;
+    if (it.y - 36 > top + 1)  // a hairline between rows
+      cv.roundRect(g_.s(96), g_.s(it.y - 36), g_.s(370), g_.s(it.y - 36) + 1.0f, 0.5f, pal::kWhite, 0.1f * fade_);
+    if (holdItem_ == it.id) glassPanel(cv, 80, it.y - 34, 386, it.y + 28, 22, gs().pressed());
     textAt(cv, fonts::small(), 233, it.y - 18, kLabels[R][it.id - IdRow], kCream, kFaint);
   }
   // values a little lower than the item centre
@@ -775,7 +854,11 @@ void Os::drawAiMode(Canvas& cv) {
   const bool R = ro();
   rimTop(cv, "AI", kCream, kDim);
   buildItems(items_);
+  glassPanel(cv, 66, 98, 400, 360, 30, gs());
+  for (const Item& it : items_)
+    if (it.id >= IdRow && it.id < IdRow + 5 && it.underline) glassPanel(cv, 78, it.y - 25, 388, it.y + 25, 20, gsAccent(kMint, 0.0f, 0.16f));
   for (Item it : items_) {
+    if (it.id >= IdRow && it.id < IdRow + 5) it.underline = false;  // the lens marks the choice
     std::vector<Item> one(1, it);
     if (it.id >= IdRow && it.id < IdRow + 5) {
       one[0].y -= 8;
@@ -856,6 +939,7 @@ void Os::drawWifi(Canvas& cv) {
     textAt(cv, fonts::small(), 233, 338, (R ? "apoi deschide " : "then open ") + net_.portalUrl.substr(7), kCream, kDim);
     textAt(cv, fonts::small(), 233, 364, (R ? "S-a închis? Deschide " : "Page closed? Open ") + net_.portalUrl.substr(7), kCream, kFaint);
   } else {
+    glassPanel(cv, 80, 140, 386, 232, 30, gs());
     textAt(cv, fonts::text(), 233, 168, net_.connected ? (R ? "Conectat" : "Connected") : net_.connecting ? (R ? "Mă conectez…" : "Connecting…") : (R ? "Neconectat" : "Not connected"),
            net_.connected ? kMint : kCream);
     if (net_.configured) textAt(cv, fonts::small(), 233, 206, net_.ssid + (net_.connected ? "  ·  " + net_.ip : std::string()), kCream, kDim);
@@ -869,6 +953,7 @@ void Os::drawMySoul(Canvas& cv) {
   const Design& d = kDesigns[face_.design()];
   rimTop(cv, birth_.chip, kCream, kFaint);
   buildItems(items_);
+  glassPanel(cv, 80, 282, 386, 398, 34, gs());
   drawItems(cv, items_);
   textAt(cv, fonts::text(), 233, 348, d.name, kCream);
   int cnt = 0;
@@ -893,13 +978,14 @@ void Os::drawMySoul(Canvas& cv) {
 void Os::drawAbout(Canvas& cv) {
   const bool R = ro();
   rimTop(cv, R ? "DESPRE" : "ABOUT", kCream, kDim);
+  glassPanel(cv, 70, 126, 396, 352, 32, gs());
   textAt(cv, fonts::large(), 233, 160, R ? "Sunt un AI." : "I'm an AI.", kCream);
   const char* body = R ? "SOUL e o mașină. Nu are sentimente adevărate și nu e un om. Ce scrii merge doar la AI-ul ales de tine."
                        : "SOUL is a machine. It has no real feelings and it is not a person. What you type goes only to the AI you chose.";
   std::string lines[5];
   const int n = wrapLines(fonts::small(), body, g_.s(320), lines, 5);
   for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 210 + i * 27, lines[i], kCream, kDim);
-  rimBottom(cv, "SoulOS 1.0 · " + std::string(viewName(view_)), kCream, kFaint);
+  rimBottom(cv, "SoulOS 1.4 · " + std::string(viewName(view_)), kCream, kFaint);
 }
 
 

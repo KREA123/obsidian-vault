@@ -31,6 +31,7 @@
 #include "Events.h"
 #include "EyeTables.h"
 #include "Geometry.h"
+#include "Glass.h"
 #include "Keyboard.h"
 #include "SoulFace.h"
 #include "TimePicker.h"
@@ -251,6 +252,13 @@ class Os {
   void restartBoot();
   void toast(const std::string& text, Rgb color, float seconds = 2.4f);
   int launcherIndex() const { return orbit_; }
+  // SoulOS 5 · Glass: standby is the eyes alone; a touch on the face "peeks"
+  // (the clock capsule for kPeekS), a screen left alone for kAppIdleS goes
+  // back to the eyes. uiOn() = the aura and the glass are showing.
+  static constexpr float kPeekS = 4.0f, kAppIdleS = 15.0f;
+  bool uiOn() const;
+  bool peeking() const { return peekT_ > 0; }
+  GlassTone glassTone() const;
   static int appCount();
   static View appView(int i);
 
@@ -337,6 +345,16 @@ class Os {
   void drawToast(Canvas& cv);
   void drawPerf(Canvas& cv);
   void rimTop(Canvas& cv, const std::string& s, Rgb c, float alpha = 1);
+  // a glass capsule on the bottom rim with the words in it (an action hint: amber = Claude needs you)
+  void rimBottomCap(Canvas& cv, const std::string& s, Rgb c, float alpha = 1, bool glow = false);
+  // glass pieces in design px (scaled here), faded in with the screen
+  void glassPanel(Canvas& cv, float x0, float y0, float x1, float y1, float r, const GlassStyle& st);
+  void glassPill(Canvas& cv, float cx, float cy, float w, float h, Rgb c, bool pressed = false);
+  void glassToggle(Canvas& cv, float cx, float cy, bool on);
+  GlassStyle gs(float alpha = 1) const { return GlassStyle::plain(alpha * fade_); }
+  GlassStyle gsAccent(Rgb c, float glowA = 0.42f, float tintA = 0.12f) const { return GlassStyle::accent(c, glowA, tintA, fade_); }
+  bool idleReturns() const;  // this screen goes back to the eyes when left alone
+  void glassUpdate(float dt, const Brain& brain);
   void rimBottom(Canvas& cv, const std::string& s, Rgb c, float alpha = 1);
   int wrapLines(const Font& f, const std::string& s, float maxW, std::string* lines, int maxLines) const;
   void textAt(Canvas& cv, const Font& f, float x, float y, const std::string& s, Rgb c, float alpha = 1,
@@ -431,6 +449,11 @@ class Os {
   int reactAfter_ = -1;
   float reactAfterT_ = 0;
   std::string cardTitle_;
+
+  // SoulOS 5 · Glass
+  float peekT_ = 0, idleT_ = 0, auraLevel_ = 0, offsetT_ = 0;
+  float gLp_[3] = {0, 0, 0};  // slow average of gravity: the tilt parallax is the difference
+  bool gravInit_ = false, asleep_ = false;
 
   // toast on the top rim
   std::string toast_;

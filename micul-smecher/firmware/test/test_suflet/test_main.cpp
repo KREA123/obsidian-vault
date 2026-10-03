@@ -924,8 +924,9 @@ void test_keyboard_renders_inside_its_bounds() {
       }
   TEST_ASSERT_TRUE(lit > 20000);
   TEST_ASSERT_EQUAL(0, outside);
-  // the q cap is drawn where the spec puts it, in the letter-cap colour
-  TEST_ASSERT_EQUAL_UINT16(Rgb::hex(0x1A1813).to565(), fb[190 * 466 + 18]);
+  // the q cap is drawn where the spec puts it: glass (a neutral white fill over the black aura-less glass)
+  const Rgb q = Rgb::from565(fb[190 * 466 + 18]);
+  TEST_ASSERT_TRUE(q.r > 12 && q.r < 60 && abs(q.r - q.b) < 10);
 }
 
 // ------------------------------------------------------------ TimePicker ---
@@ -1327,8 +1328,9 @@ void test_keyboard_types_and_renders_at_480px() {
       }
   TEST_ASSERT_TRUE(lit > 20000);
   TEST_ASSERT_EQUAL(0, outside);
-  // the q cap, scaled from design (18, 190)
-  TEST_ASSERT_EQUAL_UINT16(Rgb::hex(0x1A1813).to565(), fb[196 * 480 + 19]);
+  // the q cap, scaled from design (18, 190): a glass keycap, lighter than what is under it
+  const Rgb q = Rgb::from565(fb[196 * 480 + 19]);
+  TEST_ASSERT_TRUE(q.r + q.g + q.b > 36);
 }
 
 void test_timepicker_rim_dial_at_480px() {
@@ -1423,6 +1425,7 @@ void runAiTests();
 void runOsTests();
 void runCloudTests();
 void runBridgeTests();
+void runGlassTests();
 
 int main(int, char**) {
   UNITY_BEGIN();
@@ -1496,5 +1499,6 @@ int main(int, char**) {
   runOsTests();
   runCloudTests();
   runBridgeTests();
+  runGlassTests();
   return UNITY_END();
 }

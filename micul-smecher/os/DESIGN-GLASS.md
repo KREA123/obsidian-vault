@@ -104,12 +104,31 @@ Hierarchy: one big thing per screen (34–104 px), one secondary line (20–24 p
 ## 7 · Device implementation (firmware v1.4.0)
 
 - `Glass.h/.cpp`: `GlassLayer` owns two PSRAM buffers of (W + 2M)² RGB565 (M = 12 px margin for the
-  drift/parallax translate): the **aura** and the **frosted** aura. They are rebuilt only when the tone
-  changes: glows at ¼ resolution → 3-pass box blur (aura) / 6-pass (frosted) → bilinear upscale with a 4×4
-  ordered dither into 565. Drift + tilt only move the read offset (≤ 4 Hz, ≥ 1 px change) and repaint.
-- Painting: `background()` copies aura rows under the clip; `panel()` / `capsuleArc()` / `band()` /
-  `orb()` evaluate a cheap SDF per pixel and blend the frosted buffer with white through per-panel LUTs
-  (8 gradient steps × 32/64/32 entries), an edge term from the SDF normal, an outer shadow and glow.
-  No heap per frame; the dirty-rect composer is unchanged.
-- Standby: `render()` does a black fill as before (no aura), the home screen draws nothing unless peeking.
-- Numbers (callgrind, instructions per frame vs v1.3.0) are in `firmware/BRINGUP.md`.
+  drift/tilt translate): the **aura** and the **frosted** aura (~1 MB at 480 px), plus a second pair to build a new
+  tone in the background (~1 MB more; without it a tone change is built in one go). A build: glows at ¼
+  resolution → box blur r 2 × 3 (aura) / + r 3 × 3 and 15 % greyer (frosted) → bilinear upscale with a 4×4
+  ordered dither into 565; spread over 11 frames (≤ 7 M instructions each), then swapped in.
+- Drift (31 s / 37 s sines, ±6 px) + tilt (IMU gravity minus its 2.5 s average, ±6 px) only move the read window,
+  at most 4 times a second, and only when it moves by a whole pixel.
+- Painting: `background()` copies aura rows under the clip (or black); `panel()` / `capsuleArc()` / `band()` /
+  `orb()` evaluate a signed distance per pixel (the solid middle of a panel skips it) and map the frosted pixel
+  through per-style LUTs (8 dithered gradient steps × 32/64/32), add the top-left rim light, a short shadow and
+  an optional accent glow. No heap per frame; the dirty-rect composer is unchanged and still equals a full redraw
+  (unit-tested).
+- Standby: `render()` paints true black (the glass is off), the home screen draws nothing unless peeking: the
+  standby frame costs what it did in 1.3.0. Perf table: `firmware/BRINGUP.md` §4b.
+
+## 8 · Web and device: what differs
+
+| | Web prototype | Device (1.4.0) |
+|---|---|---|
+| Aura motion | four blobs drift independently (CSS, 19–33 s) + pointer/tilt parallax | one fixed field whose window drifts ±6 px and leans with the IMU; the glows do not move relative to each other |
+| Aura fade | 420 ms opacity | ~300 ms, 16 brightness steps |
+| Tone change | the state glow cross-fades in 600 ms | built in the background (~11 frames), then switched |
+| Behind a panel | the eyes and the aura (the eyes sit *under* glass) | the frosted aura only (the eyes are drawn on top of everything) |
+| The eyes on a screen | scale + lift + 10 % dimmer | scale + lift (the eye renderer is untouched) |
+| Type | Bricolage Grotesque + Martian Mono | the Nunito bitmap atlas (3 sizes + digits) |
+| Launcher | app names ride a glass band on the lower rim, the chosen one in a lens + a fact card | the chosen app + its fact in a glass lens, neighbours as glass pills |
+| Toggles | glass track + glowing knob | the same, drawn |
+| Notifications | glass capsule sliding along the rim (rotates in) | glass capsule on the top rim (appears, no slide) |
+| Large text, Today stack, Control, weather, games, music | glass versions | those screens do not exist on the device yet |

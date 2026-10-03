@@ -106,7 +106,8 @@ pio device monitor -b 115200        # '?' lists the serial commands; 'F' = perf 
 ```
 If the upload does not start: hold **BOOT**, tap **RESET**, release BOOT, upload again.
 
-Build size (2026-10-03, 1.3.0): `lcd28` flash ~2.12 MB (32 % of the 6.25 MB app slot), static RAM 80 KB (25 %).
+Build size (2026-10-03, 1.4.0): `lcd28` flash ~2.14 MB (33 % of the 6.25 MB app slot), static RAM 84 KB (26 %);
+the Glass buffers take ~2 MB of PSRAM at boot (`Glass.h`).
 PSRAM holds our persistent canvas and the panel's two frame buffers (3 × 460,800 B ≈ 1.4 MB of 8 MB).
 
 **How it runs** (`src/main.cpp`)

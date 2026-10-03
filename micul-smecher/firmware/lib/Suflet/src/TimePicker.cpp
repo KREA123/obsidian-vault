@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "Alarms.h"
+#include "Glass.h"
 
 namespace suflet {
 
@@ -11,8 +12,6 @@ namespace {
 
 constexpr float kPi = 3.14159265f;
 constexpr Rgb kCream = pal::kEyeDay;
-constexpr Rgb kTrackCol = Rgb::hex(0x1A1813);
-constexpr Rgb kInk = Rgb::hex(0x16130C);
 
 // Areas the picker owns (the eyes live in the hole between them), in
 // design pixels; setGeometry() scales them to the panel.
@@ -246,19 +245,21 @@ bool TimePicker::overlaps(const Rect& r) const {
 
 void TimePicker::render(Canvas& cv) {
   // clear what we own (not the middle, where the eyes are)
+  GlassLayer& G = glass();
   for (const Rect& r : {title_, digits_, rel_, ok_}) {
-    cv.fillRect(r, pal::kBlack);
+    G.background(cv, r);  // the aura (black when the glass is off)
     cv.markDirty(r);
   }
-  annulus(cv, cx_, cy_, clear0_, clear1_, 0, 360, pal::kBlack, 1, true);
+  G.backgroundRing(cv, cx_, cy_, clear0_, clear1_);
+  cv.markDirty(cv.clip(Rect{(int)(cx_ - clear1_), (int)(cy_ - clear1_), (int)(cx_ + clear1_) + 1, (int)(cy_ + clear1_) + 1}));
 
   const bool H = mode_ == DialMode::Hours;
   const float r0 = r_ - track_ * 0.5f, r1 = r_ + track_ * 0.5f;
-  if (H) {  // sundial: day (06-18, top) tinted cream, night ice, in one pass
-    const Rgb day = Rgb::lerp(kTrackCol, kCream, 0.16f), night = Rgb::lerp(kTrackCol, pal::kIce, 0.16f);
-    annulus(cv, cx_, cy_, r0, r1, 0, 360, day, 1, false, &night);
-  } else {
-    annulus(cv, cx_, cy_, r0, r1, 0, 360, kTrackCol, 1);
+  // the track is a glass annulus; the sundial tints its day (06-18, top) cream and its night ice
+  G.band(cv, cx_, cy_, r_, track_ * 0.5f, GlassStyle::plain());
+  if (H) {
+    const Rgb day = kCream, night = pal::kIce;
+    annulus(cv, cx_, cy_, r0 + 1, r1 - 1, 0, 360, day, 0.1f, false, &night);
   }
   if (!H && m_ > 0) {  // sweep from 00 to the knob
     annulus(cv, cx_, cy_, r0, r1, 270, 6.0f * m_, kCream, 0.22f);
@@ -284,10 +285,16 @@ void TimePicker::render(Canvas& cv) {
   // the knob
   float kx, ky;
   polar(knobAngle(), r_, kx, ky);
-  cv.ellipse(kx, ky, S(27), S(27), kCream, 1, S(9), 0.35f);
+  GlassStyle knob = GlassStyle::plain();  // a dark glass orb ringed in cream
+  knob.tint = Rgb(24, 20, 30);
+  knob.tintA = 0.82f;
+  knob.glow = kCream;
+  knob.glowA = 0.3f;
+  G.orb(cv, kx, ky, S(27), knob);
+  cv.ring(kx, ky, S(27) - 1.2f, 2.4f, kCream, 1);
   char val[4];
   snprintf(val, sizeof val, "%02d", H ? h_ : m_);
-  cv.drawText(sf, kx, centreBase(sf, ky), val, kInk, 1, Align::Center);
+  cv.drawText(sf, kx, centreBase(sf, ky), val, kCream, 1, Align::Center);
 
   // title
   cv.drawText(sf, cx_, centreBase(sf, S(64)), lang_ == Lang::Ro ? "ALARMĂ" : "ALARM", kCream, 0.6f,
@@ -316,9 +323,9 @@ void TimePicker::render(Canvas& cv) {
     cv.drawText(sf, cx_, centreBase(sf, S(297)), rel, kCream, 0.55f, Align::Center);
   }
   // ✓
-  cv.roundRect(S(173), S(324), S(293), S(376), S(26), pal::kMint);
-  cv.segment(S(221), S(351), S(229), S(359), S(3.4f), kInk);
-  cv.segment(S(229), S(359), S(245), S(342), S(3.4f), kInk);
+  G.orb(cv, S(233), S(350), S(30), GlassStyle::accent(pal::kMint, 0.45f, 0.14f));  // a mint glass orb
+  cv.segment(S(221), S(351), S(229), S(359), S(3.4f), pal::kMint);
+  cv.segment(S(229), S(359), S(245), S(342), S(3.4f), pal::kMint);
   changed_ = false;
 }
 
