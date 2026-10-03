@@ -401,8 +401,8 @@ static NetInfo cloudNet(bool paired) {
   n.relay = n.cloudOnline = true;
   n.paired = paired;
   n.owner = paired ? "Ana" : "";
-  n.pairCode = paired ? "" : "482913";
-  n.pairUrl = paired ? "" : "https://soul.example.eu/pair?d=soul-c0ffee123456&c=482913";
+  n.pairCode = paired ? "" : "7KQ3M9XD";
+  n.pairUrl = paired ? "" : "https://soul.example/pair#c=7KQ3M9XD&d=soul-c0ffee123456";
   return n;
 }
 
@@ -443,7 +443,7 @@ static void test_os_cloud_pushes_apply_once_and_can_be_deleted() {
   };
   // a reminder from the Claude phone app, a week ahead
   const char* rem = "{\"v\":1,\"t\":\"push\",\"seq\":412,\"action\":\"reminder.create\",\"args\":{\"when\":\"2026-10-03T18:00\","
-                    "\"text\":\"Call the bank\"},\"item_id\":\"r_412\",\"source\":\"connector\",\"say\":\"I'll remind you.\"}";
+                    "\"text\":\"Call the bank\"},\"item_id\":\"r_412\",\"origin\":{\"kind\":\"connector\",\"app\":\"claude\"},\"say\":\"I'll remind you.\"}";
   TEST_ASSERT_TRUE(push(rem));
   TEST_ASSERT_EQUAL_INT(1, (int)d.os.reminders().size());
   TEST_ASSERT_EQUAL_UINT32(parseLocalStamp("2026-10-03T18:00"), d.os.reminders()[0].when);
@@ -452,11 +452,11 @@ static void test_os_cloud_pushes_apply_once_and_can_be_deleted() {
   TEST_ASSERT_TRUE(d.hasCmd(OsCmd::SaveCloudRefs));
 
   TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":413,\"action\":\"alarm.set\",\"args\":{\"hhmm\":\"07:00\",\"days\":"
-                        "[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\"],\"label\":\"Gym\"},\"item_id\":\"a_413\",\"source\":\"turn\"}"));
+                        "[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\"],\"label\":\"Gym\"},\"item_id\":\"a_413\",\"origin\":{\"kind\":\"turn\"}}"));
   TEST_ASSERT_EQUAL_INT(1, d.alarms.count());
   TEST_ASSERT_EQUAL_INT(0x1F, d.alarms.at(0).days);
   TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":414,\"action\":\"note.create\",\"args\":{\"text\":\"buy batteries\"},"
-                        "\"item_id\":\"n_414\",\"source\":\"connector\"}"));
+                        "\"item_id\":\"n_414\",\"origin\":{\"kind\":\"connector\"}}"));
   TEST_ASSERT_EQUAL_STRING("buy batteries", d.os.notes()[0].text.c_str());
   CloudOut out;
   TEST_ASSERT_FALSE(d.os.popCloudOut(out));  // pushed items are not echoed back as item.add
@@ -482,12 +482,140 @@ static void test_os_cloud_pushes_apply_once_and_can_be_deleted() {
                         "\"text\":\"Pills\"},\"item_id\":\"r_420\",\"missed\":true}"));
   TEST_ASSERT_EQUAL_INT(0, (int)d.os.reminders().size());
   TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":421,\"action\":\"answer.show\",\"args\":{\"title\":\"Pancakes\","
-                        "\"body\":\"1. flour\\n2. eggs\\n3. pan\"},\"source\":\"connector\"}"));
+                        "\"body\":\"1. flour\\n2. eggs\\n3. pan\"},\"origin\":{\"kind\":\"connector\"}}"));
   TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());
   TEST_ASSERT_FALSE(push("{\"v\":1,\"t\":\"push\",\"seq\":422,\"action\":\"lights.on\",\"args\":{}}"));
   TEST_ASSERT_EQUAL_STRING("unsupported", err.c_str());
   TEST_ASSERT_FALSE(push("{\"v\":1,\"t\":\"push\",\"seq\":423,\"action\":\"alarm.set\",\"args\":{\"hhmm\":\"31:00\"}}"));
   TEST_ASSERT_EQUAL_STRING("invalid", err.c_str());
+}
+
+static void test_os_cloud_pair_confirm_needs_a_touch_on_soul() {
+  Dev d(true, AiMode::Cloud);
+  NetInfo n = cloudNet(false);
+  d.os.setNet(n);
+  d.os.go(View::Notes);
+  d.run(0.3f);
+  // someone claimed the code on the phone: SOUL asks, and only a touch answers
+  n.confirmPid = "p_1";
+  n.confirmName = "Ana";
+  n.confirmHint = "a***@gmail.com";
+  d.os.setNet(n);
+  d.run(0.4f);
+  TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());
+  CloudOut o;
+  TEST_ASSERT_FALSE(d.os.popCloudOut(o));  // nothing by itself
+  d.run(5.0f);
+  TEST_ASSERT_FALSE(d.os.popCloudOut(o));
+  d.tap(160, 372);  // "Yes, pair"
+  TEST_ASSERT_TRUE(d.os.popCloudOut(o));
+  TEST_ASSERT_EQUAL_INT(CloudOut::PairOk, o.kind);
+  TEST_ASSERT_EQUAL_STRING("p_1", o.pid.c_str());
+  TEST_ASSERT_FALSE(d.os.popCloudOut(o));  // once
+  n.confirmPid.clear();
+  n.paired = true;
+  n.owner = "Ana";
+  n.pairCode.clear();
+  d.os.setNet(n);
+  d.run(3.5f);
+  TEST_ASSERT_EQUAL_INT((int)View::Notes, (int)d.os.view());  // back where it was
+  // a second request, refused
+  Dev e(true, AiMode::Cloud);
+  NetInfo m = cloudNet(false);
+  m.confirmPid = "p_2";
+  m.confirmName = "Mallory";
+  e.os.setNet(m);
+  e.run(0.4f);
+  e.tap(306, 372);  // "No"
+  TEST_ASSERT_TRUE(e.os.popCloudOut(o));
+  TEST_ASSERT_EQUAL_INT(CloudOut::PairNo, o.kind);
+}
+
+static void test_os_cloud_night_alarm_private_card_and_pause() {
+  Dev d(true, AiMode::Cloud);
+  d.os.setNet(cloudNet(true));
+  d.run(0.2f);
+  CloudLink link;
+  std::string err;
+  auto push = [&](const char* json) {
+    TEST_ASSERT_EQUAL_INT((int)CloudLink::Msg::Push, (int)link.feed(json, strlen(json)));
+    err.clear();
+    const bool ok = d.os.cloudPush(link.push, err);
+    d.run(0.2f);
+    return ok;
+  };
+  // a connector alarm at 03:00 arrives pending: not armed until the owner taps Accept
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":5,\"action\":\"alarm.set\",\"args\":{\"hhmm\":\"03:00\",\"days\":[],"
+                        "\"label\":\"Flight\"},\"item_id\":\"it_5\",\"origin\":{\"kind\":\"connector\",\"app\":\"claude\"},"
+                        "\"needs_accept\":true}"));
+  TEST_ASSERT_EQUAL_INT(0, d.alarms.count());
+  TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());
+  d.run(30.0f);
+  TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());  // it waits for an answer
+  d.tap(233, 250);  // a tap elsewhere does not accept it
+  TEST_ASSERT_EQUAL_INT(0, d.alarms.count());
+  d.tap(160, 392);  // Accept
+  TEST_ASSERT_EQUAL_INT(1, d.alarms.count());
+  CloudOut o;
+  TEST_ASSERT_TRUE(d.os.popCloudOut(o));
+  TEST_ASSERT_EQUAL_INT(CloudOut::State, o.kind);
+  TEST_ASSERT_EQUAL_STRING("it_5", o.itemId.c_str());
+  TEST_ASSERT_EQUAL_STRING("accepted", o.state.c_str());
+  // another one, closed with the side button: rejected, nothing armed
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":6,\"action\":\"reminder.create\",\"args\":{\"when\":\"2030-01-01T02:00\","
+                        "\"text\":\"Wake up\"},\"item_id\":\"it_6\",\"origin\":{\"kind\":\"connector\",\"app\":\"chatgpt\"},"
+                        "\"needs_accept\":true}"));
+  d.os.back();
+  TEST_ASSERT_EQUAL_INT(0, (int)d.os.reminders().size());
+  TEST_ASSERT_TRUE(d.os.popCloudOut(o));
+  TEST_ASSERT_EQUAL_STRING("rejected", o.state.c_str());
+  // a private card shows its title only until a tap
+  d.run(0.5f);
+  TEST_ASSERT_TRUE(push("{\"v\":1,\"t\":\"push\",\"seq\":7,\"action\":\"answer.show\",\"args\":{\"title\":\"Test results\","
+                        "\"body\":\"All fine.\"},\"item_id\":\"it_7\",\"private\":true,\"origin\":{\"kind\":\"connector\"}}"));
+  TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());
+  TEST_ASSERT_TRUE(d.os.lastReply().say.empty());
+  d.tap(233, 250);
+  TEST_ASSERT_EQUAL_STRING("All fine.", d.os.lastReply().say.c_str());
+  TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());
+  d.tap(233, 250);
+  // pause connectors: a switch in Settings (a touch), sent up
+  d.os.go(View::Settings);
+  d.run(0.3f);
+  d.swipe(233, 380, 233, 160);  // page 2
+  d.swipe(233, 380, 233, 160);  // page 3: night, Claude & ChatGPT on me, Start over
+  d.run(0.3f);
+  d.tap(233, 234);
+  TEST_ASSERT_TRUE(d.os.popCloudOut(o));
+  TEST_ASSERT_EQUAL_INT(CloudOut::Connectors, o.kind);
+  TEST_ASSERT_TRUE(o.paused);
+}
+
+static void test_os_cloud_answers_with_a_reason_and_timeouts_do_not_act_twice() {
+  Dev d(true, AiMode::Cloud);
+  d.os.setNet(cloudNet(true));
+  d.os.ask("set an alarm at 7");
+  AiJob j;
+  TEST_ASSERT_TRUE(d.os.popAiJob(j));
+  AiOutcome o;
+  o.err = AiErr::Timeout;
+  o.noLocal = true;  // the cloud's turn may still set it: no second alarm from the rules
+  d.os.aiResult(o);
+  TEST_ASSERT_EQUAL_INT(0, d.alarms.count());
+  d.os.ask("set an alarm at 7");
+  TEST_ASSERT_TRUE(d.os.popAiJob(j));
+  AiOutcome net;
+  net.err = AiErr::Network;  // never reached the cloud: the rules do it
+  d.os.aiResult(net);
+  TEST_ASSERT_EQUAL_INT(1, d.alarms.count());
+  d.os.ask("hello");
+  TEST_ASSERT_TRUE(d.os.popAiJob(j));
+  AiOutcome rules;
+  rules.reply.say = "Hi!";
+  rules.note = AiErr::BadKey;  // SOUL Cloud answered with its rules: shown, plus why
+  d.os.aiResult(rules);
+  TEST_ASSERT_EQUAL_STRING("Hi!", d.os.lastReply().say.c_str());
+  TEST_ASSERT_EQUAL_INT((int)AiErr::None, (int)d.os.lastError());
 }
 
 static void test_os_cloud_items_made_on_soul_and_ask_my_claude_go_up() {
@@ -545,4 +673,7 @@ void runOsTests() {
   RUN_TEST(test_os_cloud_pairing_shows_the_code_then_greets_the_owner);
   RUN_TEST(test_os_cloud_pushes_apply_once_and_can_be_deleted);
   RUN_TEST(test_os_cloud_items_made_on_soul_and_ask_my_claude_go_up);
+  RUN_TEST(test_os_cloud_pair_confirm_needs_a_touch_on_soul);
+  RUN_TEST(test_os_cloud_night_alarm_private_card_and_pause);
+  RUN_TEST(test_os_cloud_answers_with_a_reason_and_timeouts_do_not_act_twice);
 }

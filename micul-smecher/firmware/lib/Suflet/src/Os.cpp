@@ -1047,6 +1047,9 @@ void Os::voiceText(const std::string& text, AiErr err) {
 }
 
 void Os::showAnswer(const AiReply& r, AiErr err, const char* src) {
+  if (acceptMode_) answerAccept(false);  // a question that was not answered is not armed
+  cardHidden_ = false;
+  privateBody_.clear();
   cardTitle_.clear();
   reply_ = r;
   lastErr_ = err;
@@ -1559,85 +1562,150 @@ void Os::showCard(const std::string& title, const std::string& body, const std::
   if (answerFor_ > 24) answerFor_ = 24;
 }
 
-bool Os::cloudPush(const CloudPush& p, std::string& err) {
-  const bool connector = p.source == "connector" || p.source == "shortcut" || p.source == "app";
-  const std::string src = connector ? tr("From your Claude", "De la Claude-ul tău") : std::string("SOUL Cloud");
+// "Claude", "ChatGPT", "App", "Shortcut" (+ " · Ana"): the source badge of §6.7 rule 1
+std::string Os::cloudSource(const CloudPush& p) const {
+  std::string s;
+  if (p.source == "connector") s = p.app == "chatgpt" ? "ChatGPT" : p.app == "claude" ? "Claude" : tr("An app", "O aplicație");
+  else if (p.source == "shortcut") s = tr("Shortcut", "Scurtătură");
+  else if (p.source == "app") s = tr("Account page", "Pagina contului");
+  else return "SOUL Cloud";
+  if (!p.by.empty()) s += " · " + p.by;
+  return s;
+}
+
+// store one validated action from SOUL Cloud (dedupe by item id; refs kept for item.delete)
+bool Os::applyCloudAct(const CloudPush& p, std::string& err) {
+  if (!p.itemId.empty())
+    for (const CloudRef& r : refs_)
+      if (r.id == p.itemId) return true;  // a replay: already here
+  const AiAction& a = p.act;
+  CloudRef ref;
+  ref.id = p.itemId;
+  if (a.type == AiAction::AlarmSet && alarms_ && alarms_->count() >= Alarms::kMax) {
+    err = "full";
+    return false;
+  }
+  if (a.type == AiAction::ReminderCreate && (p.missed || (now_ && a.when <= now_))) {
+    // too late to ring: say it once, keep nothing
+    toast(tr("Missed: ", "Ratat: ") + a.text, kAmber, 6.0f);
+    face_.react(X_sad, 1.2f);
+    return true;
+  }
+  std::vector<std::string> chips;
+  applyingCloud_ = true;
+  runActions(std::vector<AiAction>(1, a), &chips);
+  applyingCloud_ = false;
+  switch (a.type) {
+    case AiAction::AlarmSet:
+      ref.kind = 0;
+      ref.k1 = (uint32_t)a.hour << 16 | (uint32_t)a.minute << 8 | a.days;
+      {
+        Alarm tmp;  // hash the label as stored (cut to 48 bytes)
+        tmp.setLabel((a.text.empty() ? tr("Alarm", "Alarmă") : a.text).c_str());
+        ref.k2 = textHash(tmp.label);
+      }
+      break;
+    case AiAction::ReminderCreate:
+      ref.kind = 1;
+      ref.k1 = a.when;
+      ref.k2 = textHash(a.text.empty() ? tr("Reminder", "Memento") : a.text);
+      break;
+    case AiAction::NoteCreate:
+      ref.kind = 2;
+      ref.k1 = now_;
+      ref.k2 = textHash(a.text);
+      break;
+    default: ref.id.clear(); break;  // timers and focus are not kept
+  }
+  if (!ref.id.empty()) {
+    refs_.push_back(ref);
+    if (refs_.size() > 48) refs_.erase(refs_.begin());
+    pushCmd(OsCmd::SaveCloudRefs);
+  }
+  const std::string chip = chips.empty() ? std::string() : chips[0];
+  if (thinking_ && p.source == "turn") {  // part of the answer being written: shown with it
+    turnChips_.push_back(chip);
+    return true;
+  }
   const int hour = now_ ? localclock::hour(now_) : 12;
-  const bool night = hour >= 22 || hour < 7;
-  auto arrived = [&](const std::string& chip) {
-    if (thinking_ && p.source == "turn") {  // part of the answer being written: shown with it
-      turnChips_.push_back(chip);
-      return;
+  if (!(hour >= 22 || hour < 7)) brainEvents_.push_back(Ev::AlarmDue);  // wakes the face (not at night)
+  face_.react(X_surprised, 0.9f);  // surprised -> happy (docs/07 §4.3)
+  reactAfter_ = X_happy;
+  reactAfterT_ = 0.9f;
+  face_.flash(kMint, 1.2f);
+  const std::string from = p.source == "turn" || p.source == "device" ? std::string() : cloudSource(p) + ": ";
+  toast(p.say.empty() ? from + chip : p.say, kMint, 4.0f);
+  return true;
+}
+
+void Os::answerAccept(bool ok) {
+  if (!acceptMode_) return;
+  acceptMode_ = false;
+  CloudOut o;
+  o.kind = CloudOut::State;
+  o.itemId = pendingAccept_.itemId;
+  o.state = ok ? "accepted" : "rejected";
+  if (ok) {
+    CloudPush p = pendingAccept_;
+    p.needsAccept = false;
+    std::string err;
+    if (!applyCloudAct(p, err)) {
+      o.state = "rejected";
+      toast(tr("No room for it", "Nu mai e loc"), kAmber);
     }
-    if (!night) brainEvents_.push_back(Ev::AlarmDue);  // wakes the face (not at night)
-    face_.react(X_surprised, 0.9f);  // surprised -> happy (docs/07 §4.3)
-    reactAfter_ = X_happy;
-    reactAfterT_ = 0.9f;
-    face_.flash(kMint, 1.2f);
-    toast(p.say.empty() ? chip : p.say, kMint, 4.0f);
-  };
+  } else {
+    toast(tr("Not set", "Nu am setat"), kAmber);
+  }
+  if (!o.itemId.empty()) outs_.push_back(o);
+  pendingAccept_ = CloudPush();
+  cardTitle_.clear();
+  go(answerReturn_ == View::Answer ? View::Home : answerReturn_);
+}
+
+bool Os::cloudPush(const CloudPush& p, std::string& err) {
+  const std::string src = cloudSource(p);
   switch (p.kind) {
     case CloudPush::Act: {
-      if (!p.itemId.empty())
-        for (const CloudRef& r : refs_)
-          if (r.id == p.itemId) return true;  // a replay: already here
-      const AiAction& a = p.act;
-      CloudRef ref;
-      ref.id = p.itemId;
-      if (a.type == AiAction::AlarmSet && alarms_ && alarms_->count() >= Alarms::kMax) {
-        err = "full";
-        return false;
-      }
-      if (a.type == AiAction::ReminderCreate && (p.missed || (now_ && a.when <= now_))) {
-        // too late to ring: say it once, keep nothing
-        toast(tr("Missed: ", "Ratat: ") + a.text, kAmber, 6.0f);
-        face_.react(X_sad, 1.2f);
+      if (p.needsAccept && (p.source == "connector" || p.source == "shortcut")) {
+        // §6.7 rule 3: stored as pending, armed only after a tap ("Claude wants to set 03:00")
+        if (!p.itemId.empty())
+          for (const CloudRef& r : refs_)
+            if (r.id == p.itemId) return true;
+        if (acceptMode_ && pendingAccept_.itemId == p.itemId) return true;
+        if (acceptMode_) answerAccept(false);  // one question at a time: the older one is not armed
+        pendingAccept_ = p;
+        char hm[8];
+        snprintf(hm, sizeof hm, "%02u:%02u", p.act.hour, p.act.minute);
+        AiReply r;
+        r.say = p.act.text;
+        showAnswer(r, AiErr::None, src.c_str());
+        cardTitle_ = src + tr(" wants to set ", " vrea să pună ") + hm;
+        acceptMode_ = true;
+        answerFor_ = 3600.0f;
+        face_.react(X_surprised, 1.0f);
+        brainEvents_.push_back(Ev::AlarmDue);
+        invalidate();
         return true;
       }
-      std::vector<std::string> chips;
-      applyingCloud_ = true;
-      runActions(std::vector<AiAction>(1, a), &chips);
-      applyingCloud_ = false;
-      switch (a.type) {
-        case AiAction::AlarmSet:
-          ref.kind = 0;
-          ref.k1 = (uint32_t)a.hour << 16 | (uint32_t)a.minute << 8 | a.days;
-          {
-            Alarm tmp;  // hash the label as stored (cut to 48 bytes)
-            tmp.setLabel((a.text.empty() ? tr("Alarm", "Alarmă") : a.text).c_str());
-            ref.k2 = textHash(tmp.label);
-          }
-          break;
-        case AiAction::ReminderCreate:
-          ref.kind = 1;
-          ref.k1 = a.when;
-          ref.k2 = textHash(a.text.empty() ? tr("Reminder", "Memento") : a.text);
-          break;
-        case AiAction::NoteCreate:
-          ref.kind = 2;
-          ref.k1 = now_;
-          ref.k2 = textHash(a.text);
-          break;
-        default: ref.id.clear(); break;  // timers and focus are not kept
-      }
-      if (!ref.id.empty()) {
-        refs_.push_back(ref);
-        if (refs_.size() > 48) refs_.erase(refs_.begin());
-        pushCmd(OsCmd::SaveCloudRefs);
-      }
-      arrived(chips.empty() ? std::string() : chips[0]);
-      return true;
+      return applyCloudAct(p, err);
     }
     case CloudPush::Card:
       if (thinking_ && p.source == "turn") {
         turnChips_.push_back(p.title.empty() ? tr("Card", "Card") : p.title);
         return true;
       }
-      if (!night) brainEvents_.push_back(Ev::AlarmDue);
+      if (acceptMode_) return true;  // the question on screen stays; the card was stored (acked) anyway
+      if (!(now_ && (localclock::hour(now_) >= 22 || localclock::hour(now_) < 7))) brainEvents_.push_back(Ev::AlarmDue);
       face_.react(X_surprised, 0.9f);
       reactAfter_ = X_happy;
       reactAfterT_ = 0.9f;
-      showCard(p.title, p.body.empty() ? p.say : p.body, src);
+      if (p.priv) {  // §6.7 rule 4: the title only, until a tap
+        showCard(p.title.empty() ? tr("Private", "Privat") : p.title, std::string(), src);
+        privateBody_ = p.body.empty() ? p.say : p.body;
+        cardHidden_ = !privateBody_.empty();
+      } else {
+        showCard(p.title, p.body.empty() ? p.say : p.body, src);
+      }
       return true;
     case CloudPush::Delete: {
       for (size_t i = 0; i < refs_.size(); ++i) {
@@ -1671,6 +1739,11 @@ bool Os::cloudPush(const CloudPush& p, std::string& err) {
         }
         invalidate();
         return true;
+      }
+      if (acceptMode_ && pendingAccept_.itemId == p.itemId) {  // withdrawn before the tap
+        acceptMode_ = false;
+        pendingAccept_ = CloudPush();
+        back();
       }
       return true;  // already gone: deleting is idempotent
     }

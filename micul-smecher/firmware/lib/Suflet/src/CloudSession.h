@@ -74,6 +74,7 @@ class CloudSession {
   bool pollTz(std::string& posixTz);
   bool pollTime(uint32_t& epoch);  // server_time of the last welcome (set the clock if NTP has not)
   void setStatus(int rssi, int battery, const char* power, uint32_t freeHeap, bool awake);
+  void sleep(uint32_t wakeAtEpoch);  // best effort, just before deep sleep (§6.11)
   void fill(NetInfo& n) const;  // what the screens show (never a token)
 
   // state (also for tests)

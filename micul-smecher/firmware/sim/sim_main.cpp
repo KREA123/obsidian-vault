@@ -32,8 +32,10 @@
 #include "Gestures.h"
 #include "Os.h"
 #include "Personality.h"
+#include "sim_cloud.h"
 
 #if defined(__unix__) || defined(__APPLE__)
+#include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
 #define SIM_TTY 1
@@ -119,6 +121,7 @@ struct Sim {
   // the fake network: answers arrive after `aiDelay` seconds
   std::vector<std::pair<float, AiOutcome>> pending;
   std::function<std::pair<int, std::string>(const AiJob&)> aiServer;
+  std::function<bool(const AiJob&)> cloudAsk;  // cloud mode: turns go to SOUL Cloud over the real socket
   float aiDelay = 1.3f;
   double composeMs = 0;
   uint64_t changedPx = 0;
@@ -207,6 +210,14 @@ struct Sim {
     // the network
     AiJob job;
     while (os.popAiJob(job)) {
+      if (cloudAsk) {
+        if (!cloudAsk(job)) {  // the socket is not up: what the device does (rules)
+          AiOutcome o;
+          o.err = AiErr::Network;
+          pending.push_back({0.1f, o});
+        }
+        continue;
+      }
       HttpRequest rq;
       AiErr e = buildRequest(ai, job.ctx, job.history, job.text, rq);
       AiOutcome o;
@@ -483,8 +494,8 @@ std::vector<Scenario> scenarios() {
       {"cloud", "SOUL Cloud: the pairing code + QR, paired, a reminder and a card from your Claude, Wi-Fi join QR", true,
        [](Sim& s) {
          s.net.relay = s.net.cloudOnline = true;
-         s.net.pairCode = "482913";
-         s.net.pairUrl = "https://soul.example.eu/pair?d=soul-c0ffee123456&c=482913";
+         s.net.pairCode = "7KQ3M9XD";
+         s.net.pairUrl = "https://soul.example/pair#c=7KQ3M9XD&d=soul-c0ffee123456";
          s.os.setNet(s.net);
          s.run(0.4f);
          s.os.go(View::AiMode);
@@ -504,7 +515,7 @@ std::vector<Scenario> scenarios() {
          CloudLink link;
          std::string err;
          const char* rem = "{\"v\":1,\"t\":\"push\",\"seq\":412,\"action\":\"reminder.create\",\"args\":{\"when\":"
-                           "\"2026-09-27T18:00\",\"text\":\"Call the bank\"},\"item_id\":\"r_412\",\"source\":\"connector\","
+                           "\"2026-09-27T18:00\",\"text\":\"Call the bank\"},\"item_id\":\"r_412\",\"origin\":{\"kind\":\"connector\",\"app\":\"claude\"},"
                            "\"say\":\"Tomorrow at 18:00: call the bank.\"}";
          link.feed(rem, strlen(rem));
          s.os.cloudPush(link.push, err);
@@ -514,7 +525,7 @@ std::vector<Scenario> scenarios() {
          s.mark();  // happy + toast
          const char* card = "{\"v\":1,\"t\":\"push\",\"seq\":413,\"action\":\"answer.show\",\"args\":{\"title\":\"Pancakes\","
                             "\"body\":\"1. 200 g flour, 2 eggs\\n2. 300 ml milk, a pinch of salt\\n3. rest 10 min\\n4. hot pan, a "
-                            "little butter\"},\"source\":\"connector\"}";
+                            "little butter\"},\"origin\":{\"kind\":\"connector\",\"app\":\"claude\"}}";
          link.feed(card, strlen(card));
          s.os.cloudPush(link.push, err);
          s.run(1.2f);
@@ -708,6 +719,219 @@ static void keysMode(Sim& s, const char* script) {
 #endif
 }
 
+
+// ------------------------------------------------------------- cloud mode ---
+// `program <out_dir> cloud <base> [key_file] [record 0|1]`: this simulated SOUL
+// talks to a real SOUL Cloud (a loopback test server) with the device's own
+// protocol code (CloudDriver / CloudSession / CloudLink / DeviceKey) over a
+// small host WebSocket client (sim/sim_cloud.cpp). SoulOS applies what comes
+// and draws it. Lines on stdin drive it like a finger would; lines on stdout
+// say what the glass shows (for tools/e2e_sim.py and humans):
+//   in:  ask <text> | tap yes | tap no | accept | reject | note <text> | inbox <text> | pause | resume | state | quit
+//   out: DEVICE, AUTH, WELCOME, PAIRING, CONFIRM, PAIRED, UNPAIRED, PUSH, REPLY, CONFIG, TZ, SENT, STATE, BYE
+uint32_t simMs() {
+  using namespace std::chrono;
+  return (uint32_t)duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
+
+// UTC epoch -> "local epoch" (local wall time counted as UTC, like the device's RTC) for the current TZ
+uint32_t localFromUtc(uint32_t epoch) {
+  const time_t t = (time_t)epoch;
+  struct tm lt;
+  localtime_r(&t, &lt);
+  return (uint32_t)((int64_t)epoch + lt.tm_gmtoff);
+}
+
+int cloudMode(const std::string& dir, const std::string& base, const std::string& keyPath, bool record) {
+  setvbuf(stdout, nullptr, _IOLBF, 0);
+  Recorder rec;
+  if (record) {
+    rec.dir = dir;
+    rec.name = "cloud-live";
+    rec.open();
+  }
+  Sim s(true);
+  if (record) s.rec = &rec;
+  s.os.settings().ai = (uint8_t)AiMode::Cloud;
+  s.net.relay = true;
+  s.net.keyClaude = false;
+  s.os.setNet(s.net);
+  setenv("TZ", "EET-2EEST,M3.5.0/3,M10.5.0/4", 1);
+  tzset();
+  s.clock = localFromUtc((uint32_t)time(nullptr));
+  HostCloud hc;
+  hc.base = base;
+  hc.allowPlainWs = true;  // loopback test cloud only
+  hc.deviceId = CloudLink::deviceId(gMac);
+  hc.fw = "1.2.0-sim";
+  hc.hw = "lcd28";
+  hc.session.prefs.fw = hc.fw;
+  hc.session.prefs.hw = hc.hw;
+  hc.session.prefs.lang = "en";
+  hc.session.prefs.brainLocal = "cloud";
+  hc.session.prefs.tzPosix = "EET-2EEST,M3.5.0/3,M10.5.0/4";
+  hc.session.rng = []() {
+    static uint32_t x = (uint32_t)simMs() * 2654435761u ^ 0x5eed;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    return x;
+  };
+  hc.verbose = getenv("SIM_VERBOSE") != nullptr;
+  if (!hc.loadOrMakeKey(keyPath)) {
+    printf("FAIL no device key\n");
+    return 1;
+  }
+  printf("DEVICE %s pub=%s\n", hc.deviceId.c_str(), hc.pub().c_str());
+  s.cloudAsk = [&](const AiJob& j) {
+    const int left = s.os.timerLeft();
+    return hc.session.ask(j.text, s.os.ro(), left >= 0 ? (left + 59) / 60 : -1, simMs());
+  };
+  const int fl = fcntl(0, F_GETFL, 0);
+  fcntl(0, F_SETFL, fl | O_NONBLOCK);
+  std::string line;
+  bool welcomed = false, paired = false, quit = false;
+  std::string code, pid, state;
+  bool hadToken = false;
+  CloudDriver::Problem problem = CloudDriver::Problem::None;
+  const uint32_t start = simMs();
+  while (!quit) {
+    const uint32_t t0 = simMs();
+    hc.step(t0, (float)(rand() % 1000) / 1000.0f);
+    if (hc.haveToken() && !hadToken) printf("AUTH ok state=%s\n", hc.session.state.empty() ? "?" : hc.session.state.c_str());
+    hadToken = hc.haveToken();
+    if (hc.problem != problem) {
+      problem = hc.problem;
+      printf("AUTH problem=%d\n", (int)problem);
+    }
+    // what the device's render loop does with the session (src/main.cpp)
+    NetInfo ni = s.net;
+    hc.session.fill(ni);
+    ni.cloudProblem = (int)hc.problem;
+    s.os.setNet(ni);
+    if (hc.session.welcomed() != welcomed) {
+      welcomed = hc.session.welcomed();
+      if (welcomed) printf("WELCOME state=%s owner=%s trial=%d\n", hc.session.state.c_str(), hc.session.owner.c_str(),
+                           hc.session.trialLeft);
+    }
+    if (ni.pairCode != code) {
+      code = ni.pairCode;
+      if (!code.empty()) {
+        printf("PAIRING code=%s url=%s\n", code.c_str(), ni.pairUrl.c_str());
+        s.mark();
+      }
+    }
+    if (ni.confirmPid != pid) {
+      pid = ni.confirmPid;
+      if (!pid.empty()) {
+        printf("CONFIRM pid=%s name=%s hint=%s view=%s\n", pid.c_str(), ni.confirmName.c_str(), ni.confirmHint.c_str(),
+               viewName(s.os.view()));
+        s.mark();
+      }
+    }
+    if (ni.paired != paired) {
+      paired = ni.paired;
+      printf(paired ? "PAIRED owner=%s\n" : "UNPAIRED%s\n", paired ? ni.owner.c_str() : "");
+    }
+    AiOutcome out;
+    if (hc.session.pollAnswer(out)) {
+      s.os.aiResult(out);
+      printf("REPLY err=%s note=%s say=%s\n", aiErrCode(out.err), aiErrCode(out.note), s.os.lastReply().say.c_str());
+    }
+    CloudPush p;
+    while (hc.session.pollPush(p)) {
+      std::string err;
+      const bool ok = s.os.cloudPush(p, err);
+      hc.session.ackPush(p.seq, ok, ok ? nullptr : err.c_str());
+      printf("PUSH seq=%u action=%s from=%s/%s item=%s %s%s view=%s alarms=%d reminders=%d notes=%d\n", (unsigned)p.seq,
+             p.action.c_str(), p.source.c_str(), p.app.c_str(), p.itemId.c_str(), ok ? "applied" : "refused:",
+             ok ? "" : err.c_str(), viewName(s.os.view()), s.alarms.count(), (int)s.os.reminders().size(),
+             (int)s.os.notes().size());
+      s.mark();
+    }
+    CloudOut co;
+    while (s.os.popCloudOut(co)) {
+      hc.session.send(co, s.clock, (uint32_t)time(nullptr));
+      static const char* const kK[] = {"item.add", "inbox.add", "item.state", "pair.ok", "pair.no", "connectors"};
+      printf("SENT %s%s%s\n", kK[co.kind], co.state.empty() ? "" : " ", co.state.c_str());
+    }
+    CloudConfig cc;
+    if (hc.session.pollConfig(cc)) {
+      s.os.cloudConfig(cc.hasBrain ? cc.brain : "", cc.hasLang ? cc.lang : "", cc.hasName ? cc.name : "");
+      printf("CONFIG brain=%s lang=%s models=%s,%s\n", cc.hasBrain ? cc.brain.c_str() : "-", cc.hasLang ? cc.lang.c_str() : "-",
+             cc.modelClaude.c_str(), cc.modelOpenai.c_str());
+    }
+    std::string tz;
+    if (hc.session.pollTz(tz)) {  // the cloud's zone wins: the device would netSetTz()
+      setenv("TZ", tz.c_str(), 1);
+      tzset();
+      s.clock = localFromUtc((uint32_t)time(nullptr));
+      printf("TZ %s\n", tz.c_str());
+    }
+    uint32_t epoch;
+    if (hc.session.pollTime(epoch)) s.clock = localFromUtc(epoch);
+    // a finger on stdin
+    char buf[512];
+    ssize_t n;
+    while ((n = read(0, buf, sizeof buf)) > 0) line.append(buf, (size_t)n);
+    if (n == 0 && line.empty() && !isatty(0)) {
+      // stdin closed: keep running until `quit` arrives or 10 minutes pass
+    }
+    size_t nl;
+    while ((nl = line.find('\n')) != std::string::npos) {
+      std::string cmd = line.substr(0, nl);
+      line.erase(0, nl + 1);
+      while (!cmd.empty() && (cmd.back() == '\r' || cmd.back() == ' ')) cmd.pop_back();
+      if (cmd == "quit") {
+        quit = true;
+      } else if (cmd.compare(0, 4, "ask ") == 0) {
+        s.os.ask(cmd.substr(4));  // as if typed on the round keyboard
+        printf("ASKED %s\n", cmd.substr(4).c_str());
+      } else if (cmd == "tap yes" || cmd == "tap no") {  // the buttons of "Pair with Ana?"
+        printf("TAP %s on view=%s\n", cmd.c_str() + 4, viewName(s.os.view()));
+        s.tap(cmd == "tap yes" ? 160 : 306, 372, 0.2f);
+      } else if (cmd == "accept" || cmd == "reject") {  // a connector night alarm card
+        s.tap(cmd == "accept" ? 160 : 306, 392, 0.2f);
+      } else if (cmd.compare(0, 5, "note ") == 0) {  // a note made on SOUL (offline rules / keyboard)
+        AiAction a;
+        a.type = AiAction::NoteCreate;
+        a.text = cmd.substr(5);
+        std::vector<std::string> chips;
+        s.os.runActions(std::vector<AiAction>(1, a), &chips);
+      } else if (cmd.compare(0, 6, "inbox ") == 0) {  // "Ask my Claude"
+        CloudOut o;
+        o.kind = CloudOut::Inbox;
+        o.text = cmd.substr(6);
+        hc.session.send(o, s.clock, (uint32_t)time(nullptr));
+        printf("SENT inbox.add\n");
+      } else if (cmd == "pause" || cmd == "resume") {
+        CloudOut o;
+        o.kind = CloudOut::Connectors;
+        o.paused = cmd == "pause";
+        hc.session.send(o, s.clock, 0);
+        printf("SENT connectors %s\n", cmd.c_str());
+      } else if (cmd == "state") {
+        printf("STATE state=%s view=%s seq=%u alarms=%d reminders=%d notes=%d outq=%u in=%d out=%d\n",
+               hc.session.state.c_str(), viewName(s.os.view()), (unsigned)hc.session.lastSeq, s.alarms.count(),
+               (int)s.os.reminders().size(), (int)s.os.notes().size(), (unsigned)hc.session.outqSize(), hc.framesIn,
+               hc.framesOut);
+      } else if (!cmd.empty()) {
+        printf("? %s\n", cmd.c_str());
+      }
+    }
+    s.step(record);
+    if (simMs() - start > 600000) quit = true;
+    const uint32_t spent = simMs() - t0;
+    if (spent < 33) usleep((useconds_t)(33 - spent) * 1000);
+  }
+  if (record) {
+    rec.close("SOUL Cloud, live: the simulator paired with a real local cloud");
+    printf("RECORD %d frames -> %s/cloud-live.rgb\n", rec.frames, dir.c_str());
+  }
+  printf("BYE in=%d out=%d seq=%u\n", hc.framesIn, hc.framesOut, (unsigned)hc.session.lastSeq);
+  hc.wsClose();
+  return 0;
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -730,6 +954,13 @@ int main(int argc, char** argv) {
   const eyes::RollResult r = eyes::rollFromMac(gMac);
   printf("chip %02X%02X%02X%02X%02X%02X: design #%03d %s (%s), 1 in %.0f\n", gMac[0], gMac[1], gMac[2], gMac[3], gMac[4],
          gMac[5], eyes::kDesigns[r.design].num, eyes::kDesigns[r.design].name, eyes::kRarityName[(int)r.rarity], 1.0 / r.odds);
+  if (which == "cloud") {  // a live SOUL Cloud (see cloudMode)
+    if (argc < 4) {
+      fprintf(stderr, "usage: %s <out_dir> cloud <http://127.0.0.1:port> [key_file] [record 0|1]\n", argv[0]);
+      return 2;
+    }
+    return cloudMode(dir, argv[3], argc > 4 ? argv[4] : "", argc > 5 && atoi(argv[5]) != 0);
+  }
   if (which == "keys") {  // drive it by hand (see keysMode)
     Recorder rec;
     rec.dir = dir;

@@ -34,6 +34,8 @@ enum : int {
   IdLater,
   IdCenter,
   IdInbox,
+  IdAccept,
+  IdReject,
   IdRow = 100,
 };
 
@@ -182,7 +184,7 @@ void Os::buildItems(std::vector<Item>& out) const {
       add(IdDelete, 306, 404, 140, 56, R ? "Șterge" : "Delete", kAmber, 1, true);
       break;
     case View::Settings: {
-      static const int kRows = 10;
+      static const int kRows = 11;
       const int pages = (kRows + 3) / 4;
       const int p = page_ % pages;
       static const char* const kBr[2][4] = {{"Auto", "Low", "Mid", "High"}, {"Auto", "Mică", "Medie", "Mare"}};
@@ -200,6 +202,9 @@ void Os::buildItems(std::vector<Item>& out) const {
           case 6: v = R ? "Sunt un AI ›" : "I'm an AI ›"; break;
           case 7: v = set_.debug ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;
           case 8: v = set_.nightOff ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;
+          case 9:
+            v = !net_.paired ? (R ? "Nelegat" : "Not paired") : net_.connectorsPaused ? (R ? "Pe pauză" : "Paused") : (R ? "Pornite" : "On");
+            break;
           default: v = R ? "Ține apăsat" : "Hold"; break;
         }
         add(IdRow + i, 233, 172 + (i - p * 4) * 62, 330, 60, ellipsize(fontOf(1, set_.largeText), v, g_.s(280)), kCream, 1, false);
@@ -230,8 +235,18 @@ void Os::buildItems(std::vector<Item>& out) const {
         add(IdInbox, 233, 396, 260, 52, R ? "Întreabă-l pe Claude ›" : "Ask my Claude ›", kCream, 1, true);
       break;
     case View::Pair:
-      if (!net_.configured || (!net_.connected && !net_.connecting))
+      if (!net_.confirmPid.empty() && !net_.paired) {  // "Pair with Ana?" answered by a touch only
+        add(IdAccept, 160, 372, 150, 60, R ? "Da, leagă" : "Yes, pair", kMint, 1, true);
+        add(IdReject, 306, 372, 150, 60, R ? "Nu" : "No", kAmber, 1, true);
+      } else if (!net_.configured || (!net_.connected && !net_.connecting)) {
         add(IdSetup, 233, 330, 260, 56, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
+      }
+      break;
+    case View::Answer:
+      if (acceptMode_) {
+        add(IdAccept, 160, 392, 150, 58, R ? "Acceptă" : "Accept", kMint, 1, true);
+        add(IdReject, 306, 392, 150, 58, R ? "Nu" : "No", kAmber, 1, true);
+      }
       break;
     default: break;
   }
@@ -555,6 +570,17 @@ void Os::drawAnswer(Canvas& cv) {
   }
   for (int i = 0; i < n; ++i, y += lh) textAt(cv, f, 233, y, lines[i], kCream, lastErr_ != AiErr::None ? kDim : 1.0f);
   y += 6;
+  if (acceptMode_) {  // "Claude wants to set 03:00": armed only after Accept
+    buildItems(items_);
+    drawItems(cv, items_);
+    rimBottom(cv, R ? "nu sună până nu accepți" : "it won't ring unless you accept", kCream, kFaint);
+    return;
+  }
+  if (cardHidden_) {
+    textAt(cv, fonts::small(), 233, y + 8, R ? "Privat · atinge ca să vezi" : "Private · tap to show", kCream, kDim);
+    rimBottom(cv, R ? "atinge ca să vezi" : "tap to show", kCream, kFaint);
+    return;
+  }
   for (const std::string& c : chips_) {  // a drawn tick (Nunito has no ✓) + the chip text
     const Font& f = fonts::small();
     const float tw = (float)Canvas::measureText(f, c.c_str()), tick = 18;
@@ -717,9 +743,11 @@ void Os::drawClaude(Canvas& cv) {
 void Os::drawSettings(Canvas& cv) {
   const bool R = ro();
   rimTop(cv, R ? "SETĂRI" : "SETTINGS", kCream, kDim);
-  static const char* const kLabels[2][10] = {
-      {"Brightness", "AI", "Wi-Fi", "Language", "My SOUL", "Text size", "About", "Debug overlay", "Screen off at night", "Start over"},
-      {"Luminozitate", "AI", "Wi-Fi", "Limba", "SOUL-ul meu", "Mărimea textului", "Despre", "Depanare", "Ecran stins noaptea", "De la capăt"}};
+  static const char* const kLabels[2][11] = {
+      {"Brightness", "AI", "Wi-Fi", "Language", "My SOUL", "Text size", "About", "Debug overlay", "Screen off at night",
+       "Claude & ChatGPT on me", "Start over"},
+      {"Luminozitate", "AI", "Wi-Fi", "Limba", "SOUL-ul meu", "Mărimea textului", "Despre", "Depanare", "Ecran stins noaptea",
+       "Claude & ChatGPT pe mine", "De la capăt"}};
   buildItems(items_);
   for (const Item& it : items_) {
     if (it.id < IdRow) continue;
@@ -852,6 +880,24 @@ void Os::drawPair(Canvas& cv) {
     for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 240 + i * 27, l[i], kCream, kDim);
     return;
   }
+  if (!net_.confirmPid.empty() && !net_.paired) {  // §6.3: "Pair with {name} ({hint})?"
+    textAt(cv, fonts::text(), 233, 180, R ? "Mă leg de contul lui" : "Pair with", kCream, kDim);
+    textAt(cv, fonts::large(), 233, 226, ellipsize(fonts::large(), net_.confirmName + "?", g_.s(330)), kMint);
+    textAt(cv, fonts::small(), 233, 272, net_.confirmHint, kCream, kDim);
+    buildItems(items_);
+    drawItems(cv, items_);
+    rimBottom(cv, R ? "doar dacă tu ai scanat codul" : "only if you scanned the code", kCream, kFaint);
+    return;
+  }
+  if (net_.cloudProblem == 2 || net_.cloudProblem == 3) {
+    textAt(cv, fonts::text(), 233, 196,
+           net_.cloudProblem == 2 ? (R ? "SOUL nu e înregistrat" : "This SOUL is not registered")
+                                  : (R ? "SOUL e al altui cont" : "This SOUL belongs to another account"),
+           kAmber);
+    textAt(cv, fonts::small(), 233, 236, R ? "Scrie-ne cu codul acesta:" : "Write to us with this id:", kCream, kDim);
+    textAt(cv, fonts::small(), 233, 264, id, kCream);
+    return;
+  }
   if (net_.cloudRefused) {
     textAt(cv, fonts::text(), 233, 196, R ? "SOUL Cloud nu mă acceptă" : "SOUL Cloud won't take me", kAmber);
     textAt(cv, fonts::small(), 233, 236, R ? "Scrie-ne cu codul acesta:" : "Write to us with this id:", kCream, kDim);
@@ -877,7 +923,7 @@ void Os::drawPair(Canvas& cv) {
     drawItems(cv, items_);
     return;
   }
-  if (net_.pairCode.size() != 6) {
+  if (net_.pairCode.size() != 8) {
     const float pulse = 0.55f + 0.35f * sinf(t_ * 3.0f);
     textAt(cv, fonts::text(), 233, 200, net_.cloudOnline ? (R ? "Aștept codul…" : "Getting a code…") : (R ? "Mă conectez la SOUL Cloud…" : "Reaching SOUL Cloud…"),
            kCream, pulse);
@@ -885,7 +931,12 @@ void Os::drawPair(Canvas& cv) {
     return;
   }
   textAt(cv, fonts::small(), 233, 146, R ? "Codul tău de legare" : "Your pairing code", kCream, kDim);
-  textAt(cv, fonts::digits(), 233, 204, net_.pairCode.substr(0, 3) + " " + net_.pairCode.substr(3), kAmber);
+  textAt(cv, fonts::large(), 233, 200, net_.pairCode.substr(0, 4) + "-" + net_.pairCode.substr(4), kAmber);
+  if (net_.trialLeft > 0) {  // a factory unit answers a few questions before it is paired
+    char b[64];
+    snprintf(b, sizeof b, R ? "%d răspunsuri gratuite până atunci" : "%d free answers until then", net_.trialLeft);
+    textAt(cv, fonts::small(), 233, 240, b, kCream, kFaint);
+  }
   if (!net_.pairUrl.empty()) drawQr(cv, net_.pairUrl, 233, 330, 136);
   std::string host = net_.pairUrl.size() > 8 ? net_.pairUrl.substr(8) : std::string();
   host = host.substr(0, host.find('/'));

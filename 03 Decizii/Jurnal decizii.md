@@ -17,6 +17,7 @@ Format: `YYYY-MM-DD — decizie — de ce — sursa`. Cele mai noi sus. Se adaug
 - „Nu punem la dispoziție ce nu avem în stoc.”
 
 ## Septembrie 2026
+- 2026-10-03 — **SOUL fără AI inclus plătit de noi** (Andu): omul își conectează propriul AI — ChatGPT prin „Sign in with ChatGPT” (după aprobarea OpenAI) sau conector, Claude prin conectorul din aplicația Claude (+ opțional cheia lui API), sau cheia lui API; altfel modul offline. SOUL Cloud doar transmite mesajele (nu plătim tokeni) — [[SOUL — Harta memoriei]]
 - 2026-09-26 — **SOUL are forma MĂRGĂRITAR** (Andu), nu HOPA: colțuri mai geometrice, „umeri” ușori sus; mărimea M, aluminiu, aceleași culori. Randări v9, site și kitul P0 refăcute pe MĂRGĂRITAR
 - 2026-09-26 — **Fără Founders 00** (Andu): pe site un singur SOUL, „de la €249”, doar listă de așteptare, nicio rezervare/plată; nu vindem înainte de grant și de CE
 - 2026-09-25 — **SOUL devine mărimea M** (Andu): ecran rotund 2,8" IPS 480×480 (Waveshare ESP32-S3-Touch-LCD-2.8C), corp ≈ 90 × 103 × 31 mm, **aceeași formă și culori ca v6**, mărită uniform; taste ~6,7 mm. Minus: IPS nu are negru absolut ca AMOLED. Kit, randări v8 și firmware refăcute pe M

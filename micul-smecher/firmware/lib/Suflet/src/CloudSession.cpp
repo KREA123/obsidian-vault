@@ -475,6 +475,10 @@ void CloudSession::setStatus(int rssi, int battery, const char* power, uint32_t 
   awake_ = awake;
 }
 
+void CloudSession::sleep(uint32_t wakeAt) {
+  if (welcomed_ && wakeAt) queue(CloudLink::sleep(wakeAt));
+}
+
 void CloudSession::fill(NetInfo& n) const {
   n.cloudOnline = welcomed_;
   n.paired = state == "paired";

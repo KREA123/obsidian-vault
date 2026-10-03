@@ -68,7 +68,6 @@ void loadSecrets() {
   cfg.anthropicKey = p.getString("claude", "").c_str();
   cfg.openaiKey = p.getString("openai", "").c_str();
   cfg.relayUrl = p.getString("cloud", "").c_str();
-  cfg.relayToken = p.getString("ctoken", "").c_str();
   cfg.claudeModel = p.getString("cmodel", "claude-opus-5-5").c_str();
   cfg.openaiModel = p.getString("omodel", "gpt-6-luna").c_str();
   cfg.mode = (AiMode)p.getUChar("mode", 0);
@@ -188,25 +187,21 @@ struct DirectBackend : AiBackend {
   }
 };
 
-// SOUL Cloud. Today: the relay of micul-smecher/ai (POST /v1/ask, Bearer
-// token). The pairing / WebSocket contract (docs/07-CONNECT-AI.md) replaces
-// this class without touching the UI: SoulOS only sees AiJob -> AiOutcome.
+// SOUL Cloud turns go over its WebSocket (src/cloud.cpp, docs/07 §6.6). This
+// backend only runs when that socket is not up: SOUL Cloud has no HTTPS turn
+// endpoint (the legacy /v1/ask relay is dev-only), so with a key of your own
+// on SOUL it takes the survival path (B1), else it says "network" and SoulOS's
+// on-device rules answer (§4.3).
 struct CloudBackend : DirectBackend {
   const char* name() const override { return "cloud"; }
   AiOutcome ask(const AiConfig& c, const AiJob& job, uint32_t now) override {
-    // Over HTTPS (the socket is down): the legacy POST /v1/ask, with the
-    // shared relay token or this SOUL's device token (docs/07 §2.3)
-    AiConfig conf = c;
-    if (conf.relayToken.empty()) conf.relayToken = cloudToken();
-    AiOutcome o = DirectBackend::ask(conf, job, now);
-    wipe(conf.relayToken);
-    // SOUL Cloud unreachable but a key of your own is set: the survival path (B1)
-    const bool unreachable = o.err == AiErr::Network || o.err == AiErr::Timeout || o.err == AiErr::Upstream;
-    if (unreachable && !c.anthropicKey.empty()) {
-      conf = c;
-      conf.mode = AiMode::Claude;
-      o = DirectBackend::ask(conf, job, now);
+    if (!c.anthropicKey.empty() || !c.openaiKey.empty()) {
+      AiConfig conf = c;
+      conf.mode = !c.anthropicKey.empty() ? AiMode::Claude : AiMode::ChatGpt;
+      return DirectBackend::ask(conf, job, now);
     }
+    AiOutcome o;
+    o.err = AiErr::Network;
     return o;
   }
 };
@@ -280,10 +275,8 @@ void pageRoot() {
       "</small></label><input name=claude type=password autocomplete=off placeholder=\"sk-ant-…\">"
       "<label>OpenAI API key <small>" + (cfg.openaiKey.empty() ? std::string("not set") : "set: " + htmlEsc(maskKey(cfg.openaiKey))) +
       "</small></label><input name=openai type=password autocomplete=off placeholder=\"sk-…\"></details>"
-      "<label>SOUL Cloud address and token <small>(optional)</small></label><input name=cloud value=\"" + htmlEsc(cfg.relayUrl) +
-      "\" placeholder=\"https://…\"><input name=ctoken type=password autocomplete=off placeholder=\"" +
-      (cfg.relayToken.empty() ? std::string("token") : "token: unchanged") +
-      "\"><label>Time zone <small>(POSIX TZ)</small></label><input name=tz value=\"" + htmlEsc(tz) +
+      "<label>SOUL Cloud address <small>(dev builds; SOUL signs in with its own key)</small></label><input name=cloud value=\"" +
+      htmlEsc(cfg.relayUrl) + "\" placeholder=\"https://…\"><label>Time zone <small>(POSIX TZ)</small></label><input name=tz value=\"" + htmlEsc(tz) +
       "\"><label>SOUL's name <small>(optional)</small></label><input name=name maxlength=16>"
       "<div class=r><input type=checkbox name=forget id=f><label for=f>Forget the stored API keys</label></div>"
       "<button>Save</button></form><p><small>With SOUL Cloud, keys and your account live at the cloud's account page, "
@@ -331,12 +324,7 @@ void pageSave() {
     p.putString("cloud", url.c_str());
     cloudSetBase(url);
   }
-  k = server.arg("ctoken").c_str();
-  if (!k.empty() && k.size() < 200) {
-    cfg.relayToken = k;
-    p.putString("ctoken", k.c_str());
-  }
-  wipe(k);
+  p.remove("ctoken");  // rev. 1's shared cloud token: never stored again (§6.16)
   const std::string z = server.arg("tz").c_str();
   if (!z.empty() && z.size() < 64) {
     tz = z;

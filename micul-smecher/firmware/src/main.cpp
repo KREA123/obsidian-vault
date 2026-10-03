@@ -48,7 +48,7 @@
 #ifndef SUFLET_VOICE
 #define SUFLET_VOICE 0
 #endif
-#define FW_VERSION "1.1.0"
+#define FW_VERSION "1.2.0"
 
 using namespace suflet;
 
@@ -353,7 +353,8 @@ static void help() {
       "  T<local epoch>  set clock    P   personality + design U  unpair Claude\n"
       "  W   Wi-Fi setup portal       w   stop the portal      B  re-run first boot\n"
       "  e<name>  play an expression (e.g. elaugh)              D  demo loop on/off\n"
-      "  a<text>  ask the AI (like typing on the glass)         h  home    ?  help");
+      "  a<text>  ask the AI (like typing on the glass)         h  home    ?  help\n"
+      "  K   SOULKEY PUB: this SOUL's public device key (for the factory list; never the private key)");
 }
 
 static std::string readLine() {
@@ -432,6 +433,11 @@ static void serialCommands() {
         if (!q.empty()) os.ask(q);
         break;
       }
+      case 'K': {
+        const std::string pub = cloudPubKey();
+        Serial.printf("SOULKEY PUB %s\n", pub.empty() ? "(none yet: made once Wi-Fi is up)" : pub.c_str());
+        break;
+      }
       case '?': help(); break;
       default: break;
     }
@@ -470,7 +476,7 @@ static void maybeDeepSleep(uint32_t nowMs) {
     if (seven > now) wakeIn = min<uint32_t>(wakeIn, seven - now);
   }
   Serial.printf("[power] deep sleep for %lu s (night, screen off)\n", (unsigned long)wakeIn);
-  cloudSleep();
+  cloudSleep(time(nullptr) > 1735689600 ? (uint32_t)time(nullptr) + wakeIn : 0);
   saveMemory();
   saveAlarms();
   backlight(0);
@@ -720,7 +726,9 @@ void loop() {
   // (SOUL Cloud: over its socket when it is up, else HTTPS to the relay)
   AiJob job;
   if (!aiBusy && os.popAiJob(job))
-    aiBusy = (os.aiMode() == AiMode::Cloud && cloudReady()) ? cloudAsk(job, os.ro()) : netAsk(job);
+    aiBusy = (os.aiMode() == AiMode::Cloud && cloudReady())
+                 ? cloudAsk(job, os.ro(), os.timerLeft() >= 0 ? (os.timerLeft() + 59) / 60 : -1)
+                 : netAsk(job);
   AiOutcome out;
   if (netPollAnswer(out) || cloudPollAnswer(out)) {
     aiBusy = false;
@@ -735,14 +743,19 @@ void loop() {
     cloudAck(push.seq, ok, ok ? nullptr : perr.c_str());
   }
   CloudOut co;
-  while (os.popCloudOut(co)) cloudSend(co);
-  CloudConfigMsg cc;
+  while (os.popCloudOut(co)) cloudSend(co, local, 0);
+  CloudConfig cc;
   if (cloudPollConfig(cc)) {
-    os.cloudConfig(cc.brain, cc.lang, cc.name);
-    netSetModels(cc.modelClaude, cc.modelOpenai);
+    os.cloudConfig(cc.hasBrain ? cc.brain : "", cc.hasLang ? cc.lang : "", cc.hasName ? cc.name : "");
+    if (cc.hasModels) netSetModels(cc.modelClaude, cc.modelOpenai);
   }
   std::string ctz;
-  if (cloudPollTz(ctz)) netSetTz(ctz);
+  if (cloudPollTz(ctz)) netSetTz(ctz);  // the cloud's time zone always wins (§6.7)
+  uint32_t cloudEpoch = 0;
+  if (cloudPollTime(cloudEpoch) && time(nullptr) < 1735689600 && cloudEpoch > 1735689600) {
+    timeval tv = {(time_t)cloudEpoch, 0};  // no NTP yet: SOUL Cloud's clock (the NTP block sets the RTC)
+    settimeofday(&tv, nullptr);
+  }
   std::string heard;
   AiErr verr;
   if (netPollVoice(heard, verr)) os.voiceText(heard, verr);
