@@ -117,6 +117,8 @@ struct AiOutcome {
   std::string raw;            // the model's raw text (kept in the chat history)
   bool schemaRejected = false;  // 400 about output_config.format: retry without it
   int httpStatus = 0;
+  AiErr note = AiErr::None;  // SOUL Cloud answered with its rules and says why (reply.note: bad_key, allowance...)
+  bool noLocal = false;      // do not run the on-device rules (a cloud turn may still be acting: timeout)
 };
 AiOutcome parseResponse(const AiConfig& cfg, int status, const char* body, size_t n, AiErr netErr = AiErr::None,
                         uint32_t localNow = 0);

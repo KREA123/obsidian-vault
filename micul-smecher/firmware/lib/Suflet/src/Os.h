@@ -55,7 +55,7 @@ enum class View : uint8_t {
   Wifi,
   MySoul,
   About,
-  Pair,      // SOUL Cloud: the 6-digit code + QR, then "paired with <owner>"
+  Pair,      // SOUL Cloud: the XXXX-XXXX code + QR, "Pair with Ana?" ✓ / ✗, then "paired with <owner>"
   Keyboard,  // the system keyboard (over any screen)
   Count
 };
@@ -112,8 +112,12 @@ struct NetInfo {
   bool cloudOnline = false;  // the socket is up and the cloud said welcome
   bool paired = false;
   bool cloudUpdate = false;  // the cloud wants a newer SOUL (close 4426)
-  bool cloudRefused = false; // the cloud refused this SOUL's identity (401/409)
-  std::string owner, pairCode, pairUrl;
+  bool cloudRefused = false; // the cloud refused this SOUL's identity (see cloudProblem)
+  int cloudProblem = 0;      // 0 none, 1 can't sign in, 2 not registered, 3 belongs to another account
+  std::string owner, pairCode, pairUrl;  // pairCode: 8 Crockford characters, shown XXXX-XXXX
+  std::string confirmPid, confirmName, confirmHint;  // a pair.confirm waiting for a touch
+  bool connectorsPaused = false;
+  int trialLeft = -1, inboxPending = 0;
 };
 
 struct ClaudeInfo {
@@ -140,11 +144,17 @@ struct Note {
 
 // Something made on SOUL that SOUL Cloud should know about (item.add), or a
 // question left for the owner's own Claude (inbox.add, "Ask my Claude").
+// Also what only a touch on SOUL may send: the pairing answer and the pause
+// switch for connectors (docs/07 §6.16: never from the cloud, BLE or an LLM).
 struct CloudOut {
-  enum Kind : uint8_t { Item, Inbox } kind = Item;
+  enum Kind : uint8_t { Item, Inbox, State, PairOk, PairNo, Connectors } kind = Item;
   AiAction act;
-  std::string text;
-  uint32_t created = 0;
+  std::string text;        // Inbox
+  uint32_t created = 0;    // Item: local epoch
+  std::string itemId;      // State: the cloud's item id
+  std::string state;       // State: rang | dismissed | done | deleted | accepted | rejected ...
+  std::string pid;         // PairOk / PairNo
+  bool paused = false;     // Connectors
 };
 
 struct Reminder {
