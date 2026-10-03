@@ -209,3 +209,16 @@
     Z = (az);                        \
   } while (0)
 #endif
+
+// After an NVS / flash write: on the RGB panel (2.8C) the bounce-buffer DMA
+// starves while flash is written and the picture can come back shifted, so
+// the transmission is restarted at the next VSYNC. No-op on the AMOLEDs.
+// Defined in main.cpp; called by every task that writes NVS.
+void soulFlashWritten();
+#if defined(SUFLET_BOARD_LCD28)
+#define BOARD_HW "lcd28"
+#elif defined(SUFLET_BOARD_AMOLED175)
+#define BOARD_HW "amoled175"
+#else
+#define BOARD_HW "amoled143"
+#endif

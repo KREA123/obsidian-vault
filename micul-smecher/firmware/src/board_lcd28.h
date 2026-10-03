@@ -26,6 +26,8 @@ uint16_t* displayCanvas();
 // from the canvas into the back frame buffer and makes it the shown one at
 // the next frame boundary. Never writes into the buffer being scanned out.
 void displayPresent(const suflet::Rect& changed);
+// Restart the RGB transmission at the next VSYNC (after flash writes).
+void displayResync();
 // Panel sleep (backlight off, ST7701 sleep-in, slower pixel clock) / wake.
 void displayPower(bool on);
 struct DisplayStats {

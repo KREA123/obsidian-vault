@@ -338,6 +338,10 @@ void displayPresent(const Rect& changedIn) {
   ++stats.presents;
 }
 
+void displayResync() {
+  if (panel) esp_lcd_rgb_panel_restart(panel);
+}
+
 void displayPower(bool on) {
   if (on == panelOn || !panel) return;
   panelOn = on;
