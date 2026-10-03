@@ -4,7 +4,8 @@
 What it proves, against a running `suflet_ai.app` (or the same app started in-process by the tests):
 
   1. A fake SOUL (`tools/fake_device.py`) signs in with its ECDSA key and opens the `soul.v1` WebSocket.
-  2. An MCP client does what claude.ai does when you add a custom connector: 401 -> metadata discovery ->
+  2. An MCP SDK client (loopback redirect, Claude Code style; NOT claude.ai, and it takes the
+     unverified-client consent branch) adds the connector: 401 -> metadata discovery ->
      dynamic client registration -> PKCE authorize -> sign-in by email code -> pairing code typed on the
      consent page -> the device's ✓ -> Allow -> token. Then it calls `add_note`, `add_reminder`,
      `set_alarm`, `show_on_soul`, `list_today`, and the fake SOUL receives each push on its socket and acks.

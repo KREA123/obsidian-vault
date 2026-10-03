@@ -1,4 +1,4 @@
-"""End to end with tools/fake_device.py: pair, open the socket, ask, receive pushes (docs/07 §0.1 steps 3-7, §6)."""
+"""End to end with tools/fake_device.py: pair, open the socket, ask, receive pushes (simulated, docs/07 §0.1 steps 3, 5, 7 only; §6)."""
 import json
 import socket
 import threading

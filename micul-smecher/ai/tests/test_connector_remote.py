@@ -464,3 +464,56 @@ def test_verified_host_is_named_by_host_not_client_name(tmp_path):
     page, spoof = asyncio.run(go())
     assert spoof.status_code == 400 and spoof.json()["error"] == "invalid_client_metadata"
     assert "verificat" in page and "claude.ai" in page and 'lang="ro"' in page
+
+
+def test_claude_ai_redirect_uses_the_verified_branch_end_to_end(tmp_path):
+    """What claude.ai itself does (DCR with its callback, "Register automatically"), not the loopback client:
+    the verified-host consent needs no acknowledgement box, the code goes to claude.ai's callback with `iss`,
+    the token works, and pushes carry the Claude badge and the "From Claude:" prefix.
+
+    Still simulated: claude.ai's real client metadata and behaviour are not reproduced here [U]."""
+    import base64
+    import hashlib
+    import secrets as _secrets
+
+    claude_cb = "https://claude.ai/api/mcp/auth_callback"
+    app, gw, svc, mailbox, clock = build(tmp_path)
+    verifier = _secrets.token_urlsafe(48)
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+
+    async def go():
+        async with app.router.lifespan_context(app):
+            async with asgi_client(app) as raw:
+                reg = (await raw.post("/register", json={"client_name": "Claude", "redirect_uris": [claude_cb],
+                                                         "grant_types": ["authorization_code", "refresh_token"],
+                                                         "token_endpoint_auth_method": "none"})).json()
+            url = (f"{BASE}/authorize?response_type=code&client_id={reg['client_id']}&redirect_uri={claude_cb}"
+                   f"&state=st&code_challenge={challenge}&code_challenge_method=S256&resource={MCP_URL}"
+                   f"&scope=soul.read+soul.write+offline_access")
+            browser = Browser(app, mailbox)
+            page = await browser.open_consent(url)
+            acc = app.state.soul.accounts.db.one("SELECT id FROM accounts")["id"]
+            gw.add_device(DEV, acc, lang="en")
+            page = (await browser.http.get("/consent?req=" + page.split('name="req" value="')[1].split('"')[0])).text
+            done = await browser.allow(page, DEV, ["soul.read", "soul.write"], ack=False)  # no ack needed
+            assert done.status_code == 302, done.text
+            back = callback_params(done.headers["location"])
+            async with asgi_client(app) as raw:
+                tok = (await raw.post("/token", data={"grant_type": "authorization_code", "code": back["code"],
+                                                      "redirect_uri": claude_cb, "client_id": reg["client_id"],
+                                                      "code_verifier": verifier, "resource": MCP_URL})).json()
+            http = httpx2.AsyncClient(transport=httpx2.ASGITransport(app=app), base_url=BASE,
+                                      headers={"authorization": f"Bearer {tok['access_token']}"})
+            async with http, Client(streamable_http_client(MCP_URL, http_client=http)) as c:
+                r = await c.call_tool("show_on_soul", {"title": "Hello", "say": "hello"})
+            await browser.aclose()
+            return page, done, back, tok, r
+
+    page, done, back, tok, r = asyncio.run(go())
+    assert "verified" in page.lower() or "verificat" in page.lower()
+    assert done.headers["location"].startswith(claude_cb + "?") and back["state"] == "st"
+    assert back["iss"] in (BASE, BASE + "/")
+    assert tok["access_token"].startswith("sat_") and tok["refresh_token"].startswith("srt_")
+    assert j(r)["delivered"] == "shown"
+    push = gw.pushes[-1]
+    assert push["origin"] == {"kind": "connector", "app": "claude"} and push["say"].startswith("From Claude")

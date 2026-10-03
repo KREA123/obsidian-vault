@@ -1,4 +1,8 @@
-"""End to end over real sockets (docs/07-CONNECT-AI.md §0.1 steps 3-7, §5 Phase 0 exit gate).
+"""End to end over real sockets: a simulated variant of docs/07-CONNECT-AI.md §0.1 steps 3, 5 and 7.
+
+Not the §5 Phase 0 exit gate: steps 4 (/pair) and 6 (/me) are not built, pairing happens on the connector
+consent page, the OAuth client uses a loopback redirect (claude.ai's own redirect and verified-host branch
+are covered in test_connector_remote.py), and the device and the LLMs are our own fakes.
 
 Three servers on 127.0.0.1, all in this process but talking only through TCP:
 

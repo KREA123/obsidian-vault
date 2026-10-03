@@ -130,15 +130,21 @@ testat).
      „pune-mi pe SOUL planul de azi”, iar AI-ul lui cheamă uneltele SOUL. Merge cu abonamentul
      lui, dar **pornește din Claude/ChatGPT**, nu de pe piatră. SOUL nu poate „vorbi” cu
      abonamentul.
-  2. **Cheia API proprie (SOUL → AI).** Conversație directă de pe SOUL, text (și voce, prin
-     serviciul de voce). Cheia e a utilizatorului, factura e la Anthropic/OpenAI, separată de
-     abonament.
+  2. **Cheia API proprie (SOUL → AI).** Conversație directă de pe SOUL, **text**. Cheia e a
+     utilizatorului, factura e la Anthropic/OpenAI, separată de abonament. **Vocea:** nu există
+     încă un serviciu de voce SOUL în cloud (e planificat pentru Faza 2, `docs/07-CONNECT-AI.md` §5).
+     Azi, vorbitul la SOUL există doar pe varianta cu microfon, prin cheia OpenAI de pe dispozitiv
+     (B1, `gpt-transcribe` [U]); cine are doar o cheie Claude nu are recunoaștere de voce (Anthropic
+     nu are API de voce).
 - Pentru cine nu vrea nimic din toate astea: **modul fără AI e complet funcțional** pentru
-  lucrurile de zi cu zi, și **serviciul de voce SOUL** (abonamentul nostru) e varianta „merge
-  din cutie”.
-- Pe site, formularea actuală („Add SOUL as a connector in your own Claude”, „Add SOUL as an app
-  in your ChatGPT”, „bring your own Anthropic or OpenAI API key”, „in development”) e corectă.
-  Nu scrieți „folosește abonamentul tău Claude/ChatGPT pe SOUL”.
+  lucrurile de zi cu zi. Varianta „merge din cutie” cu AI e creierul A (Claude în SOUL, prin
+  SOUL Cloud), deocamdată doar în cloud și testată doar cu un dispozitiv simulat.
+- **Site-ul:** regula din `docs/07-CONNECT-AI.md` (§1.4, §5) e: **nicio afirmație „works with
+  ChatGPT” / „connect your ChatGPT”** până când SOUL nu e plugin listat în ChatGPT (developer mode
+  e doar pe web, scrierile pe Plus/Pro sunt [U], Free nu e suportat). Fraza de acum de pe site
+  (`site/index.html`: „For AI, you connect the Claude or ChatGPT you already have”) **trebuie
+  corectată** (de ex. „you connect the Claude you already have; ChatGPT later”). Nu scrieți nici
+  „folosește abonamentul tău Claude/ChatGPT pe SOUL”.
 
 ### Cheia API proprie („bring your own key”) — `keystore.py`
 
@@ -151,9 +157,17 @@ testat).
   erorile de validare (le-am curățat) și nu există în clar în baza de date (testat pe fișierul SQLite).
   Se decriptează doar cât durează o cerere, ca să construim clientul.
 - **Limita cinstită:** cine are și baza de date, și secretul principal poate decripta. De aceea, în
-  producție secretul stă în afara volumului de date. Conform `os/ARCHITECTURE.md` (D5), cheia stă pe
-  **telefon** (Keychain/Keystore) și **niciodată pe piatra SOUL**; codul de aici e ce rulează aplicația
-  de telefon sau releul cloud SOUL.
+  producție secretul stă în afara volumului de date. Nu e criptare cu KMS (aceea e planificată,
+  `docs/07-CONNECT-AI.md` §1.3).
+- **Unde stă cheia, de fapt** (`docs/07-CONNECT-AI.md` §1.8 înlocuiește D5 din `os/ARCHITECTURE.md`,
+  care spunea „pe telefon, niciodată pe SOUL”):
+  - **B1, pe dispozitiv:** în flash-ul SOUL (NVS, spațiul `soulkey`), **necriptată** dacă build-ul nu
+    are criptare de flash + NVS;
+  - **B2, în SOUL Cloud:** în acest keystore (opțional, la alegerea utilizatorului; azi doar prin ruta
+    dev `/v1/dev/key`, pagina `/me/keys` nu există);
+  - **telefonul nu ține nimic azi** (nu există aplicație de telefon).
+- Keystore-ul refuză prefixele de chei de admin și de tokenuri de abonament (`sk-ant-admin` [V],
+  `sk-ant-oat` [U], `sk-admin-` [U]).
 - „Testează cheia” face un apel gratuit (lista de modele), nu consumă tokeni.
 
 ### Conectorul SOUL pentru Claude (MCP) — `mcp_server.py`
@@ -299,7 +313,8 @@ tools/e2e_demo.sh          # pornește un LLM fals, aplicația și un SOUL fals;
 Ce verifică (pe socketuri reale, `127.0.0.1`):
 
 1. `tools/fake_device.py` (CLI) se autentifică cu cheia ECDSA, arată codul, e asociat, întreabă, primește push-ul.
-2. `tools/e2e_connect.py` face ce face claude.ai când adaugi conectorul: 401 → metadate → DCR → PKCE →
+2. `tools/e2e_connect.py` e un client MCP SDK (redirect loopback, ca Claude Code; **nu** e claude.ai și
+   trece pe ramura de consimțământ pentru clienți neverificați): 401 → metadate → DCR → PKCE →
    cod pe email → codul de pe ecranul SOUL pe pagina de consimțământ → ✓ pe SOUL → *Allow* → token; apoi
    `add_note`, `add_reminder`, `set_alarm`, `show_on_soul`, `list_today` ajung pe socketul dispozitivului
    (`delivered: "shown"`).
@@ -307,6 +322,12 @@ Ce verifică (pe socketuri reale, `127.0.0.1`):
    cu 1 la fiecare tură, iar la 0 răspund regulile offline cu `note: "allowance"`.
 4. Erorile au codurile din §6.9: cheie greșită `bad_key`, 429 `rate_limited`, fără credit `quota`, furnizor
    căzut `network`; SOUL offline → `delivered: "queued"`, apoi reluat la reconectare.
+
+**Ce acoperă, cinstit:** o variantă **simulată** a pașilor 3, 5 și 7 din `docs/07-CONNECT-AI.md` §0.1.
+Dispozitivul (`fake_device.py`) și modelele (`fake_llm.py`) sunt scrise de noi; pasul 4 (`/pair`) și pasul 6
+(`/me`) nu există în cod; asocierea trece prin pagina de consimțământ a conectorului sau prin ruta dev
+`/v1/dev/pair/claim`. Criteriul de ieșire din Faza 0 **nu** e îndeplinit până nu există `/pair` și `/me` și
+nu rulează prin redirect-ul claude.ai.
 
 `tools/fake_llm.py` imită `api.anthropic.com` (`/v1/messages`) și `api.openai.com` (`/v1/responses`);
 SDK-urile oficiale sunt îndreptate spre el cu `ANTHROPIC_BASE_URL` / `OPENAI_BASE_URL`, deci codul releului
@@ -316,6 +337,11 @@ producție, mailerul SMTP, importul cheilor din fabrică și fișierele de deplo
 ### Go live in 20 minutes
 
 Ținta: SOUL Cloud pe Fly.io, în UE (Frankfurt), cu adresa `https://<host>/mcp` pe care o lipești în Claude.
+
+> **Citește întâi limita:** după acești pași **un SOUL real încă nu se poate conecta** (firmware-ul de azi
+> vorbește protocolul rev. 1 și nu se poate autentifica; pagina `/pair` nu există). Pasul 5 merge azi doar
+> cu dispozitivul simulat `tools/fake_device.py` îndreptat spre `https://<host>` (pilot, înrolare `pending`).
+> Nimic nu a fost încercat încă cu claude.ai real [U]. Detalii în „Ce nu merge încă”, mai jos.
 Fișiere: `Dockerfile`, `docker-entrypoint.sh`, `fly.toml`, `constraints.txt` (versiunile testate).
 Nimic secret nu intră în repo: secretele merg doar în `fly secrets`.
 
@@ -346,19 +372,28 @@ fără el nimeni nu se poate conecta); opțional un domeniu propriu.
    fly ssh console -C "python -m suflet_ai.app check"  # regulile de pornire
    ```
    Cu domeniu propriu: `fly certs add <domeniu>` și înregistrările DNS pe care le cere Fly.
-5. **Claude (2 min).** claude.ai → *Customize → Connectors → Add custom connector* (calea verificată în
-   `docs/07-CONNECT-AI.md` §1.4 [V, 2 oct 2026]; interfețe mai vechi o au la *Settings → Connectors*) →
-   URL `https://<host>/mcp` → *Connect* → codul primit pe email → codul de pe ecranul SOUL → ✓ pe SOUL →
-   *Allow*. Apoi scrii în Claude: „Show hello on my SOUL”. Merge pe toate planurile Claude, inclusiv Free
-   (un singur conector personalizat) [V]; adăugarea doar de pe telefon e beta și netestată de noi [U].
+5. **Claude (2 min) — azi doar cu dispozitivul simulat.** Pornește întâi un SOUL fals spre cloud:
+   `python tools/fake_device.py --base https://<host> --host <host> --key soul-test.pem --confirm yes --listen 600`
+   (pilot, înrolare `pending`); un SOUL real are nevoie de firmware rev. 2. Apoi claude.ai →
+   *Customize → Connectors → Add custom connector* → URL `https://<host>/mcp` → *Connect*; dacă dialogul
+   întreabă cum se înregistrează aplicația, alege **„Register automatically”** (SOUL nu are încă CIMD, deci
+   „Use Claude's published identity” probabil nu merge [U]) → codul primit pe email → codul de pe ecranul
+   SOUL-ului (fals) → ✓ → *Allow*. Apoi scrii în Claude: „Show hello on my SOUL”. **Netestat încă cu
+   claude.ai real [U].** Ce e verificat [V, 2 oct 2026, `docs/07-CONNECT-AI.md` §1.4] e doar partea
+   Anthropic: calea din meniu (interfețe mai vechi: *Settings → Connectors*) și faptul că conectorii
+   personalizați există pe toate planurile Claude, inclusiv Free (unul singur); adăugarea doar de pe
+   telefon e beta și netestată de noi [U].
 6. **ChatGPT (doar utilizatori avansați).** chatgpt.com (web) → *Settings → Security and login → Developer
    mode* → adaugi URL-ul care se termină în `/mcp` [V]. Fiecare scriere cere confirmare în ChatGPT [V];
    scrierile pe Plus/Pro sunt [U]. Pentru toți utilizatorii trebuie listare ca plugin ChatGPT (review OpenAI).
 
 **`pilot` vs `production`.** Ambele refuză pornirea dacă lipsește ceva din §3.0 (`SUFLET_API_TOKEN` setat,
 `SOUL_MASTER_SECRET`, `SOUL_ID_PEPPER`, `SOUL_PUBLIC_HOST`, SMTP, https). `pilot` permite în plus
-`SOUL_ENROL_POLICY=pending` (orice cheie nouă de dispozitiv e acceptată; cine asociază primul un `device_id`
-îl deține) — doar pentru testeri cunoscuți. `production` cere `factory`: cheile publice din fabrică se
+`SOUL_ENROL_POLICY=pending`: o cheie nouă de dispozitiv e acceptată **doar cât timp SOUL-ul nu e asociat** și
+nu are cheie din fabrică; cine asociază primul un `device_id` liber îl deține (codul e pe ecran, confirmarea e
+o atingere). După asociere, chei noi pentru același `device_id` primesc `403 not_enrolled`, iar orice token
+al altei chei decât cea legată e refuzat (nu vede push-uri, nu confirmă, nu întreabă, nu dă jos socketul).
+Tot doar pentru testeri cunoscuți, pe un host nepublicat. `production` cere `factory`: cheile publice din fabrică se
 importă cu `fly ssh console -C "python -m suflet_ai.app import-factory /data/keys.csv"` (CSV cu antetul
 `device_id,pub`).
 
@@ -371,8 +406,10 @@ importă cu `fly ssh console -C "python -m suflet_ai.app import-factory /data/ke
   lista aplicațiilor conectate) nu există încă (`api_me.py`). Azi asocierea se face pe pagina de consimțământ
   a conectorului, cu codul de pe ecran; creierul implicit după asociere e A (cheia SOUL, vocea Claude).
 - Un singur proces, SQLite pe volum: nu porni mai multe mașini (`fly scale count 1`).
-- CIMD (`cimd.py`) nu e scris; claude.ai merge prin DCR. Nimic nu a fost încercat cu claude.ai sau ChatGPT
-  reale și nici cu cheile reale Anthropic/OpenAI.
+- CIMD (`cimd.py`) nu e scris. Că claude.ai merge prin DCR („Register automatically”) e o presupunere [U]:
+  dialogul Claude recomandă CIMD („Use Claude's published identity”) și nu știm dacă trece singur pe DCR.
+  De construit `cimd.py` sau de verificat pe claude.ai real (web, Desktop, mobil) înainte de un pilot public.
+  Nimic nu a fost încercat cu claude.ai sau ChatGPT reale și nici cu cheile reale Anthropic/OpenAI.
 
 **Variabile de mediu** (lista completă: `python -m suflet_ai.app env`):
 
@@ -392,5 +429,5 @@ importă cu `fly ssh console -C "python -m suflet_ai.app import-factory /data/ke
 | `SOUL_MAIL_FROM` | | expeditorul, ex. `SOUL <hello@domeniu>` |
 | `SOUL_CLAUDE_MODEL`, `SOUL_OPENAI_RELAY_MODEL` | | modelele releului (implicit `claude-haiku-4-5`, `gpt-6-luna`) |
 | `SOUL_ALLOWANCE_TURNS`, `SOUL_TRIAL_TURNS`, `SOUL_B2_DAILY_CAP_MICRO`, `SOUL_BRAIN_A_KILL` | | contorizare (300 ture/lună, 30 ture probă, 0,50 $/zi pe cheia proprie, oprire de urgență) [E] |
-| `SUFLET_TZ` | | fusul orar al serverului (implicit `Europe/Bucharest`) |
+| `SUFLET_TZ` | | fusul orar al serverului (implicit `Europe/Bucharest`); orele itemelor de pe un SOUL folosesc fusul **dispozitivului** (`devices.tz`), nu pe acesta |
 | `SUFLET_API_TOKEN`, `SOUL_PUBLIC_SCHEME`, `SOUL_DEV_MAILBOX` | | doar dev (rutele `/v1/dev/*`, `http` pe loopback, emailuri într-un fișier); interzise în pilot/producție |

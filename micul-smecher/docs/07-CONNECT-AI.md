@@ -1,6 +1,6 @@
 # 07 · Connect AI: how SOUL gets Claude and ChatGPT
 
-*SOUL package · 2 Oct 2026 · rev. 2 (after three reviews, see §9). Status: **design, final for the parallel build**. §3 (Cloud API) and §6 (Firmware contract) are **normative**: the cloud builder and the firmware builder implement from them independently; any change to either is a protocol change and needs both sides to agree. Scope: how a SOUL device reaches Claude and ChatGPT over Wi-Fi, and how the user's own Claude or ChatGPT (on a computer or a phone) reaches SOUL. Inputs: the verified research of 2 Oct 2026, the code in `ai/`, the installed `mcp` 2.2.0 SDK and the firmware (`firmware/src/{net,main}.cpp`, `firmware/lib/Suflet/src/AiProtocol.*`, read only). Supersedes the mode table in `os/ARCHITECTURE.md` D5 where they differ (§1.8).*
+*SOUL package · 2 Oct 2026 · rev. 2 (after three reviews, see §9), amended 3 Oct 2026 after the code review of `ai/` (status column in §0, §0.1 status, §1.3/§3.1/§4.1 "not built" markers, §3.2 enrolment and rate limits, §3.8 rejected items, §6.3 no code during `pair.confirm`, §6.4 10 KB device frames, §6.6 `timeout`). Status: **design, final for the parallel build**. §3 (Cloud API) and §6 (Firmware contract) are **normative**: the cloud builder and the firmware builder implement from them independently; any change to either is a protocol change and needs both sides to agree. Scope: how a SOUL device reaches Claude and ChatGPT over Wi-Fi, and how the user's own Claude or ChatGPT (on a computer or a phone) reaches SOUL. Inputs: the verified research of 2 Oct 2026, the code in `ai/`, the installed `mcp` 2.2.0 SDK and the firmware (`firmware/src/{net,main}.cpp`, `firmware/lib/Suflet/src/AiProtocol.*`, read only). Supersedes the mode table in `os/ARCHITECTURE.md` D5 where they differ (§1.8).*
 
 **Markers.** [V] verified on 2 Oct 2026 (source in §8) · [R] read in this repo or in the installed `mcp` 2.2.0 SDK · [L] likely, secondary source · [U] unverified, test before promising · [E] our estimate. Nothing marked [U] or [E] goes into marketing.
 
@@ -10,21 +10,25 @@
 
 The goal: *"you must be able to talk to your own Claude or ChatGPT from home or from the phone, or have Claude/ChatGPT built into SOUL, over Wi-Fi."*
 
-| What the user wants | Can SOUL do it? | How (mode) |
-|---|---|---|
-| **SOUL has Claude/ChatGPT inside** and answers on its screen (and out loud on units with a speaker, §1.9) | **Yes.** Wi-Fi alone gives a small trial on factory-registered units; the full allowance needs Wi-Fi + scanning one QR + a one-minute sign-in | **A · SOUL Cloud** (our API account, an included allowance) |
-| Same, but billed to **my own API key** | **Yes** | **B · Your API key**: B1 key on the device (works without SOUL Cloud), B2 key in SOUL Cloud (opt-in until the legal read, §1.3) |
-| **My Claude** (claude.ai, Claude Desktop, the Claude iPhone/Android app) puts things on SOUL: "remind me at 18:00 on my SOUL", "show tomorrow's plan on SOUL" | **Yes**, on every Claude plan incl. Free (Free = 1 custom connector) [V]. Adding the connector is easiest on a computer; adding it from a phone only is beta [V] and not yet tested by us [U] | **C · SOUL connector** (remote MCP + OAuth) |
-| **My ChatGPT** does the same | **Not yet for normal users.** It needs SOUL listed as a ChatGPT plugin (review). Advanced users: developer mode on chatgpt.com (web only); write actions on Plus/Pro are [U] | **C · SOUL connector** (same server) |
-| I type something **on SOUL** and **my own Claude/ChatGPT** answers it | **Only asynchronously**: SOUL sends it to my Claude app's inbox and nudges my phone; my Claude answers the next time I open it. For instant answers on SOUL use brain A. Real-time on my own plan exists only as a lab path (L1) | **C · inbox tools**; lab **L1** |
-| SOUL **logs into my Claude Pro/Max** account and uses it | **No. Anthropic forbids it** for third-party apps and enforces it server-side [V] | none, never build it |
-| SOUL uses **my ChatGPT Plus/Pro plan** for its own answers | **Not today.** Only through OpenAI "Sign in with ChatGPT" plan usage: Plus/Pro only, text only, waitlist for commercial apps [V] | lab **L2** (apply now) |
-| At my desk, SOUL shows Claude Code / Cowork status and I **approve or deny** tool calls on it | **Yes**, Claude Desktop macOS/Windows in Developer Mode, not an official feature [V]. It **cannot chat** [V] | **D · Hardware Buddy** (BLE) |
-| Works with **no internet / no AI** | **Yes** for alarms, timers, reminders, notes (RO/EN) | **E · Offline rules** |
+"Can SOUL do it?" says what the design allows. **"Status today"** says what exists on 3 Oct 2026; only a plain **Yes** in that column is something a buyer can do today. Investors and the founder: read the status column.
+
+| What the user wants | Can SOUL do it? (design) | How (mode) | Status today (3 Oct 2026) |
+|---|---|---|---|
+| **SOUL has Claude/ChatGPT inside** and answers on its screen (and out loud on units with a speaker, §1.9) | **Designed: yes.** Wi-Fi alone gives a small trial on factory-registered units; the full allowance needs Wi-Fi + scanning one QR + a one-minute sign-in | **A · SOUL Cloud** (our API account, an included allowance) | **Built in the cloud, simulated only.** Tested against `tools/fake_device.py`, never a real SOUL: the firmware still speaks §6 rev. 1 and cannot authenticate (needs firmware rev. 2), and the `/pair` page of the QR does not exist yet |
+| Same, but billed to **my own API key** | **Designed: yes** | **B · Your API key**: B1 key on the device (works without SOUL Cloud), B2 key in SOUL Cloud (opt-in until the legal read, §1.3) | **B1:** in the firmware, not hardware-tested against the providers [U]. **B2:** relay built, but **no user path** in pilot or production (`/me/keys` not built; only the dev route `/v1/dev/key` with the shared token) |
+| **My Claude** (claude.ai, Claude Desktop, the Claude iPhone/Android app) puts things on SOUL: "remind me at 18:00 on my SOUL", "show tomorrow's plan on SOUL" | **Designed: yes**, on every Claude plan incl. Free (Free = 1 custom connector) [V]. Adding the connector is easiest on a computer; adding it from a phone only is beta [V] and not yet tested by us [U] | **C · SOUL connector** (remote MCP + OAuth) | **Built in the cloud** (OAuth + 7 tools), tested only with a loopback MCP SDK client and a simulated device. **Not yet tried with real claude.ai** [U]; CIMD not implemented (§1.4) |
+| **My ChatGPT** does the same | **Not yet for normal users.** It needs SOUL listed as a ChatGPT plugin (review). Advanced users: developer mode on chatgpt.com (web only); write actions on Plus/Pro are [U] | **C · SOUL connector** (same server) | Same server as Claude; not tried with ChatGPT; not listed |
+| I type something **on SOUL** and **my own Claude/ChatGPT** answers it | **Only asynchronously and manually**: SOUL stores the question in SOUL's inbox; next time you are in Claude, ask "check my SOUL" and Claude answers it on SOUL. There is no inbox inside the Claude app, and Claude does not answer by itself when you open it. Phone nudge: planned (not built). For instant answers on SOUL use brain A. Real-time on my own plan exists only as a lab path (L1) | **C · inbox tools**; lab **L1** | `read_soul_inbox` / `answer_soul` built (simulated only); **phone nudge not built** (`notify.py` does not exist) |
+| SOUL **logs into my Claude Pro/Max** account and uses it | **No. Anthropic forbids it** for third-party apps and enforces it server-side [V] | none, never build it | never |
+| SOUL uses **my ChatGPT Plus/Pro plan** for its own answers | **Not today.** Only through OpenAI "Sign in with ChatGPT" plan usage: Plus/Pro only, text only, waitlist for commercial apps [V] | lab **L2** (apply now) | not built |
+| At my desk, SOUL shows Claude Code / Cowork status and I **approve or deny** tool calls on it | **Designed: yes**, Claude Desktop macOS/Windows in Developer Mode, not an official feature [V]. It **cannot chat** [V] | **D · Hardware Buddy** (BLE) | **Implemented in firmware, not yet tested with real Claude Desktop** [U] (§1.5) |
+| Works with **no internet / no AI** | **Yes** for alarms, timers, reminders, notes (RO/EN) | **E · Offline rules** | **Yes** (device and cloud) |
 
 Every SOUL has exactly one **brain** for turns started on the device (A, B or E); **C and D are side channels** on top. After pairing the brain is **A** unless the user picks another one. A Free-plan Claude user can still drive SOUL from the Claude phone app through C.
 
 ### 0.1 First-run journey (product requirement, Phase 0 exit criterion)
+
+> **Status (3 Oct 2026): this journey cannot be completed yet.** Step 4 (`/pair` with Apple/Google/email) and step 6 (`/me`, "Connect your Claude", the plan question, the copy-address button) do not exist in code; steps 3 and 5 need firmware rev. 2 (the firmware at HEAD speaks rev. 1 and cannot authenticate to this cloud). Today a SOUL is paired either inside the connector's consent page (the user types the code shown on SOUL there) or, in dev only, through `/v1/dev/pair/claim`.
 
 Budget: **≤ 7 screens and ≤ 15 taps** from unboxing to "my Claude put something on SOUL". All SOUL-owned screens (device, portal, account pages, consent, emails) exist in **Romanian and English**; the language comes from the device's `lang` and travels through `/pair` and OAuth as `ui_locales`.
 
@@ -35,10 +39,12 @@ Budget: **≤ 7 screens and ≤ 15 taps** from unboxing to "my Claude put someth
 | 3 | SOUL is online. Factory units get a few trial answers from brain A at once. SOUL shows a pairing QR + code | SOUL | "Can't reach SOUL Cloud" → cloud glyph, brain E, retry |
 | 4 | Scan the pairing QR → *Continue with Apple / Google / email* | phone browser `/pair` | email code lost → resend; code entered wrong 5× → wait |
 | 5 | SOUL asks "Pair with Ana (a***@gmail.com)? ✓ / ✗" → tap ✓. SOUL greets "Bună, Ana!", brain A on | SOUL | ✗ or no tap in 120 s → new pairing code; already owned by another account → "Ask the owner to release it" + transfer path (§3.4) |
-| 6 | Account page shows **Connect your Claude** → asks the plan (Free / Pro-Max / work) → *Copy connector address* (or the Directory link once listed) → add it in Claude → sign-in is one tap (session cookie) → *Allow* | `/me` → claude.ai | Free plan slot used: "remove the other custom connector or upgrade" · work account: "ask your Claude admin" + pre-written email · OAuth window lost during sign-in [U] → retry from `/me` |
+| 6 | Account page shows **Connect your Claude** → asks the plan (Free / Pro-Max / work) → *Copy connector address* (or the Directory link once listed) → add it in Claude → if Claude asks how to register the app, choose **Register automatically** (SOUL has no CIMD yet, §1.4) → SOUL sign-in: by default an **email code** (switch to Mail, come back); one tap only if this same browser context is already signed in to SOUL [U] → *Allow* | `/me` → claude.ai | Free plan slot used: "remove the other custom connector or upgrade" · work account: "ask your Claude admin" + pre-written email · OAuth window lost during sign-in [U] → retry from `/me` |
 | 7 | "Now type in Claude: *Show hello on my SOUL*". SOUL shows "Claude connected ✓"; `/me` turns green | Claude + SOUL | Claude did not use SOUL → say "on my SOUL" or switch SOUL on in the chat's tools menu; choose **Always allow** when asked [U: test the exact prompt] |
 
 **Exit criterion (Phase 0):** a scripted run of steps 3–7 against a simulated device passes, and on the first real connector call the device shows the celebration card and `/me` shows the grant as connected.
+
+**Not met yet.** What runs today (`ai/tests/test_e2e_connect.py`, `ai/tools/e2e_demo.sh`) is a **simulated variant of steps 3, 5 and 7**: the device is `tools/fake_device.py`, the LLMs are `tools/fake_llm.py`, pairing happens on the connector consent page (or the dev-only `/v1/dev/pair/claim`), and the OAuth client is the MCP SDK with a loopback redirect (Claude Code style), which takes the unverified-client consent branch, not claude.ai's. Steps 4 and 6 are not built. The gate is passed only when `/pair` and `/me` exist and the run goes through claude.ai's redirect URI.
 
 ---
 
@@ -75,8 +81,8 @@ Budget: **≤ 7 screens and ≤ 15 taps** from unboxing to "my Claude put someth
 |---|---|---|
 | Status | **opt-in**, with a notice, until the legal read on "intermediating" is done [U] | available; marked "advanced" unless the build has flash + NVS encryption |
 | What the user does | Pastes the key on `/me/keys` (HTTPS), after a fresh sign-in (§3.3) | Copies the key first, then joins SOUL's setup network, then opens `http://192.168.4.1` in Safari/Chrome (not the captive sheet: it closes on app switch [L]) → *Advanced* |
-| Where the key lives | Envelope-encrypted: per-key data key wrapped by KMS, unwrapped only in the brain worker, decrypts audited (no key material in the audit) | SOUL's flash (NVS namespace `soulkey` [R]); production needs flash + NVS encryption |
-| Key types accepted | Anthropic standard API keys only; reject admin keys (`sk-ant-admin…` [V]) and anything that looks like a subscription OAuth token (`sk-ant-oat…` [U: prefix to confirm]); OpenAI project/service-account keys, reject admin keys (prefix [U]). A live test call before saving | same rules in the portal (prefix check only) |
+| Where the key lives | **Today (built):** Fernet (AES-128-CBC + HMAC-SHA256) with a key derived by HKDF per (account, provider) from one master secret (`SOUL_MASTER_SECRET` env, else a `master.key` file in the data dir) [R: `keystore.py`]. **This is not KMS envelope encryption.** **Planned (Phase 0.9, not built):** per-key data key wrapped by KMS, unwrapped only in the brain worker, decrypts audited (no key material in the audit) | SOUL's flash (NVS namespace `soulkey` [R]); unencrypted unless the build has flash + NVS encryption; production needs both |
+| Key types accepted | Anthropic standard API keys only; reject admin keys (`sk-ant-admin…` [V]) and anything that looks like a subscription OAuth token (`sk-ant-oat…` [U: prefix to confirm]); OpenAI project/service-account keys, reject admin keys (`sk-admin-…` [U]). **Built:** the keystore refuses these three prefixes. **Not built:** a live test call before saving (the dev route `/v1/dev/key` stores without one) | same rules in the portal (prefix check only) |
 | Path | device → WS → relay → provider | device → HTTPS → `api.anthropic.com` / `api.openai.com` (§6.12) |
 | Works if SOUL Cloud is down | no | **yes** (the survival path) |
 
@@ -89,11 +95,11 @@ Budget: **≤ 7 screens and ≤ 15 taps** from unboxing to "my Claude put someth
 
 The legitimate "use your own Claude/ChatGPT": SOUL cannot use the user's subscription, but the user's Claude/ChatGPT can call SOUL.
 
-- **Claude.** *Customize → Connectors → Add custom connector* → `https://{BASE}/mcp` → *Connect* → SOUL sign-in (one tap if the SOUL session cookie is there) → consent → *Allow* [V]. Works in Claude web, Desktop, Cowork, iOS/Android once added (connectors added on web appear on mobile; adding on mobile is beta) [V]. Exact phone-only instructions, including "close and reopen the Claude app", are written **after** our test [U]. Team/Enterprise: an Owner adds it org-wide [V]; `/me` shows a pre-written admin email. **Connectors Directory listing is a launch gate** (it removes the URL copy-paste); until then `/me` has a big *Copy connector address* button and a 30-second video (RO/EN).
+- **Claude.** *Customize → Connectors → Add custom connector* → `https://{BASE}/mcp` → *Connect* [V: Anthropic's dialog steps]. The add dialog can offer "Use Claude's published identity" (CIMD, recommended), "Register automatically" (DCR) or "Use your own OAuth client" [V]; SOUL implements **DCR only** (no `cimd.py`; the metadata does not advertise CIMD), so tell users to choose **Register automatically**; whether claude.ai falls back to DCR by itself when CIMD is not advertised is [U]. Then SOUL's own pages (ours, never tried with real claude.ai [U]): SOUL sign-in, by default an email code; one tap only if a SOUL session cookie already exists in that browser context [U] (whether the Claude Desktop / mobile OAuth window shares the phone browser's cookies is [U]) → consent (pick or pair the SOUL) → *Allow*. Works in Claude web, Desktop, Cowork, iOS/Android once added (connectors added on web appear on mobile; adding on mobile is beta) [V]. Exact phone-only instructions, including "close and reopen the Claude app", are written **after** our test [U]. Team/Enterprise: an Owner adds it org-wide [V]; `/me` shows a pre-written admin email. **Connectors Directory listing is a launch gate** (it removes the URL copy-paste); until then `/me` has a big *Copy connector address* button and a 30-second video (RO/EN).
 - **ChatGPT.** Kept out of onboarding and marketing until SOUL is a listed ChatGPT plugin. Advanced users: chatgpt.com → *Settings → Security and login → Developer mode* → add the URL ending in `/mcp` [V]. In developer mode every SOUL write shows a ChatGPT confirmation step [V]. Write actions on Plus/Pro [U].
 - **What works.** Typed chat: "put 'buy batteries' on my SOUL", "wake me at 7 on weekdays", "show the 3 steps of this recipe on SOUL", "what's on my SOUL today?". The cloud stores the item and pushes it; SOUL shows it with a **source badge** ("Claude"/"ChatGPT") and, with a speaker and outside quiet hours, says it prefixed "De la Claude: …" / "From Claude: …".
 - **Tools** (§3.8): `list_today`, `read_soul_inbox` (read); `add_note`, `add_reminder`, `set_alarm`, `show_on_soul`, `answer_soul` (write). Never exposed to an LLM: factory reset, unpair, Wi-Fi, keys, brain, OTA, pausing connectors (xiaozhi's "user-only tool" rule [V]).
-- **The inbox ("Send to my Claude app").** On SOUL the user types (later says) a question → `inbox.add`. The cloud sends a Web Push / email "SOUL sent you a question — open Claude" (Web Push on iOS 16.4+ after Add to Home Screen [V]); a claude.ai prefill deep link is [U], fallback opens the Claude app. SOUL shows "waiting for you in Claude (2)". When the user says "check my SOUL", Claude calls `read_soul_inbox` and replies with `answer_soul`. **Not real-time**: connectors cannot wake Claude, and Claude supports neither MCP resource subscriptions nor sampling [V]. SOUL's default *Ask* button goes to brain A, which answers at once.
+- **The inbox ("Send to my Claude app").** On SOUL the user types (later says) a question → `inbox.add`; it waits in **SOUL's** inbox (there is no inbox inside the Claude app). Planned, **not built** (`notify.py` does not exist; the gateway's `on_inbox` hook has no subscriber): the cloud sends a Web Push / email "SOUL sent you a question — open Claude" (Web Push on iOS 16.4+ after Add to Home Screen [V]); a claude.ai prefill deep link is [U], fallback opens the Claude app. SOUL shows "waiting for you in Claude (2)". When the user says "check my SOUL", Claude calls `read_soul_inbox` and replies with `answer_soul`. **Not real-time**: connectors cannot wake Claude, and Claude supports neither MCP resource subscriptions nor sampling [V]. SOUL's default *Ask* button goes to brain A, which answers at once.
 - **Trust boundary (both ways).** Text SOUL returns to the AI (notes, inbox, items from shortcuts or other connectors) may have been typed by anyone in the house or come from a shared web page. Tool results return it as structured, delimited `untrusted_text`, ≤ 300 characters, with a `source`; shared/shortcut items are excluded by default; the server instructions say it is data, never instructions (§3.8). In the other direction, everything a connector sends is capped and visibly attributed on SOUL (§4.1 rule 6).
 - **Privacy.** The chat stays in the user's Claude/ChatGPT account, **but SOUL note and inbox text the AI reads, including text typed by other household members, enters that consumer AI account under the vendor's consumer terms.** The consent page lists exactly what the app will be able to read, and the "Send to my Claude app" screen says "goes to Ana's Claude". Bodies of notes and inbox items need the separate scope `soul.notes.read` the user can untick.
 - **Latency.** Tool calls must return well under 240 s (claude.ai) [V]; ours return within 3 s: `shown` when the device acks, else `queued` with an honest delivery forecast (§6.11).
@@ -179,7 +185,7 @@ All spoken wording in UI, docs and marketing is gated on `speaker` / `mic`.
 - **`SOUL_ENV=production` startup refuses** to start if any of these hold: `SUFLET_API_TOKEN` is set; enrolment policy ≠ `factory`; no KMS-provided master secret (`keystore.load_master_secret` must not create `master.key`); `SOUL_ID_PEPPER` missing; `SOUL_PUBLIC_HOST` missing.
 - **The legacy shared-token app (`server.py`) is never mounted in production.** It stays for local/self-host only. Every legacy route is ported: account routes → `/v1/me/…` (session + ownership check), device routes → device token (`device_id` only from the token). Production firmware has no `ctoken`.
 - MCP app: `transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=True, allowed_hosts=["{BASE}"])` (the SDK enables it only for localhost hosts [R]) and `max_request_body_size=65536`.
-- Reverse proxy: TLS 1.2+, HSTS, access logs **without query strings**, no request bodies logged; accept Anthropic's egress `160.79.104.0/21` [V].
+- Reverse proxy: TLS 1.2+, HSTS, access logs **without query strings**, no request bodies logged; accept Anthropic's egress `160.79.104.0/21` [V]. The app itself sets **no** `Strict-Transport-Security` header today (Phase 0.2 `security.py`, not built): the proxy / platform must add it.
 
 ### 3.1 Conventions
 
@@ -187,15 +193,15 @@ All spoken wording in UI, docs and marketing is gated on `speaker` / `mic`.
 - **Sessions** (browser): cookie `__Host-soul_session` (`Secure; HttpOnly; SameSite=Lax; Path=/`), 30 days sliding. **CSRF**: cookie `__Host-soul_csrf` (not HttpOnly) and header `X-CSRF-Token` with the same value on every state-changing `/v1/me/*`, `/v1/auth/*`, `/consent` and `/v1/me/pair/*` request; mismatch → `403 csrf`.
 - **Fresh re-auth** (`reauth_at` within 10 min, via a new email/Apple/Google login) is required for: setting an API key, unpairing, creating a personal token, approving a non-allowlisted OAuth client, deleting the account, transferring a device. Missing → `401 reauth_required`.
 - Security headers on all HTML: `Content-Security-Policy: default-src 'self'; frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`.
-- Logs: ids, codes, sizes, latencies only. Never keys, tokens, pairing/login codes, utterances, note text. A logging filter redacts `sdt_`, `sat_`, `srt_`, `spt_`, `sk-` patterns as a backstop; a test asserts it.
+- Logs: ids, codes, sizes, latencies only. Never keys, tokens, pairing/login codes, utterances, note text. A logging filter redacts `sdt_`, `sat_`, `srt_`, `spt_`, `sk-` patterns as a backstop; a test asserts it. **Not built yet** (Phase 0.2: there is no `RedactingFilter` in `suflet_ai`); today the code paths simply never log these values, and `tools/e2e_demo.sh` greps the server log for key and token prefixes.
 - Correlation ids and every external user identifier = `HMAC-SHA256(SOUL_ID_PEPPER, account_id)[:32]` (hex).
 
 ### 3.2 Device endpoints (wire format in §6; server-side rules here)
 
 | Endpoint | Server rules |
 |---|---|
-| `POST /v1/device/challenge` | Nonce = 32 random bytes, single-use, 60 s, bound to `device_id` and client IP /24 (IPv6 /56) |
-| `POST /v1/device/auth` | Verify per §6.2. **Enrolment policy** (`SOUL_ENROL_POLICY`): `factory` (production): only public keys imported from the factory list (`device_keys.state = bound`), anything else `403 not_enrolled`. `pending` (dev and P0 builds only, refused in production): an unknown key is stored as `pending` (≤ 5 per `device_id`); the key whose socket completes pairing confirmation becomes `bound` and the others are deleted. `reset: true` from a bound key → unpair (`reason: reset`), revoke grants and tokens, email the old owner |
+| `POST /v1/device/challenge` | Nonce = 32 random bytes, single-use, 60 s, bound to `device_id` and client IP /24 (IPv6 /56). Limits: per IP prefix, and per (`device_id`, IP prefix); **never per `device_id` alone** (it is public: a stranger could drain it) |
+| `POST /v1/device/auth` | Verify per §6.2. **Rate limits:** before the nonce and signature are verified only per IP prefix; per key (`device_id`, public key) only after the signature verifies, so nobody can lock a SOUL out by spamming its public `device_id`. **Enrolment policy** (`SOUL_ENROL_POLICY`): `factory` (production): only public keys imported from the factory list (`device_keys.state = factory`, `bound` once paired), anything else `403 not_enrolled`. `pending` (dev and P0 builds only, refused in production): an unknown key is stored as `pending` (≤ 5 per `device_id`) **only while the device has no owner and no factory key**; the key whose socket completes pairing confirmation becomes `bound` and the others are deleted. **Once a SOUL is paired, unknown keys get `403 not_enrolled`**, and a token of any key other than the paired SOUL's own (`bound`/`factory`) is refused everywhere (`401`, WS `4401`): no replay, poll, ack, `ask`, status or socket takeover. An **unpaired** SOUL under `pending` still goes to whoever pairs it first (the code is on its screen, the confirm is a tap): use `pending` only with known testers on an unlisted host. `reset: true` from a bound key → unpair (`reason: reset`), revoke grants and tokens, email the old owner |
 | `GET /v1/device/ws` | Bearer `sdt_…`; one socket per device; a second socket closes the first with `4409`; owner alert when `4409` alternates between different IP/ASN more than 3× in 1 h |
 | `GET /v1/device/poll`, `POST /v1/device/send` | Same handlers as the WS messages |
 | `GET /v1/ping` | No auth; `{"ok": true, "time": <epoch s>}`; used by the portal's "joined but no internet" test |
@@ -299,7 +305,7 @@ AuthSettings(
 
 ### 3.8 The SOUL connector (MCP tools, exact)
 
-`mcp_server.py` builds the server with `stateless_http=True, json_response=True` [R]. **Every tool call** resolves `(account_id, device_id, scopes)` from the access token and **re-checks** in the store: the grant is live, the device is owned by `account_id` (or a member), not revoked, and connectors are not paused; any id argument must belong to that device. Failures are tool errors (`isError: true`) whose text starts with a stable code: `no_device`, `device_revoked`, `connectors_paused`, `read_only_grant`, `notes_scope_off`, `rate_limited`, `limit_alarms`, `invalid_time`, `not_found`, `too_long`.
+`mcp_server.py` builds the server with `stateless_http=True, json_response=True` [R]. **Every tool call** resolves `(account_id, device_id, scopes)` from the access token and **re-checks** in the store: the grant is live, the device is owned by `account_id` (or a member), not revoked, and connectors are not paused; any id argument must belong to that device. Failures are tool errors (`isError: true`) whose text starts with a stable code: `no_device`, `device_revoked`, `connectors_paused`, `read_only_grant`, `notes_scope_off`, `rate_limited`, `limit_alarms`, `soul_full`, `invalid`, `invalid_time`, `not_found`, `too_long`.
 
 **Server instructions** (`INSTRUCTIONS`, exact intent; final wording RO/EN-neutral English):
 
@@ -340,12 +346,13 @@ Annotations are honest: writes `read_only_hint=False, destructive_hint=False, id
 ```
 
 - `delivered` ∈ `shown` (device acked within 3 s), `queued` (offline/asleep), `pending_accept` (needs a tap on SOUL, see caps).
+- **SOUL refused the item** (it acked `ok:false`, §6.6): the push is never replayed, so the tool does **not** say `queued`. It fails with `limit_alarms` (`err:"full"` on an alarm), `soul_full` (`err:"full"` on anything else), `connectors_paused` (`err:"paused"`) or `invalid` (any other `err`), with a truthful message, and the item is marked `deleted` in the cloud so `list_today` does not show it.
 - `will_ring` (reminders and alarms only) ∈ `yes` (shown, or the device's announced `wake_at` is before the due time), `no` (device offline with no announced wake before due), `unknown`.
 - `tell_user` is always present and localised to the account's `lang` (RO/EN).
 
 **Caps for `connector:*` and `shortcut` origins** (per device): pushes 30/min and **50/day**; ≤ **10 active connector alarms**; an alarm or reminder from a connector whose time falls **23:00–06:00 local** is sent with `needs_accept: true` (SOUL shows "pending, tap to accept"; it does not ring until accepted) and `delivered: "pending_accept"`; `say` from connectors is prefixed by the cloud with "De la Claude: " / "From Claude: " (ChatGPT likewise); the device never speaks connector or shortcut items in quiet hours. When the owner taps "pause connectors" on SOUL, every write tool returns `connectors_paused`.
 
-**Cloud nudges.** On `inbox.add` → Web Push / email "SOUL sent you a question". For a reminder or alarm still unacked at its due time → Web Push / email fallback. After 24 h offline → "SOUL lost Wi-Fi, here's how to reconnect" (`/me/wifi-help`).
+**Cloud nudges** (planned, **not built**: no `notify.py` yet). On `inbox.add` → Web Push / email "SOUL sent you a question". For a reminder or alarm still unacked at its due time → Web Push / email fallback. After 24 h offline → "SOUL lost Wi-Fi, here's how to reconnect" (`/me/wifi-help`).
 
 ### 3.9 Relay (the brain)
 
@@ -406,7 +413,7 @@ All in `ai/suflet_ai/` unless noted; Python 3.11; every module has pytest covera
 | `device_identity.py` (new) | Challenge, signature verify, enrolment policies, device tokens, factory import | `issue_nonce(device_id, ip) -> str`, `authenticate(body: DeviceAuthIn, ip) -> DeviceAuthOut`, `verify_sig(pub: bytes, msg: bytes, sig: bytes) -> bool`, `device_from_token(bearer) -> DeviceCtx`, `import_factory(csv_path)` |
 | `pairing.py` (new) | Codes, claims, on-device confirmation, unpair, transfer | `current_code(device_id) -> PairingMsg`, `claim(session, code, ip) -> pid`, `on_device_answer(device_id, pid, ok: bool)`, `unpair(device_id, reason, erase: bool)` |
 | `outbox.py` (new) | Per-device ordered delivery | `enqueue(device_id, action, args, item_id, origin, say=None, private=False, needs_accept=False) -> int`, `replay(device_id, after, limit=50) -> (list[dict], more: bool)`, `ack(device_id, seq, ok, err=None)`, `expire_cards()` |
-| `device_hub.py` (new) | WS endpoint, poll/send, presence, `push_and_wait`, delivery forecast | `ws_endpoint(websocket)`, `poll(ctx, after, wait)`, `send(ctx, messages)`, `push_and_wait(device_id, seq, timeout=3.0) -> "shown"\|"queued"\|"pending_accept"`, `forecast(device_id, due_local) -> "yes"\|"no"\|"unknown"`, `is_online(device_id)` |
+| `device_hub.py` (new) | WS endpoint, poll/send, presence, `push_and_wait`, delivery forecast | `ws_endpoint(websocket)`, `poll(ctx, after, wait)`, `send(ctx, messages)`, `push_and_wait(device_id, seq, timeout=3.0) -> "shown"\|"queued"\|"pending_accept"\|"rejected:<err>"`, `forecast(device_id, due_local) -> "yes"\|"no"\|"unknown"`, `is_online(device_id)` |
 | `dispatcher.py` / `soul.py` (modify) | Every stored action enqueues a push (device-origin items not echoed); connector caps; brain `cloud`; history; model caps | `SoulService.action(device, name, args, lang, source, origin_app=None) -> ActionResult`, `SoulService.ask(device, text, lang, conv=None, ctx=None, brain=None) -> AskResult(conv=…)` |
 | `models.py` (new) | Model capability table | `MODEL_CAPS: dict[str, ModelCaps]`, `request_kwargs(model, effort) -> dict` |
 | `conversations.py` (new) | History store | `append(conv_id, device_id, role, text)`, `recent(conv_id, n=6)`, `purge(older_than_days=7)` |
@@ -445,10 +452,10 @@ All in `ai/suflet_ai/` unless noted; Python 3.11; every module has pytest covera
 
 ### 4.1 Security rules
 
-1. **Never** ask for, store, proxy or extract a claude.ai login, cookie, session or subscription OAuth token (incl. `CLAUDE_CODE_OAUTH_TOKEN`) [V]. No "log in with Claude" screen anywhere. The keystore rejects such tokens (§1.3).
+1. **Never** ask for, store, proxy or extract a claude.ai login, cookie, session or subscription OAuth token (incl. `CLAUDE_CODE_OAUTH_TOKEN`) [V]. No "log in with Claude" screen anywhere. The keystore refuses the known prefixes `sk-ant-admin` [V], `sk-ant-oat` [U] and `sk-admin-` [U] (built, `keystore.py`); anything smarter than a prefix check is not built.
 2. **No fleet secret on the device or in the repo** (the Rabbit r1 lesson [V]). Per-device keys, revocable one by one; no `ctoken` in production firmware; the legacy shared token never runs in production (§3.0). Secret scanning in CI; all token prefixes (`sdt_ sat_ srt_ spt_`) are scanner-friendly.
-3. TLS everywhere with certificate verification (ESP cert bundle on device); HSTS on `{BASE}`.
-4. Device private keys never leave the device; the cloud stores public keys only. Tokens and codes stored hashed; user API keys envelope-encrypted with KMS.
+3. TLS everywhere with certificate verification (ESP cert bundle on device); HSTS on `{BASE}` (**not set by the app today**: the reverse proxy must add it until `security.py`, Phase 0.2).
+4. Device private keys never leave the device; the cloud stores public keys only. Tokens and codes stored hashed; user API keys encrypted (**today** Fernet with a key derived from one env master secret; KMS envelope encryption is Phase 0.9, **not built**).
 5. Logs never contain keys, tokens, **pairing or login codes**, utterances or note text; access logs have no query strings.
 6. **What a prompt-injected AI can do through the connector** (from a malicious email or page in the user's Claude/ChatGPT), and the limit on each: write notes/cards (capped 50 pushes/day, badge shows the source); **make SOUL speak** (prefixed "From Claude:", never in quiet hours, speaker SKUs only); set alarms (≤ 10 active, night alarms need a tap to accept); read notes and inbox (only with `soul.notes.read`, ≤ 300 chars each, shared items excluded by default, marked untrusted). It can never reset, unpair, change Wi-Fi, keys, brain or cloud URL, flash firmware, or un-pause connectors. The owner can **pause connectors** with one tap on SOUL. In the other direction, SOUL item text is returned as untrusted data so it cannot steer the user's AI into other connectors (§3.8).
 7. OAuth: PKCE S256, exact redirect match (loopback port-agnostic only), consent by host with an allowlist, CSRF + `frame-ancestors 'none'`, rotating refresh with a 60 s grace, `resource` audience check, per-call device re-check.
@@ -475,13 +482,13 @@ Local features (clock, alarms, timers, stored reminders, notes, offline rules) n
 | No Wi-Fi | `offline` | sleepy face, Wi-Fi glyph | offline rules; queue items; retry; setup reopens after 5 min of failure (§6.13) |
 | Cloud unreachable / TLS fail | `network`, reconnect loop | thinking → confused; cloud glyph | B1 if a device key exists, else rules; queue |
 | Thinking | `ask` sent | thinking face ≤ 100 ms | `say.delta` when available |
-| Slow (> 8 s) | timer | thinking + slow blink | at 25 s: confused, "taking too long" |
+| Slow (> 8 s) | timer | thinking + slow blink | at 25 s: confused, "taking too long". The cloud stops calling the model at ~22 s and answers inside 25 s; if the device still gets `timeout`, actions the turn already ran still arrive as ordinary pushes (origin `turn`): do not retry automatically |
 | Unpaired / revoked | `pairing`, close `4403` | surprised, pairing code + QR | brain E (or trial) until paired |
 | Pair request | `pair.confirm` | surprised, "Pair with Ana?" ✓/✗ | §6.3 |
 | Bad API key | `bad_key` | **sad** (not smug: not the user's fault) + QR `/me/keys` | rules answer |
 | Allowance / quota used | `allowance` / `quota` | sad + renewal date + QR `/me/allowance` | rules answer |
 | Rate limited / overloaded | `rate_limited`, `upstream` | thinking, one retry | then rules + "busy, try in a minute" |
-| Refused | `refused` | no face + short line | nothing executed |
+| Refused | `refused` | no face + short line | nothing executed: items an earlier tool round of the same turn stored are deleted again, nothing is pushed |
 | Connector push | `push` origin connector | surprised → happy, card with source badge | `say` (prefixed) if speaker and not quiet hours |
 | Connector night alarm | `needs_accept` | card "Claude wants to set 03:00 · tap to accept" | not armed until accepted |
 | **Connector item while SOUL sleeps or is offline** | cloud | – | tool result says `queued` + `will_ring` + `tell_user`; Web Push/email at due time if still unacked |
@@ -508,7 +515,7 @@ Local features (clock, alarms, timers, stored reminders, notes, offline rules) n
 | 0.10 | `app.py` + EU deploy recipe | `app.py`, `deploy/` |
 | 0.11 | **Tests** (beyond unit tests of each module): OAuth code + PKCE + refresh rotation; **refresh grace window** (same pair within 60 s, family revoked after); loopback port-agnostic accepted, non-loopback mismatch rejected, DCR rejects bad URIs and lookalike names; CIMD SSRF cases (private IP, rebinding, redirect, port); consent CSRF + `frame-ancestors` present; `iss` on redirect; 401 header + both metadata documents; per-tool scope (`read_only_grant`, `notes_scope_off`); cross-device `item_id` → `not_found`; revoked device re-checked per call; pairing needs `pair.ok`; fleet-wide pairing limit; device auth rejects a signature made for another host and a replayed nonce; `pending` vs `factory` enrolment; `reset:true` unpairs; WS hello/push/ack/replay paging/`resync`; long-poll parity; caps (50/day, 10 alarms, night `needs_accept`); `will_ring` forecast; tool results carry `source` + `untrusted_text` ≤ 300; production refuses legacy token / `pending` / missing KMS / missing pepper; no code, token or key in any response or log line; keystore rejects admin/OAuth key prefixes; Haiku request without `effort` (mocked 400 per model ID) | `tests/` |
 
-**Exit gate:** a scripted MCP client completes OAuth; `add_reminder` lands on a simulated device socket with `delivered: "shown"`; the §0.1 journey steps 3–7 pass against the simulated device.
+**Exit gate:** a scripted MCP client completes OAuth; `add_reminder` lands on a simulated device socket with `delivered: "shown"`; the §0.1 journey steps 3–7 pass against the simulated device. **Status:** the first two hold; the third holds only for the simulated variant of steps 3, 5 and 7 described under §0.1 (steps 4 and 6 not built, loopback OAuth client, not claude.ai). Not passed.
 
 ### Phase 1 · launch (Founders 00)
 
@@ -626,7 +633,7 @@ SETUP (no Wi-Fi) ──wifi ok──▶ ONLINE_UNPAIRED ──pair.confirm──
                                     ◀──────────────── `unpaired` / close 4403 ──────────────┘
 ```
 
-- In `ONLINE_UNPAIRED` the cloud sends `pairing`. The device shows the **code** large, as `XXXX-XXXX` (Crockford base32, alphabet `0123456789ABCDEFGHJKMNPQRSTVWXYZ`), and a QR of `pairing.url` (`https://{BASE}/pair#c=7KQ3M9XD&d=soul-a1b2c3d4e5f6`). A new `pairing` replaces the old one.
+- In `ONLINE_UNPAIRED` the cloud sends `pairing`. The device shows the **code** large, as `XXXX-XXXX` (Crockford base32, alphabet `0123456789ABCDEFGHJKMNPQRSTVWXYZ`), and a QR of `pairing.url` (`https://{BASE}/pair#c=7KQ3M9XD&d=soul-a1b2c3d4e5f6`). A new `pairing` replaces the old one. **While a `pair.confirm` is pending** (until its `expires_in`) the cloud sends **no** `pairing` and issues no new code (a fresh code would let a second claim expire the first); after a reconnect it repeats the same `pair.confirm` (same `pid`) instead, which the device treats as the same request. A new code follows only `pair.no`, the claim's expiry, or a rejection.
 - `pair.confirm` → the device shows *"Pair with {name} ({account_hint})?"* with ✓ and ✗. The answer **must** come from a touch on the device (never BLE, serial or a timer). ✓ → `pair.ok {pid}`; ✗ → `pair.no {pid}`; no answer within `expires_in` → `pair.no {pid}`.
 - `paired` → greet `owner` by first name; leave the pairing screen. `unpaired` → back to `ONLINE_UNPAIRED`.
 
@@ -637,7 +644,7 @@ SETUP (no Wi-Fi) ──wifi ok──▶ ONLINE_UNPAIRED ──pair.confirm──
 - Send `hello` within 10 s of open (else the server closes `4400`). Wait for `welcome`.
 - WebSocket **ping every 25 s**; the server closes a socket silent for 70 s.
 - Reconnect backoff 1, 2, 4 … 60 s + 0–30 % jitter; reset after 60 s connected; immediately on wake.
-- Frame limits: server → device text ≤ 8 KB; device → server ≤ 4 KB; binary audio (Phase 2) ≤ 1 KB.
+- Frame limits: server → device text ≤ 8 KB; device → server ≤ **10 KB** (10,240 bytes of UTF-8; send non-ASCII as raw UTF-8, not `\u` escapes: a 2,000-character note of §6.8 can take 8,000 bytes); binary audio (Phase 2) ≤ 1 KB. An over-limit frame gets `error too_big` carrying the frame's `id` (as `re`) and `cid` when the cloud can read them, so the device can drop that entry from `outq` (or split a note) instead of resending it on every connect.
 
 **Long-poll (fallback; also used for wake-polls in deep sleep, §6.11).**
 
@@ -677,7 +684,7 @@ Every text frame (and every element of `messages`) is one JSON object:
 | `t` | Fields (exact) | When / rules |
 |---|---|---|
 | `hello` | `proto: [1]`, `fw: str`, `hw: "lcd28"\|"amoled175"\|…`, `caps: [str]`, `after: u32` (last applied seq, 0 if none), `lang: "ro"\|"en"`, `brain_local: "cloud"\|"claude"\|"chatgpt"\|"direct"\|"none"`, `power: "usb"\|"battery"`, `tz_posix?: str` | first frame. `caps` ⊆ `text cards alarms reminders notes timers focus inbox confirm mic speaker stream ota` |
-| `ask` | `id: str`, `text: 1..2000`, `lang`, `conv: str\|null`, `ctx: {"timer_left_min": int\|null, "unsynced": [{"action": str, "args": {}}] ≤10}` | one turn of brain A or B2. `conv` = the last `reply.conv` if that reply came < 10 min ago, else `null`. Give up after 25 s |
+| `ask` | `id: str`, `text: 1..2000`, `lang`, `conv: str\|null`, `ctx: {"timer_left_min": int\|null, "unsynced": [{"action": str, "args": {}}] ≤10}` | one turn of brain A or B2. `conv` = the last `reply.conv` if that reply came < 10 min ago, else `null`. Give up after 25 s. An `error timeout` means the reply is lost, not that nothing happened: actions the turn ran still arrive as pushes; do not retry automatically |
 | `abort` | `re: <ask id>` | the user cancelled; ignore any later `reply` with that `re` |
 | `ack` | `seq: u32`, `ok: bool`, `err?: "unsupported"\|"invalid"\|"full"\|"paused"` | for **every** `push`, after the item is stored (not after it is shown) |
 | `item.add` | `cid: 16 hex`, `action: str`, `args: {}`, `created: "YYYY-MM-DDTHH:MM"` | something created on SOUL (offline rules, B1, keyboard). Same `action`/`args` schemas as §6.8. Retries reuse `cid` |
@@ -805,7 +812,7 @@ Without SOUL Cloud, items created in B1 stay on the device (and are sent as `ite
 | `ask` | 20 / min, 600 / day | cloud answers `error rate_limited` + `retry_ms`; offline rules answer |
 | `item.add` + `inbox.add` | 60 / min | `error rate_limited` |
 | Frames | 10 / s burst, 2 / s sustained | close `4429` |
-| `/v1/device/auth` | 10 / h per device, 60 / h per IP | `429` |
+| `/v1/device/auth` | 10 / h per device key (counted after the signature verifies), 60 / h per IP prefix | `429` |
 | Pushes from connectors + shortcuts (cloud-side) | 30 / min, 50 / day, ≤ 10 active connector alarms | the AI gets a tool error; nothing reaches the device |
 
 ### 6.16 Do / don't

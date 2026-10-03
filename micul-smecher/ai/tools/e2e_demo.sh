@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# SOUL Cloud end to end on this machine, no real keys (docs/07-CONNECT-AI.md §0.1 steps 3-7).
+# SOUL Cloud end to end on this machine, no real keys: a SIMULATED variant of docs/07-CONNECT-AI.md §0.1
+# steps 3, 5 and 7. Steps 4 (/pair) and 6 (/me) are not built; pairing goes through the connector consent page
+# and the dev-only /v1/dev/pair/claim; the OAuth client is the MCP SDK with a loopback redirect (Claude Code
+# style), not claude.ai; device and LLMs are our own fakes. Passing this is NOT the Phase 0 exit gate.
 #
 #   tools/e2e_demo.sh            # from ai/ ; exit code 0 = every step passed
 #
