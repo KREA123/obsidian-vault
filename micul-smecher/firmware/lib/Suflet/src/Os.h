@@ -403,6 +403,14 @@ class Os {
   std::vector<CloudOut> outs_;
   bool applyingCloud_ = false;
   std::vector<std::string> turnChips_;  // pushes caused by the cloud turn being answered
+  // a connector push that waits for a tap (needs_accept), a private card (title until a tap)
+  bool acceptMode_ = false;
+  CloudPush pendingAccept_;
+  bool cardHidden_ = false;
+  std::string privateBody_;
+  bool applyCloudAct(const CloudPush& p, std::string& err);
+  std::string cloudSource(const CloudPush& p) const;
+  void answerAccept(bool ok);
   View pairReturn_ = View::Settings;
   bool pairedShown_ = false;
   float pairDoneT_ = -1;

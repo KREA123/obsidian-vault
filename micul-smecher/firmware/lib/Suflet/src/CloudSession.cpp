@@ -435,7 +435,8 @@ void CloudSession::send(const CloudOut& o, uint32_t localNow, uint32_t epochNow)
     e.frame = CloudLink::itemState(o.itemId, std::string(), o.state.c_str(), epochNow);
     e.state = true;
   } else {
-    e.cid = CloudLink::cid(rand32(), rand32());
+    const uint32_t r1 = rand32(), r2 = rand32();  // in this order (argument order is unspecified)
+    e.cid = CloudLink::cid(r1, r2);
     e.frame = o.kind == CloudOut::Inbox ? CloudLink::inboxAdd(e.cid, o.text, "claude")
                                         : CloudLink::itemAdd(e.cid, o.act, o.created ? o.created : localNow);
   }

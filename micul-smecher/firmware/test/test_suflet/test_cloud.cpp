@@ -877,6 +877,29 @@ static void test_cloud_replay_recorded_frames() {
   TEST_ASSERT_EQUAL_STRING(kRecordedFinalState, s.state.c_str());
   TEST_ASSERT_EQUAL_UINT32(kRecordedLastSeq, s.lastSeq);
   TEST_ASSERT_TRUE(pushes >= kRecordedMinPushes);
+
+  // the recorded HTTP answers of /challenge and /auth
+  for (const RecordedHttp& h : kRecordedHttp) {
+    CloudAuth a;
+    if (!strcmp(h.what, "challenge")) {
+      TEST_ASSERT_TRUE_MESSAGE(CloudLink::parseChallenge(h.status, h.body, strlen(h.body), a), h.body);
+      TEST_ASSERT_EQUAL_INT(43, (int)a.nonce.size());
+    } else if (!strcmp(h.what, "auth_ok")) {
+      TEST_ASSERT_TRUE_MESSAGE(CloudLink::parseAuth(h.status, h.body, strlen(h.body), a), h.body);
+      TEST_ASSERT_EQUAL_UINT32(86400u, a.expiresIn);
+      TEST_ASSERT_EQUAL_STRING("pending", a.state.c_str());
+    } else {
+      TEST_ASSERT_FALSE(CloudLink::parseAuth(h.status, h.body, strlen(h.body), a));
+      const CloudLink::AuthRetry r = CloudLink::authRetry(a, 1, 0);
+      if (!strcmp(h.what, "auth_bad_nonce")) {
+        TEST_ASSERT_EQUAL_STRING("bad_nonce", a.code.c_str());
+        TEST_ASSERT_EQUAL_INT(CloudLink::AuthRetry::NewChallenge, r.kind);
+      } else {
+        TEST_ASSERT_EQUAL_STRING("bad_signature", a.code.c_str());
+        TEST_ASSERT_EQUAL_INT(CloudLink::AuthRetry::Backoff, r.kind);
+      }
+    }
+  }
 }
 
 void runCloudTests() {

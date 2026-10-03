@@ -31,6 +31,8 @@ enum : int {
   IdLater,
   IdCenter,
   IdInbox,
+  IdAccept,
+  IdReject,
   IdRow = 100,
 };
 
@@ -142,6 +144,11 @@ void Os::back() {
       go(pairReturn_ == View::Pair ? View::Settings : pairReturn_);
       return;
     case View::Answer:
+      if (acceptMode_) {  // closed without Accept: the item is not armed (§6.7 rule 3)
+        answerAccept(false);
+        return;
+      }
+      cardHidden_ = false;
       go(answerReturn_ == View::Answer ? View::Home : answerReturn_);
       return;
     case View::Ringing: return;
@@ -237,14 +244,24 @@ void Os::clearPendingKey() {
 
 void Os::setNet(const NetInfo& n) {
   const bool was = net_.connected, wasPaired = net_.paired;
+  const std::string oldConfirm = net_.confirmPid;
   const bool changed = n.connected != net_.connected || n.portal != net_.portal || n.ssid != net_.ssid ||
                        n.connecting != net_.connecting || n.keyClaude != net_.keyClaude ||
                        n.keyOpenai != net_.keyOpenai || n.relay != net_.relay || n.cloudOnline != net_.cloudOnline ||
                        n.paired != net_.paired || n.pairCode != net_.pairCode || n.pairUrl != net_.pairUrl ||
                        n.owner != net_.owner || n.cloudUpdate != net_.cloudUpdate || n.cloudRefused != net_.cloudRefused ||
-                       n.apPass != net_.apPass;
+                       n.apPass != net_.apPass || n.confirmPid != net_.confirmPid ||
+                       n.connectorsPaused != net_.connectorsPaused || n.cloudProblem != net_.cloudProblem ||
+                       n.trialLeft != net_.trialLeft;
   net_ = n;
   if (changed) invalidate();
+  if (!n.confirmPid.empty() && n.confirmPid != oldConfirm) {  // "Pair with Ana?": only a touch answers it
+    if (view_ == View::Keyboard) kb_.cancel();
+    if (view_ != View::Pair) pairReturn_ = (view_ == View::Boot || view_ == View::Answer) ? View::Home : view_;
+    if (view_ != View::Boot) go(View::Pair);
+    face_.react(X_surprised, 1.2f);
+    brainEvents_.push_back(Ev::AlarmDue);  // wakes the face
+  }
   if (netKnown_ && !was && n.connected && set_.booted) toast(tr("Wi-Fi connected", "Wi-Fi conectat"), kMint, 2.0f);
   if (netKnown_ && !wasPaired && n.paired) {  // the account claimed this SOUL: greet the owner
     face_.react(X_love, 1.6f);
@@ -577,7 +594,21 @@ void Os::onTap(float x, float y) {
   switch (view_) {
     case View::Home: brainEvents_.push_back(Ev::Tap); return;
     case View::Answer:
-      if (!thinking_) back();
+      if (thinking_) return;
+      if (acceptMode_) {  // only the two buttons answer it
+        const int id = hitItem(x, y);
+        if (id == IdAccept || id == IdReject) answerAccept(id == IdAccept);
+        return;
+      }
+      if (cardHidden_) {  // a private card: the text shows after a tap
+        cardHidden_ = false;
+        reply_.say = privateBody_;
+        privateBody_.clear();
+        answerT_ = 0;
+        invalidate();
+        return;
+      }
+      back();
       return;
     case View::Boot:
       if (bootStep_ == BootStep::Birth) {
@@ -719,6 +750,21 @@ void Os::activate(int id) {
         case IdRow + 8:
           set_.nightOff = !set_.nightOff;
           break;
+        case IdRow + 9: {  // pause connectors: a user-only switch, never from the cloud or an AI
+          if (!net_.paired) {
+            toast(tr("Pair with your account first", "Leagă-mă întâi de cont"), kAmber);
+            return;
+          }
+          CloudOut o;
+          o.kind = CloudOut::Connectors;
+          o.paused = !net_.connectorsPaused;
+          net_.connectorsPaused = o.paused;
+          outs_.push_back(o);
+          toast(o.paused ? tr("Claude & co. paused", "Claude & co. pe pauză") : tr("Claude & co. back on", "Claude & co. pornite"),
+                o.paused ? kAmber : kMint);
+          invalidate();
+          return;
+        }
         default: return;
       }
       pushCmd(OsCmd::SaveSettings);
@@ -754,7 +800,16 @@ void Os::activate(int id) {
       }
       return;
     case View::Pair:
-      if (id == IdSetup) {
+      if ((id == IdAccept || id == IdReject) && !net_.confirmPid.empty()) {
+        CloudOut o;  // a touch on SOUL: the only way to answer pair.confirm (§6.3)
+        o.kind = id == IdAccept ? CloudOut::PairOk : CloudOut::PairNo;
+        o.pid = net_.confirmPid;
+        outs_.push_back(o);
+        net_.confirmPid.clear();
+        face_.react(id == IdAccept ? X_happy : X_smug, 1.0f);
+        if (id == IdReject) toast(tr("Not paired", "Nu m-am legat"), kAmber);
+        invalidate();
+      } else if (id == IdSetup) {
         pushCmd(OsCmd::StartPortal);
         go(View::Wifi);
       }
@@ -952,7 +1007,7 @@ void Os::aiResult(const AiOutcome& o) {
     if (!history_.empty() && history_.back().user) history_.pop_back();
     // the on-device rules still do what they can (an alarm, a reminder, a timer)
     AiReply r;
-    if (localAct(question, now_, ro(), r)) runActions(r.actions, &chips_);
+    if (!o.noLocal && localAct(question, now_, ro(), r)) runActions(r.actions, &chips_);
     else r.say.clear();
     if (aiMode() == AiMode::Cloud && net_.relay && !net_.paired && (o.err == AiErr::NoKey || o.err == AiErr::BadKey) &&
         r.actions.empty())
@@ -967,6 +1022,10 @@ void Os::aiResult(const AiOutcome& o) {
   turnChips_.clear();
   runActions(o.reply.actions, &chips_);
   showAnswer(o.reply, AiErr::None, src);
+  if (o.note != AiErr::None) {  // SOUL Cloud answered with its rules: say why (bad key, allowance used...)
+    toast(aiErrText(o.note, ro()), kAmber, 6.0f);
+    face_.flash(kRose, 1.2f);
+  }
 }
 
 void Os::voiceText(const std::string& text, AiErr err) {
@@ -1172,6 +1231,17 @@ void Os::tickReminders() {
         face_.react(X_surprised, 1.6f);
         brainEvents_.push_back(Ev::AlarmDue);
       }
+      for (size_t k = 0; k < refs_.size(); ++k)  // one SOUL Cloud put here: keep its list truthful
+        if (refs_[k].kind == 1 && refs_[k].k1 == rems_[i].when && refs_[k].k2 == hashStr(rems_[i].text.c_str())) {
+          CloudOut o;
+          o.kind = CloudOut::State;
+          o.itemId = refs_[k].id;
+          o.state = "rang";
+          outs_.push_back(o);
+          refs_.erase(refs_.begin() + (long)k);
+          pushCmd(OsCmd::SaveCloudRefs);
+          break;
+        }
       rems_.erase(rems_.begin() + i);
       pushCmd(OsCmd::SaveReminders);
       return;
@@ -1265,7 +1335,7 @@ void Os::update(float dt, Brain& brain) {
           set_.ai = (uint8_t)(id == IdRow + 1 ? AiMode::Claude : AiMode::ChatGpt);
           openKeyboard(KbKey);  // type the key on the round keyboard (masked on screen)
         }
-      } else if (view_ == View::Settings && id == IdRow + 9) {
+      } else if (view_ == View::Settings && id == IdRow + 10) {
         restartBoot();
       }
     }
