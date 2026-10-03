@@ -478,6 +478,26 @@ class DeviceStore:
         d = self.get_device(device_id)
         return d["account_id"] if d else None
 
+    def members(self, device_id: str) -> List[str]:
+        with self.lock:
+            rows = self.db.execute("SELECT account_id FROM device_members WHERE device_id=? ORDER BY created",
+                                   (device_id,)).fetchall()
+        return [r["account_id"] for r in rows]
+
+    def revoked(self, device_id: str) -> bool:
+        """True when the device has keys on file and every one of them is revoked."""
+        with self.lock:
+            rows = self.db.execute("SELECT state FROM device_keys WHERE device_id=?", (device_id,)).fetchall()
+        return bool(rows) and all(r["state"] == "revoked" for r in rows)
+
+    def account_devices(self, account_id: str) -> List[str]:
+        with self.lock:
+            rows = self.db.execute(
+                "SELECT device_id FROM devices WHERE account_id=? UNION "
+                "SELECT device_id FROM device_members WHERE account_id=? ORDER BY 1", (account_id, account_id)
+            ).fetchall()
+        return [r["device_id"] for r in rows]
+
     # ----------------------------------------------------- factory list --
     def import_factory(self, rows: Iterable[Tuple[str, str]] | str) -> int:
         """Import `(device_id, pub_b64u)` pairs (or a CSV path with columns device_id,pub). Returns the count."""
@@ -679,8 +699,11 @@ class DeviceStore:
                 raise GatewayError(429, "rate_limited", "too many wrong codes, wait a little",
                                    retry_ms=int((q[0] + window - now) * 1000))
 
-    def claim(self, account_id: str, first_name: str, email: str, code: Any, ip: str) -> dict:
-        """A signed-in account typed / scanned a code. Returns the claim and the `pair.confirm` for the device."""
+    def claim(self, account_id: str, first_name: str, email: str, code: Any, ip: str,
+              hint: Optional[str] = None) -> dict:
+        """A signed-in account typed / scanned a code. Returns the claim and the `pair.confirm` for the device.
+
+        `hint` (e.g. "a***@gmail.com") overrides the one derived from `email` when the caller only has a hint."""
         if not isinstance(account_id, str) or not account_id:
             raise GatewayError(401, "unauthenticated", "sign in first")
         self._check_claim_limits(account_id, ip)
@@ -706,8 +729,8 @@ class DeviceStore:
             self.db.execute("UPDATE pair_claims SET state='expired' WHERE device_id=? AND state='awaiting_device'",
                             (device_id,))
             pid = "p_" + b64u(secrets.token_bytes(12))
-            name = (first_name or "").strip()[:40] or account_hint(email) or "?"
-            hint = account_hint(email)
+            hint = (hint if hint is not None else account_hint(email))[:80]
+            name = (first_name or "").strip()[:40] or hint or "?"
             self.db.execute(
                 "INSERT INTO pair_claims(pid, device_id, account_id, first_name, hint, state, expires) "
                 "VALUES (?,?,?,?,?,?,?)", (pid, device_id, account_id, name, hint, "awaiting_device", now + CLAIM_TTL))

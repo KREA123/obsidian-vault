@@ -1,0 +1,14 @@
+{
+  "comment": "SOUL device auth test vector (docs/07-CONNECT-AI.md \u00a76.2, \u00a76.17). TEST KEY ONLY: the private scalar is public. ECDSA signatures are randomized, so `sig` is one valid signature: check that the message bytes match `msg_hex`, that `sig` verifies with `pub`, and that your own signature of the message verifies with `pub`. `sig_other_host` signs the same nonce for another host and must be rejected by the cloud.",
+  "curve": "P-256",
+  "hash": "SHA-256",
+  "priv_hex": "4e068ae165a9aa91f41560ed9d5a5943e376f1239fb1ca776c7a915cfc38dafd",
+  "pub": "BD7vEwPfrnUCzqtw8_0wtw21_xPeEKP8p4ngjvBonfNW2XnGuPlDig3hF_Y4nPVAqNLc--ZN4lktLFu7yaQKLM4",
+  "host": "soul.example",
+  "device_id": "soul-a1b2c3d4e5f6",
+  "nonce": "q2X0nJ8Wf3n2v2nOQhV1C0xg5Hkq1oS6c2zq0iYq3pA",
+  "msg_utf8": "soul-auth-v1\nsoul.example\nsoul-a1b2c3d4e5f6\nq2X0nJ8Wf3n2v2nOQhV1C0xg5Hkq1oS6c2zq0iYq3pA",
+  "msg_hex": "736f756c2d617574682d76310a736f756c2e6578616d706c650a736f756c2d6131623263336434653566360a713258306e4a385766336e3276326e4f516856314330786735486b71316f533663327a7130695971337041",
+  "sig": "W5-qH6aDbOBzo6HaL4250RV_rvQ70GyVs_t5rt3T0F87DwjlGWtDOkQ0JhvwyoK1QKcIOBHIVjbbqtb9sCj8ig",
+  "sig_other_host": "pdJx2Vhjy9bHH0WR_V8a7eqUP81w3mldEkqfCIRfbxUc_xIlOcN7RAeDDMSlwi5S3YyKy4NaO7QanMpy0IaEQg"
+}

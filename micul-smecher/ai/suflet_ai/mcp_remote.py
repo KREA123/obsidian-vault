@@ -27,10 +27,9 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import html
+import functools
 import inspect
 import importlib
-import json
 import logging
 import os
 import re
@@ -53,7 +52,7 @@ from mcp.server.auth.routes import cors_middleware
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
-from mcp.types import ToolAnnotations
+from mcp.types import CallToolResult, TextContent, ToolAnnotations
 
 from .accounts import (
     Accounts,
@@ -75,6 +74,8 @@ from .oauth import (
     as_metadata,
 )
 from .soul import SoulService
+
+DEFAULT_TZ = "Europe/Bucharest"
 
 log = logging.getLogger("soul.connector")
 
@@ -124,7 +125,7 @@ def ctx_from_token() -> ConnectorCtx:
 
 
 class GatewayError(Exception):
-    """Raised by a gateway for a refused request; `code` is one of §3.13 (e.g. 'device_owned')."""
+    """A refused gateway request; `code` is one of §3.13 (e.g. 'device_owned', 'rate_limited')."""
 
     def __init__(self, code: str, msg: str = "", retry_ms: Optional[int] = None):
         super().__init__(msg or code)
@@ -132,35 +133,41 @@ class GatewayError(Exception):
 
 
 class DeviceGateway(Protocol):
-    """What the connector needs from the device side (outbox.py, device_hub.py, pairing.py, §3.12).
+    """What the connector needs from the device side (`suflet_ai.gateway.Gateway`, §3.12).
 
-    Every method may be sync or async. Optional ones (`forecast`, `is_online`) may be missing.
-    `device_info` returns None for an unknown device, else a dict with at least
-    {"device_id", "account_id" (owner or None), "name", "online", "last_seen", "connectors_paused",
-     "revoked"} and optionally "members" (account ids), "tz", "lang".
+    The real `Gateway` exposes `push`, `push_and_wait`, `forecast`, `is_online`, `claim(account_id,
+    first_name, email, code, ip) -> {"pid", ...}`, `claim_state(pid, account_id) -> {"state"}`,
+    `inbox(device_id, state)`, `inbox_answered(device_id, item_id)` and its `store` (`DeviceStore`).
+    A test double may instead offer `device_info(device_id) -> dict | None` and
+    `devices_of(account_id) -> [dict]`. Every method may be sync or async.
     """
 
-    def device_info(self, device_id: str) -> Optional[dict]: ...
-
-    def devices_of(self, account_id: str) -> List[dict]: ...
-
-    def enqueue(self, device_id: str, action: str, args: dict, item_id: str, origin: dict, say: Optional[str] = None,
-                private: bool = False, needs_accept: bool = False) -> int: ...
+    def push(self, device_id: str, action: str, args: dict, item_id: str, origin: dict, say: Optional[str] = None,
+             private: bool = False, needs_accept: bool = False) -> int: ...
 
     def push_and_wait(self, device_id: str, seq: int, timeout: float = 3.0) -> str: ...
 
     def forecast(self, device_id: str, due_local: str) -> str: ...
 
-    def claim(self, account_id: str, code: str, ip: str, *, name: str, account_hint: str) -> str: ...
 
-    def claim_state(self, pid: str, account_id: str) -> str: ...
+def _epoch_local(v: Any, tz: str) -> Optional[str]:
+    """Epoch seconds -> local 'YYYY-MM-DDTHH:MM' (strings pass through)."""
+    if v is None or v == "":
+        return None
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        try:
+            return dt.datetime.fromtimestamp(int(v), ZoneInfo(tz)).strftime("%Y-%m-%dT%H:%M")
+        except (ValueError, OverflowError, KeyError):
+            return None
+    return str(v)[:16]
 
 
 class GatewayAdapter:
-    """Wraps whatever `suflet_ai.gateway` provides (module or object; sync or async methods)."""
+    """One async face over the device gateway (the real `Gateway`, or a test double; sync or async)."""
 
     def __init__(self, impl: Any):
         self.impl = impl
+        self.store = getattr(impl, "store", None)
 
     def _fn(self, *names: str) -> Optional[Callable]:
         for n in names:
@@ -171,25 +178,76 @@ class GatewayAdapter:
 
     @staticmethod
     async def _call(f: Callable, *a, **kw):
-        r = f(*a, **kw)
-        return await r if inspect.isawaitable(r) else r
+        try:
+            r = f(*a, **kw)
+            return await r if inspect.isawaitable(r) else r
+        except GatewayError:
+            raise
+        except Exception as e:  # the gateway's own GatewayError (status, code, msg, retry_ms)
+            code = getattr(e, "code", None)
+            if isinstance(code, str):
+                raise GatewayError(code, str(getattr(e, "msg", "") or code), getattr(e, "retry_ms", None)) from e
+            raise
 
+    # ------------------------------------------------------------ devices --
     async def device_info(self, device_id: str) -> Optional[dict]:
-        f = self._fn("device_info", "get_device")
-        r = await self._call(f, device_id) if f else None
-        return dict(r) if r else None
+        f = self._fn("device_info")
+        if f is not None:
+            r = await self._call(f, device_id)
+            return dict(r) if r else None
+        if self.store is None or not callable(getattr(self.store, "get_device", None)):
+            return None
+        d = self.store.get_device(device_id)
+        if not d:
+            return None
+        tz = d.get("tz") or DEFAULT_TZ
+        online = self._fn("is_online")
+        return {"device_id": device_id, "account_id": d.get("account_id"), "name": d.get("name") or "SOUL",
+                "online": bool(online(device_id)) if online else False,
+                "last_seen": _epoch_local(d.get("last_seen"), tz), "connectors_paused": bool(d.get("connectors_paused")),
+                "revoked": False, "members": self._members(device_id), "tz": tz, "lang": d.get("lang") or "ro"}
+
+    def _members(self, device_id: str) -> List[str]:
+        db, lock = getattr(self.store, "db", None), getattr(self.store, "lock", None)
+        if db is None or lock is None:
+            return []
+        try:
+            with lock:
+                rows = db.execute("SELECT account_id FROM device_members WHERE device_id=?", (device_id,)).fetchall()
+        except Exception:  # noqa: BLE001 - an older store without the table
+            return []
+        return [r[0] for r in rows]
 
     async def devices_of(self, account_id: str) -> List[dict]:
-        f = self._fn("devices_of", "devices_for_account", "list_devices")
-        return [dict(d) for d in (await self._call(f, account_id) or [])] if f else []
+        """The SOULs this account owns (or is a member of), for the consent page."""
+        f = self._fn("devices_of")
+        if f is not None:
+            return [dict(d) for d in (await self._call(f, account_id) or [])]
+        db, lock = getattr(self.store, "db", None), getattr(self.store, "lock", None)
+        if db is None or lock is None:
+            return []
+        with lock:
+            rows = db.execute("SELECT device_id FROM devices WHERE account_id=? UNION "
+                              "SELECT device_id FROM device_members WHERE account_id=? ORDER BY 1",
+                              (account_id, account_id)).fetchall()
+        out = []
+        for r in rows:
+            info = await self.device_info(r[0])
+            if info:
+                out.append(info)
+        return out
 
+    # ------------------------------------------------------------ delivery --
     async def enqueue(self, device_id, action, args, item_id, origin, say=None, private=False,
                       needs_accept=False) -> int:
-        f = self._fn("enqueue", "push")
+        f = self._fn("push", "enqueue")
         if f is None:
             raise GatewayError("unavailable", "the device gateway cannot deliver pushes")
-        return int(await self._call(f, device_id, action, args, item_id, origin, say=say, private=private,
-                                    needs_accept=needs_accept))
+        try:
+            return int(await self._call(f, device_id, action, args, item_id, origin, say=say, private=private,
+                                        needs_accept=needs_accept))
+        except ValueError as e:  # e.g. "device is not paired"
+            raise GatewayError("no_device", str(e)) from e
 
     async def push_and_wait(self, device_id: str, seq: int, timeout: float = PUSH_WAIT_S) -> str:
         f = self._fn("push_and_wait")
@@ -205,25 +263,65 @@ class GatewayAdapter:
         r = await self._call(f, device_id, due_local)
         return r if r in ("yes", "no", "unknown") else "unknown"
 
-    async def claim(self, account_id: str, code: str, ip: str, *, name: str, account_hint: str) -> str:
+    async def item_state(self, device_id: str, item_id: str) -> Optional[str]:
+        f = self._fn("item_state") or getattr(self.store, "item_state", None)
+        return await self._call(f, device_id, item_id) if callable(f) else None
+
+    # -------------------------------------------------------------- inbox --
+    def has_inbox(self) -> bool:
+        return self._fn("inbox") is not None
+
+    async def inbox(self, device_id: str, state: Optional[str] = "pending") -> List[dict]:
+        """Inbox items of the device; `state=None` for all of them (pending and answered)."""
+        f = self._fn("inbox")
+        return [dict(x) for x in (await self._call(f, device_id, state) or [])] if f else []
+
+    async def inbox_answered(self, device_id: str, item_id: str) -> bool:
+        f = self._fn("inbox_answered")
+        return bool(await self._call(f, device_id, item_id)) if f else False
+
+    # ------------------------------------------------------------ pairing --
+    async def claim(self, account_id: str, code: str, ip: str, *, first_name: str, email: str) -> str:
+        """Start pairing with the code shown on SOUL; the device must still confirm with a tap. Returns pid."""
         f = self._fn("claim")
         if f is None:
             raise GatewayError("unavailable", "pairing is not available")
-        return str(await self._call(f, account_id, code, ip, name=name, account_hint=account_hint))
+        r = await self._call(f, account_id, first_name, email, code, ip)
+        pid = r.get("pid") if isinstance(r, dict) else r
+        if not pid:
+            raise GatewayError("invalid", "pairing failed")
+        return str(pid)
 
     async def claim_state(self, pid: str, account_id: str) -> str:
-        f = self._fn("claim_state", "pair_state")
-        return str(await self._call(f, pid, account_id)) if f else "expired"
+        f = self._fn("claim_state")
+        if f is None:
+            return "expired"
+        try:
+            r = await self._call(f, pid, account_id)
+        except GatewayError:
+            return "expired"
+        return str(r.get("state") if isinstance(r, dict) else r)
+
+    def on_unpair(self, fn: Callable[[str], Any]) -> bool:
+        """Run `fn(device_id)` whenever the device is unpaired / reset / transferred."""
+        hooks = getattr(self.store, "on_unpair", None)
+        if isinstance(hooks, list):
+            hooks.append(lambda device_id, *_a, **_k: fn(device_id))
+            return True
+        return False
 
 
-def load_gateway() -> GatewayAdapter:
-    """The device gateway from `suflet_ai.gateway` (its `get_gateway()`, `gateway` object, or the module)."""
+def load_gateway(service: Optional[SoulService] = None) -> GatewayAdapter:
+    """The process-wide device gateway from `suflet_ai.gateway`."""
     try:
         mod = importlib.import_module(f"{__package__}.gateway")
     except ImportError as e:
         raise RuntimeError("suflet_ai.gateway is not available: the connector needs the device gateway") from e
-    impl = mod.get_gateway() if callable(getattr(mod, "get_gateway", None)) else getattr(mod, "gateway", mod)
-    return GatewayAdapter(impl)
+    if callable(getattr(mod, "get_gateway", None)):
+        return GatewayAdapter(mod.get_gateway())
+    if callable(getattr(mod, "default_gateway", None)) and service is not None:
+        return GatewayAdapter(mod.default_gateway(lambda: service))
+    raise RuntimeError("suflet_ai.gateway has no process-wide gateway")
 
 
 # ===================================================================== caps log ==
@@ -234,7 +332,8 @@ class ConnectorCaps:
     def __init__(self, db: Database, clock: Callable[[], float] = time.time):
         self.db, self.clock = db, clock
         db.script("CREATE TABLE IF NOT EXISTS connector_pushes (device_id TEXT NOT NULL, at INTEGER NOT NULL);"
-                  "CREATE INDEX IF NOT EXISTS connector_pushes_dev ON connector_pushes(device_id, at);")
+                  "CREATE INDEX IF NOT EXISTS connector_pushes_dev ON connector_pushes(device_id, at);"
+                  "CREATE TABLE IF NOT EXISTS connector_greeted (grant_id TEXT PRIMARY KEY, at INTEGER NOT NULL);")
 
     def check(self, device_id: str) -> None:
         now = int(self.clock())
@@ -246,6 +345,12 @@ class ConnectorCaps:
             raise ToolError("rate_limited: too many items for SOUL this minute; try again in a minute")
         if day >= CAP_PER_DAY:
             raise ToolError(f"rate_limited: SOUL accepts at most {CAP_PER_DAY} items a day from connected apps")
+
+    def first_use(self, grant_id: str) -> bool:
+        """True exactly once per grant: its first tool call (SOUL then shows "Claude connected ✓", §0.1)."""
+        cur = self.db.exec("INSERT OR IGNORE INTO connector_greeted(grant_id, at) VALUES (?,?)",
+                           (grant_id, int(self.clock())))
+        return cur.rowcount == 1
 
     def record(self, device_id: str) -> None:
         now = int(self.clock())
@@ -331,6 +436,8 @@ _TELL = {
                            "s-ar putea să nu sune la {hhmm}.",
                      "en": "SOUL has not confirmed yet; it will get this when it reconnects. If it stays "
                            "offline it may not ring at {hhmm}."},
+    "connected": {"ro": "{app} e conectat ✓", "en": "{app} connected ✓"},
+    "connected_other": {"ro": "O aplicație e conectată ✓", "en": "An app is connected ✓"},
     "pending_accept": {"ro": "E noapte, așa că SOUL cere o atingere ca să accepte ({human}); nu sună până nu e "
                              "acceptat.",
                        "en": "It is night-time, so SOUL asks for a tap to accept this ({human}); it will not "
@@ -344,6 +451,21 @@ def tell(key: str, lang: str, **kw) -> str:
 
 # ================================================================== the tools ==
 
+def coded(fn: Callable) -> Callable:
+    """Tool errors reach the model as `isError` results whose text STARTS with the stable code (§3.8).
+
+    The SDK would prefix a raised ToolError with "Error executing tool <name>: ", so the tools return
+    the error result themselves. Anything unexpected still goes through the SDK (generic text only).
+    """
+    @functools.wraps(fn)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await fn(*args, **kwargs)
+        except ToolError as e:
+            return CallToolResult(content=[TextContent(type="text", text=str(e))], is_error=True)
+    return wrapper
+
+
 def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx], gateway: GatewayAdapter, *,
                     oauth: Optional[SoulOAuthProvider] = None, accounts: Optional[Accounts] = None,
                     caps: Optional[ConnectorCaps] = None, name: str = "SOUL") -> MCPServer:
@@ -353,10 +475,10 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         kwargs = dict(auth_server_provider=oauth, auth=oauth.settings)
     mcp = MCPServer(name, instructions=INSTRUCTIONS, version="0.3.0", **kwargs)
     caps = caps or ConnectorCaps(oauth.db if oauth else Database())
-    tzname = service.settings.timezone
 
     # ---------------------------------------------------------------- checks --
     async def checked(write: bool = False, notes: bool = False) -> tuple:
+        """Re-check on every call: live grant, device owned by the account, not revoked, not paused, scopes."""
         ctx = resolve_ctx()
         if oauth is not None and ctx.grant_id:
             g = oauth.get_grant(ctx.grant_id)
@@ -369,62 +491,99 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         if info.get("revoked") or (info.get("account_id") != ctx.account_id and ctx.account_id not in members):
             raise ToolError("device_revoked: this SOUL is no longer linked to your account")
         if info.get("connectors_paused"):
-            raise ToolError("connectors_paused: the owner paused connected apps on SOUL; ask them to resume it "
-                            "on the device")
+            raise ToolError("connectors_paused: the owner paused connected apps on SOUL; only a tap on SOUL "
+                            "can resume them")
         if write and "soul.write" not in ctx.scopes:
             raise ToolError("read_only_grant: this connection may only read SOUL; reconnect and allow "
                             "'put things on SOUL' to write")
         if notes and "soul.notes.read" not in ctx.scopes:
             raise ToolError("notes_scope_off: reading note and inbox text was not allowed for this connection")
+        if ctx.grant_id and caps.first_use(ctx.grant_id):
+            await celebrate(ctx, info)
         return ctx, info
+
+    async def celebrate(ctx: ConnectorCtx, info: dict) -> None:
+        """The first call of a new connection: a "Claude connected ✓" card on SOUL (§0.1; not counted in caps)."""
+        lang = lang_for(ctx, info)
+        app_name = {"claude": "Claude", "chatgpt": "ChatGPT"}.get(ctx.client_app)
+        title = tell("connected", lang, app=app_name) if app_name else tell("connected_other", lang)
+        try:
+            await gateway.enqueue(ctx.device_id, "answer.show", {"title": title[:60], "body": ""},
+                                  "it_hello", {"kind": "connector", "app": ctx.client_app})
+        except GatewayError:
+            log.info("celebration card not queued")
 
     def lang_for(ctx: ConnectorCtx, info: dict) -> str:
         if accounts is not None:
             acc = accounts.get_account(ctx.account_id)
             if acc:
                 return acc.lang
-        return _l(info.get("lang") or service.state.get_setting(ctx.device_id, "lang", "ro"))
+        return _l(info.get("lang") or "ro")
 
-    def now_fields() -> dict:
-        n = service.now()
-        return {"now_local": n.strftime("%Y-%m-%dT%H:%M"), "tz": tzname}
+    def tz_of(info: dict) -> str:
+        tz = info.get("tz") or service.settings.timezone
+        try:
+            ZoneInfo(tz)
+        except (KeyError, ValueError):
+            tz = service.settings.timezone
+        return tz
+
+    def now_in(tz: str) -> dt.datetime:
+        """The current local wall time of the device (the cloud's clock, in the device's zone)."""
+        return service.now().astimezone(ZoneInfo(tz))
+
+    def now_fields(tz: str) -> dict:
+        return {"now_local": now_in(tz).strftime("%Y-%m-%dT%H:%M"), "tz": tz}
 
     # ----------------------------------------------------------------- write --
+    def active_connector_alarms(device_id: str) -> int:
+        now_s = service.now().strftime("%Y-%m-%dT%H:%M")
+        n = 0
+        for a in service.state.items(device_id, kind="alarm", include_done=False):
+            if not str(a.get("source", "")).startswith("connector"):
+                continue
+            if not a.get("days") and (a.get("due") or "") < now_s:
+                continue  # a one-off alarm that already rang
+            n += 1
+        return n
+
     async def deliver(ctx: ConnectorCtx, info: dict, action: str, args: dict, push_args: dict, *,
                       say: str = "", private: bool = False, due: Optional[dt.datetime] = None,
                       is_alarm: bool = False) -> dict:
         lang = lang_for(ctx, info)
+        tz = tz_of(info)
         caps.check(ctx.device_id)
-        if is_alarm:
-            active = [a for a in service.state.items(ctx.device_id, kind="alarm", include_done=False)
-                      if str(a.get("source", "")).startswith("connector")]
-            if len(active) >= CAP_ALARMS:
-                raise ToolError(f"limit_alarms: SOUL already has {CAP_ALARMS} alarms from connected apps; "
-                                "delete one on SOUL first")
+        if is_alarm and active_connector_alarms(ctx.device_id) >= CAP_ALARMS:
+            raise ToolError(f"limit_alarms: SOUL already has {CAP_ALARMS} alarms from connected apps; "
+                            "delete one on SOUL first")
         needs_accept = bool(due is not None and (due.hour >= NIGHT_FROM or due.hour < NIGHT_TO))
         r = service.action(ctx.device_id, action, args, lang=lang, source=f"connector:{ctx.client_app}")
         if not r.ok:
             err = r.error or "invalid"
-            code = "invalid_time" if re.search(r"time|when|hhmm|passed", err) else "too_long" if "at most" in err \
-                else "invalid_time" if action in ("reminder.create", "alarm.set") else "too_long"
-            raise ToolError(f"{code}: {err}")
+            if action in ("reminder.create", "alarm.set") and re.search(r"time|when|hhmm|passed", err):
+                raise ToolError(f"invalid_time: {err}")
+            raise ToolError(f"{'too_long' if 'at most' in err else 'invalid'}: {err}")
         item_id = str(r.data.get("item_id") or f"it_{r.id}")
         caps.record(ctx.device_id)
         prefixed = (_PREFIX.get(ctx.client_app, _PREFIX["other"])[_l(lang)] + say)[:200] if say else None
-        seq = r.data.get("seq") or r.data.get("push_seq")  # already enqueued by the dispatcher hook
+        seq = r.data.get("seq") or r.data.get("push_seq")  # set if a dispatcher hook already enqueued it
         if not seq:
-            seq = await gateway.enqueue(ctx.device_id, action, push_args, item_id,
-                                        {"kind": "connector", "app": ctx.client_app},
-                                        say=prefixed, private=private, needs_accept=needs_accept)
-        delivered = "pending_accept" if needs_accept else await gateway.push_and_wait(ctx.device_id, int(seq),
-                                                                                      timeout=PUSH_WAIT_S)
+            try:
+                seq = await gateway.enqueue(ctx.device_id, action, push_args, item_id,
+                                            {"kind": "connector", "app": ctx.client_app},
+                                            say=prefixed, private=private, needs_accept=needs_accept)
+            except GatewayError as e:
+                raise ToolError(f"no_device: SOUL cannot receive items right now ({e.code})") from e
+        delivered = await gateway.push_and_wait(ctx.device_id, int(seq), timeout=PUSH_WAIT_S)
+        if needs_accept:
+            delivered = "pending_accept"
         out: Dict[str, Any] = {"ok": True, "id": item_id, "delivered": delivered}
         if due is not None:
             due_local = due.strftime("%Y-%m-%dT%H:%M")
             hh = due.strftime("%H:%M")
-            human = human_time(due, tzname, lang)
+            human = human_time(due, tz, lang)
             if needs_accept:
-                will_ring, msg = "no", tell("pending_accept", lang, human=human)
+                will_ring, msg = "unknown", tell("pending_accept", lang, human=human)
             else:
                 will_ring = "yes" if delivered == "shown" else await gateway.forecast(ctx.device_id, due_local)
                 msg = {"yes": tell("ring_yes_alarm" if is_alarm else "ring_yes", lang, human=human),
@@ -434,7 +593,7 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         else:
             kind = "note" if action == "note.create" else "card"
             msg = tell(("shown_" if delivered == "shown" else "queued_") + kind, lang)
-        out.update(now_fields())
+        out.update(now_fields(tz))
         out["tell_user"] = msg
         log.info("connector %s -> %s (%s)", action, delivered, ctx.client_app)
         return out
@@ -443,54 +602,70 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         if len(value) > n:
             raise ToolError(f"too_long: {what} must be at most {n} characters")
 
+    async def inbox_items(device_id: str, pending_only: bool) -> List[dict]:
+        """Questions typed on SOUL ("Send to my Claude app"): the gateway's inbox, else the item store."""
+        if gateway.has_inbox():
+            items = await gateway.inbox(device_id, "pending" if pending_only else None)
+            return [i for i in items if not pending_only or i.get("state", "pending") == "pending"]
+        try:
+            rows = service.state.items(device_id, kind="inbox", include_done=not pending_only)
+        except ValueError:
+            return []
+        return [{"item_id": item_id_of(r), "text": r.get("text", ""), "to": r.get("to", "any"),
+                 "created": r.get("created"), "state": _state_of(r)} for r in rows]
+
     # ------------------------------------------------------------------ tools --
     @mcp.tool(name="list_today", title="What is on SOUL today",
               annotations=ToolAnnotations(title="What is on SOUL today", **_READ))
+    @coded
     async def list_today(
         include_shared: Annotated[bool, Field(description="Also list items shared from shortcuts or the web.")] = False,
     ) -> dict:
         """List today's items on SOUL (reminders, alarms, timers, notes, cards) with the current local time."""
         ctx, info = await checked()
+        tz = tz_of(info)
+        n = now_in(tz)
         notes_ok = "soul.notes.read" in ctx.scopes
         items, hidden = [], 0
-        for it in service.today(ctx.device_id):
+        for it in service.today(ctx.device_id, n.strftime("%Y-%m-%d")):
             src = _source(it.get("source", ""))
             if src == "shortcut" and not include_shared:
                 hidden += 1
                 continue
-            v = {"id": item_id_of(it), "kind": it["kind"], "source": src, "created": it.get("created"),
-                 "due": it.get("due"), "state": _state_of(it)}
+            iid = item_id_of(it)
+            state = await gateway.item_state(ctx.device_id, iid) or _state_of(it)
+            if state == "deleted":
+                continue
+            v = {"id": iid, "kind": it["kind"], "source": src, "created": it.get("created"),
+                 "due": it.get("due"), "state": state}
             if notes_ok:
                 v["untrusted_text"] = cut(_item_text(it))
             else:
                 v["untrusted_text"] = None
                 v["hidden"] = "notes_scope_off"
             items.append(v)
-        n = service.now()
-        return {**now_fields(), "now_human": f"{n:%a} {n.day} {n:%b %Y %H:%M}",
+        return {**now_fields(tz), "now_human": f"{n:%a} {n.day} {n:%b %Y %H:%M}",
                 "device": {"name": info.get("name") or "SOUL", "online": bool(info.get("online")),
-                           "last_seen": info.get("last_seen")},
+                           "last_seen": _epoch_local(info.get("last_seen"), tz)},
                 "items": items[:50], "hidden_shared": hidden, "truncated": len(items) > 50}
 
     @mcp.tool(name="read_soul_inbox", title="Read questions sent from SOUL",
               annotations=ToolAnnotations(title="Read questions sent from SOUL", **_READ))
+    @coded
     async def read_soul_inbox(
         limit: Annotated[int, Field(ge=1, le=10, description="How many unanswered questions to return.")] = 5,
     ) -> dict:
         """Questions the user typed on SOUL with 'Send to my Claude app', unanswered, oldest first."""
-        ctx, _info = await checked(notes=True)
-        out = []
-        for it in service.state.items(ctx.device_id, kind="inbox", include_done=False):
-            if _state_of(it) in ("answered", "done", "deleted"):
-                continue
-            out.append({"id": item_id_of(it), "created": it.get("created"), "to": it.get("to", "any"),
-                        "source": "device", "untrusted_text": cut(it.get("text", ""))})
-            if len(out) >= limit:
-                break
-        return {**now_fields(), "items": out}
+        ctx, info = await checked(notes=True)
+        tz = tz_of(info)
+        out = [{"id": str(it.get("item_id")), "created": _epoch_local(it.get("created"), tz),
+                "to": it.get("to", "any"), "source": "device", "untrusted_text": cut(it.get("text", ""))}
+               for it in (await inbox_items(ctx.device_id, pending_only=True))[:limit]]
+        return {**now_fields(tz), "items": out}
 
     @mcp.tool(name="add_note", title="Add a note to SOUL",
               annotations=ToolAnnotations(title="Add a note to SOUL", **_WRITE))
+    @coded
     async def add_note(
         text: Annotated[str, Field(min_length=1, json_schema_extra={"maxLength": 2000}, description="The note text.")],
         tags: Annotated[List[Annotated[str, Field(json_schema_extra={"maxLength": 24})]],
@@ -506,6 +681,7 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
 
     @mcp.tool(name="add_reminder", title="Add a reminder to SOUL",
               annotations=ToolAnnotations(title="Add a reminder to SOUL", **_WRITE))
+    @coded
     async def add_reminder(
         text: Annotated[str, Field(min_length=1, json_schema_extra={"maxLength": 300}, description="What to remind, short.")],
         when: Annotated[Optional[str], Field(description="Local date-time YYYY-MM-DDTHH:MM.")] = None,
@@ -518,13 +694,14 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         `when`, `in_minutes`, or `day` + `time`."""
         ctx, info = await checked(write=True)
         too_long(text, 300, "text")
-        due = resolve_when(service.now(), when, in_minutes, day, time)
-        when_s = due.strftime("%Y-%m-%dT%H:%M")
-        args = {"when": when_s, "text": text}
-        return await deliver(ctx, info, "reminder.create", args, args, due=due)
+        due = resolve_when(now_in(tz_of(info)), when, in_minutes, day, time)
+        store_when = due.astimezone(service.now().tzinfo).strftime("%Y-%m-%dT%H:%M")  # the item store's zone
+        push = {"when": due.strftime("%Y-%m-%dT%H:%M"), "text": text}  # device local wall time (§6.8)
+        return await deliver(ctx, info, "reminder.create", {"when": store_when, "text": text}, push, due=due)
 
     @mcp.tool(name="set_alarm", title="Set an alarm on SOUL",
               annotations=ToolAnnotations(title="Set an alarm on SOUL", **_WRITE))
+    @coded
     async def set_alarm(
         time: Annotated[str, Field(description="24h time HH:MM, e.g. 07:30.")],
         days: Annotated[List[Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]],
@@ -540,12 +717,13 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", t):
             raise ToolError("invalid_time: time must be 24h HH:MM")
         ds = [d for d in DAYS if d in set(days)]
-        due = service.dispatcher.next_alarm(t, ds, service.now())
+        due = service.dispatcher.next_alarm(t, ds, now_in(tz_of(info)))
         args = {"hhmm": t, "days": ds, "label": label}
         return await deliver(ctx, info, "alarm.set", args, args, due=due, is_alarm=True)
 
     @mcp.tool(name="show_on_soul", title="Show a card on SOUL",
               annotations=ToolAnnotations(title="Show a card on SOUL", **_WRITE))
+    @coded
     async def show_on_soul(
         title: Annotated[str, Field(min_length=1, json_schema_extra={"maxLength": 60}, description="Card title, a few words.")],
         body: Annotated[str, Field(json_schema_extra={"maxLength": 600}, description="Card text.")] = "",
@@ -560,6 +738,7 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
 
     @mcp.tool(name="answer_soul", title="Answer a question sent from SOUL",
               annotations=ToolAnnotations(title="Answer a question sent from SOUL", **_WRITE))
+    @coded
     async def answer_soul(
         reply_to: Annotated[str, Field(max_length=40, description="The inbox item id from read_soul_inbox.")],
         title: Annotated[str, Field(min_length=1, json_schema_extra={"maxLength": 60}, description="Card title.")],
@@ -570,17 +749,12 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         """Answer a question the user sent from SOUL: shows the answer as a card on SOUL."""
         ctx, info = await checked(write=True)
         too_long(title, 60, "title"), too_long(body, 600, "body"), too_long(say, 200, "say")
-        inbox = next((it for it in service.state.items(ctx.device_id, kind="inbox")
-                      if item_id_of(it) == reply_to), None)
-        if inbox is None:
+        if not any(str(it.get("item_id")) == reply_to for it in await inbox_items(ctx.device_id, pending_only=False)):
             raise ToolError("not_found: no such question on this SOUL")
         out = await deliver(ctx, info, "answer.show", {"say": say or title, "title": title, "body": body},
-                            {"title": title, "body": body, "reply_to": reply_to}, say=say, private=private)
-        setter = getattr(service.state, "set_state", None)
-        if callable(setter):
-            setter(ctx.device_id, reply_to, "answered")
-        else:
-            service.state.mark_done(ctx.device_id, int(inbox["id"]))
+                            {"title": title, "body": body}, say=say, private=private)
+        if gateway.has_inbox():
+            await gateway.inbox_answered(ctx.device_id, reply_to)
         return out
 
     return mcp
@@ -748,7 +922,8 @@ _T = {
                pair_title="Add a SOUL with its pairing code", pair_code="Code shown on SOUL (XXXX-XXXX)",
                pair_btn="Pair", tap_on_soul="Now tap ✓ on your SOUL to confirm.", tapped="I tapped ✓",
                done="You are signed in.", expired="This request expired. Start again from your app.",
-               bad_code="That code is not valid.", device_owned="This SOUL belongs to another account. "
+               bad_code="That code is not valid.", code_expired="That code expired; SOUL shows a new one.",
+               device_owned="This SOUL belongs to another account. "
                "Ask the owner to release it.", rate="Too many attempts. Try again later.",
                ack_needed="Tick the box to confirm you trust this app.", rejected="Pairing was declined on SOUL.",
                pick_device="Choose a SOUL."),
@@ -773,7 +948,8 @@ _T = {
                pair_code="Codul de pe SOUL (XXXX-XXXX)", pair_btn="Împerechează",
                tap_on_soul="Acum atinge ✓ pe SOUL ca să confirmi.", tapped="Am atins ✓",
                done="Ești conectat.", expired="Cererea a expirat. Pornește din nou din aplicație.",
-               bad_code="Codul nu e valid.", device_owned="Acest SOUL aparține altui cont. Roagă proprietarul "
+               bad_code="Codul nu e valid.", code_expired="Codul a expirat; SOUL arată unul nou.",
+               device_owned="Acest SOUL aparține altui cont. Roagă proprietarul "
                "să-l elibereze.", rate="Prea multe încercări. Mai încearcă puțin mai târziu.",
                ack_needed="Bifează căsuța ca să confirmi că ai încredere în aplicație.",
                rejected="Împerecherea a fost refuzată pe SOUL.", pick_device="Alege un SOUL."),
@@ -868,15 +1044,15 @@ def _web_routes(rc: RemoteContext) -> List[Route]:
         lang = _lang_of(request, request.query_params.get("lang"))
         session = accounts.current_session(request)
         reauth = request.query_params.get("reauth") == "1" and session is not None
-        resp = _page("login", lang, title=_T[lang]["signin"], step="email", csrf="", next=_safe_next(
-            request.query_params.get("next")), email=session.account.email if reauth else "", reauth=reauth, error="")
-        csrf = session.csrf if session else ensure_csrf_cookie(request, resp)
-        return _page("login", lang, title=_T[lang]["signin"], step="email", csrf=csrf,
-                     next=_safe_next(request.query_params.get("next")),
-                     email=session.account.email if reauth else "", reauth=reauth, error="") if session else \
-            _with_cookies(_page("login", lang, title=_T[lang]["signin"], step="email", csrf=csrf,
-                                next=_safe_next(request.query_params.get("next")), email="", reauth=False,
-                                error=""), resp)
+        nxt = _safe_next(request.query_params.get("next"))
+        if session is not None:
+            return _page("login", lang, title=_T[lang]["signin"], step="email", csrf=session.csrf, next=nxt,
+                         email=session.account.email if reauth else "", reauth=reauth, error="")
+        resp = _page("login", lang, title=_T[lang]["signin"], step="email", csrf="", next=nxt, email="",
+                     reauth=False, error="")
+        csrf = ensure_csrf_cookie(request, resp)  # pre-session double-submit token
+        return _with_cookies(_page("login", lang, title=_T[lang]["signin"], step="email", csrf=csrf, next=nxt,
+                                   email="", reauth=False, error=""), resp)
 
     async def login_post(request: Request) -> Response:
         f = await form(request)
@@ -1001,12 +1177,12 @@ def _web_routes(rc: RemoteContext) -> List[Route]:
             return await render_consent(request, session, req, error=_T[lang]["bad_code"], status=400)
         try:
             pid = await gw.claim(session.account_id, code, client_ip(request),
-                                 name=session.account.display_name, account_hint=session.account.hint)
+                                 first_name=session.account.first_name, email=session.account.email)
         except GatewayError as e:
-            msg = {"device_owned": _T[lang]["device_owned"], "rate_limited": _T[lang]["rate"]}.get(
-                e.code, _T[lang]["bad_code"])
-            return await render_consent(request, session, req, error=msg,
-                                        status=409 if e.code == "device_owned" else 400)
+            msg = {"device_owned": _T[lang]["device_owned"], "rate_limited": _T[lang]["rate"],
+                   "code_expired": _T[lang]["code_expired"]}.get(e.code, _T[lang]["bad_code"])
+            status = {"device_owned": 409, "rate_limited": 429, "code_expired": 410}.get(e.code, 400)
+            return await render_consent(request, session, req, error=msg, status=status)
         rc.pending_pairs[pid] = session.account_id
         return RedirectResponse(f"/consent?req={quote(req_id)}&pid={quote(pid)}", status_code=303,
                                 headers={"Cache-Control": "no-store"})
@@ -1029,9 +1205,6 @@ def _web_routes(rc: RemoteContext) -> List[Route]:
         return Response(_CSS, media_type="text/css",
                         headers={"Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff"})
 
-    async def ping(request: Request) -> Response:
-        return JSONResponse({"ok": True, "time": int(time.time())})
-
     return [
         Route("/login", login_get, methods=["GET"]),
         Route("/login", login_post, methods=["POST"]),
@@ -1043,7 +1216,6 @@ def _web_routes(rc: RemoteContext) -> List[Route]:
         Route("/consent/pair/{pid}", pair_state, methods=["GET"]),
         Route("/static/soul-consent.js", static_js, methods=["GET"]),
         Route("/static/soul-web.css", static_css, methods=["GET"]),
-        Route("/v1/ping", ping, methods=["GET"]),
     ]
 
 
@@ -1086,7 +1258,7 @@ def create_remote_app(service: Optional[SoulService] = None, gateway: Any = None
         raise RuntimeError("production serves the connector over https only")
     service = service or SoulService()
     gw = gateway if isinstance(gateway, GatewayAdapter) else (GatewayAdapter(gateway) if gateway is not None
-                                                              else load_gateway())
+                                                              else load_gateway(service))
     if cimd_fetch is None:
         try:
             cimd_fetch = importlib.import_module(f"{__package__}.cimd").fetch_client_metadata
@@ -1100,6 +1272,7 @@ def create_remote_app(service: Optional[SoulService] = None, gateway: Any = None
     base = f"{scheme}://{host}"
     oauth = SoulOAuthProvider(db, base, base + "/mcp", cimd_fetch=cimd_fetch, clock=clock)
     caps = ConnectorCaps(db, clock)
+    gw.on_unpair(oauth.revoke_device_grants)  # unpair / reset / transfer revokes every connector grant
     mcp = build_connector(service, ctx_from_token, gw, oauth=oauth, accounts=accounts, caps=caps)
     rc = RemoteContext(service=service, db=db, accounts=accounts, oauth=oauth, gateway=gw, caps=caps, mcp=mcp,
                        host=host)
@@ -1116,6 +1289,29 @@ def create_remote_app(service: Optional[SoulService] = None, gateway: Any = None
     return app
 
 
+def create_dev_app(**kwargs):
+    """Dev / self-host composition: the device gateway's routes (/v1/device/*, /v1/ping) plus this app,
+    with the MCP session manager's lifespan forwarded. Production composes in app.py."""
+    from contextlib import asynccontextmanager
+
+    from fastapi import FastAPI
+
+    gw_mod = importlib.import_module(f"{__package__}.gateway")
+    remote = create_remote_app(**kwargs)
+    gw = remote.state.soul.gateway.impl
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        async with remote.router.lifespan_context(remote):
+            yield
+
+    api = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+    api.include_router(gw_mod.build_router(lambda: gw))
+    api.mount("/", remote)
+    api.state.soul = remote.state.soul
+    return api
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(prog="suflet_ai.mcp_remote", description="SOUL connector (remote MCP + OAuth)")
     ap.add_argument("--host", default="127.0.0.1", help="bind address (behind the TLS reverse proxy)")
@@ -1123,7 +1319,8 @@ def main(argv=None) -> None:
     a = ap.parse_args(argv)
     import uvicorn
 
-    uvicorn.run(create_remote_app(), host=a.host, port=a.port, proxy_headers=True)
+    uvicorn.run(create_dev_app(), host=a.host, port=a.port, proxy_headers=True, ws_ping_interval=25,
+                ws_ping_timeout=45)
 
 
 if __name__ == "__main__":

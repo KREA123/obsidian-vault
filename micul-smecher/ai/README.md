@@ -173,7 +173,7 @@ Pornire:
 ```bash
 # local, pentru Claude Desktop / Claude Code (stdio)
 SOUL_DEVICE_ID=demo python -m suflet_ai.mcp_server
-# la distanță, pentru claude.ai / ChatGPT (Streamable HTTP la /mcp)
+# HTTP fără autentificare, doar pe loopback (test local); conectorul public e mcp_remote.py, mai jos
 SOUL_DEVICE_ID=demo python -m suflet_ai.mcp_server --http --port 8788
 ```
 
@@ -187,10 +187,31 @@ SOUL_DEVICE_ID=demo python -m suflet_ai.mcp_server --http --port 8788
 În claude.ai: Settings → Connectors → „Add custom connector” → URL-ul public `https://…/mcp`
 (disponibil pe planurile care permit conectori personalizați; verificați lista curentă).
 
-**Înainte de public:** serverul HTTP trebuie pus în spatele **OAuth** (specificația de autorizare
-MCP; `MCPServer` primește `auth=` / `token_verifier=`): utilizatorul se loghează în contul SOUL, iar
-contul decide pe ce dispozitiv ajung acțiunile. `SOUL_DEVICE_ID` e doar pentru prototip, o singură
-persoană. Livrarea spre piatră: dispozitivul (sau telefonul prin BLE) trage `GET /v1/sync?since=…`.
+`SOUL_DEVICE_ID` e doar pentru prototip, o singură persoană. Conectorul public e `mcp_remote.py`.
+
+### Conectorul public (MCP la distanță + OAuth 2.1) — `mcp_remote.py`
+
+Ce lipește utilizatorul în Claude (Settings → Connectors → *Add custom connector*) sau în ChatGPT
+(modul dezvoltator): `https://{BASE}/mcp`. Implementează `docs/07-CONNECT-AI.md` §3.7–3.8:
+
+- OAuth 2.1 pe SDK-ul `mcp` 2.2.0 (`oauth.py`, `SoulOAuthProvider`): `/authorize`, `/token`, `/register`
+  (DCR cu reguli stricte pentru redirect URI și nume), `/revoke`, metadate RFC 8414 (+ `iss`, auth `none`)
+  și RFC 9728 la `/.well-known/oauth-protected-resource/mcp`, PKCE S256, `iss` la redirect, token de acces
+  `sat_` 1 h, refresh `srt_` rotit (90 zile glisant, fereastră de grație 60 s, revocarea familiei la reluare).
+- Pagini RO/EN (CSRF, `frame-ancestors 'none'`): conectare cu cod pe email (`accounts.py`), apoi consimțământ:
+  alegi SOUL-ul sau scrii codul de împerechere de pe ecran (SOUL cere apoi ✓ pe dispozitiv), bifezi ce poate
+  face aplicația. Aplicațiile din afara listei verificate (claude.ai, chatgpt.com) cer bifă explicită și
+  re-autentificare.
+- Cele 7 unelte (`list_today`, `read_soul_inbox`, `add_note`, `add_reminder`, `set_alarm`, `show_on_soul`,
+  `answer_soul`) ajung pe dispozitiv prin `gateway.py` (push + ack în 3 s); fiecare apel re-verifică grantul,
+  proprietarul și „pauză conectori”; erorile încep cu un cod stabil (`read_only_grant`, `notes_scope_off`, …).
+
+```bash
+SOUL_PUBLIC_HOST=soul.example python -m suflet_ai.mcp_remote --port 8788   # dev: + rutele /v1/device/*
+```
+
+Teste: `tests/test_connector_remote.py` (tot dansul OAuth cu clientul MCP oficial), `test_connector_tools.py`,
+`test_connector_gateway.py` (dispozitiv simulat cu cheie ECDSA prin gateway-ul real), `test_oauth_accounts.py`.
 
 ### Aceleași unelte ca aplicație în ChatGPT (Apps SDK)
 
@@ -228,3 +249,39 @@ Toate cer `Authorization: Bearer <SUFLET_API_TOKEN>`.
 `providers/claude.py` (Anthropic, tool use) · `providers/chatgpt.py` (OpenAI Responses) ·
 `keystore.py` (BYOK) · `soul.py` (alegerea modului, fallback) · `mcp_server.py` (conectorul) ·
 `server.py` (HTTP) · `tests/test_soul.py` (40 de teste noi, clienți simulați).
+
+### SOUL Cloud, partea dispozitivului — `devices.py`, `gateway.py`, `relay.py`
+
+Contractul e `docs/07-CONNECT-AI.md` §3.2, §3.4, §3.9–3.10 și §6. Rutele de dispozitiv **nu** folosesc
+`SUFLET_API_TOKEN`: SOUL se autentifică cu propria cheie ECDSA P-256 (provocare semnată
+`soul-auth-v1\n{host}\n{device_id}\n{nonce}`) și primește un token `sdt_` de 24 h.
+
+| Rută | Ce face |
+|---|---|
+| `GET /v1/ping` | test de internet pentru portalul Wi-Fi (fără autentificare) |
+| `POST /v1/device/challenge` · `POST /v1/device/auth` | nonce (60 s, o dată, legat de rețea) → token `sdt_` |
+| `GET /v1/device/ws` (subprotocol `soul.v1`) | hello/welcome, push + ack, replay pe pagini, `ask` → `reply`, coduri 4400/4401/4403/4409/4426/4429 |
+| `GET /v1/device/poll` · `POST /v1/device/send` | același protocol prin long-poll (și trezirile din somn adânc) |
+| `/v1/dev/pair/claim`, `/v1/dev/push`, `/v1/dev/unpair`, `/v1/dev/config` | doar dev / self-host, cu `SUFLET_API_TOKEN`; oprite la `SOUL_ENV=production` |
+
+- `devices.py`: identitate, înrolare (`SOUL_ENROL_POLICY=factory` în producție, `pending` doar dev/P0),
+  coduri de asociere de 8 caractere (stocate ca HMAC), confirmare obligatorie pe ecranul SOUL,
+  outbox per dispozitiv cu `seq` fără goluri.
+- `relay.py`: răspunde la `ask` — creier A (cheia SOUL, `SOUL_ANTHROPIC_KEY` / `SOUL_OPENAI_KEY`, contorizat:
+  probă pentru unitățile din fabrică, alocație lunară după asociere), B2 (cheia proprietarului din keystore,
+  plafon zilnic), E (reguli offline). Modelul implicit `claude-haiku-4-5` (fără `effort`), OpenAI `gpt-6-luna`.
+- Variabile: `SOUL_PUBLIC_HOST`, `SOUL_ENROL_POLICY`, `SOUL_ID_PEPPER`, `SOUL_GATEWAY_DB`, `SOUL_TRIAL_TURNS`,
+  `SOUL_ALLOWANCE_TURNS`, `SOUL_B2_DAILY_CAP_MICRO`, `SOUL_BRAIN_A_KILL`, `SOUL_CLAUDE_MODEL`,
+  `SOUL_OPENAI_RELAY_MODEL`. Rulați uvicorn cu `--ws-ping-interval 25 --ws-ping-timeout 45`.
+
+Un SOUL simulat, pentru teste cap-coadă (asociere, socket, o întrebare, push-uri):
+
+```bash
+SUFLET_API_TOKEN=dev SOUL_PUBLIC_HOST=soul.example uvicorn suflet_ai.server:app --port 8787
+python tools/fake_device.py --base http://127.0.0.1:8787 --claim --api-token dev --confirm yes \
+    --ask "amintește-mi mâine la 9 să sun la bancă" --listen 10
+python tools/fake_device.py --base http://127.0.0.1:8787 --poll --ask "notează lapte"   # long-poll
+```
+
+Teste: `tests/test_gateway_devices.py`, `test_gateway_ws.py`, `test_gateway_relay.py`, `test_fake_device.py`;
+vectorul de test comun cu firmware-ul: `tests/vectors/device_auth.json`.

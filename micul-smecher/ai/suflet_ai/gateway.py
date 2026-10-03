@@ -54,6 +54,8 @@ FRAME_IN_MAX = 4096
 SEND_MAX_BYTES = 16384
 SEND_MAX_MESSAGES = 20
 POLL_PAGE = 50
+ACK_BURST = 120          # one full replay page plus live traffic
+ACK_PER_S = 20
 ONLINE_POLL_WINDOW = 60
 CAPS = {"text", "cards", "alarms", "reminders", "notes", "timers", "focus", "inbox", "confirm", "mic", "speaker",
         "stream", "ota"}
@@ -83,12 +85,13 @@ def _is_int(v: Any) -> bool:
 class Session:
     """One authenticated transport context (a WebSocket, or one long-poll request)."""
 
-    def __init__(self, ctx: DeviceCtx, transport: str, ip: str, out: Callable[[dict], Awaitable[None]]):
+    def __init__(self, ctx: DeviceCtx, transport: str, ip: str, out: Callable[[dict], Awaitable[None]],
+                 aborted: Optional[Deque[str]] = None):
         self.ctx = ctx
         self.transport = transport
         self.ip = ip
         self.out = out
-        self.aborted: Set[str] = set()
+        self.aborted: Deque[str] = aborted if aborted is not None else deque(maxlen=50)
         self.hello = False
 
 
@@ -109,7 +112,12 @@ class Conn(Session):
         if self.close_code is not None:
             return
         async with self.send_lock:
-            await self.ws.send_text(json.dumps(msg, ensure_ascii=False, separators=(",", ":")))
+            try:
+                await self.ws.send_text(json.dumps(msg, ensure_ascii=False, separators=(",", ":")))
+            except Exception:  # noqa: BLE001 - the peer went away; the receive loop ends the session
+                if self.close_code is None:
+                    self.close_code = 1006
+                self.close_event.set()
 
     def request_close(self, code: int) -> None:
         """Thread-safe: ask the receive loop to close the socket with `code`."""
@@ -145,6 +153,7 @@ class Gateway:
         self._last_poll: Dict[str, float] = {}
         self._sent_code: Dict[str, Optional[str]] = {}
         self._flaps: Dict[str, Deque[Tuple[float, str]]] = defaultdict(deque)
+        self._aborted: Dict[str, Deque[str]] = defaultdict(lambda: deque(maxlen=50))  # long-poll `abort`s
         self._lock = threading.RLock()
         self.on_inbox: List[Callable[[str, dict], None]] = []
         self.on_connectors: List[Callable[[str, bool], None]] = []
@@ -172,10 +181,10 @@ class Gateway:
             raise ValueError("origin.kind must be connector|shortcut|app|turn|device")
         seq = self.store.enqueue(device_id, action, args, item_id, origin, say=say, private=private,
                                  needs_accept=needs_accept, expires_at=expires_at)
-        with self._lock:
-            self._waiters.setdefault((device_id, seq), threading.Event())
         self.notify(device_id)
         return seq
+
+    enqueue = push  # the name the connector's DeviceGateway protocol uses
 
     def _delivery(self, device_id: str, seq: int) -> str:
         st = self.store.push_status(device_id, seq)
@@ -215,14 +224,43 @@ class Gateway:
             return "no"
         return "unknown"
 
-    def claim(self, account_id: str, first_name: str, email: str, code: Any, ip: str) -> dict:
-        res = self.store.claim(account_id, first_name, email, code, ip)
+    def claim(self, account_id: str, first_name: str, email: str, code: Any, ip: str,
+              hint: Optional[str] = None) -> dict:
+        """A signed-in account claims a pairing code: the §3.4 `202` body; sends `pair.confirm` to the device.
+
+        Raises GatewayError (404 not_found, 410 code_expired, 409 device_owned, 429 rate_limited, ...)."""
+        res = self.store.claim(account_id, first_name, email, code, ip, hint=hint)
         msg = res.pop("_device_msg")
         self.control(res["device"]["id"], msg)
         return res
 
     def claim_state(self, pid: str, account_id: str) -> dict:
+        """{"state": awaiting_device | paired | rejected | expired}."""
         return self.store.claim_state(pid, account_id)
+
+    def item_state(self, device_id: str, item_id: str) -> Optional[str]:
+        """The last `item.state` the device reported for an item (rang, done, accepted, ...)."""
+        return self.store.item_state(device_id, item_id)
+
+    def device_info(self, device_id: str) -> Optional[dict]:
+        """What the connector and the account pages need to know about one device (no secrets)."""
+        d = self.store.get_device(device_id)
+        if d is None:
+            return None
+        tz = d["tz"] or DEFAULT_TZ
+        seen = d["last_seen"]
+        return {
+            "device_id": device_id, "account_id": d["account_id"], "name": d["name"], "brain": d["brain"],
+            "voice": d["voice"], "lang": d["lang"], "tz": tz, "online": self.is_online(device_id),
+            # local wall time like every other user-facing time (§6.0); epoch in last_seen_at
+            "last_seen": dt.datetime.fromtimestamp(seen, ZoneInfo(tz)).strftime("%Y-%m-%dT%H:%M") if seen else None,
+            "last_seen_at": seen, "wake_at": d["wake_at"], "power": d["power"], "fw": d["fw"],
+            "hw": d["hw"], "connectors_paused": bool(d["connectors_paused"]), "members": self.store.members(device_id),
+            "revoked": self.store.revoked(device_id), "caps": d["caps"],
+        }
+
+    def devices_of(self, account_id: str) -> List[dict]:
+        return [i for i in (self.device_info(dev) for dev in self.store.account_devices(account_id)) if i]
 
     def unpair(self, device_id: str, reason: str = "user", erase: bool = False) -> Optional[str]:
         old = self.store.unpair(device_id, reason, erase=erase)
@@ -236,7 +274,7 @@ class Gateway:
         if conn is not None:
             async def _send_close() -> None:
                 await conn.out(msg)
-                conn.request_close(4401)  # tokens are revoked: re-auth, then a fresh `pairing`
+                conn.request_close(4403)  # §6.3: `unpaired` / close 4403; tokens are revoked, re-auth gets `pairing`
             conn.loop.call_soon_threadsafe(lambda: conn.spawn(_send_close()))
         else:
             self._queue(device_id, msg)
@@ -304,35 +342,36 @@ class Gateway:
     def _queue(self, device_id: str, msg: dict) -> None:
         with self._lock:
             q = self._control[device_id]
-            if msg["t"] in ("pairing", "inbox.state"):  # a newer one replaces the old one
-                for old in [m for m in q if m["t"] == msg["t"]]:
+            if msg["t"] in ("inbox.state", "config"):  # a newer one replaces the old one
+                for old in [m for m in q if m["t"] == msg["t"] and (m["t"] != "config" or m.keys() <= msg.keys())]:
                     q.remove(old)
             q.append(msg)
         self._wake_pollers(device_id)
 
     def control(self, device_id: str, msg: dict) -> None:
-        """Send a non-sequenced message (pairing, pair.confirm, paired, unpaired, config, inbox.state). Thread-safe."""
+        """Send a non-sequenced message (pairing, pair.confirm, paired, unpaired, config, inbox.state). Thread-safe.
+
+        `pairing` is never queued: the current code is regenerated for the next hello / poll / tick
+        (a queued one could carry an expired code)."""
         conn = self.conns.get(device_id)
         if conn is not None and conn.replay_done:
             if msg["t"] == "pairing":
                 self._sent_code[device_id] = self.store.code_id(device_id)
             conn.loop.call_soon_threadsafe(lambda: conn.spawn(conn.out(msg)))
+        elif msg["t"] == "pairing":
+            self._wake_pollers(device_id)
         else:
             self._queue(device_id, msg)
 
     def _drain(self, device_id: str) -> List[dict]:
         with self._lock:
             q = self._control.pop(device_id, None)
-        msgs = list(q or [])
-        for m in msgs:
-            if m["t"] == "pairing":
-                self._sent_code[device_id] = self.store.code_id(device_id)
-        return msgs
+        return list(q or [])
 
     async def _flush(self, conn: Conn) -> None:
+        """Send every unacked push after `conn.sent_upto`. Unpaired devices only ever have their own turn's pushes
+        (Gateway.push needs an owner, unpair drops undelivered pushes), so this runs in every state."""
         async with conn.flush_lock:
-            if self.store.device_state(conn.ctx) != "paired":
-                return
             while True:
                 msgs, more = self.store.replay(conn.ctx.device_id, conn.sent_upto, POLL_PAGE)
                 for m in msgs:
@@ -341,11 +380,13 @@ class Gateway:
                 if not more:
                     break
 
-    def _pairing_msgs(self, device_id: str, force_new: bool = False) -> List[dict]:
-        """The `pairing` message if the device has not seen its current code yet (rotates expired codes)."""
+    def _pairing_msgs(self, device_id: str, force_new: bool = False, resend: bool = False) -> List[dict]:
+        """The `pairing` message if the device has not seen its current code yet (rotates expired codes).
+
+        `resend`: after a `hello` the device may have rebooted and lost the code, so send it anyway."""
         msg = self.store.current_code(device_id, force_new=force_new)
         cid = self.store.code_id(device_id)
-        if force_new or self._sent_code.get(device_id) != cid:
+        if force_new or resend or self._sent_code.get(device_id) != cid:
             self._sent_code[device_id] = cid
             return [msg]
         return []
@@ -425,25 +466,23 @@ class Gateway:
         if after > last:
             await s.out({"v": 1, "t": "resync", "last": last})
             after = last
-        if state == "paired":
-            self.store.ack_upto(dev, after)
-            self._release_waiters(dev)
+        self.store.ack_upto(dev, after)
+        self._release_waiters(dev)
         if isinstance(s, Conn):
             s.sent_upto = after
-            if state == "paired":
-                await self._flush(s)
+            await self._flush(s)
             await s.out({"v": 1, "t": "replay.done", "last": self.store.last_seq(dev)})
             s.replay_done = True
             for cm in self._drain(dev):
                 await s.out(cm)
-        else:
-            # long-poll: control messages and pushes come with the next poll
-            pass
+        # long-poll: queued control messages and pushes come with the next poll
         if state == "paired":
             await s.out({"v": 1, "t": "inbox.state", **self.store.inbox_counts(dev)})
         else:
-            for pm in self._pairing_msgs(dev, force_new=False):
+            for pm in self._pairing_msgs(dev, resend=True):
                 await s.out(pm)
+        if isinstance(s, Conn):
+            await self._flush(s)  # pushes that arrived while the replay was being sent
 
     async def _h_ask(self, s: Session, m: dict) -> None:
         dev = s.ctx.device_id
@@ -488,14 +527,12 @@ class Gateway:
 
     async def _h_abort(self, s: Session, m: dict) -> None:
         if isinstance(m.get("re"), str):
-            s.aborted.add(m["re"][:24])
+            s.aborted.append(m["re"][:24])
 
     async def _h_ack(self, s: Session, m: dict) -> None:
         if not _is_int(m.get("seq")) or not isinstance(m.get("ok"), bool):
             return
         err = m.get("err") if m.get("err") in ("unsupported", "invalid", "full", "paused") else None
-        if self.store.device_state(s.ctx) != "paired":
-            return
         if self.store.ack(s.ctx.device_id, m["seq"], m["ok"], err) is not None:
             with self._lock:
                 ev = self._waiters.get((s.ctx.device_id, m["seq"]))
@@ -741,17 +778,25 @@ class Gateway:
 
     async def _ws_frame(self, conn: Conn, text: str) -> Optional[int]:
         dev = conn.ctx.device_id
-        wait = self.store.buckets.take(f"frames:{dev}", 10, LIMITS["frames_per_s"])
+        big = len(text) > FRAME_IN_MAX or len(text.encode("utf-8")) > FRAME_IN_MAX
+        m: Any = None
+        if not big:
+            try:
+                m = json.loads(text)
+            except json.JSONDecodeError:
+                m = None
+        # Acks have their own, larger bucket: the device must ack every push of a replay burst (<= 50),
+        # which the §6.15 frame limit (10 burst, 2/s sustained) would otherwise turn into a 4429.
+        if isinstance(m, dict) and m.get("t") == "ack":
+            wait = self.store.buckets.take(f"acks:{dev}", ACK_BURST, ACK_PER_S)
+        else:
+            wait = self.store.buckets.take(f"frames:{dev}", 10, LIMITS["frames_per_s"])
         if wait is not None:
             await conn.out(_err("rate_limited", "too many frames", retry_ms=max(wait, 30000)))
             return 4429
-        if len(text.encode("utf-8")) > FRAME_IN_MAX:
+        if big:
             await conn.out(_err("too_big", "frame over 4 KB"))
             return None
-        try:
-            m = json.loads(text)
-        except json.JSONDecodeError:
-            return 4400
         if not isinstance(m, dict):
             return 4400
         if not conn.hello and m.get("t") != "hello":
@@ -786,17 +831,14 @@ class Gateway:
     def _poll_batch(self, ctx: DeviceCtx, after: int) -> Tuple[List[dict], bool]:
         dev = ctx.device_id
         msgs = self._drain(dev)
-        state = self.store.device_state(ctx)
-        more = False
-        if state == "paired":
-            last = self.store.last_seq(dev)
-            if after > last:
-                msgs.append({"v": 1, "t": "resync", "last": last})
-                after = last
-            pushes, more = self.store.replay(dev, after, POLL_PAGE)
-            msgs += pushes
-        else:
-            msgs = [m for m in msgs if m["t"] != "pairing"] + self._pairing_msgs(dev)
+        last = self.store.last_seq(dev)
+        if after > last:
+            msgs.append({"v": 1, "t": "resync", "last": last})
+            after = last
+        pushes, more = self.store.replay(dev, after, POLL_PAGE)
+        msgs += pushes
+        if self.store.device_state(ctx) != "paired":
+            msgs += self._pairing_msgs(dev)
         return msgs, more
 
     async def send(self, ctx: DeviceCtx, messages: List[Any], ip: str) -> dict:
@@ -807,7 +849,7 @@ class Gateway:
 
         self._last_poll[ctx.device_id] = self.clock()
         self.store.touch(ctx.device_id)
-        s = Session(ctx, "poll", ip, collect)
+        s = Session(ctx, "poll", ip, collect, aborted=self._aborted[ctx.device_id])
         for m in messages:
             if isinstance(m, dict) and len(json.dumps(m, ensure_ascii=False).encode()) > FRAME_IN_MAX:
                 out.append(_err("too_big", "message over 4 KB", m.get("id")))
@@ -820,9 +862,10 @@ class Gateway:
 
 def _client_ip(conn: Any) -> str:
     if os.environ.get("SOUL_TRUST_PROXY") == "1":
+        # the hop our own proxy appended (the last one); earlier entries are whatever the client sent
         fwd = conn.headers.get("x-forwarded-for", "")
         if fwd:
-            return fwd.split(",")[0].strip()
+            return fwd.split(",")[-1].strip()[:64]
     return conn.client.host if conn.client else "-"
 
 
@@ -967,6 +1010,32 @@ def build_dev_router(get_gw: Callable[[], Gateway]) -> APIRouter:
         except (ValueError, KeyError) as e:
             raise GatewayError(422, "invalid", str(e)) from None
 
+    @r.post("/key")
+    @_guard
+    async def key(request: Request):
+        """Dev stand-in for /me/keys (B2): store the owner's own provider key for this device's account.
+
+        The key is never echoed or logged; `api_key: null` removes it."""
+        b = await _json_body(request, 2048)
+        if not isinstance(b, dict):
+            raise GatewayError(400, "bad_request", "body must be a JSON object")
+        dev = check_device_id(b.get("device_id"))
+        prov = b.get("provider")
+        if prov not in ("anthropic", "openai"):
+            raise GatewayError(422, "invalid", "provider must be anthropic or openai")
+        gw = _gw()
+        account = gw.store.owner(dev)
+        if not account:
+            raise GatewayError(409, "unpaired", "pair the device first: keys belong to its owner's account")
+        try:
+            if b.get("api_key") is None:
+                gw.soul.keys.remove(account, prov)
+                return {"set": False, "provider": prov}
+            gw.soul.keys.set(account, prov, str(b["api_key"]))
+        except ValueError as e:
+            raise GatewayError(422, "invalid", str(e)) from None
+        return {"set": True, "provider": prov}
+
     return r
 
 
@@ -974,12 +1043,26 @@ _default: Optional[Gateway] = None
 _default_lock = threading.Lock()
 
 
-def default_gateway(soul_getter: Callable[[], Any]) -> Gateway:
-    """The process-wide gateway for server.py (dev / self-host): state in SOUL_GATEWAY_DB or <data_dir>/gateway.sqlite."""
+def default_gateway(soul_getter: Optional[Callable[[], Any]] = None) -> Gateway:
+    """The process-wide gateway: state in SOUL_GATEWAY_DB or <data_dir>/gateway.sqlite.
+
+    server.py (dev / self-host) passes its own SoulService getter so both share one service."""
     global _default
     with _default_lock:
         if _default is None:
-            soul = soul_getter()
+            if soul_getter is None:
+                from .soul import SoulService
+
+                soul = SoulService()
+            else:
+                soul = soul_getter()
             path = os.environ.get("SOUL_GATEWAY_DB") or os.path.join(soul.settings.data_dir, "gateway.sqlite")
             _default = Gateway(soul, DeviceStore(path))
         return _default
+
+
+def set_gateway(gw: Optional[Gateway]) -> None:
+    """Install (or clear, with None) the process-wide gateway, e.g. in app.py or tests."""
+    global _default
+    with _default_lock:
+        _default = gw

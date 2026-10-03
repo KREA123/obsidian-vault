@@ -39,6 +39,7 @@ import anthropic
 
 from . import prompts
 from .actions import ACTIONS, TOOL_TO_ACTION
+from .config import FALLBACK_BETA
 from .devices import DEFAULT_TZ, DeviceStore, b64u
 from .dispatcher import ActionResult
 from .providers.base import AskContext, AskResult, summarize
@@ -69,16 +70,18 @@ class ModelCaps:
     price_in: float = 0.0               # USD per MTok, for metering
     price_out: float = 0.0
     reasoning_none: bool = False        # OpenAI: reasoning={"effort": "none"}
+    fallback_beta: bool = False         # server-side refusal fallback (beta) on the Claude API
 
 
 # Prices and effort behaviour as in docs/07 §1.2 [V]. `strict` on Haiku 4.5 is [U]
 # in the doc, so the relay does not rely on it there (the dispatcher validates anyway).
 MODEL_CAPS: Dict[str, ModelCaps] = {
     "claude-haiku-4-5": ModelCaps(effort=False, strict_tools=False, price_in=1.0, price_out=5.0),
-    "claude-sonnet-5-5": ModelCaps(effort=True, thinking="between_tools", price_in=2.0, price_out=10.0),
+    "claude-sonnet-5-5": ModelCaps(effort=True, thinking="between_tools", price_in=2.0, price_out=10.0,
+                                   fallback_beta=True),
     "claude-sonnet-5": ModelCaps(effort=True, price_in=2.0, price_out=10.0),
-    "claude-opus-5-5": ModelCaps(effort=True, price_in=4.0, price_out=20.0),
-    "claude-opus-5": ModelCaps(effort=True, price_in=5.0, price_out=25.0),
+    "claude-opus-5-5": ModelCaps(effort=True, price_in=4.0, price_out=20.0, fallback_beta=True),
+    "claude-opus-5": ModelCaps(effort=True, price_in=5.0, price_out=25.0, fallback_beta=True),
     "gpt-6-luna": ModelCaps(reasoning_none=True, price_in=0.10, price_out=0.50),
 }
 
@@ -98,6 +101,9 @@ def claude_request_kwargs(model: str, effort: str = "low") -> dict:
         kw["output_config"] = {"effort": effort}
     if c.thinking:
         kw["thinking"] = {"type": c.thinking}
+    if c.fallback_beta:
+        kw["betas"] = [FALLBACK_BETA]
+        kw["fallbacks"] = "default"
     return kw
 
 
@@ -109,6 +115,16 @@ class RelayError(Exception):
         self.code = code
 
 
+def _anthropic_billing(e: Exception) -> bool:
+    """A billing refusal on the Claude API: error type `billing_error`, or the 400 "credit balance is too low"
+    answer [L: seen in the wild; the status Anthropic uses for it is not pinned in our sources]."""
+    body = getattr(e, "body", None)
+    err = body.get("error") if isinstance(body, dict) else None
+    etype = (err.get("type") if isinstance(err, dict) else None) or ""
+    text = str(getattr(e, "message", "") or "").lower()
+    return etype == "billing_error" or "credit balance" in text
+
+
 def classify_anthropic(e: Exception) -> str:
     if isinstance(e, anthropic.APITimeoutError):
         return "timeout"
@@ -118,7 +134,7 @@ def classify_anthropic(e: Exception) -> str:
         s = e.status_code
         if s in (401, 403):
             return "bad_key"
-        if s == 402:
+        if s == 402 or _anthropic_billing(e):
             return "quota"
         if s == 429:
             return "rate_limited"
@@ -382,8 +398,10 @@ class Relay:
         brain = device.get("brain") or "cloud"
         if not paired:
             t = self.store.trial(device["device_id"], state)
-            if not t or t["left"] <= 0:
+            if not t:
                 return "none", None, None, "unpaired"
+            if t["left"] <= 0:  # §6.9 `allowance`: brain A allowance or trial used
+                return "none", None, None, "allowance"
             brain = "cloud"
         if brain == "none":
             return "none", None, None, None
@@ -502,9 +520,13 @@ class Relay:
                 p = None
             if p is None:
                 continue
+            pre = r.data.get("seq") or r.data.get("push_seq")
+            if isinstance(pre, int) and not isinstance(pre, bool):  # a dispatcher hook already enqueued it
+                seqs.append(pre)
+                continue
             action, pargs, say = p
             ids = r.data.get("ids") if name == "list.add" else None
-            item_id = f"it_{(ids or [r.id])[-1]}"
+            item_id = str(r.data.get("item_id") or f"it_{(ids or [r.id])[-1]}")[:32]
             seqs.append(self.store.enqueue(device_id, action, pargs, item_id, {"kind": "turn"}, say=say))
         return seqs
 
@@ -550,9 +572,11 @@ class Relay:
         messages.append({"role": "user", "content": user})
         kwargs = dict(model=model, max_tokens=1024, system=[{"type": "text", "text": prompts.SOUL_SYSTEM}],
                       tools=tools, **claude_request_kwargs(model, "low"))
+        # the refusal-fallback parameter lives on the beta endpoint
+        create = client.beta.messages.create if "betas" in kwargs else client.messages.create
         text = ""
         for _ in range(MAX_ROUNDS):
-            resp = self._call(lambda: client.messages.create(messages=messages, **kwargs), classify_anthropic,
+            resp = self._call(lambda: create(messages=list(messages), **kwargs), classify_anthropic,
                               lambda e: isinstance(e, anthropic.AnthropicError))
             usage.add(getattr(resp, "usage", None))
             if resp.stop_reason == "refusal":
@@ -601,7 +625,7 @@ class Relay:
 
         text = ""
         for _ in range(MAX_ROUNDS):
-            resp = self._call(lambda: client.responses.create(input=items, **kwargs), classify_openai, is_oai)
+            resp = self._call(lambda: client.responses.create(input=list(items), **kwargs), classify_openai, is_oai)
             usage.add(getattr(resp, "usage", None))
             if getattr(resp, "status", "completed") == "incomplete":
                 raise RelayError("truncated")

@@ -11,9 +11,10 @@ dispatcher as every other mode.
     SOUL_DEVICE_ID=demo python -m suflet_ai.mcp_server --http --port 8788
 
 Which device a call lands on: here SOUL_DEVICE_ID (one person, self-hosted).
-In the real service the connector is protected with OAuth (MCP authorization
-spec) and the signed-in SOUL account decides the device; do not expose the
-HTTP transport publicly without that.
+The public connector for claude.ai / ChatGPT is `mcp_remote.py`: the same tools
+behind OAuth 2.1 (sign-in, pairing code, consent), where the access token decides
+the account and the device. This module's HTTP transport has no auth, so it only
+binds to loopback.
 """
 from __future__ import annotations
 
@@ -125,6 +126,10 @@ def main(argv=None) -> None:
     server = build_server(SoulService(), _env_device)
     if a.http:
         import uvicorn
+
+        if a.host not in ("127.0.0.1", "::1", "localhost"):
+            raise SystemExit("no auth here: --http binds to loopback only; use suflet_ai.mcp_remote (OAuth) "
+                             "for a public connector")
 
         app = server.streamable_http_app(stateless_http=True, json_response=True, host=a.host)
         uvicorn.run(app, host=a.host, port=a.port)

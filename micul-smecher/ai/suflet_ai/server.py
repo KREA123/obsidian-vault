@@ -277,3 +277,18 @@ def due_soul(device_id: str):
         return soul().due(device_id)
     except ValueError as e:
         _bad(e)
+
+
+# ======================================================= device gateway ==
+# SOUL Cloud device side (docs/07-CONNECT-AI.md §3.2, §6): /v1/ping, /v1/device/* use the device's own
+# ECDSA challenge + `sdt_` token, never the shared token. The /v1/dev/* helpers (claim a pairing code,
+# push, unpair, config) stand in for the account pages in dev / self-host and sit behind the shared token.
+from .gateway import build_dev_router, build_router, default_gateway  # noqa: E402
+
+
+def gateway():
+    return default_gateway(soul)
+
+
+app.include_router(build_router(gateway))
+app.include_router(build_dev_router(gateway), dependencies=[Depends(auth)])

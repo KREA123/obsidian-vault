@@ -406,6 +406,7 @@ class SoulOAuthProvider:
         except _RateLimited:
             raise RegistrationError("invalid_client_metadata", "too many registrations from this address")
         check_registration(client_info)
+        self.purge_unused_clients()  # cheap housekeeping: DCR clients with no grant after 24 h go
         uris = [str(u) for u in client_info.redirect_uris or []]
         self._remember_client(client_info, "dcr", redirect_host(uris[0]))
         log.info("client registered (%s)", redirect_host(uris[0]))
