@@ -70,4 +70,8 @@ void cloudWakePoll(uint32_t nextWakeEpoch);
 bool cloudWakePollDone();
 void cloudWakePollAgain(uint32_t nextWakeEpoch);  // an alarm arrived: the next wake moves earlier
 void cloudWakePollCancel();                       // a touch woke SOUL: back to the socket
-void cloudForget();  // factory reset: seq, queue and token go, soulid/rst = 1; the key stays
+void cloudForget();
+// SoulOS apps (os/APPS.md): queue one HTTPS call to SOUL Cloud (device token); the answer comes back through
+// cloudPollAppData() for Os::appData(). Offline / no cloud: answered at once with status -1.
+void cloudAppFetch(const suflet::AppFetch& f);
+bool cloudPollAppData(suflet::Fetch& kind, int& status, std::string& body);  // factory reset: seq, queue and token go, soulid/rst = 1; the key stays

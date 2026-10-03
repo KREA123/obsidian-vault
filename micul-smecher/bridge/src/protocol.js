@@ -15,7 +15,8 @@ export const msg = {
   pair: (code, bridge, label) => ({ t: 'bridge.pair', v: PROTOCOL_VERSION, code: String(code), bridge, label }),
   hello: (token, bridge, mode, label) => ({ t: 'bridge.hello', v: PROTOCOL_VERSION, token, bridge, mode, label }),
   ack: (id) => ({ t: 'ask.ack', id, state: 'thinking' }),
-  answer: (id, text, actions) => ({ t: 'answer', id, text, actions }),
+  // memory: SOUL Memory ops ({op: 'remember'|'forget', text, kind?, importance?}); SOUL validates them again
+  answer: (id, text, actions, memory) => (memory && memory.length ? { t: 'answer', id, text, actions, memory } : { t: 'answer', id, text, actions }),
   error: (id, code, detail = '') => ({ t: 'answer.error', id, code, detail: String(detail).slice(0, 200) }),
   status: (state, detail = '') => ({ t: 'bridge.status', state, detail: String(detail).slice(0, 200) }),
 }

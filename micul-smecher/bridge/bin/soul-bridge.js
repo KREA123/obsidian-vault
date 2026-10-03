@@ -118,7 +118,7 @@ async function main() {
         chain = chain.then(async () => {
           const r = await runClaudePrint(q, { claudeBin, model: cfg.model, timeoutMs: (cfg.timeout_s || 120) * 1000 - 5000, cwd: fs.existsSync(workDir()) ? workDir() : os.homedir() })
           if (r.ok) {
-            const a = core.answer(q.id, r.text, r.actions)
+            const a = core.answer(q.id, r.text, r.actions, r.memory)
             if (!a.ok) log(`answer not delivered: ${a.error}`)
           } else {
             log(`claude -p failed: ${r.error}`)

@@ -33,6 +33,8 @@
 #include "Geometry.h"
 #include "Glass.h"
 #include "Keyboard.h"
+#include "Memory.h"
+#include "OsApps.h"
 #include "SoulFace.h"
 #include "TimePicker.h"
 #include "WifiRoam.h"
@@ -61,6 +63,23 @@ enum class View : uint8_t {
   Pair,      // SOUL Cloud: the XXXX-XXXX code + QR, "Pair with Ana?" ✓ / ✗, then "paired with <owner>"
   Keyboard,  // the system keyboard (over any screen)
   Bridge,    // "My Claude on my computer" (SOUL Bridge): the `soul-bridge pair` code, then "connected: <computer>"
+  Memory,    // SOUL Memory (Settings › Memory): what SOUL knows about you, search, forget, backup (OsMemory.cpp)
+  // SoulOS apps (os/APPS.md; OsApps.cpp, OsAppsDraw.cpp)
+  Control,     // pulled down from the eyes: light + volume on the rim, Quiet, Large text, Find phone, Sleep
+  Weather,     // now, the next hours, three days (SOUL Cloud: Open-Meteo)
+  Maps,        // where SOUL is, the map, a route, the next turn (docs/11-MAPS.md)
+  Calendar,    // the owner's agenda, read-only (an ICS link on /me/where)
+  Music,       // focus sounds through the speaker
+  Games,       // tilt ball, rhythm, eye memory
+  Focus,       // pomodoro with the eyes
+  Breathe,     // the eyes breathe with you
+  Habits,      // daily check-ins
+  Stopwatch,
+  WorldClock,
+  Convert,     // units and currencies, offline
+  FindPhone,   // ring the owner's phone
+  Device,      // battery and storage
+  AppsSettings,  // Settings › Apps: order and hide
   Count
 };
 const char* viewName(View v);
@@ -90,6 +109,8 @@ enum class OsCmd : uint8_t {
   BridgeForget,   // SOUL Bridge on the home network: forget every paired computer
   AddWifi,        // pendingWifi(): a network typed on SOUL (the phone's hotspot), saved next to the others
   WifiKick,       // search fast for a saved network now (a question waits, the hotspot was just switched on)
+  AppFetch,       // popAppFetch(): an app asks SOUL Cloud for something (weather, the map, a route...)
+  SaveApps,       // saveApps(): the apps blob (launcher order, habits, clocks, bests...)
   Count
 };
 
@@ -173,8 +194,9 @@ struct Note {
 // switch for connectors (docs/07 §6.16: never from the cloud, BLE or an LLM).
 struct CloudOut {
   // BridgeCode: a new `soul-bridge pair` code; BridgeForget: forget every paired computer;
-  // Brain: the brain picked on SOUL (text = "bridge" | "none"), so the account page does not undo it
-  enum Kind : uint8_t { Item, Inbox, State, PairOk, PairNo, Connectors, BridgeCode, BridgeForget, Brain } kind = Item;
+  // Brain: the brain picked on SOUL (text = "bridge" | "none"), so the account page does not undo it;
+  // MemoryBackup: SOUL Memory's export (text = JSON) for the owner's encrypted backup, "" + paused = backup off
+  enum Kind : uint8_t { Item, Inbox, State, PairOk, PairNo, Connectors, BridgeCode, BridgeForget, Brain, MemoryBackup } kind = Item;
   AiAction act;
   std::string text;        // Inbox
   uint32_t created = 0;    // Item: local epoch
@@ -221,6 +243,38 @@ class Os {
   void voiceText(const std::string& text, AiErr err);  // a transcription (voice builds)
   void alarmDue(int index);      // an alarm rings now
   void update(float dt, Brain& brain);
+
+  // ---- SOUL Memory (docs/10-SOUL-MEMORY.md, OsMemory.cpp) -------------------
+  void setMemory(SoulMemory* m) { mem_ = m; }  // owned by the device; null = no memory
+  SoulMemory* memory() { return mem_; }
+  void memoryBackupTick();  // the cloud backup follows the memory (when on and paired)
+
+  // ---- offline voice commands (VoiceCommands.h, OsVoice.cpp) --------------
+  // A command recognised on the device (ESP-SR MultiNet, id = (int)VoiceCmd): runs it at once, no AI.
+  void voiceCommand(int id);
+  bool sleepRequested() {                 // "go to sleep": the device dims and lets the eyes doze
+    const bool r = sleepReq_;
+    sleepReq_ = false;
+    return r;
+  }
+
+  // ---- SoulOS apps (os/APPS.md; OsApps.cpp) ------------------------------------
+  bool popAppFetch(AppFetch& f);                                // after OsCmd::AppFetch
+  void appData(Fetch kind, int status, const std::string& body);  // the answer (status < 0: no network)
+  void setTz(const std::string& posix) { apps_.tz = posix; }    // the device's zone (the world clock)
+  void setStorage(const StorageInfo& s) { apps_.storage = s; }  // the Device app
+  void setAudio(bool speaker, bool mic) { apps_.speaker = speaker, apps_.mic = mic; }
+  // what the speaker should play now (focus sounds): false = nothing; the device calls fill() itself
+  bool soundOn() const { return apps_.playing && apps_.speaker; }
+  SoundGen& sound() { return apps_.sound; }
+  float volume() const { return apps_.volume; }
+  bool quiet() const { return apps_.dnd; }  // Do not disturb: toasts wait (amber ones still show)
+  std::string saveApps() const;
+  void loadApps(const std::string& s);
+  AppsState& apps() { return apps_; }
+  void openApp(AppId a);
+  int visibleApps() const;
+  AppId appAt(int i) const;  // in the orbit, wrapping
 
   // ---- outputs ----------------------------------------------------------
   bool popAiJob(AiJob& j);
@@ -281,8 +335,8 @@ class Os {
   bool auraOn() const { return uiOn() && !faceMoment(); }
   bool peeking() const { return peekT_ > 0; }
   GlassTone glassTone() const;
-  static int appCount();
-  static View appView(int i);
+  int appCount() const { return visibleApps(); }
+  View appView(int i) const;
 
   // persistence (the device stores these blobs in NVS)
   size_t saveSettings(uint8_t* buf, size_t cap) const;
@@ -485,6 +539,83 @@ class Os {
   float peekT_ = 0, idleT_ = 0, auraLevel_ = 0, offsetT_ = 0;
   float gLp_[3] = {0, 0, 0};  // slow average of gravity: the tilt parallax is the difference
   bool gravInit_ = false, asleep_ = false;
+
+  // offline voice commands (OsVoice.cpp)
+  bool sleepReq_ = false;
+  bool offlineChat(const std::string& text);  // a personality line (Lines.h) when SOUL has no AI / no internet
+
+  // SOUL Memory (OsMemory.cpp): the hooks the rest of Os calls
+  SoulMemory* mem_ = nullptr;
+  int memSel_ = -1, memUndoId_ = 0;  // the fact open on the Memory screen; the toast's undo
+  std::string memFilter_;
+  uint32_t memBackupGen_ = 0;
+  float memBackupT_ = 0;
+  bool memBackupWas_ = false;
+  bool memoryAsk(const std::string& text);         // remember / forget / answered from memory: true = handled
+  std::string memoryBlock(const std::string& q);   // the context block for an AI job
+  void memoryApply(const std::vector<MemOp>& ops, FactSrc src);  // the AI's remember / forget + the toast
+  bool memoryToastTap();                           // a tap on "Remembered: …": undo
+  void memoryOpen();
+  bool memoryBack();
+  void memoryActivate(int id);
+  void memoryHoldDone(int id);
+  bool memoryKbCommit(int ctx, const std::string& text);
+  void buildMemoryItems(std::vector<Item>& out) const;
+  void drawMemory(Canvas& cv);
+
+  // SoulOS apps (OsApps.cpp: logic; OsAppsDraw.cpp: drawing): the hooks the rest of Os calls
+  AppsState apps_;
+  void appsBegin();
+  void appsUpdate(float dt);
+  bool appsTouch(const TouchEv& e);    // raw touches (maps, control): true = taken
+  bool appsSwipe(int dir);             // true = handled
+  bool appsTap(float x, float y);      // true = handled (before the items)
+  bool appsHold(float x, float y);
+  bool appsBack();                     // true = handled
+  bool appsDraw(Canvas& cv);           // true = drawn (one of the app views)
+  bool appsIdleReturns(bool& out) const;
+  bool appsFaceMoment(bool& out) const;
+  bool appsLayout(View v, FaceLayoutT& l) const;
+  void appsFace(FaceInputs& in) const;
+  bool appsKbCommit(int ctx, const std::string& text);
+  void appsKbConfig(int ctx, KbConfig& c) const;
+  void appsActivate(int id);
+  void appsHoldDone(int id);
+  void buildAppsItems(std::vector<Item>& out) const;
+  void fetch(Fetch k, const std::string& path, const std::string& body = "", bool post = false, bool del = false);
+  void appOpened(View v);
+  std::string appName(AppId a) const;
+  std::string appFact(AppId a) const;
+  View viewOf(AppId a) const;
+  void drawGlyph(Canvas& cv, AppId a, float cx, float cy, float size, Rgb c, float alpha);
+  void drawSky(Canvas& cv, apps::Sky s, float cx, float cy, float size, float alpha);
+  void drawControl(Canvas& cv);
+  void drawTodayStack(Canvas& cv);
+  void drawWeather(Canvas& cv);
+  void drawMaps(Canvas& cv);
+  void drawCalendar(Canvas& cv);
+  void drawMusic(Canvas& cv);
+  void drawGames(Canvas& cv);
+  void drawFocus(Canvas& cv);
+  void drawBreathe(Canvas& cv);
+  void drawHabits(Canvas& cv);
+  void drawStopwatch(Canvas& cv);
+  void drawWorldClock(Canvas& cv);
+  void drawConvert(Canvas& cv);
+  void drawFindPhone(Canvas& cv);
+  void drawDevice(Canvas& cv);
+  void drawAppsSettings(Canvas& cv);
+  bool drawQuickReplies(Canvas& cv, float y);
+  void drawArrow(Canvas& cv, float cx, float cy, float size, float deg, Rgb c, float alpha);
+  void mapsOpen();
+  void mapsAskView(bool force);
+  void mapsPaintLayer(Canvas& cv);
+  void navStart();
+  void navStep(float dt);
+  void gamesStep(float dt);
+  int wrapInto(const Font& f, const std::string& s, float maxW, std::string* lines, int maxLines) const {
+    return wrapLines(f, s, maxW, lines, maxLines);
+  }
 
   // toast on the top rim
   std::string toast_;

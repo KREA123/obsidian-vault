@@ -246,6 +246,40 @@ static bool validAction(JsonVariantConst a, AiAction& out) {
   return true;
 }
 
+// {"type": "memory.remember", "text", "kind"?, "importance"?} / {"type": "memory.forget", "text"}: exactly
+// these keys, a real fact (<= 120 chars) or keyword (>= 3 chars), never a secret
+static bool validMemOp(JsonVariantConst a, MemOp& out) {
+  if (!a.is<JsonObjectConst>()) return false;
+  JsonObjectConst o = a.as<JsonObjectConst>();
+  const char* type = o["type"] | "";
+  MemOp op;
+  op.forget = !strcmp(type, "memory.forget");
+  if (!op.forget && strcmp(type, "memory.remember")) return false;
+  for (JsonPairConst kv : o) {
+    const char* k = kv.key().c_str();
+    if (strcmp(k, "type") && strcmp(k, "text") && (op.forget || (strcmp(k, "kind") && strcmp(k, "importance"))))
+      return false;
+  }
+  if (!o["text"].is<const char*>()) return false;
+  const char* raw = o["text"].as<const char*>();
+  if (strlen(raw) > (op.forget ? 80u : 400u)) return false;  // a fact, not an essay
+  op.text = cleanStr(raw, op.forget ? 80 : SoulMemory::kTextMax);
+  if (op.forget ? SoulMemory::fold(op.text).size() < 3 : op.text.empty()) return false;
+  if (!op.forget && SoulMemory::looksSecret(op.text)) return false;
+  if (!o["kind"].isNull()) {
+    if (!o["kind"].is<const char*>() || !factKindFrom(o["kind"].as<const char*>(), op.kind)) return false;
+  }
+  if (!o["importance"].isNull()) {
+    JsonVariantConst n = o["importance"];
+    if (!(n.is<long>() || n.is<double>())) return false;
+    const double v = n.as<double>();
+    if (!isfinite(v) || v < 1 || v > 5) return false;
+    op.importance = (uint8_t)lround(v);
+  }
+  out = op;
+  return true;
+}
+
 static bool parseObject(const char* p, size_t n, JsonDocument& doc) {
   if (!p || !n) return false;
   const DeserializationError e = deserializeJson(doc, p, n, DeserializationOption::NestingLimit(8));
@@ -295,7 +329,16 @@ AiReply parseReply(const char* raw, size_t n) {
   }
   JsonVariantConst acts = doc["actions"];
   int total = 0;
+  int memTotal = 0;
   auto take = [&](JsonVariantConst v) {
+    const char* t = v["type"].is<const char*>() ? v["type"].as<const char*>() : "";
+    if (!strncmp(t, "memory.", 7)) {  // SOUL Memory: its own budget of three, apart from the actions
+      ++memTotal;
+      MemOp op;
+      if (memTotal <= 3 && validMemOp(v, op)) r.memory.push_back(op);
+      else ++r.rejected;
+      return;
+    }
     ++total;
     if (r.actions.size() >= 3 || total > 3) return;
     AiAction act;
@@ -306,7 +349,7 @@ AiReply parseReply(const char* raw, size_t n) {
   } else if (!acts.isNull()) {
     take(acts);
   }
-  r.rejected = total - (int)r.actions.size();
+  r.rejected += total - (int)r.actions.size();
   return r;
 }
 
@@ -361,7 +404,18 @@ std::string systemPrompt(const AiContext& c) {
        "{\"type\": \"note.create\", \"text\": \"<up to 300 chars>\"}\n"
        "{\"type\": \"focus.start\", \"minutes\": <5-120>}\n"
        "Add an action only when the user asks for one, and confirm it in \"say\". You cannot send messages, browse, "
-       "call or control other devices; if asked, say so briefly. You are an AI and say so plainly if asked.";
+       "call or control other devices; if asked, say so briefly. You are an AI and say so plainly if asked.\n"
+       "SOUL keeps the owner's memory on the device and gives it to whichever AI is connected. Two more actions "
+       "(they do not count against the three):\n"
+       "{\"type\": \"memory.remember\", \"text\": \"<one durable fact, up to 120 chars, in the owner's words: 'My sister "
+       "is Ana'>\", \"kind\": \"person\" | \"preference\" | \"plan\" | \"place\" | \"note\" | \"summary\" | "
+       "\"other\", \"importance\": <1-5>}\n"
+       "{\"type\": \"memory.forget\", \"text\": \"<a keyword of the fact to forget>\"}\n"
+       "Remember only what is worth keeping (people and pets, birthdays, preferences, ongoing plans), at most one or "
+       "two per answer, nothing already known. Never remember passwords, codes, card or ID numbers, health, religion, "
+       "politics or sexuality unless the owner explicitly asks for that exact thing. SOUL shows \"Remembered: ...\" "
+       "and the owner can undo it.";
+  if (!c.memory.empty()) s += "\n" + c.memory;
   return s;
 }
 
@@ -410,6 +464,21 @@ static void addSchema(JsonObject fmt) {
   variant("reminder.create", {{"time", "string"}, {"day", "day"}, {"text", "string"}});
   variant("note.create", {{"text", "string"}});
   variant("focus.start", {{"minutes", "integer"}});
+  {  // SOUL Memory
+    JsonObject v = any.add<JsonObject>();
+    v["type"] = "object";
+    v["additionalProperties"] = false;
+    JsonObject p = v["properties"].to<JsonObject>();
+    p["type"]["const"] = "memory.remember";
+    p["text"]["type"] = "string";
+    p["kind"]["type"] = "string";
+    JsonArray e = p["kind"]["enum"].to<JsonArray>();
+    for (int i = 0; i < (int)FactKind::Count; ++i) e.add(factKindName((FactKind)i));
+    p["importance"]["type"] = "integer";
+    JsonArray req = v["required"].to<JsonArray>();
+    for (const char* k : {"type", "text", "kind", "importance"}) req.add(k);
+  }
+  variant("memory.forget", {{"text", "string"}});
   JsonArray req = sc["required"].to<JsonArray>();
   req.add("say");
   req.add("face");
@@ -479,6 +548,7 @@ AiErr buildRequest(const AiConfig& cfg, const AiContext& ctx, const std::vector<
       doc["device_id"] = cfg.deviceId.empty() ? std::string("soul") : cfg.deviceId;
       doc["text"] = text.size() > 2000 ? text.substr(0, 2000) : text;
       doc["lang"] = ctx.ro ? "ro" : "en";
+      if (!ctx.memory.empty()) doc["memory"] = ctx.memory;
       break;
     }
     default: return AiErr::NoKey;
@@ -569,6 +639,31 @@ static void relayActions(JsonArrayConst acts, uint32_t now, AiReply& r) {
   }
 }
 
+bool memOpFrom(const char* op, const char* text, const char* kind, int importance, MemOp& out) {
+  // the cloud's form {"op": "remember"|"forget", "text", "kind"?, "importance"?} -> the device protocol's
+  JsonDocument d;
+  const bool forget = op && !strcmp(op, "forget");
+  d["type"] = forget ? "memory.forget" : op && !strcmp(op, "remember") ? "memory.remember" : "";
+  if (text) d["text"] = text;
+  if (kind && *kind && !forget) d["kind"] = kind;
+  if (importance > 0 && !forget) d["importance"] = importance;
+  return validMemOp(d.as<JsonVariantConst>(), out);
+}
+
+static void relayMemory(JsonVariantConst ops, AiReply& r) {
+  if (!ops.is<JsonArrayConst>()) return;
+  int n = 0;
+  for (JsonObjectConst o : ops.as<JsonArrayConst>()) {
+    if (++n > 3) break;
+    MemOp m;
+    if (memOpFrom(o["op"] | "", o["text"].is<const char*>() ? o["text"].as<const char*>() : nullptr, o["kind"] | "",
+                  o["importance"] | 0, m))
+      r.memory.push_back(m);
+    else
+      ++r.rejected;
+  }
+}
+
 AiOutcome parseResponse(const AiConfig& cfg, int status, const char* body, size_t n, AiErr netErr, uint32_t now) {
   AiOutcome o;
   o.httpStatus = status;
@@ -628,6 +723,7 @@ AiOutcome parseResponse(const AiConfig& cfg, int status, const char* body, size_
       for (const auto& t : kTone)
         if (!strcmp(face, t[0])) o.reply.face = t[1];
       relayActions(doc["actions"].as<JsonArrayConst>(), now, o.reply);
+      relayMemory(doc["memory"], o.reply);
       o.raw = "{\"say\":\"" + o.reply.say + "\"}";
       if (o.reply.say.empty()) o.err = AiErr::Upstream;
       break;

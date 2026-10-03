@@ -979,7 +979,7 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
   s.cloudAsk = [&](const AiJob& j) {
     const int left = s.os.timerLeft();
     return hc.session.ask(j.text, s.os.ro(), left >= 0 ? (left + 59) / 60 : -1, simMs(),
-                          s.os.aiMode() == AiMode::Bridge);  // brain "bridge": the cloud hands it to the computer
+                          s.os.aiMode() == AiMode::Bridge, j.ctx.memory);  // brain "bridge": the cloud hands it to the computer
   };
   std::string bridgeCode, bridgeLine;
   int askState = 0;
@@ -1211,7 +1211,7 @@ int lanMode(const std::string& dir, int port) {
     struct tm tm;
     gmtime_r(&t, &tm);
     snprintf(now, sizeof now, "%04d-%02d-%02dT%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min);
-    return b.ask(j.text, s.os.ro(), now, simMs());
+    return b.ask(j.text, s.os.ro(), now, simMs(), j.ctx.memory);
   };
   printf("LAN port=%d device=%s\n", ws.port(), b.deviceId.c_str());
   const int fl = fcntl(0, F_GETFL, 0);
@@ -1307,6 +1307,8 @@ int lanMode(const std::string& dir, int port) {
 }
 }  // namespace
 
+int appsMode(const std::string& dir, const std::string& which, int px);  // sim_apps.cpp
+
 int main(int argc, char** argv) {
   setvbuf(stdout, nullptr, _IOLBF, 0);  // cloud mode is driven line by line through a pipe
   if (argc < 2) {
@@ -1335,6 +1337,8 @@ int main(int argc, char** argv) {
     }
     return cloudMode(dir, argv[3], argc > 4 ? argv[4] : "", argc > 5 && atoi(argv[5]) != 0);
   }
+  if (which == "apps" || which == "bench_maps" || which == "bench_games")  // SoulOS apps (sim_apps.cpp)
+    return appsMode(dir, which, argc > 4 ? atoi(argv[4]) : 480);
   if (which == "lan") return lanMode(dir, argc > 3 ? atoi(argv[3]) : 0);  // SOUL Bridge on the LAN (see lanMode)
   if (which == "keys") {  // drive it by hand (see keysMode)
     Recorder rec;

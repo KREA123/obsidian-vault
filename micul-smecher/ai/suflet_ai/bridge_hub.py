@@ -51,6 +51,7 @@ from zoneinfo import ZoneInfo
 from fastapi import WebSocket
 
 from .devices import CROCKFORD, DEFAULT_TZ, DeviceStore, b64u, normalize_code, sha256_hex
+from .memory_sync import memory_block
 
 log = logging.getLogger("suflet_ai.bridge")
 
@@ -93,6 +94,7 @@ class BridgeError(Exception):
 class BridgeAnswer:
     text: str
     actions: List[dict] = field(default_factory=list)
+    memory: List[dict] = field(default_factory=list)  # SOUL Memory ops ({op, text, ...}); SOUL validates them
 
 
 class _Conn:
@@ -344,6 +346,9 @@ class BridgeHub:
         self.pending[qid] = _Pending(device_id, fut, on_state, c, loop)
         frame = {"t": "ask", "id": qid, "text": str(ask["text"]).strip()[:2000], "lang": lang, "now": now_local,
                  "tz": tz, "from": "keyboard"}
+        mem = memory_block(ask.get("ctx"))
+        if mem:  # SOUL Memory: what SOUL knows about the owner, for their Claude Code (docs/10 §4)
+            frame["memory"] = mem
         try:
             if not await c.send_from_any_loop(frame):
                 raise BridgeError("bridge_offline", "your computer is offline: open Start SOUL")
@@ -469,7 +474,8 @@ class BridgeHub:
             raw = m.get("actions") if isinstance(m.get("actions"), list) else []
             acts = [a for a in raw if isinstance(a, dict) and isinstance(a.get("type"), str)
                     and isinstance(a.get("args", {}), dict)][:MAX_ACTIONS]
-            p.resolve(BridgeAnswer(text.strip()[:ANSWER_MAX], acts))
+            mem = [x for x in m.get("memory") if isinstance(x, dict)][:3] if isinstance(m.get("memory"), list) else []
+            p.resolve(BridgeAnswer(text.strip()[:ANSWER_MAX], acts, mem))
             await conn.send({"t": "answer.ack", "id": qid, "shown": True})
         elif t == "answer.error":
             code = _ERR_MAP.get(str(m.get("code")), "upstream")

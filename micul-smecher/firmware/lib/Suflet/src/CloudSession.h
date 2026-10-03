@@ -69,7 +69,8 @@ class CloudSession {
   // ---- the app (SoulOS through the device) ------------------------------------
   // one text turn; false when the socket is not welcomed or a turn is running.
   // viaBridge: the cloud hands it to the owner's computer (125 s, ask.state)
-  bool ask(const std::string& text, bool ro, int timerLeftMin, uint32_t nowMs, bool viaBridge = false);
+  bool ask(const std::string& text, bool ro, int timerLeftMin, uint32_t nowMs, bool viaBridge = false,
+           const std::string& memory = "");  // memory: SOUL Memory's context block
   bool askPending() const { return askPending_; }
   int askState() const { return askState_; }  // 0 none, 1 waiting (sent to the computer), 2 thinking
   bool pollAnswer(AiOutcome& out);
@@ -178,6 +179,9 @@ class CloudDriver {
   // then wait in `session` for SoulOS; wakePollFinish() sends the acks, the queue and `sleep` in one POST.
   bool wakePoll(uint32_t nowMs, float rnd);
   bool wakePollFinish(uint32_t nowMs, uint32_t wakeAtEpoch);
+  // SoulOS apps (os/APPS.md): one HTTPS call to SOUL Cloud with the device token (weather, the map, a route...).
+  // `path` starts with "/v1/device/"; POST when `post`, else GET. The HTTP status (< 0 network, -2 no token yet).
+  int appFetch(const std::string& path, bool post, const std::string& body, std::string& resp, uint32_t timeoutMs = 12000);
 
  protected:
   // ---- the transport --------------------------------------------------------

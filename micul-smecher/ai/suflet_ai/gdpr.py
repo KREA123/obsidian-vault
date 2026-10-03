@@ -67,6 +67,9 @@ def export_account(rc: Any, account_id: str) -> Dict[str, Any]:
             "events": _rows(st, "SELECT kind, at FROM events WHERE device_id=? ORDER BY at", (dev,)),
             "conversation_turns": _rows(st, "SELECT conv_id, role, text, created FROM conv_turns WHERE device_id=? "
                                             "ORDER BY created", (dev,)),
+            # SOUL Memory's backup (only if the owner switched it on, on SOUL): decrypted for its owner
+            "memory_backup": (impl.memory_backups.get(dev) if getattr(impl, "memory_backups", None) is not None
+                              else None),
         })
     grants = [g.public() for g in rc.oauth.grants(account_id)]
     keys = {}

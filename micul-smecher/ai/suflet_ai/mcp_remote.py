@@ -778,6 +778,49 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
             await gateway.inbox_answered(ctx.device_id, reply_to)
         return out
 
+    @mcp.tool(name="navigate_on_soul", title="Show directions on SOUL",
+              annotations=ToolAnnotations(title="Show directions on SOUL", **_WRITE))
+    @coded
+    async def navigate_on_soul(
+        destination: Annotated[str, Field(min_length=1, json_schema_extra={"maxLength": 200},
+                                          description="Where to go: a place name, an address, or 'lat,lon'.")],
+        mode: Annotated[Literal["walk", "bike", "car"], Field(description="How the user travels.")] = "walk",
+    ) -> dict:
+        """Open SOUL's Maps app with a route to `destination` from where SOUL is (the owner's shared phone
+        location). SOUL shows the next turn, the distance and the ETA, and can send the route to the phone."""
+        ctx, info = await checked(write=True)
+        too_long(destination, 200, "destination")
+        from . import apps as apps_mod
+        from .maps import MapsError
+        lang = lang_for(ctx, info)
+        args: Dict[str, Any] = {"to": destination[:60], "mode": mode}
+        note = ""
+        try:
+            rt = apps_mod.hub().maps.plan(ctx.device_id, destination, mode=mode, lang=lang)
+            args.update(to=(rt.to or destination)[:60], route=rt.id, dist=int(rt.dist_m), dur=int(rt.dur_s))
+        except MapsError as e:  # SOUL still opens Maps and asks again once it knows where it is
+            if e.code in ("not_found", "too_far", "bad_request"):
+                raise ToolError(f"{e.code}: {e.msg}")
+            note = e.code
+        caps.check(ctx.device_id)
+        try:
+            seq = await gateway.enqueue(ctx.device_id, "nav.start", args, f"nv_{int(service.now().timestamp()) % 10**8}",
+                                        {"kind": "connector", "app": ctx.client_app})
+        except GatewayError as e:
+            raise ToolError(f"no_device: SOUL cannot receive items right now ({e.code})") from e
+        caps.record(ctx.device_id)
+        delivered = await gateway.push_and_wait(ctx.device_id, int(seq), timeout=PUSH_WAIT_S)
+        out = {"ok": True, "delivered": delivered, "to": args["to"], "mode": mode, **now_fields(tz_of(info))}
+        if "dist" in args:
+            out.update(distance_m=args["dist"], duration_s=args["dur"])
+            out["tell_user"] = (f"SOUL shows the way to {args['to']}: {args['dist'] / 1000:.1f} km, about "
+                                f"{max(1, round(args['dur'] / 60))} min.")
+        else:
+            out["tell_user"] = ("SOUL opened Maps; it will show the route once it knows where it is "
+                                "(share your location from your phone: /me/where)." if note == "no_location"
+                                else "SOUL opened Maps, but routing is not set up on this SOUL Cloud.")
+        return out
+
     return mcp
 
 
@@ -1317,11 +1360,13 @@ def create_remote_app(service: Optional[SoulService] = None, gateway: Any = None
                                                      allowed_origins=[f"{scheme}://{h}" for h in hosts]),
         host=host)
     # ours first: Starlette takes the first matching route, so these override the SDK's metadata
+    from .apps_routes import where_routes
     from .web_me import me_routes
 
     # the phone pages first: their brand stylesheet replaces the plain one of the consent pages
     app.router.routes[0:0] = (_metadata_routes(rc, cimd_fetch is not None)
-                              + me_routes(rc, SECURITY_HEADERS, client_ip, key_check) + _web_routes(rc))
+                              + me_routes(rc, SECURITY_HEADERS, client_ip, key_check) + where_routes(rc, SECURITY_HEADERS)
+                              + _web_routes(rc))
     app.add_middleware(RequestContextMiddleware)
     app.state.soul = rc
     return app
@@ -1345,6 +1390,8 @@ def create_dev_app(**kwargs):
 
     api = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     api.include_router(gw_mod.build_router(lambda: gw))
+    from .apps_routes import build_apps_router
+    api.include_router(build_apps_router(lambda: gw))
     api.mount("/", remote)
     api.state.soul = remote.state.soul
     return api

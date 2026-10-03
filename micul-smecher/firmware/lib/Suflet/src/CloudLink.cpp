@@ -159,6 +159,15 @@ bool mapPush(const char* action, JsonVariantConst args, CloudPush& p) {
     p.kind = CloudPush::Card;
     return true;
   }
+  if (!strcmp(action, "nav.start")) {  // SOUL Maps (docs/11-MAPS.md §4): open Maps on a route the cloud planned
+    p.title = cleanText(args["to"] | "", 60);
+    p.body = cleanText(args["route"] | "", 24);
+    const std::string mode = args["mode"] | "walk";
+    p.say = mode == "bike" || mode == "car" ? mode : "walk";
+    if (p.title.empty()) return false;
+    p.kind = CloudPush::Nav;
+    return true;
+  }
   if (!strcmp(action, "item.delete")) {
     p.itemId = cleanText(args["item_id"] | "", 32);
     if (p.itemId.empty()) return false;
@@ -365,7 +374,7 @@ std::string CloudLink::hello(const CloudHello& h) {
 }
 
 std::string CloudLink::ask(const std::string& id, const std::string& text, const char* lang, const std::string& conv,
-                           int timerLeftMin, const std::vector<std::string>& unsynced) {
+                           int timerLeftMin, const std::vector<std::string>& unsynced, const std::string& memory) {
   JsonDocument d;
   envelope(d, "ask");
   d["id"] = id.substr(0, 24);
@@ -385,9 +394,14 @@ std::string CloudLink::ask(const std::string& id, const std::string& text, const
     o["action"] = it["action"];
     o["args"] = it["args"];
   }
+  if (!memory.empty()) ctx["memory"] = cutCp(memory, 1500);  // SOUL Memory: what SOUL knows about you
   std::string s = dump(d);
   if (s.size() > kMaxOut) {  // the unsynced context is a nice-to-have: never let it push the turn over 10 KB
     un.clear();
+    s = dump(d);
+  }
+  if (s.size() > kMaxOut) {
+    ctx.remove("memory");
     s = dump(d);
   }
   return s;
@@ -519,6 +533,37 @@ std::string CloudLink::bridgeForget() {
   JsonDocument d;
   envelope(d, "bridge.forget");
   return dump(d);
+}
+
+std::vector<std::string> CloudLink::memoryBackup(const std::string& json, uint32_t gen, bool off) {
+  std::vector<std::string> out;
+  if (off) {
+    JsonDocument d;
+    envelope(d, "memory.backup");
+    d["off"] = true;
+    out.push_back(dump(d));
+    return out;
+  }
+  // split on code points so every part is valid UTF-8 text
+  std::vector<std::string> parts;
+  size_t i = 0;
+  while (i < json.size()) {
+    size_t n = json.size() - i < kMemoryPart ? json.size() - i : kMemoryPart;
+    while (n > 0 && i + n < json.size() && ((unsigned char)json[i + n] & 0xC0) == 0x80) --n;
+    parts.push_back(json.substr(i, n));
+    i += n;
+  }
+  if (parts.empty()) parts.push_back("");
+  for (size_t k = 0; k < parts.size(); ++k) {
+    JsonDocument d;
+    envelope(d, "memory.backup");
+    d["gen"] = gen;
+    d["part"] = (uint32_t)k;
+    d["parts"] = (uint32_t)parts.size();
+    d["data"] = parts[k];
+    out.push_back(dump(d));
+  }
+  return out;
 }
 
 std::string CloudLink::brain(const char* name) {
@@ -687,6 +732,14 @@ CloudLink::Msg CloudLink::feed(const char* json, size_t n) {
       reply.allowanceUnit = d["allowance"]["unit"] | "";
     }
     if (reply.reply.say.empty() && !reply.title.empty()) reply.reply.say = reply.title;
+    int memN = 0;  // SOUL Memory: what the cloud's AI wants kept / forgotten (validated like any AI's)
+    for (JsonObjectConst m : d["memory"].as<JsonArrayConst>()) {
+      if (++memN > 3) break;
+      MemOp op;
+      if (memOpFrom(m["op"] | "", m["text"].is<const char*>() ? m["text"].as<const char*>() : nullptr, m["kind"] | "",
+                    m["importance"] | 0, op))
+        reply.reply.memory.push_back(op);
+    }
     return Msg::Reply;
   }
   if (!strcmp(t, "say.delta")) {

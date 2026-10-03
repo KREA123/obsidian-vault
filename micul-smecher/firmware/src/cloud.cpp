@@ -289,6 +289,14 @@ uint32_t wakeAtEpoch = 0, wakeStartMs = 0;
 std::string savedOutq;
 uint32_t savedSeq = 0;
 bool savedConn = false;
+// SoulOS apps (os/APPS.md): HTTPS calls to SOUL Cloud with the device token, one per loop turn, off the render loop
+struct AppResult {
+  suflet::Fetch kind;
+  int status;
+  std::string body;
+};
+std::vector<suflet::AppFetch> appQ;
+std::vector<AppResult> appDone;
 
 // ------------------------------------------------------------------ NVS ---
 
@@ -400,6 +408,27 @@ void cloudTask(void*) {
       vTaskDelay(pdMS_TO_TICKS(200));
       continue;
     }
+    {  // one app request per turn (weather, the map, a route...): never while holding the lock
+      suflet::AppFetch f;
+      bool have = false;
+      {
+        Lock l;
+        if (!appQ.empty() && drv.haveToken()) {
+          f = appQ.front();
+          appQ.erase(appQ.begin());
+          have = true;
+        }
+      }
+      if (have) {
+        std::string resp;
+        const int st = drv.appFetch(f.path, f.post, f.body, resp);
+        if (resp.size() > 64 * 1024) resp.clear();  // a map bundle is <= 24 KB: anything bigger is not ours
+        Serial.printf("[cloud] app %s -> %d (%u B)\n", suflet::fetchName(f.kind), st, (unsigned)resp.size());
+        Lock l;
+        if (appDone.size() >= 8) appDone.erase(appDone.begin());
+        appDone.push_back({f.kind, st, std::move(resp)});
+      }
+    }
     const uint32_t waitMs = drv.step(millis(), (float)(esp_random() % 1000) / 1000.0f);
     const uint32_t now = millis();
     if (now - lastSave > 1000) {
@@ -482,7 +511,7 @@ bool cloudReady() {
 bool cloudAsk(const AiJob& job, bool ro, int timerLeftMin, bool viaBridge) {
   if (!mtx) return false;
   Lock l;
-  return drv.session.ask(job.text, ro, timerLeftMin, millis(), viaBridge);
+  return drv.session.ask(job.text, ro, timerLeftMin, millis(), viaBridge, job.ctx.memory);
 }
 
 bool cloudPaired() {
@@ -598,4 +627,26 @@ void cloudForget() {
   p.clear();
   p.end();
   key.setReset(true);  // the next auth says reset: true, the cloud unpairs and tells the old owner
+}
+
+// ------------------------------------------------------------- SoulOS apps ---
+
+void cloudAppFetch(const suflet::AppFetch& f) {
+  Lock l;
+  if (off || !netOnline()) {  // no SOUL Cloud or no internet: say so at once (the app shows its offline state)
+    appDone.push_back({f.kind, -1, std::string()});
+    return;
+  }
+  if (appQ.size() >= 8) appQ.erase(appQ.begin());
+  appQ.push_back(f);
+}
+
+bool cloudPollAppData(suflet::Fetch& kind, int& status, std::string& body) {
+  Lock l;
+  if (appDone.empty()) return false;
+  kind = appDone.front().kind;
+  status = appDone.front().status;
+  body.swap(appDone.front().body);
+  appDone.erase(appDone.begin());
+  return true;
 }

@@ -901,6 +901,8 @@ class DeviceStore:
             raise ValueError("item_id must be 1..32 characters")
         if action == "answer.show" and expires_at is None:
             expires_at = self.now() + CARD_TTL
+        if action == "nav.start" and expires_at is None:  # "take me to ..." an hour later is not wanted any more
+            expires_at = self.now() + 3600
         flags = {"private": bool(private), "needs_accept": bool(needs_accept)}
         with self.lock:
             seq = self.next_seq(device_id)  # same transaction as the insert: gap-free

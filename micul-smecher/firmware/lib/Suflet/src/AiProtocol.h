@@ -10,6 +10,9 @@
 //   {"type": "reminder.create", "time": "HH:MM", "day": "today|tomorrow", "text": "..."}
 //   {"type": "note.create", "text": "..."}
 //   {"type": "focus.start", "minutes": 5..120}
+// and SOUL Memory's two (docs/10-SOUL-MEMORY.md), kept apart from the five in AiReply::memory:
+//   {"type": "memory.remember", "text": "<a durable fact, <= 120 chars>", "kind": "person|preference|plan|place|note|summary|other", "importance": 1..5}
+//   {"type": "memory.forget", "text": "<a keyword, >= 3 chars>"}
 // Unknown types, extra keys, bad times and out-of-range numbers are dropped
 // (and counted). Transport-free: this file builds request bodies and parses
 // response bodies; the device does the HTTPS (src/net.cpp), the simulator
@@ -20,6 +23,8 @@
 
 #include <string>
 #include <vector>
+
+#include "Memory.h"
 
 namespace suflet {
 
@@ -62,6 +67,7 @@ struct AiReply {
   std::string say;
   std::string face;  // "" = none; one of the 10 allowed faces
   std::vector<AiAction> actions;
+  std::vector<MemOp> memory;  // SOUL Memory: remember / forget (at most 3, validated, never a secret)
   int rejected = 0;   // actions dropped by the validation
   bool loose = false;  // not a JSON object: plain text was shown instead
 };
@@ -70,6 +76,10 @@ struct AiReply {
 // action validation, at most three actions. Never fails: plain text becomes say.
 AiReply parseReply(const char* raw, size_t n);
 inline AiReply parseReply(const std::string& s) { return parseReply(s.data(), s.size()); }
+
+// SOUL Cloud's / SOUL Bridge's memory op {"op": "remember"|"forget", "text", "kind"?, "importance"?} -> a
+// validated MemOp (false: dropped)
+bool memOpFrom(const char* op, const char* text, const char* kind, int importance, MemOp& out);
 
 // What the device knows right now, for the standing instructions.
 struct AiContext {
@@ -80,6 +90,7 @@ struct AiContext {
   std::string reminders;      // "17:00 \"Call the bank\"; ..." or ""
   int timerLeftMin = -1;      // countdown minutes left, -1 = none
   int notes = 0;
+  std::string memory;         // SOUL Memory: "What SOUL knows about you" (SoulMemory::contextBlock), "" = none
 };
 std::string systemPrompt(const AiContext& c);
 std::string formatNow(uint32_t localEpoch, bool ro);  // "Friday 2 October 2026, 18:30"

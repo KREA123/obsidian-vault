@@ -47,7 +47,8 @@ struct CloudAuth {
 };
 
 struct CloudPush {
-  enum Kind : uint8_t { Act, Card, Delete, Unsupported, Invalid } kind = Invalid;
+  // Nav: "take me to …" from your AI (navigate_on_soul): title = where to, body = the cloud's route id, say = mode
+  enum Kind : uint8_t { Act, Card, Delete, Unsupported, Invalid, Nav } kind = Invalid;
   uint32_t seq = 0;
   std::string action, itemId;
   std::string source;  // origin.kind: connector | shortcut | app | turn | device
@@ -155,7 +156,7 @@ class CloudLink {
   static std::string hello(const CloudHello& h);
   // conv "" = null; unsynced: item.add frames still in the queue (<= 10 used)
   static std::string ask(const std::string& id, const std::string& text, const char* lang, const std::string& conv,
-                         int timerLeftMin, const std::vector<std::string>& unsynced);
+                         int timerLeftMin, const std::vector<std::string>& unsynced, const std::string& memory = "");
   static std::string ack(uint32_t seq, bool ok, const char* err = nullptr);
   static std::string abort(const std::string& re);
   static std::string status(int rssi, int battery, const char* power, const char* fw, uint32_t freeHeap, bool awake);
@@ -172,6 +173,10 @@ class CloudLink {
   static std::string bridgeCodeGet();
   static std::string bridgeForget();
   static std::string brain(const char* name);
+  // SOUL Memory's encrypted backup (docs/10 §5): the export JSON in parts of <= kMemoryPart bytes
+  // {"t":"memory.backup","gen","part","parts","data"}; off = {"t":"memory.backup","off":true} (delete the copy)
+  static constexpr size_t kMemoryPart = 7000;
+  static std::vector<std::string> memoryBackup(const std::string& json, uint32_t gen, bool off);
 
   // ---- long-poll (§6.4: the fallback transport, and the deep-sleep wake-polls of §6.11) ------------------
   static std::string pollUrl(const std::string& base, uint32_t after, int waitS);

@@ -3,7 +3,7 @@
 // mode (Claude Code channel) and the print mode (`claude -p`).
 import { EventEmitter } from 'node:events'
 import { msg, ERR } from './protocol.js'
-import { validateActions, MAX_TEXT } from './actions.js'
+import { validateActions, validateMemory, MAX_TEXT } from './actions.js'
 
 export class BridgeCore extends EventEmitter {
   constructor({ link, timeoutMs = 120000, maxPending = 5 }) {
@@ -48,17 +48,18 @@ export class BridgeCore extends EventEmitter {
    * Deliver Claude's answer to SOUL.
    * @returns {{ok:boolean, error?:string, sent_actions?:number, rejected?:Array}}
    */
-  answer(id, text, actions) {
+  answer(id, text, actions, memory) {
     if (!this.pending.has(id)) return { ok: false, error: `no open question with id ${id} (already answered, cancelled or timed out)` }
     if (typeof text !== 'string' || !text.trim()) return { ok: false, error: 'text must be a non-empty string' }
     const v = validateActions(actions)
+    const mem = validateMemory(memory)  // SOUL Memory ops: validated here, and again on SOUL
     const clean = text.trim().slice(0, MAX_TEXT)
-    const sent = this.link.send(msg.answer(id, clean, v.ok))
+    const sent = this.link.send(msg.answer(id, clean, v.ok, mem.ok))
     if (!sent) return { ok: false, error: 'SOUL is not connected right now; try again in a moment' }
     this._drop(id)
     this.stats.answered++
-    this.emit('answered', { id, text: clean, actions: v.ok, rejected: v.rejected })
-    return { ok: true, sent_actions: v.ok.length, rejected: v.rejected }
+    this.emit('answered', { id, text: clean, actions: v.ok, memory: mem.ok, rejected: v.rejected.concat(mem.rejected) })
+    return { ok: true, sent_actions: v.ok.length, rejected: v.rejected.concat(mem.rejected), sent_memory: mem.ok.length }
   }
 
   fail(id, code, detail) {

@@ -44,6 +44,8 @@ from .bridge_hub import BridgeError, BridgeHub
 from .config import builtin_ai_enabled, default_brain
 from .devices import (BRAINS, DEFAULT_TZ, VOICES, DeviceCtx, DeviceStore, GatewayError, check_device_id, posix_tz)
 from .relay import DEFAULT_CLAUDE_MODEL, DEFAULT_OPENAI_MODEL, Relay
+from .keystore import load_master_secret
+from .memory_sync import MemoryBackups
 
 log = logging.getLogger("suflet_ai.gateway")
 
@@ -66,7 +68,7 @@ ACK_PER_S = 20
 ONLINE_POLL_WINDOW = 60
 CAPS = {"text", "cards", "alarms", "reminders", "notes", "timers", "focus", "inbox", "confirm", "mic", "speaker",
         "stream", "ota"}
-PUSH_ACTIONS = ("note.create", "reminder.create", "alarm.set", "timer.start", "focus.start", "answer.show",
+PUSH_ACTIONS = ("note.create", "reminder.create", "alarm.set", "timer.start", "focus.start", "answer.show", "nav.start",
                 "item.delete")
 DEVICE_ITEM_ACTIONS = ("note.create", "reminder.create", "alarm.set", "timer.start", "focus.start", "answer.show")
 ITEM_STATES = ("rang", "dismissed", "snoozed", "done", "deleted", "accepted", "rejected")
@@ -194,6 +196,12 @@ class Gateway:
                                  answer_timeout=BRIDGE_ASK_TIMEOUT)
         self.store.on_unpair.append(lambda dev, reason, old, erase: self.bridges.revoke_device(dev))
         self._bridge_tasks: Set[asyncio.Task] = set()
+        # SOUL Memory's optional encrypted backup (memory_sync.py): one copy per device, erased with the device
+        master = getattr(getattr(soul, "keys", None), "_master", None)
+        if not (isinstance(master, bytes) and len(master) >= 32):  # no keystore (tests, a bare gateway)
+            master = load_master_secret("") if os.environ.get("SOUL_MASTER_SECRET") else os.urandom(32)
+        self.memory_backups = MemoryBackups(self.store, master)
+        self.store.on_unpair.append(lambda dev, reason, old, erase: erase and self.memory_backups.delete(dev))
 
     def __repr__(self) -> str:
         return f"Gateway({self.store!r}, online={len(self.conns)})"
@@ -658,7 +666,7 @@ class Gateway:
         loop = asyncio.get_running_loop()
         try:
             res = await loop.run_in_executor(self._relay_pool, functools.partial(
-                self.relay.answer_bridge, dev, "paired", m, ans.text, ans.actions))
+                self.relay.answer_bridge, dev, "paired", m, ans.text, ans.actions, ans.memory))
         except Exception:  # noqa: BLE001
             log.exception("bridge answer failed")
             await self._to_device(s, _err("upstream", "the answer could not be applied", mid))
@@ -741,6 +749,15 @@ class Gateway:
         self.store.update_device(s.ctx.device_id, brain=b)
         if b == "bridge":
             await s.out(self.bridges.state_msg(s.ctx.device_id))
+
+    async def _h_memory_backup(self, s: Session, m: dict) -> None:
+        """SOUL Memory's optional backup (docs/10 §5): parts of the device's export, kept encrypted; off = delete."""
+        if self.store.device_state(s.ctx) != "paired":
+            await s.out(_err("not_paired", "memory backup needs a paired account"))
+            return
+        err = self.memory_backups.frame(s.ctx.device_id, m)
+        if err:
+            await s.out(_err(err, "memory backup part refused"))
 
     async def _h_ack(self, s: Session, m: dict) -> None:
         if not _is_int(m.get("seq")) or not isinstance(m.get("ok"), bool):
@@ -899,6 +916,7 @@ class Gateway:
         "item.state": _h_item_state, "inbox.add": _h_inbox_add, "pair.ok": _h_pair, "pair.no": _h_pair,
         "connectors": _h_connectors, "sleep": _h_sleep, "status": _h_status, "event": _h_event,
         "bridge.code.get": _h_bridge_code, "bridge.forget": _h_bridge_forget, "brain": _h_brain,
+        "memory.backup": _h_memory_backup,
     }
 
     # ============================================================ WebSocket ==

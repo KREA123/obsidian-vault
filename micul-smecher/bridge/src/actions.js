@@ -114,6 +114,32 @@ export function validateActions(list) {
   return { ok, rejected }
 }
 
+// SOUL Memory (docs/10-SOUL-MEMORY.md): what Claude may ask SOUL to keep / forget about its owner.
+// Mirrors firmware AiProtocol.cpp validMemOp and ai/suflet_ai/memory_sync.py; secrets are never kept.
+export const MEMORY_KINDS = ['person', 'preference', 'plan', 'place', 'note', 'summary', 'other']
+const SECRET = /\b(password|passwords|passwd|parola|passcode|pin|pin code|cvv|cvc|card number|cnp|ssn|api key|cheie api|token|seed phrase|secret code|iban|security code|access code|otp)\b/
+export const looksSecret = (t) => SECRET.test(String(t).toLowerCase()) || /sk-/.test(t) || /(\d[ -]*){12,}/.test(t)
+
+/** Validate SOUL Memory ops (at most 3); keeps the valid ones. */
+export function validateMemory(list) {
+  const ok = []
+  const rejected = []
+  if (!Array.isArray(list)) return { ok, rejected: list == null ? [] : [{ index: -1, error: 'memory must be a list' }] }
+  list.slice(0, 3).forEach((m, index) => {
+    const bad = (error) => rejected.push({ index, error })
+    if (!m || typeof m !== 'object' || !['remember', 'forget'].includes(m.op)) return bad('op must be remember or forget')
+    const text = typeof m.text === 'string' ? m.text.replace(/\s+/g, ' ').trim() : ''
+    if (m.op === 'forget') return text.length >= 3 ? ok.push({ op: 'forget', text: text.slice(0, 80) }) : bad('forget needs a keyword (>= 3 characters)')
+    if (!text || text.length > 400) return bad('remember needs a short fact')
+    if (looksSecret(text)) return bad('SOUL never keeps passwords, codes or card numbers')
+    const o = { op: 'remember', text: text.slice(0, 120) }
+    if (m.kind != null) { if (!MEMORY_KINDS.includes(m.kind)) return bad(`kind must be one of ${MEMORY_KINDS.join(', ')}`); o.kind = m.kind }
+    if (m.importance != null) { if (!Number.isFinite(m.importance) || m.importance < 1 || m.importance > 5) return bad('importance is 1..5'); o.importance = Math.round(m.importance) }
+    ok.push(o)
+  })
+  return { ok, rejected }
+}
+
 /** JSON Schema of an answer: used for the soul_reply tool and for `claude -p --json-schema`. */
 export function answerSchema({ withQuestionId }) {
   const props = {
@@ -129,6 +155,21 @@ export function answerSchema({ withQuestionId }) {
           args: { type: 'object', description: 'Fields for this action type (see the list above).' },
         },
         required: ['type', 'args'],
+      },
+    },
+    memory: {
+      type: 'array',
+      description: 'Optional SOUL Memory ops (the owner\'s memory lives on SOUL): {op: "remember", text: one durable fact in the owner\'s words, kind: ' +
+        MEMORY_KINDS.join('|') + ', importance: 1-5} or {op: "forget", text: a keyword}. At most one or two, never secrets. Omit or [] if none.',
+      items: {
+        type: 'object',
+        properties: {
+          op: { type: 'string', enum: ['remember', 'forget'] },
+          text: { type: 'string' },
+          kind: { type: 'string', enum: MEMORY_KINDS },
+          importance: { type: 'integer' },
+        },
+        required: ['op', 'text'],
       },
     },
   }

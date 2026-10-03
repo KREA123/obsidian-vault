@@ -11,6 +11,9 @@
 //
 // Serial (115200): '?' lists the commands (bring-up without a finger).
 #include <Arduino.h>
+#include <ArduinoJson.h>
+#include <WiFi.h>
+#include <nvs.h>
 #include <Preferences.h>
 #include <SensorPCF85063.hpp>
 #include <SensorQMI8658.hpp>
@@ -36,6 +39,9 @@
 #include "board.h"
 #include "bridge_lan.h"
 #include "cloud.h"
+#include "memory_store.h"
+#include "voice_sr.h"
+#include "VoiceCommands.h"
 #include "net.h"
 #if defined(SUFLET_BOARD_LCD28)
 #include "board_lcd28.h"
@@ -76,6 +82,7 @@ static Preferences prefs;
 static Brain* brain = nullptr;
 static Alarms alarms;
 static Os os(&alarms);
+static SoulMemory soulMem;  // SOUL Memory (docs/10): the `soulmem` partition, handed to every AI
 static TouchGestures touch;
 static MotionDetector motion;
 static ClaudeLink claude;
@@ -336,6 +343,7 @@ static void loadAll() {
   os.loadNotes(prefs.getString("notes", "").c_str());
   os.loadReminders(prefs.getString("rems", "").c_str());
   os.loadCloudRefs(prefs.getString("crefs", "").c_str());
+  os.loadApps(prefs.getString("apps", "").c_str());  // SoulOS apps: the orbit's order, habits, clocks, bests
   Memory m;
   if (prefs.getBytes("mem", &m, sizeof m) == sizeof m) brain->memory() = m;
   bornDay = prefs.getUInt("born", 0);
@@ -355,6 +363,8 @@ static void help() {
       "  W   Wi-Fi setup portal       w   stop the portal      B  re-run first boot\n"
       "  e<name>  play an expression (e.g. elaugh)              D  demo loop on/off\n"
       "  a<text>  ask the AI (like typing on the glass)         h  home    ?  help\n"
+      "  V   offline voice commands (ESP-SR) status\n"
+      "  Y   SOUL Memory: facts + flash writes   Yexport  the memory as JSON   Ysave  write it now\n"
       "  K   SOULKEY PUB: this SOUL's public device key (for the factory list; never the private key)\n"
       "  SOULKEY GEN / SOULKEY PUB   the factory station (tools/factory_enrol.py): make the device key once\n"
       "      (hardware RNG), print the public key as `SOULKEY PUB soul-<id> <b64u>`; there is no command for the private key");
@@ -454,6 +464,22 @@ static void serialCommands() {
         }
         break;
       }
+      case 'V': Serial.printf("[voice] offline commands: %s\n", voiceSrStatus()); break;
+      case 'Y': {  // SOUL Memory
+        const std::string rest = readLine();
+        if (rest == "export") {
+          Serial.println(soulMem.exportJson().c_str());
+        } else if (rest == "save") {
+          memoryStoreSaveNow(soulMem);
+        } else {
+          Serial.printf("[memory] %u / %u facts, %s, %lu flash writes, backup %s\n", (unsigned)soulMem.size(),
+                        (unsigned)SoulMemory::kMax, soulMem.dirty() ? "unsaved changes" : "saved",
+                        (unsigned long)memoryStoreWrites(), soulMem.backup ? "on" : "off");
+          for (size_t i = 0; i < soulMem.size() && i < 20; ++i)
+            Serial.printf("  #%u %s: %s\n", soulMem.at(i).id, factKindName(soulMem.at(i).kind), soulMem.at(i).text.c_str());
+        }
+        break;
+      }
       case '?': help(); break;
       default: break;
     }
@@ -500,6 +526,7 @@ static void deepSleepNow(uint32_t wakeIn, bool poll) {
   rtcPollWake = poll ? 1 : 0;
   if (!wakePolling) cloudSleep(time(nullptr) > 1735689600 ? (uint32_t)time(nullptr) + wakeIn : 0);
   saveMemory();
+  if (soulMem.dirty()) memoryStoreSaveNow(soulMem);  // SOUL Memory: nothing learnt is lost to deep sleep
   saveAlarms();
   backlight(0);
   displayPower(false);
@@ -602,8 +629,16 @@ void setup() {
   updateCalendar();
   brain->boot();
 
+  memoryStoreBegin(soulMem);
+  os.setMemory(&soulMem);
   os.setVoiceAvailable(SUFLET_VOICE && audioHasMic());
   os.begin(kGeom, birth);
+  // offline voice commands (ESP-SR MultiNet, SUFLET_VOICE_SR builds): after the glass took its PSRAM
+  if (voiceSrBegin()) {
+    audioSetSrOwner(true);
+    os.setVoiceAvailable(audioHasMic());
+  }
+  Serial.printf("[voice] offline commands: %s\n", voiceSrStatus());
   composer.setCanvas(cv);
   touch.setMode(TouchMode::Text);
 
@@ -641,10 +676,104 @@ void setup() {
   perfWallStartUs = lastFrameUs;
 }
 
+// offline voice commands: a command heard runs at once; with none, the recording goes to the cloud
+// transcription (SUFLET_VOICE) as before, or SOUL says it did not catch that
+static uint32_t voiceStopAtMs = 0;
+static void voiceTick(uint32_t nowMs) {
+  voiceSrTick(nowMs);
+  if (voiceSrWakeHeard()) os.face().react(eyes::X_listening, 5.0f);
+  int id;
+  if (voiceSrTake(id)) {
+    if (audioRecording()) audioRecord(false);
+    voiceStopAtMs = 0;
+    Serial.printf("[voice] heard: %s\n", voiceCmdName((VoiceCmd)id));
+    os.voiceCommand(id);
+    return;
+  }
+  if (voiceStopAtMs && nowMs - voiceStopAtMs > 1000) {
+    voiceStopAtMs = 0;
+    audioRecord(false);
+    size_t n = 0;
+    const int16_t* pcm = audioTake(n);
+    if (n < 16000 / 3 || !netTranscribe(pcm, n, os.ro())) os.voiceText("", AiErr::None);
+  }
+  if (os.sleepRequested()) Serial.println("[voice] good night: the eyes doze");
+}
+
+// ---- SoulOS apps (os/APPS.md): their calls to SOUL Cloud, the Wi-Fi scan for "Use Wi-Fi", storage facts ----
+static AppFetch wifiFetch;
+static bool wifiScanning = false;
+static uint32_t storageAt = 0;
+
+static void appsRequest(const AppFetch& f) {
+  if (f.kind == Fetch::WifiLocate) {  // the access points around (names never leave SOUL: maps.py drops them)
+    if (!wifiScanning && WiFi.scanNetworks(true, false) == WIFI_SCAN_RUNNING) {
+      wifiScanning = true;
+      wifiFetch = f;
+    }
+    return;
+  }
+  cloudAppFetch(f);
+}
+
+static void appsTick(uint32_t nowMs) {
+  Fetch k;
+  int st;
+  std::string body;
+  while (cloudPollAppData(k, st, body)) os.appData(k, st, body);
+  if (wifiScanning) {
+    const int n = WiFi.scanComplete();
+    if (n >= 0 || n == WIFI_SCAN_FAILED) {
+      wifiScanning = false;
+      JsonDocument d;
+      JsonArray aps = d["aps"].to<JsonArray>();
+      for (int i = 0; i < n && i < 20; ++i) {
+        JsonObject a = aps.add<JsonObject>();
+        a["mac"] = WiFi.BSSIDstr(i);
+        a["rssi"] = WiFi.RSSI(i);
+        if (WiFi.SSID(i).endsWith("_nomap")) a["ssid"] = "_nomap";  // the opt-out is all the cloud needs to know
+      }
+      WiFi.scanDelete();
+      serializeJson(d, wifiFetch.body);
+      cloudAppFetch(wifiFetch);
+    }
+  }
+  if (nowMs - storageAt > 5000) {  // the Device app and the world clock
+    storageAt = nowMs;
+    StorageInfo si;
+    si.fw = FW_VERSION;
+    si.board = BOARD_HW;
+    si.appKb = ESP.getSketchSize() / 1024;
+    si.appMaxKb = (ESP.getSketchSize() + ESP.getFreeSketchSpace()) / 1024;
+    si.flashKb = ESP.getFlashChipSize() / 1024;
+    si.heapKb = ESP.getFreeHeap() / 1024;
+    si.psramKb = ESP.getFreePsram() / 1024;
+    si.psramTotalKb = ESP.getPsramSize() / 1024;
+    nvs_stats_t ns;
+    if (nvs_get_stats(nullptr, &ns) == ESP_OK) {
+      si.nvsUsed = ns.used_entries;
+      si.nvsTotal = ns.total_entries;
+    }
+    si.rssi = WiFi.isConnected() ? WiFi.RSSI() : 0;
+    os.setStorage(si);
+    os.setTz(netTz());
+    os.setAudio(audioHasSpeaker(), audioHasMic());
+  }
+}
+
 static void handleCmds() {
   OsCmd c;
   while (os.popCmd(c)) {
     switch (c) {
+      case OsCmd::AppFetch: {
+        AppFetch f;
+        while (os.popAppFetch(f)) appsRequest(f);
+        break;
+      }
+      case OsCmd::SaveApps:
+        prefs.putString("apps", os.saveApps().c_str());
+        soulFlashWritten();
+        break;
       case OsCmd::SaveSettings:
         saveSettings();
         netSetMode(os.aiMode());
@@ -680,8 +809,17 @@ static void handleCmds() {
       case OsCmd::ForgetKeys: netForgetKeys(); break;
       case OsCmd::ClaudeApprove: claude.decide(true); break;
       case OsCmd::ClaudeDeny: claude.decide(false); break;
-      case OsCmd::VoiceStart: audioRecord(true); break;
+      case OsCmd::VoiceStart:
+        audioRecord(true);
+        voiceSrListen(true);
+        voiceStopAtMs = 0;
+        break;
       case OsCmd::VoiceStop: {
+        if (voiceSrReady()) {  // the recogniser gets ~1 s more to land a command said at the very end
+          voiceSrListen(false);
+          voiceStopAtMs = millis() | 1;
+          break;
+        }
         audioRecord(false);
         size_t n = 0;
         const int16_t* pcm = audioTake(n);
@@ -833,6 +971,7 @@ void loop() {
   }
   CloudOut co;
   while (os.popCloudOut(co)) cloudSend(co, local, 0);
+  appsTick(nowMs);
   CloudConfig cc;
   if (cloudPollConfig(cc)) {
     os.cloudConfig(cc.hasBrain ? cc.brain : "", cc.hasLang ? cc.lang : "", cc.hasName ? cc.name : "");
@@ -848,6 +987,7 @@ void loop() {
   std::string heard;
   AiErr verr;
   if (netPollVoice(heard, verr)) os.voiceText(heard, verr);
+  voiceTick(nowMs);
 
   // alarms (SoulOS shows the ringing screen; the tone plays here)
   if (local) {
@@ -883,6 +1023,8 @@ void loop() {
   std::string line;
   while (claude.popOutgoing(line)) bleWrite((const uint8_t*)line.data(), line.size());
   handleCmds();
+  // SOUL Memory: batched writes, never while listening, thinking or ringing
+  memoryStoreTick(soulMem, nowMs, os.thinking() || os.ringing() || audioRecording());
 
   if (nowMs - lastStatusMs > 2000) {
     lastStatusMs = nowMs;
@@ -925,6 +1067,7 @@ void loop() {
     displayPresent(changed);
     r2 = esp_timer_get_time();
   }
+  audioSetFocus(os.soundOn() && !os.ringing() ? &os.sound() : nullptr);  // Music: focus sounds
   audioTick(alarmTone.update(dt));
   serialCommands();
 

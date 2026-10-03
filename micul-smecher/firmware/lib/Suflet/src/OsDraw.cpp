@@ -71,19 +71,6 @@ static std::string ellipsize(const Font& f, const std::string& s, float maxW) {
   return out + "\xE2\x80\xA6";
 }
 
-static std::string appName(View v, bool ro) {
-  switch (v) {
-    case View::Talk: return ro ? "Vorbește" : "Talk";
-    case View::Alarms: return ro ? "Alarme" : "Alarms";
-    case View::Timer: return ro ? "Minutar" : "Timer";
-    case View::Notes: return ro ? "Notițe" : "Notes";
-    case View::Today: return ro ? "Azi" : "Today";
-    case View::Claude: return "Claude";
-    case View::Settings: return ro ? "Setări" : "Settings";
-    default: return "";
-  }
-}
-
 static std::string daysText(uint8_t d, bool ro) {
   if (d == 0) return ro ? "o dată" : "once";
   if (d == 0x7F) return ro ? "zilnic" : "daily";
@@ -139,9 +126,9 @@ void Os::buildItems(std::vector<Item>& out) const {
       }
       break;
     case View::Launcher: {
-      add(IdCenter, 233, 336, 300, 72, appName(appView(orbit_), R), kCream, 2, false);
-      add(IdRow, 138, 398, 120, 60, "‹ " + appName(appView(orbit_ - 1), R), kCream, 0, false, kDim);
-      add(IdRow + 1, 328, 398, 120, 60, appName(appView(orbit_ + 1), R) + " ›", kCream, 0, false, kDim);
+      add(IdCenter, 233, 336, 300, 72, appName(appAt(orbit_)), kCream, 2, false);
+      add(IdRow, 138, 398, 120, 60, "‹ " + appName(appAt(orbit_ - 1)), kCream, 0, false, kDim);
+      add(IdRow + 1, 328, 398, 120, 60, appName(appAt(orbit_ + 1)) + " ›", kCream, 0, false, kDim);
       break;
     }
     case View::Talk:
@@ -188,7 +175,7 @@ void Os::buildItems(std::vector<Item>& out) const {
       add(IdDelete, 306, 404, 140, 56, R ? "Șterge" : "Delete", kAmber, 1, true);
       break;
     case View::Settings: {
-      static const int kRows = 11;
+      static const int kRows = 13;
       const int pages = (kRows + 3) / 4;
       const int p = page_ % pages;
       static const char* const kBr[2][4] = {{"Auto", "Low", "Mid", "High"}, {"Auto", "Mică", "Medie", "Mare"}};
@@ -210,6 +197,8 @@ void Os::buildItems(std::vector<Item>& out) const {
           case 9:
             v = !net_.paired ? (R ? "Nelegat" : "Not paired") : net_.connectorsPaused ? (R ? "Pe pauză" : "Paused") : (R ? "Pornite" : "On");
             break;
+          case 11: v = (mem_ ? std::to_string(mem_->size()) : std::string("0")) + (R ? " lucruri ›" : " things ›"); break;  // SOUL Memory
+          case 12: v = std::to_string(visibleApps()) + (R ? " pe orbită ›" : " on the orbit ›"); break;  // Settings › Apps
           default: v = R ? "Ține apăsat" : "Hold"; break;
         }
         add(IdRow + i, 233, 172 + (i - p * 4) * 62, 330, 60, ellipsize(fontOf(1, set_.largeText), v, g_.s(280)), kCream, 1, false);
@@ -260,13 +249,16 @@ void Os::buildItems(std::vector<Item>& out) const {
         add(IdSetup, 233, 330, 260, 56, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
       }
       break;
+    case View::Memory: buildMemoryItems(out); break;  // OsMemory.cpp
     case View::Answer:
       if (acceptMode_) {
         add(IdAccept, 160, 392, 150, 58, R ? "Acceptă" : "Accept", kMint, 1, true);
         add(IdReject, 306, 392, 150, 58, R ? "Nu" : "No", kAmber, 1, true);
+      } else {
+        buildAppsItems(out);  // quick replies on a card from an app / your AI
       }
       break;
-    default: break;
+    default: buildAppsItems(out); break;
   }
 }
 
@@ -394,7 +386,7 @@ void Os::render(Canvas& cv) {
     case View::Boot: drawBoot(cv); break;
     case View::Home: drawHome(cv); break;
     case View::Launcher: drawLauncher(cv); break;
-    case View::Today: drawToday(cv); break;
+    case View::Today: drawTodayStack(cv); break;
     case View::Talk: drawTalk(cv); break;
     case View::Answer: drawAnswer(cv); break;
     case View::Alarms: drawAlarms(cv); break;
@@ -410,7 +402,8 @@ void Os::render(Canvas& cv) {
     case View::About: drawAbout(cv); break;
     case View::Pair: drawPair(cv); break;
     case View::Bridge: drawBridge(cv); break;
-    default: break;
+    case View::Memory: drawMemory(cv); break;  // OsMemory.cpp
+    default: appsDraw(cv); break;              // OsAppsDraw.cpp
   }
   if (view_ != View::Keyboard && view_ != View::Dial) drawToast(cv);
   if (set_.debug) drawPerf(cv);
@@ -529,71 +522,22 @@ void Os::drawHome(Canvas& cv) {
 }
 
 void Os::drawLauncher(Canvas& cv) {
-  const bool R = ro();
   buildItems(items_);
-  glassPanel(cv, 88, 296, 378, 392, 44, gs());  // the lens: the chosen app and its live fact
+  glassPanel(cv, 88, 268, 378, 392, 44, gs());  // the lens: the chosen app, its glyph and its live fact
   for (const Item& it : items_)
     if (it.id == IdRow || it.id == IdRow + 1) {
       const float tw = (float)Canvas::measureText(fonts::small(), it.label.c_str()) / g_.k();
       glassPill(cv, it.x, it.y, tw + 34, 40, kCream);
     }
   drawItems(cv, items_);
-  // one live fact under the word
-  std::string fact;
-  switch (appView(orbit_)) {
-    case View::Talk:
-      fact = aiMode() == AiMode::None ? (R ? "Fără AI" : "No AI") : aiMode() == AiMode::Cloud ? "SOUL Cloud" : aiMode() == AiMode::Claude ? "Claude"
-             : aiMode() == AiMode::Bridge ? (R ? "Claude (calculator)" : "Claude (computer)") : "ChatGPT";
-      break;
-    case View::Alarms: fact = nextAlarmText(); if (fact.empty()) fact = R ? "nicio alarmă" : "no alarms"; break;
-    case View::Timer: {
-      if (timerRun_) {
-        char b[16];
-        snprintf(b, sizeof b, "%d:%02d", timerLeft() / 60, timerLeft() % 60);
-        fact = b;
-      } else fact = R ? "1 · 3 · 5 · 10 · 25 min" : "1 · 3 · 5 · 10 · 25 min";
-      break;
-    }
-    case View::Notes: fact = std::to_string(notes_.size()) + (R ? " notițe" : " notes"); break;
-    case View::Today: fact = formatNow(now_, R).substr(0, formatNow(now_, R).find(',')); break;
-    case View::Claude: fact = claude_.prompt ? (R ? "te așteaptă" : "needs you") : claude_.busy ? (R ? "lucrează" : "working") : claude_.linked ? (R ? "conectat" : "connected") : (R ? "neconectat" : "not connected"); break;
-    case View::Settings: fact = set_.name; break;
-    default: break;
-  }
+  // one live fact under the word, and the app's glyph above it
+  const std::string fact = appFact(appAt(orbit_));
+  drawGlyph(cv, appAt(orbit_), 233, 294, 24, kCream, 0.85f);
   textAt(cv, fonts::small(), 233, 372, fact, kCream, kDim);
   rimTop(cv, clockText(now_), kCream, kFaint);
 }
 
-void Os::drawToday(Canvas& cv) {
-  const bool R = ro();
-  textAt(cv, fonts::digits(), 233, 196, clockText(now_), kCream);
-  std::string date = formatNow(now_, R);
-  const size_t comma = date.rfind(',');
-  if (comma != std::string::npos) date = date.substr(0, comma);
-  textAt(cv, fonts::small(), 233, 250, date, kCream, kDim);
-  std::string rows[4];
-  int n = 0;
-  const std::string na = nextAlarmText();
-  rows[n++] = na.empty() ? (R ? "Nicio alarmă" : "No alarm set") : (R ? "Alarmă " : "Alarm ") + na;
-  if (timerRun_) {
-    char b[32];
-    snprintf(b, sizeof b, "%s %d:%02d", timerFocus_ ? "Focus" : (R ? "Minutar" : "Timer"), timerLeft() / 60, timerLeft() % 60);
-    rows[n++] = b;
-  } else if (!rems_.empty()) {
-    rows[n++] = clockText(rems_.front().when) + " " + rems_.front().text;
-  }
-  rows[n++] = claude_.prompt ? (R ? "Claude te așteaptă" : "Claude needs you")
-              : claude_.busy ? (R ? "Claude lucrează" : "Claude is working")
-              : claude_.linked ? (R ? "Claude conectat" : "Claude connected") : (R ? "Claude neconectat" : "Claude not connected");
-  char b[48];
-  const char* wifi = net_.connected ? (R ? "pornit" : "on") : (R ? "oprit" : "off");
-  if (power_.batPct >= 0) snprintf(b, sizeof b, "%s %d%%%s  ·  Wi-Fi %s", R ? "Baterie" : "Battery", power_.batPct, power_.charging ? "+" : "", wifi);
-  else snprintf(b, sizeof b, "Wi-Fi %s", wifi);
-  rows[n++] = b;
-  glassPanel(cv, 75, 268, 391, 292 + (n - 1) * 32 + 24, 28, gs());
-  for (int i = 0; i < n; ++i)
-    textAt(cv, fonts::small(), 233, 292 + i * 32, ellipsize(fonts::small(), rows[i], g_.s(296)), i == 1 && claude_.prompt ? kAmber : kCream, i == 0 ? 1.0f : kDim);
-}
+void Os::drawToday(Canvas& cv) { drawTodayStack(cv); }  // the stack of glass cards (OsAppsDraw.cpp)
 
 void Os::drawTalk(Canvas& cv) {
   const bool R = ro();
@@ -681,7 +625,8 @@ void Os::drawAnswer(Canvas& cv) {
     snprintf(b, sizeof b, R ? "%d acțiuni ignorate" : "%d action%s ignored", reply_.rejected, (!R && reply_.rejected > 1) ? "s" : "");
     textAt(cv, fonts::small(), 233, y, b, kCream, kFaint);
   }
-  rimBottom(cv, R ? "atinge ca să închizi" : "tap to close", kCream, kFaint);
+  if (!drawQuickReplies(cv, y))  // a card from an app / your AI: one-tap answers (OsAppsDraw.cpp)
+    rimBottom(cv, R ? "atinge ca să închizi" : "tap to close", kCream, kFaint);
 }
 
 void Os::drawAlarms(Canvas& cv) {
@@ -833,11 +778,11 @@ void Os::drawClaude(Canvas& cv) {
 void Os::drawSettings(Canvas& cv) {
   const bool R = ro();
   rimTop(cv, R ? "SETĂRI" : "SETTINGS", kCream, kDim);
-  static const char* const kLabels[2][11] = {
+  static const char* const kLabels[2][13] = {
       {"Brightness", "AI", "Wi-Fi", "Language", "My SOUL", "Text size", "About", "Debug overlay", "Screen off at night",
-       "Claude & ChatGPT on me", "Start over"},
+       "Claude & ChatGPT on me", "Start over", "Memory", "Apps"},
       {"Luminozitate", "AI", "Wi-Fi", "Limba", "SOUL-ul meu", "Mărimea textului", "Despre", "Depanare", "Ecran stins noaptea",
-       "Claude & ChatGPT pe mine", "De la capăt"}};
+       "Claude & ChatGPT pe mine", "De la capăt", "Memorie", "Aplicații"}};
   buildItems(items_);
   float top = 1e9f, bot = -1e9f;
   for (const Item& it : items_)

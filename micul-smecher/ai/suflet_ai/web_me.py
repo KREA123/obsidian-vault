@@ -113,6 +113,14 @@ def mask_key(k: Optional[str]) -> str:
 
 _T: Dict[str, Dict[str, str]] = {
     "en": dict(
+        # SOUL Memory (docs/10-SOUL-MEMORY.md)
+        mem_title="SOUL Memory", mem_backup="Memory backup", mem_off="kept only on SOUL (backup off)",
+        mem_facts="facts, encrypted backup, updated", mem_view="See, export or delete",
+        mem_lead="What your SOUL remembers about you, as backed up from the device (Settings › Memory › Backup). "
+                 "The memory lives on SOUL and goes to whichever AI you connect; this copy is encrypted at rest.",
+        mem_search="Search", mem_export="Download as JSON", mem_delete="Delete the backup",
+        mem_delete_note="Deletes the copy in SOUL Cloud. The memory on SOUL stays (forget it there: Settings › Memory).",
+        mem_empty="No backup. Switch it on on SOUL: Settings › Memory › Backup.", mem_deleted="Backup deleted.",
         pair_title="Pair your SOUL", pair_lead="Connect this SOUL to your account. It takes a minute.",
         continue_email="Continue with email", signed_in_as="Signed in as", code_label="The code on SOUL's screen",
         code_hint="8 letters and digits, like 7KQ3-M9XD", pair_btn="Pair", not_you="Not you? Sign out",
@@ -241,6 +249,13 @@ _T: Dict[str, Dict[str, str]] = {
         privacy="Your data",
     ),
     "ro": dict(
+        mem_title="Memoria SOUL", mem_backup="Backup memorie", mem_off="doar pe SOUL (backup oprit)",
+        mem_facts="lucruri, backup criptat, actualizat", mem_view="Vezi, descarcă sau șterge",
+        mem_lead="Ce ține minte SOUL-ul tău despre tine, din backup-ul făcut de pe dispozitiv (Setări › Memorie › "
+                 "Backup). Memoria stă pe SOUL și merge la orice AI conectezi; copia de aici e criptată.",
+        mem_search="Caută", mem_export="Descarcă JSON", mem_delete="Șterge backup-ul",
+        mem_delete_note="Șterge copia din SOUL Cloud. Memoria de pe SOUL rămâne (o uiți acolo: Setări › Memorie).",
+        mem_empty="Niciun backup. Pornește-l pe SOUL: Setări › Memorie › Backup.", mem_deleted="Backup șters.",
         pair_title="Leagă-ți SOUL-ul", pair_lead="Leagă acest SOUL de contul tău. Durează un minut.",
         continue_email="Continuă cu emailul", signed_in_as="Conectat ca", code_label="Codul de pe ecranul SOUL",
         code_hint="8 litere și cifre, ca 7KQ3-M9XD", pair_btn="Leagă", not_you="Nu ești tu? Ieși din cont",
@@ -557,6 +572,8 @@ _ME = """{% extends "base" %}{% block body %}
       </select>
       <button class="btn" type="submit">{{ t.choose }}</button>
     </form>
+    <p class="small">{{ t.mem_backup }}: {% if d.memory %}{{ d.memory.facts }} {{ t.mem_facts }} {{ d.memory.when }} ·
+      <a href="/me/devices/{{ d.device_id }}/memory">{{ t.mem_view }} →</a>{% else %}{{ t.mem_off }}{% endif %}</p>
     {% if d.brain == 'cloud' and allowance and builtin %}<p class="small">{{ allowance.left }} {{ t.allowance }}</p>{% endif %}
     <h3 class="sub">{{ t.computers }}</h3>
     {% for c in d.computers %}
@@ -655,6 +672,22 @@ _DELETE = """{% extends "base" %}{% block body %}
   <button class="btn primary" type="submit">{{ t.delete_btn }}</button>
 </form>
 <p><a class="btn" href="/me">{{ t.back_me }}</a></p>
+{% endblock %}"""
+
+_MEMORY = """{% extends "base" %}{% block body %}
+<h1>{{ t.mem_title }}</h1>
+<p class="small">{{ t.mem_lead }}</p>
+{% if not facts and not q %}<div class="card"><p>{{ t.mem_empty }}</p></div>{% else %}
+<form method="get" class="inline"><label for="q">{{ t.mem_search }}</label>
+<input id="q" name="q" value="{{ q }}"><button class="btn" type="submit">{{ t.mem_search }}</button></form>
+<div class="card"><ul class="facts">
+{% for f in facts %}<li><b>{{ f.text }}</b><br><span class="small">{{ f.kind }}{% if f.date %} · {{ f.date }}{% endif %}{% if f.source %} · {{ f.source }}{% endif %}</span></li>{% endfor %}
+</ul></div>
+<p><a class="btn" href="/me/devices/{{ device_id }}/memory.json">{{ t.mem_export }}</a></p>
+<form method="post" action="/me/devices/{{ device_id }}/memory/delete" class="danger">
+<input type="hidden" name="csrf" value="{{ csrf }}"><p class="small">{{ t.mem_delete_note }}</p>
+<button class="link" type="submit">{{ t.mem_delete }}</button></form>{% endif %}
+<p><a href="/me">{{ t.back_me }}</a></p>
 {% endblock %}"""
 
 _MSG = """{% extends "base" %}{% block body %}<h1>{{ heading }}</h1><div class="card"><p>{{ message }}</p>
@@ -757,7 +790,7 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
     mcp_url = rc.oauth.resource.rstrip("/") if rc.oauth.resource.endswith("/mcp") else rc.oauth.resource
     env = Environment(loader=DictLoader({"base": _BASE, "pair": _PAIR, "wait": _WAIT, "brain": _BRAIN,
                                          "connect": _CONNECT, "me": _ME, "msg": _MSG, "bridge": _BRIDGE,
-                                         "wifi": _WIFI, "delete": _DELETE}),
+                                         "wifi": _WIFI, "delete": _DELETE, "memory": _MEMORY}),
                       autoescape=select_autoescape(default=True, default_for_string=True))
 
     def page(name: str, lang: str, status: int = 200, **ctx) -> HTMLResponse:
@@ -942,8 +975,12 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
         devices = [dict(d) for d in await gw.devices_of(session.account_id)
                    if d.get("account_id") == session.account_id and not d.get("revoked")]
         bridges = getattr(impl, "bridges", None)
+        backups = getattr(impl, "memory_backups", None)
         for d in devices:
             d["computers"] = bridges.tokens(session.account_id, d["device_id"]) if bridges is not None else []
+            d["memory"] = backups.info(d["device_id"]) if backups is not None else None  # SOUL Memory backup
+            if d["memory"]:
+                d["memory"]["when"] = time.strftime("%Y-%m-%d %H:%M", time.gmtime(d["memory"]["updated"])) + " UTC"
         grants = []
         for g in oauth.grants(session.account_id):
             name = {"claude": "Claude", "chatgpt": "ChatGPT"}.get(g.client_app, g.client_host)
@@ -1052,6 +1089,45 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
         if bridges is None or not bridges.revoke(session.account_id, request.path_params["token_id"]):
             return redirect("/me?err=forbidden")
         return redirect("/me")
+
+    # ------------------------------------------------- SOUL Memory backup --
+    async def memory_get(request: Request) -> Response:
+        session = accounts.current_session(request)
+        lang = _lang(request, session)
+        dev = request.path_params["device_id"]
+        if session is None:
+            return to_login("/me", lang)
+        if await own_device(session, dev) is None:
+            return msg(lang, _T[lang]["mem_title"], _T[lang]["forbidden"], 404, "/me", _T[lang]["back_me"])
+        backups = getattr(impl, "memory_backups", None)
+        doc = backups.get(dev) if backups is not None else None
+        facts = list((doc or {}).get("facts", []))
+        if request.url.path.endswith(".json"):
+            return JSONResponse(doc or {"v": 1, "kind": "soul-memory", "facts": []}, headers={
+                "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                "Content-Disposition": 'attachment; filename="soul-memory.json"'})
+        q = request.query_params.get("q", "")[:60]
+        if q:
+            facts = [f for f in facts if q.lower() in (f.get("text", "") + " " + f.get("subject", "")).lower()]
+        facts.sort(key=lambda f: f.get("created", 0), reverse=True)
+        return page("memory", lang, title=_T[lang]["mem_title"], device_id=dev, facts=facts, q=q, csrf=session.csrf)
+
+    async def memory_delete(request: Request) -> Response:
+        f = await form(request)
+        session = accounts.current_session(request)
+        lang = _lang(request, session)
+        if session is None:
+            return to_login("/me", lang)
+        if not csrf_ok(request, f, session):
+            return msg(lang, _T[lang]["mem_title"], _T[lang]["expired_form"], 403, "/me", _T[lang]["back_me"])
+        dev = request.path_params["device_id"]
+        if await own_device(session, dev) is None:
+            return redirect("/me?err=forbidden")
+        backups = getattr(impl, "memory_backups", None)
+        if backups is not None:
+            backups.delete(dev)
+        log.info("memory backup deleted by its owner")
+        return msg(lang, _T[lang]["mem_title"], _T[lang]["mem_deleted"], 200, "/me", _T[lang]["back_me"])
 
     # ------------------------------------------------------ help and GDPR --
     async def wifi_help(request: Request) -> Response:
@@ -1246,6 +1322,9 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
         Route("/me/devices/{device_id}/bridge", bridge_new, methods=["POST"]),
         Route("/me/bridge/{token_id}/revoke", bridge_revoke, methods=["POST"]),
         Route("/me/wifi-help", wifi_help, methods=["GET"]),
+        Route("/me/devices/{device_id}/memory", memory_get, methods=["GET"]),
+        Route("/me/devices/{device_id}/memory.json", memory_get, methods=["GET"]),
+        Route("/me/devices/{device_id}/memory/delete", memory_delete, methods=["POST"]),
         Route("/me/export", export_get, methods=["GET"]),
         Route("/v1/me/export", export_get, methods=["GET"]),
         Route("/me/delete", delete_get, methods=["GET"]),

@@ -40,14 +40,16 @@ enum : int {
 
 static constexpr float kFadeS = 0.18f;  // screens fade in, well inside the 250 ms budget
 
-static const View kApps[] = {View::Talk, View::Alarms, View::Timer, View::Notes, View::Today, View::Claude, View::Settings};
-int Os::appCount() { return (int)(sizeof(kApps) / sizeof(kApps[0])); }
-View Os::appView(int i) { return kApps[((i % appCount()) + appCount()) % appCount()]; }
+// the orbit's apps: AppsState::order minus the hidden ones (OsApps.cpp)
+View Os::appView(int i) const { return viewOf(appAt(i)); }
 
 const char* viewName(View v) {
   static const char* const k[] = {"boot",  "home",   "launcher", "today",    "talk",   "answer", "alarms",
                                   "dial",  "ringing", "timer",   "notes",    "note",   "claude", "settings",
-                                  "aimode", "wifi",  "mysoul",   "about",    "pair",   "keyboard", "bridge"};
+                                  "aimode", "wifi",  "mysoul",   "about",    "pair",   "keyboard", "bridge",
+                                  "memory", "control", "weather", "maps", "calendar", "music", "games", "focus",
+                                  "breathe", "habits", "stopwatch", "worldclock", "convert", "findphone", "device",
+                                  "appssettings"};
   static_assert(sizeof(k) / sizeof(k[0]) == (unsigned)View::Count, "view names");
   return (unsigned)v < (unsigned)View::Count ? k[(int)v] : "?";
 }
@@ -72,6 +74,7 @@ void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
     view_ = View::Home;
     face_.react(X_wake);
   }
+  appsBegin();
   face_.snapLayout(layoutFor(view_));
   invalidate();
 }
@@ -80,6 +83,7 @@ void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
 
 FaceLayoutT Os::layoutFor(View v) const {
   FaceLayoutT l;
+  if (appsLayout(v, l)) return l;
   switch (v) {
     case View::Boot:
       if (bootStep_ == BootStep::Name || bootStep_ == BootStep::Brain) l = {0.3f, 0, -0.33f};
@@ -115,6 +119,7 @@ void Os::go(View v) {
   page_ = 0;
   holdItem_ = -1;
   invalidate();
+  appOpened(v);  // an app asks SOUL Cloud for what it shows (weather, the agenda, where SOUL is...)
 }
 
 void Os::home() {
@@ -124,6 +129,7 @@ void Os::home() {
 }
 
 void Os::back() {
+  if (view_ != View::Keyboard && view_ != View::Dial && appsBack()) return;
   switch (view_) {
     case View::Boot:
       bootPrev();
@@ -153,6 +159,9 @@ void Os::back() {
     case View::MySoul:
     case View::About: go(View::Settings); return;
     case View::Bridge: go(View::AiMode); return;
+    case View::Memory:  // SOUL Memory: a fact -> the list -> Settings
+      if (!memoryBack()) go(View::Settings);
+      return;
     case View::Pair:
       pairDoneT_ = -1;
       go(pairReturn_ == View::Pair ? View::Settings : pairReturn_);
@@ -212,6 +221,8 @@ void Os::bootPrev() {
 }
 
 void Os::toast(const std::string& text, Rgb color, float seconds) {
+  // Quiet (Control): what arrives while you are not using SOUL waits; amber (needs you) still shows
+  if (apps_.dnd && view_ == View::Home && !(color == Rgb::hex(0xFFB347)) && peekT_ <= 0) return;
   toast_ = text;
   toastColor_ = color;
   toastLeft_ = seconds;
@@ -400,6 +411,7 @@ void Os::touch(const TouchEv& e) {
     setDirtyFromKeyboard();
     return;
   }
+  if (appsTouch(e)) return;  // maps (pan, rim zoom), control (rim dials)
   if (view_ == View::Dial) {
     if (e.e == Ev::TouchDown) {
       dx0_ = e.x;
@@ -501,6 +513,7 @@ void Os::onHoldStart(float x, float y) {
     brainEvents_.push_back(Ev::HoldStart);
     return;
   }
+  if (appsHold(x, y)) return;
   switch (view_) {
     case View::Boot:
       if (bootStep_ == BootStep::Hold) {
@@ -543,6 +556,7 @@ void Os::onHoldStart(float x, float y) {
     case View::NoteView:
     case View::Wifi:
     case View::AiMode:
+    case View::Memory:
     case View::Settings: {
       const int id = hitItem(x, y);
       if (id >= 0) {
@@ -586,6 +600,7 @@ void Os::onHoldEnd() {
 }
 
 void Os::onSwipe(int dir) {
+  if (appsSwipe(dir)) return;
   switch (view_) {
     case View::Boot:
       if (dir == 3) bootPrev();
@@ -609,6 +624,7 @@ void Os::onSwipe(int dir) {
     case View::Alarms:
     case View::Notes:
     case View::Settings:
+    case View::Memory:
       if (dir == 2) {  // swipe up: the next page
         ++page_;
         invalidate();
@@ -638,10 +654,12 @@ void Os::onDoubleTap(float x, float y) {
 void Os::onTap(float x, float y) {
   if (claude_.prompt && claudeHoldView(view_) && view_ != View::Talk) return;  // on a Claude request a single tap does nothing
   if (toastLeft_ > 0 && y < g_.s(70)) {
+    if (memoryToastTap()) return;  // "Remembered: … · tap to undo"
     toastLeft_ = 0;
     invalidate();
     return;
   }
+  if (appsTap(x, y)) return;  // the apps' own taps, and quick replies on a card
   switch (view_) {
     case View::Home: brainEvents_.push_back(Ev::Tap); return;
     case View::Answer:
@@ -708,13 +726,15 @@ void Os::activate(int id) {
       }
       return;
     case View::Launcher:
+      // the chosen app, or a neighbour straight away: the first three apps are two gestures from the eyes
       if (id == IdCenter) {
-        go(appView(orbit_));
-        if (appView(orbit_) == View::Talk) face_.react(X_happy, 0.8f);
+        openApp(appAt(orbit_));
       } else if (id == IdRow) {
         orbit_ = (orbit_ + appCount() - 1) % appCount();
+        openApp(appAt(orbit_));
       } else if (id == IdRow + 1) {
         orbit_ = (orbit_ + 1) % appCount();
+        openApp(appAt(orbit_));
       }
       return;
     case View::Talk:
@@ -780,6 +800,7 @@ void Os::activate(int id) {
     case View::NoteView:
       if (id == IdType && noteSel_ >= 0 && noteSel_ < (int)notes_.size()) openKeyboard(KbNoteEdit, notes_[noteSel_].text);
       return;
+    case View::Memory: memoryActivate(id); return;  // SOUL Memory (OsMemory.cpp)
     case View::Settings:
       switch (id) {
         case IdRow + 0:
@@ -801,6 +822,8 @@ void Os::activate(int id) {
         case IdRow + 8:
           set_.nightOff = !set_.nightOff;
           break;
+        case IdRow + 11: memoryOpen(); return;  // SOUL Memory
+        case IdRow + 12: go(View::AppsSettings); return;  // Settings › Apps: order and hide
         case IdRow + 9: {  // pause connectors: a user-only switch, never from the cloud or an AI
           if (!net_.paired) {
             toast(tr("Pair with your account first", "Leagă-mă întâi de cont"), kAmber);
@@ -912,7 +935,7 @@ void Os::activate(int id) {
     case View::MySoul:
       if (id == IdName) openKeyboard(KbName, set_.name);
       return;
-    default: return;
+    default: appsActivate(id); return;
   }
 }
 
@@ -964,6 +987,7 @@ void Os::openKeyboard(int ctx, const std::string& initial) {
     default: break;
   }
   if (ro()) c.undoLabel = "\xE2\x86\xB6 Anulează";
+  appsKbConfig(ctx, c);
   kbCtx_ = ctx;
   kbReturn_ = view_ == View::Keyboard ? kbReturn_ : view_;
   kb_.open(c, initial);
@@ -979,6 +1003,7 @@ void Os::kbCommit(const std::string& text) {
   viewT_ = 0;
   fade_ = 0;
   invalidate();
+  if (appsKbCommit(ctx, text)) return;
   switch (ctx) {
     case KbTalk:
       if (!text.empty()) ask(text);
@@ -1048,7 +1073,7 @@ void Os::kbCommit(const std::string& text) {
         face_.react(X_confused, 1.4f);
       }
       break;
-    default: break;
+    default: memoryKbCommit(ctx, text); break;  // SOUL Memory's search field
   }
 }
 
@@ -1102,6 +1127,7 @@ void Os::ask(const std::string& text) {
   cardTitle_.clear();
   reply_ = AiReply();
   lastErr_ = AiErr::None;
+  if (memoryAsk(text)) return;  // SOUL Memory: "remember that…", "forget…", answered from memory (OsMemory.cpp)
   if (aiMode() == AiMode::None) {
     AiReply r = localReply(text, now_, ro(), true);
     runActions(r.actions, &chips_);
@@ -1148,6 +1174,7 @@ void Os::sendJob(const std::string& text) {
   AiJob j;
   j.text = text;
   j.ctx = context();
+  j.ctx.memory = memoryBlock(text);  // SOUL Memory: what SOUL knows about you, for whichever AI answers
   j.history = history_;
   jobs_.push_back(j);
   history_.push_back({true, text});
@@ -1197,6 +1224,7 @@ void Os::aiResult(const AiOutcome& o) {
   turnChips_.clear();
   runActions(o.reply.actions, &chips_);
   showAnswer(o.reply, AiErr::None, src);
+  memoryApply(o.reply.memory, aiMode() == AiMode::Cloud ? FactSrc::Cloud : FactSrc::Ai);  // + "Remembered: …"
   if (o.note != AiErr::None) {  // SOUL Cloud answered with its rules: say why (bad key, allowance used...)
     toast(aiErrText(o.note, ro()), kAmber, 6.0f);
     face_.flash(kRose, 1.2f);
@@ -1461,8 +1489,12 @@ void Os::update(float dt, Brain& brain) {
   }
   if (toastLeft_ > 0) {
     toastLeft_ -= dt;
-    if (toastLeft_ <= 0) invalidate();
+    if (toastLeft_ <= 0) {
+      memUndoId_ = 0;  // the undo goes with the toast
+      invalidate();
+    }
   }
+  memoryBackupTick();
   // SoulOS 5: the peek fades back to the eyes; a screen left alone goes back to them too
   if (peekT_ > 0) {
     peekT_ -= dt;
@@ -1525,6 +1557,10 @@ void Os::update(float dt, Brain& brain) {
         }
       } else if (view_ == View::Settings && id == IdRow + 10) {
         restartBoot();
+      } else if (view_ == View::Memory) {
+        memoryHoldDone(id);
+      } else {
+        appsHoldDone(id);  // habits, world clock: hold a row = remove it
       }
     }
   }
@@ -1562,6 +1598,7 @@ void Os::update(float dt, Brain& brain) {
     }
   }
   tickTimer(dt);
+  appsUpdate(dt);
   tickReminders();
   // on the go: how long without / with the internet, and the questions kept while offline
   if (net_.connected) {
@@ -1626,6 +1663,8 @@ bool Os::uiOn() const {
 
 bool Os::faceMoment() const {
   if (asleep_) return true;
+  bool fm;
+  if (appsFaceMoment(fm)) return fm;  // breathe, eye memory, rhythm: the eyes are the subject (black)
   switch (view_) {
     case View::Home:
     case View::Talk:
@@ -1647,6 +1686,8 @@ GlassTone Os::glassTone() const {
 }
 
 bool Os::idleReturns() const {
+  bool r;
+  if (appsIdleReturns(r)) return r;
   switch (view_) {
     case View::Launcher:
     case View::Today:
@@ -1656,6 +1697,7 @@ bool Os::idleReturns() const {
     case View::Settings:
     case View::AiMode:
     case View::MySoul:
+    case View::Memory:
     case View::About: return holdItem_ < 0;
     case View::Wifi: return !net_.portal;
     case View::Claude: return !claude_.prompt && !claude_.passkey;
@@ -1751,11 +1793,13 @@ FaceInputs Os::faceInputs(const Brain& b) const {
   in.progress = b.approveProgress();
   if (power_.charging && power_.batPct >= 0) in.level = power_.batPct / 100.0f;
   if (view_ == View::Boot && bootStep_ == BootStep::Hold && !listening_) in.state = FaceState::Idle;
+  appsFace(in);  // the apps' eyes: breathing, the games, the map's turn
   return in;
 }
 
 float Os::fpsHint(const Brain& b) const {
   if (view_ == View::Keyboard || view_ == View::Dial || down_ || fade_ < 1) return 30;
+  if ((view_ == View::Games && apps_.game >= 0) || view_ == View::Breathe || (view_ == View::Maps && apps_.dragging)) return 30;
   if (b.mode() == Mode::Off) return 0;
   if (b.mode() == Mode::Asleep) return 10;
   if (b.mode() == Mode::Drowsy) return 15;
@@ -2070,6 +2114,20 @@ bool Os::cloudPush(const CloudPush& p, std::string& err) {
         back();
       }
       return true;  // already gone: deleting is idempotent
+    }
+    case CloudPush::Nav: {  // "take me to …": Maps opens on the route (or asks for it once SOUL knows where it is)
+      apps_.dest = p.title;
+      apps_.routeMode = p.say.empty() ? "walk" : p.say;
+      if (view_ == View::Keyboard) kb_.cancel();
+      apps_.preview = apps_.navOn = false;  // the new destination replaces any route on screen
+      apps_.nav.stop();
+      apps_.navAsked = -100;
+      go(View::Maps);
+      if (!p.body.empty()) fetch(Fetch::RouteGet, "/v1/device/maps/route");
+      face_.react(X_excited, 1.0f);
+      brainEvents_.push_back(Ev::AlarmDue);
+      toast(cloudSource(p) + ": " + p.title, kMint, 3.5f);
+      return true;
     }
     case CloudPush::Unsupported: err = "unsupported"; return false;
     default: err = "invalid"; return false;

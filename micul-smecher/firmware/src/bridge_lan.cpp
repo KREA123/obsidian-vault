@@ -212,7 +212,7 @@ bool bridgeLanOnline() {
 bool bridgeLanAsk(const AiJob& job, bool ro, uint32_t localNow) {
   if (!mtx) return false;
   Lock l;
-  const bool ok = srv.ask(job.text, ro, stamp(localNow), millis());
+  const bool ok = srv.ask(job.text, ro, stamp(localNow), millis(), job.ctx.memory);
   flushLocked();
   return ok;
 }

@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "AlarmTone.h"
+#include "SoundGen.h"
 #include "board.h"
 #if defined(SUFLET_BOARD_LCD28)
 #include "board_lcd28.h"
@@ -22,6 +23,31 @@ static int16_t* rec = nullptr;
 static size_t recN = 0;
 static bool recOn = false;
 static constexpr size_t kRecMax = 16000 * 8;
+static volatile bool srOwns = false;  // ESP-SR's feed task reads the mic (voice_sr.cpp)
+
+void audioSetSrOwner(bool on) { srOwns = on; }
+
+// SoulOS Music: focus sounds made on SOUL (SoundGen.h), when nothing rings
+static suflet::SoundGen* focusGen = nullptr;
+void audioSetFocus(suflet::SoundGen* g) { focusGen = g; }
+
+#if SUFLET_MIC_INMP441
+// one block of 32-bit I2S samples -> the recording and the loudness level
+static void takeSamples(const int32_t* buf, size_t n) {
+  if (recOn)
+    for (size_t i = 0; i < n && recN < kRecMax; ++i) rec[recN++] = (int16_t)(buf[i] >> 16);
+  if (!n) return;
+  double acc = 0;
+  for (size_t i = 0; i < n; ++i) {
+    const double s = (buf[i] >> 8) / 8388608.0;  // 24-bit sample -> -1..1
+    acc += s * s;
+  }
+  const float rms = sqrtf((float)(acc / n)) + 1e-9f;
+  const float db = 20.0f * log10f(rms);                              // dBFS
+  const float target = constrain((db + 60.0f) / 40.0f, 0.0f, 1.0f);  // -60..-20 dBFS -> 0..1
+  level += (target - level) * (target > level ? 0.5f : 0.1f);        // fast attack, slow release
+}
+#endif
 
 void audioRecord(bool on) {
 #if SUFLET_MIC_INMP441
@@ -58,6 +84,33 @@ void audioInit() {
 #endif
 }
 
+size_t audioSrFill(int16_t* out, size_t samples, uint32_t timeoutMs) {
+#if SUFLET_MIC_INMP441
+  if (!i2sOk) return 0;
+  int32_t buf[256];
+  size_t done = 0;
+  const uint32_t t0 = millis();
+  while (done < samples) {
+    const size_t want = samples - done < 256 ? samples - done : 256;
+    const size_t n = i2s.readBytes((char*)buf, want * sizeof(int32_t)) / sizeof(int32_t);
+    if (!n) {
+      if (millis() - t0 > (timeoutMs < 200 ? timeoutMs : 200)) break;
+      delay(2);
+      continue;
+    }
+    takeSamples(buf, n);
+    for (size_t i = 0; i < n; ++i) out[done + i] = (int16_t)(buf[i] >> 14 > 32767 ? 32767 : buf[i] >> 14 < -32768 ? -32768 : buf[i] >> 14);
+    done += n;
+  }
+  return done;
+#else
+  (void)out;
+  (void)samples;
+  (void)timeoutMs;
+  return 0;
+#endif
+}
+
 bool audioHasMic() {
 #if SUFLET_MIC_INMP441
   return i2sOk;
@@ -78,24 +131,12 @@ float audioLevel() { return level; }
 
 void audioTick(bool alarmOn) {
 #if SUFLET_MIC_INMP441
-  if (i2sOk) {
+  if (i2sOk && !srOwns) {
     int32_t buf[256];
     for (int chunk = 0; chunk < 12; ++chunk) {  // drain the DMA: ~1 frame of audio per call
-    const size_t n = i2s.readBytes((char*)buf, sizeof buf) / sizeof(int32_t);
-    if (!n) break;
-    if (recOn)
-      for (size_t i = 0; i < n && recN < kRecMax; ++i) rec[recN++] = (int16_t)(buf[i] >> 16);
-    {
-      double acc = 0;
-      for (size_t i = 0; i < n; ++i) {
-        const double s = (buf[i] >> 8) / 8388608.0;  // 24-bit sample -> -1..1
-        acc += s * s;
-      }
-      const float rms = sqrtf((float)(acc / n)) + 1e-9f;
-      const float db = 20.0f * log10f(rms);                      // dBFS
-      const float target = constrain((db + 60.0f) / 40.0f, 0.0f, 1.0f);  // -60..-20 dBFS -> 0..1
-      level += (target - level) * (target > level ? 0.5f : 0.1f);        // fast attack, slow release
-    }
+      const size_t n = i2s.readBytes((char*)buf, sizeof buf) / sizeof(int32_t);
+      if (!n) break;
+      takeSamples(buf, n);
     }
   }
 #endif
@@ -117,6 +158,15 @@ void audioTick(bool alarmOn) {
           phase += step;
           if (phase > 2.0f * (float)M_PI) phase -= 2.0f * (float)M_PI;
         }
+        if (i2s.write((const uint8_t*)buf, sizeof buf) < sizeof buf) break;  // DMA full
+      }
+    } else if (focusGen) {
+      // focus sounds: keep ~64 ms queued, never blocking (the generator is a few multiplies a sample)
+      static int16_t pcm[128];
+      int32_t buf[128];
+      for (int chunk = 0; chunk < 8; ++chunk) {
+        focusGen->fill(pcm, 128, kRate);
+        for (int i = 0; i < 128; ++i) buf[i] = (int32_t)pcm[i] << 16;
         if (i2s.write((const uint8_t*)buf, sizeof buf) < sizeof buf) break;  // DMA full
       }
     }

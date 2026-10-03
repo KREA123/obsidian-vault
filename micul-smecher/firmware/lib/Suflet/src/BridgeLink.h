@@ -58,7 +58,7 @@ class BridgeServer {
   bool online() const { return active_ >= 0; }
   const std::string& computer() const { return computer_; }  // what the bridge calls itself
   // false when no bridge is connected or a turn is running. nowLocal "YYYY-MM-DDTHH:MM"
-  bool ask(const std::string& text, bool ro, const std::string& nowLocal, uint32_t nowMs);
+  bool ask(const std::string& text, bool ro, const std::string& nowLocal, uint32_t nowMs, const std::string& memory = "");
   bool askPending() const { return !askId_.empty(); }
   int askState() const { return askState_; }  // 0 none, 1 waiting, 2 thinking
   bool pollAnswer(AiOutcome& out);

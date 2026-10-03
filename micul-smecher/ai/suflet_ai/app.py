@@ -215,6 +215,8 @@ def create_app(*, service: Optional[SoulService] = None, gateway: Optional[gatew
         return {"ok": True, "version": VERSION}
 
     api.include_router(gateway_mod.build_router(lambda: gw))
+    from .apps_routes import build_apps_router  # SoulOS apps: maps, weather, agenda, find my phone (docs/11)
+    api.include_router(build_apps_router(lambda: gw))
     if env not in ("production", "pilot") and os.environ.get("SUFLET_API_TOKEN"):
         api.include_router(gateway_mod.build_dev_router(lambda: gw), dependencies=[Depends(_dev_token_check)])
     api.mount("/", remote)

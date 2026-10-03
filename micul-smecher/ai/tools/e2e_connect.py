@@ -474,7 +474,7 @@ def run_scenario(base: str, host: str, api_token: str, llm_base: str, read_code:
         flow = asyncio.run(connect_connector(base, browser, device, storage))
         assert flow["state_before_tap"] == "awaiting_device" and flow["state_after_tap"] == "paired", flow
         assert set(flow["tools"]) == {"add_note", "add_reminder", "answer_soul", "list_today", "read_soul_inbox",
-                                      "set_alarm", "show_on_soul"}, flow["tools"]
+                                      "set_alarm", "show_on_soul", "navigate_on_soul"}, flow["tools"]
         q = {k: v[0] for k, v in parse_qs(urlparse(flow["seen"]["authorize"]).query).items()}
         assert q["code_challenge_method"] == "S256" and q["resource"] == base.rstrip("/") + "/mcp", q
         back = {k: v[0] for k, v in parse_qs(urlparse(flow["seen"]["redirect"]).query).items()}

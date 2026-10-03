@@ -234,6 +234,16 @@ void BridgeServer::onText(int conn, const char* s, size_t n, uint32_t nowMs) {
     if (CloudLink::mapActionJson(type, args, p) && p.kind == CloudPush::Act) o.reply.actions.push_back(p.act);
     else ++bad;
   }
+  int memN = 0;  // SOUL Memory: what the owner's Claude wants kept / forgotten (validated like any AI's)
+  for (JsonObjectConst m : d["memory"].as<JsonArrayConst>()) {
+    if (++memN > 3) break;
+    MemOp op;
+    if (memOpFrom(m["op"] | "", m["text"].is<const char*>() ? m["text"].as<const char*>() : nullptr, m["kind"] | "",
+                  m["importance"] | 0, op))
+      o.reply.memory.push_back(op);
+    else
+      ++bad;
+  }
   o.reply.rejected = bad;
   if (o.reply.say.empty()) o.reply.say = "…";
   o.reply.face = o.reply.actions.empty() ? "" : "happy";
@@ -271,7 +281,8 @@ void BridgeServer::tick(uint32_t nowMs) {
 
 // ------------------------------------------------------------------ turns ---
 
-bool BridgeServer::ask(const std::string& text, bool ro, const std::string& nowLocal, uint32_t nowMs) {
+bool BridgeServer::ask(const std::string& text, bool ro, const std::string& nowLocal, uint32_t nowMs,
+                       const std::string& memory) {
   if (active_ < 0 || !askId_.empty()) return false;
   char id[24];
   snprintf(id, sizeof id, "q%lu%04lx", (unsigned long)++askSeq_, (unsigned long)(rand32() & 0xffff));
@@ -287,6 +298,7 @@ bool BridgeServer::ask(const std::string& text, bool ro, const std::string& nowL
   d["now"] = nowLocal;
   d["tz"] = tz;
   d["from"] = "keyboard";
+  if (!memory.empty()) d["memory"] = memory.substr(0, 1500);  // SOUL Memory: what SOUL knows about you
   send(active_, dump(d));
   return true;
 }

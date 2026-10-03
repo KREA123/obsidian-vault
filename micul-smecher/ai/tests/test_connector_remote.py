@@ -129,7 +129,7 @@ def test_full_oauth_dance_pairing_and_tool_call(tmp_path, caplog):
     tools, r, today, seen, storage = asyncio.run(go())
 
     assert set(tools) == {"list_today", "read_soul_inbox", "add_note", "add_reminder", "set_alarm", "show_on_soul",
-                          "answer_soul"}
+                          "answer_soul", "navigate_on_soul"}
     assert tools["list_today"].annotations.read_only_hint is True
     w = tools["add_note"].annotations
     assert (w.read_only_hint, w.destructive_hint, w.idempotent_hint, w.open_world_hint) == (False, False, False, False)

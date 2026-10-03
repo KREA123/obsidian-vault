@@ -237,6 +237,7 @@ CloudLink::Msg CloudSession::onText(const char* s, size_t n, uint32_t nowMs) {
       answer_.httpStatus = 200;
       answer_.reply.say = r.reply.say;
       answer_.reply.face = r.reply.face;
+      answer_.reply.memory = r.reply.memory;
       if (!r.body.empty()) answer_.reply.say += (answer_.reply.say.empty() ? "" : "\n") + r.body;
       answer_.raw = r.reply.say;
       if (!r.note.empty()) answer_.note = CloudLink::errFromCode(r.note);
@@ -408,7 +409,8 @@ void CloudSession::tick(uint32_t nowMs) {
 
 // ----------------------------------------------------------------- app ---
 
-bool CloudSession::ask(const std::string& text, bool ro, int timerLeftMin, uint32_t nowMs, bool viaBridge) {
+bool CloudSession::ask(const std::string& text, bool ro, int timerLeftMin, uint32_t nowMs, bool viaBridge,
+                       const std::string& memory) {
   if (!welcomed_ || askPending_) return false;
   askBridge_ = viaBridge;
   askState_ = viaBridge ? 1 : 0;
@@ -416,7 +418,7 @@ bool CloudSession::ask(const std::string& text, bool ro, int timerLeftMin, uint3
   snprintf(id, sizeof id, "a%lu%04lx", (unsigned long)++askSeq_, (unsigned long)(rand32() & 0xffff));
   askId_ = id;
   const std::string c = (!conv.empty() && nowMs - convAt_ < kConvMs) ? conv : std::string();
-  queue(CloudLink::ask(askId_, text, ro ? "ro" : "en", c, timerLeftMin, unsynced()));
+  queue(CloudLink::ask(askId_, text, ro ? "ro" : "en", c, timerLeftMin, unsynced(), memory));
   askPending_ = true;
   answerReady_ = false;
   askAt_ = nowMs;
@@ -481,6 +483,10 @@ void CloudSession::send(const CloudOut& o, uint32_t localNow, uint32_t epochNow)
       if (welcomed_ && state == "paired") queue(CloudLink::bridgeForget());
       bridgePaired = bridgeOnline = false;
       bridgeName.clear();
+      return;
+    case CloudOut::MemoryBackup:  // SOUL Memory's backup: only to a paired account, the newest copy only
+      if (welcomed_ && state == "paired")
+        for (const std::string& f : CloudLink::memoryBackup(o.text, o.created, o.paused)) queue(f);
       return;
     case CloudOut::Brain:
       if (o.text != "bridge" && o.text != "none") return;
@@ -587,6 +593,16 @@ bool CloudDriver::needToken(uint32_t nowMs) const {
 std::string CloudDriver::bearer() {
   Guard g(this);
   return "Bearer " + token_;
+}
+
+int CloudDriver::appFetch(const std::string& path, bool post, const std::string& body, std::string& resp, uint32_t timeoutMs) {
+  if (!haveToken()) return -2;
+  if (path.compare(0, 11, "/v1/device/") != 0 || path.find("..") != std::string::npos) return -3;  // only our own API
+  std::string auth = bearer();
+  const int st = post ? httpPostAuth(base + path, auth, body.empty() ? std::string("{}") : body, resp, timeoutMs)
+                      : httpGetAuth(base + path, auth, resp, timeoutMs);
+  for (char& c : auth) c = 0;
+  return st;
 }
 
 bool CloudDriver::feedMessages(const std::string& body, uint32_t nowMs, bool* more) {
