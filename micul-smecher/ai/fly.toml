@@ -3,8 +3,8 @@
 #
 #   fly launch --no-deploy --copy-config --name <your-app>     (then edit `app` below if it differs)
 #   fly volumes create soul_data --region fra --size 1
-#   fly secrets set SOUL_MASTER_SECRET=... SOUL_ID_PEPPER=... SOUL_ANTHROPIC_KEY=... SOUL_OPENAI_KEY=... \
-#                   SOUL_SMTP_PASSWORD=...
+#   fly secrets set SOUL_MASTER_SECRET=... SOUL_ID_PEPPER=... SOUL_SMTP_PASSWORD=...
+#   (no SOUL_ANTHROPIC_KEY / SOUL_OPENAI_KEY: SOUL pays for no AI; owners bring their own key, SOUL_BUILTIN_AI=0)
 #   fly deploy
 #
 # Secrets never go in this file. See README.md "Go live in 20 minutes".

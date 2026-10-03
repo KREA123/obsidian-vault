@@ -5,6 +5,8 @@
 //   soul-bridge channel                          (started BY Claude Code) the SOUL channel server
 //   soul-bridge print                            optional: answer via your own `claude -p`
 //   soul-bridge status | doctor
+import fs from 'node:fs'
+import os from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SoulLink } from '../src/soul-link.js'
@@ -73,7 +75,7 @@ async function main() {
       let chain = Promise.resolve() // one question at a time
       core.on('question', (q) => {
         chain = chain.then(async () => {
-          const r = await runClaudePrint(q, { claudeBin, model: cfg.model, timeoutMs: (cfg.timeout_s || 120) * 1000 - 5000, cwd: workDir() })
+          const r = await runClaudePrint(q, { claudeBin, model: cfg.model, timeoutMs: (cfg.timeout_s || 120) * 1000 - 5000, cwd: fs.existsSync(workDir()) ? workDir() : os.homedir() })
           if (r.ok) {
             const a = core.answer(q.id, r.text, r.actions)
             if (!a.ok) log(`answer not delivered: ${a.error}`)

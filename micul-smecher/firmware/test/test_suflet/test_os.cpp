@@ -427,6 +427,18 @@ static void test_os_cloud_pairing_shows_the_code_then_greets_the_owner() {
   TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());  // "Paired · Ana" for a moment
   d.run(3.0f);
   TEST_ASSERT_EQUAL_INT((int)View::AiMode, (int)d.os.view());
+  // Settings › AI › Connect Claude once paired: a QR to this SOUL's page on the phone (paste the Claude key)
+  NetInfo n = cloudNet(true);
+  n.cloudHost = "soul.example";
+  d.os.setNet(n);
+  d.tap(233, 136);
+  TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());
+  d.run(0.5f);
+  int qr = 0;
+  for (int y = (int)d.g.s(250); y < (int)d.g.s(350); y += 2)
+    for (int x = (int)d.g.s(183); x < (int)d.g.s(283); x += 2)
+      if (Rgb::from565(d.cv.at(x, y)).r > 200) ++qr;
+  TEST_ASSERT_TRUE(qr > 200);
 }
 
 static void test_os_cloud_pushes_apply_once_and_can_be_deleted() {

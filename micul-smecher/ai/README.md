@@ -328,8 +328,8 @@ Ce verifică (pe socketuri reale, `127.0.0.1`):
    e simulatorul SoulOS în modul cloud — **același cod ca pe placă** (`CloudDriver`, `CloudSession`, `CloudLink`,
    `DeviceKey`, SoulOS) peste un client WebSocket de PC. Semnează cu cheia lui P-256, arată codul `XXXX-XXXX`;
    browserul deschide `/pair`, se conectează cu codul din email, scrie codul; SOUL întreabă „Pair with Ana?” și
-   driverul **atinge** *Yes, pair* pe ecranul simulat; `/pair/brain` → „Connect my Claude” + cheia proprie
-   Anthropic (verificată live pe LLM-ul fals); conectorul (OAuth, consimțământ cu SOUL-ul asociat) pune o notiță,
+   driverul **atinge** *Yes, pair* pe ecranul simulat; `/pair/brain` → „Connect your Claude account” (cheia
+   proprie Anthropic, verificată live pe LLM-ul fals) → pe SOUL apare cardul „Claude connected”; conectorul (OAuth, consimțământ cu SOUL-ul asociat) pune o notiță,
    o alarmă și un card, aplicate de SoulOS (`delivered: "shown"`); o întrebare scrisă pe SOUL → releu → Claude
    fals cu cheia proprietarului → răspuns + memento aplicat; o notiță făcută pe SOUL (`item.add`) și „Ask my
    Claude” (`inbox.add`) ajung în cloud, conectorul le citește și răspunde pe SOUL (`answer_soul`).
@@ -345,10 +345,15 @@ placă reală contra unui cloud publicat, claude.ai real, cheile reale, Apple/Go
 (`SOUL_BUILTIN_AI=0`, `config.builtin_ai_enabled()`). Un SOUL asociat pornește pe creierul `none`, nu primește
 probă (trial), iar un `cloud` rămas în bază răspunde cu regulile și `note: "no_key"`. Codul rămâne, testat
 (suitele vechi rulează cu `SOUL_BUILTIN_AI=1` prin `tests/conftest.py`; testele produsului implicit au
-`@pytest.mark.builtin_off`). După asociere, `/pair/brain` oferă exact patru alegeri: **Connect my ChatGPT**
-(„Sign in with ChatGPT”: stub, „coming soon, pending OpenAI's approval”, între timp pașii conectorului ChatGPT),
-**Connect my Claude** (conectorul + opțional cheia proprie Anthropic), **My own API key** (Anthropic/OpenAI),
-**Offline (no AI)**. SOUL Cloud apare doar cu `SOUL_BUILTIN_AI=1`.
+`@pytest.mark.builtin_off`). După asociere, `/pair/brain` arată **întâi și cel mai mare** „Connect your Claude account”
+(prioritatea fondatorului): 1. intri în contul Claude în Anthropic Console (buton, tab nou; merge Google),
+2. creezi o cheie numită SOUL (link direct la API keys, sfat: limită lunară de 5 $), 3. o lipești pe telefon →
+verificare live (`models.list`) → creierul `claude` și pe SOUL un card „Claude connected” (ochii fericiți). Un rând
+onest: „Uses your Anthropic account (pay as you go, ~$1/month typical) — Claude Pro/Max subscriptions can't be
+used by other companies' devices.” Apoi: **Connect my ChatGPT** („Sign in with ChatGPT”: stub, „coming soon,
+pending OpenAI's approval”, între timp pașii conectorului ChatGPT), **My own OpenAI key**, **conectorul din
+aplicația Claude**, **Offline (no AI)**. SOUL Cloud (creierul A) apare doar cu `SOUL_BUILTIN_AI=1`. Pe SOUL:
+*Settings › AI › Connect Claude* arată codul + QR, iar după asociere un QR spre `/pair/brain?d=…`.
 
 ### Paginile de telefon `/pair` și `/me` — `suflet_ai/web_me.py`
 

@@ -5,7 +5,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { spawn, spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { FakeSoul } from './fake-soul.js'
 import { startFakeClaudeCode } from './fake-claude-code.js'
@@ -16,6 +16,13 @@ const home = fs.mkdtempSync(path.join(os.tmpdir(), 'soul-bridge-e2e-'))
 const env = { SOUL_BRIDGE_HOME: home, SOUL_CLAUDE_DIR: path.join(home, 'SOUL-Claude') }
 const show = (label, m) => console.log(`  ${label}: ${m.t === 'answer' ? JSON.stringify({ text: m.text, actions: m.actions }) : JSON.stringify(m)}`)
 let failures = 0
+// async (the fake SOUL lives in this process, so never block the event loop)
+const run = (args) => new Promise((resolve) => {
+  const c = spawn(process.execPath, args, { env: { ...process.env, ...env } })
+  let out = ''
+  c.stdout.on('data', (d) => (out += d)); c.stderr.on('data', (d) => (out += d))
+  c.on('close', () => resolve(out))
+})
 const expect = (cond, what) => { if (!cond) { failures++; console.log(`  FAIL: ${what}`) } else console.log(`  ok: ${what}`) }
 
 const soul = new FakeSoul()
@@ -23,8 +30,8 @@ const url = await soul.listen()
 console.log(`fake SOUL listening on ${url} (pairing code ${soul.pairCode})`)
 
 console.log('\n1. pairing (user types the code shown on SOUL)')
-const pr = spawnSync(process.execPath, [BIN, 'pair', soul.pairCode, '--soul', url], { env: { ...process.env, ...env }, encoding: 'utf8' })
-console.log('  ' + (pr.stdout || pr.stderr).trim())
+const pr = await run([BIN, 'pair', soul.pairCode, '--soul', url])
+console.log('  ' + pr.trim())
 const cfg = JSON.parse(fs.readFileSync(path.join(home, 'config.json'), 'utf8'))
 expect(cfg.token?.startsWith('sbt_'), 'bridge token stored (SOUL token, not a Claude credential)')
 expect((fs.statSync(path.join(home, 'config.json')).mode & 0o077) === 0 || process.platform === 'win32', 'config.json is private (0600)')

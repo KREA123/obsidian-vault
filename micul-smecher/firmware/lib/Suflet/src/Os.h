@@ -116,6 +116,7 @@ struct NetInfo {
   int cloudProblem = 0;      // 0 none, 1 can't sign in, 2 not registered, 3 belongs to another account
   std::string owner, pairCode, pairUrl;  // pairCode: 8 Crockford characters, shown XXXX-XXXX
   std::string confirmPid, confirmName, confirmHint;  // a pair.confirm waiting for a touch
+  std::string cloudHost;  // SOUL Cloud's host, for the "Connect Claude" QR once paired
   bool connectorsPaused = false;
   int trialLeft = -1, inboxPending = 0;
 };

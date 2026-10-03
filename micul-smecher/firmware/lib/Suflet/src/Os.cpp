@@ -252,7 +252,7 @@ void Os::setNet(const NetInfo& n) {
                        n.owner != net_.owner || n.cloudUpdate != net_.cloudUpdate || n.cloudRefused != net_.cloudRefused ||
                        n.apPass != net_.apPass || n.confirmPid != net_.confirmPid ||
                        n.connectorsPaused != net_.connectorsPaused || n.cloudProblem != net_.cloudProblem ||
-                       n.trialLeft != net_.trialLeft;
+                       n.trialLeft != net_.trialLeft || n.cloudHost != net_.cloudHost;
   net_ = n;
   if (changed) invalidate();
   if (!n.confirmPid.empty() && n.confirmPid != oldConfirm) {  // "Pair with Ana?": only a touch answers it
@@ -780,7 +780,7 @@ void Os::activate(int id) {
           toast(tr("Add it on your phone: Wi-Fi setup", "Pune-o din telefon: Wi-Fi"), kAmber, 3);
           if (!net_.portal) pushCmd(OsCmd::StartPortal);
           go(View::Wifi);
-        } else if (aiMode() == AiMode::Cloud && !net_.paired) {
+        } else if (aiMode() == AiMode::Cloud) {  // the pairing code, or once paired the "Connect Claude" QR
           pairReturn_ = View::AiMode;
           go(View::Pair);
         }

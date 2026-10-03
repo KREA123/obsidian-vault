@@ -48,12 +48,19 @@ Budget: **≤ 7 screens and ≤ 15 taps** from unboxing to "my Claude put someth
 
 ### 0.2 Founder decision: no AI paid by SOUL (3 Oct 2026)
 
-"Noi nu putem include niciun AI": SOUL ships **without** a built-in AI paid by us. Brain A (§1.2) is off (`SOUL_BUILTIN_AI=0`, the default; the code path stays behind the flag and in the tests). After pairing, `/pair/brain` offers exactly four choices:
+"Noi nu putem include niciun AI": SOUL ships **without** a built-in AI paid by us. Brain A (§1.2) is off (`SOUL_BUILTIN_AI=0`, the default; the code path stays behind the flag and in the tests). After pairing, `/pair/brain` offers:
 
-1. **Connect my ChatGPT** — "Sign in with ChatGPT" (§1.10): a stub, "coming soon, pending OpenAI's approval"; meanwhile the ChatGPT connector steps (developer mode, §1.4).
-2. **Connect my Claude** — the Claude app connector (mode C): Claude puts notes, reminders, alarms and cards on SOUL; optionally the owner's own Anthropic API key to also talk to Claude on SOUL (B2).
-3. **My own API key** — Anthropic or OpenAI (B2), encrypted in SOUL Cloud.
-4. **Offline (no AI)** — the on-device and cloud rules (E).
+**Primary flow (founder priority, 3 Oct 2026): out of the box → "Connect your Claude account" → use Claude on SOUL.** It is the first and biggest option on `/pair/brain`:
+
+1. **Sign in to your Claude account at the Anthropic Console** — a button opens `https://console.anthropic.com/` in a new tab ("same Anthropic login; Google sign-in works").
+2. **Create a key named SOUL** — written guidance (API keys → Create key → name SOUL → Copy), a direct link to `https://console.anthropic.com/settings/keys`, and the advice to set a monthly spend limit (e.g. $5, link to `/settings/limits`).
+3. **Paste it on the phone page** — prefix rules, then a free live check (`GET /v1/models`, i.e. models.list); a 401/403 refuses it, no network saves it as "not checked yet". The SOUL switches to brain `claude` (B2: the key stays encrypted in SOUL Cloud) and shows a **"Claude connected"** card (eyes surprised → happy).
+
+One honest line under the button: *"Uses your Anthropic account (pay as you go, ~$1/month typical) — Claude Pro/Max subscriptions can't be used by other companies' devices."* [~$1/month is our estimate (§1.2 cost per turn [E]); keep it marked as typical.]
+
+Secondary options, in this order: **Connect my ChatGPT** (Sign in with ChatGPT, §1.10: stub, "coming soon, pending OpenAI's approval", meanwhile the ChatGPT connector steps) · **My own OpenAI key** (B2) · **the Claude app connector** (mode C: command SOUL from the Claude app; any plan, also next to a key) · **Offline (no AI)** (E).
+
+On the device: *Settings › AI › Connect Claude* shows the pairing code + QR while unpaired, and once paired a QR to `https://{BASE}/pair/brain?d={device_id}` (sign in, paste the key).
 
 A newly paired SOUL starts on brain `none`; device turns cost SOUL nothing (the owner's key or the rules). Mode C, D and E are unchanged. Marketing must not say "Claude inside SOUL".
 

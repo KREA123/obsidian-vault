@@ -5,12 +5,13 @@
 (`partitions.csv`: Arduino's `default_16MB` + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
 - built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings
-- size 2,136,768 B · sha256 `918920e1cfdd73e7c89ea9a53fa30998339957dc3f24ccafb30f45aca66e924c`
+- size 2,137,904 B · sha256 `bda9aa6775a2c54e5dfebd1c4a6ac228dbbab90ac5739e74f8db64b9a78c1d29`
 - 1.2.0: SOUL Cloud protocol rev. 2, exactly what `ai/` implements (docs/07 §6): an ECDSA P-256 device key made
   on the device (kept in the new `soulid` partition, never erased by *Start over*; serial `K` prints the public
   key), challenge/signature sign-in with a RAM-only token, 8-character pairing codes shown `XXXX-XXXX` + QR,
   "Pair with Ana?" answered only by a touch, pushes with origin badges, night alarms that wait for *Accept*,
-  private cards, *Settings › Claude & ChatGPT on me* (pause connectors), the offline queue with `added` /
+  private cards, *Settings › AI › Connect Claude* (the pairing code, then a QR to this SOUL's phone page where the
+  owner pastes the key of their Claude account), *Settings › Claude & ChatGPT on me* (pause connectors), the offline queue with `added` /
   `too_big` / `invalid` handling, the cloud's time zone. The same protocol code is unit-tested on the PC against
   frames recorded from the running cloud and runs end to end in the simulator against a local cloud
   (`ai/tools/e2e_sim.py`). Not yet tried on the board against a deployed cloud.

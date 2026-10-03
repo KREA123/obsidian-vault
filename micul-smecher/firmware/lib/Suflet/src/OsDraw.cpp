@@ -125,7 +125,7 @@ void Os::buildItems(std::vector<Item>& out) const {
       } else if (bootStep_ == BootStep::Brain) {
         add(-1, 233, 138, 0, 0, R ? "Cine mă ajută să gândesc?" : "Who helps me think?", kCream, 1, false);
         static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::None};
-        const char* labels[] = {"SOUL Cloud", R ? "Claude · cheia ta" : "Claude · your key",
+        const char* labels[] = {R ? "Conectează Claude" : "Connect Claude", R ? "Claude · cheia ta" : "Claude · your key",
                                 R ? "ChatGPT · cheia ta" : "ChatGPT · your key", R ? "Fără AI" : "No AI"};
         for (int i = 0; i < 4; ++i) {
           const bool sel = aiMode() == kModes[i];
@@ -213,7 +213,7 @@ void Os::buildItems(std::vector<Item>& out) const {
     }
     case View::AiMode: {
       static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::None};
-      const char* labels[] = {"SOUL Cloud", R ? "Claude · cheia ta" : "Claude · your key",
+      const char* labels[] = {R ? "Conectează Claude" : "Connect Claude", R ? "Claude · cheia ta" : "Claude · your key",
                               R ? "ChatGPT · cheia ta" : "ChatGPT · your key", R ? "Fără AI" : "No AI"};
       for (int i = 0; i < 4; ++i) {
         const bool sel = aiMode() == kModes[i];
@@ -902,6 +902,14 @@ void Os::drawPair(Canvas& cv) {
     textAt(cv, fonts::text(), 233, 196, R ? "SOUL Cloud nu mă acceptă" : "SOUL Cloud won't take me", kAmber);
     textAt(cv, fonts::small(), 233, 236, R ? "Scrie-ne cu codul acesta:" : "Write to us with this id:", kCream, kDim);
     textAt(cv, fonts::small(), 233, 264, id, kCream);
+    return;
+  }
+  if (net_.paired && !net_.cloudHost.empty() && pairDoneT_ <= 0) {
+    // "Connect Claude": the phone page where the owner pastes the key of their Claude account
+    textAt(cv, fonts::text(), 233, 150, R ? "Conectează Claude" : "Connect Claude", kMint);
+    textAt(cv, fonts::small(), 233, 186, R ? "Scanează cu telefonul" : "Scan with your phone", kCream, kDim);
+    drawQr(cv, "https://" + net_.cloudHost + "/pair/brain?d=" + id, 233, 300, 150);
+    rimBottom(cv, net_.owner.empty() ? net_.cloudHost : (R ? "legat de " : "paired with ") + net_.owner, kCream, kFaint);
     return;
   }
   if (net_.paired) {

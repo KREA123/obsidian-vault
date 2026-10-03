@@ -807,6 +807,7 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
     NetInfo ni = s.net;
     hc.session.fill(ni);
     ni.cloudProblem = (int)hc.problem;
+    ni.cloudHost = CloudLink::hostOf(base);
     s.os.setNet(ni);
     if (hc.session.welcomed() != welcomed) {
       welcomed = hc.session.welcomed();

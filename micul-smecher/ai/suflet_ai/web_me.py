@@ -715,9 +715,9 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
     async def pair_brain(request: Request) -> Response:
         session = accounts.current_session(request)
         lang = _lang(request, session)
-        if session is None:
-            return to_login("/me", lang)
         dev = request.query_params.get("d", "")
+        if session is None:  # SOUL's "Connect Claude" QR lands here: sign in, then come back
+            return to_login(f"/pair/brain?d={dev}" if _DEV.match(dev) else "/me", lang)
         if await own_device(session, dev) is None:
             return msg(lang, _T[lang]["me_title"], _T[lang]["forbidden"], 404, "/me", _T[lang]["back_me"])
         return page("brain", lang, title=_T[lang]["brain_title"], device_id=dev, csrf=session.csrf,

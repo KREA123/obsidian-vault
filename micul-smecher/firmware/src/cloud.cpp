@@ -389,6 +389,7 @@ void cloudFill(NetInfo& n) {
   Lock l;
   n.relay = n.relay || !off;
   drv.session.fill(n);
+  if (drv.base.compare(0, 8, "https://") == 0) n.cloudHost = CloudLink::hostOf(drv.base);
   switch (drv.problem) {
     case CloudDriver::Problem::CannotSignIn: n.cloudProblem = 1; break;
     case CloudDriver::Problem::NotEnrolled: n.cloudProblem = 2; break;
