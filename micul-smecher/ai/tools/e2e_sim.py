@@ -9,7 +9,8 @@ SOUL_BUILTIN_AI=0: no AI paid by SOUL):
   1. the simulated SOUL signs in (ECDSA P-256 challenge), opens `soul.v1`, shows its pairing code
   2. a browser opens /pair, signs in with an email code (dev mailbox), types the code
   3. the simulated SOUL shows "Pair with Ana?"; the driver taps "Yes, pair" on the simulated glass -> paired
-  4. /pair/brain: "Connect my Claude" + the owner's own Anthropic key (B2; the fake LLM stands in for the API)
+  4. /pair/brain: "Connect your Claude account" (the owner's own Anthropic key, B2; the fake LLM stands in for the
+     API) -> SOUL shows "Claude connected"
   5. the connector: OAuth (MCP SDK client, loopback redirect) -> consent lists the paired SOUL -> Allow
   6. add_note / set_alarm / show_on_soul -> pushes applied by SoulOS on the simulated device, acked: delivered=shown
   7. a text turn typed on SOUL -> relay -> (fake) Claude with the owner's key -> reply + reminder push applied
@@ -126,20 +127,22 @@ def run(base: str, read_code: Callable[[str], Optional[str]], program: str, log:
         assert brain_path == f"/pair/brain?d={dev_id}", brain_path
         ok("/pair: email sign-in + code typed -> 'Pair with Ana?' on the simulated SOUL -> tap -> paired")
 
-        # 4. Connect my Claude + the owner's own Anthropic key (no AI paid by SOUL)
+        # 4. the primary flow: "Connect your Claude account" — a key from the Anthropic Console, pasted on the phone
         page = a(browser.http.get(brain_path)).text
-        assert "Connect my Claude" in page and 'value="cloud"' not in page
-        r = a(browser.choose(page, "none", "/me/connect-claude"))
-        conn = a(browser.http.get(r.headers["location"])).text
-        assert f'value="{base}/mcp"' in conn
-        csrf = re.search(r'name="csrf" value="([^"]+)"', conn).group(1)
+        assert "Connect your Claude account" in page and 'value="cloud"' not in page
+        assert "console.anthropic.com/settings/keys" in page
+        csrf = re.search(r'name="csrf" value="([^"]+)"', page).group(1)
         r = a(browser.http.post("/me/keys", data={"csrf": csrf, "provider": "anthropic", "key": KEY,
                                                   "device_id": dev_id}))
         assert r.status_code == 303, r.text[:200]
         dev.wait(r"^CONFIG brain=claude")
+        dev.wait(r"^PUSH seq=\d+ action=answer\.show from=app/ item=\S+ applied view=answer")
         me = a(browser.http.get("/me")).text
         assert KEY not in me and "checked" in me
-        ok("brain page: Connect my Claude + own Anthropic key (live-checked against the fake API) -> config on SOUL")
+        conn = a(browser.http.get(f"/me/connect-claude?d={dev_id}")).text
+        assert f'value="{base}/mcp"' in conn
+        ok("Connect your Claude account: own Anthropic key (live-checked against the fake API) -> brain claude, "
+           "'Claude connected' card applied on SOUL")
 
         # 5. the connector (MCP SDK OAuth client) adds SOUL; consent lists the paired SOUL
         async def on_consent(page: str):

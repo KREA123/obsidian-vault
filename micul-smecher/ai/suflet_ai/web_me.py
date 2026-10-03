@@ -4,13 +4,13 @@
                                     GET never claims anything). Not signed in: "Continue with email" -> /login.
     POST /pair/claim                form: code -> pair.confirm on SOUL -> /pair/wait?pid=…
     GET  /pair/wait                 "Tap Yes on SOUL" (JS polls /v1/me/pair/{pid}; without JS: a button)
-    GET  /pair/brain?d=soul-…       after the tap, the founder's four choices (no AI paid by SOUL, 3 Oct 2026):
-                                      · Connect my ChatGPT (Sign in with ChatGPT: stub, pending OpenAI approval;
-                                        meanwhile the ChatGPT connector steps)
-                                      · Connect my Claude (the connector, step by step + the address to copy;
-                                        optional own Anthropic key to talk to Claude on SOUL)
-                                      · my own Anthropic or OpenAI key (encrypted; a cheap live check when it can)
-                                      · Offline (no AI)
+    GET  /pair/brain?d=soul-…       after the tap (no AI paid by SOUL, founder decisions of 3 Oct 2026):
+                                      first and biggest: "Connect your Claude account" — 1. sign in at the Anthropic
+                                        Console, 2. create a key named SOUL (+ a monthly spend limit), 3. paste it:
+                                        live check (models.list), brain `claude`, a "Claude connected" card on SOUL
+                                      then: Connect my ChatGPT (Sign in with ChatGPT: stub, pending OpenAI approval;
+                                        meanwhile the ChatGPT connector steps) · my own OpenAI key · the Claude app
+                                        connector (step by step + the address to copy) · Offline (no AI)
                                     SOUL Cloud's built-in AI (brain A) appears only with SOUL_BUILTIN_AI=1.
     POST /v1/me/pair/claim          JSON (session + X-CSRF-Token), §3.4: 202 {pid, device, state, expires_in}
     GET  /v1/me/pair/{pid}          JSON {state: awaiting_device | paired | rejected | expired}
@@ -118,11 +118,24 @@ _T: Dict[str, Dict[str, str]] = {
         brain_title="Who answers on SOUL?", brain_lead="When you ask SOUL something on its screen, who should answer?",
         b_cloud="SOUL Cloud", b_cloud_sub="Claude inside SOUL. Included, nothing to set up. Not your claude.ai account.",
         b_key="My own API key", b_key_sub="Anthropic or OpenAI. Billed to you, per question. Stored encrypted.",
+        ca_title="Connect your Claude account", ca_lead="Three steps, about two minutes. Then you talk to Claude on SOUL.",
+        ca_s1="Sign in to your Claude account at the Anthropic Console", ca_s1_btn="Open the Anthropic Console",
+        ca_s1_note="Same Anthropic login as Claude; “Continue with Google” works.",
+        ca_s2="Create a key named SOUL",
+        ca_s2_shot="In the Console: <b>API keys</b> → <b>Create key</b> → name it <b>SOUL</b> → <b>Add</b> → "
+                   "<b>Copy</b> the key (it starts with <code>sk-ant-</code>; it is shown only once).",
+        ca_s2_btn="Go to API keys", ca_s2_limit="Tip: set a monthly spend limit, e.g. <b>$5</b>, so SOUL can never "
+        "cost more.", ca_limits="Limits", ca_s3="Paste the key here",
+        ca_btn="Connect Claude", ca_honest="Uses your Anthropic account (pay as you go, ~$1/month typical) — Claude "
+        "Pro/Max subscriptions can't be used by other companies' devices.",
+        other_ways="Other ways", b_oai="My own OpenAI key", b_oai_sub="ChatGPT's models on SOUL, billed to your "
+        "OpenAI account, per question. Stored encrypted.", claude_connected="Claude connected",
+        claude_connected_body="Ask me anything: I answer with your Claude.",
         b_chatgpt="Connect my ChatGPT", b_chatgpt_sub="Sign in with your ChatGPT account so SOUL can talk to "
         "your ChatGPT. Until then, your ChatGPT can put things on SOUL through the SOUL app (connector).",
         soon="Coming soon, pending OpenAI's approval.",
-        b_claude="Connect my Claude", b_claude_sub="Add SOUL to your Claude app: Claude puts notes, reminders, "
-        "alarms and cards on SOUL. Optional: add your own Anthropic API key so you can also talk to Claude on SOUL.",
+        b_claude="The Claude app connector", b_claude_sub="Command SOUL from the Claude app: Claude puts notes, "
+        "reminders, alarms and cards on SOUL. Works with any Claude plan; you can add it as well as your key.",
         b_none="Offline (no AI)", b_none_sub="Alarms, timers, reminders and notes work on SOUL itself; nothing "
         "leaves the house.", opt_key="Optional: your Anthropic API key, to talk to Claude on SOUL itself",
         b_app="My own Claude or ChatGPT app",
@@ -179,12 +192,24 @@ _T: Dict[str, Dict[str, str]] = {
         brain_title="Cine răspunde pe SOUL?", brain_lead="Când îl întrebi ceva pe SOUL, pe ecranul lui, cine să răspundă?",
         b_cloud="SOUL Cloud", b_cloud_sub="Claude în SOUL. Inclus, nimic de configurat. Nu e contul tău claude.ai.",
         b_key="Cheia mea API", b_key_sub="Anthropic sau OpenAI. Plătești tu, pe întrebare. Păstrată criptat.",
+        ca_title="Conectează-ți contul Claude", ca_lead="Trei pași, cam două minute. Apoi vorbești cu Claude pe SOUL.",
+        ca_s1="Intră în contul tău Claude în Anthropic Console", ca_s1_btn="Deschide Anthropic Console",
+        ca_s1_note="Același cont Anthropic ca la Claude; merge și „Continue with Google”.",
+        ca_s2="Creează o cheie numită SOUL",
+        ca_s2_shot="În Console: <b>API keys</b> → <b>Create key</b> → numește-o <b>SOUL</b> → <b>Add</b> → "
+                   "<b>Copy</b> (cheia începe cu <code>sk-ant-</code>; se arată o singură dată).",
+        ca_s2_btn="Mergi la API keys", ca_s2_limit="Sfat: pune o limită lunară de cheltuieli, de ex. <b>5 $</b>, ca "
+        "SOUL să nu coste niciodată mai mult.", ca_limits="Limite", ca_s3="Lipește cheia aici",
+        ca_btn="Conectează Claude", ca_honest="Folosește contul tău Anthropic (plătești cât folosești, de obicei ~1 $/lună) "
+        "— abonamentele Claude Pro/Max nu pot fi folosite de dispozitivele altor companii.",
+        other_ways="Alte variante", b_oai="Cheia mea OpenAI", b_oai_sub="Modelele ChatGPT pe SOUL, plătite din contul "
+        "tău OpenAI, pe întrebare. Păstrată criptat.", claude_connected="Claude conectat",
+        claude_connected_body="Întreabă-mă orice: îți răspund cu Claude-ul tău.",
         b_chatgpt="Conectează-mi ChatGPT", b_chatgpt_sub="Te conectezi cu contul tău ChatGPT ca SOUL să poată "
         "vorbi cu ChatGPT-ul tău. Până atunci, ChatGPT-ul tău poate pune lucruri pe SOUL prin aplicația SOUL (conector).",
         soon="În curând, după aprobarea OpenAI.",
-        b_claude="Conectează-mi Claude", b_claude_sub="Adaugă SOUL în aplicația ta Claude: Claude pune notițe, "
-        "mementouri, alarme și carduri pe SOUL. Opțional: adaugă cheia ta API Anthropic ca să vorbești cu Claude și "
-        "direct pe SOUL.",
+        b_claude="Conectorul din aplicația Claude", b_claude_sub="Comanzi SOUL din aplicația Claude: Claude pune "
+        "notițe, mementouri, alarme și carduri pe SOUL. Merge cu orice plan Claude; îl poți avea pe lângă cheie.",
         b_none="Offline (fără AI)", b_none_sub="Alarmele, cronometrele, mementourile și notițele merg pe SOUL; "
         "nimic nu iese din casă.", opt_key="Opțional: cheia ta API Anthropic, ca să vorbești cu Claude pe SOUL",
         b_app="Aplicația mea Claude sau ChatGPT",
@@ -311,40 +336,58 @@ _WAIT = """{% extends "base" %}{% block body %}
 
 _BRAIN = """{% extends "base" %}{% block body %}
 <h1>{{ t.brain_title }}</h1>
-<p class="lead">{{ t.brain_lead }}</p>
+<form class="card hero" method="post" action="/me/keys" id="claude-account">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="device_id" value="{{ device_id }}">
+  <input type="hidden" name="provider" value="anthropic">
+  <h2>{{ t.ca_title }}</h2>
+  <p>{{ t.ca_lead }}</p>
+  <ol class="steps big">
+    <li><b>{{ t.ca_s1 }}</b><br>
+      <a class="btn" href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">{{ t.ca_s1_btn }} ↗</a>
+      <span class="hint">{{ t.ca_s1_note }}</span></li>
+    <li><b>{{ t.ca_s2 }}</b><br>
+      <span class="shot">{{ t.ca_s2_shot|safe }}</span>
+      <a class="btn" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">{{ t.ca_s2_btn }} ↗</a>
+      <span class="hint">{{ t.ca_s2_limit|safe }}
+      <a href="https://console.anthropic.com/settings/limits" target="_blank" rel="noopener noreferrer">{{ t.ca_limits }} ↗</a></span></li>
+    <li><b>{{ t.ca_s3 }}</b>
+      <input id="key" name="key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-api03-…" required>
+    </li>
+  </ol>
+  <button class="btn primary" type="submit">{{ t.ca_btn }}</button>
+  <p class="fine">{{ t.ca_honest }}</p>
+</form>
+<h2>{{ t.other_ways }}</h2>
 <form class="card choice" method="post" action="/me/devices/{{ device_id }}/brain">
   <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="brain" value="none">
   <input type="hidden" name="next" value="/me/signin-chatgpt">
-  <h2>{{ t.b_chatgpt }}</h2><p>{{ t.b_chatgpt_sub }}</p><p class="note">{{ t.soon }}</p>
+  <h3>{{ t.b_chatgpt }}</h3><p>{{ t.b_chatgpt_sub }}</p><p class="note">{{ t.soon }}</p>
   <button class="btn" type="submit">{{ t.choose }}</button>
-</form>
-<form class="card choice" method="post" action="/me/devices/{{ device_id }}/brain">
-  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="brain" value="none">
-  <input type="hidden" name="next" value="/me/connect-claude">
-  <h2>{{ t.b_claude }}</h2><p>{{ t.b_claude_sub }}</p>
-  <button class="btn primary" type="submit">{{ t.choose }}</button>
 </form>
 <form class="card choice" method="post" action="/me/keys">
   <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="device_id" value="{{ device_id }}">
-  <h2>{{ t.b_key }}</h2><p>{{ t.b_key_sub }}</p>
-  <fieldset class="seg"><legend>{{ t.provider }}</legend>
-    <label><input type="radio" name="provider" value="anthropic" checked> Anthropic (Claude)</label>
-    <label><input type="radio" name="provider" value="openai"> OpenAI (ChatGPT)</label>
-  </fieldset>
-  <label for="key">{{ t.api_key }}</label>
-  <input id="key" name="key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-… / sk-…" required>
+  <input type="hidden" name="provider" value="openai">
+  <h3>{{ t.b_oai }}</h3><p>{{ t.b_oai_sub }}</p>
+  <label for="okey">{{ t.api_key }}</label>
+  <input id="okey" name="key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-proj-…" required>
   <p class="hint">{{ t.key_advice }}</p>
   <button class="btn" type="submit">{{ t.save_key }}</button>
 </form>
 <form class="card choice" method="post" action="/me/devices/{{ device_id }}/brain">
   <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="brain" value="none">
-  <h2>{{ t.b_none }}</h2><p>{{ t.b_none_sub }}</p>
+  <input type="hidden" name="next" value="/me/connect-claude">
+  <h3>{{ t.b_claude }}</h3><p>{{ t.b_claude_sub }}</p>
+  <button class="btn" type="submit">{{ t.choose }}</button>
+</form>
+<form class="card choice" method="post" action="/me/devices/{{ device_id }}/brain">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="brain" value="none">
+  <h3>{{ t.b_none }}</h3><p>{{ t.b_none_sub }}</p>
   <button class="btn" type="submit">{{ t.choose }}</button>
 </form>
 {% if builtin %}
 <form class="card choice" method="post" action="/me/devices/{{ device_id }}/brain">
   <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="brain" value="cloud">
-  <h2>{{ t.b_cloud }}</h2><p>{{ t.b_cloud_sub }}</p>
+  <h3>{{ t.b_cloud }}</h3><p>{{ t.b_cloud_sub }}</p>
   <button class="btn" type="submit">{{ t.choose }}</button>
 </form>
 {% endif %}
@@ -485,6 +528,10 @@ border-radius:50%;background:var(--glass);box-shadow:0 0 0 3px var(--silver)}
 @keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
 @media (prefers-reduced-motion:reduce){.soulface span{animation:none}}
 .wait{text-align:center}
+.card.hero{border:2px solid var(--ink);padding:20px}.card.hero h2{font-size:1.5rem;font-weight:800;margin:0 0 .2em}
+.steps.big li{margin:1em 0}.steps.big .btn{margin:8px 0 4px}.steps.big .hint{display:block}
+.shot{display:block;background:var(--warm);color:#16181D;border-radius:12px;padding:10px 12px;margin:6px 0;font-size:.92rem}
+.fine{font-size:.8rem;color:var(--muted);margin-top:10px}h3{margin-bottom:.2em}
 fieldset{border:1px solid var(--line);border-radius:12px;margin:.8em 0}
 .client.unverified .warn,.warn{color:#9A3412}.verified .badge{border-color:var(--ink)}"""
 
@@ -833,6 +880,15 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
         log.info("key saved for %s (%s)", provider, verdict)
         if dev:
             set_brain(dev, "claude" if provider == "anthropic" else "chatgpt")
+            if provider == "anthropic":  # SOUL's eyes go surprised -> happy with a "Claude connected" card
+                push = getattr(impl, "push", None)
+                if callable(push):
+                    try:
+                        push(dev, "answer.show", {"title": _T[lang]["claude_connected"],
+                                                  "body": _T[lang]["claude_connected_body"]},
+                             f"it_cc{int(time.time()) % 10**8}", {"kind": "app"})
+                    except ValueError:
+                        pass
             return redirect("/me?done=key")
         return redirect("/me")
 

@@ -121,12 +121,17 @@ def test_pair_page_signs_in_claims_and_needs_the_tap_on_soul(cloud):
         assert brain == f"/pair/brain?d={d.device_id}"
         assert (await b.http.get(f"/v1/me/pair/{pid}")).json() == {"state": "paired"}
         assert cloud["gw"].store.owner(d.device_id)
-        # the founder's four choices, and no AI paid by SOUL
+        # first and biggest: connect your Claude account (a key from the Anthropic Console); then the others
         page = (await b.http.get(brain)).text
-        for want in ("Connect my ChatGPT", "Coming soon, pending OpenAI", "Connect my Claude", "My own API key",
-                     "Offline (no AI)"):
-            assert want in html.unescape(page), want
-        assert 'value="cloud"' not in page and "SOUL Cloud</h2>" not in page
+        text = html.unescape(page)
+        order = [text.index(w) for w in ("Connect your Claude account", "https://console.anthropic.com/",
+                                          "Create a key named SOUL", "https://console.anthropic.com/settings/keys",
+                                          "monthly spend limit", "Paste the key here",
+                                          "Claude Pro/Max subscriptions can't be used by other companies' devices",
+                                          "Connect my ChatGPT", "Coming soon, pending OpenAI", "My own OpenAI key",
+                                          "The Claude app connector", "Offline (no AI)")]
+        assert order == sorted(order), order
+        assert 'value="cloud"' not in page and "SOUL Cloud</h3>" not in page
         # "Connect my Claude": brain none on SOUL (no paid AI), then the connector steps with the address to copy
         r = await b.choose(page, "none", "/me/connect-claude")
         assert r.status_code == 303 and r.headers["location"] == f"/me/connect-claude?d={d.device_id}"
@@ -135,6 +140,15 @@ def test_pair_page_signs_in_claims_and_needs_the_tap_on_soul(cloud):
         assert 'name="key"' in c  # optional own Anthropic key, to talk to Claude on SOUL
         cfg = d.wait_for(lambda rs: next((m for m in rs if m.get("t") == "config" and "brain" in m), None), 10, "config")
         assert cfg["brain"] == "none"
+        # the primary flow: paste the Anthropic key -> checked, brain claude, "Claude connected" on SOUL
+        csrf = _hidden(page, "csrf")
+        r = await b.http.post("/me/keys", data={"csrf": csrf, "provider": "anthropic", "key": GOOD,
+                                                "device_id": d.device_id})
+        assert r.status_code == 303 and r.headers["location"] == "/me?done=key"
+        card = d.wait_for(lambda rs: next((m for m in rs if m.get("t") == "push" and m["action"] == "answer.show"),
+                                          None), 10, "Claude connected card")
+        assert card["args"]["title"] == "Claude connected" and card["origin"]["kind"] == "app"
+        assert d.wait_for(lambda rs: any(m.get("t") == "config" and m.get("brain") == "claude" for m in rs), 10, "c")
         # "Connect my ChatGPT": the Sign in with ChatGPT stub + the connector meanwhile
         s = html.unescape((await b.http.get(f"/me/signin-chatgpt?d={d.device_id}")).text)
         assert "Coming soon, pending OpenAI's approval" in s and "Developer mode" in s and "/mcp" in s
@@ -197,6 +211,7 @@ def test_me_keys_brains_apps_and_unpair(cloud):
         r = await b.http.post("/me/keys", data={"csrf": csrf, "provider": "openai", "key": OAI,
                                                 "device_id": d.device_id})
         assert r.status_code == 303 and r.headers["location"] == "/me?done=key"  # and SOUL switched to it
+        assert not any(m.get("t") == "push" and m["args"].get("title") == "Claude connected" for m in d.received)
         me = (await b.http.get("/me")).text
         assert GOOD not in me and OAI not in me and "sk-ant-…ghij" in html.unescape(me)
         assert "checked" in me
@@ -276,7 +291,7 @@ def test_builtin_ai_flag_shows_soul_cloud(cloud):
     async def flow():
         await _pair(b, d)
         page = (await b.http.get(f"/pair/brain?d={d.device_id}")).text
-        assert 'value="cloud"' in page and "SOUL Cloud</h2>" in page
+        assert 'value="cloud"' in page and "SOUL Cloud</h3>" in page
         r = await b.choose(page, "cloud")
         assert r.headers["location"] == "/me?done=cloud"
 

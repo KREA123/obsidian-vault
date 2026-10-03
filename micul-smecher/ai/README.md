@@ -323,11 +323,59 @@ Ce verifică (pe socketuri reale, `127.0.0.1`):
 4. Erorile au codurile din §6.9: cheie greșită `bad_key`, 429 `rate_limited`, fără credit `quota`, furnizor
    căzut `network`; SOUL offline → `delivered: "queued"`, apoi reluat la reconectare.
 
-**Ce acoperă, cinstit:** o variantă **simulată** a pașilor 3, 5 și 7 din `docs/07-CONNECT-AI.md` §0.1.
-Dispozitivul (`fake_device.py`) și modelele (`fake_llm.py`) sunt scrise de noi; pasul 4 (`/pair`) și pasul 6
-(`/me`) nu există în cod; asocierea trece prin pagina de consimțământ a conectorului sau prin ruta dev
-`/v1/dev/pair/claim`. Criteriul de ieșire din Faza 0 **nu** e îndeplinit până nu există `/pair` și `/me` și
-nu rulează prin redirect-ul claude.ai.
+5. **Pasul 3/3, cu firmware-ul ca dispozitiv** (`tools/e2e_sim.py`, sărit dacă simulatorul nu e compilat:
+   `cd ../firmware && pio run -e sim`): un cloud nou cu produsul implicit (`SOUL_BUILTIN_AI=0`), iar dispozitivul
+   e simulatorul SoulOS în modul cloud — **același cod ca pe placă** (`CloudDriver`, `CloudSession`, `CloudLink`,
+   `DeviceKey`, SoulOS) peste un client WebSocket de PC. Semnează cu cheia lui P-256, arată codul `XXXX-XXXX`;
+   browserul deschide `/pair`, se conectează cu codul din email, scrie codul; SOUL întreabă „Pair with Ana?” și
+   driverul **atinge** *Yes, pair* pe ecranul simulat; `/pair/brain` → „Connect my Claude” + cheia proprie
+   Anthropic (verificată live pe LLM-ul fals); conectorul (OAuth, consimțământ cu SOUL-ul asociat) pune o notiță,
+   o alarmă și un card, aplicate de SoulOS (`delivered: "shown"`); o întrebare scrisă pe SOUL → releu → Claude
+   fals cu cheia proprietarului → răspuns + memento aplicat; o notiță făcută pe SOUL (`item.add`) și „Ask my
+   Claude” (`inbox.add`) ajung în cloud, conectorul le citește și răspunde pe SOUL (`answer_soul`).
+
+**Ce acoperă, cinstit:** pașii 3–7 din `docs/07-CONNECT-AI.md` §0.1, cu falsuri: LLM-ul (`fake_llm.py`),
+căsuța de email (fișierul dev), browserul (httpx), clientul OAuth (MCP SDK cu redirect loopback, **nu**
+claude.ai). Reale: cloudul, socketurile, codul de protocol al firmware-ului și SoulOS. Ce lipsește încă: o
+placă reală contra unui cloud publicat, claude.ai real, cheile reale, Apple/Google la autentificare.
+
+### Fără AI plătit de noi (decizia fondatorului, 3 oct 2026) — `SOUL_BUILTIN_AI`
+
+„Noi nu putem include niciun AI”: creierul A (Claude/ChatGPT în SOUL pe cheile SOUL) e **oprit implicit**
+(`SOUL_BUILTIN_AI=0`, `config.builtin_ai_enabled()`). Un SOUL asociat pornește pe creierul `none`, nu primește
+probă (trial), iar un `cloud` rămas în bază răspunde cu regulile și `note: "no_key"`. Codul rămâne, testat
+(suitele vechi rulează cu `SOUL_BUILTIN_AI=1` prin `tests/conftest.py`; testele produsului implicit au
+`@pytest.mark.builtin_off`). După asociere, `/pair/brain` oferă exact patru alegeri: **Connect my ChatGPT**
+(„Sign in with ChatGPT”: stub, „coming soon, pending OpenAI's approval”, între timp pașii conectorului ChatGPT),
+**Connect my Claude** (conectorul + opțional cheia proprie Anthropic), **My own API key** (Anthropic/OpenAI),
+**Offline (no AI)**. SOUL Cloud apare doar cu `SOUL_BUILTIN_AI=1`.
+
+### Paginile de telefon `/pair` și `/me` — `suflet_ai/web_me.py`
+
+- `/pair`: QR-ul de pe SOUL duce aici (`#c=COD&d=soul-…`, codul stă doar în fragment, citit de JS; GET nu
+  revendică nimic). Neconectat → „Continue with email” (`/login?next=/pair`, cod de 6 cifre pe email).
+  Conectat → câmpul de cod (precompletat din fragment) → `POST /pair/claim` → `/pair/wait` („atinge *Yes,
+  pair* pe SOUL”, JS întreabă `GET /v1/me/pair/{pid}` la 2 s) → `/pair/brain?d=…`. JSON-ul din §3.4:
+  `POST /v1/me/pair/claim` (sesiune + `X-CSRF-Token`) → `202`.
+- `/me`: SOUL-urile (online, firmware, creierul, schimbarea lui, dezlegarea — cu reautentificare), cheile
+  (mascate `sk-ant-…a1B2`, „checked” / „saved, not checked yet”), aplicațiile conectate (deconectare = toată
+  familia de tokenuri), adresa conectorului cu buton de copiere, `/me/connect-claude`, `/me/connect-chatgpt`,
+  `/me/signin-chatgpt`.
+- Cheile: refuzate prefixele admin/abonament; verificare live gratuită `GET /v1/models` (`SOUL_KEY_CHECK=0` o
+  oprește): 401/403 → refuzată, 200 → „checked”, altceva (fără rețea) → salvată „not checked yet”; salvarea
+  cere o autentificare proaspătă (≤ 10 min). Nicio cheie nu iese înapoi și nu ajunge în loguri.
+- Aspect: mobil întâi, marca SOUL (crem / cerneală, Bricolage Grotesque și Martian Mono servite local din
+  `suflet_ai/web/`, OFL), fără cereri externe (CSP `default-src 'self'`), RO/EN. Paginile de login și
+  consimțământ folosesc aceeași foaie de stil.
+- Teste: `tests/test_web_pair_me.py` (fluxul complet, erori, CSRF, proprietar, chei, reautentificare,
+  steagul `SOUL_BUILTIN_AI`), `tests/test_e2e_sim.py` (simulatorul firmware ca dispozitiv).
+
+### Cadre înregistrate pentru firmware — `tools/record_frames.py`
+
+Pornește aplicația reală, joacă o poveste completă cu un dispozitiv scriptat (auth + erori 400/401, pairing,
+toate push-urile, o tură, `added`, `too_big`, `invalid`, `config` cu fus orar, reluare, `resync`, `unpaired`) și
+scrie `../firmware/test/test_suflet/cloud_frames.h`, pe care testele native îl reiau prin `CloudLink` și
+`CloudSession`. `--check` spune dacă antetul e la zi.
 
 `tools/fake_llm.py` imită `api.anthropic.com` (`/v1/messages`) și `api.openai.com` (`/v1/responses`);
 SDK-urile oficiale sunt îndreptate spre el cu `ANTHROPIC_BASE_URL` / `OPENAI_BASE_URL`, deci codul releului
@@ -422,8 +470,10 @@ importă cu `fly ssh console -C "python -m suflet_ai.app import-factory /data/ke
 | `SOUL_TRUST_PROXY` | | `1` în spatele proxy-ului TLS (IP-ul clientului = ultimul hop din `X-Forwarded-For`) |
 | `SOUL_MASTER_SECRET` | da | ≥ 32 octeți hex; criptează cheile API ale utilizatorilor (B2) |
 | `SOUL_ID_PEPPER` | da | ≥ 32 octeți hex; HMAC pentru id-uri, coduri, `safety_identifier` |
-| `SOUL_ANTHROPIC_KEY` | da | cheia SOUL pentru creierul A (Claude în SOUL) |
-| `SOUL_OPENAI_KEY` | da | cheia SOUL pentru creierul A cu vocea ChatGPT |
+| `SOUL_BUILTIN_AI` | | `0` implicit: fără AI plătit de SOUL (decizia fondatorului); `1` repornește creierul A |
+| `SOUL_KEY_CHECK` | | `0` = cheile lipite pe `/me` nu se verifică live (rămân „not checked yet”) |
+| `SOUL_ANTHROPIC_KEY` | da | cheia SOUL pentru creierul A (doar cu `SOUL_BUILTIN_AI=1`; altfel nu o seta) |
+| `SOUL_OPENAI_KEY` | da | cheia SOUL pentru creierul A cu vocea ChatGPT (doar cu `SOUL_BUILTIN_AI=1`) |
 | `SOUL_SMTP_HOST`, `SOUL_SMTP_PORT`, `SOUL_SMTP_USER` | | serverul de email (STARTTLS pe 587 sau TLS pe 465) |
 | `SOUL_SMTP_PASSWORD` | da | parola / tokenul SMTP |
 | `SOUL_MAIL_FROM` | | expeditorul, ex. `SOUL <hello@domeniu>` |
