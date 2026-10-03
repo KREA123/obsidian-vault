@@ -212,9 +212,9 @@ void Os::buildItems(std::vector<Item>& out) const {
                               R ? "ChatGPT · cheia ta" : "ChatGPT · your key", R ? "Fără AI" : "No AI"};
       for (int i = 0; i < 4; ++i) {
         const bool sel = aiMode() == kModes[i];
-        add(IdRow + i, 233, 150 + i * 62, 320, 60, labels[i], sel ? kMint : kCream, 1, sel);
+        add(IdRow + i, 233, 136 + i * 60, 320, 58, labels[i], sel ? kMint : kCream, 1, sel);
       }
-      if (net_.keyClaude || net_.keyOpenai) add(IdForget, 233, 412, 200, 44, R ? "Uită cheile" : "Forget keys", kAmber, 0, true, kDim);
+      if (net_.keyClaude || net_.keyOpenai) add(IdForget, 233, 378, 200, 40, R ? "Uită cheile" : "Forget keys", kAmber, 0, true, kDim);
       break;
     }
     case View::Wifi:
@@ -401,10 +401,8 @@ void Os::drawBoot(Canvas& cv) {
       buildItems(items_);
       drawItems(cv, items_);
       if (bootStep_ == BootStep::Brain) {
-        std::string hint;
         if (aiMode() != AiMode::None) {
-          const bool needs = (aiMode() == AiMode::Claude && !net_.keyClaude) || (aiMode() == AiMode::ChatGpt && !net_.keyOpenai) ||
-                             (aiMode() == AiMode::Cloud && !net_.relay) || !net_.configured;
+          const bool needs = needsSetup();
           if (needs && net_.portal) {
             textAt(cv, fonts::small(), 233, 370, (R ? "Pe telefon: Wi-Fi " : "On your phone: Wi-Fi ") + net_.apName + " · " + net_.apPass, kAmber);
             textAt(cv, fonts::small(), 233, 394, (R ? "apoi deschide " : "then open ") + net_.portalUrl.substr(7), kAmber, kDim);

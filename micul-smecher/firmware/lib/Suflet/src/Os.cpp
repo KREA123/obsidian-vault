@@ -88,8 +88,8 @@ FaceLayoutT Os::layoutFor(View v) const {
     case View::Keyboard: l = {0.2f, 0, -0.414f}; break;
     case View::MySoul: l = {0.5f, 0, -0.12f}; break;
     case View::Timer: l = {0.28f, 0, -0.34f}; break;
-    case View::Pair: l = {0.2f, 0, -0.62f}; break;
-    case View::Wifi: l = net_.portal ? FaceLayoutT{0.16f, 0, -0.7f} : FaceLayoutT{0.3f, 0, -0.33f}; break;
+    case View::Pair: l = {0.22f, 0, -0.3f}; break;
+    case View::Wifi: l = net_.portal ? FaceLayoutT{0.15f, 0, -0.36f} : FaceLayoutT{0.3f, 0, -0.33f}; break;
     default: l = {0.3f, 0, -0.33f}; break;
   }
   return l;

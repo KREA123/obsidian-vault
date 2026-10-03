@@ -319,7 +319,7 @@ class Os {
   Alarms* alarms_;
   DisplayGeometry g_;
   BirthInfo birth_;
-  SoulFace face_;
+  SoulFace face_{};
   Keyboard kb_;
   TimePicker tp_;
   OsSettings set_;
@@ -403,7 +403,7 @@ class Os {
   float toastLeft_ = 0;
 
   // output queues
-  OsCmd cmds_[16];
+  OsCmd cmds_[16] = {};
   int cmdHead_ = 0, cmdCount_ = 0;
   std::vector<Ev> brainEvents_;
 

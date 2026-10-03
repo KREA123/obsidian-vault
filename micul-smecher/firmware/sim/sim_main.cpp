@@ -21,6 +21,7 @@
 
 #include "AiProtocol.h"
 #include "Alarms.h"
+#include "CloudLink.h"
 #include "Brain.h"
 #include "EyeRig.h"
 #include "Frame.h"
@@ -220,6 +221,7 @@ struct Sim {
   }
   void mark() {
     if (rec && rec->frames) rec->stills.push_back(rec->frames - 1);
+    if (getenv("SIM_VERBOSE")) fprintf(stderr, "  still %d: view %s\n", rec ? rec->frames - 1 : -1, viewName(os.view()));
   }
   // design px -> panel px
   void press(float x, float y, float holdS, float gapS, bool markWhileDown = false) {
@@ -405,6 +407,53 @@ std::vector<Scenario> scenarios() {
          s.finger = false;
          s.run(1.4f);
          s.mark();
+       }},
+      {"cloud", "SOUL Cloud: the pairing code + QR, paired, a reminder and a card from your Claude, Wi-Fi join QR", true,
+       [](Sim& s) {
+         s.net.relay = s.net.cloudOnline = true;
+         s.net.pairCode = "482913";
+         s.net.pairUrl = "https://soul.example.eu/pair?d=soul-c0ffee123456&c=482913";
+         s.os.setNet(s.net);
+         s.run(0.4f);
+         s.os.go(View::AiMode);
+         s.run(0.5f);
+         s.tap(233, 150, 1.0f);  // SOUL Cloud -> the pairing screen
+         s.mark();
+         s.net.paired = true;
+         s.net.owner = "Ana";
+         s.net.pairCode.clear();
+         s.net.pairUrl.clear();
+         s.os.setNet(s.net);
+         s.run(1.0f);
+         s.mark();  // paired: hi Ana
+         s.run(2.5f);
+         s.os.go(View::Home);
+         s.run(1.0f);
+         CloudLink link;
+         std::string err;
+         const char* rem = "{\"v\":1,\"t\":\"push\",\"seq\":412,\"action\":\"reminder.create\",\"args\":{\"when\":"
+                           "\"2026-09-27T18:00\",\"text\":\"Call the bank\"},\"item_id\":\"r_412\",\"source\":\"connector\","
+                           "\"say\":\"Tomorrow at 18:00: call the bank.\"}";
+         link.feed(rem, strlen(rem));
+         s.os.cloudPush(link.push, err);
+         s.run(0.5f);
+         s.mark();  // surprised
+         s.run(1.0f);
+         s.mark();  // happy + toast
+         const char* card = "{\"v\":1,\"t\":\"push\",\"seq\":413,\"action\":\"answer.show\",\"args\":{\"title\":\"Pancakes\","
+                            "\"body\":\"1. 200 g flour, 2 eggs\\n2. 300 ml milk, a pinch of salt\\n3. rest 10 min\\n4. hot pan, a "
+                            "little butter\"},\"source\":\"connector\"}";
+         link.feed(card, strlen(card));
+         s.os.cloudPush(link.push, err);
+         s.run(1.2f);
+         s.mark();  // the card
+         s.net.portal = true;
+         s.net.apName = "SOUL-3456";
+         s.net.apPass = "40718263";
+         s.os.setNet(s.net);
+         s.os.go(View::Wifi);
+         s.run(1.0f);
+         s.mark();  // the Wi-Fi join QR
        }},
       {"apps", "Timer, notes, Today, Settings, My SOUL", true,
        [](Sim& s) {

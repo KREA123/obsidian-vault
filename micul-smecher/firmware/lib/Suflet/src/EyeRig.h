@@ -133,7 +133,7 @@ class EyeRig {
   Spring s_[Ch_Count];
   Spring pL_[2], pR_[2], eyeG_[2];
   static constexpr int kGq = 64;
-  GazeSample gq_[kGq];
+  GazeSample gq_[kGq] = {};
   int gqHead_ = 0, gqLen_ = 0;
   float gazeT_[2] = {0, 0}, base_[2] = {0, 0};
   bool look_ = false;

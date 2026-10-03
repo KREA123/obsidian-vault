@@ -72,7 +72,7 @@ class SoulFace {
  private:
   int moodFor(const FaceInputs& in) const;
   eyes::EyeRig rig_;
-  eyes::EyeRenderer ren_;
+  eyes::EyeRenderer ren_{};
   int design_ = 0, pendingDesign_ = -1;
   float swapIn_ = 0;
   int W_ = 0, H_ = 0;

@@ -105,7 +105,7 @@ class Path {
   bool overflow_ = false;
   // the contour being built, in device coordinates
   static constexpr int kMaxContour = 512;
-  float cx_[kMaxContour], cy_[kMaxContour];
+  float cx_[kMaxContour] = {}, cy_[kMaxContour] = {};
   int cn_ = 0;
   bool forceCcw_ = false;
   friend class Raster;

@@ -54,7 +54,7 @@ class TouchGestures {
     q_.push(t);
   }
   void updateText(bool down, float x, float y);
-  EvQueue<16, TouchEv> q_;
+  EvQueue<16, TouchEv> q_{};
   TouchMode mode_ = TouchMode::Face;
   float t_ = 0, tDown_ = 0, lastTap_ = -10;
   float x0_ = 0, y0_ = 0, x_ = 0, y_ = 0, moved_ = 0, mx_ = 0, my_ = 0;
@@ -83,7 +83,7 @@ class MotionDetector {
   float knockG = 0.28f;
 
  private:
-  EvQueue<8> q_;
+  EvQueue<8> q_{};
   float t_ = 0;
   bool init_ = false;
   float gx_ = 0, gy_ = 0, gz_ = 1;  // fast gravity (tau 0.25 s)

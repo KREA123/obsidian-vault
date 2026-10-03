@@ -70,7 +70,7 @@ class ClaudeLink {
   void pushOut(const std::string& s);
   void ack(const char* cmd, bool ok, uint32_t n = 0, const char* error = nullptr);
 
-  EvQueue<12> q_;
+  EvQueue<12> q_{};
   std::string rx_;
   std::string out_[8];
   int outHead_ = 0, outCount_ = 0;

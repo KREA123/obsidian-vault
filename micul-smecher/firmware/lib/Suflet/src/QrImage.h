@@ -19,7 +19,7 @@ class QrImage {
   bool empty() const { return size_ == 0; }
   int size() const { return size_; }  // modules per side (21, 25 ... 57)
   bool at(int x, int y) const {
-    return x >= 0 && y >= 0 && x < size_ && y < size_ && bits_[(size_t)(y * size_ + x)];
+    return x >= 0 && y >= 0 && x < size_ && y < size_ && bits_[(size_t)y * (size_t)size_ + (size_t)x];
   }
   const std::string& text() const { return text_; }
 

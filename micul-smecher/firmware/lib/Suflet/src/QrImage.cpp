@@ -25,7 +25,7 @@ bool QrImage::make(const std::string& text) {
   size_ = q.size;
   bits_.assign((size_t)size_ * size_, 0);
   for (int y = 0; y < size_; ++y)
-    for (int x = 0; x < size_; ++x) bits_[(size_t)(y * size_ + x)] = qrcode_getModule(&q, (uint8_t)x, (uint8_t)y) ? 1 : 0;
+    for (int x = 0; x < size_; ++x) bits_[(size_t)y * (size_t)size_ + (size_t)x] = qrcode_getModule(&q, (uint8_t)x, (uint8_t)y) ? 1 : 0;
   text_ = text;
   return true;
 }
