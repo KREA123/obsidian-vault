@@ -18,9 +18,10 @@ from starlette.applications import Starlette
 from _gateway_kit import DEV, Env
 from suflet_ai import apps as apps_mod
 from suflet_ai import maps as M
-from suflet_ai.apps import (AppsHub, CalendarService, OpenMeteo, PhoneRing, check_ics_url, parse_ics, weather_for_device,
+from suflet_ai.apps import (AppsHub, CalendarService, EcbRates, OpenMeteo, PhoneRing, check_ics_url, parse_ics, weather_for_device,
                             wmo_icon)
 from suflet_ai.apps_routes import build_apps_router, where_routes
+from suflet_ai.maps import MapsError
 
 BUC = (44.4355, 26.1025)
 T0 = dt.datetime(2026, 10, 3, 10, 0, tzinfo=ZoneInfo("Europe/Bucharest")).timestamp()
@@ -505,6 +506,28 @@ def test_find_my_phone_reaches_an_open_page():
 
 # ================================================================= HTTP routes ==
 
+ECB_XML = (b'<?xml version="1.0" encoding="UTF-8"?><gesmes:Envelope xmlns:gesmes="http://www.gesmes.org/xml/2002-08-01" '
+           b'xmlns="http://www.ecb.int/vocabulary/2002-08-01/eurofxref"><Cube><Cube time=\'2026-09-25\'>'
+           b"<Cube currency='USD' rate='1.0912'/><Cube currency='JPY' rate='161.42'/><Cube currency='RON' rate='4.9746'/>"
+           b"<Cube currency='GBP' rate='0.8391'/></Cube></Cube></gesmes:Envelope>")
+
+
+def test_ecb_rates_parse_cache_and_fallback():
+    c = Clock()
+    http = FakeHttp({"https://www.ecb.europa.eu/": (200, ECB_XML)})
+    e = EcbRates(http=http, clock=c)
+    j = e.latest()
+    assert j == {"base": "EUR", "date": "2026-09-25", "rates": {"USD": 1.0912, "JPY": 161.42, "RON": 4.9746, "GBP": 0.8391},
+                 "source": "ECB"}
+    e.latest()
+    assert e.calls == 1  # cached for 6 h
+    c.t += 7 * 3600
+    http.routes["https://www.ecb.europa.eu/"] = (503, b"")
+    assert e.latest()["date"] == "2026-09-25"  # yesterday's rates beat none
+    with pytest.raises(MapsError):
+        EcbRates(http=FakeHttp({"https://": (200, b"<html>maintenance</html>")}), clock=c).latest()
+
+
 def _hub(c):
     tiles = M.DemoTiles(M.demo_city_tiles(*BUC), 15)
     maps = M.MapsService(clock=c, tiles=tiles, router=FakeRouter(),
@@ -512,7 +535,7 @@ def _hub(c):
                          wifi=M.WifiGeolocator(http=FakeHttp({"https://": (200, b'{"location":{"lat":44.44,"lng":26.09},"accuracy":40}')})))
     return AppsHub(maps, OpenMeteo(http=FakeHttp({"https://": (200, json.dumps(OM).encode())}), clock=c),
                    CalendarService(http=FakeHttp({"https://": (200, ICS.encode())}), clock=c, resolver=lambda h: ["93.184.216.34"]),
-                   PhoneRing(clock=c), clock=c)
+                   PhoneRing(clock=c), clock=c, rates=EcbRates(http=FakeHttp({"https://www.ecb.europa.eu/": (200, ECB_XML)}), clock=c))
 
 
 def test_device_routes_end_to_end(tmp_path):
@@ -539,6 +562,11 @@ def test_device_routes_end_to_end(tmp_path):
     assert cl.post("/v1/device/maps/send", headers=auth).json()["links"]["google"].startswith("https://www.google.com/maps/dir/")
     assert cl.delete("/v1/device/maps/route", headers=auth).json() == {"ok": True}
     assert cl.get("/v1/device/maps/route", headers=auth).status_code == 404
+    cl.post("/v1/device/maps/route", headers=auth, json={"to": "Ateneu"})
+    assert cl.post("/v1/device/maps/route/end", headers=auth, json={}).json() == {"ok": True}  # the device's POST form
+    assert cl.get("/v1/device/maps/route", headers=auth).status_code == 404
+    rt = cl.get("/v1/device/apps/rates", headers=auth).json()
+    assert rt["base"] == "EUR" and rt["date"] == "2026-09-25" and rt["rates"]["RON"] == 4.9746
     wf = cl.post("/v1/device/maps/wifi", headers=auth, json={"aps": [{"mac": "a4:2b:b0:11:22:33", "rssi": -50},
                                                                      {"mac": "00:1a:2b:3c:4d:5f", "rssi": -60}]})
     assert wf.status_code == 403 and wf.json()["error"]["code"] == "not_allowed"  # opt-in first

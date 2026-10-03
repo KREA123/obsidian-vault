@@ -1,12 +1,26 @@
 # SOUL M install image
 
-`SOUL-2.8C-install.bin` — SoulOS firmware 1.6.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+`SOUL-2.8C-install.bin` — SoulOS firmware 1.7.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
 (ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
 (`partitions.csv`: Arduino's `default_16MB` with the unused `spiffs` split into `soulmem` (128 KB, SOUL Memory) and `model` (3.2 MB, the optional speech models), + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
 - built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings,
-  `pio check -e lcd28` clean; app 2,461,847 B of 6.25 MB, static RAM 114,180 B
-- size 2,574,624 B · sha256 `c141e7dfdee51acdb24959cc4b4cadd674d3c03ed0e50eab06a73be2ae7cb61d`
+  `pio check -e lcd28` clean; app 2,462,559 B of 6.25 MB (4.1 MB headroom), static RAM 114,212 B of 320 KB
+- size 2,575,392 B · sha256 `d9c9886588821cc035dd973cefb16084f794c0b647842b3e5b182499c6bb7dcf`
+- 1.7.0: **SoulOS apps** (`../../os/APPS.md`), all in the glass design, the eyes always on black. **Maps**
+  (`../../docs/11-MAPS.md`): SOUL has no GPS, so the owner's phone tells it where it is (`/me/where` › *Share my
+  location*, or a pasted Google / Apple / OSM link), or, opt-in, a Wi-Fi scan located by the cloud (beaconDB by
+  default; Google's Geolocation API for production); SOUL Cloud cuts the map into a small vector bundle (≤ 24 KB, from
+  a self-hosted Protomaps file; never `tile.openstreetmap.org`) that SOUL draws dark on glass; drag = pan, along the
+  rim = zoom; *Where to?* / "take me to…" (AI action `navigate`, Claude connector `navigate_on_soul`) → route preview
+  (km, min, arrival), then a step card whose arrow is relative to the route (no compass: tap the card at each turn),
+  *Send to phone* (QR of a Google Maps link); the last map stays on SOUL until a restart (the last place survives one). Also: **Control** (rim dials for brightness
+  and volume, Quiet, Large text, Find phone, Sleep), the **Today** stack, **Weather** (Open-Meteo via the cloud),
+  **Calendar** (an ICS link), **Music** = focus sounds made on SOUL (rain, brown noise, ocean, fire), **Games** (tilt
+  ball on the gyro, rhythm, eye memory), **Focus** (Pomodoro), **Breathe** (the eyes breathe), **Habits**,
+  **Stopwatch**, **World clock**, **Convert** (units offline, ECB currency rates), **Find my phone**, **Device**,
+  **Quick replies**, Settings › **Apps** (order and hide the orbit). Same partition table as 1.6.0 (no reflash at 0x0
+  needed over 1.6; from ≤ 1.5 flash this image at 0x0). Checks: [`../BRINGUP.md`](../BRINGUP.md) §4e.
 - 1.6.0: **SOUL Memory** (`../../docs/10-SOUL-MEMORY.md`): what SOUL knows about its owner lives **on SOUL** (the new
   `soulmem` partition, two CRC-checked copies, batched writes that wait for a quiet moment and resync the panel) and
   goes with every question to whichever AI is connected (Claude / ChatGPT with your key, SOUL Cloud, your Claude Code

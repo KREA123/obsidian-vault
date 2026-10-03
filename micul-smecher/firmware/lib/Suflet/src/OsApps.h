@@ -39,7 +39,7 @@ struct AppFetch {
 // what the device knows about its storage (the Device app)
 struct StorageInfo {
   uint32_t flashKb = 0, appKb = 0, appMaxKb = 0, nvsUsed = 0, nvsTotal = 0, heapKb = 0, psramKb = 0, psramTotalKb = 0;
-  std::string fw = "1.6.0", board;
+  std::string fw = "1.7.0", board;
   int rssi = 0;
 };
 

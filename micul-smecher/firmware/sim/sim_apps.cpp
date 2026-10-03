@@ -81,7 +81,7 @@ struct AppSim {
     pw.batPct = 78;
     os.setPower(pw);
     StorageInfo si;
-    si.fw = "1.6.0";
+    si.fw = "1.7.0";
     si.board = "lcd28";
     si.appKb = 2404;
     si.appMaxKb = 6400;
@@ -207,7 +207,7 @@ struct AppSim {
     fwrite(rgb.data(), 1, rgb.size(), f);
     fclose(f);
     if (manifest) fprintf(manifest, "%02d-%s %s\n", shot, name, viewName(os.view()));
-    printf("  %02d %-22s view %s  map z%d feats %d view z%d s%.2f\n", shot, name, viewName(os.view()), os.apps().bundle.z, (int)os.apps().bundle.feats.size(), os.apps().view.z, os.apps().view.scale);
+    printf("  %02d %-22s view %s\n", shot, name, viewName(os.view()));
   }
 };
 
@@ -260,7 +260,7 @@ void allApps(AppSim& s) {
   }
   s.run(0.8f);
   s.snap("maps-next-turn");
-  s.tap(150, 420, 0.8f);  // send to phone
+  s.tap(166, 372, 0.8f);  // send to phone
   s.snap("maps-send-to-phone");
   s.os.back();
   s.run(0.3f);

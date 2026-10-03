@@ -288,8 +288,11 @@ void Os::mapsAskView(bool force) {
   fetch(Fetch::MapView, p);
 }
 
+void appsReleaseLayers();  // OsAppsDraw.cpp
+
 void Os::appOpened(View v) {
   AppsState& A = apps_;
+  if (v == View::Home) appsReleaseLayers();
   const bool cloud = cloudUsable(net_);
   switch (v) {
     case View::Weather:
@@ -873,7 +876,7 @@ bool Os::appsHold(float x, float y) {
       if (A.navOn) {  // hold on the map while walking: end the route
         A.navOn = false;
         A.nav.stop();
-        if (cloudUsable(net_)) fetch(Fetch::RouteEnd, "/v1/device/maps/route", "", false, true);
+        if (cloudUsable(net_)) fetch(Fetch::RouteEnd, "/v1/device/maps/route/end", "{}", true);
         toast(tr("Route ended", "Traseu oprit"), kAmber, 2.0f);
         A.mapDirty = true;
         invalidate();
@@ -1139,7 +1142,7 @@ void Os::appsActivate(int id) {
           A.preview = false;
           A.nav.stop();
           A.followMe = true;
-          if (cloudUsable(net_)) fetch(Fetch::RouteEnd, "/v1/device/maps/route", "", false, true);
+          if (cloudUsable(net_)) fetch(Fetch::RouteEnd, "/v1/device/maps/route/end", "{}", true);
           A.mapDirty = true;
           return;
         case ANext: A.nav.next(); return;

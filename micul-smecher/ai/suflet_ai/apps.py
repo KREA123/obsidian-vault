@@ -432,6 +432,47 @@ class CalendarService:
 
 # ======================================================================= find my phone ==
 
+class EcbRates:
+    """Euro foreign exchange reference rates of the European Central Bank (published once a day around 16:00 CET on
+    working days; free to reuse with the source named: "Source: ECB"). The device converts offline with the last set it
+    got (AppKit Rates); this only refreshes it. https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"""
+
+    URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
+    _CUBE = re.compile(r"<Cube\s+currency=['\"]([A-Z]{3})['\"]\s+rate=['\"]([0-9.]+)['\"]")
+    _TIME = re.compile(r"<Cube\s+time=['\"](\d{4}-\d{2}-\d{2})['\"]")
+
+    def __init__(self, http: Http = urllib_http, clock: Callable[[], float] = time.time, ttl: float = 6 * 3600):
+        self.http, self.clock, self.ttl = http, clock, ttl
+        self._cache: Optional[Tuple[float, dict]] = None
+        self._lock = threading.Lock()
+        self.calls = 0
+
+    @classmethod
+    def parse(cls, xml: str) -> dict:
+        rates = {c: float(v) for c, v in cls._CUBE.findall(xml) if float(v) > 0}
+        m = cls._TIME.search(xml)
+        if not rates or not m:
+            raise MapsError("provider", "the ECB sent something unreadable", 502)
+        return {"base": "EUR", "date": m.group(1), "rates": rates, "source": "ECB"}
+
+    def latest(self) -> dict:
+        now = self.clock()
+        with self._lock:
+            if self._cache and now - self._cache[0] < self.ttl:
+                return self._cache[1]
+        st, raw = self.http("GET", self.URL, None, {"user-agent": "SOUL-Cloud/0.4"}, 6.0)
+        self.calls += 1
+        if st != 200:
+            with self._lock:
+                if self._cache:  # yesterday's rates beat none
+                    return self._cache[1]
+            raise MapsError("provider", f"the ECB answered {st}", 502)
+        j = self.parse(raw.decode("utf-8", "replace") if isinstance(raw, (bytes, bytearray)) else str(raw))
+        with self._lock:
+            self._cache = (now, j)
+        return j
+
+
 class PhoneRing:
     """SOUL rings the owner's phone: each /me/where page that is open polls /v1/me/ring every few seconds; a ring
     lasts 60 s or until the owner taps "Found it". `push` (optional) sends a Web Push to subscribed phones."""
@@ -468,8 +509,9 @@ class PhoneRing:
 class AppsHub:
     def __init__(self, maps: Optional[MapsService] = None, weather: Optional[OpenMeteo] = None,
                  calendar: Optional[CalendarService] = None, ring: Optional[PhoneRing] = None,
-                 clock: Callable[[], float] = time.time):
+                 clock: Callable[[], float] = time.time, rates: Optional[EcbRates] = None):
         self.clock = clock
+        self.rates = rates or EcbRates(clock=clock)
         self.maps = maps or MapsService(clock=clock)
         self.weather = weather
         self.calendar = calendar or CalendarService(clock=clock)

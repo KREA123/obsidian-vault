@@ -5491,7 +5491,7 @@ window.SoulApps = (() => {
     const C = 2 * Math.PI * 214;
     return lbl(L.dvTitle) + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="214" fill="none" stroke="rgba(255,240,200,.12)" stroke-width="10"/><circle cx="233" cy="233" r="214" fill="none" stroke="${B.chg ? "#C9F2E4" : B.lvl < 20 ? "#FFB347" : "#FFF0C8"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - B.lvl / 100)).toFixed(1)}" transform="rotate(-90 233 233)"/></svg>
       <div class="c" style="top:112px;gap:2px"><div class="t1">${Math.round(B.lvl)}%</div><div class="t3" style="font-size:18px">${B.chg ? L.dvChg : L.dvBatt}</div></div>
-      <div class="c gl gcard" style="top:212px;left:84px;right:84px;gap:6px"><div class="t3" style="font-size:18px;color:var(--g-ink)">${esc(L.dvCounts(S.notes.length, S.alarms.length, S.rems.filter(r => !r.done).length))}</div><div class="t3" style="font-size:17px">${esc(L.dvStore(kb))}</div><div class="t3" style="font-size:17px">SoulOS 1.6 · web</div></div>`;
+      <div class="c gl gcard" style="top:212px;left:84px;right:84px;gap:6px"><div class="t3" style="font-size:18px;color:var(--g-ink)">${esc(L.dvCounts(S.notes.length, S.alarms.length, S.rems.filter(r => !r.done).length))}</div><div class="t3" style="font-size:17px">${esc(L.dvStore(kb))}</div><div class="t3" style="font-size:17px">SoulOS 1.7 · web</div></div>`;
   }
   function appsSetHTML() {
     const L = A(), n = ORDER.length, pages = Math.ceil(n / 4), p = SA.setPage % pages;

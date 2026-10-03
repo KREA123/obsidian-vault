@@ -239,6 +239,53 @@ serial monitor open: every step logs a `[net]` line.
       room and at 1 m. Debug overlay (`F`): fps with the recogniser running (hold) and paused.
 - [ ] If `[voice] … off (PSRAM)`: the fallback works (hold = keyboard / cloud transcription as in 1.5).
 
+## 4e · SoulOS apps (firmware 1.7, 12 min)
+
+Pictures: `sim/shots/apps/soulos-apps-sheet-device.png` (the firmware's own pixels); design: `../os/APPS.md`, maps:
+`../docs/11-MAPS.md`. Pair SOUL with SOUL Cloud first (most apps ask the cloud); every answer logs
+`[apps] <what> -> <HTTP status> (<bytes> B)` (never the body).
+
+- [ ] **Two gestures to the top apps.** From the face, swipe → : the orbit opens on the last app; Maps and Weather sit
+      next to Talk. Settings › Apps: move Weather up, hide Games → the orbit follows; power-cycle → kept.
+- [ ] **Control.** Swipe ↓ on the face: Quiet, Large text, Find phone, Sleep; drag the **left rim** = brightness
+      (low at the bottom), the **right rim** = volume. Note whether the dial feels mirrored.
+- [ ] **Today.** Swipe ↑: Now, Weather, Next event, Focus / timer / reminder, Habits cards; ↑/↓ moves between them; tap opens the app.
+- [ ] **Weather.** No location yet → "share your location" with the QR to `/me/where`. Open `/me/where` on the phone
+      and tap *Share my location*: `[apps] where -> 200`, then `[apps] weather -> 200` and the sky. Tap: the next days.
+      Without `SOUL_OPEN_METEO_KEY` / `SOUL_WEATHER` on the cloud: `-> 501` and a calm "not set up" panel.
+- [ ] **Maps.** The fix from the phone: `[apps] mapview -> 200 (≈ 0.5–20 KB)`, the dark map with you as a blue dot.
+      Drag = pan (the next bundle comes when you leave the area); slide a finger **along the rim** = zoom; `+`/`-` too.
+      *Where to?* → type "Ateneul Român" → `[apps] routeplan -> 200`, the route preview (km · min · arrival);
+      *Start*: the step card. The arrow is **relative to the route line** (no compass on this board): walk and tap the
+      card at each turn; a new phone fix (re-share) snaps onto the route and never goes back more than one step.
+      *Phone* shows a QR of the Google Maps link. *End* → `[apps] routeend -> 200`. Time the first map (s): ____.
+- [ ] **Use Wi-Fi** (needs the opt-in on `/me/where`): `[apps] wifi scan: N access points`, `[apps] wifilocate -> 200`
+      (or `403` before the opt-in). Note the accuracy shown (~m) indoors.
+- [ ] **"Take me to the station"** to Claude via the connector (`navigate_on_soul`): Maps opens with the route (push
+      `nav.start`).
+- [ ] **Calendar.** Paste an ICS link on `/me/where` → `[apps] agenda -> 200`; rows open the event.
+- [ ] **Music / focus sounds** on the speaker: Rain, Brown noise, Ocean, Fire; no crackle while the eyes move; the
+      sleep timer stops it. Note the current (mA) while playing: ____.
+- [ ] **Games.** Tilt ball: tilt the board, the ball must roll **downhill** on all four sides (if it goes uphill on one
+      axis, note which: the IMU axes of §3b). Rhythm: taps on the beat score "Perfect". Eye memory: the eyes look at
+      the spots, repeat them. A pull down from the top edge = back to the menu.
+- [ ] **Breathe**: the eyes grow and shrink with the breath on pure black. **Habits**, **Stopwatch** (lap),
+      **World clock**, **Convert** (currency: `[apps] rates -> 200`; offline it uses the last table, or built-in approximate rates), **Find phone**
+      (`/me/where` open on the phone rings), **Device** (firmware, storage, PSRAM).
+- [ ] **No dead ends.** In every app: the side button and a swipe ↓ go back; 15 s untouched → the eyes alone (not
+      while navigating, breathing, playing, timing, playing sounds or ringing the phone).
+
+Frame cost (callgrind instructions per composed frame on the PC, `--toggle-collect='suflet::FrameComposer::compose*'`):
+
+| Scenario | 1.7.0 | |
+|---|---|---|
+| A screen open, idle (`bench_screen`, Settings) | 2.58 M | 1.4.0: 2.45 M (same work) |
+| `bench_maps` (10 s: pan, rim zoom, preview, walking a route) | 10.8 M | the step card's glass panels 27 %, the rim vignette 17 %; the map itself is a cached layer, repainted only when the view moves |
+| `bench_games` (10 s: tilt ball + rhythm) | 9.2 M | was 14.6 M before the glass arena was cached (only the aura changes it) |
+
+By §4b's scale (6.3 M ≈ 11–18 ms) maps and games land around 16–30 ms: 30 fps asked, the adaptive cap may settle
+at ~24 while panning or playing. **Measure** with `F` and write the numbers: maps pan ____ fps, games ____ fps.
+
 ## 5 · Wi-Fi and the AI (4 min)
 
 1. Settings → Wi-Fi → **Set up from a phone**. SOUL scans the networks first, then opens the access

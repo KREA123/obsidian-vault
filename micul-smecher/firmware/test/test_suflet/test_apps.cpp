@@ -671,7 +671,7 @@ static void test_apps_maps_where_view_route_and_walk() {
   d.run(0.2f);
   TEST_ASSERT_EQUAL_INT(2, d.os.apps().nav.step());
   // "Send to phone": a QR of the Google Maps link, offline-capable
-  d.tap(150, 420);
+  d.tap(166, 372);
   TEST_ASSERT_TRUE(d.os.apps().sendSheet);
   TEST_ASSERT_TRUE(d.os.apps().sendUrl.find("https://www.google.com/maps/dir/?api=1&destination=") == 0);
   TEST_ASSERT_TRUE(d.asked(Fetch::RouteSend));

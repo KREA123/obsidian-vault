@@ -55,7 +55,7 @@
 #ifndef SUFLET_VOICE
 #define SUFLET_VOICE 0
 #endif
-#define FW_VERSION "1.6.0"
+#define FW_VERSION "1.7.0"
 
 using namespace suflet;
 
@@ -720,7 +720,10 @@ static void appsTick(uint32_t nowMs) {
   Fetch k;
   int st;
   std::string body;
-  while (cloudPollAppData(k, st, body)) os.appData(k, st, body);
+  while (cloudPollAppData(k, st, body)) {
+    Serial.printf("[apps] %s -> %d (%u B)\n", fetchName(k), st, (unsigned)body.size());  // never the body: it may hold places
+    os.appData(k, st, body);
+  }
   if (wifiScanning) {
     const int n = WiFi.scanComplete();
     if (n >= 0 || n == WIFI_SCAN_FAILED) {
@@ -735,6 +738,7 @@ static void appsTick(uint32_t nowMs) {
       }
       WiFi.scanDelete();
       serializeJson(d, wifiFetch.body);
+      Serial.printf("[apps] wifi scan: %d access points\n", n < 0 ? 0 : n);
       cloudAppFetch(wifiFetch);
     }
   }

@@ -127,7 +127,7 @@ Hierarchy: one big thing per screen (34–104 px), one secondary line (20–24 p
 
 ## 8 · Web and device: what differs
 
-| | Web prototype | Device (1.4.0) |
+| | Web prototype | Device (1.4.0 – 1.7.0) |
 |---|---|---|
 | Aura motion | four blobs drift independently (CSS, 19–33 s) + pointer/tilt parallax | one fixed field whose window drifts ±6 px and leans with the IMU; the glows do not move relative to each other |
 | Aura fade | 420 ms opacity | ~300 ms, 16 brightness steps |
@@ -138,4 +138,6 @@ Hierarchy: one big thing per screen (34–104 px), one secondary line (20–24 p
 | Launcher | app names ride a glass band on the lower rim, the chosen one in a lens + a fact card | the chosen app + its fact in a glass lens, neighbours as glass pills |
 | Toggles | glass track + glowing knob | the same, drawn |
 | Notifications | glass capsule sliding along the rim (rotates in) | glass capsule on the top rim (appears, no slide) |
-| Large text, Today stack, Control, weather, games, music | glass versions | those screens do not exist on the device yet |
+| Large text, Today stack, Control, weather, games, music | glass versions | glass versions since 1.7.0 (`APPS.md`); music = focus sounds made on SOUL |
+| Maps | the demo city on a canvas, the browser's geolocation | the cloud's SMB1 bundle painted into a cached PSRAM layer; the fix comes from the phone or Wi-Fi |
+| Breathe, rhythm, eye memory | face moments: the eyes on pure black, no aura | the same |

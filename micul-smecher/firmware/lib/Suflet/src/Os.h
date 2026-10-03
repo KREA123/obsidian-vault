@@ -428,6 +428,13 @@ class Os {
   void glassPill(Canvas& cv, float cx, float cy, float w, float h, Rgb c, bool pressed = false);
   void glassToggle(Canvas& cv, float cx, float cy, bool on);
   GlassStyle gs(float alpha = 1) const { return GlassStyle::plain(alpha * fade_); }
+  // what the games' cached glass arena depends on (OsAppsDraw.cpp arenaLayer): the aura and the fade
+  uint64_t arenaKey(int game) const {
+    const GlassLayer& gl = glass();
+    return (uint64_t)game | (uint64_t)(gl.offsetX() + 32) << 2 | (uint64_t)(gl.offsetY() + 32) << 8 |
+           (uint64_t)(int)(gl.level() * 16) << 14 | (uint64_t)gl.on() << 19 | (uint64_t)(int)(fade_ * 64) << 20 |
+           (uint64_t)(gl.ready() ? 1 : 0) << 27 | (uint64_t)gl.rebuilds << 28;
+  }
   GlassStyle gsAccent(Rgb c, float glowA = 0.42f, float tintA = 0.12f) const { return GlassStyle::accent(c, glowA, tintA, fade_); }
   bool idleReturns() const;  // this screen goes back to the eyes when left alone
   void glassUpdate(float dt, const Brain& brain);

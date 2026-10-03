@@ -208,8 +208,8 @@ void Os::buildAppsItems(std::vector<Item>& out) const {
       } else if (!A.haveFix && !A.preview && !A.navOn) {
         if (cloudOk(net_)) add(AWifi, 233, 404, 200, 44, R ? "Află prin Wi-Fi" : "Use Wi-Fi", kCream, 0, true, kDim);
       } else if (A.navOn) {
-        add(APhone, 150, 420, 110, 40, R ? "Telefon" : "Phone", kCream, 0, true, kDim);
-        add(AEnd, 316, 420, 110, 40, R ? "Stop" : "End", kAmber, 0, true, kDim);
+        add(APhone, 166, 372, 110, 40, R ? "Telefon" : "Phone", kCream, 0, true, kDim);
+        add(AEnd, 300, 372, 110, 40, R ? "Stop" : "End", kAmber, 0, true, kDim);
         add(APrev, 92, 168, 56, 56, "\xE2\x80\xB9", kCream, 1, false, kDim);
         add(ANext, 374, 168, 56, 56, "\xE2\x80\xBA", kCream, 1, false, kDim);
       } else if (A.preview) {
@@ -972,6 +972,37 @@ void Os::drawMusic(Canvas& cv) {
 
 // ------------------------------------------------------------------ games ---
 
+// The games' glass arena (a full annulus, ~6 M instructions to shade) only changes with the aura, so it is shaded
+// once over the background into a PSRAM layer and copied in afterwards (bench_games: 14.6 M -> see BRINGUP §4e).
+static std::vector<uint16_t> gArena;
+static uint64_t gArenaKey = ~0ull;
+
+static void arenaLayer(Canvas& cv, const GlassLayer& gl, uint64_t key, float cx, float cy, float rm, float hw, const GlassStyle& st) {
+  const int W = cv.width(), H = cv.height();
+  if (gArena.size() != (size_t)W * H) {
+    gArena.assign((size_t)W * H, 0);
+    gArenaKey = ~0ull;
+  }
+  if (key != gArenaKey) {
+    Canvas layer(W, H, gArena.data());
+    gl.background(layer);
+    gl.band(layer, cx, cy, rm, hw, st);
+    gArenaKey = key;
+  }
+  const Rect& c = cv.clipRect();
+  for (int y = c.y0; y < c.y1; ++y)
+    memcpy(cv.data() + y * W + c.x0, gArena.data() + y * W + c.x0, (size_t)(c.x1 - c.x0) * 2);
+  cv.markDirty(c);
+}
+
+// back to the eyes: give the two 460 KB layers back to PSRAM (the voice build needs it); the next open repaints them
+void appsReleaseLayers() {
+  std::vector<uint16_t>().swap(gMapLayer);
+  std::vector<uint16_t>().swap(gArena);
+  gMapLayerOk = false;
+  gArenaKey = ~0ull;
+}
+
 void Os::drawGames(Canvas& cv) {
   const bool R = ro();
   AppsState& A = apps_;
@@ -996,7 +1027,7 @@ void Os::drawGames(Canvas& cv) {
   int score = 0;
   if (A.game == 0) {
     const games::TiltBall& T = A.tilt;
-    glass().band(cv, cx, cy, g_.s(games::TiltBall::kArena + 6), g_.s(8), gs());
+    arenaLayer(cv, glass(), arenaKey(0), cx, cy, g_.s(games::TiltBall::kArena + 6), g_.s(8), gs());
     for (const games::TiltBall::Hole& h : T.holes()) {
       cv.ellipse(cx + g_.s(h.x), cy + g_.s(h.y), g_.s(games::TiltBall::kHole), g_.s(games::TiltBall::kHole), kDark, fade_);
       cv.ring(cx + g_.s(h.x), cy + g_.s(h.y), g_.s(games::TiltBall::kHole), g_.s(2.5f), kAmber, 0.55f * fade_, 6, 0.3f);
@@ -1012,7 +1043,7 @@ void Os::drawGames(Canvas& cv) {
   } else if (A.game == 1) {
     const games::Rhythm& Ry = A.rhythm;
     // the target: the rim; the beats swell out from the eyes
-    glass().band(cv, cx, cy, g_.s(206), g_.s(10), gs(0.9f));
+    arenaLayer(cv, glass(), arenaKey(1), cx, cy, g_.s(206), g_.s(10), gs(0.9f));
     float fr[8];
     const int n = Ry.visible(fr, 8);
     for (int i = 0; i < n; ++i) {

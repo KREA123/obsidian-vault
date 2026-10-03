@@ -5,12 +5,13 @@ Device (Bearer device token, the same as /v1/device/poll):
     GET  /v1/device/apps/weather              -> weather_for_device(...)            (no_location 409, config 501)
     GET  /v1/device/apps/agenda               -> {"events": [...], "tz"}             (no_calendar 404)
     POST /v1/device/apps/findphone            -> {"ringing", "reach": page|push|none}
+    GET  /v1/device/apps/rates                -> {"base": "EUR", "date", "rates": {...}, "source": "ECB"}
     GET  /v1/device/maps/where                -> {"fix": {lat, lon, acc, src, age, label}} | {"fix": null}
     POST /v1/device/maps/wifi   {"aps": [{"mac","rssi","ssid"}]} -> {"fix"}         (opt-in on /me/where)
     GET  /v1/device/maps/view?lat=&lon=&z=    -> application/x-soul-map (SMB1)      (config 501)
     POST /v1/device/maps/route  {"to"| "lat","lon"; "mode"} -> route.device_json()
     GET  /v1/device/maps/route                -> the current route (after a nav.start push) or 404
-    DELETE /v1/device/maps/route              -> ended
+    DELETE /v1/device/maps/route              -> ended  (POST /v1/device/maps/route/end: the same, for the device's GET/POST client)
     POST /v1/device/maps/send                 -> {"links": {...}}  (shown on /me/where; SOUL also draws a QR)
 
 Owner (session cookie + CSRF header, like /v1/me/pair/claim):
@@ -101,6 +102,12 @@ def build_apps_router(get_gw: Callable[[], Any], get_hub: Callable[[], apps_mod.
             raise MapsError("not_paired", "pair SOUL with your account first", 409)
         return JSONResponse(get_hub().ring.ring(acc, d.get("name") or "SOUL"), headers=NO_STORE)
 
+    @r.get("/v1/device/apps/rates")
+    @guarded
+    async def rates(request: Request):
+        device(request)
+        return JSONResponse(get_hub().rates.latest(), headers={"Cache-Control": "private, max-age=3600"})
+
     @r.get("/v1/device/maps/where")
     @guarded
     async def where(request: Request):
@@ -156,6 +163,13 @@ def build_apps_router(get_gw: Callable[[], Any], get_hub: Callable[[], apps_mod.
     @r.delete("/v1/device/maps/route")
     @guarded
     async def route_end(request: Request):
+        dev, _, _, _ = device(request)
+        get_hub().maps.end_route(dev)
+        return JSONResponse({"ok": True}, headers=NO_STORE)
+
+    @r.post("/v1/device/maps/route/end")
+    @guarded
+    async def route_end_post(request: Request):
         dev, _, _, _ = device(request)
         get_hub().maps.end_route(dev)
         return JSONResponse({"ok": True}, headers=NO_STORE)

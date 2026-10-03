@@ -986,7 +986,7 @@ void Os::drawAbout(Canvas& cv) {
   std::string lines[5];
   const int n = wrapLines(fonts::small(), body, g_.s(320), lines, 5);
   for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 210 + i * 27, lines[i], kCream, kDim);
-  rimBottom(cv, "SoulOS 1.5 · " + std::string(viewName(view_)), kCream, kFaint);
+  rimBottom(cv, "SoulOS 1.7 · " + std::string(viewName(view_)), kCream, kFaint);
 }
 
 

@@ -300,3 +300,14 @@ batched writes (`src/memory_store.*`); *Settings › Memory* and the undo toast 
 backup to SOUL Cloud (off by default). Offline voice commands: `VoiceCommands.*` + `OsVoice.cpp` (39 English commands,
 55 phrases) on Espressif ESP-SR MultiNet7, `src/voice_sr.*`, build `pio run -e lcd28_voice` and flash `srmodels.bin`
 at `0xcb0000` once (the `model` partition). Offline personality lines: `Lines.*` (222). Serial: `Y` memory, `V` voice.
+
+## SoulOS apps (firmware 1.7, English)
+
+[`../os/APPS.md`](../os/APPS.md) and [`../docs/11-MAPS.md`](../docs/11-MAPS.md). `lib/Suflet/src/OsApps.cpp` (logic,
+gestures, the cloud requests), `OsAppsDraw.cpp` (the glass screens), `MapCore.*` (SMB1 map bundles, Web-Mercator,
+the painter, routes and the compass-free step logic), `AppKit.*` (weather / agenda / rates parsing, time zones, units,
+habits, Pomodoro, breathing, stopwatch), `Games.*` (tilt ball, rhythm, eye memory), `SoundGen.h` (focus sounds for the
+I2S speaker, `src/audio.cpp`). The device asks SOUL Cloud through `OsCmd::AppFetch` → `src/cloud.cpp`
+(`CloudDriver::appFetch`, device token, `/v1/device/…` only); the Wi-Fi scan for "Use Wi-Fi" is in `src/main.cpp`;
+serial logs `[apps] <what> -> <status> (<bytes> B)`. Tests: `test/test_suflet/test_apps.cpp`. Simulator:
+`.pio/build/sim/program /tmp/out apps` (+ `tools/app_shots.py` for the sheet), `bench_maps`, `bench_games`.
