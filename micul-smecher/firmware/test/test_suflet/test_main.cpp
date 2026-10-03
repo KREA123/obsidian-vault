@@ -341,6 +341,22 @@ void test_claude_snapshot_events() {
   TEST_ASSERT_EQUAL_STRING("npm test", c.promptHint().c_str());
 }
 
+void test_claude_no_duplicate_prompt_after_a_decision() {
+  ClaudeLink c;
+  const char* snap = "{\"total\":1,\"running\":0,\"waiting\":1,\"prompt\":{\"id\":\"req_7\",\"tool\":\"Bash\",\"hint\":\"ls\"}}";
+  feedLine(c, snap);
+  TEST_ASSERT_TRUE(c.hasPrompt());
+  TEST_ASSERT_TRUE(c.decide(true));
+  drainLink(c);
+  // the desktop resends the same snapshot before it processes our answer
+  feedLine(c, snap);
+  TEST_ASSERT_FALSE(c.hasPrompt());
+  TEST_ASSERT_FALSE(has(drainLink(c), Ev::ClaudePrompt));
+  // a new request still comes through
+  feedLine(c, "{\"total\":1,\"running\":0,\"waiting\":1,\"prompt\":{\"id\":\"req_8\",\"tool\":\"Edit\",\"hint\":\"x\"}}");
+  TEST_ASSERT_TRUE(c.hasPrompt());
+}
+
 void test_claude_permission_decision_wire_format() {
   ClaudeLink c;
   feedLine(c, "{\"total\":1,\"running\":0,\"waiting\":1,\"prompt\":{\"id\":\"req_abc123\",\"tool\":\"Bash\",\"hint\":\"ls\"}}");
@@ -1426,6 +1442,7 @@ int main(int, char**) {
   RUN_TEST(test_brain_stays_awake_while_claude_works);
   RUN_TEST(test_brain_night_colour);
   RUN_TEST(test_claude_snapshot_events);
+  RUN_TEST(test_claude_no_duplicate_prompt_after_a_decision);
   RUN_TEST(test_claude_permission_decision_wire_format);
   RUN_TEST(test_claude_commands_and_acks);
   RUN_TEST(test_claude_time_and_timeout);

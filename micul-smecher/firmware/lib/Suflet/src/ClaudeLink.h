@@ -83,6 +83,7 @@ class ClaudeLink {
   bool haveTokens_ = false;
   std::string msg_, owner_, name_ = "Claude-Suflet";
   std::string promptId_, promptTool_, promptHint_;
+  std::string lastDecidedId_;  // the desktop resends the prompt until it sees our answer: never re-ask it
   bool timeValid_ = false;
   int64_t epoch_ = 0;
   int32_t tz_ = 0;

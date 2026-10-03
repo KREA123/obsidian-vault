@@ -14,6 +14,9 @@
 
 #include <vector>
 
+#include "board.h"
+#include "cloud.h"
+
 using namespace suflet;
 
 #ifndef SUFLET_DEFAULT_TZ
@@ -71,6 +74,7 @@ void loadSecrets() {
   cfg.mode = (AiMode)p.getUChar("mode", 0);
   p.end();
   cfg.deviceId = deviceId;
+  cloudSetBase(cfg.relayUrl);
 }
 
 void publish() {  // what the UI may know (never the secrets themselves)
@@ -87,7 +91,7 @@ void publish() {  // what the UI may know (never the secrets themselves)
   info.portalUrl = "http://192.168.4.1";
   info.keyClaude = !cfg.anthropicKey.empty();
   info.keyOpenai = !cfg.openaiKey.empty();
-  info.relay = !cfg.relayUrl.empty();
+  info.relay = !cfg.relayUrl.empty();  // cloudFill() adds a built-in SOUL Cloud address
   info.maskClaude = maskKey(cfg.anthropicKey);
   info.maskOpenai = maskKey(cfg.openaiKey);
 }
@@ -189,6 +193,22 @@ struct DirectBackend : AiBackend {
 // this class without touching the UI: SoulOS only sees AiJob -> AiOutcome.
 struct CloudBackend : DirectBackend {
   const char* name() const override { return "cloud"; }
+  AiOutcome ask(const AiConfig& c, const AiJob& job, uint32_t now) override {
+    // Over HTTPS (the socket is down): the legacy POST /v1/ask, with the
+    // shared relay token or this SOUL's device token (docs/07 §2.3)
+    AiConfig conf = c;
+    if (conf.relayToken.empty()) conf.relayToken = cloudToken();
+    AiOutcome o = DirectBackend::ask(conf, job, now);
+    wipe(conf.relayToken);
+    // SOUL Cloud unreachable but a key of your own is set: the survival path (B1)
+    const bool unreachable = o.err == AiErr::Network || o.err == AiErr::Timeout || o.err == AiErr::Upstream;
+    if (unreachable && !c.anthropicKey.empty()) {
+      conf = c;
+      conf.mode = AiMode::Claude;
+      o = DirectBackend::ask(conf, job, now);
+    }
+    return o;
+  }
 };
 
 DirectBackend direct;
@@ -212,7 +232,10 @@ std::string htmlEsc(const std::string& s) {
   return o;
 }
 
+std::string scanned;  // the networks around, scanned before the access point starts
+
 std::string scanOptions() {
+  if (!scanned.empty()) return scanned;
   std::string o;
   const int n = WiFi.scanNetworks(false, false);
   for (int i = 0; i < n && i < 20; ++i) {
@@ -221,6 +244,7 @@ std::string scanOptions() {
     o += "<option value=\"" + htmlEsc(s) + "\">" + htmlEsc(s) + " (" + std::to_string(WiFi.RSSI(i)) + " dBm)</option>";
   }
   WiFi.scanDelete();
+  scanned = o;
   return o;
 }
 
@@ -233,7 +257,8 @@ const char* kStyle =
 
 void pageRoot() {
   const std::string opts = scanOptions();
-  const char* modes[] = {"No AI (on the device)", "Claude (your Anthropic key)", "ChatGPT (your OpenAI key)", "SOUL Cloud"};
+  const char* modes[] = {"No AI (offline, on the device)", "Your Anthropic key (advanced)", "Your OpenAI key (advanced)",
+                         "SOUL Cloud (recommended)"};
   std::string mode;
   for (int i = 0; i < 4; ++i) {
     static const int order[4] = {3, 1, 2, 0};
@@ -250,17 +275,19 @@ void pageRoot() {
       "<label>Wi-Fi password</label><input name=pass type=password autocomplete=off placeholder=\"" +
       (pass.empty() ? std::string("") : "unchanged") +
       "\"><label>Who helps SOUL think?</label><select name=mode>" + mode +
-      "</select><label>Anthropic API key <small>" + (cfg.anthropicKey.empty() ? std::string("not set") : "set: " + htmlEsc(maskKey(cfg.anthropicKey))) +
+      "</select><details" + std::string(cfg.mode == AiMode::Claude || cfg.mode == AiMode::ChatGpt ? " open" : "") +
+      "><summary>Advanced: an API key kept on this SOUL</summary><label>Anthropic API key <small>" + (cfg.anthropicKey.empty() ? std::string("not set") : "set: " + htmlEsc(maskKey(cfg.anthropicKey))) +
       "</small></label><input name=claude type=password autocomplete=off placeholder=\"sk-ant-…\">"
       "<label>OpenAI API key <small>" + (cfg.openaiKey.empty() ? std::string("not set") : "set: " + htmlEsc(maskKey(cfg.openaiKey))) +
-      "</small></label><input name=openai type=password autocomplete=off placeholder=\"sk-…\">"
+      "</small></label><input name=openai type=password autocomplete=off placeholder=\"sk-…\"></details>"
       "<label>SOUL Cloud address and token <small>(optional)</small></label><input name=cloud value=\"" + htmlEsc(cfg.relayUrl) +
       "\" placeholder=\"https://…\"><input name=ctoken type=password autocomplete=off placeholder=\"" +
       (cfg.relayToken.empty() ? std::string("token") : "token: unchanged") +
       "\"><label>Time zone <small>(POSIX TZ)</small></label><input name=tz value=\"" + htmlEsc(tz) +
       "\"><label>SOUL's name <small>(optional)</small></label><input name=name maxlength=16>"
       "<div class=r><input type=checkbox name=forget id=f><label for=f>Forget the stored API keys</label></div>"
-      "<button>Save</button></form><p><small>Keys are kept on this SOUL only and are sent only to the AI you chose. "
+      "<button>Save</button></form><p><small>With SOUL Cloud, keys and your account live at the cloud's account page, "
+      "not here. Keys typed above are kept on this SOUL only and are sent only to the AI you chose. "
       "This page never shows them back.</small></p></body></html>";
   server.send(200, "text/html; charset=utf-8", page.c_str());
 }
@@ -302,6 +329,7 @@ void pageSave() {
   if (url.empty() || url.compare(0, 8, "https://") == 0) {
     cfg.relayUrl = url;
     p.putString("cloud", url.c_str());
+    cloudSetBase(url);
   }
   k = server.arg("ctoken").c_str();
   if (!k.empty() && k.size() < 200) {
@@ -321,6 +349,7 @@ void pageSave() {
     p.remove("openai");
   }
   p.end();
+  soulFlashWritten();
   const std::string nm = server.arg("name").c_str();
   if (!nm.empty()) {
     Lock l;
@@ -339,6 +368,9 @@ void portalStart() {
   char pw[9];
   snprintf(pw, sizeof pw, "%08lu", (unsigned long)(esp_random() % 100000000UL));
   apPass = pw;
+  scanned.clear();
+  WiFi.mode(WIFI_STA);
+  scanOptions();  // scan first: with the AP up, scans are slow and phones drop the captive page
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(apName.c_str(), apPass.c_str());
   dns.start(53, "*", WiFi.softAPIP());
@@ -455,6 +487,7 @@ void netTask(void*) {
       p.remove("ssid");
       p.remove("pass");
       p.end();
+      soulFlashWritten();
     }
     if (reconnect) {
       reconnect = false;
@@ -533,6 +566,7 @@ void netSetKey(AiMode mode, const std::string& key) {
     p.putString("openai", key.c_str());
   }
   p.end();
+  soulFlashWritten();
 }
 
 void netForgetKeys() {
@@ -541,6 +575,7 @@ void netForgetKeys() {
   p.remove("claude");
   p.remove("openai");
   p.end();
+  soulFlashWritten();
   Lock l;
   wipe(cfg.anthropicKey);
   wipe(cfg.openaiKey);
@@ -556,6 +591,7 @@ void netSetMode(AiMode mode) {
   p.begin("soulkey", false);
   p.putUChar("mode", (uint8_t)mode);
   p.end();
+  soulFlashWritten();
 }
 
 bool netAsk(const AiJob& job) {
@@ -632,4 +668,61 @@ bool netPollVoice(std::string& text, AiErr& err) {
   (void)err;
   return false;
 #endif
+}
+
+int netHttpsPost(const HttpRequest& rq, std::string& body, AiErr& err) { return httpsPost(rq, body, err); }
+
+std::string netTz() {
+  Lock l;
+  return tz;
+}
+
+void netSetTz(const std::string& z) {
+  if (z.empty() || z.size() >= 64) return;
+  {
+    Lock l;
+    if (z == tz) return;
+    tz = z;
+  }
+  Preferences p;
+  p.begin("soulkey", false);
+  p.putString("tz", z.c_str());
+  p.end();
+  soulFlashWritten();
+  setenv("TZ", z.c_str(), 1);
+  tzset();
+}
+
+void netSetModels(const std::string& claudeModel, const std::string& openaiModel) {
+  bool changed = false;
+  {
+    Lock l;
+    if (!claudeModel.empty() && claudeModel.size() < 64 && claudeModel != cfg.claudeModel) {
+      cfg.claudeModel = claudeModel;
+      changed = true;
+    }
+    if (!openaiModel.empty() && openaiModel.size() < 64 && openaiModel != cfg.openaiModel) {
+      cfg.openaiModel = openaiModel;
+      changed = true;
+    }
+  }
+  if (!changed) return;
+  Preferences p;
+  p.begin("soulkey", false);
+  p.putString("cmodel", cfg.claudeModel.c_str());
+  p.putString("omodel", cfg.openaiModel.c_str());
+  p.end();
+  soulFlashWritten();
+}
+
+void netFactoryReset() {
+  Preferences p;
+  p.begin("soulkey", false);
+  p.clear();
+  p.end();
+  Lock l;
+  wipe(cfg.anthropicKey);
+  wipe(cfg.openaiKey);
+  wipe(cfg.relayToken);
+  wipe(pass);
 }

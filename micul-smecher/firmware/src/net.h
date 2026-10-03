@@ -10,9 +10,9 @@
 // masked: "sk-ant-…a1B2").
 //
 // AI backends (AiBackend): "direct" calls api.anthropic.com / api.openai.com
-// with the key on the device; "cloud" talks to SOUL Cloud (today: the relay
-// POST /v1/ask of micul-smecher/ai). The cloud contract (pairing code,
-// device token, WebSocket pushes) plugs in as another AiBackend.
+// with the key on the device; "cloud" is the HTTPS fallback of SOUL Cloud
+// (POST /v1/ask with the device token) for when its WebSocket (src/cloud.cpp,
+// docs/07-CONNECT-AI.md) is down, then your own key if one is set.
 #pragma once
 #include <stdint.h>
 
@@ -43,6 +43,14 @@ bool netPollPortalSettings(std::string& name);
 // Cloud): transcribe 16 kHz mono PCM. The answer arrives on netPollVoice.
 bool netTranscribe(const int16_t* pcm, size_t samples, bool ro);
 bool netPollVoice(std::string& text, suflet::AiErr& err);
+
+// HTTPS POST (TLS checked against the certificate bundle); status or -1 + err.
+// Thread-safe (one client per call). The SOUL Cloud task uses it for /auth.
+int netHttpsPost(const suflet::HttpRequest& rq, std::string& body, suflet::AiErr& err);
+std::string netTz();                        // the POSIX TZ in use
+void netSetTz(const std::string& posixTz);  // from SOUL Cloud's welcome
+void netSetModels(const std::string& claudeModel, const std::string& openaiModel);  // SOUL Cloud "config"
+void netFactoryReset();                     // Wi-Fi, keys, models, TZ: gone
 
 struct AiBackend {
   virtual ~AiBackend() {}

@@ -51,7 +51,7 @@ bool awake = true, statusDirty = true, baseChanged = false;
 bool welcomed = false, paired = false, needUpdate = false, refused = false;
 std::string owner, pairCode, pairUrl;
 std::string token, wsUrl;  // secret: never printed
-CloudLink link;
+CloudLink cl;  // the protocol state (named cl: POSIX has a link())
 uint32_t savedSeq = 0;
 std::deque<std::string> up;    // frames to send now (acks, ask, abort, status)
 std::deque<std::string> outq;  // item.add / inbox.add until sent (NVS soulid/outq while offline)
@@ -77,13 +77,13 @@ uint32_t lastRx = 0;
 // ------------------------------------------------------------------ NVS ---
 
 void saveSeqLocked() {
-  if (link.lastSeq == savedSeq) return;
+  if (cl.lastSeq == savedSeq) return;
   Preferences p;
   p.begin("soulid", false);
-  p.putUInt("seq", link.lastSeq);
+  p.putUInt("seq", cl.lastSeq);
   p.end();
-  savedSeq = link.lastSeq;
-  link.seqSaved(millis());
+  savedSeq = cl.lastSeq;
+  cl.seqSaved(millis());
   soulFlashWritten();
 }
 
@@ -107,7 +107,7 @@ void loadState() {
   Preferences p;
   p.begin("soulid", false);
   token = p.getString("tok", "").c_str();
-  link.lastSeq = savedSeq = p.getUInt("seq", 0);
+  cl.lastSeq = savedSeq = p.getUInt("seq", 0);
   savedOutq = p.getString("outq", "").c_str();
   p.end();
   size_t i = 0;
@@ -117,7 +117,7 @@ void loadState() {
     if (e > i) outq.push_back(savedOutq.substr(i, e - i));
     i = e + 1;
   }
-  link.seqSaved(millis());
+  cl.seqSaved(millis());
 }
 
 // The identity secret: 32 random bytes, made once (with the radio on, so the
@@ -315,16 +315,16 @@ AiOutcome outcomeFromReply(const CloudReply& r) {
 }
 
 void handlePushLocked() {
-  const CloudPush& p = link.push;
-  if (link.alreadyApplied(p.seq)) {  // a replay: ack again, do not apply
-    up.push_back(link.ack(p.seq, true));
+  const CloudPush& p = cl.push;
+  if (cl.alreadyApplied(p.seq)) {  // a replay: ack again, do not apply
+    up.push_back(cl.ack(p.seq, true));
     return;
   }
   for (uint32_t s : inFlight)
     if (s == p.seq) return;  // SoulOS has it already
   if (p.kind == CloudPush::Unsupported || p.kind == CloudPush::Invalid) {
-    up.push_back(link.ack(p.seq, false, p.kind == CloudPush::Unsupported ? "unsupported" : "invalid"));
-    link.applied(p.seq);
+    up.push_back(cl.ack(p.seq, false, p.kind == CloudPush::Unsupported ? "unsupported" : "invalid"));
+    cl.applied(p.seq);
     Serial.printf("[cloud] push %lu %s: %s\n", (unsigned long)p.seq, p.action.c_str(),
                   p.kind == CloudPush::Unsupported ? "unsupported" : "invalid");
     return;
@@ -337,27 +337,27 @@ void handlePushLocked() {
 
 void dispatch(const std::string& m) {
   Lock l;
-  switch (link.feed(m.data(), m.size())) {
+  switch (cl.feed(m.data(), m.size())) {
     case CloudLink::Msg::Welcome:
       welcomed = true;
-      paired = link.paired;
-      owner = link.owner;
+      paired = cl.paired;
+      owner = cl.owner;
       statusDirty = true;
-      if (!link.posixTz.empty() && link.posixTz != tzs && link.posixTz.size() < 64) {
-        tzNew = link.posixTz;
+      if (!cl.posixTz.empty() && cl.posixTz != tzs && cl.posixTz.size() < 64) {
+        tzNew = cl.posixTz;
         tzReady = true;
       }
       Serial.printf("[cloud] welcome, %s\n", paired ? "paired" : "not paired");
       break;
     case CloudLink::Msg::Pairing:
-      pairCode = link.pairCode;
-      pairUrl = link.pairUrl;
+      pairCode = cl.pairCode;
+      pairUrl = cl.pairUrl;
       paired = false;
       Serial.println("[cloud] pairing code received");  // the code is on the screen, not in the log
       break;
     case CloudLink::Msg::Paired:
       paired = true;
-      owner = link.owner;
+      owner = cl.owner;
       pairCode.clear();
       pairUrl.clear();
       Serial.println("[cloud] paired");
@@ -368,30 +368,30 @@ void dispatch(const std::string& m) {
       Serial.println("[cloud] unpaired");
       break;
     case CloudLink::Msg::Reply:
-      if (askPending && link.reply.re == askId) {
-        answer = outcomeFromReply(link.reply);
+      if (askPending && cl.reply.re == askId) {
+        answer = outcomeFromReply(cl.reply);
         answerReady = true;
         askPending = false;
       }
       break;
     case CloudLink::Msg::Error:
-      Serial.printf("[cloud] error %s\n", link.error.code.c_str());
-      if (askPending && link.error.re == askId) {
+      Serial.printf("[cloud] error %s\n", cl.error.code.c_str());
+      if (askPending && cl.error.re == askId) {
         answer = AiOutcome();
-        answer.err = link.error.code == "unpaired" ? AiErr::NoKey : link.error.err;
+        answer.err = cl.error.code == "unpaired" ? AiErr::NoKey : cl.error.err;
         answerReady = true;
         askPending = false;
       }
-      if (link.error.code == "unpaired") paired = false;
-      if (link.error.retryMs > 0) waitMs = link.error.retryMs;
+      if (cl.error.code == "unpaired") paired = false;
+      if (cl.error.retryMs > 0) waitMs = cl.error.retryMs;
       break;
     case CloudLink::Msg::Push: handlePushLocked(); break;
     case CloudLink::Msg::Config:
-      config.brain = link.brain;
-      config.lang = link.lang;
-      config.name = link.name;
-      config.modelClaude = link.modelClaude;
-      config.modelOpenai = link.modelOpenai;
+      config.brain = cl.brain;
+      config.lang = cl.lang;
+      config.name = cl.name;
+      config.modelClaude = cl.modelClaude;
+      config.modelOpenai = cl.modelOpenai;
       configReady = true;
       break;
     case CloudLink::Msg::Bad: Serial.printf("[cloud] unreadable frame (%u B)\n", (unsigned)m.size()); break;
@@ -517,7 +517,7 @@ void cloudTask(void*) {
       {
         Lock l;
         needUpdate = false;
-        hello = link.hello(fw.c_str(), hw.c_str(), brainName.c_str(), lang.c_str(), tzs.c_str());
+        hello = cl.hello(fw.c_str(), hw.c_str(), brainName.c_str(), lang.c_str(), tzs.c_str());
       }
       if (!sendFrame(hello)) {
         closeSocket();
@@ -578,7 +578,7 @@ void cloudTask(void*) {
         alive = false;
       }
       if (askPending && t - askAt > kAskMs) {  // too slow: drop it, the rules answer
-        up.push_back(link.abort(askId));
+        up.push_back(cl.abort(askId));
         askPending = false;
         answer = AiOutcome();
         answer.err = AiErr::Timeout;
@@ -587,10 +587,10 @@ void cloudTask(void*) {
       if (welcomed && (statusDirty || t - lastStatus > kStatusMs)) {
         statusDirty = false;
         lastStatus = t;
-        up.push_back(link.status(battery, WiFi.RSSI(), awake, fw.c_str(),
+        up.push_back(cl.status(battery, WiFi.RSSI(), awake, fw.c_str(),
                                  (uint32_t)heap_caps_get_free_size(MALLOC_CAP_INTERNAL)));
       }
-      if (link.seqSaveDue(t)) saveSeqLocked();
+      if (cl.seqSaveDue(t)) saveSeqLocked();
       if (t - lastSave > 60000) {  // the offline queue, batched like the seq
         lastSave = t;
         saveQueueLocked();
@@ -711,7 +711,7 @@ bool cloudAsk(const AiJob& job, bool ro) {
   Lock l;
   if (!welcomed || askPending) return false;
   askId = "a" + std::to_string(++askSeq);
-  up.push_back(link.ask(askId, job.text, ro ? "ro" : "en", job.ctx));
+  up.push_back(cl.ask(askId, job.text, ro ? "ro" : "en", job.ctx));
   askPending = true;
   askAt = millis();
   return true;
@@ -739,8 +739,8 @@ bool cloudPollPush(CloudPush& p) {
 void cloudAck(uint32_t seq, bool ok, const char* err) {
   if (!mtx) return;
   Lock l;
-  up.push_back(link.ack(seq, ok, err));
-  link.applied(seq);
+  up.push_back(cl.ack(seq, ok, err));
+  cl.applied(seq);
   for (size_t i = 0; i < inFlight.size(); ++i)
     if (inFlight[i] == seq) {
       inFlight.erase(inFlight.begin() + (long)i);
@@ -752,7 +752,7 @@ void cloudSend(const CloudOut& o) {
   if (!mtx) return;
   Lock l;
   if (base.empty()) return;
-  outq.push_back(o.kind == CloudOut::Inbox ? link.inboxAdd(cid(), o.text, "claude") : link.itemAdd(cid(), o.act, o.created));
+  outq.push_back(o.kind == CloudOut::Inbox ? cl.inboxAdd(cid(), o.text, "claude") : cl.itemAdd(cid(), o.act, o.created));
   while (outq.size() > kMaxQueue) outq.pop_front();  // the items stay on SOUL either way
 }
 
@@ -793,7 +793,7 @@ void cloudForget() {
   Lock l;
   wipe(token);
   wsUrl.clear();
-  link.lastSeq = savedSeq = 0;
+  cl.lastSeq = savedSeq = 0;
   outq.clear();
   savedOutq.clear();
   paired = false;

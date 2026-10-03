@@ -5,7 +5,8 @@
 //   core 1  this loop: touch, IMU, the Claude Desktop link (BLE), the Brain,
 //           SoulOS and the frame (only what changed is drawn and pushed)
 //   core 0  the network task (src/net.cpp): Wi-Fi, the setup portal, NTP and
-//           the AI calls (HTTPS), plus the panel's bounce-buffer interrupt
+//           the AI calls (HTTPS); the SOUL Cloud task (src/cloud.cpp): the
+//           device WebSocket; plus the panel's bounce-buffer interrupt
 // The loop never waits on the network: questions are posted and answers polled.
 //
 // Serial (115200): '?' lists the commands (bring-up without a finger).
@@ -33,6 +34,7 @@
 #include "audio.h"
 #include "ble_link.h"
 #include "board.h"
+#include "cloud.h"
 #include "net.h"
 #if defined(SUFLET_BOARD_LCD28)
 #include "board_lcd28.h"
@@ -89,6 +91,7 @@ static float demoT = 0;
 static int demoIdx = 0;
 static uint32_t offSinceMs = 0;
 static bool aiBusy = false;
+static int lastBatPct = -1;
 
 // perf (the debug overlay and the serial log)
 static double accFrameMs = 0, accRenderMs = 0, accPushMs = 0, accBusyMs = 0;
@@ -240,17 +243,21 @@ static bool clockValid() { return rtcOk && rtc.getDateTime().getYear() >= 2025; 
 static uint32_t localEpoch() {  // the RTC keeps local time
   if (!clockValid()) return 0;
   RTC_DateTime d = rtc.getDateTime();
-  struct tm t = {};
-  t.tm_year = d.getYear() - 1900;
-  t.tm_mon = d.getMonth() - 1;
-  t.tm_mday = d.getDay();
-  t.tm_hour = d.getHour();
-  t.tm_min = d.getMinute();
-  t.tm_sec = d.getSecond();
-  setenv("TZ", "UTC0", 1);  // mktime on a UTC process = our "local seconds"
-  tzset();
-  const uint32_t v = (uint32_t)mktime(&t);
-  return v;
+  // days from civil (no mktime: the process TZ stays the POSIX TZ that NTP's
+  // localtime_r needs; changing it here once made NTP set the RTC to UTC)
+  const int Y = d.getYear(), M = d.getMonth(), D = d.getDay();
+  const int y = Y - (M <= 2), era = (y >= 0 ? y : y - 399) / 400;
+  const unsigned yoe = (unsigned)(y - era * 400);
+  const unsigned doy = (153 * (M + (M > 2 ? -3 : 9)) + 2) / 5 + D - 1;
+  const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  const long days = era * 146097L + (long)doe - 719468L;
+  return (uint32_t)(days * 86400L + d.getHour() * 3600L + d.getMinute() * 60L + d.getSecond());
+}
+
+void soulFlashWritten() {
+#if defined(SUFLET_BOARD_LCD28)
+  lcd28::displayResync();
+#endif
 }
 
 static void setClockLocal(uint32_t localSecs) {
@@ -300,12 +307,14 @@ static void saveAlarms() {
   uint8_t buf[Alarms::kMaxBlob];
   const size_t n = alarms.serialize(buf, sizeof buf);
   if (n) prefs.putBytes("alarms", buf, n);
+  soulFlashWritten();
 }
 
 static void saveSettings() {
   uint8_t buf[sizeof(OsSettings)];
   const size_t n = os.saveSettings(buf, sizeof buf);
   if (n) prefs.putBytes("os", buf, n);
+  soulFlashWritten();
 }
 
 static void saveMemory() {
@@ -313,6 +322,7 @@ static void saveMemory() {
   const uint32_t now = localNow();
   if (now) prefs.putUInt("seen", now);
   prefs.putUInt("naps", naps);
+  soulFlashWritten();
 }
 
 static void loadAll() {
@@ -324,6 +334,7 @@ static void loadAll() {
   if (n && !os.loadSettings(sb, n)) Serial.println("[os] settings from an older version, defaults used");
   os.loadNotes(prefs.getString("notes", "").c_str());
   os.loadReminders(prefs.getString("rems", "").c_str());
+  os.loadCloudRefs(prefs.getString("crefs", "").c_str());
   Memory m;
   if (prefs.getBytes("mem", &m, sizeof m) == sizeof m) brain->memory() = m;
   bornDay = prefs.getUInt("born", 0);
@@ -446,6 +457,7 @@ static void maybeDeepSleep(uint32_t nowMs) {
     if (seven > now) wakeIn = min<uint32_t>(wakeIn, seven - now);
   }
   Serial.printf("[power] deep sleep for %lu s (night, screen off)\n", (unsigned long)wakeIn);
+  cloudSleep();
   saveMemory();
   saveAlarms();
   backlight(0);
@@ -522,10 +534,11 @@ void setup() {
   bleInit(name);
   char ap[16];
   snprintf(ap, sizeof ap, "SOUL-%02X%02X", mac[4], mac[5]);
-  char devId[16];
-  snprintf(devId, sizeof devId, "SOUL-%02X%02X%02X", mac[3], mac[4], mac[5]);
-  netBegin(ap, devId);
+  // docs/07 §2.1: device_id = "soul-" + the 12 lowercase hex digits of the MAC
+  cloudBegin(mac, FW_VERSION, BOARD_HW);
+  netBegin(ap, CloudLink::deviceId(mac));
   netSetMode(os.aiMode());
+  cloudSetPrefs(os.aiMode(), os.ro(), netTz());
 
   pinMode(BOOT_BUTTON, INPUT_PULLUP);
   if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED && digitalRead(BOOT_BUTTON) == LOW) demo = true;
@@ -542,10 +555,21 @@ static void handleCmds() {
       case OsCmd::SaveSettings:
         saveSettings();
         netSetMode(os.aiMode());
+        cloudSetPrefs(os.aiMode(), os.ro(), netTz());
         break;
       case OsCmd::SaveAlarms: saveAlarms(); break;
-      case OsCmd::SaveNotes: prefs.putString("notes", os.saveNotes().c_str()); break;
-      case OsCmd::SaveReminders: prefs.putString("rems", os.saveReminders().c_str()); break;
+      case OsCmd::SaveNotes:
+        prefs.putString("notes", os.saveNotes().c_str());
+        soulFlashWritten();
+        break;
+      case OsCmd::SaveReminders:
+        prefs.putString("rems", os.saveReminders().c_str());
+        soulFlashWritten();
+        break;
+      case OsCmd::SaveCloudRefs:
+        prefs.putString("crefs", os.saveCloudRefs().c_str());
+        soulFlashWritten();
+        break;
       case OsCmd::StartPortal: netStartPortal(); break;
       case OsCmd::StopPortal: netStopPortal(); break;
       case OsCmd::ForgetWifi: netForgetWifi(); break;
@@ -565,8 +589,10 @@ static void handleCmds() {
         break;
       }
       case OsCmd::Restart: ESP.restart(); break;
-      case OsCmd::FactoryReset:
+      case OsCmd::FactoryReset:  // a user-only action: everything but the identity secret
         prefs.clear();
+        netFactoryReset();
+        cloudForget();
         ESP.restart();
         break;
       default: break;
@@ -606,10 +632,14 @@ void loop() {
   os.button(digitalRead(BOOT_BUTTON) == LOW);
 
   // Claude Desktop (Hardware Buddy over BLE)
-  uint8_t chunk[128];
-  size_t n = 0;
-  while (bleAvailable() && n < sizeof chunk) chunk[n++] = (uint8_t)bleRead();
-  if (n) claude.feed(chunk, n);
+  // drain everything waiting (a turn event can be 4 KB; at 2 fps face down a
+  // 128-byte drain overflowed the BLE ring), in 256-byte bites
+  for (int bites = 0; bites < 32 && bleAvailable(); ++bites) {
+    uint8_t chunk[256];
+    size_t n = 0;
+    while (bleAvailable() && n < sizeof chunk) chunk[n++] = (uint8_t)bleRead();
+    if (n) claude.feed(chunk, n);
+  }
   claude.setTransportConnected(bleConnected());
   claude.tick(dt);
   if (claude.unpairRequested()) bleClearBonds();
@@ -638,7 +668,10 @@ void loop() {
   }
   if (nowMs - lastNetMs > 500) {
     lastNetMs = nowMs;
-    os.setNet(netInfo());
+    NetInfo ni = netInfo();
+    cloudFill(ni);
+    os.setNet(ni);
+    cloudSetStatus(lastBatPct, brain->mode() != Mode::Off);
     const uint32_t ntp = netLocalTime();
     if (ntp && (!lastNtpSync || nowMs - lastNtpSync > 3600000u)) {
       const uint32_t rtcNow = localEpoch();
@@ -656,13 +689,32 @@ void loop() {
   os.setClock(local);
 
   // the AI: questions go to the network task, answers come back here
+  // (SOUL Cloud: over its socket when it is up, else HTTPS to the relay)
   AiJob job;
-  if (!aiBusy && os.popAiJob(job)) aiBusy = netAsk(job);
+  if (!aiBusy && os.popAiJob(job))
+    aiBusy = (os.aiMode() == AiMode::Cloud && cloudReady()) ? cloudAsk(job, os.ro()) : netAsk(job);
   AiOutcome out;
-  if (netPollAnswer(out)) {
+  if (netPollAnswer(out) || cloudPollAnswer(out)) {
     aiBusy = false;
     os.aiResult(out);
   }
+  // SOUL Cloud: what your Claude (or the account page) put on SOUL, applied
+  // once and acked; what was made here goes up
+  CloudPush push;
+  while (cloudPollPush(push)) {
+    std::string perr;
+    const bool ok = os.cloudPush(push, perr);
+    cloudAck(push.seq, ok, ok ? nullptr : perr.c_str());
+  }
+  CloudOut co;
+  while (os.popCloudOut(co)) cloudSend(co);
+  CloudConfigMsg cc;
+  if (cloudPollConfig(cc)) {
+    os.cloudConfig(cc.brain, cc.lang, cc.name);
+    netSetModels(cc.modelClaude, cc.modelOpenai);
+  }
+  std::string ctz;
+  if (cloudPollTz(ctz)) netSetTz(ctz);
   std::string heard;
   AiErr verr;
   if (netPollVoice(heard, verr)) os.voiceText(heard, verr);
@@ -710,6 +762,7 @@ void loop() {
     PowerInfo pw;
     pw.batPct = pct;
     pw.charging = usb;
+    lastBatPct = pct;
     os.setPower(pw);
     claude.status.batPct = pct;
     claude.status.batMv = mv;

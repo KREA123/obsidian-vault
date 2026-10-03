@@ -84,6 +84,7 @@ bool ClaudeLink::decide(bool approve) {
   size_t len = serializeJson(o, buf, sizeof(buf) - 2);
   buf[len++] = '\n';
   pushOut(std::string(buf, len));
+  lastDecidedId_ = promptId_;
   if (approve) {
     ++approvals_;
     if (promptAge_ < 5.0f) q_.push(Ev::ClaudeQuickApprove);  // the buddy's "heart"
@@ -179,7 +180,7 @@ void ClaudeLink::handleLine(const char* line, size_t n) {
   JsonObjectConst p = doc["prompt"].as<JsonObjectConst>();
   if (!p.isNull()) {
     const char* id = p["id"] | "";
-    if (*id && promptId_ != id) {
+    if (*id && promptId_ != id && lastDecidedId_ != id) {
       promptId_ = id;
       promptTool_ = p["tool"] | "";
       promptHint_ = p["hint"] | "";
