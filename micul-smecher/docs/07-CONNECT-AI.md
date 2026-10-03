@@ -1,6 +1,6 @@
 # 07 · Connect AI: how SOUL gets Claude and ChatGPT
 
-*SOUL package · 2 Oct 2026 · rev. 2 (after three reviews, see §9), amended 3 Oct 2026 after the code review of `ai/` (status column in §0, §0.1 status, §1.3/§3.1/§4.1 "not built" markers, §3.2 enrolment and rate limits, §3.8 rejected items, §6.3 no code during `pair.confirm`, §6.4 10 KB device frames, §6.6 `timeout`). Status: **design, final for the parallel build**. §3 (Cloud API) and §6 (Firmware contract) are **normative**: the cloud builder and the firmware builder implement from them independently; any change to either is a protocol change and needs both sides to agree. Scope: how a SOUL device reaches Claude and ChatGPT over Wi-Fi, and how the user's own Claude or ChatGPT (on a computer or a phone) reaches SOUL. Inputs: the verified research of 2 Oct 2026, the code in `ai/`, the installed `mcp` 2.2.0 SDK and the firmware (`firmware/src/{net,main}.cpp`, `firmware/lib/Suflet/src/AiProtocol.*`, read only). Supersedes the mode table in `os/ARCHITECTURE.md` D5 where they differ (§1.8).*
+*SOUL package · 2 Oct 2026 · rev. 2 (after three reviews, see §9), amended 3 Oct 2026 after the code review of `ai/` (status column in §0, §0.1 status, §1.3/§3.1/§4.1 "not built" markers, §3.2 enrolment and rate limits, §3.8 rejected items, §6.3 no code during `pair.confirm`, §6.4 10 KB device frames, §6.6 `timeout`); amended again 3 Oct 2026 (evening): **founder decision: SOUL includes no AI paid by us** (§0.2), firmware on rev. 2 of §6, `/pair` and `/me` built, the firmware simulator run end to end against the cloud, "Sign in with ChatGPT" (§1.10). Status: **design, final for the parallel build**. §3 (Cloud API) and §6 (Firmware contract) are **normative**: the cloud builder and the firmware builder implement from them independently; any change to either is a protocol change and needs both sides to agree. Scope: how a SOUL device reaches Claude and ChatGPT over Wi-Fi, and how the user's own Claude or ChatGPT (on a computer or a phone) reaches SOUL. Inputs: the verified research of 2 Oct 2026, the code in `ai/`, the installed `mcp` 2.2.0 SDK and the firmware (`firmware/src/{net,main}.cpp`, `firmware/lib/Suflet/src/AiProtocol.*`, read only). Supersedes the mode table in `os/ARCHITECTURE.md` D5 where they differ (§1.8).*
 
 **Markers.** [V] verified on 2 Oct 2026 (source in §8) · [R] read in this repo or in the installed `mcp` 2.2.0 SDK · [L] likely, secondary source · [U] unverified, test before promising · [E] our estimate. Nothing marked [U] or [E] goes into marketing.
 
@@ -14,13 +14,13 @@ The goal: *"you must be able to talk to your own Claude or ChatGPT from home or 
 
 | What the user wants | Can SOUL do it? (design) | How (mode) | Status today (3 Oct 2026) |
 |---|---|---|---|
-| **SOUL has Claude/ChatGPT inside** and answers on its screen (and out loud on units with a speaker, §1.9) | **Designed: yes.** Wi-Fi alone gives a small trial on factory-registered units; the full allowance needs Wi-Fi + scanning one QR + a one-minute sign-in | **A · SOUL Cloud** (our API account, an included allowance) | **Built in the cloud, simulated only.** Tested against `tools/fake_device.py`, never a real SOUL: the firmware still speaks §6 rev. 1 and cannot authenticate (needs firmware rev. 2), and the `/pair` page of the QR does not exist yet |
-| Same, but billed to **my own API key** | **Designed: yes** | **B · Your API key**: B1 key on the device (works without SOUL Cloud), B2 key in SOUL Cloud (opt-in until the legal read, §1.3) | **B1:** in the firmware, not hardware-tested against the providers [U]. **B2:** relay built, but **no user path** in pilot or production (`/me/keys` not built; only the dev route `/v1/dev/key` with the shared token) |
-| **My Claude** (claude.ai, Claude Desktop, the Claude iPhone/Android app) puts things on SOUL: "remind me at 18:00 on my SOUL", "show tomorrow's plan on SOUL" | **Designed: yes**, on every Claude plan incl. Free (Free = 1 custom connector) [V]. Adding the connector is easiest on a computer; adding it from a phone only is beta [V] and not yet tested by us [U] | **C · SOUL connector** (remote MCP + OAuth) | **Built in the cloud** (OAuth + 7 tools), tested only with a loopback MCP SDK client and a simulated device. **Not yet tried with real claude.ai** [U]; CIMD not implemented (§1.4) |
+| **SOUL has Claude/ChatGPT inside** and answers on its screen (and out loud on units with a speaker, §1.9) | **No: founder decision of 3 Oct 2026 (§0.2): SOUL does not include an AI paid by us.** SOUL answers with the owner's own key (B), or offline (E) | ~~A · SOUL Cloud~~ (kept as code behind `SOUL_BUILTIN_AI=1`, off by default; not offered on `/pair` or `/me`) | **Off.** The code path stays tested (`SOUL_BUILTIN_AI=1` in the older test suites); with the default a paired SOUL starts on brain `none`, gets no trial, and a stored `cloud` brain answers with the rules (`note: no_key`) |
+| Same, but billed to **my own API key** | **Designed: yes** | **B · Your API key**: B1 key on the device (works without SOUL Cloud), B2 key in SOUL Cloud (opt-in until the legal read, §1.3) | **B1:** in the firmware, not hardware-tested against the providers [U]. **B2: built end to end** on `/pair` → "My own API key" and on `/me` (encrypted; a free live check `GET /v1/models` marks it checked / not checked; admin and subscription prefixes refused); tested with the fake LLM and with the firmware simulator as the device, never with a real key [U] |
+| **My Claude** (claude.ai, Claude Desktop, the Claude iPhone/Android app) puts things on SOUL: "remind me at 18:00 on my SOUL", "show tomorrow's plan on SOUL" | **Designed: yes**, on every Claude plan incl. Free (Free = 1 custom connector) [V]. Adding the connector is easiest on a computer; adding it from a phone only is beta [V] and not yet tested by us [U] | **C · SOUL connector** (remote MCP + OAuth) | **Built** (OAuth + 7 tools; `/pair` → "Connect my Claude" and `/me/connect-claude` give the steps and the address to copy, optional own Anthropic key to also talk on SOUL). Tested with a loopback MCP SDK client and with the **firmware simulator** as the device (pushes applied by SoulOS). **Not yet tried with real claude.ai** [U]; CIMD not implemented (§1.4) |
 | **My ChatGPT** does the same | **Not yet for normal users.** It needs SOUL listed as a ChatGPT plugin (review). Advanced users: developer mode on chatgpt.com (web only); write actions on Plus/Pro are [U] | **C · SOUL connector** (same server) | Same server as Claude; not tried with ChatGPT; not listed |
 | I type something **on SOUL** and **my own Claude/ChatGPT** answers it | **Only asynchronously and manually**: SOUL stores the question in SOUL's inbox; next time you are in Claude, ask "check my SOUL" and Claude answers it on SOUL. There is no inbox inside the Claude app, and Claude does not answer by itself when you open it. Phone nudge: planned (not built). For instant answers on SOUL use brain A. Real-time on my own plan exists only as a lab path (L1) | **C · inbox tools**; lab **L1** | `read_soul_inbox` / `answer_soul` built (simulated only); **phone nudge not built** (`notify.py` does not exist) |
 | SOUL **logs into my Claude Pro/Max** account and uses it | **No. Anthropic forbids it** for third-party apps and enforces it server-side [V] | none, never build it | never |
-| SOUL uses **my ChatGPT Plus/Pro plan** for its own answers | **Not today.** Only through OpenAI "Sign in with ChatGPT" plan usage: Plus/Pro only, text only, waitlist for commercial apps [V] | lab **L2** (apply now) | not built |
+| SOUL uses **my ChatGPT Plus/Pro plan** for its own answers | **Not today.** Only through OpenAI "Sign in with ChatGPT" plan usage: Plus/Pro only, Responses API, waitlist for paid or hosted apps [V] (§1.10) | **"Connect my ChatGPT"** (§1.10; lab L2 until OpenAI approves SOUL) | **Stub only**: `/pair` and `/me/signin-chatgpt` say "coming soon, pending OpenAI's approval" and show the ChatGPT connector steps meanwhile |
 | At my desk, SOUL shows Claude Code / Cowork status and I **approve or deny** tool calls on it | **Designed: yes**, Claude Desktop macOS/Windows in Developer Mode, not an official feature [V]. It **cannot chat** [V] | **D · Hardware Buddy** (BLE) | **Implemented in firmware, not yet tested with real Claude Desktop** [U] (§1.5) |
 | Works with **no internet / no AI** | **Yes** for alarms, timers, reminders, notes (RO/EN) | **E · Offline rules** | **Yes** (device and cloud) |
 
@@ -28,7 +28,7 @@ Every SOUL has exactly one **brain** for turns started on the device (A, B or E)
 
 ### 0.1 First-run journey (product requirement, Phase 0 exit criterion)
 
-> **Status (3 Oct 2026): this journey cannot be completed yet.** Step 4 (`/pair` with Apple/Google/email) and step 6 (`/me`, "Connect your Claude", the plan question, the copy-address button) do not exist in code; steps 3 and 5 need firmware rev. 2 (the firmware at HEAD speaks rev. 1 and cannot authenticate to this cloud). Today a SOUL is paired either inside the connector's consent page (the user types the code shown on SOUL there) or, in dev only, through `/v1/dev/pair/claim`.
+> **Status (3 Oct 2026, evening): steps 3–7 run end to end against fakes, with the firmware's own code as the device.** `ai/tools/e2e_sim.py` (step 3 of `ai/tools/e2e_demo.sh`, and `ai/tests/test_e2e_sim.py`) starts the SoulOS simulator in cloud mode (`firmware/.pio/build/sim/program <dir> cloud <base>`: the same `CloudDriver`/`CloudSession`/`CloudLink`/`DeviceKey`/SoulOS code as the board, over a host WebSocket): step 3 ECDSA sign-in + code on the glass; step 4 `/pair` with the **email code** (Apple/Google not built: Phase 1 gate); step 5 "Pair with Ana?" answered by a tap on the simulated glass; step 6 `/pair/brain` → "Connect my Claude" (+ own key), `/me/connect-claude` with the copy button; step 7 the connector (MCP SDK client, **loopback redirect, not claude.ai**) puts a note, an alarm and a card on SOUL, applied by SoulOS. **Not yet:** a real board against a deployed cloud, real claude.ai, the plan question on `/me/connect-claude`, Apple/Google sign-in.
 
 Budget: **≤ 7 screens and ≤ 15 taps** from unboxing to "my Claude put something on SOUL". All SOUL-owned screens (device, portal, account pages, consent, emails) exist in **Romanian and English**; the language comes from the device's `lang` and travels through `/pair` and OAuth as `ui_locales`.
 
@@ -45,6 +45,17 @@ Budget: **≤ 7 screens and ≤ 15 taps** from unboxing to "my Claude put someth
 **Exit criterion (Phase 0):** a scripted run of steps 3–7 against a simulated device passes, and on the first real connector call the device shows the celebration card and `/me` shows the grant as connected.
 
 **Not met yet.** What runs today (`ai/tests/test_e2e_connect.py`, `ai/tools/e2e_demo.sh`) is a **simulated variant of steps 3, 5 and 7**: the device is `tools/fake_device.py`, the LLMs are `tools/fake_llm.py`, pairing happens on the connector consent page (or the dev-only `/v1/dev/pair/claim`), and the OAuth client is the MCP SDK with a loopback redirect (Claude Code style), which takes the unverified-client consent branch, not claude.ai's. Steps 4 and 6 are not built. The gate is passed only when `/pair` and `/me` exist and the run goes through claude.ai's redirect URI.
+
+### 0.2 Founder decision: no AI paid by SOUL (3 Oct 2026)
+
+"Noi nu putem include niciun AI": SOUL ships **without** a built-in AI paid by us. Brain A (§1.2) is off (`SOUL_BUILTIN_AI=0`, the default; the code path stays behind the flag and in the tests). After pairing, `/pair/brain` offers exactly four choices:
+
+1. **Connect my ChatGPT** — "Sign in with ChatGPT" (§1.10): a stub, "coming soon, pending OpenAI's approval"; meanwhile the ChatGPT connector steps (developer mode, §1.4).
+2. **Connect my Claude** — the Claude app connector (mode C): Claude puts notes, reminders, alarms and cards on SOUL; optionally the owner's own Anthropic API key to also talk to Claude on SOUL (B2).
+3. **My own API key** — Anthropic or OpenAI (B2), encrypted in SOUL Cloud.
+4. **Offline (no AI)** — the on-device and cloud rules (E).
+
+A newly paired SOUL starts on brain `none`; device turns cost SOUL nothing (the owner's key or the rules). Mode C, D and E are unchanged. Marketing must not say "Claude inside SOUL".
 
 ---
 
@@ -64,6 +75,8 @@ Budget: **≤ 7 screens and ≤ 15 taps** from unboxing to "my Claude put someth
 | What leaves the house | the utterance, the last ≤ 6 exchanges of this conversation and a short context → SOUL relay (EU) → Anthropic/OpenAI | B2: same as A; B1: straight to Anthropic/OpenAI | tool arguments reach SOUL; **SOUL item text the AI reads goes into the user's AI account** (§1.4 Privacy) | nothing (local BLE) | nothing |
 
 ### 1.2 Mode A · Built-in AI through SOUL Cloud ("it has Claude/ChatGPT inside")
+
+> **Off (founder decision, 3 Oct 2026, §0.2).** Everything below describes code that exists behind `SOUL_BUILTIN_AI=1` (default `0`): no trial, no allowance, no SOUL-paid provider calls in the product. It stays because the relay, metering and tests are shared with B2, and as an option if a paid plan is ever decided.
 
 - **What the user does.** Joins SOUL to Wi-Fi. A factory-registered unit then has brain A on a **trial** (default 30 turns, product decision [E]) metered by `device_id`. Scanning the pairing QR and signing in unlocks the monthly allowance, the connector and the phone features. Brain A is the default after pairing; the account page can switch the voice behind it between Claude (default) and ChatGPT.
 - **What works.** Short displayed (and, with a speaker, spoken) answers with SOUL's personality; follow-up questions (server-side history, `conv` id, §6.6); typed SOUL actions (alarms, reminders, notes, timers, focus, cards) executed by the same dispatcher every mode uses (`ai/suflet_ai/dispatcher.py`).
@@ -124,7 +137,7 @@ On device `localAct` / `localReply` [R]; in the cloud `providers/rules.py` [R]. 
 | | What | Why it is not a mode yet |
 |---|---|---|
 | **L1 · Claude Code channel ("SOUL Bridge")** | Official Claude Code on an always-on home PC with a SOUL channel plugin; real-time, on the user's Pro/Max plan [V] | Research preview; custom channels need `--dangerously-load-development-channels` or allowlisting [V]; Claude Code has shell access; ask Anthropic first |
-| **L2 · Sign in with ChatGPT, plan usage** | The cloud holds the user's rotating refresh token and sends SOUL's text turns on the user's Plus/Pro plan [V] | Waitlist for commercial apps [V]; browser + `127.0.0.1` redirect [V]; text only [V]. **Founder action: fill in OpenAI's interest form now** |
+| **L2 · Sign in with ChatGPT, plan usage** | The cloud holds the user's rotating refresh token and sends SOUL's text turns on the user's Plus/Pro plan [V] | Waitlist for paid / hosted apps [V]; see **§1.10** (how to apply, and how SOUL would use it). **Founder action: fill in OpenAI's interest form now** |
 | **L3 · ChatGPT MCP Events** | A SOUL button starts the user's ChatGPT automation [L] | Draft spec, page not read |
 
 ### 1.8 Differences from `os/ARCHITECTURE.md` D5
@@ -141,6 +154,25 @@ On device `localAct` / `localReply` [R]; in the cloud `providers/rules.py` [R]. 
 | SOUL M + audio build | same | yes | yes | base + `mic speaker` | spoken answers (`say`), hold-to-talk STT (B1 OpenAI key, or brain A in Phase 2) |
 
 All spoken wording in UI, docs and marketing is gated on `speaker` / `mic`.
+
+### 1.10 "Sign in with ChatGPT" (OpenAI, launched at DevDay, 29 Sep 2026)
+
+**What it is** [V: developers.openai.com, read 3 Oct 2026]. A ChatGPT **Plus or Pro** user signs in to an app with their ChatGPT account, and the app's AI requests can run **on that user's ChatGPT plan** instead of the app's API key, within a weekly per-app cap the user sets [L: secondary source]. Plan usage is for the **Responses API** (`resource=https://api.openai.com/v1`, scope `resource.invoke` with `chatgpt.tokens.use.direct`, plus the identity scopes and `offline_access`) [V]. The flow is OpenID Connect + OAuth 2.0 authorization code with **PKCE S256**, fresh `state` / `nonce` per attempt, exact redirect URIs; discovery at `https://auth.openai.com/.well-known/openid-configuration` [V].
+
+**Who may use it today** [V]: plan usage is self-serve for **open-source projects, personal projects that run locally, and selected private apps** (the SDK registers dynamically, `client_id=dynamic_agent_client`, with a `127.0.0.1` loopback callback). **Paid or remotely hosted apps — SOUL is both — must join the waitlist.** The identity-only "Sign in with ChatGPT" for websites is a limited trial for selected commercial partners ("contact your OpenAI representative"), with a backend that keeps transaction state and the client secret server-side [V]. Free-plan ChatGPT users cannot spend plan usage [V: Plus/Pro only].
+
+**How to apply (founder action)**
+1. Fill in OpenAI's interest form for Sign in with ChatGPT: <https://openai.com/form/sign-in-with-chatgpt-interest/> (linked from the developer cookbook as the waitlist for paid or remotely hosted apps) [V: link read 3 Oct 2026; the form's own fields were not read].
+2. Describe SOUL honestly: a hardware companion with a hosted EU cloud (SOUL Cloud) that would call the Responses API for short text turns typed on the device; expected users and turns per day (Phase 0 measurement, §3.10); data handling (`store: false`, no content logged, EU hosting); that the device never sees ChatGPT credentials.
+3. If there is an OpenAI account manager (API organisation for SOUL, §5 founder action 4), ask them as well: the website flow is "contact your OpenAI representative" [V].
+4. Before approval: nothing ships. Read the technical docs to keep the design below current: <https://developers.openai.com/siwc/website> and <https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt> [V].
+
+**How SOUL would use it (design, stub built)**
+- **Where**: the phone, never the device. `/pair` → "Connect my ChatGPT" and `/me/signin-chatgpt` (built today as a stub: "Coming soon, pending OpenAI's approval", plus the ChatGPT connector steps meanwhile).
+- **Flow**: the button opens the **system browser** (not an in-app web view) on SOUL Cloud's `/me/signin-chatgpt/start`, which creates `state`, `nonce` and the PKCE verifier server-side, bound to the signed-in SOUL session (the same CSRF / `__Host-` cookie rules as §3.1), and redirects to OpenAI's authorize endpoint with SOUL's **registered, exact** `https://{BASE}/me/signin-chatgpt/callback` (a hosted app gets a registered client, not the loopback dynamic client). The callback checks `state` and `nonce`, exchanges the code with the client secret **from the secret manager**, stores the refresh token **encrypted like a B2 key** (keystore, per account, never returned, never logged) and sets the device's brain to `chatgpt-plan` (a new brain value: a §6 additive change, devices treat it like `cloud`).
+- **Turns**: unchanged for the device (`ask` → `reply`). The relay calls the Responses API with a short-lived access token from the stored refresh token (`store: false`, the same tools and prompt as B2), and maps OpenAI's plan-limit error to `quota` ("your ChatGPT plan's limit for SOUL is used up", §6.9).
+- **The device never sees** a ChatGPT password, cookie or token; revoking on `/me` deletes the refresh token and asks OpenAI to revoke it.
+- **Not before**: OpenAI's approval in writing, a legal read of their terms for hardware companions, and a test with a real Plus account [U].
 
 ---
 
@@ -252,7 +284,7 @@ Rules: codes valid 10 min, rotated on expiry, single use, stored hashed, lookup 
 | `GET /v1/me/export` | → JSON file (account, devices, items, inbox, grants, usage) | |
 | `DELETE /v1/me` | → `204` | reauth; GDPR erasure |
 
-Phone-facing pages (all with a QR target from the device): `/me`, `/me/keys`, `/me/wifi-help`, `/me/allowance`, `/me/connect-claude`, `/me/connect-chatgpt`, `/pair`.
+Phone-facing pages (all with a QR target from the device): `/me`, `/me/keys`, `/me/wifi-help`, `/me/allowance`, `/me/connect-claude`, `/me/connect-chatgpt`, `/pair`. **Built (3 Oct 2026, `ai/suflet_ai/web_me.py`):** `/pair` (+ `POST /pair/claim`, `/pair/wait`, `/pair/brain`), `POST /v1/me/pair/claim`, `GET /v1/me/pair/{pid}`, `/me` (devices, brain, masked keys, connected apps with disconnect, unpair, sign out; HTML forms with CSRF rather than the JSON `/v1/me/*` routes), `/me/connect-claude`, `/me/connect-chatgpt`, `/me/signin-chatgpt` (stub, §1.10). Not built: `/me/wifi-help`, `/me/allowance`, `/v1/me/*` JSON beyond pairing, personal tokens, export, account deletion.
 
 ### 3.6 Personal-token API (`/v1/pt/*`, for Shortcuts)
 
@@ -515,7 +547,7 @@ Local features (clock, alarms, timers, stored reminders, notes, offline rules) n
 | 0.10 | `app.py` + EU deploy recipe | `app.py`, `deploy/` |
 | 0.11 | **Tests** (beyond unit tests of each module): OAuth code + PKCE + refresh rotation; **refresh grace window** (same pair within 60 s, family revoked after); loopback port-agnostic accepted, non-loopback mismatch rejected, DCR rejects bad URIs and lookalike names; CIMD SSRF cases (private IP, rebinding, redirect, port); consent CSRF + `frame-ancestors` present; `iss` on redirect; 401 header + both metadata documents; per-tool scope (`read_only_grant`, `notes_scope_off`); cross-device `item_id` → `not_found`; revoked device re-checked per call; pairing needs `pair.ok`; fleet-wide pairing limit; device auth rejects a signature made for another host and a replayed nonce; `pending` vs `factory` enrolment; `reset:true` unpairs; WS hello/push/ack/replay paging/`resync`; long-poll parity; caps (50/day, 10 alarms, night `needs_accept`); `will_ring` forecast; tool results carry `source` + `untrusted_text` ≤ 300; production refuses legacy token / `pending` / missing KMS / missing pepper; no code, token or key in any response or log line; keystore rejects admin/OAuth key prefixes; Haiku request without `effort` (mocked 400 per model ID) | `tests/` |
 
-**Exit gate:** a scripted MCP client completes OAuth; `add_reminder` lands on a simulated device socket with `delivered: "shown"`; the §0.1 journey steps 3–7 pass against the simulated device. **Status:** the first two hold; the third holds only for the simulated variant of steps 3, 5 and 7 described under §0.1 (steps 4 and 6 not built, loopback OAuth client, not claude.ai). Not passed.
+**Exit gate:** a scripted MCP client completes OAuth; `add_reminder` lands on a simulated device socket with `delivered: "shown"`; the §0.1 journey steps 3–7 pass against the simulated device. **Status (3 Oct 2026, evening):** all three hold against fakes, with the firmware simulator as the device (`ai/tools/e2e_sim.py`, §0.1 status). Still open before calling it passed for launch: claude.ai's own redirect URI (the run uses a loopback client), the first-call celebration card checked on a real board, `/me` showing the grant as connected after real claude.ai use.
 
 ### Phase 1 · launch (Founders 00)
 
@@ -532,7 +564,7 @@ Local features (clock, alarms, timers, stored reminders, notes, offline rules) n
 
 ### Founder actions (this week)
 
-1. Fill in OpenAI's "Sign in with ChatGPT" interest form (L2).
+1. Fill in OpenAI's "Sign in with ChatGPT" interest form (L2): <https://openai.com/form/sign-in-with-chatgpt-interest/> — see §1.10 "How to apply".
 2. Ask Anthropic: commercial SOUL channel plugin (L1), "Works with Claude" wording, SOUL-paid companion use, B2 "intermediating".
 3. Domain for `{BASE}`, EU hosting choice, **EU transactional email sender + SPF/DKIM/DMARC** on `{BASE}`, VAPID keys.
 4. Anthropic and OpenAI organisations for SOUL Cloud, with spend caps and alerts; KMS.
@@ -828,6 +860,8 @@ Without SOUL Cloud, items created in B1 stay on the device (and are sent as `ite
 ### 6.17 Conformance (firmware side)
 
 Unity tests in `native` with recorded frames: every message of §6.6/§6.7 parsed and built; must-ignore behaviour; push → `AiAction` mapping for every action incl. multi-day reminders and weekday masks; dedupe by `seq`/`item_id`; `needs_accept`, `private`, quiet-hours and paused rules; auth message bytes and signature against a fixed test vector (the cloud ships the same vector in `ai/tests/vectors/device_auth.json`); SSE parser skips thinking blocks; effort omitted for `claude-haiku-4-5`.
+
+**Status (3 Oct 2026):** the firmware speaks rev. 2 (`firmware/lib/Suflet/src/{CloudLink,CloudSession,DeviceKey}.*`). Done: auth bytes and signatures against `ai/tests/vectors/device_auth.json`, every §6.6/§6.7 message built and parsed, must-ignore, push → `AiAction` incl. multi-day reminders and weekday masks, dedupe, `needs_accept`, `private`, paused, outq with `added` / `too_big` / `invalid`, close codes, the frame budget, and a replay of frames and HTTP answers **recorded from the running cloud** (`firmware/test/test_suflet/cloud_frames.h`, made by `ai/tools/record_frames.py`); end to end in the simulator against a live local cloud (`ai/tools/e2e_sim.py`). Not done in firmware: the long-poll fallback and §6.11 wake-polls, `SOULKEY GEN` (the key is made on first Wi-Fi; `K` prints `SOULKEY PUB`), quiet hours for speech (no speaker on the base SKU).
 
 ---
 

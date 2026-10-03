@@ -159,9 +159,12 @@ Checks:
 - [ ] Nothing secret on serial: search the log for `sk-`, `sdt_`, `Bearer` → no hits.
 
 **SOUL Cloud** (when a server is running, docs/07):
-- [ ] Log: `[cloud] device token ok, not paired yet` → `[cloud] socket open, hello sent` → `[cloud] welcome`.
-- [ ] Settings → AI → SOUL Cloud → the **pairing code** (6 digits, big) + a QR of the pair link. Scan it,
-      sign in, confirm → SOUL says "Hi, <name>!" with heart eyes and returns.
+- [ ] Serial `K` prints `SOULKEY PUB <87 chars>` once Wi-Fi is up (the device key was made; never the private key).
+- [ ] Log: `[cloud] device key made (P-256)` (first time) → `[cloud] signed in (not paired yet)`; no
+      `[cloud] auth: HTTP 401 bad_signature` (that would mean the host SOUL signs for ≠ the cloud's SOUL_PUBLIC_HOST).
+- [ ] Settings → AI → SOUL Cloud → the **pairing code** (`XXXX-XXXX`, big) + a QR of `https://{BASE}/pair#c=…`.
+      Scan it, sign in with the email code, type/confirm the code → SOUL asks "Pair with <name>?" → tap
+      *Yes, pair* → SOUL says "Hi, <name>!" with heart eyes; the phone shows the brain choices.
 - [ ] In Claude (web or phone app) with the SOUL connector: "remind me tomorrow at 18:00 to call the bank
       on my SOUL" → within ~1 s SOUL shows surprised → happy eyes and the toast; the reminder rings at 18:00.
 - [ ] Claude app → Ask my Claude: type a question → "Left for your Claude" → in Claude: "check my SOUL".

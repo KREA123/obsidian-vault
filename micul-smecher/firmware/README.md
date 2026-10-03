@@ -91,8 +91,10 @@ geometry differ. On this disc a keyboard key is **~6.6 mm wide and ~7.9 mm tall*
 
 **Build, test, flash**
 ```bash
-pio test -e native                  # 112 native tests (eyes + motion parity, SoulOS flows, AI + SOUL Cloud protocols)
+pio test -e native                  # 123 native tests (eyes + motion parity, SoulOS flows, AI + SOUL Cloud protocols);
+                                    # needs OpenSSL's libcrypto on the PC (the device key; apt install libssl-dev)
 pio run -e sim && .pio/build/sim/program /tmp/out all   # the simulator (stills: sim/shots/)
+.pio/build/sim/program /tmp/out cloud http://127.0.0.1:8790 /tmp/key.hex   # a live local SOUL Cloud (see below)
 .pio/build/sim/program /tmp/out keys                     # drive the IMU from the keyboard: a/d turn, w/s tip,
                                                          # q/e yaw, x spin, t tap, n nod, h shake, b/f/u/r poses
 pio check -e lcd28                  # cppcheck on our code (clean)
@@ -102,7 +104,7 @@ pio device monitor -b 115200        # '?' lists the serial commands; 'F' = perf 
 ```
 If the upload does not start: hold **BOOT**, tap **RESET**, release BOOT, upload again.
 
-Build size (2026-10-03, 1.1.0): `lcd28` flash ~2.00 MB (31 % of the 6.25 MB app slot), static RAM 76 KB (23 %).
+Build size (2026-10-03, 1.2.0): `lcd28` flash ~2.04 MB (31 % of the 6.25 MB app slot), static RAM 77 KB (24 %).
 PSRAM holds our persistent canvas and the panel's two frame buffers (3 × 460,800 B ≈ 1.4 MB of 8 MB).
 
 **How it runs** (`src/main.cpp`)
@@ -110,7 +112,7 @@ PSRAM holds our persistent canvas and the panel's two frame buffers (3 × 460,80
 | Core | Task | What |
 |---|---|---|
 | 1 | the loop | touch, IMU, BLE (Hardware Buddy), Brain, SoulOS, the frame |
-| 0 | `soul-net` | Wi-Fi, setup portal, NTP, AI turns over HTTPS (Claude / OpenAI / SOUL Cloud fallback) |
+| 0 | `soul-net` | Wi-Fi, setup portal, NTP, AI turns over HTTPS (your Claude / OpenAI key; the survival path when SOUL Cloud is unreachable) |
 | 0 | `soul-cloud` | the SOUL Cloud WebSocket (docs/07 §6): pairing, pushes, turns, item/inbox sync |
 | 0 | LCD ISR | refills the two 10-line SRAM bounce buffers from the PSRAM frame buffer |
 
@@ -124,22 +126,54 @@ if frames get expensive.
 **Wi-Fi and the AI.** Settings → Wi-Fi → *Set up from a phone*: SOUL scans, opens the WPA2 access point
 `SOUL-XXXX` (random 8-digit password) and shows a **join QR**; the captive page sets the Wi-Fi, the
 brain, the time zone and, under *Advanced*, an Anthropic or OpenAI key (NVS `soulkey`, never printed,
-only shown masked). Brains (Settings → AI): **SOUL Cloud** (pair with the 6-digit code + QR; the cloud
-holds the provider key), **your Claude key** (`claude-opus-5-5`, effort low, structured JSON output),
-**your OpenAI key** (`gpt-6-luna`), **No AI** (on-device RO/EN rules). Models can be changed from the
-portal or by SOUL Cloud's `config` message. Every brain falls back to the on-device rules when the
-network, the key or the allowance fails, and the eyes say what happened.
+only shown masked). Brains (Settings → AI): **SOUL Cloud** (pair with the `XXXX-XXXX` code + QR; the account
+page decides who answers: your own Anthropic / OpenAI key kept encrypted in the cloud, or the offline rules —
+SOUL includes no AI paid by us, so the cloud's built-in brain is off unless `SOUL_BUILTIN_AI=1`), **your Claude
+key** on SOUL (`claude-opus-5-5`, effort low, structured JSON output), **your OpenAI key** on SOUL (`gpt-6-luna`),
+**No AI** (on-device RO/EN rules). Your own Claude / ChatGPT app reaches SOUL through the connector whatever the
+brain. Models can be changed from the portal or by SOUL Cloud's `config` message. Every brain falls back to the
+on-device rules when the network or the key fails, and the eyes say what happened.
 
-**SOUL Cloud** (`lib/Suflet/src/CloudLink.*` transport-free + `src/cloud.*` on the device), contract
-`../docs/07-CONNECT-AI.md` §6: device id `soul-<12 hex>`, a 32-byte secret made once with the radio on
-(NVS `soulid/sec`), device token (`soulid/tok`), `wss://…/v1/device/ws` with Bearer + `soul.v1`, ping
-25 s, reconnect 1–60 s + jitter, close codes 4401/4403/4426/4429. Pushes (`note.create`,
-`reminder.create` with an absolute date, `alarm.set` with any weekday set, `timer.start`,
-`focus.start`, `answer.show` cards, `item.delete`) are validated, applied once (dedupe by seq and
-item id, refs persisted), acked, and greeted with surprised → happy eyes. Things made on SOUL go up as
-`item.add` (queued offline, NVS `soulid/outq`), "Ask my Claude" (Claude app) as `inbox.add`. The last
-seq is saved batched (10 pushes / 60 s / before sleep). Without a cloud address none of this runs and
-the direct-key and No-AI brains work alone.
+**SOUL Cloud**, protocol v1 **rev. 2**, the one `../ai/suflet_ai/{devices,gateway}.py` implement
+(`../docs/07-CONNECT-AI.md` §6). Transport-free and tested on the PC: `lib/Suflet/src/CloudLink.*` (frames,
+auth bodies, the §6.2 error table, close codes), `CloudSession.*` (the state machine: dedupe, acks, outq,
+pairing, turns, time zone, frame budget) and `CloudDriver` (auth → socket → reconnect over a transport),
+`DeviceKey.*` (P-256: mbedTLS on the device, OpenSSL on the PC). `src/cloud.*` is only the ESP transport
+(esp_transport TLS + WebSocket, NVS); `sim/sim_cloud.*` is the same for the simulator (POSIX sockets).
+- **Identity**: device id `soul-<12 hex>`; an ECDSA P-256 key made on the device once Wi-Fi is up, kept in its
+  own NVS partition `soulid` (`priv`, `pub`, `rst`; *Start over* never erases it). Serial `K` prints the public
+  key (`SOULKEY PUB …`), never the private one.
+- **Sign-in**: `POST /v1/device/challenge` → sign `soul-auth-v1\n{host}\n{device_id}\n{nonce}` (raw r‖s) →
+  `POST /v1/device/auth` (`reset: true` after a factory reset) → a 24 h device token **in RAM only**, renewed
+  5 min before it ends. 400 → a new challenge once; 401 → back off 1 → 60 min ("Can't sign in" after 3);
+  403 `not_enrolled` / `key_revoked` → the matching screen, retry every 6 h; 429 → `Retry-After`.
+- **Socket**: `wss://…/v1/device/ws`, Bearer + `soul.v1`, `hello` (proto, caps, `after`, `brain_local`, `power`,
+  `tz_posix` as a hint) → `welcome` (the cloud's `posix_tz` always wins; `server_time` sets the clock if NTP has
+  not). Ping 25 s, silent 70 s, backoff 1–60 s + jitter reset after a minute up; close 4000 (1–5 s), 4401/4403
+  (sign in again), 4409 (not for 60 s), 4426 ("Update SOUL", daily), 4429 (`retry_ms`). Frames ≤ 10 KB of raw
+  UTF-8, at most 10 burst / 2 per s (acks apart).
+- **Pairing**: the 8-character code shown `XXXX-XXXX` + QR of `https://{BASE}/pair#c=…&d=…`; `pair.confirm`
+  shows "Pair with Ana?" and only a touch answers it (no touch in `expires_in` = no).
+- **Pushes** (`note.create`, `reminder.create` with an absolute date, `alarm.set` with any weekday set,
+  `timer.start`, `focus.start`, `answer.show`, `item.delete`): replays acked again and never re-applied; unknown
+  actions `unsupported`, bad ones `invalid`; while *Settings › Claude & ChatGPT on me* is paused, connector and
+  shortcut pushes are acked `paused`. A source badge (Claude / ChatGPT / App + who), night alarms with
+  `needs_accept` wait for *Accept* (then `item.state accepted|rejected`), private cards show the title until a
+  tap, reminders from the cloud report `item.state rang`.
+- **Up**: `item.add` / `inbox.add` / `item.state` in an offline queue (≤ 50, NVS `soulsync/outq` ≤ 8 KB), sent in
+  order only while paired, removed on `added` (or on `invalid` / `too_big` naming their `cid`), kept on
+  `rate_limited`. Turns: `ask` with `conv` (10 min) and the unsynced items, 25 s then `abort`; a cloud `timeout`
+  never makes the on-device rules act twice. The last seq is saved batched (10 pushes / 60 s / before sleep),
+  `sleep {wake_at}` before deep sleep.
+- **Proof**: 13 native tests in `test/test_suflet/test_cloud.cpp` incl. the cloud's auth test vector and a replay
+  of 32 frames + 4 HTTP answers recorded from the running cloud (`test/test_suflet/cloud_frames.h`, made by
+  `../ai/tools/record_frames.py`); and the simulator in cloud mode runs the same code over real sockets against a
+  local cloud (`../ai/tools/e2e_sim.py`, step 3 of `../ai/tools/e2e_demo.sh`): pairs via `/pair` + a tap on the
+  simulated glass, receives connector pushes, talks through the relay, sends items and inbox questions.
+- **Not yet**: the long-poll fallback and the 15-minute deep-sleep wake-polls of §6.11 (the device keeps the
+  socket while awake and sleeps up to 6 h at night), the factory `SOULKEY GEN` serial command (the key is made
+  on first Wi-Fi), flash + NVS encryption. Never run on the board against a deployed cloud.
+Without a cloud address none of this runs and the direct-key and No-AI brains work alone.
 
 **What the board has** (Waveshare wiki, vendor ESP-IDF demo and schematic, read 2026-09-25)
 
@@ -220,7 +254,9 @@ The checklist is [`BRINGUP.md`](BRINGUP.md). Open risks:
 - **Internal RAM with TLS + BLE**: mbedTLS allocates internally in this framework build; a SOUL Cloud
   socket plus a direct HTTPS turn plus BLE is the peak. Watch `min` heap in the perf log.
 - **GT911 INT polarity** for touch-wake from deep sleep (armed only if the line idles high).
-- **SOUL Cloud** is tested against recorded frames only, not a live server; the `esp_transport_ws`
-  read semantics (opcode after a timeout) are from the IDF sources as remembered, not read here.
-- **Keys and the device secret sit in plain NVS** until production turns on flash + NVS encryption.
+- **SOUL Cloud on the board**: the protocol code is tested on the PC (recorded frames) and end to end in the
+  simulator against a live local cloud, but the ESP transport (`src/cloud.cpp`: esp_transport TLS + WebSocket,
+  mbedTLS P-256) is compile-checked only; the `esp_transport_ws` read semantics (opcode after a timeout) are from
+  the IDF sources as remembered. First board test: serial `K`, then watch `[cloud]` lines while pairing.
+- **Keys and the device key sit in plain NVS** until production turns on flash + NVS encryption.
 - Orientation, IMU axes, charge current (R7 = 82 kΩ), buzzer polarity: see BRINGUP.md.
