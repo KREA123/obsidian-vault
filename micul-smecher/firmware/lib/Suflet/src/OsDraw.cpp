@@ -193,7 +193,8 @@ void Os::buildItems(std::vector<Item>& out) const {
         switch (i) {
           case 0: v = kBr[R][set_.bright % 4]; break;
           case 1:
-            v = aiMode() == AiMode::Cloud ? "SOUL Cloud" : aiMode() == AiMode::Claude ? "Claude" : aiMode() == AiMode::ChatGpt ? "ChatGPT" : (R ? "Fără AI" : "No AI");
+            v = aiMode() == AiMode::Cloud ? "SOUL Cloud" : aiMode() == AiMode::Claude ? "Claude" : aiMode() == AiMode::ChatGpt ? "ChatGPT"
+                : aiMode() == AiMode::Bridge ? (R ? "Claude (calculator)" : "Claude (computer)") : (R ? "Fără AI" : "No AI");
             break;
           case 2: v = net_.connected ? net_.ssid : net_.configured ? (R ? "Neconectat" : "Not connected") : (R ? "Nesetat" : "Not set"); break;
           case 3: v = R ? "Română" : "English"; break;
@@ -212,16 +213,21 @@ void Os::buildItems(std::vector<Item>& out) const {
       break;
     }
     case View::AiMode: {
-      static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::None};
+      static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::Bridge, AiMode::None};
       const char* labels[] = {R ? "Conectează Claude" : "Connect Claude", R ? "Claude · cheia ta" : "Claude · your key",
-                              R ? "ChatGPT · cheia ta" : "ChatGPT · your key", R ? "Fără AI" : "No AI"};
-      for (int i = 0; i < 4; ++i) {
+                              R ? "ChatGPT · cheia ta" : "ChatGPT · your key",
+                              R ? "Claude-ul de pe calculator" : "My Claude on my computer", R ? "Fără AI" : "No AI"};
+      for (int i = 0; i < 5; ++i) {
         const bool sel = aiMode() == kModes[i];
-        add(IdRow + i, 233, 136 + i * 60, 320, 58, labels[i], sel ? kMint : kCream, 1, sel);
+        add(IdRow + i, 233, 126 + i * 52, 330, 50, labels[i], sel ? kMint : kCream, 1, sel);
       }
-      if (net_.keyClaude || net_.keyOpenai) add(IdForget, 233, 378, 200, 40, R ? "Uită cheile" : "Forget keys", kAmber, 0, true, kDim);
+      if (net_.keyClaude || net_.keyOpenai) add(IdForget, 233, 394, 200, 36, R ? "Uită cheile" : "Forget keys", kAmber, 0, true, kDim);
       break;
     }
+    case View::Bridge:
+      add(IdNew, 160, 392, 150, 50, R ? "Cod nou" : "New code", kCream, 1, true);
+      if (net_.bridgePaired || net_.bridgeOnline) add(IdForget, 306, 392, 150, 50, R ? "Uită" : "Forget", kAmber, 1, true);
+      break;
     case View::Wifi:
       if (net_.portal) add(IdStopSetup, 233, 404, 200, 50, R ? "Gata" : "Done", kCream, 1, true);
       else add(IdSetup, 233, 300, 260, 56, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
@@ -356,6 +362,7 @@ void Os::render(Canvas& cv) {
     case View::MySoul: drawMySoul(cv); break;
     case View::About: drawAbout(cv); break;
     case View::Pair: drawPair(cv); break;
+    case View::Bridge: drawBridge(cv); break;
     default: break;
   }
   if (view_ != View::Keyboard && view_ != View::Dial) drawToast(cv);
@@ -472,7 +479,8 @@ void Os::drawLauncher(Canvas& cv) {
   std::string fact;
   switch (appView(orbit_)) {
     case View::Talk:
-      fact = aiMode() == AiMode::None ? (R ? "Fără AI" : "No AI") : aiMode() == AiMode::Cloud ? "SOUL Cloud" : aiMode() == AiMode::Claude ? "Claude" : "ChatGPT";
+      fact = aiMode() == AiMode::None ? (R ? "Fără AI" : "No AI") : aiMode() == AiMode::Cloud ? "SOUL Cloud" : aiMode() == AiMode::Claude ? "Claude"
+             : aiMode() == AiMode::Bridge ? (R ? "Claude (calculator)" : "Claude (computer)") : "ChatGPT";
       break;
     case View::Alarms: fact = nextAlarmText(); if (fact.empty()) fact = R ? "nicio alarmă" : "no alarms"; break;
     case View::Timer: {
@@ -543,8 +551,11 @@ void Os::drawTalk(Canvas& cv) {
 void Os::drawAnswer(Canvas& cv) {
   const bool R = ro();
   if (thinking_) {
-    const char* who = aiMode() == AiMode::Claude ? "Claude" : aiMode() == AiMode::ChatGpt ? "ChatGPT" : "SOUL";
-    rimTop(cv, std::string(who) + (R ? " se gândește…" : " is thinking…"), kAmber, 0.9f);
+    const char* who = aiMode() == AiMode::Claude || aiMode() == AiMode::Bridge ? "Claude" : aiMode() == AiMode::ChatGpt ? "ChatGPT" : "SOUL";
+    if (aiMode() == AiMode::Bridge && net_.askState != 2)  // on its way to the computer, Claude Code has not taken it yet
+      rimTop(cv, R ? "trimit calculatorului tău…" : "sending to your computer…", kAmber, 0.9f);
+    else
+      rimTop(cv, std::string(who) + (R ? " se gândește…" : " is thinking…"), kAmber, 0.9f);
     std::string lines[3];
     const int n = wrapLines(fonts::small(), reply_.say, g_.s(320), lines, 3);
     for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 250 + i * 28, lines[i], kCream, kDim);
@@ -766,7 +777,7 @@ void Os::drawAiMode(Canvas& cv) {
   buildItems(items_);
   for (Item it : items_) {
     std::vector<Item> one(1, it);
-    if (it.id >= IdRow && it.id < IdRow + 4) {
+    if (it.id >= IdRow && it.id < IdRow + 5) {
       one[0].y -= 8;
       std::string st;
       switch (it.id - IdRow) {
@@ -779,13 +790,59 @@ void Os::drawAiMode(Canvas& cv) {
           break;
         case 1: st = net_.keyClaude ? net_.maskClaude : (R ? "are nevoie de o cheie" : "needs a key"); break;
         case 2: st = net_.keyOpenai ? net_.maskOpenai : (R ? "are nevoie de o cheie" : "needs a key"); break;
+        case 3:
+          st = net_.bridgeOnline ? (R ? "conectat · " : "connected · ") + (net_.bridgeName.empty() ? std::string("PC") : net_.bridgeName)
+               : net_.bridgePaired ? (R ? "calculatorul e oprit" : "the computer is off")
+                                   : (R ? "Claude Code-ul tău (Pro/Max)" : "your own Claude Code (Pro/Max)");
+          break;
         default: st = R ? "ore și minutare pe device" : "times and timers on the device"; break;
       }
-      textAt(cv, fonts::small(), 233, it.y + 18, st, kCream, kFaint);
+      textAt(cv, fonts::small(), 233, it.y + 16, st, kCream, kFaint);
     }
     drawItems(cv, one);
   }
   rimBottom(cv, R ? "ține un rând = scrii cheia" : "hold a row = type the key", kCream, kFaint);
+}
+
+// "My Claude on my computer" (SOUL Bridge, docs/08 §4): the code to type in `soul-bridge pair`, then the
+// computer's name once it is connected. SOUL Cloud's 8-character code (any network) when SOUL is paired, else
+// the 6-digit code of SOUL's own server on this Wi-Fi.
+void Os::drawBridge(Canvas& cv) {
+  const bool R = ro();
+  rimTop(cv, R ? "CLAUDE DE PE CALCULATOR" : "MY CLAUDE ON MY COMPUTER", kCream, kDim);
+  if (net_.bridgeOnline) {
+    textAt(cv, fonts::large(), 233, 186, R ? "Conectat" : "Connected", kMint);
+    textAt(cv, fonts::text(), 233, 230, net_.bridgeName.empty() ? std::string("PC") : net_.bridgeName, kCream);
+    std::string l[3];
+    const int n = wrapLines(fonts::small(), R ? "Întreabă-mă orice: îți răspunde Claude Code-ul tău, de pe calculator."
+                                              : "Ask me anything: your own Claude Code answers, on your computer.",
+                            g_.s(320), l, 3);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 274 + i * 27, l[i], kCream, kDim);
+  } else if (!net_.connected) {
+    textAt(cv, fonts::text(), 233, 200, R ? "Întâi Wi-Fi-ul" : "Wi-Fi first", kCream);
+  } else if (net_.bridgeCode.empty()) {
+    const float pulse = 0.55f + 0.35f * sinf(t_ * 3.0f);
+    textAt(cv, fonts::text(), 233, 200, R ? "Fac un cod…" : "Making a code…", kCream, pulse);
+  } else {
+    const bool cloud = net_.bridgeCode.size() == 8;
+    textAt(cv, fonts::small(), 233, 132, R ? "Pe calculator, în terminal:" : "On your computer, in a terminal:", kCream, kDim);
+    textAt(cv, fonts::small(), 233, 160, "soul-bridge pair", kCream);
+    textAt(cv, fonts::large(), 233, 206, cloud ? net_.bridgeCode.substr(0, 4) + "-" + net_.bridgeCode.substr(4) : net_.bridgeCode, kAmber);
+    std::string tail;
+    if (cloud && !net_.cloudHost.empty()) tail = "--cloud " + net_.cloudHost;
+    else if (!cloud && !net_.ip.empty()) tail = R ? "(sau --soul " + net_.ip + ")" : "(or --soul " + net_.ip + ")";
+    if (!tail.empty()) textAt(cv, fonts::small(), 233, 248, ellipsize(fonts::small(), tail, g_.s(330)), kCream);
+    std::string l[2];
+    const int n = wrapLines(fonts::small(), net_.bridgePaired ? (R ? "Un calculator e legat, dar oprit: deschide Start SOUL."
+                                                                    : "A computer is paired but off: open Start SOUL.")
+                                                               : (R ? "Apoi: soul-bridge setup și Start SOUL."
+                                                                    : "Then: soul-bridge setup, and Start SOUL."),
+                            g_.s(330), l, 2);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 290 + i * 26, l[i], kCream, kDim);
+  }
+  buildItems(items_);
+  drawItems(cv, items_);
+  rimBottom(cv, R ? "Claude Code-ul tău, conectat de tine" : "your own Claude Code, signed in by you", kCream, kFaint);
 }
 
 void Os::drawWifi(Canvas& cv) {

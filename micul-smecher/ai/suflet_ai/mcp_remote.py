@@ -1279,7 +1279,7 @@ def _metadata_routes(rc: RemoteContext, cimd_supported: bool) -> List[Route]:
 
 def create_remote_app(service: Optional[SoulService] = None, gateway: Any = None, *,
                       public_host: Optional[str] = None, scheme: str = "https", db_path: Optional[str] = None,
-                      mailer: Optional[Mailer] = None, cimd_fetch: Optional[Callable[[str], dict]] = None,
+                      mailer: Optional[Mailer] = None, cimd_fetch: Any = None,
                       clock: Callable[[], float] = time.time, extra_allowed_hosts: Optional[List[str]] = None,
                       key_check: Optional[Callable[[str, str], str]] = None):
     """The remote connector app (Starlette, with its lifespan). `gateway` defaults to `suflet_ai.gateway`."""
@@ -1291,11 +1291,13 @@ def create_remote_app(service: Optional[SoulService] = None, gateway: Any = None
     service = service or SoulService()
     gw = gateway if isinstance(gateway, GatewayAdapter) else (GatewayAdapter(gateway) if gateway is not None
                                                               else load_gateway(service))
-    if cimd_fetch is None:
+    if cimd_fetch is False or os.environ.get("SOUL_CIMD") == "0":
+        cimd_fetch = None  # CIMD off: the metadata does not claim it
+    elif cimd_fetch is None:
         try:
             cimd_fetch = importlib.import_module(f"{__package__}.cimd").fetch_client_metadata
         except (ImportError, AttributeError):
-            cimd_fetch = None  # CIMD off: the metadata does not claim it
+            cimd_fetch = None
     if db_path is None:
         os.makedirs(service.settings.data_dir, exist_ok=True)
         db_path = os.environ.get("SOUL_AUTH_DB") or os.path.join(service.settings.data_dir, "auth.sqlite")

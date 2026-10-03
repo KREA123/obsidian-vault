@@ -1,6 +1,6 @@
 # 08 · Your own Claude on SOUL (Pro/Max, through Anthropic's own apps)
 
-*SOUL package · 3 Oct 2026 · rev. 1. Scope: how a SOUL owner types or says something on SOUL and gets the answer from **their own** Claude subscription, using only Anthropic's official apps that the owner installs and signs in to himself. Complements `07-CONNECT-AI.md` (lab path L1 there is this document's §3). Code: `bridge/` (SOUL Bridge prototype, Node). Markers as in doc 07: [V] verified today against the official page in §9 · [R] read/run in this repo · [L] likely · [U] unverified, test before promising · [E] our estimate.*
+*SOUL package · 3 Oct 2026 · rev. 2 (night: SOUL's side built — firmware brain "My Claude on my computer" with its LAN server, SOUL Cloud `/v1/bridge`, pairing by a code on SOUL or on `/me`, the bridge's cloud/LAN pairing, status page and launchers; end to end with the firmware simulator, the real cloud and a mocked Claude Code). Scope: how a SOUL owner types or says something on SOUL and gets the answer from **their own** Claude subscription, using only Anthropic's official apps that the owner installs and signs in to himself. Complements `07-CONNECT-AI.md` (lab path L1 there is this document's §3). Code: `bridge/` (SOUL Bridge prototype, Node). Markers as in doc 07: [V] verified today against the official page in §9 · [R] read/run in this repo · [L] likely · [U] unverified, test before promising · [E] our estimate.*
 
 ---
 
@@ -16,16 +16,16 @@ Ce e permis și am construit: **SOUL Bridge**, un mic program open-source care r
 
 | Ruta | Merge azi? | Ce trebuie | Risc de politică |
 |---|---|---|---|
-| **1. SOUL Bridge ca *channel* Claude Code** (recomandat) | Prototip funcțional, testat cu SOUL simulat și Claude simulat; Claude Code real (2.1.288) pornește Bridge-ul și vede instrumentele lui. **Livrarea mesajului într-o sesiune Claude reală, logată, NU a fost testată** (aici nu avem voie să folosim un cont real) | PC/Mac pornit, fereastra Claude Code deschisă, abonament Pro/Max, firmware SOUL cu endpoint-ul `/bridge` (**nu există încă**) | **Mediu.** Canalele „custom" cer azi flag-ul `--dangerously-load-development-channels`, documentat pentru dezvoltare locală. Ca să-l vindem ca funcție trebuie ca Anthropic să ne pună pe lista aprobată (cerere prin partener). Până atunci: „experimental, pentru utilizatori avansați", nu în reclame |
+| **1. SOUL Bridge ca *channel* Claude Code** (recomandat) | **Construit cap-coadă**: firmware 1.3.0 (*Setări › AI › Claude-ul meu de pe calculator*, server `/bridge` pe Wi-Fi-ul de acasă), SOUL Cloud (`/v1/bridge`, pentru calculator în altă rețea), `soul-bridge` pe calculator. Rulat cu firmware-ul în simulator, cloudul real și un Claude Code **simulat**. Claude Code real (2.1.288) pornește Bridge-ul și vede instrumentele lui. **Livrarea mesajului într-o sesiune Claude reală, logată, NU a fost testată** (aici nu avem voie să folosim un cont real), nici pe placă | PC/Mac pornit, fereastra Claude Code deschisă, abonament Pro/Max | **Mediu.** Canalele „custom" cer azi flag-ul `--dangerously-load-development-channels`, documentat pentru dezvoltare locală. Ca să-l vindem ca funcție trebuie ca Anthropic să ne pună pe lista aprobată (cerere prin partener). Până atunci: „experimental, pentru utilizatori avansați", nu în reclame |
 | 1b. Bridge cu `claude -p` (fără fereastră deschisă) | Construit, **oprit implicit** | la fel, dar fără fereastră | **Mai mare.** Arată ca „un produs terț care folosește abonamentul utilizatorului prin Agent SDK", exact zona pe care Anthropic spune că n-o permite fără aprobare. Nu-l livrăm fără confirmare scrisă |
 | **2. iPhone: Shortcut cu acțiunea „Ask Claude"** | Acțiunea există oficial (iOS 18+) și răspunsul curge în Shortcut [V]. Nu am construit fișierul Shortcut (trebuie un iPhone) și cloudul nu are încă endpoint-urile de citire/răspuns | iPhone cu app-ul Claude logat; utilizatorul apasă (widget/Siri/notificare) | **Mic** (utilizatorul folosește app-ul oficial, mesajele se scad din limita lui [V]). Dar **nu e automat**: rulează când utilizatorul îl declanșează; rularea complet în fundal e [U] |
 | **3. Claude Desktop / claude.ai → SOUL (conectorul, modul C din doc 07)** | Construit în cloud, netestat cu claude.ai real | orice plan Claude | Mic (funcție oficială). Dar direcția e inversă: Claude comandă SOUL, nu SOUL întreabă Claude |
 
-**Ce înseamnă pentru utilizator (ruta 1), prima dată:** instalează Claude Code și se loghează (1–2 min) → instalează SOUL Bridge → pe SOUL: *Setări › AI › Conectează calculatorul* afișează un cod → îl tastează în Bridge → dublu-click pe „Start SOUL" → acceptă 3 dialoguri ale Claude Code. Zilnic: dublu-click „Start SOUL" + confirmarea avertismentului „development channels" (la fiecare pornire, cât timp suntem în afara listei aprobate). Latență estimată: 3–15 s pe răspuns [E].
+**Ce înseamnă pentru utilizator (ruta 1), prima dată:** instalează Node.js și Claude Code și se loghează (2–3 min) → `npm install -g soul-bridge` → pe SOUL: *Setări › AI › Claude-ul meu de pe calculator* afișează comanda cu codul (`soul-bridge pair 7KQ3-M9XD --cloud …` prin SOUL Cloud, sau `soul-bridge pair 482913` pe același Wi-Fi) → o tastează → `soul-bridge setup` → dublu-click pe „Start SOUL" → acceptă 3 dialoguri ale Claude Code; o pagină de stare se deschide la http://127.0.0.1:8766. Zilnic: dublu-click „Start SOUL" + confirmarea avertismentului „development channels" (la fiecare pornire, cât timp suntem în afara listei aprobate). Latență estimată: 3–15 s pe răspuns [E].
 
 **Riscul, în cuvinte simple:** nu atingem niciodată login-ul Claude, deci nu suntem în zona interzisă explicit. Zona gri e alta: (a) folosim un flag de dezvoltator pentru o funcție de produs; (b) Anthropic ar putea considera că SOUL „își oferă produsul pe limitele abonamentului utilizatorului". Ca să reducem riscul: Bridge open-source, rulează doar pe calculatorul utilizatorului, cu login-ul lui, uz personal, nicio dată Claude prin serverele noastre, fără branding „Claude Code" în numele produsului, și **cerem Anthropic, în scris, aprobarea canalului** (adăugăm la draftul de parteneriat existent). Dacă Anthropic spune nu, ruta 1 rămâne un proiect open-source pentru pasionați, nu o funcție SOUL.
 
-**Acțiuni fondator:** (1) trimite cererea către Anthropic: listarea canalului SOUL în marketplace-ul oficial + confirmare pentru uz personal (§7); (2) prioritizează în firmware endpoint-ul `/bridge` (§4) după ce agentul de firmware termină CloudLink; (3) testează pe propriul Mac/PC cu contul tău Pro/Max pașii din §3.1 (singurul test pe care noi nu-l putem face aici).
+**Acțiuni fondator:** (1) trimite cererea către Anthropic: listarea canalului SOUL în marketplace-ul oficial + confirmare pentru uz personal (§7); (2) ~~endpoint-ul `/bridge` în firmware~~ făcut (firmware 1.3.0 + SOUL Cloud `/v1/bridge`); (2b) publică `soul-bridge` pe npm (sau un `.tgz` pe site) ca să meargă `npm install -g soul-bridge`; (3) testează pe propriul Mac/PC cu contul tău Pro/Max pașii din §3.1 (singurul test pe care noi nu-l putem face aici).
 
 ---
 
@@ -50,9 +50,9 @@ So the only legitimate shapes are those where **the user runs an Anthropic app, 
 |---|---|---|---|
 | Direction | SOUL asks, user's Claude answers | SOUL asks (via inbox), user's Claude answers when the Shortcut runs | user's Claude acts on SOUL |
 | Official mechanism | Claude Code *channels*, research preview [V] | Claude iOS App Intent "Ask Claude", iOS 18+ [V] | remote MCP connector (claude.ai, Desktop, mobile) [V]; local MCP in Claude Desktop [V] |
-| Status in this repo | **prototype built** (`bridge/`), 17 tests + e2e with fake SOUL and mocked Claude [R]; wiring checked against real Claude Code 2.1.288 (§3.4) | **recipe only** (§5); cloud endpoints not built; Shortcut file not built | connector built in `ai/` (doc 07 mode C), not tried with real claude.ai |
+| Status in this repo | **built end to end**: `bridge/` (23 tests + e2e), firmware brain `bridge` + LAN server, SOUL Cloud `/v1/bridge`; run with the firmware simulator, the real cloud and a mocked Claude Code [R]; wiring checked against real Claude Code 2.1.288 (§3.4) | **recipe only** (§5); cloud endpoints not built; Shortcut file not built | connector built in `ai/` (doc 07 mode C), not tried with real claude.ai |
 | Plan | Pro or Max (Claude Code is not in Free [L]); Team/Enterprise only if an Owner enables channels [V] | any plan with the iOS app (counts toward usage limits [V]) | any plan incl. Free (1 custom connector) [V] |
-| Needs | computer on and awake, Claude Code window open, home Wi-Fi (or SOUL Cloud relay, not built) | iPhone, Claude iOS app signed in, user trigger | Claude app |
+| Needs | computer on and awake, Claude Code window open; same Wi-Fi as SOUL, or SOUL Cloud (`/v1/bridge`, any network) | iPhone, Claude iOS app signed in, user trigger | Claude app |
 | Real time | yes, while the session is open [V] | no: runs when triggered | n/a |
 | Latency | ≈ 3–15 s per answer [E] (model time; push is immediate [V]) | ≈ 5–20 s after the trigger [E] | Claude's own reply time |
 | First-time steps | ≈ 7 (§3.1) | ≈ 6 (§5) | ≈ 7 (doc 07 §0.1) |
@@ -66,11 +66,11 @@ So the only legitimate shapes are those where **the user runs an Anthropic app, 
 |---|---|---|
 | 1 | Install **Claude Code** from Anthropic (code.claude.com; one installer per OS) | official [V] |
 | 2 | Open a terminal, run `claude`, sign in to **your own** Claude account in Anthropic's browser flow | official [V]; SOUL never sees it |
-| 3 | Install **SOUL Bridge** | today: `cd bridge && npm install` (Node ≥ 20). **Not built:** a signed one-click installer bundling Node, and a tray/menu-bar icon "SOUL connected". Today the status is `soul-bridge status` / `~/.soul-bridge/status.json` |
-| 4 | On SOUL: *Settings › AI › Pair a computer* shows a 6-digit code; run `soul-bridge pair 123456` (SOUL found as `soul.local`, or `--soul ws://soul-xxxx.local:8765/bridge`) | **firmware screen + endpoint not built** (§4); works against the fake SOUL |
-| 5 | `soul-bridge setup` → creates `~/SOUL-Claude/` with `.mcp.json`, locked-down `.claude/settings.json`, `CLAUDE.md`, and launchers `Start SOUL.command` (macOS), `Start SOUL.cmd` (Windows), `start-soul.sh` | built [R] |
-| 6 | Double-click **Start SOUL**. First time Claude Code asks: trust this folder → *Yes*; "New MCP server found: soul" → *Use this MCP server*; development-channels warning → *I am using this for local development*. Keep the window open | dialogs [V] from the docs; the dev-channel warning appears on **every** start while SOUL is not on the approved allowlist [L] |
-| 7 | Ask on SOUL ("Trezește-mă mâine la 7"). SOUL shows "Claude is thinking…" then the answer; the alarm is set | e2e with fake SOUL + mocked Claude [R]; **not tried with a signed-in Claude** [U] |
+| 3 | Install **Node.js ≥ 20** and **SOUL Bridge**: `npm install -g soul-bridge` | built: the package installs globally (checked from a `npm pack` tarball into a scratch prefix [R]); **not done:** publishing to npm (founder), a signed one-click installer bundling Node |
+| 4 | On SOUL: *Settings › AI › My Claude on my computer* shows the command with a one-time code: `soul-bridge pair XXXX-XXXX --cloud {BASE}` when SOUL is paired with an account (works from any network; `/me` → *Pair a computer* shows the same kind of code), else `soul-bridge pair 123456` for SOUL on this Wi-Fi (found by mDNS `_soul._tcp`, or `--soul <IP>` as SOUL shows) | built [R] (firmware 1.3.0, cloud, bridge); e2e with the simulator for both [R]; mDNS on a real network [U] |
+| 5 | `soul-bridge setup [--desktop]` → creates `~/SOUL-Claude/` with `.mcp.json`, locked-down `.claude/settings.json`, `CLAUDE.md`, and launchers `Start SOUL.command` (macOS), `Start SOUL.cmd` (Windows), `start-soul.sh` (+ a Desktop copy) | built [R]; launchers reviewed (§3.4) |
+| 6 | Double-click **Start SOUL**: it finds `claude` (also with a double-click's bare PATH), opens the status page http://127.0.0.1:8766 (instead of a tray icon: green when SOUL is connected, counts of questions; loopback only, no secrets), starts Claude Code and keeps the window open when it stops. First time Claude Code asks: trust this folder → *Yes*; "New MCP server found: soul" → *Use this MCP server*; development-channels warning → *I am using this for local development*. Keep the window open | dialogs [V] from the docs; the dev-channel warning appears on **every** start while SOUL is not on the approved allowlist [L]; launchers never run on macOS/Windows here [U] |
+| 7 | Ask on SOUL ("Trezește-mă mâine la 7"). SOUL's eyes wait (on its way), then think (Claude Code took it), then the answer; the alarm is set. Computer off → "Your computer is offline: open Start SOUL" and the offline rules answer what they can | e2e: simulated SOUL → cloud → bridge → mocked Claude Code → alarm on SOUL, and the same on the LAN [R]; **not tried with a signed-in Claude** [U] |
 
 What the launcher runs (no credential anywhere, binary unmodified):
 
@@ -107,17 +107,27 @@ SOUL (round screen)  --ws, LAN-->  soul-bridge channel  --stdio MCP-->  Claude C
 | File | What |
 |---|---|
 | `bridge/src/protocol.js` | wire protocol v1 (§4), frame validation, `ws://` only on the LAN |
-| `bridge/src/soul-link.js` | outbound WebSocket to SOUL, pairing, reconnect with backoff |
+| `bridge/src/soul-link.js` | outbound WebSocket to SOUL (LAN) or SOUL Cloud (`/v1/bridge`), pairing, reconnect with backoff; sends this computer's host name as `label` |
+| `bridge/src/discover.js` | mDNS `_soul._tcp.local` (no library): finds SOUL on this Wi-Fi for `pair <6 digits>` |
+| `bridge/src/status-page.js` | the local status page http://127.0.0.1:8766 (the "tray"), opened by the launchers |
 | `bridge/src/core.js` | pending questions, ack/answer/timeout/busy, action validation |
 | `bridge/src/actions.js` | action schemas mirroring `ai/suflet_ai/actions.py` |
 | `bridge/src/channel.js` | the Claude Code channel MCP server (`soul_reply`, `soul_status`) |
 | `bridge/src/print-runner.js` | optional `claude -p` runner |
 | `bridge/src/config.js`, `setup.js` | config (no Claude secrets), `~/SOUL-Claude` folder + launchers |
-| `bridge/bin/soul-bridge.js` | CLI: `pair`, `setup`, `channel`, `print`, `status`, `doctor` |
+| `bridge/bin/soul-bridge.js` | CLI: `pair` (8 characters + `--cloud`, or 6 digits + `--soul`/mDNS), `setup [--desktop]`, `channel`, `print`, `status`, `status-page [--open]`, `discover`, `doctor` |
+| `bridge/README.md` | install and daily use |
 | `bridge/tools/fake-soul.js` | fake SOUL device (server side of §4) |
-| `bridge/tools/fake-claude-code.js`, `fake-claude.js`, `mock-brain.js` | mocked Claude Code (spawns the channel over stdio like Claude Code does) and mocked `claude -p` |
+| `bridge/tools/fake-claude-code.js`, `fake-claude-code-cli.js`, `fake-claude.js`, `mock-brain.js` | mocked Claude Code (spawns the channel over stdio like Claude Code does; `-cli` = as a process, for `ai/tools/e2e_bridge.py`) and mocked `claude -p` |
 | `bridge/tools/e2e-fake-soul.js` | end-to-end demo: `npm run e2e` |
-| `bridge/test/*.test.js` | `npm test` (node:test, 17 tests) |
+| `bridge/test/*.test.js` | `npm test` (node:test, 23 tests) |
+| `firmware/lib/Suflet/src/BridgeLink.*` | SOUL's side on the LAN (transport-free): 6-digit code, token hashes, hello, turns, timeouts |
+| `firmware/src/bridge_lan.*` | the ESP transport: `esp_http_server` WebSocket on :8765 `/bridge`, mDNS `soul-xxxx` + `_soul._tcp`, token hashes in NVS `soulbridge` |
+| `firmware/lib/Suflet/src/CloudLink.*`, `CloudSession.*` | the cloud transport's device frames (`bridge.code`, `bridge.state`, `ask.state`, `brain`, `bridge_offline`), 125 s turns |
+| `firmware/lib/Suflet/src/Os*.cpp` | brain "My Claude on my computer" in *Settings › AI*, its screen (code, command, computer, *New code*, *Forget*), the eyes (wait → think), the offline fallback |
+| `ai/suflet_ai/bridge_hub.py` | SOUL Cloud `/v1/bridge`: codes, bridge tokens (hashed, per SOUL and owner), the live bridge per SOUL, turns |
+| `ai/suflet_ai/web_me.py` | `/me`: the computers per SOUL, *Pair a computer*, *Forget*; brain `bridge` |
+| `ai/tools/e2e_bridge.py` | simulator → cloud → bridge → mocked Claude Code → back; and the LAN variant (`--lan`) |
 
 ### 3.4 What was verified, and how
 
@@ -128,20 +138,24 @@ SOUL (round screen)  --ws, LAN-->  soul-bridge channel  --stdio MCP-->  Claude C
 | Real **Claude Code 2.1.288** reads `~/SOUL-Claude/.mcp.json`, spawns `soul-bridge channel`, MCP handshake `connected`, tools exposed as `mcp__soul__soul_reply` / `mcp__soul__soul_status`, `--tools ""` leaves only those two tools, and the bridge connects and authenticates to the (fake) SOUL | [R] run in a scratch HOME in the build sandbox (`claude mcp list`; `system/init` of a `-p` run) |
 | Until the folder is trusted interactively, Claude Code shows the server as "Pending approval" and ignores the project `permissions.allow` | [R] observed; that is why step 6 includes the trust dialog. We do **not** write Claude Code's own `~/.claude.json` to skip it |
 | A pushed SOUL question actually appears in a signed-in **interactive** session and Claude calls `soul_reply` | **[U]** not tested: needs a real user account on a real machine (founder test, §7) |
-| Windows/macOS launchers, `soul.local` resolution on Windows | [U] |
+| SOUL's side, cloud transport: simulated SOUL (the firmware's own code) → `/v1/bridge` → real `soul-bridge pair` / `channel` → mocked Claude Code → `soul_reply` + `alarm.set` → pushed, applied by SoulOS; computer gone → `bridge_offline`, the rules answer | [R] `ai/tests/test_e2e_bridge.py`, step 4 of `ai/tools/e2e_demo.sh`; cloud unit tests `ai/tests/test_gateway_bridge.py`, `test_web_gdpr_bridge.py` |
+| SOUL's side, LAN transport: the simulator serves `/bridge` with the firmware's `BridgeServer`; `soul-bridge pair <6 digits> --soul …`; the same mocked Claude Code; actions applied on SOUL without a cloud | [R] same test file; native `test_bridge.cpp`; the ESP transport compiles (lcd28, amoled143), never run on a board [U] |
+| `npm install -g` from the packed tarball; `soul-bridge` on PATH; launchers: ShellCheck clean (`-s sh`), the `.cmd` checked by tests (CRLF, `chcp 65001`, `where claude`, `call`, `pause`, `%` escaped), paths from `fileURLToPath` (not `URL.pathname`, which breaks on Windows) | [R] |
+| Windows/macOS launchers actually double-clicked; `soul-xxxx.local` / mDNS on a real Wi-Fi and on Windows | [U] |
 
 ## 4. SOUL side: bridge protocol v1 (for the firmware and cloud builders)
 
-Not built in firmware or cloud. The firmware agent is editing CloudLink now; this section is the contract to implement after that. JSON text frames over WebSocket, max 16 KB.
+**Built (3 Oct 2026, night)** on both transports; JSON text frames over WebSocket, max 16 KB, the same frames on both.
 
-- **Transport, LAN (first):** SOUL listens on `ws://<hostname>.local:8765/bridge` and advertises mDNS `soul-xxxx.local` (+ `_soul._tcp` service, optional). Plain `ws://` is accepted by the bridge only for `.local`/private addresses.
-- **Transport, cloud (later):** `wss://{BASE}/v1/bridge` with SOUL Cloud relaying frames to the device's existing WebSocket; lets the PC be on another network. Needs a new gateway route (not built).
+- **Transport, LAN:** while its brain is "My Claude on my computer", SOUL listens on `ws://soul-xxxx.local:8765/bridge` (`esp_http_server`, mDNS `soul-xxxx` + `_soul._tcp`). Pairing code: 6 digits, 120 s, 5 tries, on SOUL's screen; SOUL keeps only SHA-256 of the tokens it issued (≤ 3). Answers carry their actions; SoulOS validates (the push rules of doc 07 §6.8) and applies them itself. Plain `ws://` is accepted by the bridge only for `.local`/private addresses.
+- **Transport, cloud:** `wss://{BASE}/v1/bridge` (`ai/suflet_ai/bridge_hub.py`): the bridge talks to SOUL Cloud, SOUL Cloud to the SOUL on its existing `soul.v1` socket (or long-poll). Pairing code: 8 Crockford characters, 5 min, single use, made on request of a touch on SOUL (`bridge.code.get`) or on `/me` (*Pair a computer*); the bridge token is bound to that SOUL and its owner, stored hashed, listed and revocable on `/me`, dead when the SOUL is unpaired, reset, forgotten on SOUL or the account deleted; one bridge per SOUL (newest wins). A turn of brain `bridge` is an ordinary `ask`: the cloud answers `ask.state waiting` at once, `bridge_offline` at once when no bridge is connected, forwards it as `ask {id, text, lang, now, tz, from}`, turns the bridge's `ask.ack` into `ask.state thinking`, runs the answer's actions through the dispatcher (as any brain: validated, stored, pushed with origin `turn`), and sends the `reply` (provider `claude`, brain `bridge`) — or `timeout` after 120 s (the bridge gets `ask.cancel`). Device-side frames: doc 07 §6.6/§6.7/§6.9. Limits: 20 pairing tries per network per hour, 1,000 failed pairings fleet-wide per hour.
+- **Which one SOUL uses:** the LAN bridge when one is connected, else the cloud one; neither → the offline rules on SOUL with "Your computer is offline: open Start SOUL". The screen shows SOUL Cloud's code when SOUL is paired (any network), else the LAN code.
 
 | Direction | `t` | Fields |
 |---|---|---|
-| bridge → SOUL | `bridge.pair` | `v:1, code:"482913", bridge:"soul-bridge/0.1.0"` (code shown on SOUL's screen, 6 digits, valid 120 s, 5 tries) |
+| bridge → SOUL | `bridge.pair` | `v:1, code:"482913", bridge:"soul-bridge/0.2.0", label:"anas-mac"` (code shown on SOUL's screen: 6 digits on the LAN, 120 s, 5 tries; 8 characters through SOUL Cloud, 5 min) |
 | SOUL → bridge | `bridge.paired` | `token:"sbt_<≥16 b64url>", device_id, name` |
-| bridge → SOUL | `bridge.hello` | `v:1, token, bridge, mode:"channel"\|"print"` (first frame of every connection) |
+| bridge → SOUL | `bridge.hello` | `v:1, token, bridge, mode:"channel"\|"print", label` (first frame of every connection; nothing else within 10 s closes it) |
 | SOUL → bridge | `bridge.welcome` / `bridge.denied` | `device_id, name, lang, tz` / `reason` |
 | SOUL → bridge | `ask` | `id:[A-Za-z0-9_.:-]{1,64}, text:1..2000, lang, now:"YYYY-MM-DDTHH:MM", tz, from:"touch"\|"keyboard"\|"voice"\|"phone"` |
 | SOUL → bridge | `ask.cancel` | `id` |
@@ -150,7 +164,7 @@ Not built in firmware or cloud. The firmware agent is editing CloudLink now; thi
 | bridge → SOUL | `answer.error` | `id, code:"timeout"\|"claude_unavailable"\|"busy"\|"bad_request", detail` |
 | SOUL → bridge | `answer.ack` | `id, shown:bool` |
 
-SOUL rules: store the token hash only; one active bridge per device (newest wins); revoke from *Settings › AI › Paired computers*; actions from the bridge are executed by the same dispatcher as any brain and shown with a "Claude (PC)" source badge; a new brain value `"bridge"` (doc 07 §0.2 list) routes the *Ask* button to the bridge when it is connected, else falls back to rules (E) with the message "Your computer is offline: open Start SOUL".
+SOUL rules (as built): store the token hash only; one active bridge per device (newest wins); *Forget* on SOUL's Bridge screen (both transports) or on `/me` (cloud tokens); actions from the bridge are executed by the same rules as any brain; the answer shows "Claude · your computer"; the brain value `"bridge"` routes the *Ask* button to the bridge when it is connected, else falls back to rules (E) with the message "Your computer is offline: open Start SOUL"; the eyes wait while the question travels and think once Claude Code took it; SOUL gives up after 125 s (the device) / 120 s (the cloud, the bridge).
 
 ## 5. Route 2 · iPhone "Ask Claude" Shortcut
 
@@ -190,9 +204,9 @@ How we minimise it:
 |---|---|
 | Founder | Add to the Anthropic partnership request: (a) list a SOUL channel plugin in `claude-plugins-official` (no dev flag); (b) written confirmation that a device vendor's open-source local channel, run by the user on his own Pro/Max login, is acceptable; (c) whether print mode is acceptable for personal use. |
 | Founder | Run §3.1 on your own Mac/PC with your Pro/Max account and the fake SOUL: `npm install`, then in one terminal `node -e "import('./tools/fake-soul.js').then(async m=>{const s=new m.FakeSoul();await s.listen(8765);console.log(s.url);s.on('bridge',()=>setTimeout(()=>s.ask('Trezește-mă mâine la 7').then(a=>console.log(a)),3000))})"`, then `node bin/soul-bridge.js pair 482913 --soul ws://127.0.0.1:8765/bridge`, `node bin/soul-bridge.js setup`, start `~/SOUL-Claude/start-soul.sh`. Expect the alarm answer printed in the first terminal. |
-| Firmware | After CloudLink: §4 endpoint, pairing screen, brain `"bridge"`, "Claude (PC)" badge. |
-| Cloud | `/v1/bridge` relay (optional), `/v1/pt/inbox` read + answer scopes for route 2. |
-| Bridge | Installer (bundled Node, signed, macOS/Windows), tray icon from `status.json`, auto-start at login, `_soul._tcp` discovery. |
+| Firmware | ~~§4 endpoint, pairing screen, brain `"bridge"`~~ built (1.3.0). Next: try it on the board (LAN server memory with TLS + BLE on, mDNS name on a real router). |
+| Cloud | ~~`/v1/bridge` relay~~ built. Next: `/v1/pt/inbox` read + answer scopes for route 2. |
+| Bridge | ~~`_soul._tcp` discovery, status (a local page instead of a tray icon)~~ built. Next: publish on npm; a signed installer bundling Node (macOS/Windows); auto-start at login (a LaunchAgent / a Startup shortcut) — the user still has to accept Claude Code's dev-channel warning on every start. |
 
 ## 8. Route 3 (complement): Claude → SOUL
 

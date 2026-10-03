@@ -23,8 +23,10 @@
 
 namespace suflet {
 
-enum class AiMode : uint8_t { None, Claude, ChatGpt, Cloud };  // Offline · your Claude key · your OpenAI key · SOUL Cloud
-const char* aiModeName(AiMode m);  // "none" | "claude" | "chatgpt" | "cloud"
+// Offline · your Claude key · your OpenAI key · SOUL Cloud · your own Claude Code on your computer (SOUL Bridge,
+// docs/08-OWN-CLAUDE.md: over the home network, or through SOUL Cloud's /v1/bridge)
+enum class AiMode : uint8_t { None, Claude, ChatGpt, Cloud, Bridge };
+const char* aiModeName(AiMode m);  // "none" | "claude" | "chatgpt" | "cloud" | "bridge"
 AiMode aiModeFrom(const char* s);
 
 enum class AiErr : uint8_t {
@@ -39,6 +41,7 @@ enum class AiErr : uint8_t {
   Timeout,
   Upstream,     // 5xx, 529 overloaded, unreadable answer
   Truncated,    // stop_reason "max_tokens"
+  BridgeOffline,  // SOUL Bridge: the owner's computer is not connected (or Claude Code is not running)
   Count
 };
 const char* aiErrCode(AiErr e);                 // "bad_key" ...
@@ -100,6 +103,7 @@ struct AiConfig {
 
 struct HttpRequest {
   std::string url;
+  bool get = false;  // GET (no body) instead of POST: SOUL Cloud's long-poll
   std::vector<std::pair<std::string, std::string>> headers;  // never logged: carries the key
   std::string body;
   uint32_t timeoutMs = 25000;

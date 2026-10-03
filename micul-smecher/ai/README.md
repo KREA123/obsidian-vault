@@ -276,6 +276,7 @@ Contractul e `docs/07-CONNECT-AI.md` §3.2, §3.4, §3.9–3.10 și §6. Rutele 
 | `POST /v1/device/challenge` · `POST /v1/device/auth` | nonce (60 s, o dată, legat de rețea) → token `sdt_` |
 | `GET /v1/device/ws` (subprotocol `soul.v1`) | hello/welcome, push + ack, replay pe pagini, `ask` → `reply`, coduri 4400/4401/4403/4409/4426/4429 |
 | `GET /v1/device/poll` · `POST /v1/device/send` | același protocol prin long-poll (și trezirile din somn adânc) |
+| `GET /v1/bridge` (WebSocket) | SOUL Bridge prin cloud (`bridge_hub.py`, `docs/08-OWN-CLAUDE.md` §4): calculatorul proprietarului, cu Claude Code-ul lui |
 | `/v1/dev/pair/claim`, `/v1/dev/push`, `/v1/dev/unpair`, `/v1/dev/config`, `/v1/dev/key` | doar dev / self-host, cu `SUFLET_API_TOKEN`; nu există la `SOUL_ENV=production` sau `pilot` (`/v1/dev/key` ține locul paginii `/me/keys` pentru B2) |
 
 - `devices.py`: identitate, înrolare (`SOUL_ENROL_POLICY=factory` în producție, `pending` doar dev/P0),
@@ -334,6 +335,15 @@ Ce verifică (pe socketuri reale, `127.0.0.1`):
    fals cu cheia proprietarului → răspuns + memento aplicat; o notiță făcută pe SOUL (`item.add`) și „Ask my
    Claude” (`inbox.add`) ajung în cloud, conectorul le citește și răspunde pe SOUL (`answer_soul`).
 
+6. **Pasul 4/4, SOUL Bridge** (`tools/e2e_bridge.py`, sărit fără simulator, `node` sau `../bridge/node_modules`):
+   simulatorul e asociat, pe ecran *Setări › AI › My Claude on my computer* → SOUL arată
+   `soul-bridge pair XXXX-XXXX --cloud …`; `soul-bridge pair` (Node, real) ia un token de bridge (al SOUL, nu al lui
+   Claude); un Claude Code **simulat** pornește `soul-bridge channel` (real) care intră pe `/v1/bridge`; „Trezește-mă
+   mâine la 7” scris pe SOUL → ochii așteaptă, apoi se gândesc → `soul_reply` cu `alarm.set` → cloudul o validează și o
+   trimite ca push → SoulOS pune alarma; calculatorul închis → SOUL răspunde cu regulile offline. Apoi la fel **pe
+   Wi-Fi-ul de acasă** (`--lan`): simulatorul servește `/bridge` cu `BridgeServer`-ul din firmware, cod de 6 cifre,
+   fără cloud. Niciun model nu e apelat nicăieri.
+
 **Ce acoperă, cinstit:** pașii 3–7 din `docs/07-CONNECT-AI.md` §0.1, cu falsuri: LLM-ul (`fake_llm.py`),
 căsuța de email (fișierul dev), browserul (httpx), clientul OAuth (MCP SDK cu redirect loopback, **nu**
 claude.ai). Reale: cloudul, socketurile, codul de protocol al firmware-ului și SoulOS. Ce lipsește încă: o
@@ -362,7 +372,9 @@ aplicația Claude**, **Offline (no AI)**. SOUL Cloud (creierul A) apare doar cu 
   Conectat → câmpul de cod (precompletat din fragment) → `POST /pair/claim` → `/pair/wait` („atinge *Yes,
   pair* pe SOUL”, JS întreabă `GET /v1/me/pair/{pid}` la 2 s) → `/pair/brain?d=…`. JSON-ul din §3.4:
   `POST /v1/me/pair/claim` (sesiune + `X-CSRF-Token`) → `202`.
-- `/me`: SOUL-urile (online, firmware, creierul, schimbarea lui, dezlegarea — cu reautentificare), cheile
+- `/me`: SOUL-urile (online, firmware, creierul — inclusiv „My Claude on my computer” —, schimbarea lui, dezlegarea —
+  cu reautentificare, opțional cu ștergerea datelor —, calculatoarele SOUL Bridge cu *Forget* și *Pair a computer*),
+  descărcarea datelor, ștergerea contului, ajutorul pentru Wi-Fi, cheile
   (mascate `sk-ant-…a1B2`, „checked” / „saved, not checked yet”), aplicațiile conectate (deconectare = toată
   familia de tokenuri), adresa conectorului cu buton de copiere, `/me/connect-claude`, `/me/connect-chatgpt`,
   `/me/signin-chatgpt`.
@@ -374,6 +386,58 @@ aplicația Claude**, **Offline (no AI)**. SOUL Cloud (creierul A) apare doar cu 
   consimțământ folosesc aceeași foaie de stil.
 - Teste: `tests/test_web_pair_me.py` (fluxul complet, erori, CSRF, proprietar, chei, reautentificare,
   steagul `SOUL_BUILTIN_AI`), `tests/test_e2e_sim.py` (simulatorul firmware ca dispozitiv).
+
+### SOUL Bridge prin SOUL Cloud — `bridge_hub.py` (`docs/08-OWN-CLAUDE.md` §4)
+
+Creierul `bridge` („My Claude on my computer” pe SOUL): întrebările scrise pe SOUL le răspunde **Claude Code-ul
+proprietarului**, pe calculatorul lui (abonamentul lui Pro/Max, conectat de el), prin programul `../bridge/`. Pe același
+Wi-Fi SOUL e serverul (`ws://soul-xxxx.local:8765/bridge`, în firmware); din altă rețea trece prin cloud:
+
+- Cod: SOUL cere (`bridge.code.get`, o atingere) → `bridge.code {code (8 caractere), cmd}`; sau `/me` → *Pair a
+  computer*. `soul-bridge pair XXXX-XXXX --cloud {BASE}` îl schimbă pe `/v1/bridge` pe un token `sbt_…` (stocat ca
+  SHA-256, legat de SOUL și de proprietar, listat și revocabil pe `/me`, mort la dezlegare / reset / *Forget* /
+  ștergerea contului). Un singur bridge pe SOUL (cel mai nou câștigă). Limite: 20 de încercări / rețea / oră, 1 000 de
+  eșecuri / oră pe toată flota.
+- Tura: un `ask` obișnuit de la un SOUL cu creierul `bridge` → `ask.state waiting` imediat, `bridge_offline` imediat
+  dacă nu e niciun calculator conectat (SOUL răspunde atunci cu regulile offline), altfel `ask` către bridge;
+  `ask.ack` → `ask.state thinking`; răspunsul (text + acțiuni) trece prin dispecer ca la orice creier (validat,
+  salvat, push cu originea `turn`) → `reply` cu `provider: claude`, `brain: bridge`; 120 s → `timeout` și `ask.cancel`.
+  Merge și pe long-poll (răspunsul vine cu următorul poll).
+- Prezența: `bridge.state {paired, online, name}` către SOUL la fiecare schimbare. `brain {bridge|none}` de la SOUL
+  (o atingere) salvează alegerea, ca `welcome`-ul următor să n-o anuleze.
+- Nimic din conversație nu e logat; tokenul Claude nu există nicăieri aici.
+- Teste: `tests/test_gateway_bridge.py` (cod pe ecran, token, tură cu `alarm.set`, offline, timeout, anulare,
+  revocare, long-poll), `tests/test_web_gdpr_bridge.py` (`/me`), `tests/test_e2e_bridge.py` (cap-coadă, cloud și LAN).
+
+### Datele tale (GDPR) — `gdpr.py`, `/me/export`, `/me/delete`, `/me/wifi-help`
+
+- `GET /me/export` și `GET /v1/me/export`: un singur JSON descărcat (contul, SOUL-urile cu itemele, inboxul, stările,
+  evenimentele și turele de conversație, aplicațiile conectate, calculatoarele, ce chei sunt setate, consumul).
+  Niciodată o cheie, un token, un cod sau hash-ul lor.
+- `/me/delete` (autentificare proaspătă + scrii DELETE / STERGE) și `DELETE /v1/me` (sesiune + `X-CSRF-Token` +
+  autentificare proaspătă → `204`): fiecare SOUL al contului e dezlegat cu datele șterse din cloud (granturi, tokenuri
+  de bridge, conversații), apoi granturile, cheile, consumul, sesiunile, codurile de login și contul. *Unpair* pe `/me`
+  poate șterge și datele acelui SOUL.
+- `/me/wifi-help`: public, RO/EN (butonul de 5 secunde, QR-ul rețelei SOUL-xxxx, cele patru mesaje ale portalului și
+  ce faci la fiecare); SOUL o arată ca QR pe cardurile de eroare.
+
+### CIMD — `cimd.py`
+
+Clientul se prezintă cu un `client_id` care e un URL https (documentul lui: nume, redirect URI-uri); SOUL îl descarcă
+în siguranță: doar https pe 443, cale nevidă, fără userinfo / fragment; DNS o singură dată și **toate** adresele
+publice (orice adresă privată, loopback, link-local, CGNAT, `169.254/16`, `fc00::/7`… refuză), conexiune la IP-ul
+fixat cu SNI și certificat verificat, fără redirecturi, 3 s, ≤ 16 KB, JSON, `client_id` identic cu URL-ul, fără secret;
+cache 5 min; descărcarea nu blochează bucla. Un nume rezervat („Claude Code”) e acceptat doar de pe un host din lista
+verificată (claude.ai, chatgpt.com). Teste: `tests/test_cimd.py` (regulile + tot dansul OAuth cu clientul CIMD al SDK-ului).
+
+### Stația din fabrică — `tools/factory_enrol.py`
+
+`python tools/factory_enrol.py --port /dev/ttyACM0 --csv factory_keys.csv [--import-db gateway.sqlite]`: trimite
+`SOULKEY GEN` pe serial (firmware 1.3.0 își face cheia o singură dată, cu RNG-ul hardware, și răspunde
+`SOULKEY PUB soul-… <pub>`), verifică punctul P-256 și id-ul, adaugă în CSV (un id deja listat cu altă cheie e refuzat),
+tipărește eticheta. `--log` reia un log de serial capturat. CSV-ul intră în cloud cu
+`python -m suflet_ai.app import-factory`. Teste: `tests/test_factory_enrol.py` (port serial fals, apoi autentificare
+reală cu politica `factory`).
 
 ### Cadre înregistrate pentru firmware — `tools/record_frames.py`
 
@@ -459,10 +523,9 @@ importă cu `fly ssh console -C "python -m suflet_ai.app import-factory /data/ke
   lista aplicațiilor conectate) nu există încă (`api_me.py`). Azi asocierea se face pe pagina de consimțământ
   a conectorului, cu codul de pe ecran; creierul implicit după asociere e A (cheia SOUL, vocea Claude).
 - Un singur proces, SQLite pe volum: nu porni mai multe mașini (`fly scale count 1`).
-- CIMD (`cimd.py`) nu e scris. Că claude.ai merge prin DCR („Register automatically”) e o presupunere [U]:
-  dialogul Claude recomandă CIMD („Use Claude's published identity”) și nu știm dacă trece singur pe DCR.
-  De construit `cimd.py` sau de verificat pe claude.ai real (web, Desktop, mobil) înainte de un pilot public.
-  Nimic nu a fost încercat cu claude.ai sau ChatGPT reale și nici cu cheile reale Anthropic/OpenAI.
+- CIMD (`cimd.py`) e construit: metadatele îl anunță, deci în dialogul Claude merge și „Use Claude's published
+  identity”, și „Register automatically” (DCR). Testat cu clientul CIMD al SDK-ului MCP, **nu** cu documentul real al
+  claude.ai [U]. Nimic nu a fost încercat cu claude.ai sau ChatGPT reale și nici cu cheile reale Anthropic/OpenAI.
 
 **Variabile de mediu** (lista completă: `python -m suflet_ai.app env`):
 
@@ -484,5 +547,6 @@ importă cu `fly ssh console -C "python -m suflet_ai.app import-factory /data/ke
 | `SOUL_MAIL_FROM` | | expeditorul, ex. `SOUL <hello@domeniu>` |
 | `SOUL_CLAUDE_MODEL`, `SOUL_OPENAI_RELAY_MODEL` | | modelele releului (implicit `claude-haiku-4-5`, `gpt-6-luna`) |
 | `SOUL_ALLOWANCE_TURNS`, `SOUL_TRIAL_TURNS`, `SOUL_B2_DAILY_CAP_MICRO`, `SOUL_BRAIN_A_KILL` | | contorizare (300 ture/lună, 30 ture probă, 0,50 $/zi pe cheia proprie, oprire de urgență) [E] |
+| `SOUL_CIMD` | | `0` oprește CIMD (clienții cu `client_id` URL); implicit pornit |
 | `SUFLET_TZ` | | fusul orar al serverului (implicit `Europe/Bucharest`); orele itemelor de pe un SOUL folosesc fusul **dispozitivului** (`devices.tz`), nu pe acesta |
 | `SUFLET_API_TOKEN`, `SOUL_PUBLIC_SCHEME`, `SOUL_DEV_MAILBOX` | | doar dev (rutele `/v1/dev/*`, `http` pe loopback, emailuri într-un fișier); interzise în pilot/producție |

@@ -45,7 +45,7 @@ View Os::appView(int i) { return kApps[((i % appCount()) + appCount()) % appCoun
 const char* viewName(View v) {
   static const char* const k[] = {"boot",  "home",   "launcher", "today",    "talk",   "answer", "alarms",
                                   "dial",  "ringing", "timer",   "notes",    "note",   "claude", "settings",
-                                  "aimode", "wifi",  "mysoul",   "about",    "pair",   "keyboard"};
+                                  "aimode", "wifi",  "mysoul",   "about",    "pair",   "keyboard", "bridge"};
   static_assert(sizeof(k) / sizeof(k[0]) == (unsigned)View::Count, "view names");
   return (unsigned)v < (unsigned)View::Count ? k[(int)v] : "?";
 }
@@ -91,6 +91,7 @@ FaceLayoutT Os::layoutFor(View v) const {
     case View::MySoul: l = {0.5f, 0, -0.12f}; break;
     case View::Timer: l = {0.28f, 0, -0.34f}; break;
     case View::Pair: l = {0.22f, 0, -0.3f}; break;
+    case View::Bridge: l = {0.22f, 0, -0.3f}; break;
     case View::Wifi: l = net_.portal ? FaceLayoutT{0.15f, 0, -0.36f} : FaceLayoutT{0.3f, 0, -0.33f}; break;
     default: l = {0.3f, 0, -0.33f}; break;
   }
@@ -139,6 +140,7 @@ void Os::back() {
     case View::Wifi:
     case View::MySoul:
     case View::About: go(View::Settings); return;
+    case View::Bridge: go(View::AiMode); return;
     case View::Pair:
       pairDoneT_ = -1;
       go(pairReturn_ == View::Pair ? View::Settings : pairReturn_);
@@ -252,7 +254,11 @@ void Os::setNet(const NetInfo& n) {
                        n.owner != net_.owner || n.cloudUpdate != net_.cloudUpdate || n.cloudRefused != net_.cloudRefused ||
                        n.apPass != net_.apPass || n.confirmPid != net_.confirmPid ||
                        n.connectorsPaused != net_.connectorsPaused || n.cloudProblem != net_.cloudProblem ||
-                       n.trialLeft != net_.trialLeft || n.cloudHost != net_.cloudHost;
+                       n.trialLeft != net_.trialLeft || n.cloudHost != net_.cloudHost ||
+                       n.bridgeOnline != net_.bridgeOnline || n.bridgePaired != net_.bridgePaired ||
+                       n.bridgeName != net_.bridgeName || n.bridgeCode != net_.bridgeCode ||
+                       n.bridgeCmd != net_.bridgeCmd || n.bridgeLan != net_.bridgeLan || n.askState != net_.askState;
+  const bool bridgeWas = net_.bridgeOnline;
   net_ = n;
   if (changed) invalidate();
   if (!n.confirmPid.empty() && n.confirmPid != oldConfirm) {  // "Pair with Ana?": only a touch answers it
@@ -269,6 +275,10 @@ void Os::setNet(const NetInfo& n) {
     reactAfterT_ = 1.6f;
     toast(n.owner.empty() ? tr("Paired!", "Legat de cont!") : tr("Hi, ", "Bună, ") + n.owner + "!", kMint, 3.0f);
     if (view_ == View::Pair) pairDoneT_ = 2.6f;
+  }
+  if (netKnown_ && !bridgeWas && n.bridgeOnline && aiMode() == AiMode::Bridge) {  // the computer is here
+    face_.react(X_happy, 1.4f);
+    toast(tr("Your computer is connected", "Calculatorul tău e conectat"), kMint, 3.0f);
   }
   netKnown_ = true;
 }
@@ -770,13 +780,22 @@ void Os::activate(int id) {
       pushCmd(OsCmd::SaveSettings);
       return;
     case View::AiMode:
-      if (id >= IdRow && id < IdRow + 4) {
-        static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::None};
+      if (id >= IdRow && id < IdRow + 5) {
+        static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::Bridge, AiMode::None};
+        const AiMode was = aiMode();
         set_.ai = (uint8_t)kModes[id - IdRow];
         pushCmd(OsCmd::SaveSettings);
         history_.clear();
         face_.react(aiMode() == AiMode::None ? X_smug : X_excited, 1.2f);
-        if (needsSetup()) {
+        if (net_.paired && (aiMode() == AiMode::Bridge || (was == AiMode::Bridge && aiMode() == AiMode::None))) {
+          CloudOut o;  // the account keeps what was picked here (a touch), so a reconnect does not undo it
+          o.kind = CloudOut::Brain;
+          o.text = aiMode() == AiMode::Bridge ? "bridge" : "none";
+          outs_.push_back(o);
+        }
+        if (aiMode() == AiMode::Bridge && net_.configured) {
+          bridgeOpen();
+        } else if (needsSetup()) {
           toast(tr("Add it on your phone: Wi-Fi setup", "Pune-o din telefon: Wi-Fi"), kAmber, 3);
           if (!net_.portal) pushCmd(OsCmd::StartPortal);
           go(View::Wifi);
@@ -797,6 +816,23 @@ void Os::activate(int id) {
         } else {
           openKeyboard(KbInbox);
         }
+      }
+      return;
+    case View::Bridge:
+      if (id == IdNew) {
+        bridgeOpen();
+        toast(tr("New code", "Cod nou"), kMint);
+      } else if (id == IdForget) {
+        pushCmd(OsCmd::BridgeForget);
+        if (net_.paired) {
+          CloudOut o;
+          o.kind = CloudOut::BridgeForget;
+          outs_.push_back(o);
+        }
+        net_.bridgeOnline = net_.bridgePaired = false;
+        net_.bridgeName.clear();
+        toast(tr("Computers forgotten", "Calculatoare uitate"), kAmber);
+        face_.react(X_bored, 1.0f);
       }
       return;
     case View::Pair:
@@ -962,6 +998,16 @@ AiContext Os::context() const {
   return c;
 }
 
+void Os::bridgeOpen() {
+  pushCmd(OsCmd::BridgePair);  // the 6-digit code of SOUL's own LAN server
+  if (net_.paired) {           // and SOUL Cloud's 8-character one, which works from any network
+    CloudOut o;
+    o.kind = CloudOut::BridgeCode;
+    outs_.push_back(o);
+  }
+  go(View::Bridge);
+}
+
 void Os::ask(const std::string& text) {
   answerReturn_ = view_ == View::Answer || view_ == View::Keyboard ? View::Home : view_;
   if (answerReturn_ == View::Boot) answerReturn_ = View::Home;
@@ -983,6 +1029,13 @@ void Os::ask(const std::string& text) {
     showAnswer(r, AiErr::Offline, "");
     return;
   }
+  if (aiMode() == AiMode::Bridge && !net_.bridgeOnline) {  // the computer is off: the rules do what they can
+    AiReply r;
+    if (localAct(text, now_, ro(), r)) runActions(r.actions, &chips_);
+    else r.say.clear();
+    showAnswer(r, AiErr::BridgeOffline, ro() ? "Fără calculator · pe device" : "No computer · on the device");
+    return;
+  }
   AiJob j;
   j.text = text;
   j.ctx = context();
@@ -1001,6 +1054,7 @@ void Os::aiResult(const AiOutcome& o) {
   chips_.clear();
   const char* src = aiMode() == AiMode::Claude ? (ro() ? "Claude · cheia ta" : "Claude · your key")
                     : aiMode() == AiMode::ChatGpt ? (ro() ? "ChatGPT · cheia ta" : "ChatGPT · your key")
+                    : aiMode() == AiMode::Bridge  ? (ro() ? "Claude · calculatorul tău" : "Claude · your computer")
                                                   : "SOUL Cloud";
   const std::string question = history_.empty() ? std::string() : history_.back().text;
   if (o.err != AiErr::None) {
@@ -1370,7 +1424,7 @@ void Os::update(float dt, Brain& brain) {
   }
   if (thinking_) {
     thinkT_ += dt;
-    if (thinkT_ > 45.0f) {  // the device never waits forever
+    if (thinkT_ > (aiMode() == AiMode::Bridge ? 130.0f : 45.0f)) {  // the device never waits forever
       AiOutcome o;
       o.err = AiErr::Timeout;
       aiResult(o);
@@ -1418,6 +1472,8 @@ FaceInputs Os::faceInputs(const Brain& b) const {
     in.lookY = lookY_;
   }
   if (listening_) in.state = FaceState::Listen;
+  // a turn handed to the owner's computer: waiting (on its way) until Claude Code has it, then thinking
+  else if (thinking_ && aiMode() == AiMode::Bridge && net_.askState == 1) in.state = FaceState::Wait;
   else if (thinking_ || voiceWait_) in.state = FaceState::Think;
   else if (view_ == View::Answer && lastErr_ != AiErr::None) in.state = FaceState::Error;
   else if (claude_.prompt) in.state = FaceState::Wait;
@@ -1547,6 +1603,7 @@ bool Os::needsSetup() const {
     case AiMode::Claude: return !net_.keyClaude || !net_.configured;
     case AiMode::ChatGpt: return !net_.keyOpenai || !net_.configured;
     case AiMode::Cloud: return !net_.relay || !net_.configured;
+    case AiMode::Bridge: return !net_.configured;
     default: return false;
   }
 }

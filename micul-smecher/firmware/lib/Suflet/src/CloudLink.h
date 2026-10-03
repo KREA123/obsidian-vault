@@ -13,9 +13,12 @@
 //   socket    wss://{BASE}/v1/device/ws, Bearer token, subprotocol soul.v1
 //   frames    {"v":1,"t":<type>,...}
 //             up:   hello ask abort ack item.add item.state inbox.add pair.ok pair.no
-//                   connectors sleep status
+//                   connectors sleep status · bridge.code.get bridge.forget brain (SOUL Bridge)
 //             down: welcome pairing pair.confirm paired unpaired replay.done resync reply
-//                   say.delta push added inbox.state config error (ota: must-ignore)
+//                   say.delta push added inbox.state config error · bridge.code bridge.state
+//                   ask.state (SOUL Bridge, docs/08 §4) (ota: must-ignore)
+//   long-poll GET /v1/device/poll?after=&wait= / POST /v1/device/send {"messages":[...]} (§6.4):
+//             the same envelopes in a {"messages": [...]} list (pollUrl, sendBody, splitMessages)
 //
 // Must-ignore: unknown fields are ignored; unknown types are Msg::Unknown; a
 // push with an unknown action is acked ok:false "unsupported". Pushes are
@@ -89,6 +92,17 @@ struct CloudConfig {
   std::string brain, voice, lang, name, tz, posixTz, quietFrom, quietTo, modelClaude, modelOpenai;
 };
 
+// SOUL Bridge through SOUL Cloud (docs/08 §4): the one-time code for `soul-bridge pair`, the computer's presence,
+// and how far a turn handed to it has got (waiting = sent, thinking = Claude Code has it)
+struct CloudBridgeCode {
+  std::string code, cmd;  // 8 Crockford characters; "soul-bridge pair XXXX-XXXX --cloud host"
+  uint32_t expiresIn = 0;
+};
+struct CloudBridgeState {
+  bool paired = false, online = false;
+  std::string name;  // the computer's label
+};
+
 struct CloudPairing {
   std::string code, url;  // 8 Crockford base32 characters; https://{BASE}/pair#c=...&d=...
   uint32_t expiresIn = 0;
@@ -110,7 +124,7 @@ class CloudLink {
  public:
   enum class Msg : uint8_t {
     None, Welcome, Pairing, PairConfirm, Paired, Unpaired, ReplayDone, Resync, Reply, SayDelta, Push, Added,
-    InboxState, Config, Error, Unknown, Bad
+    InboxState, Config, Error, BridgeCode, BridgeState, AskState, Unknown, Bad
   };
 
   // ---- identity / auth (HTTPS, §6.1-6.2) ---------------------------------
@@ -153,6 +167,18 @@ class CloudLink {
   static std::string connectors(bool paused);
   static std::string sleep(uint32_t wakeAt);
   static std::string cid(uint32_t r1, uint32_t r2);  // 16 lowercase hex
+  // SOUL Bridge (touches on SOUL only): ask for a pairing code, forget every paired computer,
+  // and tell the cloud which brain the owner picked on SOUL ("bridge" | "none")
+  static std::string bridgeCodeGet();
+  static std::string bridgeForget();
+  static std::string brain(const char* name);
+
+  // ---- long-poll (§6.4: the fallback transport, and the deep-sleep wake-polls of §6.11) ------------------
+  static std::string pollUrl(const std::string& base, uint32_t after, int waitS);
+  // {"messages": [frames]} for POST /v1/device/send (<= 20 frames, <= 16 KB; what does not fit stays)
+  static std::string sendBody(const std::vector<std::string>& frames, size_t* used = nullptr);
+  // the envelopes of a poll / send answer, each re-serialised as one frame for feed(); `more` from poll
+  static bool splitMessages(const char* body, size_t n, std::vector<std::string>& frames, bool* more = nullptr);
 
   // ---- frames down (§6.7) ------------------------------------------------
   Msg feed(const char* json, size_t n);
@@ -169,8 +195,14 @@ class CloudLink {
   int inboxPending = 0, inboxAnswered = 0;
   CloudConfig config;
   CloudError error;
+  CloudBridgeCode bridgeCode;
+  CloudBridgeState bridgeState;
+  std::string askStateRe, askState;  // ask.state: "waiting" | "thinking"
 
   static AiErr errFromCode(const std::string& code);
+  // one action as SOUL applies it (§6.8 schemas): `argsJson` is the args object; false = invalid.
+  // Also used for the actions in a SOUL Bridge answer on the home network (docs/08 §4).
+  static bool mapActionJson(const std::string& action, const std::string& argsJson, CloudPush& p);
 
   // ---- close codes (§6.4) -------------------------------------------------
   enum class CloseAction : uint8_t { Reconnect, Restart, Reauth, Replaced, Update, Wait };
@@ -180,6 +212,7 @@ class CloudLink {
 
   // frame limits: cloud -> device <= 8 KB (we accept 16 KB); device -> cloud <= 10 KB of UTF-8
   static constexpr size_t kMaxIn = 16384, kMaxOut = 10240;
+  static constexpr size_t kSendMaxBytes = 16384, kSendMaxFrames = 20, kPollMaxBytes = 65536;
 };
 
 }  // namespace suflet

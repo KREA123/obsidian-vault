@@ -1,9 +1,12 @@
 // Outbound WebSocket link from the bridge to SOUL (LAN) or SOUL Cloud.
 import { EventEmitter } from 'node:events'
+import os from 'node:os'
 import WebSocket from 'ws'
 import { msg, parseFromSoul, checkSoulUrl, MAX_FRAME } from './protocol.js'
 
-export const BRIDGE_ID = 'soul-bridge/0.1.0'
+export const BRIDGE_ID = 'soul-bridge/0.2.0'
+/** What SOUL and the account page call this computer (its host name, nothing more). */
+export const LABEL = (os.hostname() || 'computer').replace(/\.local$/, '').slice(0, 40)
 
 export class SoulLink extends EventEmitter {
   /**
@@ -36,7 +39,7 @@ export class SoulLink extends EventEmitter {
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(url, { maxPayload: MAX_FRAME })
       const t = setTimeout(() => { ws.terminate(); reject(new Error('pairing timed out')) }, timeoutMs)
-      ws.on('open', () => ws.send(JSON.stringify(msg.pair(code, BRIDGE_ID))))
+      ws.on('open', () => ws.send(JSON.stringify(msg.pair(code, BRIDGE_ID, LABEL))))
       ws.on('message', (raw) => {
         const p = parseFromSoul(raw)
         if (!p.ok) return
@@ -44,6 +47,7 @@ export class SoulLink extends EventEmitter {
         if (p.msg.t === 'bridge.denied') { clearTimeout(t); ws.close(); reject(new Error(`SOUL refused: ${p.msg.reason}`)) }
       })
       ws.on('error', (e) => { clearTimeout(t); reject(e) })
+      ws.on('close', () => { clearTimeout(t); reject(new Error('SOUL closed the connection without an answer')) })
     })
   }
 
@@ -59,7 +63,7 @@ export class SoulLink extends EventEmitter {
     this.emit('state', this.state)
     const ws = new WebSocket(this.url, { maxPayload: MAX_FRAME })
     this.ws = ws
-    ws.on('open', () => ws.send(JSON.stringify(msg.hello(this.token, BRIDGE_ID, this.mode))))
+    ws.on('open', () => ws.send(JSON.stringify(msg.hello(this.token, BRIDGE_ID, this.mode, LABEL))))
     ws.on('message', (raw) => this._onMessage(raw))
     ws.on('close', () => this._onClose())
     ws.on('error', (e) => this.emit('log', `link error: ${e.message}`))

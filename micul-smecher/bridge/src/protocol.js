@@ -11,8 +11,9 @@ export const MAX_FRAME = 16 * 1024
 export const MAX_QUESTION = 2000
 
 export const msg = {
-  pair: (code, bridge) => ({ t: 'bridge.pair', v: PROTOCOL_VERSION, code: String(code), bridge }),
-  hello: (token, bridge, mode) => ({ t: 'bridge.hello', v: PROTOCOL_VERSION, token, bridge, mode }),
+  // `label`: this computer's name, shown on SOUL ("connected · anas-mac") and on the account page
+  pair: (code, bridge, label) => ({ t: 'bridge.pair', v: PROTOCOL_VERSION, code: String(code), bridge, label }),
+  hello: (token, bridge, mode, label) => ({ t: 'bridge.hello', v: PROTOCOL_VERSION, token, bridge, mode, label }),
   ack: (id) => ({ t: 'ask.ack', id, state: 'thinking' }),
   answer: (id, text, actions) => ({ t: 'answer', id, text, actions }),
   error: (id, code, detail = '') => ({ t: 'answer.error', id, code, detail: String(detail).slice(0, 200) }),
@@ -74,6 +75,37 @@ export function parseFromSoul(raw) {
 
 function str(v, max) {
   return typeof v === 'string' ? v.slice(0, max) : ''
+}
+
+export const LAN_PORT = 8765
+
+/** Pairing codes: 6 digits on SOUL's own LAN server, 8 Crockford characters from SOUL Cloud (dash optional). */
+export function parseCode(raw) {
+  const c = String(raw || '').replace(/[\s-]/g, '').toUpperCase()
+  if (/^\d{6}$/.test(c)) return { kind: 'lan', code: c }
+  if (/^[0-9A-HJKMNP-TV-Z]{8}$/.test(c)) return { kind: 'cloud', code: c }
+  return null
+}
+
+/** `--cloud soul.example` / `https://soul.example` -> wss://soul.example/v1/bridge (http:// only for a loopback test cloud). */
+export function cloudUrl(hostOrUrl) {
+  let h = String(hostOrUrl || '').trim()
+  if (!h) throw new Error('which SOUL Cloud? add --cloud <host shown on SOUL>')
+  if (/^wss?:\/\//.test(h)) return h
+  let scheme = 'wss'
+  const m = /^(https?):\/\/(.*)$/.exec(h)
+  if (m) { scheme = m[1] === 'http' ? 'ws' : 'wss'; h = m[2] }
+  h = h.replace(/\/.*$/, '')
+  if (scheme === 'ws' && !/^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(h)) throw new Error('SOUL Cloud is https only')
+  return `${scheme}://${h}/v1/bridge`
+}
+
+/** `--soul 192.168.1.42` / `soul-ab12.local` / a full ws:// URL -> ws://host:8765/bridge (SOUL on this Wi-Fi). */
+export function lanUrl(hostOrUrl) {
+  const h = String(hostOrUrl || '').trim()
+  if (/^wss?:\/\//.test(h)) return h
+  if (!h) throw new Error('which SOUL? add --soul <address shown on SOUL>')
+  return h.includes(':') && !h.startsWith('[') ? `ws://${h}/bridge` : `ws://${h}:${LAN_PORT}/bridge`
 }
 
 /** Accept wss:// anywhere, ws:// only for the local network (SOUL on the LAN). */

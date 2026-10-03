@@ -669,6 +669,113 @@ static void test_os_cloud_items_made_on_soul_and_ask_my_claude_go_up() {
   TEST_ASSERT_EQUAL_INT((int)AiMode::None, (int)d.os.aiMode());
 }
 
+// "My Claude on my computer" (SOUL Bridge, docs/08 §4)
+static void test_os_bridge_computer_offline_falls_back_to_the_rules() {
+  Dev d(true, AiMode::Bridge);
+  d.os.ask("wake me at 7");
+  AiJob job;
+  TEST_ASSERT_FALSE(d.os.popAiJob(job));  // nobody to ask: no request at all
+  TEST_ASSERT_EQUAL_INT((int)AiErr::BridgeOffline, (int)d.os.lastError());
+  TEST_ASSERT_EQUAL_INT(1, d.alarms.count());  // the on-device rules still set it
+  TEST_ASSERT_EQUAL_STRING("Your computer is offline: open Start SOUL.", aiErrText(AiErr::BridgeOffline, false));
+  TEST_ASSERT_EQUAL_STRING("bridge_offline", aiErrCode(AiErr::BridgeOffline));
+  TEST_ASSERT_EQUAL_INT((int)AiMode::Bridge, (int)aiModeFrom("bridge"));
+  TEST_ASSERT_EQUAL_STRING("bridge", aiModeName(AiMode::Bridge));
+}
+
+static void test_os_bridge_turn_waits_then_thinks_then_answers() {
+  Dev d(true, AiMode::Bridge);
+  d.render = true;
+  NetInfo n;
+  n.configured = n.connected = true;
+  n.bridgeOnline = true;
+  n.bridgeName = "Ana's Mac";
+  d.os.setNet(n);
+  d.os.ask("what is on tomorrow?");
+  AiJob job;
+  TEST_ASSERT_TRUE(d.os.popAiJob(job));
+  TEST_ASSERT_TRUE(d.os.thinking());
+  n.askState = 1;  // sent, Claude Code has not taken it yet: the eyes wait
+  d.os.setNet(n);
+  d.run(0.2f);
+  TEST_ASSERT_EQUAL_INT((int)FaceState::Wait, (int)d.os.faceInputs(d.brain).state);
+  n.askState = 2;  // ask.ack: Claude is thinking
+  d.os.setNet(n);
+  d.run(0.2f);
+  TEST_ASSERT_EQUAL_INT((int)FaceState::Think, (int)d.os.faceInputs(d.brain).state);
+  d.run(60);  // a slow computer is not given up after 45 s (a cloud turn would be)
+  TEST_ASSERT_TRUE(d.os.thinking());
+  AiOutcome o;
+  o.reply.say = "Dentist at 10.";
+  o.raw = o.reply.say;
+  AiAction a;
+  a.type = AiAction::AlarmSet;
+  a.hour = 8;
+  o.reply.actions.push_back(a);
+  d.os.aiResult(o);
+  TEST_ASSERT_EQUAL_STRING("Dentist at 10.", d.os.lastReply().say.c_str());
+  TEST_ASSERT_EQUAL_INT(1, d.alarms.count());  // the computer's actions run on SOUL (LAN answers carry them)
+  // and the device gives up after 130 s at the latest
+  d.os.ask("hello?");
+  d.os.popAiJob(job);
+  d.run(131);
+  TEST_ASSERT_FALSE(d.os.thinking());
+  TEST_ASSERT_EQUAL_INT((int)AiErr::Timeout, (int)d.os.lastError());
+}
+
+static void test_os_bridge_is_picked_in_settings_and_shows_the_code() {
+  Dev d(true, AiMode::None);
+  d.render = true;
+  NetInfo n;
+  n.configured = n.connected = true;
+  n.relay = n.cloudOnline = n.paired = true;
+  n.cloudHost = "soul.example";
+  n.ip = "192.168.1.42";
+  d.os.setNet(n);
+  d.os.go(View::AiMode);
+  d.run(0.3f);
+  d.tap(233, 126 + 3 * 52);  // "My Claude on my computer"
+  TEST_ASSERT_EQUAL_INT((int)AiMode::Bridge, (int)d.os.aiMode());
+  TEST_ASSERT_EQUAL_INT((int)View::Bridge, (int)d.os.view());
+  bool lan = false;
+  OsCmd c;
+  while (d.os.popCmd(c)) lan = lan || c == OsCmd::BridgePair;
+  TEST_ASSERT_TRUE(lan);  // the LAN server makes a 6-digit code
+  CloudOut o;
+  bool brain = false, code = false;
+  while (d.os.popCloudOut(o)) {
+    brain = brain || (o.kind == CloudOut::Brain && o.text == "bridge");
+    code = code || o.kind == CloudOut::BridgeCode;
+  }
+  TEST_ASSERT_TRUE(brain);  // the account keeps the choice
+  TEST_ASSERT_TRUE(code);   // and SOUL Cloud makes an 8-character one
+  n.bridgeCode = "7KQ3M9XD";
+  n.bridgeCmd = "soul-bridge pair 7KQ3-M9XD --cloud soul.example";
+  d.os.setNet(n);
+  d.run(0.5f);
+  n.bridgeCode = "482913";  // not paired with an account: the LAN code
+  d.os.setNet(n);
+  d.run(0.3f);
+  n.bridgeOnline = n.bridgePaired = true;
+  n.bridgeName = "Ana's Mac";
+  n.bridgeCode.clear();
+  d.os.setNet(n);
+  d.run(0.5f);
+  d.tap(306, 392);  // Forget
+  bool forgot = false;
+  while (d.os.popCmd(c)) forgot = forgot || c == OsCmd::BridgeForget;
+  TEST_ASSERT_TRUE(forgot);
+  bool cloudForgot = false;
+  while (d.os.popCloudOut(o)) cloudForgot = cloudForgot || o.kind == CloudOut::BridgeForget;
+  TEST_ASSERT_TRUE(cloudForgot);
+  d.os.back();
+  TEST_ASSERT_EQUAL_INT((int)View::AiMode, (int)d.os.view());
+  d.tap(233, 126 + 4 * 52);  // back to No AI: the account hears it too
+  bool none = false;
+  while (d.os.popCloudOut(o)) none = none || (o.kind == CloudOut::Brain && o.text == "none");
+  TEST_ASSERT_TRUE(none);
+}
+
 void runOsTests() {
   RUN_TEST(test_os_first_boot_birth_name_brain_hold);
   RUN_TEST(test_os_boot_brain_step_opens_the_setup_portal_when_a_key_is_missing);
@@ -688,4 +795,7 @@ void runOsTests() {
   RUN_TEST(test_os_cloud_pair_confirm_needs_a_touch_on_soul);
   RUN_TEST(test_os_cloud_night_alarm_private_card_and_pause);
   RUN_TEST(test_os_cloud_answers_with_a_reason_and_timeouts_do_not_act_twice);
+  RUN_TEST(test_os_bridge_computer_offline_falls_back_to_the_rules);
+  RUN_TEST(test_os_bridge_turn_waits_then_thinks_then_answers);
+  RUN_TEST(test_os_bridge_is_picked_in_settings_and_shows_the_code);
 }

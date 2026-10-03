@@ -25,6 +25,8 @@ struct DeviceKey {
   // wire helpers: b64u of the public point / of the signature of `msg`
   static std::string pubB64(const uint8_t pub[65]);
   static std::string signB64(const uint8_t priv[32], const std::string& msg);
+  // SHA-256 of `s`, lowercase hex (SOUL Bridge keeps only the hashes of the tokens it issued)
+  static std::string sha256Hex(const std::string& s);
   static void wipe(void* p, size_t n);
 };
 

@@ -34,6 +34,7 @@
 #include "audio.h"
 #include "ble_link.h"
 #include "board.h"
+#include "bridge_lan.h"
 #include "cloud.h"
 #include "net.h"
 #if defined(SUFLET_BOARD_LCD28)
@@ -48,7 +49,7 @@
 #ifndef SUFLET_VOICE
 #define SUFLET_VOICE 0
 #endif
-#define FW_VERSION "1.2.0"
+#define FW_VERSION "1.3.0"
 
 using namespace suflet;
 
@@ -354,7 +355,9 @@ static void help() {
       "  W   Wi-Fi setup portal       w   stop the portal      B  re-run first boot\n"
       "  e<name>  play an expression (e.g. elaugh)              D  demo loop on/off\n"
       "  a<text>  ask the AI (like typing on the glass)         h  home    ?  help\n"
-      "  K   SOULKEY PUB: this SOUL's public device key (for the factory list; never the private key)");
+      "  K   SOULKEY PUB: this SOUL's public device key (for the factory list; never the private key)\n"
+      "  SOULKEY GEN / SOULKEY PUB   the factory station (tools/factory_enrol.py): make the device key once\n"
+      "      (hardware RNG), print the public key as `SOULKEY PUB soul-<id> <b64u>`; there is no command for the private key");
 }
 
 static std::string readLine() {
@@ -438,6 +441,19 @@ static void serialCommands() {
         Serial.printf("SOULKEY PUB %s\n", pub.empty() ? "(none yet: made once Wi-Fi is up)" : pub.c_str());
         break;
       }
+      case 'S': {  // the factory station (docs/07 §6.1): "SOULKEY GEN" / "SOULKEY PUB"
+        const std::string rest = readLine();
+        if (rest == "OULKEY GEN" || rest == "OULKEY PUB") {
+          const bool gen = rest == "OULKEY GEN";
+          const int made = gen ? cloudKeyGenerate() : 0;  // 1 made now, 0 already there, -1 failed
+          const std::string pub = cloudPubKey();
+          if (pub.empty()) Serial.printf("SOULKEY ERR %s\n", made < 0 ? "generate failed" : "no key yet: SOULKEY GEN");
+          else Serial.printf("SOULKEY PUB %s %s%s\n", cloudDeviceId().c_str(), pub.c_str(), made > 0 ? " new" : "");
+        } else {
+          Serial.println("SOULKEY ERR unknown command");
+        }
+        break;
+      }
       case '?': help(); break;
       default: break;
     }
@@ -458,15 +474,14 @@ static void demoTick(float dt) {
 // (face down or asleep long enough), no Claude session. Wakes on the side
 // button, a touch (GT911 INT, if it idles high) or a timer a minute before
 // the next alarm / at 07:00.
-static void maybeDeepSleep(uint32_t nowMs) {
+RTC_DATA_ATTR static uint8_t rtcPollWake = 0;  // the next timer wake is a §6.11 wake-poll, not the morning
+static bool wakePolling = false;                // this boot is that wake-poll: screen off, poll, sleep again
+static uint32_t wakePollStartMs = 0;
+
+// The seconds until the next wake: an alarm (a minute early), 07:00, and for a paired SOUL at most 15 minutes
+// (docs/07 §6.11: a paired SOUL is never unreachable for longer). `poll` says whether it is a wake-poll.
+static uint32_t nextWake(bool& poll) {
   const float hour = hourNow();
-  const bool night = hour >= 0 && (hour >= 23.0f || hour < 6.0f);
-  if (!os.settings().nightOff || !night || brain->mode() != Mode::Off || bleConnected() || os.ringing()) {
-    offSinceMs = 0;
-    return;
-  }
-  if (!offSinceMs) offSinceMs = nowMs;
-  if (nowMs - offSinceMs < 10u * 60u * 1000u) return;
   const uint32_t now = localNow();
   uint32_t wakeIn = 6 * 3600;
   uint32_t when = 0;
@@ -475,8 +490,15 @@ static void maybeDeepSleep(uint32_t nowMs) {
     const uint32_t seven = (now / 86400) * 86400 + 7 * 3600 + (hour >= 7 ? 86400 : 0);
     if (seven > now) wakeIn = min<uint32_t>(wakeIn, seven - now);
   }
-  Serial.printf("[power] deep sleep for %lu s (night, screen off)\n", (unsigned long)wakeIn);
-  cloudSleep(time(nullptr) > 1735689600 ? (uint32_t)time(nullptr) + wakeIn : 0);
+  poll = cloudPaired() && wakeIn > 15 * 60;
+  if (poll) wakeIn = 15 * 60;
+  return wakeIn;
+}
+
+static void deepSleepNow(uint32_t wakeIn, bool poll) {
+  Serial.printf("[power] deep sleep for %lu s (%s)\n", (unsigned long)wakeIn, poll ? "then a SOUL Cloud wake-poll" : "night, screen off");
+  rtcPollWake = poll ? 1 : 0;
+  if (!wakePolling) cloudSleep(time(nullptr) > 1735689600 ? (uint32_t)time(nullptr) + wakeIn : 0);
   saveMemory();
   saveAlarms();
   backlight(0);
@@ -489,6 +511,40 @@ static void maybeDeepSleep(uint32_t nowMs) {
   esp_sleep_enable_ext1_wakeup(mask, ESP_EXT1_WAKEUP_ANY_LOW);
   Serial.flush();
   esp_deep_sleep_start();
+}
+
+// §6.11: woken by the timer for a wake-poll. The screen stays off; when the poll is done (or 12 s passed) SOUL
+// sleeps again, unless an alarm is due within 15 minutes or someone touched it.
+static void wakePollTick(uint32_t nowMs, bool touched) {
+  if (!wakePolling) return;
+  if (touched) {  // a person: wake up properly
+    wakePolling = false;
+    cloudWakePollCancel();
+    rtcPollWake = 0;
+    return;
+  }
+  if (!cloudWakePollDone() && nowMs - wakePollStartMs < 12000) return;
+  bool poll = false;
+  const uint32_t wakeIn = nextWake(poll);
+  if (wakeIn < 15 * 60 && !poll) {  // an alarm soon: stay up (the night rules put it back to sleep after)
+    wakePolling = false;
+    return;
+  }
+  deepSleepNow(wakeIn, poll);
+}
+
+static void maybeDeepSleep(uint32_t nowMs) {
+  const float hour = hourNow();
+  const bool night = hour >= 0 && (hour >= 23.0f || hour < 6.0f);
+  if (!os.settings().nightOff || !night || brain->mode() != Mode::Off || bleConnected() || os.ringing()) {
+    offSinceMs = 0;
+    return;
+  }
+  if (!offSinceMs) offSinceMs = nowMs;
+  if (nowMs - offSinceMs < 10u * 60u * 1000u) return;
+  bool poll = false;
+  const uint32_t wakeIn = nextWake(poll);
+  deepSleepNow(wakeIn, poll);
 }
 
 // ------------------------------------------------------------ setup/loop ---
@@ -559,6 +615,20 @@ void setup() {
   snprintf(ap, sizeof ap, "SOUL-%02X%02X", mac[4], mac[5]);
   // docs/07 §2.1: device_id = "soul-" + the 12 lowercase hex digits of the MAC
   cloudBegin(mac, FW_VERSION, BOARD_HW);
+  {
+    char mdns[16];  // soul-xxxx.local: the last 4 hex digits of the device id
+    snprintf(mdns, sizeof mdns, "soul-%02x%02x", mac[4], mac[5]);
+    bridgeLanBegin(CloudLink::deviceId(mac), mdns);
+  }
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER && rtcPollWake) {  // §6.11 wake-poll
+    wakePolling = true;
+    wakePollStartMs = millis();
+    bool poll = false;
+    const uint32_t wakeIn = min<uint32_t>(nextWake(poll), 15 * 60);  // it was paired when it went to sleep
+    cloudWakePoll(time(nullptr) > 1735689600 ? (uint32_t)time(nullptr) + wakeIn : 0);
+    Serial.println("[power] wake-poll: screen off, one poll, back to sleep");
+  }
+  rtcPollWake = 0;
   netBegin(ap, CloudLink::deviceId(mac));
   netSetMode(os.aiMode());
   cloudSetPrefs(os.aiMode(), os.ro(), netTz());
@@ -593,6 +663,8 @@ static void handleCmds() {
         prefs.putString("crefs", os.saveCloudRefs().c_str());
         soulFlashWritten();
         break;
+      case OsCmd::BridgePair: bridgeLanNewCode(); break;
+      case OsCmd::BridgeForget: bridgeLanForget(); break;
       case OsCmd::StartPortal: netStartPortal(); break;
       case OsCmd::StopPortal: netStopPortal(); break;
       case OsCmd::ForgetWifi: netForgetWifi(); break;
@@ -703,6 +775,8 @@ void loop() {
   if (nowMs - lastNetMs > 500) {
     lastNetMs = nowMs;
     NetInfo ni = netInfo();
+    bridgeLanTick(os.aiMode() == AiMode::Bridge && !wakePolling, os.settings().name, os.ro(), netTz());
+    bridgeLanFill(ni);  // SOUL Bridge on this Wi-Fi; SOUL Cloud's bridge (any network) fills over it
     cloudFill(ni);
     os.setNet(ni);
     cloudSetStatus(lastBatPct, brain->mode() != Mode::Off);
@@ -725,12 +799,22 @@ void loop() {
   // the AI: questions go to the network task, answers come back here
   // (SOUL Cloud: over its socket when it is up, else HTTPS to the relay)
   AiJob job;
-  if (!aiBusy && os.popAiJob(job))
-    aiBusy = (os.aiMode() == AiMode::Cloud && cloudReady())
-                 ? cloudAsk(job, os.ro(), os.timerLeft() >= 0 ? (os.timerLeft() + 59) / 60 : -1)
-                 : netAsk(job);
+  if (!aiBusy && os.popAiJob(job)) {
+    const int timerMin = os.timerLeft() >= 0 ? (os.timerLeft() + 59) / 60 : -1;
+    if (os.aiMode() == AiMode::Bridge) {  // the owner's computer: on this Wi-Fi first, else through SOUL Cloud
+      aiBusy = bridgeLanOnline() ? bridgeLanAsk(job, os.ro(), local)
+                                 : cloudReady() && cloudAsk(job, os.ro(), timerMin, true);
+      if (!aiBusy) {
+        AiOutcome off;
+        off.err = AiErr::BridgeOffline;
+        os.aiResult(off);
+      }
+    } else {
+      aiBusy = (os.aiMode() == AiMode::Cloud && cloudReady()) ? cloudAsk(job, os.ro(), timerMin) : netAsk(job);
+    }
+  }
   AiOutcome out;
-  if (netPollAnswer(out) || cloudPollAnswer(out)) {
+  if (netPollAnswer(out) || cloudPollAnswer(out) || bridgeLanPollAnswer(out)) {
     aiBusy = false;
     os.aiResult(out);
   }
@@ -815,14 +899,14 @@ void loop() {
   }
 
   // backlight: eases toward what SoulOS wants (~0.25 s up, ~0.8 s down)
-  const float target = os.backlight(in.hour, *brain);
+  const float target = wakePolling ? 0.0f : os.backlight(in.hour, *brain);
   const float rate = target > backlightNow ? 4.0f : 1.2f;
   const float d = target - backlightNow;
   backlightNow += fabsf(d) < rate * dt ? d : (d > 0 ? rate * dt : -rate * dt);
   backlight(backlightNow);
 
   // the frame: only what changed is drawn and pushed
-  const bool wantOn = brain->mode() != Mode::Off || os.ringing();
+  const bool wantOn = !wakePolling && (brain->mode() != Mode::Off || os.ringing());
   if (wantOn != displayOn) {
     displayOn = wantOn;
     displayPower(wantOn);
@@ -844,7 +928,8 @@ void loop() {
     saveMemory();
     updateCalendar();
   }
-  maybeDeepSleep(nowMs);
+  wakePollTick(nowMs, down || digitalRead(BOOT_BUTTON) == LOW);
+  if (!wakePolling) maybeDeepSleep(nowMs);
 
   // perf: frame time, CPU share of this loop, memory
   const int64_t endUs = esp_timer_get_time();

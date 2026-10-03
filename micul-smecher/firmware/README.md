@@ -91,10 +91,12 @@ geometry differ. On this disc a keyboard key is **~6.6 mm wide and ~7.9 mm tall*
 
 **Build, test, flash**
 ```bash
-pio test -e native                  # 123 native tests (eyes + motion parity, SoulOS flows, AI + SOUL Cloud protocols);
+pio test -e native                  # 131 native tests (eyes + motion parity, SoulOS flows, AI + SOUL Cloud + SOUL Bridge);
                                     # needs OpenSSL's libcrypto on the PC (the device key; apt install libssl-dev)
 pio run -e sim && .pio/build/sim/program /tmp/out all   # the simulator (stills: sim/shots/)
 .pio/build/sim/program /tmp/out cloud http://127.0.0.1:8790 /tmp/key.hex   # a live local SOUL Cloud (see below)
+SIM_NO_WS=1 .pio/build/sim/program /tmp/out cloud http://127.0.0.1:8790     # ... with the socket blocked: long-poll
+.pio/build/sim/program /tmp/out lan 0                    # SOUL Bridge on the LAN: serves ws://127.0.0.1:<port>/bridge
 .pio/build/sim/program /tmp/out keys                     # drive the IMU from the keyboard: a/d turn, w/s tip,
                                                          # q/e yaw, x spin, t tap, n nod, h shake, b/f/u/r poses
 pio check -e lcd28                  # cppcheck on our code (clean)
@@ -104,7 +106,7 @@ pio device monitor -b 115200        # '?' lists the serial commands; 'F' = perf 
 ```
 If the upload does not start: hold **BOOT**, tap **RESET**, release BOOT, upload again.
 
-Build size (2026-10-03, 1.2.0): `lcd28` flash ~2.04 MB (31 % of the 6.25 MB app slot), static RAM 77 KB (24 %).
+Build size (2026-10-03, 1.3.0): `lcd28` flash ~2.12 MB (32 % of the 6.25 MB app slot), static RAM 80 KB (25 %).
 PSRAM holds our persistent canvas and the panel's two frame buffers (3 × 460,800 B ≈ 1.4 MB of 8 MB).
 
 **How it runs** (`src/main.cpp`)
@@ -113,7 +115,8 @@ PSRAM holds our persistent canvas and the panel's two frame buffers (3 × 460,80
 |---|---|---|
 | 1 | the loop | touch, IMU, BLE (Hardware Buddy), Brain, SoulOS, the frame |
 | 0 | `soul-net` | Wi-Fi, setup portal, NTP, AI turns over HTTPS (your Claude / OpenAI key; the survival path when SOUL Cloud is unreachable) |
-| 0 | `soul-cloud` | the SOUL Cloud WebSocket (docs/07 §6): pairing, pushes, turns, item/inbox sync |
+| 0 | `soul-cloud` | the SOUL Cloud WebSocket (docs/07 §6): pairing, pushes, turns, item/inbox sync; long-poll when the socket will not open; the deep-sleep wake-polls |
+| 0 | `httpd` | only with the brain "My Claude on my computer": the SOUL Bridge server `ws://soul-xxxx.local:8765/bridge` (`src/bridge_lan.cpp`, docs/08 §4) |
 | 0 | LCD ISR | refills the two 10-line SRAM bounce buffers from the PSRAM frame buffer |
 
 The render loop never blocks on the network: it posts questions and polls answers. A frame redraws
@@ -130,8 +133,11 @@ only shown masked). Brains (Settings → AI): **SOUL Cloud** (pair with the `XXX
 page decides who answers: your own Anthropic / OpenAI key kept encrypted in the cloud, or the offline rules —
 SOUL includes no AI paid by us, so the cloud's built-in brain is off unless `SOUL_BUILTIN_AI=1`), **your Claude
 key** on SOUL (`claude-opus-5-5`, effort low, structured JSON output), **your OpenAI key** on SOUL (`gpt-6-luna`),
-**No AI** (on-device RO/EN rules). Your own Claude / ChatGPT app reaches SOUL through the connector whatever the
-brain. Models can be changed from the portal or by SOUL Cloud's `config` message. Every brain falls back to the
+**My Claude on my computer** (SOUL Bridge, docs/08: the owner's own Claude Code on a computer that is on; SOUL shows
+`soul-bridge pair XXXX-XXXX --cloud …` when paired with an account, else a 6-digit code for the bridge on the same
+Wi-Fi; the eyes wait while the question travels and think once Claude Code took it; computer off → the offline rules
+and "Your computer is offline: open Start SOUL"), **No AI** (on-device RO/EN rules). Your own Claude / ChatGPT app
+reaches SOUL through the connector whatever the brain. Models can be changed from the portal or by SOUL Cloud's `config` message. Every brain falls back to the
 on-device rules when the network or the key fails, and the eyes say what happened.
 
 **SOUL Cloud**, protocol v1 **rev. 2**, the one `../ai/suflet_ai/{devices,gateway}.py` implement
@@ -170,9 +176,21 @@ pairing, turns, time zone, frame budget) and `CloudDriver` (auth → socket → 
   `../ai/tools/record_frames.py`); and the simulator in cloud mode runs the same code over real sockets against a
   local cloud (`../ai/tools/e2e_sim.py`, step 3 of `../ai/tools/e2e_demo.sh`): pairs via `/pair` + a tap on the
   simulated glass, receives connector pushes, talks through the relay, sends items and inbox questions.
-- **Not yet**: the long-poll fallback and the 15-minute deep-sleep wake-polls of §6.11 (the device keeps the
-  socket while awake and sleeps up to 6 h at night), the factory `SOULKEY GEN` serial command (the key is made
-  on first Wi-Fi), flash + NVS encryption. Never run on the board against a deployed cloud.
+- **Long-poll** (§6.4): after 3 socket refusals that are not 401/403/426, `CloudDriver` carries the same frames over
+  `GET /v1/device/poll` + `POST /v1/device/send` (hello in the first send, `wait=8` idle), and tries the socket
+  again every 10 minutes. **Wake-polls** (§6.11): a paired SOUL sleeps at most 15 minutes; on that timer wake the
+  screen stays off, it signs in, polls once (all pages, `wait=0`, no hello), SoulOS applies the pushes, one send
+  carries the acks, the queue and the next `sleep`, and it sleeps again within 12 s (unless an alarm is due within
+  15 minutes or someone touched it). **Factory**: serial `SOULKEY GEN` / `SOULKEY PUB` answer
+  `SOULKEY PUB soul-<id> <pub>` for `../ai/tools/factory_enrol.py`.
+- **SOUL Bridge** (docs/08 §4): through the cloud (`bridge.code` / `bridge.state` / `ask.state`, brain `bridge`,
+  125 s turns) and on the LAN (`lib/Suflet/src/BridgeLink.*`: 6-digit code, token hashes in NVS `soulbridge`,
+  hello, turns; `src/bridge_lan.cpp`: `esp_http_server` WebSocket + mDNS `soul-xxxx` / `_soul._tcp`).
+  Proof: `test/test_suflet/test_bridge.cpp` (LAN server, cloud frames and session, long-poll and wake-poll against a
+  scripted cloud) and `../ai/tools/e2e_bridge.py` (simulator → cloud → the real `soul-bridge` → a mocked Claude
+  Code → alarm on SOUL; and on the LAN).
+- **Not yet**: flash + NVS encryption. Never run on the board against a deployed cloud; the LAN server, mDNS and
+  the wake-polls are compiled, not run on hardware.
 Without a cloud address none of this runs and the direct-key and No-AI brains work alone.
 
 **What the board has** (Waveshare wiki, vendor ESP-IDF demo and schematic, read 2026-09-25)

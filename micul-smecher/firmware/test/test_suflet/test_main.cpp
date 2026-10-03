@@ -1422,6 +1422,7 @@ void runMotionTests();
 void runAiTests();
 void runOsTests();
 void runCloudTests();
+void runBridgeTests();
 
 int main(int, char**) {
   UNITY_BEGIN();
@@ -1494,5 +1495,6 @@ int main(int, char**) {
   runAiTests();
   runOsTests();
   runCloudTests();
+  runBridgeTests();
   return UNITY_END();
 }

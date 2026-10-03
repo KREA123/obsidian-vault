@@ -1,11 +1,12 @@
 {
   "name": "soul-bridge",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
   "description": "SOUL Bridge: lets your own, official Claude Code (signed in by you, on your computer) answer questions typed on SOUL. No Claude credentials are read, stored or sent anywhere.",
   "license": "MIT",
   "type": "module",
   "bin": { "soul-bridge": "bin/soul-bridge.js" },
+  "files": ["bin/", "src/", "README.md"],
+  "keywords": ["soul", "claude-code", "channel", "mcp"],
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test test/*.test.js",

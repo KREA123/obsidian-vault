@@ -23,7 +23,7 @@ export const INSTRUCTIONS = [
   'If the question is unclear, answer with a short clarifying question via soul_reply; SOUL will send the follow-up as a new event.',
 ].join(' ')
 
-export function createChannelServer({ core, link, version = '0.1.0' }) {
+export function createChannelServer({ core, link, version = '0.2.0' }) {
   const mcp = new Server(
     { name: CHANNEL_NAME, version },
     {

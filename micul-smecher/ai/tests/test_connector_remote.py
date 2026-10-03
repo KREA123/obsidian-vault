@@ -49,7 +49,7 @@ def build(tmp_path, gateway=None, **kw):
     svc = make_service(tmp_path, clock)
     gw = gateway or StubGateway()
     app = create_remote_app(svc, gw, public_host=HOST, db_path=":memory:", mailer=mailbox, clock=clock,
-                            cimd_fetch=kw.pop("cimd_fetch", None), **kw)
+                            cimd_fetch=kw.pop("cimd_fetch", False), **kw)  # False: CIMD off
     return app, gw, svc, mailbox, clock
 
 

@@ -12,7 +12,7 @@ export function homeDir() {
 export const configPath = () => path.join(homeDir(), 'config.json')
 export const statusPath = () => path.join(homeDir(), 'status.json')
 
-const ALLOWED = ['soul_url', 'token', 'device_id', 'soul_name', 'mode', 'model', 'timeout_s']
+const ALLOWED = ['soul_url', 'token', 'device_id', 'soul_name', 'mode', 'model', 'timeout_s', 'via', 'cloud']
 const FORBIDDEN = /sk-ant-|oauth|session[_-]?key|refresh[_-]?token|access[_-]?token/i
 
 export function load() {

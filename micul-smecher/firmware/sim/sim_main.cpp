@@ -32,7 +32,11 @@
 #include "Gestures.h"
 #include "Os.h"
 #include "Personality.h"
+#include <openssl/rand.h>
+
+#include "BridgeLink.h"
 #include "sim_cloud.h"
+#include "sim_lan.h"
 
 #if defined(__unix__) || defined(__APPLE__)
 #include <fcntl.h>
@@ -122,6 +126,7 @@ struct Sim {
   std::vector<std::pair<float, AiOutcome>> pending;
   std::function<std::pair<int, std::string>(const AiJob&)> aiServer;
   std::function<bool(const AiJob&)> cloudAsk;  // cloud mode: turns go to SOUL Cloud over the real socket
+  std::function<void(OsCmd)> onCmd;            // lan mode: the SOUL Bridge commands (a new code, forget)
   float aiDelay = 1.3f;
   double composeMs = 0;
   uint64_t changedPx = 0;
@@ -240,6 +245,7 @@ struct Sim {
     }
     OsCmd c;
     while (os.popCmd(c)) {
+      if (onCmd) onCmd(c);
       if (c == OsCmd::StartPortal) {
         net.portal = true;
         os.setNet(net);
@@ -727,8 +733,10 @@ static void keysMode(Sim& s, const char* script) {
 // small host WebSocket client (sim/sim_cloud.cpp). SoulOS applies what comes
 // and draws it. Lines on stdin drive it like a finger would; lines on stdout
 // say what the glass shows (for tools/e2e_sim.py and humans):
-//   in:  ask <text> | tap yes | tap no | accept | reject | note <text> | inbox <text> | pause | resume | state | quit
-//   out: DEVICE, AUTH, WELCOME, PAIRING, CONFIRM, PAIRED, UNPAIRED, PUSH, REPLY, CONFIG, TZ, SENT, STATE, BYE
+//   in:  ask <text> | tap yes | tap no | accept | reject | note <text> | inbox <text> | pause | resume | state |
+//        ai bridge | ai none (Settings > AI on the glass) | bridge code | bridge forget | quit
+//   out: DEVICE, AUTH, WELCOME, PAIRING, CONFIRM, PAIRED, UNPAIRED, PUSH, REPLY, CONFIG, TZ, SENT, STATE,
+//        BRIDGECODE, BRIDGE, ASKSTATE (SOUL Bridge through SOUL Cloud, docs/08 §4), POLLMODE, BYE
 uint32_t simMs() {
   using namespace std::chrono;
   return (uint32_t)duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
@@ -762,7 +770,7 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
   hc.base = base;
   hc.allowPlainWs = true;  // loopback test cloud only
   hc.deviceId = CloudLink::deviceId(gMac);
-  hc.fw = "1.2.0-sim";
+  hc.fw = "1.3.0-sim";
   hc.hw = "lcd28";
   hc.session.prefs.fw = hc.fw;
   hc.session.prefs.hw = hc.hw;
@@ -777,6 +785,7 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
     return x;
   };
   hc.verbose = getenv("SIM_VERBOSE") != nullptr;
+  hc.noWs = getenv("SIM_NO_WS") != nullptr;
   if (!hc.loadOrMakeKey(keyPath)) {
     printf("FAIL no device key\n");
     return 1;
@@ -784,8 +793,12 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
   printf("DEVICE %s pub=%s\n", hc.deviceId.c_str(), hc.pub().c_str());
   s.cloudAsk = [&](const AiJob& j) {
     const int left = s.os.timerLeft();
-    return hc.session.ask(j.text, s.os.ro(), left >= 0 ? (left + 59) / 60 : -1, simMs());
+    return hc.session.ask(j.text, s.os.ro(), left >= 0 ? (left + 59) / 60 : -1, simMs(),
+                          s.os.aiMode() == AiMode::Bridge);  // brain "bridge": the cloud hands it to the computer
   };
+  std::string bridgeCode, bridgeLine;
+  int askState = 0;
+  bool pollMode = false;
   const int fl = fcntl(0, F_GETFL, 0);
   fcntl(0, F_SETFL, fl | O_NONBLOCK);
   std::string line;
@@ -833,6 +846,32 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
       paired = ni.paired;
       printf(paired ? "PAIRED owner=%s\n" : "UNPAIRED%s\n", paired ? ni.owner.c_str() : "");
     }
+    if (ni.bridgeCode != bridgeCode) {
+      bridgeCode = ni.bridgeCode;
+      if (!bridgeCode.empty()) {
+        printf("BRIDGECODE code=%s cmd=%s view=%s\n", bridgeCode.c_str(), ni.bridgeCmd.c_str(), viewName(s.os.view()));
+        s.mark();
+      }
+    }
+    {
+      char bl[160];
+      snprintf(bl, sizeof bl, "BRIDGE paired=%d online=%d name=%s", ni.bridgePaired, ni.bridgeOnline, ni.bridgeName.c_str());
+      if (bl != bridgeLine && (ni.bridgePaired || ni.bridgeOnline || !bridgeLine.empty())) {
+        bridgeLine = bl;
+        printf("%s\n", bl);
+        if (ni.bridgeOnline) s.mark();
+      }
+    }
+    if (ni.askState != askState) {
+      askState = ni.askState;
+      printf("ASKSTATE %s face=%d\n", askState == 1 ? "waiting" : askState == 2 ? "thinking" : "none",
+             (int)s.os.faceInputs(s.brain).state);
+      if (askState) s.mark();
+    }
+    if (hc.pollMode() != pollMode) {
+      pollMode = hc.pollMode();
+      printf("POLLMODE %d\n", pollMode);
+    }
     AiOutcome out;
     if (hc.session.pollAnswer(out)) {
       s.os.aiResult(out);
@@ -853,7 +892,8 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
     CloudOut co;
     while (s.os.popCloudOut(co)) {
       hc.session.send(co, s.clock, (uint32_t)time(nullptr));
-      static const char* const kK[] = {"item.add", "inbox.add", "item.state", "pair.ok", "pair.no", "connectors"};
+      static const char* const kK[] = {"item.add", "inbox.add", "item.state", "pair.ok", "pair.no", "connectors",
+                                       "bridge.code.get", "bridge.forget", "brain"};
       printf("SENT %s%s%s\n", kK[co.kind], co.state.empty() ? "" : " ", co.state.c_str());
     }
     CloudConfig cc;
@@ -911,11 +951,24 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
         o.paused = cmd == "pause";
         hc.session.send(o, s.clock, 0);
         printf("SENT connectors %s\n", cmd.c_str());
+      } else if (cmd == "ai bridge" || cmd == "ai none") {  // Settings > AI, on the glass
+        s.os.go(View::AiMode);
+        s.step(false);
+        s.tap(233, cmd == "ai bridge" ? 126 + 3 * 52 : 126 + 4 * 52, 0.2f);
+        printf("AI mode=%s view=%s\n", aiModeName(s.os.aiMode()), viewName(s.os.view()));
+      } else if (cmd == "bridge code") {  // "New code" on the Bridge screen
+        if (s.os.view() != View::Bridge) s.os.go(View::Bridge);
+        s.step(false);
+        s.tap(160, 392, 0.2f);
+      } else if (cmd == "bridge forget") {
+        if (s.os.view() != View::Bridge) s.os.go(View::Bridge);
+        s.step(false);
+        s.tap(306, 392, 0.2f);
       } else if (cmd == "state") {
-        printf("STATE state=%s view=%s seq=%u alarms=%d reminders=%d notes=%d outq=%u in=%d out=%d\n",
+        printf("STATE state=%s view=%s seq=%u alarms=%d reminders=%d notes=%d outq=%u in=%d out=%d ai=%s\n",
                hc.session.state.c_str(), viewName(s.os.view()), (unsigned)hc.session.lastSeq, s.alarms.count(),
                (int)s.os.reminders().size(), (int)s.os.notes().size(), (unsigned)hc.session.outqSize(), hc.framesIn,
-               hc.framesOut);
+               hc.framesOut, aiModeName(s.os.aiMode()));
       } else if (!cmd.empty()) {
         printf("? %s\n", cmd.c_str());
       }
@@ -931,6 +984,140 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
   }
   printf("BYE in=%d out=%d seq=%u\n", hc.framesIn, hc.framesOut, (unsigned)hc.session.lastSeq);
   hc.wsClose();
+  return 0;
+}
+// ------------------------------------------------------------------ LAN mode ---
+// `program <out_dir> lan [port]`: SOUL Bridge on the home network (docs/08 §4) with the firmware's own
+// BridgeServer (lib/Suflet/src/BridgeLink.*) behind a loopback WebSocket server (sim/sim_lan.cpp), as the device
+// serves ws://soul-xxxx.local:8765/bridge. The brain is "My Claude on my computer"; SoulOS shows the code, the
+// computer, the eyes, and applies the actions an answer carries.
+//   in:  ai bridge | code | ask <text> | forget | state | quit
+//   out: LAN port=, LANCODE code=, BRIDGE online= name=, ASKSTATE, REPLY err= say=, STATE ..., BYE
+int lanMode(const std::string& dir, int port) {
+  (void)dir;
+  Sim s(true);
+  s.os.settings().ai = (uint8_t)AiMode::None;
+  s.net.ip = "127.0.0.1";
+  s.os.setNet(s.net);
+  setenv("TZ", "EET-2EEST,M3.5.0/3,M10.5.0/4", 1);
+  tzset();
+  s.clock = localFromUtc((uint32_t)time(nullptr));
+  HostWsServer ws;
+  if (!ws.listen(port)) {
+    printf("FAIL cannot listen on 127.0.0.1:%d\n", port);
+    return 1;
+  }
+  BridgeServer b;
+  b.deviceId = CloudLink::deviceId(gMac);
+  b.name = s.os.settings().name;
+  b.tz = "EET-2EEST,M3.5.0/3,M10.5.0/4";
+  b.rng = []() {
+    uint32_t r;
+    RAND_bytes((unsigned char*)&r, sizeof r);
+    return r;
+  };
+  s.onCmd = [&](OsCmd c) {
+    if (c == OsCmd::BridgePair) b.newCode(simMs());
+    if (c == OsCmd::BridgeForget) b.forget();
+  };
+  s.cloudAsk = [&](const AiJob& j) {
+    char now[48];
+    const time_t t = (time_t)s.clock;
+    struct tm tm;
+    gmtime_r(&t, &tm);
+    snprintf(now, sizeof now, "%04d-%02d-%02dT%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min);
+    return b.ask(j.text, s.os.ro(), now, simMs());
+  };
+  printf("LAN port=%d device=%s\n", ws.port(), b.deviceId.c_str());
+  const int fl = fcntl(0, F_GETFL, 0);
+  fcntl(0, F_SETFL, fl | O_NONBLOCK);
+  std::string line, code, bridgeLine;
+  int askState = 0;
+  bool quit = false;
+  const uint32_t start = simMs();
+  while (!quit) {
+    const uint32_t t0 = simMs();
+    ws.poll(5, [&](int fd) { b.onOpen(fd, simMs()); },
+            [&](int fd, const std::string& t) { b.onText(fd, t.data(), t.size(), simMs()); },
+            [&](int fd) { b.onClose(fd); });
+    b.tick(simMs());
+    BridgeOut o;
+    while (b.nextOut(o)) {
+      if (o.close) ws.close(o.conn);
+      else ws.send(o.conn, o.frame);
+    }
+    NetInfo ni = s.net;
+    ni.bridgeLan = true;
+    ni.bridgeOnline = b.online();
+    ni.bridgeName = b.computer();
+    ni.bridgePaired = b.tokenCount() > 0;
+    ni.askState = b.askState();
+    const std::string c = b.code(simMs());
+    if (!c.empty()) {
+      ni.bridgeCode = c;
+      ni.bridgeCmd = "soul-bridge pair " + c;
+    }
+    s.os.setNet(ni);
+    if (c != code) {
+      code = c;
+      if (!code.empty()) printf("LANCODE code=%s view=%s\n", code.c_str(), viewName(s.os.view()));
+    }
+    char bl[160];
+    snprintf(bl, sizeof bl, "BRIDGE online=%d name=%s tokens=%d", ni.bridgeOnline, ni.bridgeName.c_str(), (int)b.tokenCount());
+    if (bl != bridgeLine) {
+      bridgeLine = bl;
+      printf("%s\n", bl);
+    }
+    if (ni.askState != askState) {
+      askState = ni.askState;
+      printf("ASKSTATE %s face=%d\n", askState == 1 ? "waiting" : askState == 2 ? "thinking" : "none",
+             (int)s.os.faceInputs(s.brain).state);
+    }
+    AiOutcome out;
+    if (b.pollAnswer(out)) {
+      s.os.aiResult(out);
+      printf("REPLY err=%s say=%s alarms=%d notes=%d\n", out.err == AiErr::None ? "none" : aiErrCode(out.err),
+             s.os.lastReply().say.c_str(), s.alarms.count(), (int)s.os.notes().size());
+    }
+    char buf[512];
+    ssize_t n;
+    while ((n = read(0, buf, sizeof buf)) > 0) line.append(buf, (size_t)n);
+    size_t nl;
+    while ((nl = line.find('\n')) != std::string::npos) {
+      std::string cmd = line.substr(0, nl);
+      line.erase(0, nl + 1);
+      while (!cmd.empty() && (cmd.back() == '\r' || cmd.back() == ' ')) cmd.pop_back();
+      if (cmd == "quit") {
+        quit = true;
+      } else if (cmd == "ai bridge") {
+        s.os.go(View::AiMode);
+        s.step(false);
+        s.tap(233, 126 + 3 * 52, 0.2f);
+        printf("AI mode=%s view=%s\n", aiModeName(s.os.aiMode()), viewName(s.os.view()));
+      } else if (cmd == "code") {
+        if (s.os.view() != View::Bridge) s.os.go(View::Bridge);
+        s.step(false);
+        s.tap(160, 392, 0.2f);
+      } else if (cmd == "forget") {
+        if (s.os.view() != View::Bridge) s.os.go(View::Bridge);
+        s.step(false);
+        s.tap(306, 392, 0.2f);
+      } else if (cmd.compare(0, 4, "ask ") == 0) {
+        s.os.ask(cmd.substr(4));
+        printf("ASKED %s err=%s\n", cmd.substr(4).c_str(), s.os.thinking() ? "-" : aiErrCode(s.os.lastError()));
+      } else if (cmd == "state") {
+        printf("STATE ai=%s view=%s alarms=%d notes=%d online=%d\n", aiModeName(s.os.aiMode()), viewName(s.os.view()),
+               s.alarms.count(), (int)s.os.notes().size(), b.online());
+      } else if (!cmd.empty()) {
+        printf("? %s\n", cmd.c_str());
+      }
+    }
+    s.step(false);
+    if (simMs() - start > 600000) quit = true;
+    const uint32_t spent = simMs() - t0;
+    if (spent < 33) usleep((useconds_t)(33 - spent) * 1000);
+  }
+  printf("BYE\n");
   return 0;
 }
 }  // namespace
@@ -963,6 +1150,7 @@ int main(int argc, char** argv) {
     }
     return cloudMode(dir, argv[3], argc > 4 ? argv[4] : "", argc > 5 && atoi(argv[5]) != 0);
   }
+  if (which == "lan") return lanMode(dir, argc > 3 ? atoi(argv[3]) : 0);  // SOUL Bridge on the LAN (see lanMode)
   if (which == "keys") {  // drive it by hand (see keysMode)
     Recorder rec;
     rec.dir = dir;

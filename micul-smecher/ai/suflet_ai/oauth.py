@@ -27,6 +27,7 @@ and RFC 9728 metadata and the bearer middleware; this module is the provider beh
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import contextvars
 import json
@@ -188,8 +189,12 @@ class SoulClient(OAuthClientInformationFull):
         raise InvalidRedirectUriError("redirect_uri is not registered for this client")
 
 
-def check_registration(info: OAuthClientInformationFull) -> None:
-    """DCR rules of §3.7. Raises RegistrationError."""
+def check_registration(info: OAuthClientInformationFull, vouched_host: str = "") -> None:
+    """DCR rules of §3.7. Raises RegistrationError.
+
+    `vouched_host`: for a CIMD client, the TLS-verified host that serves its document. A reserved name
+    ("Claude Code" from claude.ai) is then fine when that host is on the allowlist, whatever its redirect
+    URIs (Claude Code's own document lists loopback redirects)."""
     uris = [str(u) for u in (info.redirect_uris or [])]
     if not uris:
         raise RegistrationError("invalid_redirect_uri", "at least one redirect URI is required")
@@ -200,7 +205,7 @@ def check_registration(info: OAuthClientInformationFull) -> None:
         if why:
             raise RegistrationError("invalid_redirect_uri", why)
     name = (info.client_name or "").lower()
-    if any(w in name for w in RESERVED_NAMES):
+    if any(w in name for w in RESERVED_NAMES) and vouched_host.lower() not in VERIFIED_HOSTS:
         if not all(redirect_host(u) in VERIFIED_HOSTS for u in uris):
             raise RegistrationError("invalid_client_metadata",
                                     "client_name uses a reserved name for a redirect host we cannot verify")
@@ -361,18 +366,19 @@ class SoulOAuthProvider:
         if not client_id or len(client_id) > 512:
             return None
         if client_id.startswith("https://"):
-            return self._cimd_client(client_id)
+            return await self._cimd_client(client_id)
         row = self.db.one("SELECT metadata FROM oauth_clients WHERE client_id=? AND kind='dcr'", (client_id,))
         return SoulClient.model_validate_json(row["metadata"]) if row else None
 
-    def _cimd_client(self, client_id: str) -> Optional[SoulClient]:
+    async def _cimd_client(self, client_id: str) -> Optional[SoulClient]:
         if self.cimd_fetch is None:
             return None
         hit = self._cimd_cache.get(client_id)
         if hit and hit[0] > self.now():
             return hit[1]
         try:
-            doc = self.cimd_fetch(client_id)
+            # the fetch blocks for up to 3 s (DNS, TLS): off the event loop that serves every device socket
+            doc = await asyncio.to_thread(self.cimd_fetch, client_id)
         except Exception as e:  # CimdRejected or a network error: unknown client
             log.warning("CIMD client rejected (%s)", type(e).__name__)
             return None
@@ -385,7 +391,7 @@ class SoulOAuthProvider:
         doc["scope"] = " ".join(SCOPES)  # CIMD clients are given all valid scopes; consent decides
         try:
             client = SoulClient.model_validate(doc)
-            check_registration(client)
+            check_registration(client, vouched_host=urlparse(client_id).hostname or "")
         except (ValueError, RegistrationError):
             return None
         self._cimd_cache[client_id] = (self.now() + 300, client)

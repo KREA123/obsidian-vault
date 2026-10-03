@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <esp_crt_bundle.h>
 #include <esp_heap_caps.h>
+#include <bootloader_random.h>
 #include <esp_random.h>
 #include <esp_transport.h>
 #include <esp_transport_ssl.h>
@@ -61,11 +62,16 @@ struct Key {
     resetFlag = p.getUChar("rst", 0) == 1;
     p.end();
   }
-  // made once, after Wi-Fi is up (the RNG is a true RNG with the radio on); never printed
-  bool make() {
+  // made once, after Wi-Fi is up (the RNG is a true RNG with the radio on) or on the factory station's
+  // SOULKEY GEN (bootloader entropy source); never printed
+  bool make(bool factory = false) {
     if (ready) return true;
-    if (WiFi.status() != WL_CONNECTED) return false;
-    if (!DeviceKey::generate(priv, pub)) return false;
+    const bool radio = WiFi.status() == WL_CONNECTED;
+    if (!radio && !factory) return false;
+    if (!radio) bootloader_random_enable();
+    const bool made = DeviceKey::generate(priv, pub);
+    if (!radio) bootloader_random_disable();
+    if (!made) return false;
     Preferences p;
     if (!p.begin("soulid", false, kIdPart)) return false;
     const bool ok = p.putBytes("priv", priv, 32) == 32 && p.putBytes("pub", pub, 65) == 65;
@@ -170,6 +176,32 @@ class EspDriver : public CloudDriver {
 
   void wsPing() override { sendRaw(std::string(), WS_TRANSPORT_OPCODES_PING); }
 
+  // long-poll (§6.4 fallback, §6.11 wake-polls): the same HTTPS client as /auth, Bearer in the header
+  bool supportsPoll() override { return true; }
+  int httpGetAuth(const std::string& url, const std::string& bearer, std::string& resp, uint32_t timeoutMs) override {
+    HttpRequest rq;
+    rq.url = url;
+    rq.get = true;
+    rq.headers = {{"authorization", bearer}};
+    rq.timeoutMs = timeoutMs;
+    AiErr err;
+    const int st = netHttpsPost(rq, resp, err);
+    wipe(rq.headers[0].second);
+    return st;
+  }
+  int httpPostAuth(const std::string& url, const std::string& bearer, const std::string& body, std::string& resp,
+                   uint32_t timeoutMs) override {
+    HttpRequest rq;
+    rq.url = url;
+    rq.headers = {{"content-type", "application/json"}, {"authorization", bearer}};
+    rq.body = body;
+    rq.timeoutMs = timeoutMs;
+    AiErr err;
+    const int st = netHttpsPost(rq, resp, err);
+    wipe(rq.headers[1].second);
+    return st;
+  }
+
   Rd wsRead(std::string& text, int& closeCode, uint32_t waitMs) override {
     if (!wsT) return Rd::Closed;
     const int p = esp_transport_poll_read(wsT, (int)waitMs);
@@ -251,6 +283,9 @@ class EspDriver : public CloudDriver {
 
 EspDriver drv;  // its session is shared with the render loop under `mtx`
 bool off = true, baseChanged = false;
+// §6.11: this boot is a timer wake from deep sleep: poll once, let SoulOS apply, report, sleep again
+enum class Wake : uint8_t { None, Polling, Applying, Done } wake = Wake::None;
+uint32_t wakeAtEpoch = 0, wakeStartMs = 0;
 std::string savedOutq;
 uint32_t savedSeq = 0;
 bool savedConn = false;
@@ -329,6 +364,42 @@ void cloudTask(void*) {
       vTaskDelay(pdMS_TO_TICKS(500));
       continue;
     }
+    Wake w;
+    {
+      Lock l;
+      w = wake;
+    }
+    if (w == Wake::Polling) {  // one GET, no socket (§6.11)
+      const bool ok = drv.wakePoll(millis(), (float)(esp_random() % 1000) / 1000.0f);
+      Lock l;
+      wake = ok ? Wake::Applying : Wake::Done;
+      if (!ok) Serial.println("[cloud] wake-poll failed");
+      continue;
+    }
+    if (w == Wake::Applying) {  // SoulOS applies the pushes (the render loop), then the acks go up at once
+      bool settled;
+      {
+        Lock l;
+        settled = drv.session.pushesWaiting() == 0;
+      }
+      if (settled || millis() - wakeStartMs > 8000) {
+        uint32_t at;
+        {
+          Lock l;
+          at = wakeAtEpoch;
+        }
+        drv.wakePollFinish(millis(), at);
+        Lock l;
+        saveSyncLocked(true);
+        wake = Wake::Done;
+      }
+      vTaskDelay(pdMS_TO_TICKS(50));
+      continue;
+    }
+    if (w == Wake::Done) {
+      vTaskDelay(pdMS_TO_TICKS(200));
+      continue;
+    }
     const uint32_t waitMs = drv.step(millis(), (float)(esp_random() % 1000) / 1000.0f);
     const uint32_t now = millis();
     if (now - lastSave > 1000) {
@@ -373,7 +444,10 @@ void cloudSetPrefs(AiMode brain, bool ro, const std::string& posixTz) {
   if (!mtx) return;
   Lock l;
   CloudHello& h = drv.session.prefs;
-  h.brainLocal = brain == AiMode::Cloud ? "cloud" : brain == AiMode::None ? "none" : "direct";  // B1: the key is here
+  h.brainLocal = brain == AiMode::Cloud    ? "cloud"
+                 : brain == AiMode::None   ? "none"
+                 : brain == AiMode::Bridge ? "bridge"
+                                           : "direct";  // B1: the key is here
   h.lang = ro ? "ro" : "en";
   if (!posixTz.empty()) h.tzPosix = posixTz;
 }
@@ -405,10 +479,43 @@ bool cloudReady() {
   return drv.session.welcomed();
 }
 
-bool cloudAsk(const AiJob& job, bool ro, int timerLeftMin) {
+bool cloudAsk(const AiJob& job, bool ro, int timerLeftMin, bool viaBridge) {
   if (!mtx) return false;
   Lock l;
-  return drv.session.ask(job.text, ro, timerLeftMin, millis());
+  return drv.session.ask(job.text, ro, timerLeftMin, millis(), viaBridge);
+}
+
+bool cloudPaired() {
+  if (!mtx) return false;
+  Lock l;
+  return !off && drv.session.state == "paired";
+}
+
+void cloudWakePoll(uint32_t nextWakeEpoch) {
+  if (!mtx) return;
+  Lock l;
+  wake = off ? Wake::Done : Wake::Polling;
+  wakeAtEpoch = nextWakeEpoch;
+  wakeStartMs = millis();
+}
+
+bool cloudWakePollDone() {
+  if (!mtx) return true;
+  Lock l;
+  return wake == Wake::Done;
+}
+
+void cloudWakePollAgain(uint32_t nextWakeEpoch) {
+  if (!mtx) return;
+  Lock l;
+  wakeAtEpoch = nextWakeEpoch;
+}
+
+void cloudWakePollCancel() {  // the owner woke SOUL up during the poll: back to the socket
+  if (!mtx) return;
+  Lock l;
+  if (drv.session.wakePolling()) drv.session.endWakePoll();
+  wake = Wake::None;
 }
 
 bool cloudPollAnswer(AiOutcome& out) {
@@ -452,6 +559,16 @@ bool cloudPollTime(uint32_t& epoch) {
   if (!mtx) return false;
   Lock l;
   return drv.session.pollTime(epoch);
+}
+
+std::string cloudDeviceId() { return drv.deviceId; }
+
+int cloudKeyGenerate() {
+  if (!key.ready) key.load();
+  if (key.ready) return 0;
+  if (!mtx) return -1;
+  Lock l;
+  return key.make(true) ? 1 : -1;
 }
 
 std::string cloudPubKey() {

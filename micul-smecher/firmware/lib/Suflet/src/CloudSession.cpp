@@ -8,6 +8,9 @@ namespace suflet {
 
 namespace {
 constexpr uint32_t kAskMs = 25000;       // §6.6: give up after 25 s
+constexpr uint32_t kBridgeAskMs = 125000;  // docs/08 §4: the computer answers within 120 s (+ the way back)
+constexpr uint32_t kPollWaitIdleS = 8;     // long-poll: how long one poll may hang when nothing goes up
+constexpr uint32_t kPollRetryWsMs = 600000;  // long-poll: try the socket again every 10 min
 constexpr uint32_t kConvMs = 600000;     // reuse `conv` for 10 min
 constexpr uint32_t kStatusMs = 600000;   // status at least every 10 min
 constexpr size_t kOutqMax = 50, kOutqBytes = 8192;
@@ -102,6 +105,7 @@ std::vector<std::string> CloudSession::unsynced() const {
 
 std::string CloudSession::onOpen(uint32_t nowMs) {
   open_ = true;
+  wake_ = false;
   welcomed_ = replayDone_ = false;
   openedAt_ = helloAt_ = nowMs;
   ctl_.clear();
@@ -120,8 +124,20 @@ std::string CloudSession::onOpen(uint32_t nowMs) {
   return CloudLink::hello(h);
 }
 
+void CloudSession::beginWakePoll(uint32_t nowMs) {
+  onOpen(nowMs);  // budgets and a fresh outq round; the hello it builds is not sent (§6.11: no hello)
+  wake_ = true;
+}
+
+void CloudSession::endWakePoll() {
+  wake_ = false;
+  open_ = false;
+  ctl_.clear();
+}
+
 void CloudSession::answerError(AiErr e, bool noLocal) {
   askPending_ = false;
+  askState_ = 0;
   answer_ = AiOutcome();
   answer_.err = e;
   answer_.noLocal = noLocal;
@@ -154,8 +170,14 @@ CloudLink::Msg CloudSession::onText(const char* s, size_t n, uint32_t nowMs) {
       }
       config_ = CloudConfig();
       if (state == "paired") {  // the account page is the source of truth once paired
-        config_.hasBrain = !w.brain.empty();
-        config_.brain = w.brain;
+        // ... except right after the owner picked a brain on SOUL itself: that wins until the cloud has it
+        if (!brainWanted.empty() && w.brain != brainWanted) {
+          queue(CloudLink::brain(brainWanted.c_str()));
+        } else {
+          brainWanted.clear();
+          config_.hasBrain = !w.brain.empty();
+          config_.brain = w.brain;
+        }
         config_.hasVoice = !w.voice.empty();
         config_.voice = w.voice;
         config_.hasLang = !w.lang.empty();
@@ -210,6 +232,7 @@ CloudLink::Msg CloudSession::onText(const char* s, size_t n, uint32_t nowMs) {
       if (r.allowanceLeft >= 0) allowanceLeft = r.allowanceLeft;
       if (!askPending_ || r.re != askId_) break;  // an aborted turn: ignore
       askPending_ = false;
+      askState_ = 0;
       answer_ = AiOutcome();
       answer_.httpStatus = 200;
       answer_.reply.say = r.reply.say;
@@ -242,6 +265,7 @@ CloudLink::Msg CloudSession::onText(const char* s, size_t n, uint32_t nowMs) {
       if (pushes_.size() >= kPushesMax) break;  // SoulOS is behind: no ack, replayed on the next socket
       pushes_.push_back(p);
       inFlight_.push_back(p.seq);
+      if (p.seq > seenSeq_) seenSeq_ = p.seq;
       break;
     }
     case CloudLink::Msg::Added: dropOut(link_.addedCid); break;
@@ -249,6 +273,7 @@ CloudLink::Msg CloudSession::onText(const char* s, size_t n, uint32_t nowMs) {
     case CloudLink::Msg::Config: {
       const CloudConfig& c = link_.config;
       config_ = c;
+      if (c.hasBrain) brainWanted.clear();  // the account page changed it after: it wins
       configReady_ = true;
       if (c.hasTz && c.posixTz != prefs.tzPosix) {
         tzNew_ = c.posixTz;
@@ -261,10 +286,28 @@ CloudLink::Msg CloudSession::onText(const char* s, size_t n, uint32_t nowMs) {
       }
       break;
     }
+    case CloudLink::Msg::BridgeCode:
+      bridgeCode = link_.bridgeCode.code;
+      bridgeCmd = link_.bridgeCode.cmd;
+      bridgeCodeUntil_ = nowMs + link_.bridgeCode.expiresIn * 1000u;
+      break;
+    case CloudLink::Msg::BridgeState:
+      bridgePaired = link_.bridgeState.paired;
+      bridgeOnline = link_.bridgeState.online;
+      bridgeName = link_.bridgeState.name;
+      if (bridgeOnline) {  // a computer took the code: it is spent
+        bridgeCode.clear();
+        bridgeCmd.clear();
+      }
+      break;
+    case CloudLink::Msg::AskState:
+      if (askPending_ && link_.askStateRe == askId_) askState_ = link_.askState == "thinking" ? 2 : 1;
+      break;
     case CloudLink::Msg::Error: {
       const CloudError& e = link_.error;
-      if (askPending_ && !e.re.empty() && e.re == askId_)
-        answerError(e.err, e.code == "timeout");  // timeout: what the turn did still arrives as pushes
+      // timeout: what a cloud turn did still arrives as pushes (no rules on top); a bridge turn runs nothing
+      // until its answer, so the offline rules may answer instead
+      if (askPending_ && !e.re.empty() && e.re == askId_) answerError(e.err, e.code == "timeout" && !askBridge_);
       if (e.code == "rate_limited" && e.retryMs > 0) waitMs_ = e.retryMs;
       if (!e.cid.empty()) {
         if (e.code == "invalid" || e.code == "too_big") {
@@ -297,7 +340,7 @@ bool CloudSession::nextFrame(std::string& out, uint32_t nowMs) {
     ctl_.pop_front();
     return true;
   }
-  if (!welcomed_ || state != "paired" || (int32_t)(nowMs - holdOutqUntil_) < 0) return false;
+  if (!(welcomed_ || wake_) || state != "paired" || (int32_t)(nowMs - holdOutqUntil_) < 0) return false;
   for (auto it = outq_.begin(); it != outq_.end(); ++it) {
     if (it->sent) continue;
     if (it->frame.size() > CloudLink::kMaxOut) {  // cannot happen with our builders; never resend it
@@ -344,9 +387,13 @@ CloudSession::Retry CloudSession::onClose(int code, uint32_t nowMs, float rnd) {
 }
 
 void CloudSession::tick(uint32_t nowMs) {
-  if (askPending_ && nowMs - askAt_ > kAskMs) {  // too slow: tell the cloud, the rules answer nothing twice
+  if (askPending_ && nowMs - askAt_ > (askBridge_ ? kBridgeAskMs : kAskMs)) {  // too slow: tell the cloud
     queue(CloudLink::abort(askId_));
-    answerError(AiErr::Timeout, true);
+    answerError(AiErr::Timeout, !askBridge_);  // a cloud turn may still have acted; a bridge turn did nothing
+  }
+  if (!bridgeCode.empty() && (int32_t)(nowMs - bridgeCodeUntil_) > 0) {
+    bridgeCode.clear();
+    bridgeCmd.clear();
   }
   if (!confirm.pid.empty() && (int32_t)(nowMs - confirmUntil_) > 0) {  // no touch in time = no
     queue(CloudLink::pairAnswer(confirm.pid, false));
@@ -361,8 +408,10 @@ void CloudSession::tick(uint32_t nowMs) {
 
 // ----------------------------------------------------------------- app ---
 
-bool CloudSession::ask(const std::string& text, bool ro, int timerLeftMin, uint32_t nowMs) {
+bool CloudSession::ask(const std::string& text, bool ro, int timerLeftMin, uint32_t nowMs, bool viaBridge) {
   if (!welcomed_ || askPending_) return false;
+  askBridge_ = viaBridge;
+  askState_ = viaBridge ? 1 : 0;
   char id[24];
   snprintf(id, sizeof id, "a%lu%04lx", (unsigned long)++askSeq_, (unsigned long)(rand32() & 0xffff));
   askId_ = id;
@@ -425,6 +474,19 @@ void CloudSession::send(const CloudOut& o, uint32_t localNow, uint32_t epochNow)
       connectorsPaused = o.paused;
       if (welcomed_) queue(CloudLink::connectors(o.paused));
       return;
+    case CloudOut::BridgeCode:
+      if (welcomed_ && state == "paired") queue(CloudLink::bridgeCodeGet());
+      return;
+    case CloudOut::BridgeForget:
+      if (welcomed_ && state == "paired") queue(CloudLink::bridgeForget());
+      bridgePaired = bridgeOnline = false;
+      bridgeName.clear();
+      return;
+    case CloudOut::Brain:
+      if (o.text != "bridge" && o.text != "none") return;
+      brainWanted = o.text;
+      if (welcomed_ && state == "paired") queue(CloudLink::brain(o.text.c_str()));
+      return;
     default: break;
   }
   trimOutq();
@@ -476,7 +538,7 @@ void CloudSession::setStatus(int rssi, int battery, const char* power, uint32_t 
 }
 
 void CloudSession::sleep(uint32_t wakeAt) {
-  if (welcomed_ && wakeAt) queue(CloudLink::sleep(wakeAt));
+  if ((welcomed_ || wake_) && wakeAt) queue(CloudLink::sleep(wakeAt));
 }
 
 void CloudSession::fill(NetInfo& n) const {
@@ -492,6 +554,16 @@ void CloudSession::fill(NetInfo& n) const {
   n.connectorsPaused = connectorsPaused;
   n.trialLeft = trialLeft;
   n.inboxPending = inboxPending;
+  if (n.paired) {  // the cloud's bridge (the LAN one, if any, is filled in by the device)
+    n.bridgeOnline = n.bridgeOnline || bridgeOnline;
+    n.bridgePaired = n.bridgePaired || bridgePaired;
+    if (bridgeOnline) n.bridgeName = bridgeName;
+    if (!bridgeCode.empty()) {
+      n.bridgeCode = bridgeCode;
+      n.bridgeCmd = bridgeCmd;
+    }
+  }
+  n.askState = askState_;
 }
 
 // ============================================================== driver ===
@@ -506,6 +578,146 @@ void CloudDriver::forgetToken() {
 void CloudDriver::reconnectNow() {
   waiting_ = false;
   retryAt_ = 0;
+}
+
+bool CloudDriver::needToken(uint32_t nowMs) const {
+  return token_.empty() || forceReauth_ || (int32_t)(nowMs - tokenUntil_) > 0;
+}
+
+std::string CloudDriver::bearer() {
+  Guard g(this);
+  return "Bearer " + token_;
+}
+
+bool CloudDriver::feedMessages(const std::string& body, uint32_t nowMs, bool* more) {
+  std::vector<std::string> frames;
+  if (!CloudLink::splitMessages(body.data(), body.size(), frames, more)) return false;
+  Guard g(this);
+  for (const std::string& f : frames) session.onText(f.data(), f.size(), nowMs);
+  return true;
+}
+
+// POST /v1/device/send with what is waiting; true = sent (the answers are fed to the session)
+bool CloudDriver::postFrames(std::vector<std::string>& frames, uint32_t nowMs) {
+  if (frames.empty()) return true;
+  size_t used = 0;
+  const std::string body = CloudLink::sendBody(frames, &used);
+  std::string resp, auth = bearer();
+  const int st = httpPostAuth(base + "/v1/device/send", auth, body, resp, 30000);
+  for (char& c : auth) c = 0;
+  if (st == 401) {
+    forgetToken();
+    forceReauth_ = true;
+    return false;
+  }
+  if (st != 200) return false;
+  frames.erase(frames.begin(), frames.begin() + (long)used);
+  feedMessages(resp, nowMs);
+  return true;
+}
+
+// The long-poll transport (§6.4 fallback): hello and everything else go up with POST /send, pushes and the
+// rest come down with GET /poll. A turn's reply comes back on the POST that carried the ask (the cloud holds
+// it <= 25 s); a SOUL Bridge turn's reply comes with a later poll.
+uint32_t CloudDriver::stepPoll(uint32_t nowMs, float rnd) {
+  if ((int32_t)(nowMs - pollUntil_) > 0) {  // every 10 minutes: is the socket possible again?
+    Guard g(this);
+    if (!session.askPending()) {
+      pollMode_ = false;
+      session.onClose(1000, nowMs, rnd);
+      pollOut_.clear();
+      log("[cloud] long-poll: trying the socket again");
+      return 0;
+    }
+  }
+  if (!keyReady()) {
+    retryAt_ = nowMs + 2000;
+    waiting_ = true;
+    return 200;
+  }
+  if (needToken(nowMs) && !authenticate(nowMs, rnd)) return 50;
+  {
+    Guard g(this);
+    if (!session.open()) {
+      pollOut_.clear();
+      pollOut_.push_back(session.onOpen(nowMs));  // the first send carries hello; its answer carries welcome
+    }
+    session.tick(nowMs);
+    std::string f;
+    while (pollOut_.size() < 40 && session.nextFrame(f, nowMs)) pollOut_.push_back(f);
+  }
+  bool ok = postFrames(pollOut_, nowMs);
+  bool more = false;
+  if (ok) {
+    bool pending;
+    {
+      Guard g(this);
+      pending = !pollOut_.empty();
+    }
+    const int wait = pending ? 0 : (int)kPollWaitIdleS;
+    std::string resp, auth = bearer();
+    const int st = httpGetAuth(CloudLink::pollUrl(base, session.pollAfter(), wait), auth, resp, (wait + 10) * 1000u);
+    for (char& c : auth) c = 0;
+    if (st == 200) {
+      lastRx_ = nowMs;
+      ok = feedMessages(resp, nowMs, &more);
+    } else {
+      if (st == 401) {
+        forgetToken();
+        forceReauth_ = true;
+      }
+      ok = false;
+    }
+  }
+  if (!ok) {
+    Guard g(this);
+    const CloudSession::Retry r = session.onClose(forceReauth_ ? 4401 : 1006, nowMs, rnd);
+    retryAt_ = nowMs + (forceReauth_ ? 500 : CloudLink::backoffMs(++pollFails_, rnd));
+    (void)r;
+    waiting_ = true;
+    return 50;
+  }
+  pollFails_ = 0;
+  return more ? 0 : 10;
+}
+
+bool CloudDriver::wakePoll(uint32_t nowMs, float rnd) {
+  if (!keyReady() || !supportsPoll()) return false;
+  if (needToken(nowMs) && !authenticate(nowMs, rnd)) return false;
+  {
+    Guard g(this);
+    session.beginWakePoll(nowMs);
+  }
+  for (int page = 0; page < 6; ++page) {  // <= 50 pushes a page; more = at once again
+    std::string resp, auth = bearer();
+    const int st = httpGetAuth(CloudLink::pollUrl(base, session.pollAfter(), 0), auth, resp, 10000);
+    for (char& c : auth) c = 0;
+    if (st == 401) {
+      forgetToken();
+      forceReauth_ = true;
+    }
+    if (st != 200) return false;
+    bool more = false;
+    if (!feedMessages(resp, nowMs, &more)) return false;
+    if (!more) break;
+  }
+  return true;
+}
+
+bool CloudDriver::wakePollFinish(uint32_t nowMs, uint32_t wakeAt) {
+  std::vector<std::string> frames;
+  {
+    Guard g(this);
+    if (!session.wakePolling()) return false;
+    session.sleep(wakeAt);
+    std::string f;
+    while (frames.size() < 40 && session.nextFrame(f, nowMs + 60000)) frames.push_back(f);  // budgets: one burst
+  }
+  bool ok = true;
+  while (ok && !frames.empty()) ok = postFrames(frames, nowMs);
+  Guard g(this);
+  session.endWakePoll();
+  return ok;
 }
 
 bool CloudDriver::authenticate(uint32_t nowMs, float rnd) {
@@ -584,6 +796,7 @@ uint32_t CloudDriver::step(uint32_t nowMs, float rnd) {
     return left < 200 ? left : 200;
   }
   waiting_ = false;
+  if (pollMode_) return stepPoll(nowMs, rnd);
   if (!connected_) {
     if (!keyReady()) {
       retryAt_ = nowMs + 2000;
@@ -618,6 +831,13 @@ uint32_t CloudDriver::step(uint32_t nowMs, float rnd) {
         wait = 24u * 3600u * 1000u;
       } else {
         wait = CloudLink::backoffMs(++sockFails_, rnd);
+        if (sockFails_ >= 3 && supportsPoll()) {  // the socket is blocked here (a proxy?): long-poll (§6.4)
+          sockFails_ = 0;
+          pollMode_ = true;
+          pollUntil_ = nowMs + kPollRetryWsMs;
+          log("[cloud] the socket will not open: long-poll");
+          return 0;
+        }
       }
       retryAt_ = nowMs + wait;
       waiting_ = true;

@@ -121,7 +121,7 @@ int httpsPost(const HttpRequest& rq, std::string& body, AiErr& err) {
   Resp resp;
   esp_http_client_config_t c = {};
   c.url = rq.url.c_str();
-  c.method = HTTP_METHOD_POST;
+  c.method = rq.get ? HTTP_METHOD_GET : HTTP_METHOD_POST;
   c.timeout_ms = (int)rq.timeoutMs;
   c.crt_bundle_attach = esp_crt_bundle_attach;
   c.event_handler = onHttp;
@@ -134,7 +134,7 @@ int httpsPost(const HttpRequest& rq, std::string& body, AiErr& err) {
     return -1;
   }
   for (const auto& hd : rq.headers) esp_http_client_set_header(h, hd.first.c_str(), hd.second.c_str());
-  esp_http_client_set_post_field(h, rq.body.data(), (int)rq.body.size());
+  if (!rq.get) esp_http_client_set_post_field(h, rq.body.data(), (int)rq.body.size());
   const esp_err_t e = esp_http_client_perform(h);
   const int status = e == ESP_OK ? esp_http_client_get_status_code(h) : -1;
   esp_http_client_cleanup(h);

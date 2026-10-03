@@ -89,6 +89,18 @@ bool DeviceKey::verify(const uint8_t pub[65], const uint8_t* msg, size_t n, cons
   return ok;
 }
 
+std::string DeviceKey::sha256Hex(const std::string& s) {
+  uint8_t h[32];
+  if (mbedtls_sha256((const unsigned char*)s.data(), s.size(), h, 0) != 0) return std::string();
+  static const char* const k = "0123456789abcdef";
+  std::string o;
+  for (uint8_t b : h) {
+    o += k[b >> 4];
+    o += k[b & 15];
+  }
+  return o;
+}
+
 }  // namespace suflet
 
 #else
@@ -173,6 +185,18 @@ bool DeviceKey::verify(const uint8_t pub[65], const uint8_t* msg, size_t n, cons
   EC_POINT_free(q);
   EC_KEY_free(k);
   return ok;
+}
+
+std::string DeviceKey::sha256Hex(const std::string& s) {
+  uint8_t h[32];
+  SHA256((const unsigned char*)s.data(), s.size(), h);
+  static const char* const k = "0123456789abcdef";
+  std::string o;
+  for (uint8_t b : h) {
+    o += k[b >> 4];
+    o += k[b & 15];
+  }
+  return o;
 }
 
 }  // namespace suflet

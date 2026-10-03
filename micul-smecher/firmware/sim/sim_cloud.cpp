@@ -150,6 +150,22 @@ void HostCloud::log(const char* line) {
 // ------------------------------------------------------------------ HTTP ---
 
 int HostCloud::httpPost(const std::string& url, const std::string& body, std::string& resp, int& retryAfterS) {
+  return request("POST", url, std::string(), body, resp, retryAfterS, 15000);
+}
+
+int HostCloud::httpGetAuth(const std::string& url, const std::string& bearer, std::string& resp, uint32_t timeoutMs) {
+  int ra = -1;
+  return request("GET", url, bearer, std::string(), resp, ra, timeoutMs);
+}
+
+int HostCloud::httpPostAuth(const std::string& url, const std::string& bearer, const std::string& body, std::string& resp,
+                            uint32_t timeoutMs) {
+  int ra = -1;
+  return request("POST", url, bearer, body, resp, ra, timeoutMs);
+}
+
+int HostCloud::request(const char* method, const std::string& url, const std::string& bearer, const std::string& body,
+                       std::string& resp, int& retryAfterS, uint32_t timeoutMs) {
   std::string host, path;
   int port = 0;
   retryAfterS = -1;
@@ -157,18 +173,21 @@ int HostCloud::httpPost(const std::string& url, const std::string& body, std::st
   if (!splitUrl(url, host, port, path)) return -1;
   const int fd = dial(host, port);
   if (fd < 0) return -1;
-  char head[512];
-  snprintf(head, sizeof head,
-           "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Type: application/json\r\nContent-Length: %u\r\n"
-           "User-Agent: SOUL-sim/%s\r\nConnection: close\r\n\r\n",
-           path.c_str(), host.c_str(), port, (unsigned)body.size(), fw.c_str());
+  std::string head = std::string(method) + " " + path + " HTTP/1.1\r\nHost: " + host + ":" + std::to_string(port) +
+                     "\r\nUser-Agent: SOUL-sim/" + fw + "\r\nConnection: close\r\n";
+  if (!bearer.empty()) head += "Authorization: " + bearer + "\r\n";  // never in the URL
+  if (strcmp(method, "GET") != 0)
+    head += "Content-Type: application/json\r\nContent-Length: " + std::to_string(body.size()) + "\r\n";
+  head += "\r\n";
   int status = -1;
-  if (writeAll(fd, head, strlen(head)) && writeAll(fd, body.data(), body.size())) {
+  if (writeAll(fd, head.data(), head.size()) && writeAll(fd, body.data(), body.size())) {
     std::string in;
     char buf[4096];
+    const uint32_t t0 = msNow();
     for (;;) {
       pollfd p{fd, POLLIN, 0};
-      if (poll(&p, 1, 15000) <= 0) break;
+      const int left = (int)timeoutMs - (int)(msNow() - t0);
+      if (left <= 0 || poll(&p, 1, left) <= 0) break;
       const ssize_t r = recv(fd, buf, sizeof buf, 0);
       if (r <= 0) break;
       in.append(buf, (size_t)r);
@@ -203,6 +222,7 @@ int HostCloud::httpPost(const std::string& url, const std::string& body, std::st
 // ------------------------------------------------------------- WebSocket ---
 
 int HostCloud::wsOpen(const std::string& url, const std::string& bearer) {
+  if (noWs) return -1;  // SIM_NO_WS=1: a network that drops WebSocket upgrades (long-poll then)
   std::string host, path;
   int port = 0;
   if (!splitUrl(url, host, port, path)) return -1;

@@ -18,6 +18,7 @@ const char* aiModeName(AiMode m) {
     case AiMode::Claude: return "claude";
     case AiMode::ChatGpt: return "chatgpt";
     case AiMode::Cloud: return "cloud";
+    case AiMode::Bridge: return "bridge";
     default: return "none";
   }
 }
@@ -27,12 +28,13 @@ AiMode aiModeFrom(const char* s) {
   if (!strcmp(s, "claude") || !strcmp(s, "api")) return AiMode::Claude;
   if (!strcmp(s, "chatgpt")) return AiMode::ChatGpt;
   if (!strcmp(s, "cloud") || !strcmp(s, "relay")) return AiMode::Cloud;
+  if (!strcmp(s, "bridge")) return AiMode::Bridge;
   return AiMode::None;
 }
 
 const char* aiErrCode(AiErr e) {
   static const char* const k[] = {"",        "no_key",  "bad_key", "rate_limited", "quota",    "refused",
-                                  "offline", "network", "timeout", "upstream",     "truncated"};
+                                  "offline", "network", "timeout", "upstream",     "truncated", "bridge_offline"};
   static_assert(sizeof(k) / sizeof(k[0]) == (unsigned)AiErr::Count, "codes");
   return (unsigned)e < (unsigned)AiErr::Count ? k[(int)e] : "?";
 }
@@ -49,6 +51,8 @@ const char* aiErrText(AiErr e, bool ro) {
     case AiErr::Timeout: return ro ? "AI-ul a răspuns prea încet. Mai încearcă." : "The AI took too long. Try again.";
     case AiErr::Upstream: return ro ? "AI-ul nu a răspuns. Mai încearcă." : "The AI didn't answer. Try again.";
     case AiErr::Truncated: return ro ? "Răspunsul a fost tăiat. Întreabă mai scurt." : "The answer was cut off. Ask something shorter.";
+    case AiErr::BridgeOffline:
+      return ro ? "Calculatorul tău e offline: deschide Start SOUL." : "Your computer is offline: open Start SOUL.";
     default: return "";
   }
 }

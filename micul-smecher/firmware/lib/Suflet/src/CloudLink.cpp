@@ -509,6 +509,64 @@ std::string CloudLink::sleep(uint32_t wakeAt) {
   return dump(d);
 }
 
+std::string CloudLink::bridgeCodeGet() {
+  JsonDocument d;
+  envelope(d, "bridge.code.get");
+  return dump(d);
+}
+
+std::string CloudLink::bridgeForget() {
+  JsonDocument d;
+  envelope(d, "bridge.forget");
+  return dump(d);
+}
+
+std::string CloudLink::brain(const char* name) {
+  JsonDocument d;
+  envelope(d, "brain");
+  d["brain"] = name ? name : "none";
+  return dump(d);
+}
+
+std::string CloudLink::pollUrl(const std::string& base, uint32_t after, int waitS) {
+  if (waitS < 0) waitS = 0;
+  if (waitS > 25) waitS = 25;
+  std::string b = base;
+  while (!b.empty() && b.back() == '/') b.pop_back();
+  return b + "/v1/device/poll?after=" + std::to_string(after) + "&wait=" + std::to_string(waitS);
+}
+
+std::string CloudLink::sendBody(const std::vector<std::string>& frames, size_t* used) {
+  std::string body = "{\"messages\":[";
+  size_t n = 0;
+  for (const std::string& f : frames) {
+    if (n >= kSendMaxFrames || body.size() + f.size() + 3 > kSendMaxBytes) break;
+    if (n) body += ',';
+    body += f;  // each frame is already one JSON object
+    ++n;
+  }
+  body += "]}";
+  if (used) *used = n;
+  return body;
+}
+
+bool CloudLink::splitMessages(const char* body, size_t n, std::vector<std::string>& frames, bool* more) {
+  frames.clear();
+  if (more) *more = false;
+  if (!body || !n || n > kPollMaxBytes) return false;
+  JsonDocument d;
+  if (deserializeJson(d, body, n, DeserializationOption::NestingLimit(10)) || !d.is<JsonObject>()) return false;
+  if (!d["messages"].is<JsonArrayConst>()) return false;
+  for (JsonVariantConst m : d["messages"].as<JsonArrayConst>()) {
+    if (!m.is<JsonObjectConst>()) continue;
+    std::string f;
+    serializeJson(m, f);
+    if (f.size() <= kMaxIn) frames.push_back(f);
+  }
+  if (more) *more = d["more"] | false;
+  return true;
+}
+
 std::string CloudLink::cid(uint32_t r1, uint32_t r2) {
   char b[20];
   snprintf(b, sizeof b, "%08lx%08lx", (unsigned long)r1, (unsigned long)r2);
@@ -516,6 +574,14 @@ std::string CloudLink::cid(uint32_t r1, uint32_t r2) {
 }
 
 // ---------------------------------------------------------- frames down ---
+
+bool CloudLink::mapActionJson(const std::string& action, const std::string& argsJson, CloudPush& p) {
+  JsonDocument d;
+  if (deserializeJson(d, argsJson.data(), argsJson.size(), DeserializationOption::NestingLimit(4))) return false;
+  p = CloudPush();
+  p.action = action;
+  return mapPush(action.c_str(), d.as<JsonVariantConst>(), p) && p.kind != CloudPush::Unsupported;
+}
 
 AiErr CloudLink::errFromCode(const std::string& c) {
   if (c == "bad_key") return AiErr::BadKey;
@@ -527,6 +593,7 @@ AiErr CloudLink::errFromCode(const std::string& c) {
   if (c == "offline") return AiErr::Offline;
   if (c == "network") return AiErr::Network;
   if (c == "truncated") return AiErr::Truncated;
+  if (c == "bridge_offline") return AiErr::BridgeOffline;
   return AiErr::Upstream;  // upstream, invalid, too_big, paused and anything new
 }
 
@@ -676,6 +743,30 @@ CloudLink::Msg CloudLink::feed(const char* json, size_t n) {
       c.modelOpenai = d["models"]["openai"] | "";
     }
     return Msg::Config;
+  }
+  if (!strcmp(t, "bridge.code")) {
+    bridgeCode = CloudBridgeCode();
+    const char* code = d["code"] | "";
+    if (strlen(code) != 8) return Msg::Bad;
+    for (const char* c = code; *c; ++c)
+      if (!((*c >= '0' && *c <= '9') || (*c >= 'A' && *c <= 'Z'))) return Msg::Bad;
+    bridgeCode.code = code;
+    bridgeCode.cmd = cleanText(d["cmd"] | "", 120);
+    bridgeCode.expiresIn = d["expires_in"] | 300u;
+    return Msg::BridgeCode;
+  }
+  if (!strcmp(t, "bridge.state")) {
+    bridgeState = CloudBridgeState();
+    bridgeState.paired = d["paired"] | false;
+    bridgeState.online = d["online"] | false;
+    bridgeState.name = cleanText(d["name"] | "", 40);
+    return Msg::BridgeState;
+  }
+  if (!strcmp(t, "ask.state")) {
+    askStateRe = d["re"] | "";
+    askState = d["state"] | "";
+    if (askState != "waiting" && askState != "thinking") return Msg::Bad;
+    return Msg::AskState;
   }
   if (!strcmp(t, "error")) {
     error = CloudError();

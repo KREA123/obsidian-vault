@@ -105,6 +105,11 @@ class _Conn:
         self.lock = asyncio.Lock()
         self.closed = asyncio.Event()
         self.close_code: Optional[int] = None
+        self.loop = asyncio.get_running_loop()
+
+    async def send_from_any_loop(self, msg: dict) -> bool:
+        """`send` from a coroutine that may run on another event loop (tests run one loop per socket)."""
+        return await _on_loop(self.loop, self.send(msg))
 
     async def send(self, msg: dict) -> bool:
         if self.closed.is_set():
@@ -118,9 +123,11 @@ class _Conn:
                 return False
 
     def close(self, code: int) -> None:
-        if self.close_code is None:
-            self.close_code = code
-        self.closed.set()
+        def _do() -> None:
+            if self.close_code is None:
+                self.close_code = code
+            self.closed.set()
+        _soon(self.loop, _do)
 
 
 @dataclass
@@ -129,6 +136,38 @@ class _Pending:
     fut: "asyncio.Future[BridgeAnswer]"
     on_state: Optional[Callable[[str], Awaitable[None]]]
     conn: _Conn
+    loop: asyncio.AbstractEventLoop  # the device side's loop (the future and on_state live there)
+
+    def resolve(self, result: Optional[BridgeAnswer] = None, error: Optional[Exception] = None) -> None:
+        def _do() -> None:
+            if self.fut.done():
+                return
+            if error is not None:
+                self.fut.set_exception(error)
+            else:
+                self.fut.set_result(result)
+        _soon(self.loop, _do)
+
+    def state(self, state: str) -> None:
+        if self.on_state is not None:
+            asyncio.run_coroutine_threadsafe(self.on_state(state), self.loop)
+
+
+def _soon(loop: asyncio.AbstractEventLoop, fn: Callable[[], None]) -> None:
+    try:
+        running = asyncio.get_running_loop()
+    except RuntimeError:
+        running = None
+    if running is loop:
+        fn()
+    else:
+        loop.call_soon_threadsafe(fn)
+
+
+async def _on_loop(loop: asyncio.AbstractEventLoop, coro: Awaitable[Any]) -> Any:
+    if asyncio.get_running_loop() is loop:
+        return await coro
+    return await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(coro, loop))
 
 
 class BridgeHub:
@@ -300,17 +339,18 @@ class BridgeHub:
         tz = tz or d.get("tz") or DEFAULT_TZ
         if now_local is None:
             now_local = dt.datetime.now(ZoneInfo(tz)).strftime("%Y-%m-%dT%H:%M")
-        fut: asyncio.Future = asyncio.get_running_loop().create_future()
-        self.pending[qid] = _Pending(device_id, fut, on_state, c)
+        loop = asyncio.get_running_loop()
+        fut: asyncio.Future = loop.create_future()
+        self.pending[qid] = _Pending(device_id, fut, on_state, c, loop)
         frame = {"t": "ask", "id": qid, "text": str(ask["text"]).strip()[:2000], "lang": lang, "now": now_local,
                  "tz": tz, "from": "keyboard"}
         try:
-            if not await c.send(frame):
+            if not await c.send_from_any_loop(frame):
                 raise BridgeError("bridge_offline", "your computer is offline: open Start SOUL")
             try:
                 return await asyncio.wait_for(asyncio.shield(fut), self.answer_timeout)
             except asyncio.TimeoutError:
-                await c.send({"t": "ask.cancel", "id": qid})
+                await c.send_from_any_loop({"t": "ask.cancel", "id": qid})
                 raise BridgeError("timeout", "Claude on your computer did not answer in time") from None
         finally:
             self.pending.pop(qid, None)
@@ -318,9 +358,8 @@ class BridgeHub:
     async def cancel(self, qid: str) -> None:
         p = self.pending.pop(qid, None)
         if p is not None:
-            await p.conn.send({"t": "ask.cancel", "id": qid})
-            if not p.fut.done():
-                p.fut.set_exception(BridgeError("cancelled", "the question was cancelled on SOUL"))
+            await p.conn.send_from_any_loop({"t": "ask.cancel", "id": qid})
+            p.resolve(error=BridgeError("cancelled", "the question was cancelled on SOUL"))
 
     # ---------------------------------------------------------------- websocket --
     async def ws_endpoint(self, ws: WebSocket, client_ip: str = "-") -> None:
@@ -391,8 +430,8 @@ class BridgeHub:
             if self.conns.get(dev) is conn:
                 del self.conns[dev]
             for qid, p in list(self.pending.items()):
-                if p.conn is conn and not p.fut.done():
-                    p.fut.set_exception(BridgeError("bridge_offline", "your computer went offline"))
+                if p.conn is conn:
+                    p.resolve(error=BridgeError("bridge_offline", "your computer went offline"))
             await _close(ws, conn.close_code or 1000)
             log.info("bridge offline for %s", dev)
             self._state_changed(dev)
@@ -421,23 +460,20 @@ class BridgeHub:
         if p is None or p.conn is not conn or p.fut.done():
             return  # an answer for a question that timed out, was cancelled, or belongs to another SOUL
         if t == "ask.ack":
-            if p.on_state is not None:
-                try:
-                    await p.on_state("thinking")
-                except Exception:  # noqa: BLE001
-                    log.exception("ask.state failed")
+            p.state("thinking")
         elif t == "answer":
             text = m.get("text")
             if not isinstance(text, str) or not text.strip():
-                p.fut.set_exception(BridgeError("invalid", "the computer sent an empty answer"))
+                p.resolve(error=BridgeError("invalid", "the computer sent an empty answer"))
                 return
-            acts = [a for a in (m.get("actions") or []) if isinstance(a, dict) and isinstance(a.get("type"), str)
+            raw = m.get("actions") if isinstance(m.get("actions"), list) else []
+            acts = [a for a in raw if isinstance(a, dict) and isinstance(a.get("type"), str)
                     and isinstance(a.get("args", {}), dict)][:MAX_ACTIONS]
-            p.fut.set_result(BridgeAnswer(text.strip()[:ANSWER_MAX], acts))
+            p.resolve(BridgeAnswer(text.strip()[:ANSWER_MAX], acts))
             await conn.send({"t": "answer.ack", "id": qid, "shown": True})
         elif t == "answer.error":
             code = _ERR_MAP.get(str(m.get("code")), "upstream")
-            p.fut.set_exception(BridgeError(code, str(m.get("detail") or code)[:200]))
+            p.resolve(error=BridgeError(code, str(m.get("detail") or code)[:200]))
 
 
 def _parse(raw: Any) -> Optional[dict]:

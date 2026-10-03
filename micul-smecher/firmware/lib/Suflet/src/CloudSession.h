@@ -14,7 +14,12 @@
 //   outq       item.add / inbox.add / item.state, in order, only while paired; an
 //              item.add / inbox.add leaves on `added` (or on an error that names its
 //              cid: invalid, too_big); kept across reboots (NVS soulsync/outq, <= 8 KB)
-//   turns      ask (25 s, then abort + timeout), conv kept 10 min, unsynced items in ctx
+//   turns      ask (25 s, then abort + timeout), conv kept 10 min, unsynced items in ctx; a turn handed to the
+//              owner's computer (SOUL Bridge, brain "bridge", docs/08 §4) waits 125 s and reports
+//              ask.state waiting -> thinking; bridge_offline / its timeout fall back to the offline rules
+//   bridge     the one-time code for `soul-bridge pair`, the computer's presence (bridge.state)
+//   long-poll  the same frames over GET /v1/device/poll + POST /v1/device/send when the socket cannot
+//              open (CloudDriver switches by itself, §6.4), and the deep-sleep wake-polls of §6.11
 //   pairing    the code + URL for the screen; pair.confirm waits for a touch
 //              (pairAnswer), no touch within expires_in = pair.no
 //   time zone  welcome / config posix_tz always win (hello.tz_posix is a hint)
@@ -62,9 +67,11 @@ class CloudSession {
   bool welcomed() const { return welcomed_; }
 
   // ---- the app (SoulOS through the device) ------------------------------------
-  // one text turn; false when the socket is not welcomed or a turn is running
-  bool ask(const std::string& text, bool ro, int timerLeftMin, uint32_t nowMs);
+  // one text turn; false when the socket is not welcomed or a turn is running.
+  // viaBridge: the cloud hands it to the owner's computer (125 s, ask.state)
+  bool ask(const std::string& text, bool ro, int timerLeftMin, uint32_t nowMs, bool viaBridge = false);
   bool askPending() const { return askPending_; }
+  int askState() const { return askState_; }  // 0 none, 1 waiting (sent to the computer), 2 thinking
   bool pollAnswer(AiOutcome& out);
   bool pollPush(CloudPush& p);
   void ackPush(uint32_t seq, bool ok, const char* err);
@@ -76,6 +83,11 @@ class CloudSession {
   void setStatus(int rssi, int battery, const char* power, uint32_t freeHeap, bool awake);
   void sleep(uint32_t wakeAtEpoch);  // best effort, just before deep sleep (§6.11)
   void fill(NetInfo& n) const;  // what the screens show (never a token)
+  // a deep-sleep wake-poll (§6.11): no socket and no hello, only pushes in and acks / outq / sleep out
+  void beginWakePoll(uint32_t nowMs);
+  void endWakePoll();
+  bool wakePolling() const { return wake_; }
+  uint32_t pollAfter() const { return seenSeq_ > lastSeq ? seenSeq_ : lastSeq; }  // paging while acks wait
 
   // state (also for tests)
   std::string state;  // "" (not known yet) | unpaired | paired | pending
@@ -84,6 +96,10 @@ class CloudSession {
   int trialLeft = -1, allowanceLeft = -1, inboxPending = 0;
   bool needUpdate = false;
   std::string quietFrom = "22:00", quietTo = "07:00";
+  // SOUL Bridge through the cloud (docs/08 §4)
+  std::string bridgeCode, bridgeCmd, bridgeName;
+  bool bridgePaired = false, bridgeOnline = false;
+  std::string brainWanted;  // the brain picked on SOUL ("bridge" / "none") until the cloud echoes it
   size_t outqSize() const { return outq_.size(); }
   size_t pushesWaiting() const { return pushes_.size(); }
 
@@ -107,7 +123,10 @@ class CloudSession {
   std::vector<std::string> unsynced() const;
 
   CloudLink link_;
-  bool open_ = false, welcomed_ = false, replayDone_ = false;
+  bool open_ = false, welcomed_ = false, replayDone_ = false, wake_ = false;
+  uint32_t seenSeq_ = 0, bridgeCodeUntil_ = 0;
+  int askState_ = 0;
+  bool askBridge_ = false;
   uint32_t openedAt_ = 0, helloAt_ = 0, statusAt_ = 0, confirmUntil_ = 0;
   int attempt_ = 0, waitMs_ = 0;
   std::deque<std::string> acks_, ctl_;
@@ -152,8 +171,13 @@ class CloudDriver {
   Problem problem = Problem::None;
   bool haveToken() const { return !token_.empty(); }
   bool connected() const { return connected_; }
+  bool pollMode() const { return pollMode_; }  // long-poll is the transport (the socket would not open)
   void forgetToken();
   void reconnectNow();
+  // §6.11 wake-poll, one shot from deep sleep: sign in, GET /v1/device/poll?wait=0 (all pages); the pushes
+  // then wait in `session` for SoulOS; wakePollFinish() sends the acks, the queue and `sleep` in one POST.
+  bool wakePoll(uint32_t nowMs, float rnd);
+  bool wakePollFinish(uint32_t nowMs, uint32_t wakeAtEpoch);
 
  protected:
   // ---- the transport --------------------------------------------------------
@@ -167,6 +191,18 @@ class CloudDriver {
   virtual Rd wsRead(std::string& text, int& closeCode, uint32_t waitMs) = 0;
   virtual void wsClose() = 0;
   virtual void wsPing() {}
+  // ---- long-poll (optional: a transport without it never leaves the socket) -------------------------------
+  virtual bool supportsPoll() { return false; }
+  // GET / POST with "Authorization: Bearer ..."; the HTTP status, < 0 network
+  virtual int httpGetAuth(const std::string& url, const std::string& bearer, std::string& resp, uint32_t timeoutMs) {
+    (void)url, (void)bearer, (void)resp, (void)timeoutMs;
+    return -1;
+  }
+  virtual int httpPostAuth(const std::string& url, const std::string& bearer, const std::string& body, std::string& resp,
+                           uint32_t timeoutMs) {
+    (void)url, (void)bearer, (void)body, (void)resp, (void)timeoutMs;
+    return -1;
+  }
   // ---- the key (never leaves the implementation) ------------------------------
   virtual bool keyReady() = 0;  // made / loaded (the device makes it once Wi-Fi is up)
   virtual std::string pubB64() = 0;
@@ -185,10 +221,18 @@ class CloudDriver {
   };
   bool authenticate(uint32_t nowMs, float rnd);
   void closed(int code, uint32_t nowMs, float rnd);
+  uint32_t stepPoll(uint32_t nowMs, float rnd);
+  bool needToken(uint32_t nowMs) const;
+  std::string bearer();
+  bool feedMessages(const std::string& body, uint32_t nowMs, bool* more = nullptr);
+  bool postFrames(std::vector<std::string>& frames, uint32_t nowMs);
+  bool pollMode_ = false;
+  uint32_t pollUntil_ = 0;
+  std::vector<std::string> pollOut_;  // frames a failed send keeps for the next round
   std::string token_, wsUrl_;
   uint32_t tokenUntil_ = 0, retryAt_ = 0, lastRx_ = 0, lastPing_ = 0, helloAt_ = 0;
   bool connected_ = false, waiting_ = false, forceReauth_ = false;
-  int authFails_ = 0, sockFails_ = 0;
+  int authFails_ = 0, sockFails_ = 0, pollFails_ = 0;
   std::string lastAuthCode_;
 };
 

@@ -23,6 +23,11 @@ class HostCloud : public suflet::CloudDriver {
   std::vector<std::string> recorded;  // every text frame received (for --record)
 
   int httpPost(const std::string& url, const std::string& body, std::string& resp, int& retryAfterS) override;
+  bool supportsPoll() override { return true; }
+  int httpGetAuth(const std::string& url, const std::string& bearer, std::string& resp, uint32_t timeoutMs) override;
+  int httpPostAuth(const std::string& url, const std::string& bearer, const std::string& body, std::string& resp,
+                   uint32_t timeoutMs) override;
+  bool noWs = false;  // pretend the socket cannot open (the long-poll fallback)
   int wsOpen(const std::string& url, const std::string& bearer) override;
   bool wsSend(const std::string& text) override;
   Rd wsRead(std::string& text, int& closeCode, uint32_t waitMs) override;
@@ -35,6 +40,8 @@ class HostCloud : public suflet::CloudDriver {
 
  private:
   bool sendFrame(uint8_t opcode, const std::string& payload);
+  int request(const char* method, const std::string& url, const std::string& bearer, const std::string& body,
+              std::string& resp, int& retryAfterS, uint32_t timeoutMs);
   bool fill(size_t want, int waitMs);
   int fd_ = -1;
   std::string rx_;

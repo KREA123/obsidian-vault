@@ -1,11 +1,21 @@
 # SOUL M install image
 
-`SOUL-2.8C-install.bin` — SoulOS firmware 1.2.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+`SOUL-2.8C-install.bin` — SoulOS firmware 1.3.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
 (ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
 (`partitions.csv`: Arduino's `default_16MB` + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
-- built 2026-10-03 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings
-- size 2,137,904 B · sha256 `bda9aa6775a2c54e5dfebd1c4a6ac228dbbab90ac5739e74f8db64b9a78c1d29`
+- built 2026-10-03 (night) from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings,
+  `pio check -e lcd28` clean
+- size 2,225,776 B · sha256 `523df2ce9d8ee1823489be91e441f134dfaf4aca30e82bbf12777a1c19029382`
+- 1.3.0: **My Claude on my computer** (SOUL Bridge, `../../docs/08-OWN-CLAUDE.md` §4) in *Settings › AI*: the owner's
+  own Claude Code on a computer answers what is asked on SOUL — through SOUL Cloud (`soul-bridge pair XXXX-XXXX
+  --cloud …`, any network) or on the home Wi-Fi (SOUL serves `ws://soul-xxxx.local:8765/bridge`, mDNS, a 6-digit
+  code); the eyes wait, then think; computer off → the offline rules and "Your computer is offline: open Start
+  SOUL". SOUL Cloud over **long-poll** when the socket will not open (3 refusals; the socket is tried again every
+  10 min). **Wake-polls**: a paired SOUL in deep sleep wakes every ≤ 15 min, screen off, polls once, acks, sleeps
+  again. **Factory**: serial `SOULKEY GEN` / `SOULKEY PUB` (`../../ai/tools/factory_enrol.py`). None of this has run
+  on the board yet: the code is unit-tested on the PC (131 native tests) and runs end to end in the simulator
+  against a local cloud and the real `soul-bridge` with a mocked Claude Code.
 - 1.2.0: SOUL Cloud protocol rev. 2, exactly what `ai/` implements (docs/07 §6): an ECDSA P-256 device key made
   on the device (kept in the new `soulid` partition, never erased by *Start over*; serial `K` prints the public
   key), challenge/signature sign-in with a RAM-only token, 8-character pairing codes shown `XXXX-XXXX` + QR,
@@ -39,13 +49,15 @@ esptool --chip esp32s3 write-flash 0x0 SOUL-2.8C-install.bin
 
 Wi-Fi, the AI (SOUL Cloud with your account / your own Anthropic or OpenAI key / No AI) and the first checks:
 [`../BRINGUP.md`](../BRINGUP.md). The settings, alarms, notes and keys live in NVS and survive
-re-flashing this image (`nvs` did not move; 1.2.0 only adds `soulid` at the end of flash, taken from the unused
-`spiffs`); *Settings › Start over* re-runs the first boot and keeps the device key.
+re-flashing this image (`nvs` did not move; 1.2.0 only added `soulid` at the end of flash, taken from the unused
+`spiffs`; 1.3.0 changes no partition, its paired computers live in NVS `soulbridge`); *Settings › Start over* re-runs
+the first boot and keeps the device key.
 
 ## Rebuild this image
 
 ```bash
 pio run -e lcd28
+cp .pio/build/lcd28/firmware.factory.bin release/SOUL-2.8C-install.bin   # the same bytes as the merge below
 esptool --chip esp32s3 merge-bin -o release/SOUL-2.8C-install.bin --flash-mode dio --flash-freq 80m --flash-size 16MB \
   0x0 .pio/build/lcd28/bootloader.bin 0x8000 .pio/build/lcd28/partitions.bin \
   0xe000 ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin \

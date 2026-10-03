@@ -169,6 +169,34 @@ Checks:
       on my SOUL" → within ~1 s SOUL shows surprised → happy eyes and the toast; the reminder rings at 18:00.
 - [ ] Claude app → Ask my Claude: type a question → "Left for your Claude" → in Claude: "check my SOUL".
 - [ ] Pull the Ethernet of the router for 2 min, plug it back → `[cloud] socket open` again within 60 s.
+- [ ] Long-poll (only if a network blocks WebSockets, e.g. a guest/corporate proxy): `[cloud] the socket will not
+      open: long-poll` → pairing, pushes and turns still work (a little slower); every 10 min
+      `[cloud] long-poll: trying the socket again`.
+- [ ] Wake-polls (night, paired, `nightOff` on): after 10 min dark at night `[power] deep sleep for 900 s (then a
+      SOUL Cloud wake-poll)`; 15 min later the screen stays **off**, `[power] wake-poll: screen off, one poll, back
+      to sleep`, and within ~12 s it sleeps again. Send a connector reminder while it sleeps → it is on SOUL after the
+      next wake (≤ 15 min). Write down the awake time and the current of one wake-poll (§6).
+
+**Factory key** (the provisioning station, `../ai/tools/factory_enrol.py`; also fine on a dev unit):
+- [ ] Serial `SOULKEY GEN` (type it, Enter) → `SOULKEY PUB soul-<12 hex> <87 chars> new` the first time, the same
+      line without `new` afterwards; it works before Wi-Fi is set up (bootloader entropy source). `SOULKEY PUB` alone
+      prints it again. Never anything that looks like a private key.
+- [ ] `python tools/factory_enrol.py --port /dev/ttyACM0 --csv /tmp/keys.csv` (from `ai/`, `pip install pyserial`)
+      → `ENROLLED  SOUL  XXXX-XXXX  (soul-…)`; again → `ALREADY LISTED`.
+
+**My Claude on my computer** (SOUL Bridge, `../docs/08-OWN-CLAUDE.md`; needs Claude Code signed in on a computer):
+- [ ] On the computer: `npm install -g soul-bridge` (or the `.tgz`), `soul-bridge doctor`.
+- [ ] On SOUL: Settings → AI → *My Claude on my computer*. Paired with an account: SOUL shows
+      `soul-bridge pair XXXX-XXXX --cloud <host>`; not paired: a 6-digit code and `--soul <IP>`, and the log
+      `[bridge] listening: ws://soul-xxxx.local:8765/bridge`. Type the command on the computer → "Paired with …".
+- [ ] `soul-bridge discover` on the same Wi-Fi lists `soul-xxxx.local` (mDNS works on this router).
+- [ ] `soul-bridge setup`, double-click **Start SOUL**, accept Claude Code's three dialogs → the status page
+      (http://127.0.0.1:8766) turns green; SOUL's AI screen says "connected · <computer>".
+- [ ] Ask on SOUL "wake me at 7" → eyes wait, then think → the answer "Claude · your computer" and the alarm.
+      Write down the time to answer.
+- [ ] Close the Start SOUL window → SOUL: "Your computer is offline: open Start SOUL", and "set a timer for 5
+      minutes" still starts a timer (offline rules). *Forget* on SOUL → the computer must pair again.
+- [ ] Free internal heap with the bridge server on + TLS + BLE (`p` perf line): write it down.
 
 **Claude Desktop Hardware Buddy** (BLE): Claude Desktop → Help → Troubleshooting → Enable Developer
 Mode → Developer → Open Hardware Buddy… → Connect → type the 6-digit code SOUL shows. Ask Claude Code to
@@ -184,6 +212,8 @@ run a command → SOUL's eyes go wide with an amber rim → hold the glass = app
 | min free internal heap after a cloud turn + BLE | |
 | mA awake 100 % / night / asleep / off | |
 | AI answer time (direct key) | |
+| SOUL Bridge answer time (LAN / through the cloud) | |
+| wake-poll: seconds awake, mA | |
 | NVS write: flicker only, or lasting shift? | |
 | Touch wakes from deep sleep? | |
 | Orientation / mirror flags needed | |
@@ -197,7 +227,8 @@ run a command → SOUL's eyes go wide with an amber rim → hold the glass = app
 | SoulOS flows, gestures, alarms, notes, keyboard, pairing, pushes | 112 native tests, simulator stills (`sim/shots/`) | finger feel, touch calibration |
 | Eyes' motion (level keeping, marble pupils, dizzy, orientation, double tap, nods) | filter / detector unit tests, a parity trace vs `eyes.js` Motion (`tools/gen_motion_fixture.js`), the simulator (`program out motion`, `program out keys`) | the IMU axes (§3b), tap threshold on the real case |
 | AI protocol (Claude / OpenAI / relay), offline rules | recorded API bodies, strict action validation | real TLS, real latency |
-| SOUL Cloud protocol v1 | frames in/out, push mapping, dedupe, close codes, backoff, auth | the WebSocket against a real server; TLS memory with BLE on |
+| SOUL Cloud protocol v1 | frames in/out, push mapping, dedupe, close codes, backoff, auth; long-poll and wake-polls against a scripted cloud; the simulator over long-poll against a real cloud | the WebSocket against a real server; TLS memory with BLE on; a wake-poll's time and current |
+| SOUL Bridge (docs/08) | the LAN server, the cloud frames, the Os screen and eyes (native); simulator → cloud → `soul-bridge` → mocked Claude Code, and on the LAN | `esp_http_server` + mDNS on a real router; a signed-in Claude Code |
 | QR codes (pairing, Wi-Fi join) | decoded from simulator frames with zxing | phone cameras at arm's length |
 | Rendering cost | callgrind instruction counts, PC timings | real fps / CPU on the S3 |
 | Display driver, touch, IMU, RTC, buzzer, deep sleep | compiles warning-free | everything in this checklist |

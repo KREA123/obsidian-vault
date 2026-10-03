@@ -25,6 +25,11 @@
     POST /me/logout
     GET  /me/signin-chatgpt         "Connect my ChatGPT": stub ("coming soon, pending OpenAI approval") + the
                                     ChatGPT connector steps meanwhile (§1.10)
+    POST /me/devices/{id}/bridge    SOUL Bridge (docs/08): a one-time code + the `soul-bridge pair` command
+    POST /me/bridge/{id}/revoke     forget a paired computer (its bridge token dies, a connected bridge is closed)
+    GET  /me/wifi-help              public: how to put SOUL back on Wi-Fi (the §6.13 messages and what to do)
+    GET  /me/export, /v1/me/export  GDPR: everything about the account as one JSON download (no secrets)
+    GET/POST /me/delete, DELETE /v1/me   GDPR erasure (fresh sign-in; the form wants DELETE / STERGE typed)
 
 Rules kept: every page has the security headers; every POST checks CSRF (double submit); every device id is
 checked against the signed-in account; keys are never shown back (masked: first 7 + "…" + last 4), never logged.
@@ -52,12 +57,12 @@ from .accounts import AuthError, Session, clear_session_cookies, ensure_csrf_coo
 log = logging.getLogger("suflet_ai.web_me")
 
 WEB = Path(__file__).resolve().parent / "web"
-BRAINS = ("cloud", "claude", "chatgpt", "none")
+BRAINS = ("cloud", "claude", "chatgpt", "bridge", "none")
 
 
 def brain_choices() -> tuple:
     """What the owner may pick. No AI paid by SOUL by default: "cloud" only with SOUL_BUILTIN_AI=1."""
-    return BRAINS if builtin_ai_enabled() else ("claude", "chatgpt", "none")
+    return BRAINS if builtin_ai_enabled() else ("claude", "chatgpt", "bridge", "none")
 PROVIDER_OF = {"claude": "anthropic", "chatgpt": "openai"}
 _PID = re.compile(r"^p_[A-Za-z0-9_-]{4,40}$")
 _DEV = re.compile(r"^soul-[0-9a-f]{12}$")
@@ -154,7 +159,8 @@ _T: Dict[str, Dict[str, str]] = {
         claude_steps="<li>Open <b>claude.ai</b> on a computer (or the Claude app) and sign in.</li>"
                      "<li>Go to <b>Settings → Connectors</b> (on some plans: <b>Customize → Connectors</b>) and choose "
                      "<b>Add custom connector</b>.</li><li>Name it <b>SOUL</b> and paste the address below.</li>"
-                     "<li>If Claude asks how to register, choose <b>Register automatically</b>.</li>"
+                     "<li>If Claude asks how to register, either choice works (<b>Use Claude's published identity</b> or "
+                     "<b>Register automatically</b>).</li>"
                      "<li>Click <b>Connect</b>. Sign in to SOUL with your email code and tap <b>Allow</b>.</li>"
                      "<li>In a chat, type: <i>Show hello on my SOUL</i>. SOUL shows “Claude connected”.</li>",
         claude_plans="Every Claude plan can add one custom connector (Free: one). Work account? Ask your Claude admin "
@@ -179,6 +185,43 @@ _T: Dict[str, Dict[str, str]] = {
         key_refused="That is not a standard API key (admin keys and subscription tokens are refused).",
         reauth="For your safety, confirm it is you with a new email code first.", expired_form="The form expired. Try again.",
         trial="free answers left before pairing", allowance="answers left this month",
+        b_bridge="My Claude on my computer", b_bridge_sub="Your own Claude Code (Pro/Max), signed in by you on your "
+        "computer, answers what you ask on SOUL. Experimental: the computer must be on with Start SOUL open.",
+        computers="Your computers (SOUL Bridge)", no_computers="No computer paired yet.",
+        add_computer="Pair a computer", forget="Forget", br_online="connected", br_offline="not connected",
+        br_title="Pair a computer with SOUL", br_lead="On the computer where you use Claude Code, run:",
+        br_steps="<li>Install Node.js 20+ and Claude Code, then run <code>claude</code> once and sign in to "
+                 "<b>your own</b> Claude account (SOUL never sees it).</li>"
+                 "<li><code>npm install -g soul-bridge</code></li>"
+                 "<li>Run the command below (the code works once, for 5 minutes).</li>"
+                 "<li><code>soul-bridge setup</code>, then double-click <b>Start SOUL</b> and keep its window open.</li>",
+        br_note="The code is the same kind SOUL shows under Settings › AI › My Claude on my computer.",
+        export="Download my data", export_sub="Everything SOUL Cloud keeps about you, as one JSON file "
+        "(keys and tokens are never included).",
+        delete_title="Delete my account", delete_sub="Unpairs every SOUL and erases its data in SOUL Cloud, "
+        "disconnects every app and computer, removes your keys, then your account. This cannot be undone.",
+        delete_confirm="Type DELETE to confirm", delete_btn="Delete my account for good",
+        delete_word="DELETE", deleted="Your account and its data are gone. Your SOUL keeps working offline; "
+        "pair it again any time.", delete_typo="Type the word exactly to confirm.",
+        erase_too="Also erase this SOUL's data in SOUL Cloud",
+        wifi_title="SOUL lost its Wi-Fi?", wifi_lead="SOUL keeps your alarms and notes without the internet. "
+        "To join it to a network again:",
+        wifi_steps="<li>Hold SOUL's side button for <b>5 seconds</b> (or <b>Settings › Wi-Fi</b> on SOUL). Its "
+                   "screen shows a Wi-Fi QR code and the network name <b>SOUL-xxxx</b>.</li>"
+                   "<li>Scan the QR with your phone's camera (or join <b>SOUL-xxxx</b> with the password on the "
+                   "screen). The setup page opens; if it does not, open <b>http://192.168.4.1</b>.</li>"
+                   "<li>Pick your home network, type its password, tap <b>Connect</b>. SOUL tests it and says what "
+                   "happened, on the page and on its screen.</li>",
+        wifi_errors="If it says…", wifi_e1="“Network not found”", wifi_e1b="Is your Wi-Fi 5 GHz only? SOUL needs "
+        "2.4 GHz. Most routers have both; turn 2.4 GHz on, or use a separate 2.4 GHz name.",
+        wifi_e2="“Wrong password”", wifi_e2b="Passwords are case sensitive. Check the one on the router's label.",
+        wifi_e3="“This network type is not supported”", wifi_e3b="WPA3-only and company (enterprise) networks do "
+        "not work yet. Use WPA2 or WPA2/WPA3 mixed mode, or a guest network without a login page.",
+        wifi_e4="“Joined, but no internet”", wifi_e4b="A hotel or guest Wi-Fi with a login page. SOUL cannot click "
+        "through it: use a phone hotspot or a home network.",
+        wifi_more="Nothing helps? Restart the router, keep SOUL within a few metres of it, and try again. The setup "
+                  "network closes by itself 60 s after a success or after 15 minutes.",
+        privacy="Your data",
     ),
     "ro": dict(
         pair_title="Leagă-ți SOUL-ul", pair_lead="Leagă acest SOUL de contul tău. Durează un minut.",
@@ -229,7 +272,8 @@ _T: Dict[str, Dict[str, str]] = {
         claude_steps="<li>Deschide <b>claude.ai</b> pe calculator (sau aplicația Claude) și conectează-te.</li>"
                      "<li>Mergi la <b>Settings → Connectors</b> (pe unele planuri: <b>Customize → Connectors</b>) și "
                      "alege <b>Add custom connector</b>.</li><li>Numește-l <b>SOUL</b> și lipește adresa de mai jos.</li>"
-                     "<li>Dacă Claude întreabă cum să înregistreze aplicația, alege <b>Register automatically</b>.</li>"
+                     "<li>Dacă Claude întreabă cum să înregistreze aplicația, merge oricare variantă (<b>Use Claude's published "
+                     "identity</b> sau <b>Register automatically</b>).</li>"
                      "<li>Apasă <b>Connect</b>. Conectează-te la SOUL cu codul din email și apasă <b>Permite</b>.</li>"
                      "<li>Într-o conversație scrie: <i>Show hello on my SOUL</i>. SOUL arată „Claude conectat”.</li>",
         claude_plans="Orice plan Claude poate adăuga un conector propriu (Free: unul). Cont de firmă? Roagă "
@@ -256,14 +300,52 @@ _T: Dict[str, Dict[str, str]] = {
         reauth="Pentru siguranță, confirmă întâi că ești tu cu un cod nou pe email.",
         expired_form="Formularul a expirat. Încearcă din nou.", trial="răspunsuri gratuite până la legare",
         allowance="răspunsuri rămase luna aceasta",
+        b_bridge="Claude-ul meu de pe calculator", b_bridge_sub="Claude Code-ul tău (Pro/Max), conectat de tine pe "
+        "calculatorul tău, răspunde la ce întrebi pe SOUL. Experimental: calculatorul trebuie să fie pornit, cu Start "
+        "SOUL deschis.",
+        computers="Calculatoarele tale (SOUL Bridge)", no_computers="Niciun calculator legat încă.",
+        add_computer="Leagă un calculator", forget="Uită", br_online="conectat", br_offline="neconectat",
+        br_title="Leagă un calculator de SOUL", br_lead="Pe calculatorul unde folosești Claude Code, rulează:",
+        br_steps="<li>Instalează Node.js 20+ și Claude Code, apoi rulează o dată <code>claude</code> și conectează-te "
+                 "în <b>contul tău</b> Claude (SOUL nu-l vede niciodată).</li>"
+                 "<li><code>npm install -g soul-bridge</code></li>"
+                 "<li>Rulează comanda de mai jos (codul merge o singură dată, 5 minute).</li>"
+                 "<li><code>soul-bridge setup</code>, apoi dublu-click pe <b>Start SOUL</b> și lasă fereastra deschisă.</li>",
+        br_note="E același fel de cod pe care SOUL îl arată la Setări › AI › Claude-ul meu de pe calculator.",
+        export="Descarcă datele mele", export_sub="Tot ce păstrează SOUL Cloud despre tine, într-un fișier JSON "
+        "(cheile și tokenurile nu sunt incluse niciodată).",
+        delete_title="Șterge-mi contul", delete_sub="Dezleagă fiecare SOUL și îi șterge datele din SOUL Cloud, "
+        "deconectează toate aplicațiile și calculatoarele, îți șterge cheile, apoi contul. Nu se poate anula.",
+        delete_confirm="Scrie STERGE ca să confirmi", delete_btn="Șterge-mi contul definitiv",
+        delete_word="STERGE", deleted="Contul tău și datele lui au fost șterse. SOUL-ul tău merge mai departe "
+        "offline; îl poți lega din nou oricând.", delete_typo="Scrie exact cuvântul ca să confirmi.",
+        erase_too="Șterge și datele acestui SOUL din SOUL Cloud",
+        wifi_title="SOUL a pierdut Wi-Fi-ul?", wifi_lead="SOUL îți păstrează alarmele și notițele și fără internet. "
+        "Ca să-l conectezi din nou la o rețea:",
+        wifi_steps="<li>Ține apăsat butonul lateral al SOUL <b>5 secunde</b> (sau <b>Setări › Wi-Fi</b> pe SOUL). "
+                   "Ecranul arată un cod QR de Wi-Fi și rețeaua <b>SOUL-xxxx</b>.</li>"
+                   "<li>Scanează QR-ul cu camera telefonului (sau intră în <b>SOUL-xxxx</b> cu parola de pe ecran). "
+                   "Se deschide pagina de configurare; dacă nu, deschide <b>http://192.168.4.1</b>.</li>"
+                   "<li>Alege rețeaua de acasă, scrie parola, apasă <b>Conectează</b>. SOUL o testează și spune ce s-a "
+                   "întâmplat, pe pagină și pe ecranul lui.</li>",
+        wifi_errors="Dacă scrie…", wifi_e1="„Rețeaua nu a fost găsită”", wifi_e1b="Wi-Fi-ul tău e doar pe 5 GHz? "
+        "SOUL are nevoie de 2,4 GHz. Majoritatea routerelor au ambele; pornește 2,4 GHz sau folosește un nume separat.",
+        wifi_e2="„Parolă greșită”", wifi_e2b="Contează literele mari și mici. Verifică parola de pe eticheta routerului.",
+        wifi_e3="„Acest tip de rețea nu e suportat”", wifi_e3b="Rețelele doar WPA3 și cele de firmă (enterprise) nu "
+        "merg încă. Folosește WPA2 sau modul mixt WPA2/WPA3, ori o rețea pentru oaspeți fără pagină de login.",
+        wifi_e4="„Conectat, dar fără internet”", wifi_e4b="Un Wi-Fi de hotel sau de oaspeți cu pagină de login. SOUL "
+        "nu poate trece de ea: folosește hotspotul telefonului sau o rețea de acasă.",
+        wifi_more="Nu merge nimic? Repornește routerul, ține SOUL la câțiva metri de el și încearcă din nou. Rețeaua "
+                  "de configurare se închide singură la 60 s după succes sau după 15 minute.",
+        privacy="Datele tale",
     ),
 }
 
 BRAIN_NAME = {
     "en": {"cloud": "SOUL Cloud (Claude inside SOUL)", "claude": "Your Anthropic key", "chatgpt": "Your OpenAI key",
-           "none": "Offline (no AI)", "direct": "A key on SOUL itself"},
+           "none": "Offline (no AI)", "direct": "A key on SOUL itself", "bridge": "My Claude on my computer"},
     "ro": {"cloud": "SOUL Cloud (Claude în SOUL)", "claude": "Cheia ta Anthropic", "chatgpt": "Cheia ta OpenAI",
-           "none": "Offline (fără AI)", "direct": "O cheie pe SOUL"},
+           "none": "Offline (fără AI)", "direct": "O cheie pe SOUL", "bridge": "Claude-ul meu de pe calculator"},
 }
 
 # ============================================================= templates ==
@@ -442,8 +524,19 @@ _ME = """{% extends "base" %}{% block body %}
       <button class="btn" type="submit">{{ t.choose }}</button>
     </form>
     {% if d.brain == 'cloud' and allowance and builtin %}<p class="small">{{ allowance.left }} {{ t.allowance }}</p>{% endif %}
+    <h3 class="sub">{{ t.computers }}</h3>
+    {% for c in d.computers %}
+    <div class="row between"><p class="small"><span class="dot {{ 'on' if c.online else 'off' }}"></span>{{ c.label }} ·
+      {{ t.br_online if c.online else t.br_offline }}</p>
+      <form method="post" action="/me/bridge/{{ c.id }}/revoke"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="link" type="submit">{{ t.forget }}</button></form></div>
+    {% else %}<p class="small">{{ t.no_computers }}</p>{% endfor %}
+    <form method="post" action="/me/devices/{{ d.device_id }}/bridge"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn" type="submit">{{ t.add_computer }}</button></form>
     <form method="post" action="/me/devices/{{ d.device_id }}/unpair" class="danger">
-      <input type="hidden" name="csrf" value="{{ csrf }}"><button class="link" type="submit">{{ t.unpair }}</button></form>
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label class="check"><input type="checkbox" name="erase" value="1"> {{ t.erase_too }}</label>
+      <button class="link" type="submit">{{ t.unpair }}</button></form>
   </section>
   {% endfor %}
   <h2>{{ t.connect_claude }}</h2>
@@ -477,9 +570,51 @@ _ME = """{% extends "base" %}{% block body %}
     <p class="hint">{{ t.key_advice }}</p>
     <button class="btn" type="submit">{{ t.save_key }}</button>
   </form>
+  <h2>{{ t.privacy }}</h2>
+  <div class="card"><p class="small">{{ t.export_sub }}</p><a class="btn" href="/me/export">{{ t.export }}</a>
+    <p class="small"><a href="/me/wifi-help">{{ t.wifi_title }}</a></p></div>
+  <div class="card"><p class="small">{{ t.delete_sub }}</p><a class="btn" href="/me/delete">{{ t.delete_title }}</a></div>
   <form method="post" action="/me/logout"><input type="hidden" name="csrf" value="{{ csrf }}">
   <button class="btn ghost" type="submit">{{ t.sign_out }}</button></form>
 {% endif %}
+{% endblock %}"""
+
+_BRIDGE = """{% extends "base" %}{% block body %}
+<h1>{{ t.br_title }}</h1>
+<ol class="steps">{{ t.br_steps|safe }}</ol>
+<div class="card">
+  <p class="code">{{ code[:4] }}-{{ code[4:] }}</p>
+  <label for="cmd">{{ t.br_lead }}</label>
+  <div class="copyrow"><input id="cmd" name="cmd" value="{{ cmd }}" class="mono" readonly>
+  <button class="btn" type="button" data-copy="cmd" data-done="{{ t.copied }}">{{ t.copy }}</button></div>
+</div>
+<p class="small">{{ t.br_note }}</p>
+<p><a class="btn" href="/me">{{ t.back_me }}</a></p>
+{% endblock %}"""
+
+_WIFI = """{% extends "base" %}{% block body %}
+<h1>{{ t.wifi_title }}</h1>
+<p class="lead">{{ t.wifi_lead }}</p>
+<ol class="steps big">{{ t.wifi_steps|safe }}</ol>
+<h2>{{ t.wifi_errors }}</h2>
+<div class="card"><h3>{{ t.wifi_e1 }}</h3><p class="small">{{ t.wifi_e1b }}</p></div>
+<div class="card"><h3>{{ t.wifi_e2 }}</h3><p class="small">{{ t.wifi_e2b }}</p></div>
+<div class="card"><h3>{{ t.wifi_e3 }}</h3><p class="small">{{ t.wifi_e3b }}</p></div>
+<div class="card"><h3>{{ t.wifi_e4 }}</h3><p class="small">{{ t.wifi_e4b }}</p></div>
+<p class="small">{{ t.wifi_more }}</p>
+<p><a class="btn" href="/me">{{ t.back_me }}</a></p>
+{% endblock %}"""
+
+_DELETE = """{% extends "base" %}{% block body %}
+<h1>{{ t.delete_title }}</h1>
+<form class="card" method="post" action="/me/delete">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p>{{ t.delete_sub }}</p>
+  <label for="confirm">{{ t.delete_confirm }}</label>
+  <input id="confirm" name="confirm" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+  <button class="btn primary" type="submit">{{ t.delete_btn }}</button>
+</form>
+<p><a class="btn" href="/me">{{ t.back_me }}</a></p>
 {% endblock %}"""
 
 _MSG = """{% extends "base" %}{% block body %}<h1>{{ heading }}</h1><div class="card"><p>{{ message }}</p>
@@ -533,6 +668,8 @@ border-radius:50%;background:var(--glass);box-shadow:0 0 0 3px var(--silver)}
 .shot{display:block;background:var(--warm);color:#16181D;border-radius:12px;padding:10px 12px;margin:6px 0;font-size:.92rem}
 .fine{font-size:.8rem;color:var(--muted);margin-top:10px}h3{margin-bottom:.2em}
 fieldset{border:1px solid var(--line);border-radius:12px;margin:.8em 0}
+h3.sub{font-size:.95rem;margin-top:1em}label.check{display:flex;gap:8px;align-items:center;font-weight:500;font-size:.9rem}
+label.check input{width:auto}
 .client.unverified .warn,.warn{color:#9A3412}.verified .badge{border-color:var(--ink)}"""
 
 JS = """(function(){
@@ -579,7 +716,8 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
     rc.db.script(_KEY_CHECKS)
     mcp_url = rc.oauth.resource.rstrip("/") if rc.oauth.resource.endswith("/mcp") else rc.oauth.resource
     env = Environment(loader=DictLoader({"base": _BASE, "pair": _PAIR, "wait": _WAIT, "brain": _BRAIN,
-                                         "connect": _CONNECT, "me": _ME, "msg": _MSG}),
+                                         "connect": _CONNECT, "me": _ME, "msg": _MSG, "bridge": _BRIDGE,
+                                         "wifi": _WIFI, "delete": _DELETE}),
                       autoescape=select_autoescape(default=True, default_for_string=True))
 
     def page(name: str, lang: str, status: int = 200, **ctx) -> HTMLResponse:
@@ -761,8 +899,11 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
         lang = _lang(request, session)
         if session is None:
             return page("me", lang, title=_T[lang]["me_title"], session=None)
-        devices = [d for d in await gw.devices_of(session.account_id)
+        devices = [dict(d) for d in await gw.devices_of(session.account_id)
                    if d.get("account_id") == session.account_id and not d.get("revoked")]
+        bridges = getattr(impl, "bridges", None)
+        for d in devices:
+            d["computers"] = bridges.tokens(session.account_id, d["device_id"]) if bridges is not None else []
         grants = []
         for g in oauth.grants(session.account_id):
             name = {"claude": "Claude", "chatgpt": "ChatGPT"}.get(g.client_app, g.client_host)
@@ -839,8 +980,103 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
             return to_login("/me", lang, reauth=True)
         f_unpair = getattr(impl, "unpair", None)
         if callable(f_unpair):
-            f_unpair(dev, "user", erase=False)
+            f_unpair(dev, "user", erase=f.get("erase") == "1")  # GDPR: the owner may erase the SOUL's cloud data
         return redirect("/me")
+
+    # ------------------------------------------------- SOUL Bridge (docs/08) --
+    async def bridge_new(request: Request) -> Response:
+        """A one-time code for `soul-bridge pair` (the same kind SOUL shows on its screen)."""
+        f = await form(request)
+        session = accounts.current_session(request)
+        lang = _lang(request, session)
+        if session is None:
+            return to_login("/me", lang)
+        if not csrf_ok(request, f, session):
+            return msg(lang, _T[lang]["me_title"], _T[lang]["expired_form"], 403, "/me", _T[lang]["back_me"])
+        dev = request.path_params["device_id"]
+        bridges = getattr(impl, "bridges", None)
+        if await own_device(session, dev) is None or bridges is None:
+            return redirect("/me?err=forbidden")
+        c = bridges.pair_code(dev)
+        return page("bridge", lang, title=_T[lang]["br_title"], code=c["code"], cmd=c["cmd"])
+
+    async def bridge_revoke(request: Request) -> Response:
+        f = await form(request)
+        session = accounts.current_session(request)
+        lang = _lang(request, session)
+        if session is None:
+            return to_login("/me", lang)
+        if not csrf_ok(request, f, session):
+            return msg(lang, _T[lang]["me_title"], _T[lang]["expired_form"], 403, "/me", _T[lang]["back_me"])
+        bridges = getattr(impl, "bridges", None)
+        if bridges is None or not bridges.revoke(session.account_id, request.path_params["token_id"]):
+            return redirect("/me?err=forbidden")
+        return redirect("/me")
+
+    # ------------------------------------------------------ help and GDPR --
+    async def wifi_help(request: Request) -> Response:
+        session = accounts.current_session(request)
+        lang = _lang(request, session)
+        return page("wifi", lang, title=_T[lang]["wifi_title"])
+
+    async def export_get(request: Request) -> Response:
+        session = accounts.current_session(request)
+        if session is None:
+            if request.url.path.startswith("/v1/"):
+                return JSONResponse({"error": {"code": "unauthenticated", "msg": "sign in first"}}, 401)
+            return to_login("/me", _lang(request, None))
+        from .gdpr import export_account
+
+        data = export_account(rc, session.account_id)
+        log.info("data export downloaded")
+        return JSONResponse(data, headers={
+            "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": 'attachment; filename="soul-my-data.json"'})
+
+    async def delete_get(request: Request) -> Response:
+        session = accounts.current_session(request)
+        lang = _lang(request, session)
+        if session is None:
+            return to_login("/me/delete", lang)
+        if not accounts.is_fresh(session):  # §3.1: deleting the account needs a fresh sign-in
+            return to_login("/me/delete", lang, reauth=True)
+        return page("delete", lang, title=_T[lang]["delete_title"], csrf=session.csrf)
+
+    def erase_and_sign_out(session: Session, resp: Response) -> Response:
+        from .gdpr import delete_account
+
+        delete_account(rc, session.account_id)
+        clear_session_cookies(resp)
+        return resp
+
+    async def delete_post(request: Request) -> Response:
+        f = await form(request)
+        session = accounts.current_session(request)
+        lang = _lang(request, session)
+        if session is None:
+            return to_login("/me", lang)
+        if not csrf_ok(request, f, session):
+            return msg(lang, _T[lang]["delete_title"], _T[lang]["expired_form"], 403, "/me", _T[lang]["back_me"])
+        if not accounts.is_fresh(session):
+            return to_login("/me/delete", lang, reauth=True)
+        word = f.get("confirm", "").strip().upper().replace("Ș", "S").replace("Ş", "S")
+        if word not in ("DELETE", "STERGE"):
+            return page("delete", lang, 422, title=_T[lang]["delete_title"], csrf=session.csrf,
+                        error=_T[lang]["delete_typo"])
+        return erase_and_sign_out(session, msg(lang, _T[lang]["delete_title"], _T[lang]["deleted"]))
+
+    async def api_delete(request: Request) -> Response:
+        """`DELETE /v1/me` (§3.5): session + X-CSRF-Token + a fresh sign-in -> 204."""
+        session = accounts.current_session(request)
+        if session is None:
+            return JSONResponse({"error": {"code": "unauthenticated", "msg": "sign in first"}}, 401)
+        try:
+            require_csrf(request, None, session)
+        except AuthError:
+            return JSONResponse({"error": {"code": "csrf", "msg": "csrf"}}, 403)
+        if not accounts.is_fresh(session):
+            return JSONResponse({"error": {"code": "reauth_required", "msg": "sign in again first"}}, 401)
+        return erase_and_sign_out(session, Response(status_code=204))
 
     async def keys_post(request: Request) -> Response:
         f = await form(request)
@@ -967,6 +1203,14 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
         Route("/me/keys/{provider}/delete", keys_delete, methods=["POST"]),
         Route("/me/grants/{grant_id}/revoke", grant_revoke, methods=["POST"]),
         Route("/me/logout", logout, methods=["POST"]),
+        Route("/me/devices/{device_id}/bridge", bridge_new, methods=["POST"]),
+        Route("/me/bridge/{token_id}/revoke", bridge_revoke, methods=["POST"]),
+        Route("/me/wifi-help", wifi_help, methods=["GET"]),
+        Route("/me/export", export_get, methods=["GET"]),
+        Route("/v1/me/export", export_get, methods=["GET"]),
+        Route("/me/delete", delete_get, methods=["GET"]),
+        Route("/me/delete", delete_post, methods=["POST"]),
+        Route("/v1/me", api_delete, methods=["DELETE"]),
         Route("/static/soul-web.css", static_css, methods=["GET"]),
         Route("/static/soul-pair.js", static_js, methods=["GET"]),
         Route("/static/fonts/{name}", static_file, methods=["GET"]),

@@ -8,7 +8,8 @@
 //                Claude request), stroke = purr, swipe <-/-> = the orbit of
 //                apps, swipe up = Today
 //   apps         Talk, Alarms, Timer, Notes, Today, Claude (+ "Ask my Claude"),
-//                Settings (+ AI, pairing, Wi-Fi with a join QR, My SOUL)
+//                Settings (+ AI, pairing, Wi-Fi with a join QR, My SOUL, "My Claude on my computer":
+//                SOUL Bridge, docs/08 — the owner's own Claude Code answers, on the LAN or via SOUL Cloud)
 //   back         swipe down (or ->) and the side button: always up one level
 //
 // The eyes are the UI: every state is said by the eyes first (SoulFace), then
@@ -57,6 +58,7 @@ enum class View : uint8_t {
   About,
   Pair,      // SOUL Cloud: the XXXX-XXXX code + QR, "Pair with Ana?" ✓ / ✗, then "paired with <owner>"
   Keyboard,  // the system keyboard (over any screen)
+  Bridge,    // "My Claude on my computer" (SOUL Bridge): the `soul-bridge pair` code, then "connected: <computer>"
   Count
 };
 const char* viewName(View v);
@@ -82,6 +84,8 @@ enum class OsCmd : uint8_t {
   Restart,
   FactoryReset,
   SaveCloudRefs,  // saveCloudRefs(): which cloud item ids made which local items
+  BridgePair,     // SOUL Bridge on the home network: a new 6-digit pairing code (the device's LAN server)
+  BridgeForget,   // SOUL Bridge on the home network: forget every paired computer
   Count
 };
 
@@ -119,6 +123,11 @@ struct NetInfo {
   std::string cloudHost;  // SOUL Cloud's host, for the "Connect Claude" QR once paired
   bool connectorsPaused = false;
   int trialLeft = -1, inboxPending = 0;
+  // SOUL Bridge (docs/08): the owner's own Claude Code on a computer, on the home network (LAN) or
+  // through SOUL Cloud; the code to type in `soul-bridge pair`, and whether a computer is connected now
+  bool bridgeOnline = false, bridgePaired = false, bridgeLan = false;  // bridgeLan: SOUL listens on the LAN
+  std::string bridgeName, bridgeCode, bridgeCmd;  // bridgeCode: 8 (cloud) or 6 (LAN) characters
+  int askState = 0;  // a turn on the computer: 0 none, 1 waiting for it, 2 Claude is thinking
 };
 
 struct ClaudeInfo {
@@ -148,7 +157,9 @@ struct Note {
 // Also what only a touch on SOUL may send: the pairing answer and the pause
 // switch for connectors (docs/07 §6.16: never from the cloud, BLE or an LLM).
 struct CloudOut {
-  enum Kind : uint8_t { Item, Inbox, State, PairOk, PairNo, Connectors } kind = Item;
+  // BridgeCode: a new `soul-bridge pair` code; BridgeForget: forget every paired computer;
+  // Brain: the brain picked on SOUL (text = "bridge" | "none"), so the account page does not undo it
+  enum Kind : uint8_t { Item, Inbox, State, PairOk, PairNo, Connectors, BridgeCode, BridgeForget, Brain } kind = Item;
   AiAction act;
   std::string text;        // Inbox
   uint32_t created = 0;    // Item: local epoch
@@ -320,6 +331,8 @@ class Os {
   void drawMySoul(Canvas& cv);
   void drawAbout(Canvas& cv);
   void drawPair(Canvas& cv);
+  void drawBridge(Canvas& cv);
+  void bridgeOpen();  // the Bridge screen: ask for a code (LAN + SOUL Cloud) and show it
   void drawQr(Canvas& cv, const std::string& text, float cx, float cy, float maxPx);
   void drawToast(Canvas& cv);
   void drawPerf(Canvas& cv);
