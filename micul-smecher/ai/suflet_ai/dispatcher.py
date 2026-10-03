@@ -92,7 +92,8 @@ class Dispatcher:
                             card={"title": _t(lang, "Notiță", "Note"), "body": a.text, "icon": "note"})
 
     def _reminder_create(self, device, a, lang, source, now) -> ActionResult:
-        when = dt.datetime.strptime(a.when, "%Y-%m-%dT%H:%M").replace(tzinfo=self.tz)
+        # `when` is wall time in the zone of `now` (the device's zone for device / connector calls, §6.0)
+        when = dt.datetime.strptime(a.when, "%Y-%m-%dT%H:%M").replace(tzinfo=now.tzinfo or self.tz)
         if when < now.replace(second=0, microsecond=0):
             raise ValueError(f"that time has already passed (now is {self.stamp(now)})")
         i = self.state.add(device, "reminder", {"text": a.text}, self.stamp(now), due=a.when, source=source)

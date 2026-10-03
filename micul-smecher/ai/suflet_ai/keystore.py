@@ -60,6 +60,11 @@ def load_master_secret(data_dir: str) -> bytes:
         return f.read()
 
 
+# Prefixes refused by `set` (docs/07 §1.3 / §4.1). Only `sk-ant-admin` is verified [V]; `sk-ant-oat`
+# (Claude subscription OAuth token) and `sk-admin-` (OpenAI admin key) are [U] and refused defensively.
+REFUSED_PREFIXES = ("sk-ant-admin", "sk-ant-oat", "sk-admin-")
+
+
 class KeyStore:
     def __init__(self, state: StateStore, master_secret: bytes):
         if len(master_secret) < 32:
@@ -86,6 +91,9 @@ class KeyStore:
         api_key = (api_key or "").strip()
         if not (20 <= len(api_key) <= 400) or any(c.isspace() for c in api_key):
             raise ValueError("that does not look like an API key")
+        if api_key.lower().startswith(REFUSED_PREFIXES):
+            # docs/07 §4.1 rule 1: never an admin key, never a subscription OAuth token
+            raise ValueError("that is not a standard API key (admin keys and subscription tokens are refused)")
         token = self._fernet(device, provider).encrypt(api_key.encode())
         self._state.put_secret(device, provider, token, dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"))
 

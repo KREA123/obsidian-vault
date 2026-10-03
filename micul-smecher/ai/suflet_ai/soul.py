@@ -129,9 +129,18 @@ class SoulService:
             return res
 
     # --------------------------------------------------------------- action --
-    def action(self, device: str, name: str, args: dict, lang: str = "en", source: str = "app") -> ActionResult:
+    def now_in(self, tz: Optional[str]) -> dt.datetime:
+        """The current time as wall time in `tz` (a device's zone); the service zone if `tz` is unknown."""
+        try:
+            return self.now().astimezone(ZoneInfo(tz)) if tz else self.now()
+        except (KeyError, ValueError):
+            return self.now()
+
+    def action(self, device: str, name: str, args: dict, lang: str = "en", source: str = "app",
+               tz: Optional[str] = None) -> ActionResult:
+        """Run one action. `tz`: the device's zone; item times are read and stored as wall time there (§6.0)."""
         return self.dispatcher.dispatch(device, name, args, lang=lang if lang in ("ro", "en") else "en",
-                                        source=source)
+                                        source=source, now=self.now_in(tz) if tz else None)
 
     def today(self, device: str, day: Optional[str] = None) -> list:
         return self.state.today(device, day or self.now().strftime("%Y-%m-%d"))

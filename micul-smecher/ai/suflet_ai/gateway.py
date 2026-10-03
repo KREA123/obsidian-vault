@@ -33,6 +33,7 @@ import re
 import threading
 import time
 from collections import defaultdict, deque
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Awaitable, Callable, Deque, Dict, List, Optional, Set, Tuple
 from zoneinfo import ZoneInfo
 
@@ -49,8 +50,11 @@ PROTO_VERSIONS = (1,)
 LIMITS = {"ask_per_min": 20, "ask_per_day": 600, "frames_per_s": 2}
 HELLO_TIMEOUT = 10.0
 ASK_TIMEOUT = 25.0
+RELAY_BUDGET = ASK_TIMEOUT - 3.0   # the relay stops calling the model after this, so it answers inside ASK_TIMEOUT
 TICK = 15.0
-FRAME_IN_MAX = 4096
+# device -> cloud frame limit (§6.4), in UTF-8 bytes. 2000 characters of note text (§6.8) can take 8000 bytes
+# (4-byte characters), so the limit sits above that plus the envelope, and below SEND_MAX_BYTES.
+FRAME_IN_MAX = 10240
 SEND_MAX_BYTES = 16384
 SEND_MAX_MESSAGES = 20
 POLL_PAGE = 50
@@ -65,6 +69,8 @@ DEVICE_ITEM_ACTIONS = ("note.create", "reminder.create", "alarm.set", "timer.sta
 ITEM_STATES = ("rang", "dismissed", "snoozed", "done", "deleted", "accepted", "rejected")
 EVENT_KINDS = ("boop", "wake", "sleep", "face_down", "focus_done")
 _CID = re.compile(r"^[0-9a-f]{16}$")
+_RAW_CID = re.compile(r'"cid"\s*:\s*"([0-9a-f]{16})"')
+_RAW_ID = re.compile(r'"id"\s*:\s*"([^"\\]{1,24})"')
 _HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
@@ -76,6 +82,22 @@ def _err(code: str, msg: str = "", re_: Any = None, retry_ms: Optional[int] = No
         m["retry_ms"] = int(retry_ms)
     m.update(extra)
     return m
+
+
+def _too_big(msg: str, m: Any = None, raw: str = "") -> dict:
+    """`too_big` echoes the frame's `id` and `cid` when they can be read, so the device can drop it from outq."""
+    extra: Dict[str, Any] = {}
+    if isinstance(m, dict):
+        if isinstance(m.get("cid"), str) and _CID.match(m["cid"]):
+            extra["cid"] = m["cid"]
+        rid = m.get("id") if isinstance(m.get("id"), str) and len(m["id"]) <= 24 else None
+    else:
+        c = _RAW_CID.search(raw[:200000])
+        if c:
+            extra["cid"] = c.group(1)
+        i = _RAW_ID.search(raw[:200000])
+        rid = i.group(1) if i else None
+    return _err("too_big", msg, rid, **extra)
 
 
 def _is_int(v: Any) -> bool:
@@ -150,6 +172,11 @@ class Gateway:
         self._control: Dict[str, Deque[dict]] = defaultdict(lambda: deque(maxlen=20))
         self._pollers: Dict[str, List[Tuple[asyncio.AbstractEventLoop, asyncio.Event]]] = defaultdict(list)
         self._waiters: Dict[Tuple[str, int], threading.Event] = {}
+        self._async_waiters: Dict[Tuple[str, int], List[Tuple[asyncio.AbstractEventLoop, asyncio.Event]]] = {}
+        # Relay turns get their own pool: slow model calls must not starve the loop's default executor
+        # (1 vCPU -> 5 default workers), which other work (and the connector) still uses.
+        self._relay_pool = ThreadPoolExecutor(max_workers=int(os.environ.get("SOUL_RELAY_WORKERS", "8")),
+                                              thread_name_prefix="soul-relay")
         self._last_poll: Dict[str, float] = {}
         self._sent_code: Dict[str, Optional[str]] = {}
         self._flaps: Dict[str, Deque[Tuple[float, str]]] = defaultdict(deque)
@@ -187,9 +214,12 @@ class Gateway:
     enqueue = push  # the name the connector's DeviceGateway protocol uses
 
     def _delivery(self, device_id: str, seq: int) -> str:
+        """shown | pending_accept | queued | rejected:<err> (the device acked ok:false; it is never replayed)."""
         st = self.store.push_status(device_id, seq)
-        if st and st["acked"] and st["ok"]:
-            return "pending_accept" if st["needs_accept"] else "shown"
+        if st and st["acked"]:
+            if st["ok"]:
+                return "pending_accept" if st["needs_accept"] else "shown"
+            return f"rejected:{st.get('err') or 'invalid'}"
         return "queued"
 
     def wait_delivery(self, device_id: str, seq: int, timeout: float = 3.0) -> str:
@@ -203,7 +233,37 @@ class Gateway:
         return self._delivery(device_id, seq)
 
     async def push_and_wait(self, device_id: str, seq: int, timeout: float = 3.0) -> str:
-        return await asyncio.to_thread(self.wait_delivery, device_id, seq, timeout)
+        """Async wait for the ack of `seq` (no thread is parked: an asyncio.Event set from `_h_ack`)."""
+        key = (device_id, seq)
+        ev = asyncio.Event()
+        entry = (asyncio.get_running_loop(), ev)
+        with self._lock:
+            self._async_waiters.setdefault(key, []).append(entry)
+        try:
+            if self._delivery(device_id, seq) == "queued":
+                try:
+                    await asyncio.wait_for(ev.wait(), timeout)
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            with self._lock:
+                lst = self._async_waiters.get(key, [])
+                if entry in lst:
+                    lst.remove(entry)
+                if not lst:
+                    self._async_waiters.pop(key, None)
+        return self._delivery(device_id, seq)
+
+    def _signal(self, device_id: str, seq: Optional[int] = None) -> None:
+        """Wake sync and async waiters for one push (or, with seq None, every push of the device)."""
+        with self._lock:
+            evs = [ev for (d, q), ev in self._waiters.items() if d == device_id and (seq is None or q == seq)]
+            aevs = [w for (d, q), lst in self._async_waiters.items() if d == device_id and (seq is None or q == seq)
+                    for w in lst]
+        for ev in evs:
+            ev.set()
+        for loop, aev in aevs:
+            loop.call_soon_threadsafe(aev.set)
 
     def forecast(self, device_id: str, due_local: str) -> str:
         """Will SOUL have an item due at `due_local` (device local time) in time? yes | no | unknown."""
@@ -368,9 +428,19 @@ class Gateway:
             q = self._control.pop(device_id, None)
         return list(q or [])
 
+    @staticmethod
+    def _close_now(conn: Conn, code: int) -> None:
+        if conn.close_code is None:
+            conn.close_code = code
+        conn.close_event.set()
+
     async def _flush(self, conn: Conn) -> None:
         """Send every unacked push after `conn.sent_upto`. Unpaired devices only ever have their own turn's pushes
-        (Gateway.push needs an owner, unpair drops undelivered pushes), so this runs in every state."""
+        (Gateway.push needs an owner, unpair drops undelivered pushes). A paired device's pushes go only to its
+        bound / factory key: any other key's socket is closed instead (`key_allowed`)."""
+        if not self.store.key_allowed(conn.ctx):
+            self._close_now(conn, 4401)
+            return
         async with conn.flush_lock:
             while True:
                 msgs, more = self.store.replay(conn.ctx.device_id, conn.sent_upto, POLL_PAGE)
@@ -383,7 +453,12 @@ class Gateway:
     def _pairing_msgs(self, device_id: str, force_new: bool = False, resend: bool = False) -> List[dict]:
         """The `pairing` message if the device has not seen its current code yet (rotates expired codes).
 
-        `resend`: after a `hello` the device may have rebooted and lost the code, so send it anyway."""
+        `resend`: after a `hello` the device may have rebooted and lost the code, so send it anyway.
+        While a claim waits for the owner's tap (`pair.confirm` sent), no code is issued or sent: a new code
+        would let someone else's claim expire the first one. `resend` then repeats the `pair.confirm`."""
+        confirm = self.store.awaiting_confirm(device_id)
+        if confirm is not None:
+            return [confirm] if resend else []
         msg = self.store.current_code(device_id, force_new=force_new)
         cid = self.store.code_id(device_id)
         if force_new or resend or self._sent_code.get(device_id) != cid:
@@ -421,6 +496,12 @@ class Gateway:
     # ============================================================= handlers ==
     async def handle(self, s: Session, m: Any) -> None:
         if not isinstance(m, dict):
+            return
+        if not self.store.key_allowed(s.ctx):  # e.g. the device was paired by another key meanwhile
+            if isinstance(s, Conn):
+                self._close_now(s, 4401)
+            else:
+                await s.out(_err("unauthenticated", "this key is not the paired SOUL's key", m.get("id")))
             return
         t = m.get("t")
         if m.get("v", 1) != 1:
@@ -467,19 +548,21 @@ class Gateway:
             await s.out({"v": 1, "t": "resync", "last": last})
             after = last
         self.store.ack_upto(dev, after)
-        self._release_waiters(dev)
+        self._signal(dev)
+        drained: List[dict] = []
         if isinstance(s, Conn):
             s.sent_upto = after
             await self._flush(s)
             await s.out({"v": 1, "t": "replay.done", "last": self.store.last_seq(dev)})
             s.replay_done = True
-            for cm in self._drain(dev):
+            drained = self._drain(dev)
+            for cm in drained:
                 await s.out(cm)
         # long-poll: queued control messages and pushes come with the next poll
         if state == "paired":
             await s.out({"v": 1, "t": "inbox.state", **self.store.inbox_counts(dev)})
-        else:
-            for pm in self._pairing_msgs(dev, resend=True):
+        else:  # the code again (a rebooted device lost it), or the pending pair.confirm if not just drained
+            for pm in self._pairing_msgs(dev, resend=not any(cm["t"] == "pair.confirm" for cm in drained)):
                 await s.out(pm)
         if isinstance(s, Conn):
             await self._flush(s)  # pushes that arrived while the replay was being sent
@@ -505,10 +588,17 @@ class Gateway:
     async def _run_ask(self, s: Session, m: dict, mid: str) -> None:
         dev = s.ctx.device_id
         state = self.store.device_state(s.ctx)
+        loop = asyncio.get_running_loop()
+        deadline = time.monotonic() + RELAY_BUDGET
+        fut = loop.run_in_executor(self._relay_pool, functools.partial(self.relay.answer, dev, state, m,
+                                                                        deadline=deadline))
         try:
-            res = await asyncio.wait_for(asyncio.to_thread(self.relay.answer, dev, state, m), ASK_TIMEOUT)
+            res = await asyncio.wait_for(asyncio.shield(fut), ASK_TIMEOUT)
         except asyncio.TimeoutError:
-            await s.out(_err("timeout", "the answer took too long", mid))
+            # The turn cannot be cancelled mid-call. Actions it still runs are committed and arrive as
+            # ordinary pushes (origin "turn") once it ends; the device was told `timeout` (§6.6).
+            fut.add_done_callback(lambda f: self._late_turn(dev, f))
+            await s.out(_err("timeout", "the answer took too long; anything it already did still arrives", mid))
             return
         except Exception:  # noqa: BLE001 - never leak internals to the device
             log.exception("relay failed")
@@ -525,6 +615,14 @@ class Gateway:
             return
         await s.out(res["reply"])
 
+    def _late_turn(self, device_id: str, f: "asyncio.Future[Any]") -> None:
+        """A turn that finished after its `timeout`: deliver the pushes it made now, not at the next reconnect."""
+        if f.cancelled() or f.exception() is not None:
+            return
+        res = f.result()
+        if isinstance(res, dict) and res.get("seqs"):
+            self.notify(device_id)
+
     async def _h_abort(self, s: Session, m: dict) -> None:
         if isinstance(m.get("re"), str):
             s.aborted.append(m["re"][:24])
@@ -534,16 +632,7 @@ class Gateway:
             return
         err = m.get("err") if m.get("err") in ("unsupported", "invalid", "full", "paused") else None
         if self.store.ack(s.ctx.device_id, m["seq"], m["ok"], err) is not None:
-            with self._lock:
-                ev = self._waiters.get((s.ctx.device_id, m["seq"]))
-            if ev:
-                ev.set()
-
-    def _release_waiters(self, device_id: str) -> None:
-        with self._lock:
-            evs = [ev for (d, _), ev in self._waiters.items() if d == device_id]
-        for ev in evs:
-            ev.set()
+            self._signal(s.ctx.device_id, m["seq"])
 
     async def _require_paired(self, s: Session, m: dict) -> bool:
         if self.store.device_state(s.ctx) != "paired":
@@ -578,7 +667,7 @@ class Gateway:
             a = {"say": (title or body or "…")[:400], "title": title[:60], "body": body[:600]}
         d = self.store.get_device(dev) or {}
         lang = d.get("lang") if d.get("lang") in ("ro", "en") else "en"
-        r = self.soul.action(dev, action, a, lang=lang, source="device")
+        r = self.soul.action(dev, action, a, lang=lang, source="device", tz=d.get("tz") or DEFAULT_TZ)  # §6.0
         if not r.ok:
             await s.out(_err("invalid", r.error[:200], m.get("id"), cid=cid))
             return
@@ -640,6 +729,9 @@ class Gateway:
         ok = m.get("t") == "pair.ok"
         paired = self.store.on_device_answer(s.ctx, m.get("pid"), ok)
         if paired:
+            other = self.conns.get(dev)
+            if other is not None and other is not s and other.ctx.pub_hash != s.ctx.pub_hash:
+                other.request_close(4401)  # a socket of another key must not see the now paired SOUL
             await s.out(paired)
             if isinstance(s, Conn):
                 await self._flush(s)
@@ -795,7 +887,7 @@ class Gateway:
             await conn.out(_err("rate_limited", "too many frames", retry_ms=max(wait, 30000)))
             return 4429
         if big:
-            await conn.out(_err("too_big", "frame over 4 KB"))
+            await conn.out(_too_big(f"frame over {FRAME_IN_MAX // 1024} KB", raw=text))
             return None
         if not isinstance(m, dict):
             return 4400
@@ -830,6 +922,8 @@ class Gateway:
 
     def _poll_batch(self, ctx: DeviceCtx, after: int) -> Tuple[List[dict], bool]:
         dev = ctx.device_id
+        if not self.store.key_allowed(ctx):
+            raise GatewayError(401, "unauthenticated", "this key is not the paired SOUL's key")
         msgs = self._drain(dev)
         last = self.store.last_seq(dev)
         if after > last:
@@ -852,7 +946,7 @@ class Gateway:
         s = Session(ctx, "poll", ip, collect, aborted=self._aborted[ctx.device_id])
         for m in messages:
             if isinstance(m, dict) and len(json.dumps(m, ensure_ascii=False).encode()) > FRAME_IN_MAX:
-                out.append(_err("too_big", "message over 4 KB", m.get("id")))
+                out.append(_too_big(f"message over {FRAME_IN_MAX // 1024} KB", m))
                 continue
             await self.handle(s, m)
         return {"messages": out}

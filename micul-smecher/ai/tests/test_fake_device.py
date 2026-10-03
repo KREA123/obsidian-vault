@@ -51,7 +51,7 @@ def test_fake_device_pairs_asks_and_gets_pushes_over_the_socket(tmp_path):
         for f in d.process(json.loads(ws.receive_text())):
             assert f == {"v": 1, "t": "ack", "seq": seq2, "ok": False, "err": "paused"}
             ws.send_text(json.dumps(f))
-        assert e.gw.wait_delivery(DEV, seq2, timeout=2.0) == "queued"
+        assert e.gw.wait_delivery(DEV, seq2, timeout=2.0) == "rejected:paused"  # never replayed
     assert any(x.startswith("SCREEN pairing code ") for x in lines)
     assert not any(d.token in x for x in lines)
 

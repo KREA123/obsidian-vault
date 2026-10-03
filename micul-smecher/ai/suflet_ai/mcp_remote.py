@@ -254,6 +254,8 @@ class GatewayAdapter:
         if f is None:
             return "queued"
         r = await self._call(f, device_id, seq, timeout=timeout)
+        if isinstance(r, str) and r.startswith("rejected:"):
+            return r
         return r if r in ("shown", "queued", "pending_accept") else "queued"
 
     async def forecast(self, device_id: str, due_local: str) -> str:
@@ -262,6 +264,14 @@ class GatewayAdapter:
             return "unknown"
         r = await self._call(f, device_id, due_local)
         return r if r in ("yes", "no", "unknown") else "unknown"
+
+    async def set_item_state(self, device_id: str, item_id: str, state: str) -> None:
+        f = self._fn("set_item_state") or getattr(self.store, "set_item_state", None)
+        if callable(f):
+            try:
+                await self._call(f, device_id, item_id, state, int(time.time()))
+            except Exception:  # noqa: BLE001 - bookkeeping only
+                log.warning("could not mark %s as %s", item_id, state)
 
     async def item_state(self, device_id: str, item_id: str) -> Optional[str]:
         f = self._fn("item_state") or getattr(self.store, "item_state", None)
@@ -536,8 +546,8 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         return {"now_local": now_in(tz).strftime("%Y-%m-%dT%H:%M"), "tz": tz}
 
     # ----------------------------------------------------------------- write --
-    def active_connector_alarms(device_id: str) -> int:
-        now_s = service.now().strftime("%Y-%m-%dT%H:%M")
+    def active_connector_alarms(device_id: str, tz: str) -> int:
+        now_s = now_in(tz).strftime("%Y-%m-%dT%H:%M")  # items are stored in the device's wall time
         n = 0
         for a in service.state.items(device_id, kind="alarm", include_done=False):
             if not str(a.get("source", "")).startswith("connector"):
@@ -553,11 +563,11 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         lang = lang_for(ctx, info)
         tz = tz_of(info)
         caps.check(ctx.device_id)
-        if is_alarm and active_connector_alarms(ctx.device_id) >= CAP_ALARMS:
+        if is_alarm and active_connector_alarms(ctx.device_id, tz) >= CAP_ALARMS:
             raise ToolError(f"limit_alarms: SOUL already has {CAP_ALARMS} alarms from connected apps; "
                             "delete one on SOUL first")
         needs_accept = bool(due is not None and (due.hour >= NIGHT_FROM or due.hour < NIGHT_TO))
-        r = service.action(ctx.device_id, action, args, lang=lang, source=f"connector:{ctx.client_app}")
+        r = service.action(ctx.device_id, action, args, lang=lang, source=f"connector:{ctx.client_app}", tz=tz)
         if not r.ok:
             err = r.error or "invalid"
             if action in ("reminder.create", "alarm.set") and re.search(r"time|when|hhmm|passed", err):
@@ -575,6 +585,17 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
             except GatewayError as e:
                 raise ToolError(f"no_device: SOUL cannot receive items right now ({e.code})") from e
         delivered = await gateway.push_and_wait(ctx.device_id, int(seq), timeout=PUSH_WAIT_S)
+        if delivered.startswith("rejected:"):
+            # SOUL received it and said no (§6.8 ack ok:false): it will never be replayed, so say so.
+            await gateway.set_item_state(ctx.device_id, item_id, "deleted")
+            why = delivered.split(":", 1)[1]
+            if why == "paused":
+                raise ToolError("connectors_paused: the owner paused connected apps on SOUL; it refused this item")
+            if why == "full":
+                code = "limit_alarms" if is_alarm else "soul_full"
+                raise ToolError(f"{code}: SOUL refused this item because its storage for it is full; "
+                                "the user must delete something on SOUL first")
+            raise ToolError(f"invalid: SOUL refused this item ({why}); it is not on SOUL")
         if needs_accept:
             delivered = "pending_accept"
         out: Dict[str, Any] = {"ok": True, "id": item_id, "delivered": delivered}
@@ -695,9 +716,9 @@ def build_connector(service: SoulService, resolve_ctx: Callable[[], ConnectorCtx
         ctx, info = await checked(write=True)
         too_long(text, 300, "text")
         due = resolve_when(now_in(tz_of(info)), when, in_minutes, day, time)
-        store_when = due.astimezone(service.now().tzinfo).strftime("%Y-%m-%dT%H:%M")  # the item store's zone
-        push = {"when": due.strftime("%Y-%m-%dT%H:%M"), "text": text}  # device local wall time (§6.8)
-        return await deliver(ctx, info, "reminder.create", {"when": store_when, "text": text}, push, due=due)
+        local = due.strftime("%Y-%m-%dT%H:%M")  # device local wall time (§6.0, §6.8): stored and pushed as is
+        args = {"when": local, "text": text}
+        return await deliver(ctx, info, "reminder.create", args, args, due=due)
 
     @mcp.tool(name="set_alarm", title="Set an alarm on SOUL",
               annotations=ToolAnnotations(title="Set an alarm on SOUL", **_WRITE))

@@ -190,7 +190,7 @@ def recv_until(ws, t: str, limit: int = 200) -> List[dict]:
 
 
 def send(ws, msg: dict) -> None:
-    ws.send_text(json.dumps(msg))
+    ws.send_text(json.dumps(msg, ensure_ascii=False))  # raw UTF-8, as the firmware sends it
 
 
 def hello(after: int = 0, **kw) -> dict:

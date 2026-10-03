@@ -143,7 +143,7 @@ def test_live_push_ack_and_delivery_states(tmp_path):
         seq3 = note_push(e, 3)
         recv(ws)
         send(ws, {"v": 1, "t": "ack", "seq": seq3, "ok": False, "err": "paused"})
-        assert e.gw.wait_delivery(DEV, seq3, timeout=2.0) == "queued"
+        assert e.gw.wait_delivery(DEV, seq3, timeout=2.0) == "rejected:paused"
 
 
 def test_push_and_wait_wakes_on_the_ack(tmp_path):
@@ -246,8 +246,17 @@ def test_big_frames_and_must_ignore(tmp_path):
         send(ws, hello(future_field={"x": 1}))
         recv_until(ws, "inbox.state")
         send(ws, {"v": 1, "t": "teleport", "to": "mars"})           # unknown type: ignored
-        send(ws, {"v": 1, "t": "note", "text": "x" * 5000})          # over 4 KB
+        send(ws, {"v": 1, "t": "note", "text": "x" * 11000})         # over 10 KB
         assert recv(ws)["code"] == "too_big"
+        # a full-length §6.8 note (2000 characters of 2-byte UTF-8) fits the device -> cloud frame limit
+        send(ws, {"v": 1, "t": "item.add", "id": "n1", "cid": "00112233aabbccdd", "action": "note.create",
+                  "args": {"text": "ă" * 2000, "tags": []}})
+        assert recv(ws) == {"v": 1, "t": "added", "cid": "00112233aabbccdd", "item_id": "it_1"}
+        # too big: the error echoes cid and id, so the device can drop the item from its outq
+        send(ws, {"v": 1, "t": "item.add", "id": "n2", "cid": "00112233aabbccde", "action": "note.create",
+                  "args": {"text": "😀" * 2600, "tags": []}})
+        m = recv(ws)
+        assert (m["code"], m["cid"], m["re"]) == ("too_big", "00112233aabbccde", "n2")
         send(ws, {"v": 2, "t": "status", "id": "s1"})
         assert recv(ws) == {"v": 1, "t": "error", "code": "invalid", "msg": "unsupported envelope version",
                             "re": "s1"}

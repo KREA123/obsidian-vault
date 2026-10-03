@@ -528,8 +528,11 @@ class DeviceStore:
     # ------------------------------------------------------------ auth --
     def issue_nonce(self, device_id: Any, ip: str) -> dict:
         check_device_id(device_id)
-        self.buckets.check(f"chal:dev:{device_id}", 20, 20 / 3600)
+        # Nothing about the caller is proven yet and device_id is public, so no bucket may be keyed by the
+        # device alone (a third party could drain it and lock the real SOUL out). Per network, and per
+        # (device, network): a stranger elsewhere cannot touch the real device's budget.
         self.buckets.check(f"chal:ip:{ip_prefix(ip)}", 120, 120 / 3600)
+        self.buckets.check(f"chal:dev:{device_id}:{ip_prefix(ip)}", 20, 20 / 3600)
         nonce = b64u(secrets.token_bytes(32))
         now = self.now()
         with self.lock:
@@ -556,7 +559,8 @@ class DeviceStore:
         fw = str(body.get("fw", ""))[:24]
         hw = str(body.get("hw", ""))[:24]
         reset = body.get("reset") is True
-        self.buckets.check(f"auth:dev:{device_id}", 10, 10 / 3600)
+        # Before verification only the caller's network pays (device_id is public: a per-device bucket
+        # here would let anyone lock a SOUL out). The per-device bucket is charged after the signature.
         self.buckets.check(f"auth:ip:{ip_prefix(ip)}", 60, 60 / 3600)
 
         now = self.now()
@@ -572,12 +576,19 @@ class DeviceStore:
             raise GatewayError(401, "bad_signature", "signature does not verify")
 
         ph = sha256_hex(pub)
+        # proven: this caller holds `pub`. Its own budget, which nobody else can spend.
+        self.buckets.check(f"auth:key:{device_id}:{ph}", 10, 10 / 3600)
         with self.lock:
             k = self.db.execute("SELECT state FROM device_keys WHERE device_id=? AND pub_hash=?",
                                 (device_id, ph)).fetchone()
             if k is None:
                 if self.policy == "factory":
                     raise GatewayError(403, "not_enrolled", "this SOUL is not registered")
+                # `pending` enrols unknown keys only while nobody owns the device and no known key exists.
+                # device_id is public (MAC, box QR, SoftAP name), so otherwise anyone could attach a key to
+                # a paired SOUL and read / ack its pushes. A re-flashed SOUL is unpaired by its owner first.
+                if self._locked_to_known_key(device_id):
+                    raise GatewayError(403, "not_enrolled", "this SOUL is already registered to another key")
                 pend = self.db.execute(
                     "SELECT pub_hash FROM device_keys WHERE device_id=? AND state='pending' ORDER BY created",
                     (device_id,)).fetchall()
@@ -619,6 +630,30 @@ class DeviceStore:
             "trial": self.trial(device_id, state),
         }
 
+    def _locked_to_known_key(self, device_id: str) -> bool:
+        """True when the device has an owner or a factory key: no new key may enrol then.
+
+        (A `bound` key without an owner is a SOUL its owner released, or one that reset itself: it is
+        unpaired again, and under `pending` an unpaired SOUL goes to whoever pairs it first.)"""
+        with self.lock:
+            d = self.db.execute("SELECT account_id FROM devices WHERE device_id=?", (device_id,)).fetchone()
+            k = self.db.execute("SELECT 1 FROM device_keys WHERE device_id=? AND state='factory' LIMIT 1",
+                                (device_id,)).fetchone()
+        return bool((d and d["account_id"]) or k)
+
+    def key_allowed(self, ctx: DeviceCtx) -> bool:
+        """May this key's transport be served at all? Not when it is unknown or revoked, and not when the
+        device is paired and this is not its factory / bound key (a pending key never sees a paired SOUL)."""
+        with self.lock:
+            k = self.db.execute("SELECT state FROM device_keys WHERE device_id=? AND pub_hash=?",
+                                (ctx.device_id, ctx.pub_hash)).fetchone()
+            d = self.db.execute("SELECT account_id FROM devices WHERE device_id=?", (ctx.device_id,)).fetchone()
+        if not k or k["state"] == "revoked":
+            return False
+        if d and d["account_id"] and k["state"] not in ("bound", "factory"):
+            return False
+        return True
+
     def device_from_token(self, bearer: Optional[str]) -> DeviceCtx:
         token = (bearer or "").strip()
         if token.lower().startswith("bearer "):
@@ -635,7 +670,10 @@ class DeviceStore:
                                 (t["device_id"], t["pub_hash"])).fetchone()
         if not k or k["state"] == "revoked":
             raise GatewayError(401, "unauthenticated", "device key revoked")
-        return DeviceCtx(t["device_id"], t["pub_hash"], k["state"])
+        ctx = DeviceCtx(t["device_id"], t["pub_hash"], k["state"])
+        if not self.key_allowed(ctx):
+            raise GatewayError(401, "unauthenticated", "this key is not the paired SOUL's key")
+        return ctx
 
     def revoke_tokens(self, device_id: str) -> None:
         with self.lock:
@@ -739,6 +777,17 @@ class DeviceStore:
                    "expires_in": CLAIM_TTL}
         return {"pid": pid, "device": {"id": device_id, "name": d.get("name", "SOUL")},
                 "state": "awaiting_device", "expires_in": CLAIM_TTL, "_device_msg": confirm}
+
+    def awaiting_confirm(self, device_id: str) -> Optional[dict]:
+        """The `pair.confirm` of a live claim waiting for the owner's tap on this device, else None."""
+        now = self.now()
+        with self.lock:
+            r = self.db.execute("SELECT * FROM pair_claims WHERE device_id=? AND state='awaiting_device' "
+                                "AND expires>=? ORDER BY expires DESC LIMIT 1", (device_id, now)).fetchone()
+        if not r:
+            return None
+        return {"v": 1, "t": "pair.confirm", "pid": r["pid"], "name": r["first_name"], "account_hint": r["hint"],
+                "expires_in": max(1, r["expires"] - now)}
 
     def claim_state(self, pid: str, account_id: str) -> dict:
         with self.lock:

@@ -115,6 +115,14 @@ class StateStore:
                 self.db.commit()
         return [self._row(r) for r in rows]
 
+    def delete(self, device: str, seqs: List[int]) -> int:
+        """Remove items (e.g. what a refused model turn stored before it refused)."""
+        check_device(device)
+        with self._lock:
+            cur = self.db.executemany("DELETE FROM items WHERE device=? AND seq=?", [(device, int(i)) for i in seqs])
+            self.db.commit()
+            return cur.rowcount
+
     def mark_done(self, device: str, seq: int) -> bool:
         check_device(device)
         with self._lock:
