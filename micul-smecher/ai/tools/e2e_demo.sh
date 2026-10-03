@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# SOUL Cloud end to end on this machine, no real keys: a SIMULATED variant of docs/07-CONNECT-AI.md §0.1
-# steps 3, 5 and 7. Steps 4 (/pair) and 6 (/me) are not built; pairing goes through the connector consent page
-# and the dev-only /v1/dev/pair/claim; the OAuth client is the MCP SDK with a loopback redirect (Claude Code
-# style), not claude.ai; device and LLMs are our own fakes. Passing this is NOT the Phase 0 exit gate.
+# SOUL Cloud end to end on this machine, no real keys: docs/07-CONNECT-AI.md §0.1 steps 3-7 against fakes.
+# Steps 1-2 use the Python fake device and brain A (SOUL_BUILTIN_AI=1, kept as a tested code path); step 3 runs
+# the FIRMWARE's own protocol code (the SoulOS simulator, `pio run -e sim`) against a fresh cloud with the
+# default product (SOUL_BUILTIN_AI=0: no AI paid by SOUL): /pair + email code + tap on the simulated glass,
+# "Connect my Claude" + own key, connector OAuth, tools -> pushes applied by SoulOS, a text turn, item.add /
+# inbox.add. The OAuth client is the MCP SDK with a loopback redirect (Claude Code style), not claude.ai.
 #
 #   tools/e2e_demo.sh            # from ai/ ; exit code 0 = every step passed
 #
@@ -50,7 +52,7 @@ wait_http "$LLM/__fake/requests"
 echo "== SOUL Cloud on $BASE (data in $WORK)"
 env SOUL_ENV=dev SOUL_DATA_DIR="$WORK/data" SUFLET_TZ=Europe/Bucharest \
     SOUL_PUBLIC_HOST="127.0.0.1:$APP_PORT" SOUL_PUBLIC_SCHEME=http SOUL_ENROL_POLICY=pending \
-    SUFLET_API_TOKEN="$DEV_TOKEN" SOUL_DEV_MAILBOX="$WORK/mailbox.txt" SOUL_ALLOWANCE_TURNS=4 \
+    SUFLET_API_TOKEN="$DEV_TOKEN" SOUL_DEV_MAILBOX="$WORK/mailbox.txt" SOUL_ALLOWANCE_TURNS=4 SOUL_BUILTIN_AI=1 \
     SOUL_ANTHROPIC_KEY=sk-ant-fake-service-ok-0123456789 SOUL_OPENAI_KEY=sk-fake-service-ok-0123456789 \
     ANTHROPIC_BASE_URL="$LLM" OPENAI_BASE_URL="$LLM/v1" \
     "$PY" -m suflet_ai.app serve --host 127.0.0.1 --port "$APP_PORT" >"$WORK/app.log" 2>&1 &
@@ -58,7 +60,7 @@ pids+=("$!")
 wait_http "$BASE/healthz"
 
 echo
-echo "== 1/2 tools/fake_device.py (CLI): pair through the dev claim route, ask, receive the push"
+echo "== 1/3 tools/fake_device.py (CLI): pair through the dev claim route, ask, receive the push"
 "$PY" tools/fake_device.py --base "$BASE" --host "127.0.0.1:$APP_PORT" --key "$WORK/dev1.pem" \
     --claim --api-token "$DEV_TOKEN" --confirm yes \
     --ask "remind me tomorrow at 9 to call the bank" --listen 3 | sed 's/^/   device> /' | tee "$WORK/dev1.out"
@@ -67,11 +69,31 @@ grep -q "SAY \[claude/cloud\]" "$WORK/dev1.out" || { echo "FAIL fake_device CLI:
 echo "PASS  fake_device.py CLI paired, asked (fake Claude), got and acked the reminder push"
 
 echo
-echo "== 2/2 tools/e2e_connect.py: connector OAuth + tools + relay + error codes + offline queue"
+echo "== 2/3 tools/e2e_connect.py: connector OAuth + tools + relay + error codes + offline queue"
 "$PY" tools/e2e_connect.py --base "$BASE" --llm "$LLM" --llm-pid "$LLM_PID" \
     --mailbox "$WORK/mailbox.txt" --api-token "$DEV_TOKEN" --allowance 4
 
-if grep -E "sk-ant-|sk-fake-|sdt_|sat_|srt_" "$WORK/app.log" >/dev/null; then
+echo
+SIM="${SOUL_SIM:-../firmware/.pio/build/sim/program}"
+if [ -x "$SIM" ]; then
+  echo "== 3/3 tools/e2e_sim.py: the firmware simulator as the device (default product: no AI paid by SOUL)"
+  LLM2_PORT="$(port)"; APP2_PORT="$(port)"
+  LLM2="http://127.0.0.1:$LLM2_PORT"; BASE2="http://127.0.0.1:$APP2_PORT"
+  "$PY" tools/fake_llm.py --port "$LLM2_PORT" &
+  pids+=("$!")
+  wait_http "$LLM2/__fake/requests"
+  env SOUL_ENV=dev SOUL_DATA_DIR="$WORK/data2" SUFLET_TZ=Europe/Bucharest \
+      SOUL_PUBLIC_HOST="127.0.0.1:$APP2_PORT" SOUL_PUBLIC_SCHEME=http SOUL_ENROL_POLICY=pending \
+      SOUL_DEV_MAILBOX="$WORK/mailbox2.txt" ANTHROPIC_BASE_URL="$LLM2" OPENAI_BASE_URL="$LLM2/v1" \
+      "$PY" -m suflet_ai.app serve --host 127.0.0.1 --port "$APP2_PORT" >"$WORK/app2.log" 2>&1 &
+  pids+=("$!")
+  wait_http "$BASE2/healthz"
+  "$PY" tools/e2e_sim.py --base "$BASE2" --mailbox "$WORK/mailbox2.txt" --sim "$SIM"
+else
+  echo "== 3/3 SKIPPED: no simulator at $SIM (cd ../firmware && pio run -e sim)"
+fi
+
+if grep -hE "sk-ant-|sk-fake-|sk-proj-|sdt_|sat_|srt_" "$WORK"/app*.log >/dev/null; then
   echo "FAIL  a key or token appears in the server log"; exit 1
 fi
 echo "PASS  server log holds no key or token"

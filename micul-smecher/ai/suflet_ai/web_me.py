@@ -46,7 +46,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
-from .config import builtin_ai_enabled
+from .config import builtin_ai_enabled, default_brain
 from .accounts import AuthError, Session, clear_session_cookies, ensure_csrf_cookie, require_csrf
 
 log = logging.getLogger("suflet_ai.web_me")
@@ -850,9 +850,9 @@ def me_routes(rc: Any, headers: Dict[str, str], client_ip: Callable[[Request], s
         soul.keys.remove(session.account_id, provider)
         rc.db.exec("DELETE FROM key_checks WHERE account_id=? AND provider=?", (session.account_id, provider))
         brain = "claude" if provider == "anthropic" else "chatgpt"
-        for d in await gw.devices_of(session.account_id):  # a SOUL that used this key goes back to SOUL Cloud
+        for d in await gw.devices_of(session.account_id):  # a SOUL that used this key goes back to the default
             if d.get("account_id") == session.account_id and d.get("brain") == brain:
-                set_brain(d["device_id"], "cloud")
+                set_brain(d["device_id"], default_brain())  # offline rules, unless built-in AI is on
         return redirect("/me")
 
     async def grant_revoke(request: Request) -> Response:

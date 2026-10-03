@@ -743,7 +743,6 @@ uint32_t localFromUtc(uint32_t epoch) {
 }
 
 int cloudMode(const std::string& dir, const std::string& base, const std::string& keyPath, bool record) {
-  setvbuf(stdout, nullptr, _IOLBF, 0);
   Recorder rec;
   if (record) {
     rec.dir = dir;
@@ -836,7 +835,8 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
     AiOutcome out;
     if (hc.session.pollAnswer(out)) {
       s.os.aiResult(out);
-      printf("REPLY err=%s note=%s say=%s\n", aiErrCode(out.err), aiErrCode(out.note), s.os.lastReply().say.c_str());
+      printf("REPLY err=%s note=%s say=%s\n", out.err == AiErr::None ? "none" : aiErrCode(out.err),
+             out.note == AiErr::None ? "none" : aiErrCode(out.note), s.os.lastReply().say.c_str());
     }
     CloudPush p;
     while (hc.session.pollPush(p)) {
@@ -935,6 +935,7 @@ int cloudMode(const std::string& dir, const std::string& base, const std::string
 }  // namespace
 
 int main(int argc, char** argv) {
+  setvbuf(stdout, nullptr, _IOLBF, 0);  // cloud mode is driven line by line through a pipe
   if (argc < 2) {
     fprintf(stderr, "usage: %s <out_dir> [scenario|all] [chip-id hex, 12 digits] [466|480]\n", argv[0]);
     return 2;

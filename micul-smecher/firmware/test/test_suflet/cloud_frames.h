@@ -11,10 +11,10 @@ struct RecordedFrame {
 };
 
 static const RecordedFrame kRecordedFrames[] = {
-    {"welcome", true, "{\"v\":1,\"t\":\"welcome\",\"server_time\":1791024828,\"tz\":\"Europe/Bucharest\",\"posix_tz\":\"EET-2EEST,M3.5.0/3,M10.5.0/4\",\"state\":\"pending\",\"owner\":\"\",\"brain\":\"none\",\"voice\":\"claude\",\"lang\":\"en\",\"quiet\":{\"from\":\"22:00\",\"to\":\"07:00\"},\"connectors_paused\":false,\"limits\":{\"ask_per_min\":20,\"ask_per_day\":600,\"frames_per_s\":2},\"allowance\":null,\"trial\":null,\"models\":{\"claude\":\"claude-haiku-4-5\",\"openai\":\"gpt-6-luna\"}}"},
+    {"welcome", true, "{\"v\":1,\"t\":\"welcome\",\"server_time\":1791026290,\"tz\":\"Europe/Bucharest\",\"posix_tz\":\"EET-2EEST,M3.5.0/3,M10.5.0/4\",\"state\":\"pending\",\"owner\":\"\",\"brain\":\"none\",\"voice\":\"claude\",\"lang\":\"en\",\"quiet\":{\"from\":\"22:00\",\"to\":\"07:00\"},\"connectors_paused\":false,\"limits\":{\"ask_per_min\":20,\"ask_per_day\":600,\"frames_per_s\":2},\"allowance\":null,\"trial\":null,\"models\":{\"claude\":\"claude-haiku-4-5\",\"openai\":\"gpt-6-luna\"}}"},
     {"replay.done", false, "{\"v\":1,\"t\":\"replay.done\",\"last\":0}"},
-    {"pairing", false, "{\"v\":1,\"t\":\"pairing\",\"code\":\"P8GECKCH\",\"expires_in\":600,\"url\":\"https://127.0.0.1:52549/pair#c=P8GECKCH&d=soul-c0ffee123456\"}"},
-    {"pair.confirm", false, "{\"v\":1,\"t\":\"pair.confirm\",\"pid\":\"p_qRpaXXphtm5fAH0l\",\"name\":\"Ana\",\"account_hint\":\"a***@example.com\",\"expires_in\":120}"},
+    {"pairing", false, "{\"v\":1,\"t\":\"pairing\",\"code\":\"0TQSH4PG\",\"expires_in\":600,\"url\":\"https://127.0.0.1:47491/pair#c=0TQSH4PG&d=soul-c0ffee123456\"}"},
+    {"pair.confirm", false, "{\"v\":1,\"t\":\"pair.confirm\",\"pid\":\"p_WlGkWPXDFgswe4pT\",\"name\":\"Ana\",\"account_hint\":\"a***@example.com\",\"expires_in\":120}"},
     {"paired", false, "{\"v\":1,\"t\":\"paired\",\"owner\":\"Ana\",\"account_hint\":\"a***@example.com\"}"},
     {"inbox.state", false, "{\"v\":1,\"t\":\"inbox.state\",\"pending\":0,\"answered\":0}"},
     {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":1,\"action\":\"note.create\",\"args\":{\"text\":\"Buy batteries \342\200\224 \310\231i lapte\",\"tags\":[\"shop\"]},\"item_id\":\"it_n1\",\"origin\":{\"kind\":\"connector\",\"app\":\"claude\",\"by\":\"Ana\"},\"say\":\"From Claude: noted.\"}"},
@@ -23,22 +23,22 @@ static const RecordedFrame kRecordedFrames[] = {
     {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":4,\"action\":\"alarm.set\",\"args\":{\"hhmm\":\"07:30\",\"days\":[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\"],\"label\":\"Work\"},\"item_id\":\"it_a1\",\"origin\":{\"kind\":\"connector\",\"app\":\"claude\",\"by\":\"Ana\"}}"},
     {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":5,\"action\":\"timer.start\",\"args\":{\"seconds\":90,\"label\":\"tea\"},\"item_id\":\"it_t1\",\"origin\":{\"kind\":\"app\"}}"},
     {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":6,\"action\":\"focus.start\",\"args\":{\"minutes\":25,\"label\":\"write\"},\"item_id\":\"it_f1\",\"origin\":{\"kind\":\"app\"}}"},
-    {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":7,\"action\":\"answer.show\",\"args\":{\"title\":\"Pancakes\",\"body\":\"1. flour\\n2. eggs\"},\"item_id\":\"it_c1\",\"origin\":{\"kind\":\"connector\",\"app\":\"claude\",\"by\":\"Ana\"},\"say\":\"Here are the steps\",\"private\":true,\"expires_at\":1791046428}"},
+    {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":7,\"action\":\"answer.show\",\"args\":{\"title\":\"Pancakes\",\"body\":\"1. flour\\n2. eggs\"},\"item_id\":\"it_c1\",\"origin\":{\"kind\":\"connector\",\"app\":\"claude\",\"by\":\"Ana\"},\"say\":\"Here are the steps\",\"private\":true,\"expires_at\":1791047890}"},
     {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":8,\"action\":\"item.delete\",\"args\":{\"item_id\":\"it_a1\"},\"item_id\":\"it_a1\",\"origin\":{\"kind\":\"app\"}}"},
     {"config", false, "{\"v\":1,\"t\":\"config\",\"brain\":\"none\"}"},
     {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":9,\"action\":\"reminder.create\",\"args\":{\"when\":\"2026-10-04T09:00\",\"text\":\"call mom\"},\"item_id\":\"it_1\",\"origin\":{\"kind\":\"turn\"}}"},
-    {"reply", false, "{\"v\":1,\"t\":\"reply\",\"re\":\"a1\",\"conv\":\"c_MaS0b3mJ9vco9e2E\",\"say\":\"Done, I'll remind you tomorrow at 09:00: call mom.\",\"face\":\"happy\",\"chips\":[],\"provider\":\"rules\",\"brain\":\"none\",\"seqs\":[9]}"},
+    {"reply", false, "{\"v\":1,\"t\":\"reply\",\"re\":\"a1\",\"conv\":\"c_ev2kWPwPaovPVZQ-\",\"say\":\"Done, I'll remind you tomorrow at 09:00: call mom.\",\"face\":\"happy\",\"chips\":[],\"provider\":\"rules\",\"brain\":\"none\",\"seqs\":[9]}"},
     {"added", false, "{\"v\":1,\"t\":\"added\",\"cid\":\"c0ffee0000000001\",\"item_id\":\"it_2\"}"},
-    {"added", false, "{\"v\":1,\"t\":\"added\",\"cid\":\"c0ffee0000000002\",\"item_id\":\"ib_AysO1_2d-mG1\"}"},
+    {"added", false, "{\"v\":1,\"t\":\"added\",\"cid\":\"c0ffee0000000002\",\"item_id\":\"ib_UqlnQXavYeN-\"}"},
     {"inbox.state", false, "{\"v\":1,\"t\":\"inbox.state\",\"pending\":1,\"answered\":0}"},
     {"error", false, "{\"v\":1,\"t\":\"error\",\"code\":\"too_big\",\"msg\":\"frame over 10 KB\",\"re\":\"big1\",\"cid\":\"c0ffee0000000003\"}"},
     {"error", false, "{\"v\":1,\"t\":\"error\",\"code\":\"invalid\",\"msg\":\"invalid arguments: hhmm: Value error, hhmm must be 24h HH:MM\",\"cid\":\"c0ffee0000000004\"}"},
     {"config", false, "{\"v\":1,\"t\":\"config\",\"tz\":\"Europe/London\",\"posix_tz\":\"GMT0BST,M3.5.0/1,M10.5.0\",\"quiet\":{\"from\":\"23:00\",\"to\":\"07:00\"}}"},
-    {"welcome", true, "{\"v\":1,\"t\":\"welcome\",\"server_time\":1791024829,\"tz\":\"Europe/London\",\"posix_tz\":\"GMT0BST,M3.5.0/1,M10.5.0\",\"state\":\"paired\",\"owner\":\"Ana\",\"brain\":\"none\",\"voice\":\"claude\",\"lang\":\"en\",\"quiet\":{\"from\":\"23:00\",\"to\":\"07:00\"},\"connectors_paused\":false,\"limits\":{\"ask_per_min\":20,\"ask_per_day\":600,\"frames_per_s\":2},\"allowance\":null,\"trial\":null,\"models\":{\"claude\":\"claude-haiku-4-5\",\"openai\":\"gpt-6-luna\"}}"},
+    {"welcome", true, "{\"v\":1,\"t\":\"welcome\",\"server_time\":1791026291,\"tz\":\"Europe/London\",\"posix_tz\":\"GMT0BST,M3.5.0/1,M10.5.0\",\"state\":\"paired\",\"owner\":\"Ana\",\"brain\":\"none\",\"voice\":\"claude\",\"lang\":\"en\",\"quiet\":{\"from\":\"23:00\",\"to\":\"07:00\"},\"connectors_paused\":false,\"limits\":{\"ask_per_min\":20,\"ask_per_day\":600,\"frames_per_s\":2},\"allowance\":null,\"trial\":null,\"models\":{\"claude\":\"claude-haiku-4-5\",\"openai\":\"gpt-6-luna\"}}"},
     {"push", false, "{\"v\":1,\"t\":\"push\",\"seq\":10,\"action\":\"note.create\",\"args\":{\"text\":\"While you were away\",\"tags\":[]},\"item_id\":\"it_n2\",\"origin\":{\"kind\":\"connector\",\"app\":\"claude\",\"by\":\"Ana\"}}"},
     {"replay.done", false, "{\"v\":1,\"t\":\"replay.done\",\"last\":10}"},
     {"inbox.state", false, "{\"v\":1,\"t\":\"inbox.state\",\"pending\":1,\"answered\":0}"},
-    {"welcome", true, "{\"v\":1,\"t\":\"welcome\",\"server_time\":1791024829,\"tz\":\"Europe/London\",\"posix_tz\":\"GMT0BST,M3.5.0/1,M10.5.0\",\"state\":\"paired\",\"owner\":\"Ana\",\"brain\":\"none\",\"voice\":\"claude\",\"lang\":\"en\",\"quiet\":{\"from\":\"23:00\",\"to\":\"07:00\"},\"connectors_paused\":false,\"limits\":{\"ask_per_min\":20,\"ask_per_day\":600,\"frames_per_s\":2},\"allowance\":null,\"trial\":null,\"models\":{\"claude\":\"claude-haiku-4-5\",\"openai\":\"gpt-6-luna\"}}"},
+    {"welcome", true, "{\"v\":1,\"t\":\"welcome\",\"server_time\":1791026291,\"tz\":\"Europe/London\",\"posix_tz\":\"GMT0BST,M3.5.0/1,M10.5.0\",\"state\":\"paired\",\"owner\":\"Ana\",\"brain\":\"none\",\"voice\":\"claude\",\"lang\":\"en\",\"quiet\":{\"from\":\"23:00\",\"to\":\"07:00\"},\"connectors_paused\":false,\"limits\":{\"ask_per_min\":20,\"ask_per_day\":600,\"frames_per_s\":2},\"allowance\":null,\"trial\":null,\"models\":{\"claude\":\"claude-haiku-4-5\",\"openai\":\"gpt-6-luna\"}}"},
     {"resync", false, "{\"v\":1,\"t\":\"resync\",\"last\":10}"},
     {"replay.done", false, "{\"v\":1,\"t\":\"replay.done\",\"last\":10}"},
     {"inbox.state", false, "{\"v\":1,\"t\":\"inbox.state\",\"pending\":1,\"answered\":0}"},
@@ -58,8 +58,8 @@ struct RecordedHttp {
 };
 
 static const RecordedHttp kRecordedHttp[] = {
-    {"challenge", 200, "{\"nonce\":\"xRxFmV56jNLQHPauBo9ANj895nMoz2sEOQ4cSYInecI\",\"expires_in\":60}"},
-    {"auth_ok", 200, "{\"token\":\"sdt_RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\",\"expires_in\":86400,\"ws_url\":\"wss://127.0.0.1:52549/v1/device/ws\",\"server_time\":1791024828,\"state\":\"pending\",\"owner\":\"\",\"trial\":null}"},
+    {"challenge", 200, "{\"nonce\":\"pGB-pRY3WJbzdj0rZ0wxDtacZjIEqmSPS1n7yoSuGWk\",\"expires_in\":60}"},
+    {"auth_ok", 200, "{\"token\":\"sdt_RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\",\"expires_in\":86400,\"ws_url\":\"wss://127.0.0.1:47491/v1/device/ws\",\"server_time\":1791026290,\"state\":\"pending\",\"owner\":\"\",\"trial\":null}"},
     {"auth_bad_nonce", 400, "{\"error\":{\"code\":\"bad_nonce\",\"msg\":\"nonce unknown, used, expired or from another network\"}}"},
     {"auth_bad_signature", 401, "{\"error\":{\"code\":\"bad_signature\",\"msg\":\"signature does not verify\"}}"},
 };
