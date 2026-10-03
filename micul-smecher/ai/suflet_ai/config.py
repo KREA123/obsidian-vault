@@ -17,7 +17,8 @@ class Settings:
     use_fallbacks: bool = field(
         default_factory=lambda: os.environ.get("SUFLET_FALLBACKS", "1") not in ("0", "false", "no")
     )
-    data_dir: str = field(default_factory=lambda: os.environ.get("SUFLET_DATA_DIR", "./data"))
+    data_dir: str = field(default_factory=lambda: os.environ.get("SOUL_DATA_DIR")
+                          or os.environ.get("SUFLET_DATA_DIR", "./data"))
     history_turns: int = 6  # past exchanges resent with each turn
     timezone: str = field(default_factory=lambda: os.environ.get("SUFLET_TZ", "Europe/Bucharest"))
 

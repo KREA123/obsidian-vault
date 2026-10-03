@@ -1,0 +1,54 @@
+# SOUL Cloud on Fly.io, EU (Frankfurt). One machine, one volume: Phase 0 keeps the device hub, queues and
+# rate limits in one process (docs/07-CONNECT-AI.md §3.0), so never scale this above 1 machine.
+#
+#   fly launch --no-deploy --copy-config --name <your-app>     (then edit `app` below if it differs)
+#   fly volumes create soul_data --region fra --size 1
+#   fly secrets set SOUL_MASTER_SECRET=... SOUL_ID_PEPPER=... SOUL_ANTHROPIC_KEY=... SOUL_OPENAI_KEY=... \
+#                   SOUL_SMTP_PASSWORD=...
+#   fly deploy
+#
+# Secrets never go in this file. See README.md "Go live in 20 minutes".
+app = "soul-cloud"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  SOUL_ENV = "pilot"                       # "production" once the factory key list exists (§3.2)
+  SOUL_ENROL_POLICY = "pending"            # "factory" in production
+  SOUL_PUBLIC_HOST = "soul-cloud.fly.dev"  # or your own domain (then: fly certs add <domain>)
+  SOUL_DATA_DIR = "/data"
+  SOUL_TRUST_PROXY = "1"
+  SUFLET_TZ = "Europe/Bucharest"
+  SOUL_SMTP_HOST = "smtp.example.eu"       # your EU transactional mail provider
+  SOUL_SMTP_PORT = "587"
+  SOUL_SMTP_USER = "apikey"
+  SOUL_MAIL_FROM = "SOUL <hello@soul.example>"
+
+[[mounts]]
+  source = "soul_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"     # devices hold a WebSocket open; a stopped machine drops them all
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "connections"         # each SOUL is one long-lived connection
+    soft_limit = 800
+    hard_limit = 1000
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/healthz"
+    interval = "15s"
+    timeout = "3s"
+    grace_period = "10s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

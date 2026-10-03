@@ -12,9 +12,7 @@ No real key exists anywhere: the fake keys only steer the fake LLM ("bad", "rate
 """
 from __future__ import annotations
 
-import json
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -183,7 +181,7 @@ def test_smtp_mailer_sends_without_logging_the_code(caplog):
             sent.append(("msg", msg["To"], msg["Subject"], msg.get_content()))
 
     caplog.set_level(logging.DEBUG)
-    m = SmtpMailer("smtp.example", 587, "apikey", "pw-secret", "SOUL <hello@soul.example>", smtp_factory=FakeSMTP)
+    m = SmtpMailer("smtp.example", 587, "apikey", "pw-secret", "SOUL <hello@soul.example>", smtp_factory=FakeSMTP, background=False)
     m("ana@example.com", "Your SOUL code: 123456", "Your SOUL sign-in code is 123456.")
     assert sent[0] == ("login", "apikey", True)
     assert sent[1][1] == "ana@example.com" and "123456" in sent[1][3]
@@ -209,3 +207,53 @@ def test_import_factory_cli(tmp_path, monkeypatch, capsys):
         assert "imported 1" in capsys.readouterr().out
     finally:
         gateway_mod.set_gateway(None)
+
+
+def test_pilot_mode_allows_pending_enrolment_only():
+    pilot = {**PROD_OK, "SOUL_ENV": "pilot", "SOUL_ENROL_POLICY": "pending"}
+    assert production_problems(pilot) == []
+    assert production_problems({**pilot, "SOUL_ENV": "production"}) == ["SOUL_ENROL_POLICY must be 'factory'"]
+    assert any("SUFLET_API_TOKEN" in p for p in production_problems({**pilot, "SUFLET_API_TOKEN": "t"}))
+    assert any("SOUL_SMTP_HOST" in p for p in production_problems({**pilot, "SOUL_SMTP_HOST": ""}))
+
+
+def test_fly_and_docker_files_hold_no_secret_and_match_the_checks():
+    root = Path(__file__).resolve().parents[1]
+    if not (root / "fly.toml").exists():
+        pytest.skip("deployment files are not shipped inside the image")
+    fly = (root / "fly.toml").read_text()
+    docker = (root / "Dockerfile").read_text()
+    for secret in ("SOUL_MASTER_SECRET", "SOUL_ID_PEPPER", "SOUL_ANTHROPIC_KEY", "SOUL_OPENAI_KEY",
+                   "SOUL_SMTP_PASSWORD", "SUFLET_API_TOKEN"):
+        assert f'{secret} = "' not in fly and f"{secret}=" not in docker.replace(" ", "")
+    assert 'primary_region = "fra"' in fly  # EU
+    import tomllib
+
+    env = tomllib.loads(fly)["env"]
+    fake_secrets = {"SOUL_MASTER_SECRET": "ab" * 32, "SOUL_ID_PEPPER": "cd" * 32}
+    assert production_problems({**env, **fake_secrets}) == []
+
+
+def test_smtp_mailer_runs_off_the_event_loop_and_logs_failures_without_details(caplog):
+    import threading as th
+
+    from suflet_ai.app import SmtpMailer
+
+    done = th.Event()
+
+    class Down:
+        def __init__(self, host, port, timeout):
+            done.set()
+            raise ConnectionRefusedError("smtp.example refused for ana@example.com")
+
+    caplog.set_level(logging.DEBUG)
+    SmtpMailer("smtp.example", 587, sender="SOUL <hello@soul.example>", smtp_factory=Down)(
+        "ana@example.com", "Your SOUL code: 654321", "code 654321")
+    assert done.wait(5)
+    for _ in range(50):
+        if any("failed" in r.getMessage() for r in caplog.records):
+            break
+        __import__("time").sleep(0.05)
+    logs = "\n".join(r.getMessage() for r in caplog.records)
+    assert "sign-in mail to *@example.com failed: ConnectionRefusedError" in logs
+    assert "654321" not in logs and "ana@" not in logs

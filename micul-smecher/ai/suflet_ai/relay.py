@@ -40,7 +40,7 @@ import anthropic
 from . import prompts
 from .actions import ACTIONS, TOOL_TO_ACTION
 from .config import FALLBACK_BETA
-from .devices import DEFAULT_TZ, DeviceStore, b64u
+from .devices import DeviceStore, b64u
 from .dispatcher import ActionResult
 from .providers.base import AskContext, AskResult, summarize
 from .providers.chatgpt import openai_tools

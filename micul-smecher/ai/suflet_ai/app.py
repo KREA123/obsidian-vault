@@ -25,6 +25,7 @@ import os
 import smtplib
 import ssl
 import sys
+import threading
 import time
 from contextlib import asynccontextmanager
 from email.message import EmailMessage
@@ -43,7 +44,7 @@ VERSION = "0.3.0"
 
 # Every variable the cloud reads. "secret" ones come from the platform's secret store, never from the repo.
 ENV_VARS: List[Dict[str, Any]] = [
-    {"name": "SOUL_ENV", "secret": False, "prod": True, "doc": "`production` turns on the startup checks; anything else is dev"},
+    {"name": "SOUL_ENV", "secret": False, "prod": True, "doc": "`production` or `pilot` (Phase 0 testers: same checks, `pending` enrolment allowed) turn on the startup checks; anything else is dev"},
     {"name": "SOUL_PUBLIC_HOST", "secret": False, "prod": True, "doc": "public host name, e.g. soul.example (no scheme); devices sign for it, OAuth issuer is https://{it}"},
     {"name": "SOUL_DATA_DIR", "secret": False, "prod": True, "doc": "where the SQLite files live (a persistent volume), e.g. /data"},
     {"name": "SOUL_ENROL_POLICY", "secret": False, "prod": True, "doc": "`factory` in production (only imported device keys); `pending` for dev builds"},
@@ -73,12 +74,17 @@ ENV_VARS: List[Dict[str, Any]] = [
 # ================================================================ startup checks ==
 
 def production_problems(env: Mapping[str, str] = os.environ) -> List[str]:
-    """Everything that makes this environment unfit for SOUL_ENV=production (§3.0). Never prints values."""
+    """Everything that makes this environment unfit for SOUL_ENV=production (§3.0). Never prints values.
+
+    SOUL_ENV=pilot (a Phase 0 deployment for known testers, §3.2 "dev and P0 builds only") applies the same
+    rules except that SOUL_ENROL_POLICY may be `pending`, because no factory key list exists yet."""
     p: List[str] = []
+    pilot = env.get("SOUL_ENV") == "pilot"
     if env.get("SUFLET_API_TOKEN"):
         p.append("SUFLET_API_TOKEN is set: the legacy shared-token API must not exist in production")
-    if env.get("SOUL_ENROL_POLICY", "pending") != "factory":
-        p.append("SOUL_ENROL_POLICY must be 'factory'")
+    policy = env.get("SOUL_ENROL_POLICY", "pending")
+    if policy != "factory" and not (pilot and policy == "pending"):
+        p.append("SOUL_ENROL_POLICY must be 'factory'" + (" or 'pending'" if pilot else ""))
     if not env.get("SOUL_MASTER_SECRET"):
         p.append("SOUL_MASTER_SECRET missing (inject it from the secret manager; no master.key file in production)")
     if len(env.get("SOUL_ID_PEPPER", "")) < 32:
@@ -98,7 +104,9 @@ def production_problems(env: Mapping[str, str] = os.environ) -> List[str]:
 def assert_production_ready(env: Mapping[str, str] = os.environ) -> None:
     problems = production_problems(env)
     if problems:
-        raise RuntimeError("SOUL_ENV=production refused to start: " + "; ".join(problems))
+        raise RuntimeError(f"SOUL_ENV={env.get('SOUL_ENV', '')} refused to start: " + "; ".join(problems))
+    if env.get("SOUL_ENV") == "pilot" and env.get("SOUL_ENROL_POLICY", "pending") == "pending":
+        log.warning("pilot: pending enrolment (whoever pairs a new device id first owns it); testers only")
     if not (env.get("SOUL_ANTHROPIC_KEY") or env.get("SOUL_OPENAI_KEY")):
         log.warning("no SOUL_ANTHROPIC_KEY / SOUL_OPENAI_KEY: brain A answers with the offline rules (note upstream)")
 
@@ -106,20 +114,36 @@ def assert_production_ready(env: Mapping[str, str] = os.environ) -> None:
 # ======================================================================== mail ==
 
 class SmtpMailer:
-    """Sign-in emails through an EU transactional SMTP relay. Logs the recipient domain only, never the body."""
+    """Sign-in emails through an EU transactional SMTP relay. Logs the recipient domain only, never the body.
+
+    `Accounts` calls the mailer inside a request handler on the event loop, so by default the SMTP exchange
+    runs on a short-lived thread: a slow mail server must not stall every device socket."""
 
     def __init__(self, host: str, port: int = 587, user: str = "", password: str = "", sender: str = "",
-                 timeout: float = 10.0, smtp_factory: Callable[..., Any] = None):
+                 timeout: float = 10.0, smtp_factory: Callable[..., Any] = None, background: bool = True):
         if not sender:
             raise ValueError("SOUL_MAIL_FROM is required")
         self.host, self.port, self.user, self._password = host, int(port), user, password
         self.sender, self.timeout = sender, timeout
         self._factory = smtp_factory
+        self.background = background
 
     def __repr__(self) -> str:
         return f"SmtpMailer({self.host}:{self.port}, <credentials sealed>)"
 
     def __call__(self, to: str, subject: str, body: str) -> None:
+        if not self.background:
+            self._send(to, subject, body)
+            return
+        threading.Thread(target=self._send_logged, args=(to, subject, body), daemon=True).start()
+
+    def _send_logged(self, to: str, subject: str, body: str) -> None:
+        try:
+            self._send(to, subject, body)
+        except Exception as e:  # noqa: BLE001 - the user sees "no email" and can resend; ops sees the class
+            log.error("sign-in mail to *@%s failed: %s", to.rpartition("@")[2], type(e).__name__)
+
+    def _send(self, to: str, subject: str, body: str) -> None:
         msg = EmailMessage()
         msg["From"], msg["To"], msg["Subject"] = self.sender, to, subject
         msg.set_content(body)
@@ -163,7 +187,7 @@ def create_app(*, service: Optional[SoulService] = None, gateway: Optional[gatew
                cimd_fetch: Optional[Callable[[str], dict]] = None) -> FastAPI:
     """The production composition: device routes + connector, one SoulService, one Gateway, one lifespan."""
     env = os.environ.get("SOUL_ENV", "dev")
-    if env == "production":
+    if env in ("production", "pilot"):
         assert_production_ready()
     scheme = scheme or os.environ.get("SOUL_PUBLIC_SCHEME", "https")
     service = service or SoulService()
@@ -188,7 +212,7 @@ def create_app(*, service: Optional[SoulService] = None, gateway: Optional[gatew
         return {"ok": True, "version": VERSION}
 
     api.include_router(gateway_mod.build_router(lambda: gw))
-    if env != "production" and os.environ.get("SUFLET_API_TOKEN"):
+    if env not in ("production", "pilot") and os.environ.get("SUFLET_API_TOKEN"):
         api.include_router(gateway_mod.build_dev_router(lambda: gw), dependencies=[Depends(_dev_token_check)])
     api.mount("/", remote)
     api.state.soul = remote.state.soul
@@ -212,7 +236,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     a = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
-    if a.cmd == "check":
+    if a.cmd == "check":  # checks the rules of SOUL_ENV=production (or pilot, when SOUL_ENV=pilot)
         problems = production_problems()
         for p in problems:
             print("FAIL", p)

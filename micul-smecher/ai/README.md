@@ -262,7 +262,7 @@ Contractul e `docs/07-CONNECT-AI.md` §3.2, §3.4, §3.9–3.10 și §6. Rutele 
 | `POST /v1/device/challenge` · `POST /v1/device/auth` | nonce (60 s, o dată, legat de rețea) → token `sdt_` |
 | `GET /v1/device/ws` (subprotocol `soul.v1`) | hello/welcome, push + ack, replay pe pagini, `ask` → `reply`, coduri 4400/4401/4403/4409/4426/4429 |
 | `GET /v1/device/poll` · `POST /v1/device/send` | același protocol prin long-poll (și trezirile din somn adânc) |
-| `/v1/dev/pair/claim`, `/v1/dev/push`, `/v1/dev/unpair`, `/v1/dev/config` | doar dev / self-host, cu `SUFLET_API_TOKEN`; oprite la `SOUL_ENV=production` |
+| `/v1/dev/pair/claim`, `/v1/dev/push`, `/v1/dev/unpair`, `/v1/dev/config`, `/v1/dev/key` | doar dev / self-host, cu `SUFLET_API_TOKEN`; nu există la `SOUL_ENV=production` sau `pilot` (`/v1/dev/key` ține locul paginii `/me/keys` pentru B2) |
 
 - `devices.py`: identitate, înrolare (`SOUL_ENROL_POLICY=factory` în producție, `pending` doar dev/P0),
   coduri de asociere de 8 caractere (stocate ca HMAC), confirmare obligatorie pe ecranul SOUL,
@@ -285,3 +285,112 @@ python tools/fake_device.py --base http://127.0.0.1:8787 --poll --ask "notează 
 
 Teste: `tests/test_gateway_devices.py`, `test_gateway_ws.py`, `test_gateway_relay.py`, `test_fake_device.py`;
 vectorul de test comun cu firmware-ul: `tests/vectors/device_auth.json`.
+
+### Totul cap-coadă, local (fără chei reale) — `app.py`, `tools/e2e_demo.sh`
+
+`suflet_ai/app.py` e aplicația care merge pe internet: partea dispozitivului (`gateway.py` + releul) și
+conectorul (`mcp_remote.py` + OAuth) într-un singur proces, cu un singur `SoulService` și o singură
+durată de viață (lifespan-ul MCP e transmis). `server.py` (tokenul comun vechi) **nu** e montat aici.
+
+```bash
+tools/e2e_demo.sh          # pornește un LLM fals, aplicația și un SOUL fals; ieșire 0 = tot e verde
+```
+
+Ce verifică (pe socketuri reale, `127.0.0.1`):
+
+1. `tools/fake_device.py` (CLI) se autentifică cu cheia ECDSA, arată codul, e asociat, întreabă, primește push-ul.
+2. `tools/e2e_connect.py` face ce face claude.ai când adaugi conectorul: 401 → metadate → DCR → PKCE →
+   cod pe email → codul de pe ecranul SOUL pe pagina de consimțământ → ✓ pe SOUL → *Allow* → token; apoi
+   `add_note`, `add_reminder`, `set_alarm`, `show_on_soul`, `list_today` ajung pe socketul dispozitivului
+   (`delivered: "shown"`).
+3. Întrebări scrise pe SOUL → releu → Claude fals și OpenAI fals → răspuns + push-uri; alocația lunară scade
+   cu 1 la fiecare tură, iar la 0 răspund regulile offline cu `note: "allowance"`.
+4. Erorile au codurile din §6.9: cheie greșită `bad_key`, 429 `rate_limited`, fără credit `quota`, furnizor
+   căzut `network`; SOUL offline → `delivered: "queued"`, apoi reluat la reconectare.
+
+`tools/fake_llm.py` imită `api.anthropic.com` (`/v1/messages`) și `api.openai.com` (`/v1/responses`);
+SDK-urile oficiale sunt îndreptate spre el cu `ANTHROPIC_BASE_URL` / `OPENAI_BASE_URL`, deci codul releului
+e cel din producție. Testele: `tests/test_e2e_connect.py` (aceeași poveste, plus verificările de pornire în
+producție, mailerul SMTP, importul cheilor din fabrică și fișierele de deploy).
+
+### Go live in 20 minutes
+
+Ținta: SOUL Cloud pe Fly.io, în UE (Frankfurt), cu adresa `https://<host>/mcp` pe care o lipești în Claude.
+Fișiere: `Dockerfile`, `docker-entrypoint.sh`, `fly.toml`, `constraints.txt` (versiunile testate).
+Nimic secret nu intră în repo: secretele merg doar în `fly secrets`.
+
+**Ce trebuie să existe înainte** (nu intră în cele 20 de minute): cont Fly.io + `flyctl`; un furnizor de
+email tranzacțional din UE cu SPF/DKIM/DMARC pe domeniul expeditorului (codurile de conectare pleacă pe email;
+fără el nimeni nu se poate conecta); opțional un domeniu propriu.
+
+1. **Cheile (5 min).** Anthropic: în Console → *API Keys* creezi o cheie într-un workspace dedicat SOUL, cu
+   **limită lunară de cheltuieli** și fără expirare. OpenAI (doar dacă vrei vocea ChatGPT pentru creierul A):
+   o cheie de proiect, cu limită de buget. Numele exacte ale meniurilor nu le-am verificat azi [U].
+2. **Secretele (1 min)**, generate local, niciodată în fișiere din repo:
+   `python3 -c "import secrets; print(secrets.token_hex(32))"` de două ori (master secret și pepper).
+3. **Configurarea (3 min).** În `fly.toml`: `app`, `SOUL_PUBLIC_HOST` (`<app>.fly.dev` sau domeniul tău),
+   `SOUL_SMTP_HOST`, `SOUL_SMTP_USER`, `SOUL_MAIL_FROM`. Lasă `SOUL_ENV = "pilot"` până există lista de chei
+   din fabrică (vezi mai jos).
+4. **Deploy (8 min).**
+   ```bash
+   cd micul-smecher/ai
+   tools/e2e_demo.sh                                   # înainte: totul verde local
+   fly launch --no-deploy --copy-config --name <app>
+   fly volumes create soul_data --region fra --size 1
+   # secretele se citesc fără ecou, ca să nu rămână în istoricul shell-ului
+   for v in SOUL_MASTER_SECRET SOUL_ID_PEPPER SOUL_ANTHROPIC_KEY SOUL_OPENAI_KEY SOUL_SMTP_PASSWORD; do
+     read -rsp "$v: " val; echo; printf '%s=%s\n' "$v" "$val"; done | fly secrets import
+   fly deploy
+   curl https://<host>/healthz                         # {"ok": true, ...}
+   curl https://<host>/.well-known/oauth-protected-resource/mcp
+   fly ssh console -C "python -m suflet_ai.app check"  # regulile de pornire
+   ```
+   Cu domeniu propriu: `fly certs add <domeniu>` și înregistrările DNS pe care le cere Fly.
+5. **Claude (2 min).** claude.ai → *Customize → Connectors → Add custom connector* (calea verificată în
+   `docs/07-CONNECT-AI.md` §1.4 [V, 2 oct 2026]; interfețe mai vechi o au la *Settings → Connectors*) →
+   URL `https://<host>/mcp` → *Connect* → codul primit pe email → codul de pe ecranul SOUL → ✓ pe SOUL →
+   *Allow*. Apoi scrii în Claude: „Show hello on my SOUL”. Merge pe toate planurile Claude, inclusiv Free
+   (un singur conector personalizat) [V]; adăugarea doar de pe telefon e beta și netestată de noi [U].
+6. **ChatGPT (doar utilizatori avansați).** chatgpt.com (web) → *Settings → Security and login → Developer
+   mode* → adaugi URL-ul care se termină în `/mcp` [V]. Fiecare scriere cere confirmare în ChatGPT [V];
+   scrierile pe Plus/Pro sunt [U]. Pentru toți utilizatorii trebuie listare ca plugin ChatGPT (review OpenAI).
+
+**`pilot` vs `production`.** Ambele refuză pornirea dacă lipsește ceva din §3.0 (`SUFLET_API_TOKEN` setat,
+`SOUL_MASTER_SECRET`, `SOUL_ID_PEPPER`, `SOUL_PUBLIC_HOST`, SMTP, https). `pilot` permite în plus
+`SOUL_ENROL_POLICY=pending` (orice cheie nouă de dispozitiv e acceptată; cine asociază primul un `device_id`
+îl deține) — doar pentru testeri cunoscuți. `production` cere `factory`: cheile publice din fabrică se
+importă cu `fly ssh console -C "python -m suflet_ai.app import-factory /data/keys.csv"` (CSV cu antetul
+`device_id,pub`).
+
+**Ce nu merge încă după deploy (onest):**
+
+- Firmware-ul actual încă se autentifică cu secretul vechi (fără provocare ECDSA, cod de 6 cifre), deci un
+  SOUL real **nu** se conectează la acest cloud până nu e actualizat la rev. 2 (vectorul comun:
+  `tests/vectors/device_auth.json`).
+- Pagina `/pair` (QR-ul de pe ecran duce acolo) și paginile de cont `/me` (chei B2, alegerea creierului,
+  lista aplicațiilor conectate) nu există încă (`api_me.py`). Azi asocierea se face pe pagina de consimțământ
+  a conectorului, cu codul de pe ecran; creierul implicit după asociere e A (cheia SOUL, vocea Claude).
+- Un singur proces, SQLite pe volum: nu porni mai multe mașini (`fly scale count 1`).
+- CIMD (`cimd.py`) nu e scris; claude.ai merge prin DCR. Nimic nu a fost încercat cu claude.ai sau ChatGPT
+  reale și nici cu cheile reale Anthropic/OpenAI.
+
+**Variabile de mediu** (lista completă: `python -m suflet_ai.app env`):
+
+| Variabilă | Secret | Ce face |
+|---|---|---|
+| `SOUL_ENV` | | `production` / `pilot` pornesc verificările; altceva = dev |
+| `SOUL_PUBLIC_HOST` | | host-ul public (fără schemă); emitentul OAuth e `https://{host}`, dispozitivele semnează pentru el |
+| `SOUL_DATA_DIR` | | directorul cu SQLite (volumul, `/data`) |
+| `SOUL_ENROL_POLICY` | | `factory` în producție, `pending` în pilot/dev |
+| `SOUL_TRUST_PROXY` | | `1` în spatele proxy-ului TLS (IP-ul clientului = ultimul hop din `X-Forwarded-For`) |
+| `SOUL_MASTER_SECRET` | da | ≥ 32 octeți hex; criptează cheile API ale utilizatorilor (B2) |
+| `SOUL_ID_PEPPER` | da | ≥ 32 octeți hex; HMAC pentru id-uri, coduri, `safety_identifier` |
+| `SOUL_ANTHROPIC_KEY` | da | cheia SOUL pentru creierul A (Claude în SOUL) |
+| `SOUL_OPENAI_KEY` | da | cheia SOUL pentru creierul A cu vocea ChatGPT |
+| `SOUL_SMTP_HOST`, `SOUL_SMTP_PORT`, `SOUL_SMTP_USER` | | serverul de email (STARTTLS pe 587 sau TLS pe 465) |
+| `SOUL_SMTP_PASSWORD` | da | parola / tokenul SMTP |
+| `SOUL_MAIL_FROM` | | expeditorul, ex. `SOUL <hello@domeniu>` |
+| `SOUL_CLAUDE_MODEL`, `SOUL_OPENAI_RELAY_MODEL` | | modelele releului (implicit `claude-haiku-4-5`, `gpt-6-luna`) |
+| `SOUL_ALLOWANCE_TURNS`, `SOUL_TRIAL_TURNS`, `SOUL_B2_DAILY_CAP_MICRO`, `SOUL_BRAIN_A_KILL` | | contorizare (300 ture/lună, 30 ture probă, 0,50 $/zi pe cheia proprie, oprire de urgență) [E] |
+| `SUFLET_TZ` | | fusul orar al serverului (implicit `Europe/Bucharest`) |
+| `SUFLET_API_TOKEN`, `SOUL_PUBLIC_SCHEME`, `SOUL_DEV_MAILBOX` | | doar dev (rutele `/v1/dev/*`, `http` pe loopback, emailuri într-un fișier); interzise în pilot/producție |
