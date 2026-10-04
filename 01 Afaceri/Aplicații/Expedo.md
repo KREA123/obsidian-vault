@@ -58,9 +58,14 @@ Ce face, pentru fiecare comandă:
 - **Interfața în engleză**, cu româna ca a doua limbă (se alege după limba din adminul Shopify).
 - **Planuri de preț** (Shopify App Pricing, decizie Andu 04.10): fără plan gratuit; 5 zile de probă gratuită, apoi **Pro $15** (1.000 comenzi/lună) sau **Pro Max $30** (nelimitat + procesare automată, istoric refuzuri, export ramburs, mai multe magazine, suport prioritar). Fără plan: doar modul de probă. Pași de configurare: `P/apps/expedo/PRICING.md`.
 - **Protecția datelor pentru App Store:** date criptate, ștergere automată după 180 de zile, jurnal de acces, GDPR, pagini /privacy și /terms.
-- **Istoric colete refuzate** după telefon/e-mail (Growth).
+- **Istoric colete refuzate** după telefon/e-mail (Pro Max).
 - **Trailer motion design** 56 s, EN + RO, orizontal + vertical: `P/apps/expedo/marketing/trailer/`. Muzică Mixkit (licență gratuită comercială, fără TV/radio), voce Microsoft neurală.
 - **Trusa App Store în engleză:** iconiță, imagine principală, 6 capturi + 3 pe telefon, texte, prețuri, filmuleț și instrucțiuni pentru recenzenți: `P/apps/expedo/marketing/listing/LISTING.md`.
 - 452 de teste automate trec.
 
-**Rămâne (doar cu conturile lui Andu):** pornirea serverului pe Render (Frankfurt), aplicația publică în Partners cu prețurile, cheia Partner API pentru citirea planului, încărcarea listării.
+- **Publicat (04.10.2026):** serverul rulează la https://expedo.onrender.com (Render, Frankfurt, plan gratuit). Configurația Shopify (adresa aplicației, redirect, permisiuni, webhook-uri) e trimisă în aplicația „Expedo test” (versiunea expedo-2). Verificat pe dexters-laboratory: comenzile se sincronizează, iar o comandă nouă apare în aplicație în câteva secunde, prin webhook.
+
+**Rămâne (doar cu conturile lui Andu):**
+- un card pe Render (https://dashboard.render.com/billing), ca să trecem pe Starter + disc, cam $7/lună; pe planul gratuit datele se pierd la fiecare repornire;
+- cele două planuri de preț din Dev Dashboard (`PRICING.md`);
+- încărcarea listării și „Submit for review” (`marketing/listing/LISTING.md`).
