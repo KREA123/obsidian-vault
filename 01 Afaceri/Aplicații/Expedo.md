@@ -52,3 +52,15 @@ Ce face, pentru fiecare comandă:
 - **Stack:** Node 22, Express, SQLite.
 - **Demo:** `npm install && npm run demo`. **Teste:** `npm test`.
 - Detalii complete în `P/apps/expedo/README.md`.
+
+## 4. Stadiu nou (04.10.2026)
+
+- **Interfața în engleză**, cu româna ca a doua limbă (se alege după limba din adminul Shopify).
+- **Planuri de preț** (Shopify App Pricing, 30 de zile gratuite la planurile plătite): Free $0 (50 comenzi/lună), Starter $14.99 (1.000/lună), Growth $24.99 (nelimitat + procesare automată, istoric refuzuri, export ramburs), Plus $49.99 (+ mai multe magazine, integrare personalizată). Inspirate din xConnector ($0 / $19.99 / $29.99 / $59.99). Pași de configurare: `P/apps/expedo/PRICING.md`.
+- **Protecția datelor pentru App Store:** date criptate, ștergere automată după 180 de zile, jurnal de acces, GDPR, pagini /privacy și /terms.
+- **Istoric colete refuzate** după telefon/e-mail (Growth).
+- **Trailer motion design** 56 s, EN + RO, orizontal + vertical: `P/apps/expedo/marketing/trailer/`. Muzică Mixkit (licență gratuită comercială, fără TV/radio), voce Microsoft neurală.
+- **Trusa App Store în engleză:** iconiță, imagine principală, 6 capturi + 3 pe telefon, texte, prețuri, filmuleț și instrucțiuni pentru recenzenți: `P/apps/expedo/marketing/listing/LISTING.md`.
+- 452 de teste automate trec.
+
+**Rămâne (doar cu conturile lui Andu):** pornirea serverului pe Render (Frankfurt), aplicația publică în Partners cu prețurile, cheia Partner API pentru citirea planului, încărcarea listării.

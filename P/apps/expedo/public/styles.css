@@ -136,7 +136,7 @@ a.stat:hover { text-decoration: none; border-color: var(--border-strong); }
 
 /* ---------- table ---------- */
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-.toolbar input[type=search] { width: 280px; }
+.toolbar input[type=search] { width: 380px; max-width: 100%; }
 .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); white-space: nowrap; }

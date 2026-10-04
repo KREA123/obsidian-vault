@@ -52,7 +52,7 @@ English, Romanian (the app UI is usable in both; req. 4.3.2)
 Billing method: Recurring charge, Shopify App Pricing (one public plan marked Free). Free trial: **30 days** on every paid plan (a free plan has nothing to trial).
 Plan display names and top features: shopify.dev gives no character limit; names kept ≤ 20 and each feature ≤ 80 characters (counts below).
 
-### Free `4/20`: Free
+### Free `4/20`: $0
 
 - Up to 50 orders a month `23/80`
 - All couriers and invoicing apps `31/80`
