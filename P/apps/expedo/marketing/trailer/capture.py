@@ -272,6 +272,14 @@ def main():
         # the demo store's UI language (apps with i18n; older builds ignore the unknown setting or answer 400)
         try: api('PUT', '/settings', {'settings': {'language': ARGS.ui_lang}})
         except Exception as e: print('language setting not supported:', e)
+        # the demo seeds its rule names in English; a Romanian merchant names them in Romanian (Settings → Rules)
+        if ARGS.ui_lang == 'ro':
+            RO_RULES = {'Heavy orders → 2 parcels': 'Colete grele → 2 colete', 'Large COD orders → check first': 'Comenzi mari cu ramburs → verificare',
+                        'Customers who refused parcels → check first': 'Clienți care au refuzat colete → verificare'}
+            rules = api('GET', '/settings')['settings'].get('rules', [])
+            if any(r.get('name') in RO_RULES for r in rules):
+                for r in rules: r['name'] = RO_RULES.get(r['name'], r['name'])
+                api('PUT', '/settings', {'settings': {'rules': rules}})
         refused = refusal_order()                       # find it before we change anything
         loc_id, loc_err = setup_locality_error(ARGS.loc_order)
         with sync_playwright() as p:

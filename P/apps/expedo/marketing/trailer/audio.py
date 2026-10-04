@@ -2,12 +2,13 @@
 """EXPEDO trailer soundtrack: licensed music bed + synthesized trailer layer / UI SFX + neural TTS voice-over.
 
 Same pipeline as the SOUL trailer (micul-smecher/trailer/audio.py), adapted:
-- Music bed: "Electro Dreams" by Arulo, Mixkit (Mixkit Stock Music Free License: commercial use, no attribution
+- Music bed (about 3.5 dB under the voice, ducked a further ~7 dB while it speaks): "Electro Dreams" by Arulo, Mixkit (Mixkit Stock Music Free License: commercial use, no attribution
   required). See MUSIC-LICENSE.md. The mp3 is downloaded at build time and never committed (the licence forbids
   redistributing it as a standalone file). 120 BPM, edited on its own beat grid (1 beat = 0.5 s):
     video  0–40 s  ← track  8–48 s : the filtered intro build under the pain scene, the drop lands on the logo at 8 s
     video 40–44 s  ← track 60–64 s : last two bars of the breakdown (the "safety" beat)
-    video 44–56 s  ← track 64–76 s : second drop on tracking / ramburs, then the end card (filter close + fade)
+    video 44–50 s  ← track 64–70 s : second drop on tracking / ramburs
+    video 50–56 s  ← track 108–114 s: the track's own last two bars under the end card; it stops on the downbeat at 54 s
 - Trailer layer (braams, impacts, sub drops, risers, reversed cymbals, glitches, packing-tape rips) and the UI SFX
   (clicks, key taps, pops, ticks, chimes, whooshes) are synthesized here and placed on the page's event times.
 - Voice: one short line per scene, each starting on a beat. Microsoft neural voices via edge-tts:
@@ -15,7 +16,8 @@ Same pipeline as the SOUL trailer (micul-smecher/trailer/audio.py), adapted:
   ASR round-trip), EN en-US-AndrewMultilingualNeural. VOICE_FILE_RO / VOICE_FILE_EN = a recorded track timed to the
   video from 0 s replaces the TTS.
 - Light voice processing (low cut + gentle compression), music ducks ~7 dB under the voice,
-  loudnorm to -14 LUFS / -2 dBTP (two-pass, linear), AAC 192k, muxed into every rendered mp4 of that language.
+  loudnorm to -14 LUFS (two-pass, linear), AAC 192k with a true-peak check on the encoded audio (≤ -2 dBTP), muxed into
+  every rendered mp4 of that language.
   Writes voiceover_script.md (RO + EN, with timings).
 
 usage: python3 audio.py [ro|en ...]        env: AUDIO_TMP (scratch dir), NO_MUX=1, NO_ASR=1, VOICE_FILE_RO / VOICE_FILE_EN
@@ -37,7 +39,9 @@ N = int(round(SR * T_END))
 
 MUSIC_URL = 'https://assets.mixkit.co/music/190/190.mp3'   # "Electro Dreams" by Arulo (Mixkit), 120 BPM, ~F# minor
 PHASE = 0.047                                              # first beat of the track's grid (kick onsets at 0.047 + 0.5 k)
-MUSIC_EDIT = [(0.0, 8 + PHASE, 40.0), (40.0, 60 + PHASE, 44.0), (44.0, 64 + PHASE, 56.0)]   # (video start, track start, video end)
+# (video start, track start, video end). The last segment is the track's own ending: its final two bars run under the
+# end card and the music stops by itself on the downbeat at video 54 s (track 112 s), with its natural tail.
+MUSIC_EDIT = [(0.0, 8 + PHASE, 40.0), (40.0, 60 + PHASE, 44.0), (44.0, 64 + PHASE, 50.0), (50.0, 108 + PHASE, 56.0)]
 PENT = [78, 81, 83, 85, 88, 90, 93, 95, 97, 100]          # F# minor pentatonic (F#5 …), for tonal pops
 
 # ── voice-over: (beat, text, on-screen note[, rate override]) ──
@@ -134,11 +138,7 @@ def make_bed():
     # the track's intro is ~16 dB under its drop: lift it so the pain scene isn't a hole, keep the contrast
     g = np.interp(np.arange(N) / SR, [0, 7.9, 8.0, 40, 40.05, 44, 52, T_END], [db(7), db(7), 1, 1, db(1.5), db(1.5), 1, 1])
     bed *= g[:, None]
-    # end card: close a low-pass over the last bars and fade out
-    i0, i1 = t2i(51.0), N
-    dark = lp(bed[i0:i1], 700, 2); w = np.linspace(0, 1, i1 - i0)[:, None] ** .8
-    bed[i0:i1] = bed[i0:i1] * (1 - w) + dark * w
-    fe = np.ones(N); j0 = t2i(53.5); fe[j0:] = np.linspace(1, 0, N - j0) ** 1.6
+    fe = np.ones(N); j0 = t2i(55.7); fe[j0:] = np.linspace(1, 0, N - j0)   # only a click guard on the last frames
     return bed * fe[:, None]
 
 # ───────────────────────── trailer layer ─────────────────────────
@@ -243,6 +243,26 @@ def glitch(d=1.6, gain=.25):
         x[i:i + L] += seg[:max(0, min(L, n - i))]; i += L + int(SR * r.choice([0, .015, .03]))
     x *= np.linspace(.3, 1, n)
     return st(x * gain, 0)
+def heartbeat(gain=.5):
+    """lub-dub: two soft low thumps"""
+    out = np.zeros(int(.5 * SR))
+    for d0, a in ((0, 1.0), (.17, .7)):
+        t = tt(.25); f = 52 + 30 * np.exp(-t / .03); x = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / .07) * a
+        i = int(d0 * SR); out[i:i + len(x)] += x
+    return st(out * gain)
+def vibrate(gain=.2):
+    """a phone buzzing on the desk: two gated 160 Hz bursts with a rattle"""
+    out = np.zeros(int(.6 * SR))
+    for d0 in (0, .3):
+        t = tt(.2); x = np.tanh(3 * np.sin(2 * np.pi * 160 * t)) * (1 + .4 * np.sin(2 * np.pi * 37 * t))
+        x = bp(x, 120, 2500) * np.minimum(1, t / .01) * np.minimum(1, (.2 - t) / .02)
+        i = int(d0 * SR); out[i:i + len(x)] += x
+    return st(out * gain, .35)
+def swell(d=3.0, gain=.15):
+    n = int(d * SR); t = np.arange(n) / n
+    x = varlp(rng.standard_normal(n), 200 * (4000 / 200) ** (t ** 1.5)) * t ** 2 * 2.5
+    x[-int(.03 * SR):] *= np.linspace(1, 0, int(.03 * SR))
+    return np.stack([x, np.roll(x, 90)], 1) * gain
 def tape(d=.42, gain=.32, pan=0.0):
     """Packing tape pulled off the roll: crackly noise with fast irregular amplitude modulation."""
     n = int(d * SR); t = np.arange(n) / SR; r = np.random.default_rng(int(abs(pan) * 100) + 7)
@@ -277,6 +297,15 @@ def make_sfx():
     xs = [.5, .28, .72, .30, .70, .50, .22, .78, .52, .48]
     for t0, x in zip(t0s, xs): add(s, errbuzz(.22, (x - .5) * 1.4), t0 + .02)
     add(s, whoosh(.6, 200, 3000, .25, (-.3, .3)), b(7.6))
+    # pain, denser: a clock ticking on the eighths, a heartbeat on the beat, phones buzzing, frantic retry clicks,
+    # keyboard bursts and a noise swell that builds under "…nobody tells you what to fix"
+    for k in range(30):
+        add(s, tick(.035 + .03 * k / 30, 3300 if k % 2 == 0 else 2500), k * .25)
+    for k in range(15): add(s, heartbeat(.5 + .25 * k / 15), k * BEAT)
+    for tb in (1.75, 3.6, 5.6): add(s, vibrate(.2), tb)
+    for tc in (2.55, 2.7, 2.85, 5.4, 5.55): add(s, mouse(.22), tc)
+    for k in range(9): add(s, key(.12), 1.0 + k * .085 + (.04 if k % 3 == 0 else 0))
+    addend(s, swell(3.4, .16), b(15.2))
     # logo: mark draws, word, tape slap
     add(s, whoosh(.5, 600, 7000, .22, (.4, -.4)), b(16) + .15); add(s, pop(PENT[3], .14), b(16) + .55)
     add(s, tape(.3, .3, .2), b(16) + 1.25); add(s, slap(.35), b(16) + 1.55)
@@ -324,6 +353,7 @@ def make_sfx():
     add(s, chime((90, 97, 102), .12), T9 + 4.6)
     # end card
     T10 = b(100); add(s, tape(.32, .3, .3), T10 + 1.0); add(s, slap(.3), T10 + 1.15)
+    add(s, shimmer(2.2, .05, (85, 90, 97, 102)), b(108))       # the music's own final downbeat
     return s
 
 # ───────────────────────── voice ─────────────────────────
@@ -383,6 +413,13 @@ def asr_check(path, lang):
     for a, z, tx in out: print(f'ASR[{lang}] {a:6.2f}-{z:6.2f}  {tx}')
     return out
 
+def ebur128(path):
+    """(integrated LUFS, true peak dBTP) of an audio/video file"""
+    r = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', str(path), '-af', 'ebur128=peak=true', '-f', 'null', '-'],
+                       capture_output=True, text=True).stderr
+    tail = r[r.rfind('Summary:'):]
+    return float(re.search(r'I:\s+(-?[\d.]+) LUFS', tail).group(1)), float(re.search(r'Peak:\s+(-?[\d.]+) dBFS', tail).group(1))
+
 def tc(t): return f'{int(t // 60):02d}:{t % 60:05.2f}'
 def write_script(all_durs):
     rows = ['# Expedo trailer: voice-over script (EN + RO)', '',
@@ -426,7 +463,7 @@ def mix_lang(lang, bed, trailer, sfx):
     g = np.empty(N); cur = 1.0
     for i in range(N):
         cur += (tgt[i] - cur) * (att if tgt[i] < cur else rel); g[i] = cur
-    mix = bed * db(-1) * g[:, None] + trailer * db(-2) * np.sqrt(g)[:, None] + sfx * db(-7) + vo * db(2)
+    mix = bed * db(-4.5) * g[:, None] + trailer * db(-4) * np.sqrt(g)[:, None] + sfx * db(-7) + vo * db(2)
     mix *= .9 / np.abs(mix).max()
     pre = TMP / f'mix_pre_{lang}.wav'; write_wav(pre, mix)
     r = subprocess.run(['ffmpeg', '-hide_banner', '-i', str(pre), '-af', 'loudnorm=I=-14:TP=-2.8:LRA=11:print_format=json', '-f', 'null', '-'],
@@ -436,13 +473,22 @@ def mix_lang(lang, bed, trailer, sfx):
     af = (f"loudnorm=I=-14:TP=-2.8:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
           f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(pre), '-af', af, '-ar', str(SR), str(final)], check=True)
+    # AAC adds inter-sample overshoot: encode, measure the true peak of the encoded audio, pull the gain down until ≤ -2 dBTP
+    aac = TMP / f'mix_{lang}.m4a'; trim = 0.0
+    for _ in range(4):
+        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(final), '-af', f'volume={trim}dB', '-c:a', 'aac', '-b:a', '192k',
+                        '-ac', '2', '-ar', str(SR), str(aac)], check=True)
+        I, tp = ebur128(aac)
+        print(f'AUDIO[{lang}] {I:.1f} LUFS, true peak {tp:.1f} dBTP (trim {trim:.1f} dB)')
+        if tp <= -2.05: break
+        trim -= tp + 2.15
     if not os.environ.get('NO_MUX'):
         for v in (f'expedo_trailer_{lang}.mp4', f'expedo_trailer_{lang}_vertical.mp4'):
             src = HERE / v
             if not src.exists(): continue
             tmp = TMP / ('mux_' + v)
-            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(src), '-i', str(final), '-map', '0:v:0', '-map', '1:a:0',
-                            '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-ac', '2', '-ar', str(SR), '-shortest', '-movflags', '+faststart', str(tmp)], check=True)
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(src), '-i', str(aac), '-map', '0:v:0', '-map', '1:a:0',
+                            '-c:v', 'copy', '-c:a', 'copy', '-shortest', '-movflags', '+faststart', str(tmp)], check=True)
             os.replace(tmp, src); print('muxed', src)
     return durs
 

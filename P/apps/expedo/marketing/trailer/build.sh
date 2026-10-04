@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 # Rebuild the Expedo trailer end to end: UI capture → frames → mp4s → soundtrack/VO mux → contact sheet → checks.
 #
-#   ./build.sh                                                        # UI from the frozen snapshot (default)
-#   ./build.sh --app /home/user/obsidian-vault/P/apps/expedo --port 3302   # UI from the current app (English UI)
+#   ./build.sh --app /tmp/claude-0/expedo-snap2/P/apps/expedo --port 3302   # captures ui/en and ui/ro from that app copy
 #   SKIP_CAPTURE=1 ./build.sh                                         # keep ui/ as it is
 #   VERSIONS="en:h en:v" ./build.sh ...                               # only some cuts (default: all four)
 #
-# All arguments go to capture.py (--app, --port, --db, --locale, --loc-order, --track-order).
+# All arguments go to capture.py (--app, --port, --db, --loc-order, --track-order); it runs once per UI language.
 # Frames go to $FRAMES_DIR (default /tmp/claude-0/expedo_frames) and are deleted at the end.
 set -euo pipefail
 cd "$(dirname "$0")"
 export FRAMES_DIR="${FRAMES_DIR:-/tmp/claude-0/expedo_frames}"
 VERSIONS="${VERSIONS:-en:h en:v ro:h ro:v}"
 
-[ -n "${SKIP_CAPTURE:-}" ] || python3 capture.py "$@"
+if [ -z "${SKIP_CAPTURE:-}" ]; then
+  for l in en ro; do python3 capture.py --ui-lang "$l" "$@"; done
+fi
 for v in $VERSIONS; do
   rm -rf "$FRAMES_DIR/${v%%:*}${v##*:}"
   WORKERS="${WORKERS:-4}" python3 render.py video "${v%%:*}" "${v##*:}"
