@@ -1,6 +1,8 @@
 # Shopify app config (Dev Dashboard / Shopify CLI). Fill client_id and the URLs, then `shopify app deploy`.
 client_id = ""
 name = "Expedo"
+# Handle: part of the plan selection page URL (SHOPIFY_APP_HANDLE must match).
+handle = "expedo"
 application_url = "https://EXPEDO-HOST/"
 embedded = true
 
@@ -14,7 +16,7 @@ redirect_urls = ["https://EXPEDO-HOST/auth/callback"]
 api_version = "2026-07"
 
   [[webhooks.subscriptions]]
-  topics = ["orders/create", "orders/updated", "orders/cancelled", "app/uninstalled"]
+  topics = ["orders/create", "orders/updated", "orders/cancelled", "app/uninstalled", "app_subscriptions/update"]
   uri = "/webhooks/shopify"
 
   [[webhooks.subscriptions]]

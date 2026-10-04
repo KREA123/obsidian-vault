@@ -13,6 +13,13 @@ import { withDefaults } from './settings.js';
 import { planOrder, buildShipment, buildInvoice, bucharestDate } from './build.js';
 import { getShopify } from '../shopify/index.js';
 import { customerHistory, openOrdersOfCustomer } from './customers.js';
+import { can, planFor, usageThisPeriod, upgradeUrl, PLANS } from './plans.js';
+
+/** planOrder() options for this store: the customer's refusal history only on plans that include it. */
+export function historyOptions(store, order) {
+  const refusalHistory = can(store, 'refusalHistory');
+  return { history: refusalHistory ? customerHistory(store, order) : undefined, refusalHistory };
+}
 
 /** Order statuses; their labels are `status.<id>` in the catalogs. */
 export const ORDER_STATUSES = ['new', 'needs_attention', 'on_hold', 'ready', 'shipped', 'in_transit', 'delivered', 'returned', 'cancelled'];
@@ -109,7 +116,7 @@ export function deriveStatus(order, { blocking, hold } = {}) {
 export function validateOrder(store, orderId) {
   const order = db.getOrder(orderId);
   const settings = storeSettings(store);
-  const plan = planOrder(order.data, settings, order.overrides, { history: customerHistory(store, order) });
+  const plan = planOrder(order.data, settings, order.overrides, historyOptions(store, order));
   const skipTag = (order.data.tags || []).some((t) => settings.automation.skipTags.map((s) => s.toLowerCase()).includes(t.toLowerCase()));
   const staleValidationError = order.last_error?.step === 'validate' && !plan.blocking;
   const updated = db.updateOrder(orderId, {
@@ -138,7 +145,8 @@ export function importOrder(store, normalized, { source = 'sync' } = {}) {
 
   const settings = storeSettings(store);
   const fresh = db.getOrder(order.id);
-  if (!existing && settings.automation.autoProcess && fresh.status === 'ready' && !plan.blocking && !plan.hold && !skipTag) {
+  // Automatic processing is a plan feature (Growth and up); on other plans the setting is kept but idle.
+  if (!existing && settings.automation.autoProcess && can(store, 'autoProcess') && fresh.status === 'ready' && !plan.blocking && !plan.hold && !skipTag) {
     const runAt = new Date(Date.now() + settings.automation.delayMinutes * 60_000).toISOString();
     enqueue(store.id, 'process_order', { orderId: order.id }, { runAt, key: `process:${order.id}` });
     db.logEvent(store.id, order.id, 'info', 'auto', m('events.autoScheduled', { count: settings.automation.delayMinutes }));
@@ -216,6 +224,16 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
     }
     if (!force && held && !order.awb) {
       return refuse('ORDER_ON_HOLD');
+    }
+    // Monthly limit of the plan: only new live AWBs. Test mode, tracking, labels, cancel, storno and
+    // orders that already have their AWB are never blocked.
+    const limit = planFor(store).limit;
+    if (steps.includes('awb') && !order.awb && !test && limit != null && usageThisPeriod(store) >= limit) {
+      const p = planFor(store);
+      return { ok: false, error: new ProcessingError({
+        code: 'PLAN_LIMIT_REACHED', params: { limit, plan: p.name, next: PLANS[p.id === 'free' ? 'starter' : 'growth'].name },
+        details: { upgradeUrl: upgradeUrl(store) },
+      }).toJSON() };
     }
     db.updateOrder(orderId, { last_error: null });
 

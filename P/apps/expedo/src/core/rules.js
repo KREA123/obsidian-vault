@@ -61,12 +61,14 @@ function test(fact, op, value) {
   }
 }
 
-export function evaluateRules(rules = [], facts) {
+/** locked: fields the store's plan doesn't include (core/plans.js); a rule that tests one never matches. */
+export function evaluateRules(rules = [], facts, { locked = [] } = {}) {
   const actions = {};
   const matched = [];
   for (const rule of rules) {
     if (rule.enabled === false) continue;
     const conds = rule.conditions || [];
+    if (conds.some((c) => locked.includes(c.field))) continue;
     if (conds.every((c) => test(facts[c.field], c.op, c.value))) {
       matched.push(rule.name || rule.id);
       for (const [k, v] of Object.entries(rule.actions || {})) {

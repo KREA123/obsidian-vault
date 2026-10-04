@@ -34,11 +34,15 @@ export function effectiveAddress(order, overrides = {}) {
   return { ...(order.shippingAddress || order.billingAddress || {}), ...(overrides.address || {}) };
 }
 
-/** history: the customer's earlier parcels (core/customers.js customerHistory), when known. */
-export function planOrder(order, settings, overrides = {}, { history } = {}) {
+/**
+ * history: the customer's earlier parcels (core/customers.js customerHistory), when known.
+ * refusalHistory: false when the store's plan doesn't include it (no warning; "refused before" rules don't apply).
+ */
+export function planOrder(order, settings, overrides = {}, { history, refusalHistory = true } = {}) {
+  if (!refusalHistory) history = undefined;
   const rawAddress = effectiveAddress(order, overrides);
   const first = validateAddress(rawAddress);
-  const { actions, matched } = evaluateRules(settings.rules, ruleFacts(order, first.address, history));
+  const { actions, matched } = evaluateRules(settings.rules, ruleFacts(order, first.address, history), { locked: refusalHistory ? [] : ['refusedBefore'] });
 
   const courier = overrides.courier || actions.courier || settings.courier.default || '';
   const { address, issues } = validateAddress(rawAddress, { requireZip: COURIERS_NEEDING_ZIP.has(courier) });

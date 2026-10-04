@@ -5,6 +5,7 @@ import { getShopify } from './shopify/index.js';
 import { ProcessingError, toProcessingError, errorMessage, errorHint } from './core/errors.js';
 import { m } from './i18n/index.js';
 import { applyRetention, pruneAccessLog } from './core/privacy.js';
+import { refreshPlan, planStale, isComplimentary, REFRESH_MS } from './core/plans.js';
 
 // Background jobs stored in SQLite, so nothing is lost on restart.
 // Backoff for retryable failures: 1, 5, 15, 60, 180 minutes.
@@ -29,6 +30,19 @@ export const handlers = {
   },
   async track_store(store) {
     return trackStore(store);
+  },
+  // Pricing plan from Shopify: every 6 hours, or right away (force) after a subscription webhook.
+  async refresh_plan(store, { force = false } = {}) {
+    if (isComplimentary(store) || (!force && !planStale(store))) return { skipped: true };
+    try {
+      await refreshPlan(store, getShopify(store), { source: force ? 'webhook' : 'refresh' });
+    } catch (err) {
+      // Keep the cached plan (never downgrade on an outage) and try again at the next interval.
+      console.error('refresh_plan', store.shop, err.message);
+      db.touchPlanChecked(store.id);
+      return { ok: false };
+    }
+    return { ok: true };
   },
   // Daily: customer data of old finished orders (store setting "Keep customer data"), access log > 1 year.
   async privacy_cleanup(store) {
@@ -86,6 +100,9 @@ export function schedulePeriodic() {
   for (const store of db.listStores()) {
     enqueue(store.id, 'track_store', {}, { key: `track:${store.id}`, runAt: new Date(now + config.trackingIntervalMinutes * 60_000).toISOString(), maxAttempts: 1 });
     if (!store.demo) enqueue(store.id, 'sync_store', { days: 3 }, { key: `sync:${store.id}`, runAt: new Date(now + 15 * 60_000).toISOString(), maxAttempts: 2 });
+    // Never-checked stores (installed before plans existed) right away, the others 6 hours after the last check.
+    const nextPlanCheck = store.plan_checked_at ? Math.max(now, Date.parse(store.plan_checked_at) + REFRESH_MS) : now;
+    if (!isComplimentary(store)) enqueue(store.id, 'refresh_plan', {}, { key: `plan:${store.id}`, runAt: new Date(nextPlanCheck).toISOString(), maxAttempts: 1 });
     enqueue(store.id, 'privacy_cleanup', {}, { key: `privacy:${store.id}`, runAt: new Date(now + 24 * 3600_000).toISOString(), maxAttempts: 2 });
   }
 }

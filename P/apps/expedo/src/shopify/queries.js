@@ -41,7 +41,30 @@ export const ORDER_QUERY = `
 query Order($id: ID!) { order(id: $id) { ...OrderFields } }
 ${FRAGMENTS}`;
 
-export const SHOP_QUERY = `query { shop { name myshopifyDomain currencyCode } }`;
+export const SHOP_QUERY = `query { shop { id name myshopifyDomain currencyCode } }`;
+
+// Legacy / fallback source of the plan (Billing API subscriptions; managed-pricing apps enrolled before
+// April 2026). Dev-store test charges are ACTIVE with test: true and count as active.
+export const CURRENT_PLAN_QUERY = `
+query CurrentPlan {
+  currentAppInstallation {
+    activeSubscriptions {
+      id name status trialDays createdAt currentPeriodEnd test
+      lineItems { plan { pricingDetails { __typename ... on AppRecurringPricing { interval price { amount currencyCode } } } } }
+    }
+  }
+}`;
+
+// Partner API (not the Admin API): Shopify App Pricing's Active Subscription API, 2026-07.
+// Returns null when the shop has no active subscription. Written from the shopify.dev reference.
+export const PARTNER_ACTIVE_SUBSCRIPTION_QUERY = `
+query ActiveSubscription($appId: ID!, $shopId: ID!) {
+  activeSubscription(appId: $appId, shopId: $shopId) {
+    billingPeriod cancelAtEndOfCycle trialEndsAt
+    currentBillingCycle { startTime endTime }
+    items { handle description price { __typename active currency ... on FlatRatePrice { amount } } }
+  }
+}`;
 
 export const FULFILL_MUTATION = `
 mutation Fulfill($fulfillment: FulfillmentInput!) {

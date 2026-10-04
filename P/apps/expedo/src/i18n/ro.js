@@ -90,6 +90,7 @@ export default {
     settingsSaved: 'Setările au fost salvate.',
     integrationSaved: 'Integrarea {provider} a fost salvată.',
     installed: 'Aplicația a fost conectată la magazin.',
+    planChanged: 'Plan: {plan}.',
     jobFailed: 'Sarcina „{job}” a eșuat: {error}',
   },
 
@@ -213,6 +214,11 @@ export default {
     LOGIN_REQUIRED: { message: 'Autentifică-te.' },
     CSRF: { message: 'Cerere respinsă. Reîncarcă pagina.' },
     NO_STORE: { message: 'Niciun magazin conectat. Instalează aplicația din Shopify.' },
+    PLAN_LIMIT_REACHED: {
+      message: 'Ai atins limita planului {plan}: {limit} comenzi pe lună.',
+      hint: 'Treci la un plan superior ({next} sau mai mare) ca să generezi în continuare AWB-uri. Urmărirea coletelor, etichetele, anulările și modul de probă merg în continuare.',
+    },
+    PLAN_FEATURE_LOCKED: { message: 'Disponibil din planul {plan}.', hint: 'Schimbă planul din Setări → Plan.' },
   },
 
   access: {
@@ -954,6 +960,15 @@ export default {
     },
     events: { empty: 'Nimic încă.', downloadCustomer: 'Descarcă datele clientului' },
     files: { customerData: 'date-client.json', cod: 'ramburs.csv' },
+    plan: {
+      availableOn: 'Disponibil în {plan}',
+      historyLocked: 'Vezi câte colete a refuzat clientul înainte. Disponibil în {plan}.',
+      banner: {
+        near: 'Ai folosit {used} din {limit} comenzi luna aceasta, în planul {plan}.',
+        reached: 'Ai atins limita de {limit} comenzi a planului {plan}. AWB-urile noi sunt oprite până pe {date}; urmărirea coletelor, etichetele și modul de probă merg în continuare.',
+        action: 'Schimbă planul',
+      },
+    },
     refused: {
       badge: { one: 'a refuzat 1 colet', other: 'a refuzat {count} colete' },
       title: { one: 'Clientul a refuzat un colet înainte', other: 'Clientul a refuzat {count} colete înainte' },
@@ -1131,7 +1146,7 @@ export default {
       saved: 'Setările au fost salvate.',
       sections: {
         general: 'General', couriers: 'Curieri', invoicing: 'Facturare', automation: 'Automatizări',
-        rules: 'Reguli', packaging: 'Colete', privacy: 'Date clienți',
+        rules: 'Reguli', packaging: 'Colete', privacy: 'Date clienți', plan: 'Plan',
       },
       general: {
         mode: 'Modul de lucru',
@@ -1216,6 +1231,39 @@ export default {
         a6: 'A6 (imprimantă termică 10×15)',
         a4: 'A4',
         openPackage: 'Deschidere colet la livrare, implicit',
+      },
+      plan: {
+        title: 'Planul tău',
+        price: '{price} la 30 de zile',
+        priceFree: 'Gratuit',
+        usage: '{used} / {limit} comenzi luna aceasta',
+        usageUnlimited: { one: '{count} comandă luna aceasta · nelimitat', few: '{count} comenzi luna aceasta · nelimitat', other: '{count} de comenzi luna aceasta · nelimitat' },
+        resets: 'Numărătoarea reîncepe pe {date}',
+        usageHelp: 'Comenzi cu AWB real. Modul de probă nu se numără.',
+        trial: { one: 'Perioadă de probă gratuită: încă {count} zi', few: 'Perioadă de probă gratuită: încă {count} zile', other: 'Perioadă de probă gratuită: încă {count} de zile' },
+        test: 'plată de test',
+        change: 'Schimbă planul',
+        changeHelp: 'Planurile și plata sunt gestionate de Shopify; fiecare plan plătit începe cu 30 de zile gratuite.',
+        check: 'Verifică din nou',
+        checked: 'Planul a fost verificat.',
+        complimentary: 'Magazinul acesta are toate funcțiile Plus, fără limite.',
+        included: 'Inclus',
+        notIncluded: 'În planurile superioare',
+        features: {
+          addressCheck: 'Verificarea adresei și a telefonului',
+          allIntegrations: 'Toți curierii și toate aplicațiile de facturare',
+          testMode: 'Mod de probă',
+          bulk: 'Procesare în bloc',
+          rules: 'Reguli',
+          tracking: 'Urmărirea coletelor',
+          codReconciliation: 'Reconcilierea rambursurilor',
+          autoProcess: 'Procesarea automată a comenzilor noi',
+          refusalHistory: 'Istoricul refuzurilor clientului',
+          codExport: 'Export rambursuri (CSV)',
+          prioritySupport: 'Suport prioritar',
+          multiStore: 'Mai multe magazine într-un singur cont',
+          customIntegration: 'O integrare personalizată, făcută de noi',
+        },
       },
       privacy: {
         title: 'Păstrează datele clienților',

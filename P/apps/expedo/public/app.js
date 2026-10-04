@@ -175,6 +175,7 @@ async function refreshChrome() {
   // The server decides the language (Shopify admin language / store setting); follow it.
   if (state.me.locale && state.me.locale !== i18n.locale) await loadLocale(state.me.locale);
   $('#test-banner').hidden = !state.me.testMode;
+  planBanner(state.me.plan);
   $('#store-name').textContent = state.me.store.name || state.me.store.shop;
   const sw = $('#store-switch');
   if (state.me.stores.length > 1) {
@@ -186,6 +187,37 @@ async function refreshChrome() {
   const nav = $('#nav-attention');
   nav.hidden = !stats.attention;
   nav.textContent = stats.attention;
+}
+
+// ---------- plan ----------
+/** "Available on Growth" note next to a feature the store's plan doesn't include. */
+const lockedNote = (feature) => html`<span class="locked-note">${t('ui.plan.availableOn', { plan: planNameFor(feature) })}</span>`;
+const hasFeature = (feature) => !!state.me?.plan?.features?.[feature];
+// Lowest plan with the feature (same catalog as src/core/plans.js).
+const planNameFor = (feature) => (['multiStore', 'customIntegration'].includes(feature) ? 'Plus' : 'Growth');
+
+/** Shopify's plan selection page: top-level inside the Shopify admin (it is outside the app frame). */
+function openPlanPage(url) {
+  if (!safeUrl(url)) return;
+  if (window.__EMBEDDED__) window.open(url, '_top');
+  else window.open(url, '_blank', 'noopener');
+}
+
+/** Warning banner from 80% of the monthly limit; red once the limit is reached. */
+function planBanner(plan) {
+  const el = $('#plan-banner');
+  if (!plan || !plan.nearLimit) { el.hidden = true; return; }
+  el.className = `banner ${plan.reached ? 'bad' : 'warn'}`;
+  el.innerHTML = html`${plan.reached
+    ? t('ui.plan.banner.reached', { limit: plan.limit, plan: plan.name, date: fmtDay(plan.periodEnd) })
+    : t('ui.plan.banner.near', { used: plan.used, limit: plan.limit, plan: plan.name })}
+    ${plan.upgradeUrl ? html`<a href="${safeUrl(plan.upgradeUrl)}" data-plan-link>${t('ui.plan.banner.action')}</a>` : ''}`;
+  el.hidden = false;
+  bindPlanLinks(el);
+}
+
+function bindPlanLinks(root) {
+  $$('[data-plan-link]', root).forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); openPlanPage(a.getAttribute('href')); }));
 }
 
 // ---------- dashboard ----------
@@ -219,7 +251,7 @@ async function viewDashboard() {
           ${stats.byCourier.length ? html`<table><thead><tr><th>${t('ui.dashboard.courier')}</th><th class="num">${t('ui.dashboard.awbs')}</th><th class="num">${t('ui.dashboard.delivered')}</th><th class="num">${t('ui.dashboard.returned')}</th></tr></thead><tbody>
             ${stats.byCourier.map((c) => html`<tr><td>${courierName(c.courier)}</td><td class="num">${c.c}</td><td class="num">${c.delivered}</td><td class="num">${c.returned}${c.c ? html` <span class="faint small">(${Math.round((c.returned / c.c) * 100)}%)</span>` : ''}</td></tr>`)}
           </tbody></table>` : html`<div class="empty">${t('ui.dashboard.noAwb')}</div>`}
-          <div class="form-actions"><button class="btn small" id="btn-cod">${icon('download')} ${t('ui.dashboard.codExport')}</button><span class="muted small">${t('ui.dashboard.shippingCost', { amount: money(stats.shippingCost30) })}</span></div>
+          <div class="form-actions">${hasFeature('codExport') ? html`<button class="btn small" id="btn-cod">${icon('download')} ${t('ui.dashboard.codExport')}</button>` : html`<button class="btn small" disabled>${icon('download')} ${t('ui.dashboard.codExport')}</button> ${lockedNote('codExport')}`}<span class="muted small">${t('ui.dashboard.shippingCost', { amount: money(stats.shippingCost30) })}</span></div>
         </div>
       </div>
       <div class="card">
@@ -230,7 +262,7 @@ async function viewDashboard() {
     </div>`;
   $$('[data-open]').forEach((tr) => tr.addEventListener('click', () => openOrder(Number(tr.dataset.open))));
   $('#btn-track').onclick = trackNow;
-  $('#btn-cod').onclick = () => download('/cod.csv', t('ui.files.cod'));
+  if ($('#btn-cod')) $('#btn-cod').onclick = () => download('/cod.csv', t('ui.files.cod'));
   bindDataDownloads($('#view'));
 }
 
@@ -522,6 +554,7 @@ async function renderOrder(id) {
           <span class="muted small">${t('ui.order.address.note')}</span></div>
       </form>` : html`<dl class="kv"><dt>${t('ui.order.address.recipient')}</dt><dd>${plan.address.name}${plan.address.company ? ` (${plan.address.company})` : ''}</dd><dt>${t('ui.order.address.phone')}</dt><dd>${plan.address.phone}</dd><dt>${t('ui.order.address.address')}</dt><dd>${plan.address.street}, ${plan.address.city}${plan.address.sector ? `, Sector ${plan.address.sector}` : ''}, ${plan.address.county} ${plan.address.zip}</dd></dl>`}
     </div>
+    ${data.customerLocked ? html`<div class="card"><h2>${t('ui.order.history.title')}</h2><p class="muted small" style="margin:0">${t('ui.plan.historyLocked', { plan: data.customerLocked })}</p></div>` : ''}
     ${customer?.orders.length ? html`<div class="card">
       <h2>${t('ui.order.history.title')} ${customer.returned ? html`<span class="badge warn plain">${t('ui.refused.badge', { count: customer.returned })}</span>` : ''}</h2>
       <p class="muted small" style="margin-top:-6px">${t('ui.order.history.summary', { delivered: customer.delivered, returned: customer.returned })}</p>
@@ -658,7 +691,7 @@ async function viewActivity() {
 }
 
 // ---------- settings ----------
-const SECTIONS = ['general', 'couriers', 'invoicing', 'automation', 'rules', 'packaging', 'privacy'];
+const SECTIONS = ['general', 'plan', 'couriers', 'invoicing', 'automation', 'rules', 'packaging', 'privacy'];
 
 async function viewSettings(section = 'general') {
   setActiveNav('settings');
@@ -681,7 +714,7 @@ async function viewSettings(section = 'general') {
       return null;
     }
   };
-  ({ general: sectionGeneral, couriers: sectionProviders, invoicing: sectionProviders, automation: sectionAutomation, rules: sectionRules, packaging: sectionPackaging, privacy: sectionPrivacy }[section] || sectionGeneral)(el, settings, integrations, save, section);
+  ({ general: sectionGeneral, plan: sectionPlan, couriers: sectionProviders, invoicing: sectionProviders, automation: sectionAutomation, rules: sectionRules, packaging: sectionPackaging, privacy: sectionPrivacy }[section] || sectionGeneral)(el, settings, integrations, save, section);
 }
 
 function sectionGeneral(el, s, integrations, save) {
@@ -736,6 +769,52 @@ function sectionGeneral(el, s, integrations, save) {
     const f = new FormData(e.target);
     save({ fulfillment: { ...s.fulfillment, fulfillInShopify: f.has('fulfillInShopify'), notifyCustomer: f.has('notifyCustomer'), markCodPaidOnDelivery: f.has('markCodPaidOnDelivery'), registerCodPayment: f.has('registerCodPayment'), tags: String(f.get('tags')).split(',').map((t) => t.trim()).filter(Boolean) } });
   });
+}
+
+const PLAN_FEATURES = ['addressCheck', 'allIntegrations', 'testMode', 'bulk', 'rules', 'tracking', 'codReconciliation', 'autoProcess', 'refusalHistory', 'codExport', 'prioritySupport', 'multiStore', 'customIntegration'];
+
+function sectionPlan(el) {
+  const draw = (p) => {
+    const pct = p.limit ? Math.min(100, Math.round((p.used / p.limit) * 100)) : 0;
+    el.innerHTML = html`<div class="card">
+      <h2>${t('ui.settings.plan.title')}</h2>
+      <div class="plan-head">
+        <span class="plan-name">${p.name}</span>
+        <span class="muted">${p.price ? t('ui.settings.plan.price', { price: money(p.price, 'USD') }) : t('ui.settings.plan.priceFree')}</span>
+        ${p.trialDaysLeft ? html`<span class="badge info">${t('ui.settings.plan.trial', { count: p.trialDaysLeft })}</span>` : ''}
+        ${p.test ? html`<span class="pill test">${t('ui.settings.plan.test')}</span>` : ''}
+      </div>
+      ${p.limit != null ? html`
+        <div class="meter ${p.reached ? 'bad' : p.nearLimit ? 'warn' : ''}" role="progressbar" aria-valuemin="0" aria-valuemax="${p.limit}" aria-valuenow="${p.used}"><span style="width:${pct}%"></span></div>
+        <div><strong>${t('ui.settings.plan.usage', { used: p.used, limit: p.limit })}</strong></div>`
+        : html`<p style="margin:10px 0 0"><strong>${t('ui.settings.plan.usageUnlimited', { count: p.used })}</strong></p>`}
+      <p class="muted small" style="margin:4px 0 0">${t('ui.settings.plan.usageHelp')} ${t('ui.settings.plan.resets', { date: fmtDay(p.periodEnd) })}</p>
+      ${p.complimentary ? html`<p class="small" style="margin:12px 0 0">${t('ui.settings.plan.complimentary')}</p>` : html`
+      <div class="form-actions">
+        ${safeUrl(p.upgradeUrl) ? html`<a class="btn primary" href="${safeUrl(p.upgradeUrl)}" data-plan-link>${t('ui.settings.plan.change')}</a>` : ''}
+        <button type="button" class="link small" id="plan-check">${t('ui.settings.plan.check')}</button>
+      </div>
+      <p class="muted small" style="margin:8px 0 0">${t('ui.settings.plan.changeHelp')}</p>`}
+    </div>
+    <div class="card">
+      <h2>${t('ui.settings.plan.included')}</h2>
+      <ul class="plan-features">${PLAN_FEATURES.filter((f) => p.features[f]).map((f) => html`<li>${icon('check')} ${t(`ui.settings.plan.features.${f}`)}</li>`)}</ul>
+      ${PLAN_FEATURES.some((f) => !p.features[f]) ? html`<h3 style="margin-top:16px">${t('ui.settings.plan.notIncluded')}</h3>
+      <ul class="plan-features">${PLAN_FEATURES.filter((f) => !p.features[f]).map((f) => html`<li class="off">${icon('x')} <span>${t(`ui.settings.plan.features.${f}`)} <span class="faint small">· ${planNameFor(f)}</span></span></li>`)}</ul>` : ''}
+    </div>`;
+    bindPlanLinks(el);
+    $('#plan-check', el)?.addEventListener('click', async (e) => {
+      busy(e.currentTarget, true);
+      try {
+        const r = await api('/plan/refresh', { method: 'POST' });
+        toast(t('ui.settings.plan.checked'), 'ok');
+        state.me.plan = r.plan;
+        planBanner(r.plan);
+        draw(r.plan);
+      } catch (err) { toast(err.message, 'bad'); busy(e.currentTarget, false); }
+    });
+  };
+  draw(state.me.plan);
 }
 
 function fieldInput(f, value, isSecret, isSet) {
@@ -863,7 +942,9 @@ function sectionAutomation(el, s, integrations, save) {
   el.innerHTML = html`<div class="card">
     <h2>${t('ui.settings.automation.title')}</h2>
     <form id="f">
-      <label class="check"><input type="checkbox" name="autoProcess" ${a.autoProcess ? 'checked' : ''}> <span><strong>${t('ui.settings.automation.auto')}</strong><br><span class="muted small">${t('ui.settings.automation.autoHelp')}</span></span></label>
+      ${hasFeature('autoProcess')
+        ? html`<label class="check"><input type="checkbox" name="autoProcess" ${a.autoProcess ? 'checked' : ''}> <span><strong>${t('ui.settings.automation.auto')}</strong><br><span class="muted small">${t('ui.settings.automation.autoHelp')}</span></span></label>`
+        : html`<label class="check"><input type="checkbox" disabled> <span><strong>${t('ui.settings.automation.auto')}</strong> ${lockedNote('autoProcess')}<br><span class="muted small">${t('ui.settings.automation.autoHelp')}</span></span></label>`}
       <div class="grid2" style="margin-top:14px">
         <label class="field">${t('ui.settings.automation.delay')} <input type="number" name="delayMinutes" min="0" value="${a.delayMinutes}"><span class="help">${t('ui.settings.automation.delayHelp')}</span></label>
         <label class="field">${t('ui.settings.automation.skipTags')} <input type="text" name="skipTags" value="${a.skipTags.join(', ')}"><span class="help">${t('ui.settings.automation.skipTagsHelp')}</span></label>
@@ -880,7 +961,7 @@ function sectionAutomation(el, s, integrations, save) {
   $('#f', el).addEventListener('submit', (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
-    save({ automation: { ...a, autoProcess: f.has('autoProcess'), delayMinutes: Number(f.get('delayMinutes') || 0), skipTags: String(f.get('skipTags')).split(',').map((t) => t.trim()).filter(Boolean) } });
+    save({ automation: { ...a, autoProcess: hasFeature('autoProcess') ? f.has('autoProcess') : a.autoProcess, delayMinutes: Number(f.get('delayMinutes') || 0), skipTags: String(f.get('skipTags')).split(',').map((t) => t.trim()).filter(Boolean) } });
   });
 }
 
@@ -950,7 +1031,7 @@ function sectionRules(el, s, integrations, save) {
           <button class="btn small" data-up="${ri}" ${ri === 0 ? 'disabled' : ''} title="${t('ui.settings.rules.moveUp')}" aria-label="${t('ui.settings.rules.moveUp')}">↑</button><button class="btn small danger" data-del="${ri}" title="${t('ui.common.remove')}" aria-label="${t('ui.common.remove')}">${icon('x')}</button></div>
         <div class="rule-label">${t('ui.settings.rules.if')}</div>
         ${(r.conditions || []).map((c, ci) => html`<div class="rule-row">
-          <select data-c="${ri}:${ci}:field">${Object.entries(fields).map(([k, f]) => html`<option value="${k}" ${c.field === k ? 'selected' : ''}>${f.label}</option>`)}</select>
+          <select data-c="${ri}:${ci}:field">${Object.entries(fields).map(([k, f]) => html`<option value="${k}" ${c.field === k ? 'selected' : ''} ${f.locked && c.field !== k ? 'disabled' : ''}>${f.locked ? `${f.label} — ${t('ui.plan.availableOn', { plan: f.locked })}` : f.label}</option>`)}</select>
           <select data-c="${ri}:${ci}:op">${Object.entries(ops).map(([k, l]) => html`<option value="${k}" ${c.op === k ? 'selected' : ''}>${l}</option>`)}</select>
           ${fields[c.field]?.type === 'select' ? html`<select data-c="${ri}:${ci}:value">${fields[c.field].options.map(([v, l]) => html`<option value="${v}" ${c.value === v ? 'selected' : ''}>${l}</option>`)}</select>`
             : html`<input type="text" data-c="${ri}:${ci}:value" value="${c.value}">`}
@@ -1018,6 +1099,10 @@ async function boot() {
   } catch (err) {
     if (err.message !== 'login') $('#view').innerHTML = html`<div class="error-box"><strong>${err.message}</strong>${err.info?.hint ? html`<div class="hint">${err.info.hint}</div>` : ''}</div>`;
     return;
+  }
+  // Back from Shopify's plan page (welcome link ?plan_handle=…): re-check the plan with Shopify.
+  if (new URLSearchParams(location.search).has('plan_handle')) {
+    api('/plan/refresh', { method: 'POST' }).then(() => refreshChrome()).catch(() => {});
   }
   window.addEventListener('hashchange', (e) => {
     // Opening/closing the drawer shouldn't re-render the page underneath.

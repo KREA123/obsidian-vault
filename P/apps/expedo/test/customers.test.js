@@ -22,6 +22,7 @@ before(() => {
   ({ store: demo } = seedDemo());
   live = db.upsertStore({ shop: 'real.myshopify.com', name: 'Real', accessToken: 'tok' });
   db.saveStoreSettings(live.id, { courier: { default: 'cargus' } });
+  db.saveStorePlan(live.id, 'growth'); // refusal history is a Growth feature (test/plans.test.js covers lower plans)
   live = db.getStore(live.id);
 });
 
@@ -132,6 +133,7 @@ test('rule field "Colete refuzate înainte": refused > 0 → hold', () => {
   assert.equal(order(mia).status, 'on_hold');
   assert.equal(order({ phone: '0766000222' }).status, 'ready');
   db.saveStoreSettings(live.id, { courier: { default: 'cargus' } });
+  db.saveStorePlan(live.id, 'growth'); // refusal history is a Growth feature (test/plans.test.js covers lower plans)
   live = db.getStore(live.id);
 });
 

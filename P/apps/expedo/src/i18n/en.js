@@ -91,6 +91,7 @@ export default {
     settingsSaved: 'Settings saved.',
     integrationSaved: '{provider} integration saved.',
     installed: 'The app was connected to the store.',
+    planChanged: 'Plan: {plan}.',
     jobFailed: 'Background task “{job}” failed: {error}',
   },
 
@@ -213,6 +214,11 @@ export default {
     LOGIN_REQUIRED: { message: 'Please log in.' },
     CSRF: { message: 'Request rejected. Reload the page.' },
     NO_STORE: { message: 'No store connected. Install the app from Shopify.' },
+    PLAN_LIMIT_REACHED: {
+      message: 'You’ve reached the {plan} plan’s limit of {limit} orders this month.',
+      hint: 'Upgrade your plan ({next} or higher) to keep creating AWBs. Tracking, labels, cancellations and test mode keep working.',
+    },
+    PLAN_FEATURE_LOCKED: { message: 'Available on the {plan} plan and up.', hint: 'Upgrade your plan in Settings → Plan.' },
   },
 
   access: {
@@ -950,6 +956,15 @@ export default {
     },
     events: { empty: 'Nothing yet.', downloadCustomer: 'Download customer data' },
     files: { customerData: 'customer-data.json', cod: 'cod-export.csv' },
+    plan: {
+      availableOn: 'Available on {plan}',
+      historyLocked: 'See how many parcels this customer refused before. Available on {plan}.',
+      banner: {
+        near: 'You’ve used {used} of {limit} orders this month on the {plan} plan.',
+        reached: 'You’ve reached the {limit}-order limit of the {plan} plan. New AWBs are paused until {date}; tracking, labels and test mode keep working.',
+        action: 'Change plan',
+      },
+    },
     refused: {
       badge: { one: 'refused 1 parcel', other: 'refused {count} parcels' },
       title: { one: 'The customer refused one parcel before', other: 'The customer refused {count} parcels before' },
@@ -1127,7 +1142,7 @@ export default {
       saved: 'Settings saved.',
       sections: {
         general: 'General', couriers: 'Couriers', invoicing: 'Invoicing', automation: 'Automation',
-        rules: 'Rules', packaging: 'Parcels', privacy: 'Customer data',
+        rules: 'Rules', packaging: 'Parcels', privacy: 'Customer data', plan: 'Plan',
       },
       general: {
         mode: 'Mode',
@@ -1212,6 +1227,39 @@ export default {
         a6: 'A6 (10×15 thermal printer)',
         a4: 'A4',
         openPackage: 'Open package on delivery, by default',
+      },
+      plan: {
+        title: 'Your plan',
+        price: '{price} every 30 days',
+        priceFree: 'No charge',
+        usage: '{used} / {limit} orders this month',
+        usageUnlimited: { one: '{count} order this month · unlimited', other: '{count} orders this month · unlimited' },
+        resets: 'The count starts again on {date}.',
+        usageHelp: 'Orders with a live AWB. Test mode never counts.',
+        trial: { one: 'Free trial: {count} day left', other: 'Free trial: {count} days left' },
+        test: 'test charge',
+        change: 'Change plan',
+        changeHelp: 'Plans and billing are handled by Shopify; every paid plan starts with a 30-day free trial.',
+        check: 'Check again',
+        checked: 'Plan checked.',
+        complimentary: 'This store has every Plus feature, with no limits.',
+        included: 'Included',
+        notIncluded: 'On higher plans',
+        features: {
+          addressCheck: 'Address & phone check',
+          allIntegrations: 'All couriers and invoicing apps',
+          testMode: 'Test mode',
+          bulk: 'Bulk processing',
+          rules: 'Rules',
+          tracking: 'Parcel tracking',
+          codReconciliation: 'COD reconciliation',
+          autoProcess: 'Automatic processing of new orders',
+          refusalHistory: 'Customer refusal history',
+          codExport: 'COD export (CSV)',
+          prioritySupport: 'Priority support',
+          multiStore: 'Multiple stores under one account',
+          customIntegration: 'One custom integration, set up by us',
+        },
       },
       privacy: {
         title: 'Keep customer data',

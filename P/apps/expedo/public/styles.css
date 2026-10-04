@@ -252,3 +252,17 @@ table.static tbody tr { cursor: default; }
   #app { display: block; }
   body { background: #fff; }
 }
+
+/* Pricing plan: Settings → Plan, usage banner, "Available on Growth" notes */
+.banner.bad { background: var(--bad-soft); color: var(--bad); }
+.plan-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.plan-name { font-size: 22px; font-weight: 700; }
+.meter { height: 8px; border-radius: 99px; background: var(--neutral-soft); overflow: hidden; margin: 8px 0 6px; }
+.meter > span { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.meter.warn > span { background: var(--warn); }
+.meter.bad > span { background: var(--bad); }
+.plan-features { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 16px; }
+.plan-features li { display: flex; gap: 8px; align-items: center; font-size: 13.5px; }
+.plan-features li.off { color: var(--faint); }
+.plan-features svg { flex: none; }
+.locked-note { display: inline-block; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--neutral-soft); border-radius: 99px; padding: 1px 8px; }

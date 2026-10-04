@@ -6,6 +6,7 @@ import * as Q from './queries.js';
 import { mapOrder } from './mapper.js';
 import { clientCredentialsToken } from './auth.js';
 import { storeCache } from '../db.js';
+import { planIdFromName } from '../core/plans.js';
 
 const isOwnStore = (store) => config.shopify.ownStores.includes(store.shop);
 
@@ -135,8 +136,25 @@ export function shopifyClient(store) {
       return userErrors((await gql(Q.TAGS_ADD_MUTATION, { id: gid, tags })).tagsAdd, 'tags');
     },
 
+    /**
+     * The store's active subscription to this app, normalized: { name, status, trialEndsAt, periodEnd, test }
+     * or null (no subscription → Free). Shopify App Pricing: the Partner API when it is configured,
+     * otherwise the Admin API (Billing API / legacy managed pricing).
+     */
+    async activeSubscription() {
+      const p = config.shopify.partner;
+      if (p.orgId && p.token && p.appGid) {
+        const { id: shopId } = (await gql(Q.SHOP_QUERY)).shop;
+        return partnerActiveSubscription(shopId);
+      }
+      const subs = (await gql(Q.CURRENT_PLAN_QUERY)).currentAppInstallation?.activeSubscriptions || [];
+      return adminSubscription(subs);
+    },
+
     async registerWebhooks(baseUrl) {
-      const topics = ['ORDERS_CREATE', 'ORDERS_UPDATED', 'ORDERS_CANCELLED', 'APP_UNINSTALLED'];
+      // APP_SUBSCRIPTIONS_UPDATE: plan changes (delivered only to Billing API / pre-April-2026 managed pricing;
+      // the worker re-checks every 6 hours anyway).
+      const topics = ['ORDERS_CREATE', 'ORDERS_UPDATED', 'ORDERS_CANCELLED', 'APP_UNINSTALLED', 'APP_SUBSCRIPTIONS_UPDATE'];
       const results = [];
       for (const topic of topics) {
         const res = await gql(Q.WEBHOOK_CREATE_MUTATION, { topic, sub: { uri: `${baseUrl}/webhooks/shopify`, format: 'JSON' } });
@@ -147,4 +165,38 @@ export function shopifyClient(store) {
       return results;
     },
   };
+}
+
+/** currentAppInstallation.activeSubscriptions → the active one, normalized (test charges count as active). */
+export function adminSubscription(subs) {
+  const sub = (subs || []).find((x) => String(x?.status).toUpperCase() === 'ACTIVE');
+  if (!sub) return null;
+  const created = Date.parse(sub.createdAt || '');
+  const trialEndsAt = sub.trialDays > 0 && Number.isFinite(created) ? new Date(created + sub.trialDays * 86400_000).toISOString() : null;
+  return { name: sub.name, status: 'ACTIVE', trialEndsAt, periodEnd: sub.currentPeriodEnd || null, test: !!sub.test };
+}
+
+/** Partner API activeSubscription → normalized; the plan is named by an item's handle (or description). */
+export function partnerSubscription(sub) {
+  if (!sub) return null;
+  const labels = (sub.items || []).flatMap((i) => [i?.handle, i?.description]).filter(Boolean);
+  const name = labels.find((l) => planIdFromName(l)) || labels[0] || '';
+  return { name, status: 'ACTIVE', trialEndsAt: sub.trialEndsAt || null, periodEnd: sub.currentBillingCycle?.endTime || null, test: false };
+}
+
+async function partnerActiveSubscription(shopId) {
+  const p = config.shopify.partner;
+  const url = `https://partners.shopify.com/${encodeURIComponent(p.orgId)}/api/${p.apiVersion}/graphql.json`;
+  const { body } = await request('Shopify Partners', url, {
+    method: 'POST',
+    headers: { 'X-Shopify-Access-Token': p.token },
+    json: { query: Q.PARTNER_ACTIVE_SUBSCRIPTION_QUERY, variables: { appId: p.appGid, shopId } },
+  });
+  if (body?.errors?.length) {
+    // Throttled or failed: throw, never read it as "no subscription" (that would downgrade a paying store).
+    throw new ProcessingError({
+      code: 'SHOPIFY_GRAPHQL', params: { text: body.errors.map((e) => e.message).join('; ') }, retryable: true, provider: 'shopify', details: body.errors,
+    });
+  }
+  return partnerSubscription(body?.data?.activeSubscription);
 }

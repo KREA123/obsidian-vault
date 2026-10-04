@@ -164,6 +164,9 @@ function migrate() {
   const eventCols = new Set(db.prepare('PRAGMA table_info(events)').all().map((c) => c.name));
   if (!eventCols.has('key')) db.exec('ALTER TABLE events ADD COLUMN key TEXT');
   if (!eventCols.has('params')) db.exec('ALTER TABLE events ADD COLUMN params TEXT');
+  // Pricing plan cache (core/plans.js): plan id, what Shopify said (JSON), when it was last checked.
+  const storeCols = new Set(db.prepare('PRAGMA table_info(stores)').all().map((c) => c.name));
+  for (const c of ['plan', 'plan_info', 'plan_checked_at']) if (!storeCols.has(c)) db.exec(`ALTER TABLE stores ADD COLUMN ${c} TEXT`);
   db.exec(`CREATE INDEX IF NOT EXISTS orders_phone ON orders(store_id, phone_hash);
     CREATE INDEX IF NOT EXISTS orders_email ON orders(store_id, email_hash);
     CREATE INDEX IF NOT EXISTS orders_finished ON orders(store_id, finished_at);`);
@@ -220,7 +223,15 @@ export function listStores() {
   return db.prepare('SELECT * FROM stores WHERE uninstalled_at IS NULL ORDER BY id').all().map(hydrateStore);
 }
 function hydrateStore(row) {
-  return { ...row, demo: !!row.demo, settings: j(row.settings, {}), accessToken: row.access_token ? decrypt(row.access_token) : null };
+  return { ...row, demo: !!row.demo, settings: j(row.settings, {}), plan_info: j(row.plan_info, {}), accessToken: row.access_token ? decrypt(row.access_token) : null };
+}
+/** A failed plan check: keep the cached plan, check again after the usual interval. */
+export function touchPlanChecked(storeId) {
+  db.prepare('UPDATE stores SET plan_checked_at = ? WHERE id = ?').run(new Date().toISOString(), storeId);
+}
+/** Caches the store's pricing plan (core/plans.js). */
+export function saveStorePlan(storeId, plan, info = {}) {
+  db.prepare('UPDATE stores SET plan = ?, plan_info = ?, plan_checked_at = ? WHERE id = ?').run(plan, JSON.stringify(info), new Date().toISOString(), storeId);
 }
 export function upsertStore({ shop, name, accessToken, scopes, demo = false }) {
   db.prepare(`INSERT INTO stores (shop, name, access_token, scopes, demo) VALUES (?, ?, ?, ?, ?)

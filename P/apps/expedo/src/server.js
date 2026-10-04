@@ -24,6 +24,7 @@ import { searchHashes } from './core/identity.js';
 import { customerHistory } from './core/customers.js';
 import * as privacy from './core/privacy.js';
 import { legalPage } from './legal.js';
+import { can, planSummary, refreshPlan, minPlanFor, PLANS } from './core/plans.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -124,6 +125,8 @@ export function createApp() {
       stores: req.session?.admin ? db.listStores().map(publicStore) : [publicStore(req.store)],
       embedded: !!req.embedded,
       testMode: P.isTestMode(req.store),
+      // Pricing plan, usage this period, trial, the Shopify plan page (core/plans.js).
+      plan: planSummary(req.store),
       // Language the API answers in; the SPA loads the matching catalog.
       locale: req.locale,
     });
@@ -149,7 +152,10 @@ export function createApp() {
       invoicers: Object.values(invoicers).filter((c) => c.id !== 'mock').map(describe),
       rules: {
         fields: Object.fromEntries(Object.entries(RULE_FIELDS).map(([k, f]) => [k, {
-          ...f, label: t(L, `rules.fields.${k}`), ...(f.options ? { options: f.options.map((v) => [v, t(L, `rules.values.${k}.${v}`)]) } : {}),
+          ...f, label: t(L, `rules.fields.${k}`),
+          // A field the plan doesn't include: shown, not selectable ("Available on Growth").
+          ...(k === 'refusedBefore' && !can(req.store, 'refusalHistory') ? { locked: PLANS[minPlanFor('refusalHistory')].name } : {}),
+          ...(f.options ? { options: f.options.map((v) => [v, t(L, `rules.values.${k}.${v}`)]) } : {}),
         }])),
         ops: labels(RULE_OPS),
         actions: labels(RULE_ACTIONS),
@@ -195,21 +201,25 @@ export function createApp() {
     const total = d.prepare(`SELECT COUNT(*) c FROM orders WHERE ${where.join(' AND ')}`).get(...args).c;
     const counts = Object.fromEntries(d.prepare('SELECT status, COUNT(*) c FROM orders WHERE store_id = ? GROUP BY status').all(req.store.id).map((r) => [r.status, r.c]));
     // Small badge for customers who refused parcels before (one indexed lookup per row).
-    const orders = rows.map((o) => ({ ...orderSummary(o, req.locale), refusedBefore: o.redacted_at ? 0 : customerHistory(req.store, o, { limit: 0 }).returned }));
+    const history = can(req.store, 'refusalHistory');
+    const orders = rows.map((o) => ({ ...orderSummary(o, req.locale), refusedBefore: o.redacted_at || !history ? 0 : customerHistory(req.store, o, { limit: 0 }).returned }));
     res.json({ orders, total, page, pageSize: limit, counts });
   });
 
   api.get('/orders/:id', (req, res) => {
     const order = ownOrder(req, res);
     if (!order) return;
-    const history = customerHistory(req.store, order);
-    const plan = planOrder(order.data, P.storeSettings(req.store), order.overrides, { history });
+    const opts = P.historyOptions(req.store, order);
+    const history = opts.history;
+    const plan = planOrder(order.data, P.storeSettings(req.store), order.overrides, opts);
     const courier = getCourier(order.courier);
     db.logAccess(req.store.id, { actor: req.actor, action: 'order_view', orderId: order.id, orderName: order.name });
     res.json({
       order: { ...orderSummary(order, req.locale), data: order.data, overrides: order.overrides, trackingUrl: order.awb && courier?.trackingUrl ? courier.trackingUrl(order.awb) : null },
       plan: { courier: plan.courier, service: plan.service, parcels: plan.parcels, weightKg: plan.weightKg, cod: plan.cod, openPackage: plan.openPackage, lockerId: plan.lockerId, matchedRules: plan.matchedRules, address: plan.address, skipInvoice: plan.skipInvoice, hold: plan.hold },
-      customer: { returned: history.returned, refusedCod: history.refusedCod, delivered: history.delivered, orders: history.orders },
+      // Refusal history is a plan feature: null (and customerLocked) on plans without it.
+      customer: history ? { returned: history.returned, refusedCod: history.refusedCod, delivered: history.delivered, orders: history.orders } : null,
+      customerLocked: !history ? PLANS[minPlanFor('refusalHistory')].name : null,
       events: db.orderEvents(order.id).map((e) => db.renderEvent(e, req.locale)),
     });
   });
@@ -350,6 +360,8 @@ export function createApp() {
 
   // COD reconciliation export: what each courier should transfer.
   api.get('/cod.csv', (req, res) => {
+    // The dashboard hides the button on plans without it; a direct call gets a clear answer.
+    if (!can(req.store, 'codExport')) return sendError(req, res, 403, 'PLAN_FEATURE_LOCKED', { plan: PLANS[minPlanFor('codExport')].name });
     const rows = db.getDb().prepare(`SELECT name, courier, awb, cod_amount, awb_at, cod_collected_at, status, invoice_series, invoice_number
       FROM orders WHERE store_id = ? AND cod_amount > 0 AND awb IS NOT NULL ORDER BY awb_at DESC`).all(req.store.id);
     const day = (iso) => (iso ? bucharestDate(new Date(iso)) : '');
@@ -396,6 +408,15 @@ export function createApp() {
 
   api.post('/track', wrap(async (req, res) => {
     res.json(await P.trackStore(req.store));
+  }));
+
+  // Plan and usage; POST re-checks with Shopify (after the merchant comes back from the plan page).
+  api.get('/plan', (req, res) => res.json({ plan: planSummary(req.store) }));
+  api.post('/plan/refresh', wrap(async (req, res) => {
+    let store = req.store;
+    const last = Date.parse(store.plan_checked_at || '');
+    if (!(Number.isFinite(last) && Date.now() - last < 15_000)) store = await refreshPlan(store, getShopify(store), { source: 'manual' });
+    res.json({ plan: planSummary(store) });
   }));
 
   api.get('/settings', (req, res) => res.json({ settings: P.storeSettings(req.store) }));
@@ -624,6 +645,11 @@ async function onInstalled(shop, token) {
   } catch (err) {
     console.error('post-install', err);
   }
+  try {
+    await refreshPlan(db.getStore(store.id), client, { source: 'install' });
+  } catch (err) {
+    console.error('post-install plan', err);
+  }
   store = db.getStore(store.id);
   db.logEvent(store.id, null, 'success', 'install', m('events.installed'));
   // Own key: the periodic 3-day re-sync (key sync:<id>) may already be pending and must not swallow this one.
@@ -643,6 +669,10 @@ function handleWebhook(topic, shop, payload) {
     case 'orders/cancelled':
       // Collapse bursts of updates into one fetch of the full order.
       P.enqueue(store.id, 'sync_order', { gid: payload.admin_graphql_api_id }, { key: `sync_order:${payload.admin_graphql_api_id}`, runAt: new Date(Date.now() + 3000).toISOString() });
+      break;
+    case 'app_subscriptions/update':
+      // Plan changed (or canceled / frozen): re-read it from Shopify rather than trusting the payload alone.
+      P.enqueue(store.id, 'refresh_plan', { force: true }, { key: `plan_now:${store.id}`, maxAttempts: 2 });
       break;
     case 'app/uninstalled':
       db.getDb().prepare(`UPDATE stores SET uninstalled_at = datetime('now'), access_token = NULL WHERE id = ?`).run(store.id);

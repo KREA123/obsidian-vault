@@ -18,6 +18,23 @@ The app is in English, with Romanian as the second language (see [Languages](#la
 
 Also: labels for many orders in one PDF (A6 or A4), a picking list, a COD export (CSV) to reconcile courier payouts, a full history on every order, a dashboard with what needs doing today, and the **refusal history**: if a customer refused a COD parcel before, their new order shows "The customer refused 2 parcels before (out of 5)" before the AWB (and you can make a rule "Parcels refused before > 0 → on hold").
 
+## Pricing
+
+Four plans, billed by Shopify (Shopify App Pricing, formerly Managed Pricing). Prices are in USD every 30 days, and every paid plan has a 30-day free trial:
+
+| Plan | Price | Orders / month | Adds |
+|---|---|---|---|
+| Free | $0 | 50 | all couriers and invoicing apps, address & phone check, test mode, bulk processing, rules, tracking, COD reconciliation |
+| Starter | $14.99 | 1,000 | everything in Free, more orders |
+| Growth | $24.99 | unlimited | automatic processing of new orders, customer refusal history, COD export (CSV), priority support |
+| Plus | $49.99 | unlimited | everything in Growth + multiple stores under one account, one custom integration (set up by us) |
+
+- The **address & phone check is on in every plan**: it is what prevents failed AWBs. Only the monthly limit and the Growth/Plus features are gated.
+- **What counts:** orders with a **live** AWB in the current billing period. Test mode never counts. At the limit, new live AWBs are refused with an "Upgrade your plan" hint. Tracking, labels, canceling, reversing invoices and orders that already have an AWB keep working. A banner appears from 80% of the limit.
+- **Settings → Plan:** the current plan, usage ("37 / 50 orders this month"), trial days left, and **Change plan**, which opens Shopify's plan page.
+- The plan is cached on the store and re-checked on install, on return from the plan page, on the `app_subscriptions/update` webhook and every 6 hours. The demo store and `SHOPIFY_OWN_STORES` are always on Plus.
+- **Setup** (Partner Dashboard plans, the Partner API client, the variables): [`PRICING.md`](PRICING.md). Code: [`src/core/plans.js`](src/core/plans.js).
+
 ## Customer data
 
 - Names, addresses, phone numbers and emails are **encrypted** in the database (AES-256-GCM, key from `APP_SECRET`). Search by name / phone / email works through codes (HMAC), exact matches only; order number, AWB and invoice are searched as before. Older databases are encrypted on their own at first start.
@@ -65,9 +82,10 @@ npm test
 1. **Shopify app:** create the "Expedo" app in the Dev Dashboard (dev.shopify.com). Fill in `client_id` and the URLs in `shopify.app.toml`, then `shopify app deploy`.
    - The app reads names, addresses and phone numbers from orders, so it needs access to **protected customer data** (level 2: name, address, phone, email). Request it in the Partner Dashboard → API access; the questionnaire answers are in `docs/security.md`. For "Privacy policy URL" use `https://<server>/privacy`.
 2. **Server:** `render.yaml` is ready for Render. **Note:** the database is SQLite, so it needs a persistent disk (Starter plan + disk, about $7/month). On the free plan the data is lost on every restart.
-3. **Variables:** see `.env.example`. `APP_SECRET` encrypts customer data, courier passwords and Shopify tokens; never change it after the first start. `PUBLISHER_DETAILS` (tax ID, registered office) appears on the privacy and terms pages.
-4. Install the app on the store → it opens in the Shopify admin → **Settings → Couriers** and **Invoicing**: login details + "Test connection".
-5. Run a few days in **test mode**, then **Settings → General → Live**.
+3. **Variables:** see `.env.example` (for billing: `SHOPIFY_PARTNER_*`, `SHOPIFY_APP_GID`, `SHOPIFY_APP_HANDLE`; see [`PRICING.md`](PRICING.md)). `APP_SECRET` encrypts customer data, courier passwords and Shopify tokens; never change it after the first start. `PUBLISHER_DETAILS` (tax ID, registered office) appears on the privacy and terms pages.
+4. **Plans:** create them in the Partner Dashboard exactly as in [`PRICING.md`](PRICING.md).
+5. Install the app on the store → it opens in the Shopify admin → **Settings → Couriers** and **Invoicing**: login details + "Test connection".
+6. Run a few days in **test mode**, then **Settings → General → Live**.
 
 ## How it's built
 
@@ -76,7 +94,7 @@ npm test
 - `src/couriers/`, `src/invoicing/` — one file per integration, all on the same contract (`contract.js`).
 - `src/i18n/` — the catalogs (English, Romanian) and the translation engine.
 - `src/shopify/` — OAuth, token exchange for the embedded app, webhooks, GraphQL Admin API (2026-07).
-- `src/worker.js` — background jobs (automatic processing, parcel tracking every 30 min, re-sync every 15 min), saved in the database, so nothing is lost on restart.
+- `src/worker.js` — background jobs (automatic processing, parcel tracking every 30 min, re-sync every 15 min, plan check every 6 h), saved in the database, so nothing is lost on restart.
 - `public/` — the dashboard (HTML + plain JS). Works inside the Shopify admin (App Bridge) and on its own, with a password (`ADMIN_PASSWORD`).
 
 ## Testing on a development store

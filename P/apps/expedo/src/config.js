@@ -21,6 +21,17 @@ export const config = {
     // Stores in the app's own organization (e.g. a dev store), connected with the client credentials grant
     // instead of OAuth: no public URL or install flow needed. Comma-separated *.myshopify.com domains.
     ownStores: (env.SHOPIFY_OWN_STORES || '').split(',').map((s) => s.trim()).filter(Boolean),
+    // App handle (shopify.app.toml `handle`): part of the plan selection page URL
+    // https://admin.shopify.com/store/{store_handle}/charges/{app_handle}/pricing_plans
+    appHandle: env.SHOPIFY_APP_HANDLE || 'expedo',
+    // Shopify App Pricing reads the subscription through the Partner API (Active Subscription API).
+    // Without these, the app falls back to the Admin API (currentAppInstallation.activeSubscriptions).
+    partner: {
+      orgId: env.SHOPIFY_PARTNER_ORG_ID || '',
+      token: env.SHOPIFY_PARTNER_API_TOKEN || '',
+      appGid: env.SHOPIFY_APP_GID || '',
+      apiVersion: env.SHOPIFY_PARTNER_API_VERSION || '2026-07',
+    },
   },
   workerIntervalMs: Number(env.WORKER_INTERVAL_MS || 5000),
   trackingIntervalMinutes: Number(env.TRACKING_INTERVAL_MINUTES || 30),
