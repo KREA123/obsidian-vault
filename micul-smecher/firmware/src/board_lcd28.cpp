@@ -25,6 +25,8 @@
 #include <freertos/semphr.h>
 #include <string.h>
 
+#include "Frame.h"  // suflet::presentPlan
+
 #ifndef LCD_BOUNCE_LINES
 #define LCD_BOUNCE_LINES 10
 #endif
@@ -38,6 +40,7 @@
 namespace lcd28 {
 
 using suflet::Rect;
+using suflet::RectList;
 
 // ------------------------------------------------------------ TCA9554 ---
 
@@ -185,7 +188,7 @@ static int front = 0;                  // the buffer being shown
 static volatile uint32_t frames = 0;   // frames the panel finished reading
 static uint32_t switchedAt = 0;        // `frames` when we last switched
 static SemaphoreHandle_t frameSem = nullptr;
-static Rect lastChanged{0, 0, LCD_W, LCD_H};  // what the back buffer still misses
+static RectList lastChanged;  // what the back buffer still misses (all of it until the first present)
 static DisplayStats stats;
 static bool panelOn = true;
 
@@ -264,6 +267,8 @@ bool displayInit() {
   esp_cache_msync(fb[0], LCD_W * LCD_H * 2, ESP_CACHE_MSYNC_FLAG_DIR_C2M);
   esp_cache_msync(fb[1], LCD_W * LCD_H * 2, ESP_CACHE_MSYNC_FLAG_DIR_C2M);
   front = 0;
+  lastChanged.clear();
+  lastChanged.add(Rect{0, 0, LCD_W, LCD_H});
   esp_lcd_panel_draw_bitmap(panel, 0, 0, LCD_W, LCD_H, fb[0]);
   Serial.printf("[lcd] ST7701 480x480 RGB565, 2 PSRAM frame buffers, %d-line bounce buffers, pclk %.1f MHz\n",
                 LCD_BOUNCE_LINES, LCD_PCLK_HZ / 1e6);
@@ -312,11 +317,11 @@ static void copyRect(uint16_t* dst, const Rect& r) {
 #endif
 }
 
-void displayPresent(const Rect& changedIn) {
-  if (!panel || !canvas || changedIn.empty()) return;
-  Rect changed = changedIn;
-  Rect copy = changed;
-  copy.add(lastChanged);
+void displayPresent(const RectList& changed) {
+  if (!panel || !canvas || changed.empty()) return;
+  // this frame's rectangles + the previous frame's (the back buffer missed those): copied one by one,
+  // so two eyes apart cost two eye-sized copies, not the box around both
+  const RectList copy = suflet::presentPlan(changed, lastChanged);
   const int64_t t0 = esp_timer_get_time();
   // the back buffer may still be scanned out right after a switch: wait
   // until the panel finished two frames from the new front buffer
@@ -326,15 +331,14 @@ void displayPresent(const Rect& changedIn) {
   }
   const int64_t t1 = esp_timer_get_time();
   const int back = front ^ 1;
-  copyRect(fb[back], copy);
+  for (int i = 0; i < copy.n; ++i) copyRect(fb[back], copy.r[i]);
   esp_lcd_panel_draw_bitmap(panel, 0, 0, LCD_W, LCD_H, fb[back]);  // a frame buffer: switch, no copy
   front = back;
   switchedAt = frames;
-  lastChanged = changed;
   const int64_t t2 = esp_timer_get_time();
   stats.waitMs = (t1 - t0) / 1000.0f;
   stats.copyMs = (t2 - t1) / 1000.0f;
-  stats.copiedPx = (uint32_t)(copy.w() * copy.h());
+  stats.copiedPx = (uint32_t)copy.pixels();
   ++stats.presents;
 }
 

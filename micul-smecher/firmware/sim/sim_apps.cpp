@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -22,6 +23,7 @@
 #include "Os.h"
 #include "Personality.h"
 #include "app_fixtures.h"
+#include "sim_util.h"
 
 using namespace suflet;
 
@@ -52,7 +54,12 @@ struct AppSim {
   std::vector<Pending> pending;
   bool cloudUp = true, haveFix = true, speaker = true;
   double composeMs = 0;
-  int composed = 0;
+  int composed = 0, composedAll = 0;  // composedAll: every frame (callgrind collects them all)
+  uint64_t copiedPx = 0, changedPx = 0, repairPx = 0;
+  RectList lastChanged;
+  int fullRepairs = 0;
+  
+  FILE* hashF = nullptr;  // SIM_HASH=1: one hash per composed frame (tools/perf_bench.py --check)
   std::string dir;
   int shot = 0;
   FILE* manifest = nullptr;
@@ -100,6 +107,7 @@ struct AppSim {
   }
   ~AppSim() {
     if (manifest) fclose(manifest);
+    if (hashF) fclose(hashF);
   }
 
   std::string answer(Fetch k, const std::string& path, int& st) {
@@ -166,9 +174,28 @@ struct AppSim {
     brain.update(dt, in);
     if (!render) return;
     const auto t0 = std::chrono::high_resolution_clock::now();
-    comp.compose(os);
+    const Rect ch = comp.compose(os);
     composeMs += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
     ++composed;
+    ++composedAll;
+    changedPx += comp.stats().changedPx;
+    copiedPx += presentCost(comp.changedList(), lastChanged);
+    
+    repairPx += comp.stats().repairPx;
+    fullRepairs += comp.stats().repairPx >= (uint32_t)(W * H);
+    if (getenv("SIM_VERIFY")) {  // incremental vs the UI and the face drawn whole (sim_main.cpp has the same)
+      static std::vector<uint16_t> ref;
+      ref.assign(fb.size(), 0);
+      Canvas rc(W, H, ref.data());
+      os.render(rc);
+      os.face().renderEyes(rc);
+      os.face().renderRings(rc, nullptr, false);
+      int n = 0;
+      for (size_t i = 0; i < ref.size(); ++i) n += ref[i] != fb[i];
+      if (n) fprintf(stderr, "frame %d view %s: %d px differ\n", composedAll - 1, viewName(os.view()), n);
+    }
+    dumpPpm(cv, (dir + "/apps").c_str(), composedAll - 1);
+    if (hashF) fprintf(hashF, "%016llx\n", (unsigned long long)frameHash(fb.data(), fb.size()));
   }
   void run(float s) {
     for (int i = 0; i < (int)(s * 30 + 0.5f); ++i) step();
@@ -419,9 +446,14 @@ void benchGames(AppSim& s) {
 int appsMode(const std::string& dir, const std::string& which, int px) {
   const DisplayGeometry g = px == 466 ? displays::kAmoled175 : displays::kLcd28;
   AppSim s(g, dir);
+  if (getenv("SIM_HASH")) s.hashF = fopen((dir + "/" + which + ".hash").c_str(), "wb");
   if (which == "bench_maps") benchMaps(s);
   else if (which == "bench_games") benchGames(s);
   else allApps(s);
   printf("%s: %d frames, compose %.2f ms/frame on this PC\n", which.c_str(), s.composed, s.composeMs / (s.composed ? s.composed : 1));
+  printf("BENCH %s composed=%d changed_px=%.0f copied_px=%.0f repair_px=%.0f full_repairs=%d\n", which.c_str(),
+         s.composedAll, (double)s.changedPx / (s.composedAll ? s.composedAll : 1),
+         (double)s.copiedPx / (s.composedAll ? s.composedAll : 1), (double)s.repairPx / (s.composedAll ? s.composedAll : 1),
+         s.fullRepairs);
   return 0;
 }

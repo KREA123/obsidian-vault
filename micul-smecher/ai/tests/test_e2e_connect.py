@@ -16,9 +16,12 @@ No real key exists anywhere: the fake keys only steer the fake LLM ("bad", "rate
 """
 from __future__ import annotations
 
+import datetime as dt
 import logging
 import sys
+import time
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -37,6 +40,15 @@ from suflet_ai.soul import SoulService
 
 API_TOKEN = "dev-e2e-token"
 ALLOWANCE = 4
+# The cloud's clock for these tests: a Wednesday morning that moves on in real time. The scenario's
+# reminder is due in 2 h, so with the wall clock the test failed from 21:00 to 04:00 (a due time in the
+# night needs a tap on SOUL to accept, mcp_remote NIGHT_FROM/NIGHT_TO) and the weekday alarm depended on the day.
+CLOCK_START = (2026, 9, 30, 10, 0)
+
+
+def moving_clock(tz: str, start=CLOCK_START):
+    t0, base = time.monotonic(), dt.datetime(*start, tzinfo=ZoneInfo(tz))
+    return lambda: base + dt.timedelta(seconds=time.monotonic() - t0)
 
 
 @pytest.fixture
@@ -55,7 +67,8 @@ def cloud(tmp_path, monkeypatch, caplog):
         monkeypatch.setenv(k, v)
     for k in ("SOUL_BRAIN_A_KILL", "SOUL_CLAUDE_MODEL", "SOUL_OPENAI_RELAY_MODEL", "SOUL_TRUST_PROXY"):
         monkeypatch.delenv(k, raising=False)
-    svc = SoulService(settings=Settings(data_dir=str(tmp_path)), master_secret=b"m" * 32)
+    settings = Settings(data_dir=str(tmp_path))
+    svc = SoulService(settings=settings, master_secret=b"m" * 32, clock=moving_clock(settings.timezone))
     gw = Gateway(svc, DeviceStore(str(tmp_path / "gateway.sqlite"), host=host, policy="pending", pepper=b"p" * 32))
     mailbox = DevMailbox()
     app = create_app(service=svc, gateway=gw, mailer=mailbox, db_path=str(tmp_path / "auth.sqlite"))

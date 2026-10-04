@@ -758,7 +758,7 @@ void EyeRenderer::overlays(Canvas& cv, const EyeRig& rig, const Design& d, float
 }
 
 void EyeRenderer::render(Canvas& cv, const EyeRig& rig, const Design& d, float cx, float cy, float D,
-                         const RenderOpts& o) {
+                         const RenderOpts& o, RectList* parts) {
   if (D < 2) return;
   const double td = rig.time();
   const float shk = rig.ch(Ch_shake), bnc = clampf_(rig.ch(Ch_bounce), 0, 1.5f);
@@ -777,9 +777,30 @@ void EyeRenderer::render(Canvas& cv, const EyeRig& rig, const Design& d, float c
     sx /= sq;
   }
   ras_.setDiscClip(cx, cy, D * 0.5f);  // eyes.js clips everything to the glass disc
-  drawEye(cv, rig, d, -1, cx, cy, D, sx, sy, G, oo);
-  drawEye(cv, rig, d, 1, cx, cy, D, sx, sy, G, oo);
-  if (o.overlays) overlays(cv, rig, d, cx, cy, D, G, oo.alpha);
+  if (!parts) {
+    drawEye(cv, rig, d, -1, cx, cy, D, sx, sy, G, oo);
+    drawEye(cv, rig, d, 1, cx, cy, D, sx, sy, G, oo);
+    if (o.overlays) overlays(cv, rig, d, cx, cy, D, G, oo.alpha);
+  } else {  // the same drawing; the canvas's dirty box is taken apart per eye (two boxes, not one wide one)
+    const Rect before = cv.dirty();
+    cv.resetDirty();
+    drawEye(cv, rig, d, -1, cx, cy, D, sx, sy, G, oo);
+    const Rect left = cv.dirty();
+    cv.resetDirty();
+    drawEye(cv, rig, d, 1, cx, cy, D, sx, sy, G, oo);
+    const Rect right = cv.dirty();
+    cv.resetDirty();
+    if (o.overlays) overlays(cv, rig, d, cx, cy, D, G, oo.alpha);
+    const Rect over = cv.dirty();
+    parts->add(left);
+    parts->add(right);
+    parts->add(over);
+    cv.resetDirty();
+    cv.markDirty(before);
+    cv.markDirty(left);
+    cv.markDirty(right);
+    cv.markDirty(over);
+  }
   ras_.clearDiscClip();
 }
 

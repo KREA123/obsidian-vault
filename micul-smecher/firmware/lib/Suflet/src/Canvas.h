@@ -29,6 +29,67 @@ struct Rect {
   }
 };
 
+// A few disjoint rectangles: what changed on the glass this frame (the two eyes and a key apart are two
+// small rectangles, not one box over the whole face). add() merges a rectangle into any it touches, and
+// into a neighbour when one box would cost little more than the two (each rectangle is one more pass of
+// the UI under a clip); with no room left the cheapest pair is merged. Drawing every rectangle in turn
+// gives the same pixels as drawing their bounding box once (each pass clears and redraws its area).
+struct RectList {
+  static constexpr int kMax = 6;
+  Rect r[kMax];
+  int n = 0;
+  bool empty() const { return n == 0; }
+  void clear() { n = 0; }
+  static int64_t area(const Rect& a) { return a.empty() ? 0 : (int64_t)a.w() * a.h(); }
+  static Rect hull(Rect a, const Rect& b) {
+    a.add(b);
+    return a;
+  }
+  // worth one box: they touch, or the box wastes at most a quarter of it plus a strip of 2K px
+  static bool mergeable(const Rect& a, const Rect& b) {
+    const int64_t u = area(hull(a, b));
+    return (a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1) || u - area(a) - area(b) <= u / 16 + 512;
+  }
+  Rect bounds() const {
+    Rect b;
+    for (int i = 0; i < n; ++i) b.add(r[i]);
+    return b;
+  }
+  int64_t pixels() const {
+    int64_t s = 0;
+    for (int i = 0; i < n; ++i) s += area(r[i]);
+    return s;
+  }
+  void add(Rect a) {
+    if (a.empty()) return;
+    for (int i = 0; i < n;) {
+      if (mergeable(r[i], a)) {
+        a = hull(a, r[i]);
+        r[i] = r[--n];
+        i = 0;  // the bigger box may now reach another one
+        continue;
+      }
+      ++i;
+    }
+    if (n < kMax) {
+      r[n++] = a;
+      return;
+    }
+    int bi = 0;
+    int64_t best = -1;
+    for (int i = 0; i < n; ++i) {
+      const int64_t grow = area(hull(r[i], a)) - area(r[i]);
+      if (best < 0 || grow < best) best = grow, bi = i;
+    }
+    const Rect m = hull(r[bi], a);
+    r[bi] = r[--n];
+    add(m);
+  }
+  void add(const RectList& o) {
+    for (int i = 0; i < o.n; ++i) add(o.r[i]);
+  }
+};
+
 inline float clampf(float v, float a, float b) { return v < a ? a : (v > b ? b : v); }
 
 class Canvas {

@@ -31,8 +31,9 @@ class EyeRenderer {
  public:
   bool begin(int canvasW, int canvasH);
   // cx, cy: centre of the face; D: the face diameter (eyes.js D).
+  // parts (optional): the rectangles each eye and the overlays touched
   void render(Canvas& cv, const EyeRig& rig, const Design& d, float cx, float cy, float D,
-              const RenderOpts& o = RenderOpts());
+              const RenderOpts& o = RenderOpts(), RectList* parts = nullptr);
   const EyeGeom& eye(int i) const { return eyes_[i]; }
   Raster& raster() { return ras_; }
 

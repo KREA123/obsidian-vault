@@ -192,7 +192,7 @@ bool SoulFace::ringRefreshDue() const {
   return t_ - look_.t >= 1.0f / 12.0f;
 }
 
-void SoulFace::renderEyes(Canvas& cv) {
+void SoulFace::renderEyes(Canvas& cv, RectList* parts) {
   const float S = (float)(W_ < H_ ? W_ : H_);
   const float D = S * lay_[0];
   const float cx = W_ * 0.5f + lay_[1] * S, cy = H_ * 0.5f + lay_[2] * S;
@@ -200,10 +200,10 @@ void SoulFace::renderEyes(Canvas& cv) {
   o.hetero = hetero;
   o.alpha = dim;
   if (motion_.active() && motionOn) o.motion = &pose_;
-  if (D > 2) ren_.render(cv, rig_, kDesigns[design_], cx, cy, D, o);
+  if (D > 2) ren_.render(cv, rig_, kDesigns[design_], cx, cy, D, o, parts);
 }
 
-void SoulFace::renderRings(Canvas& cv, const Rect* repair, bool refresh) {
+void SoulFace::renderRings(Canvas& cv, const RectList* repair, bool refresh) {
   if (refresh) {
     look_.listen = fListen_;
     look_.alert = fAlert_;
@@ -215,10 +215,6 @@ void SoulFace::renderRings(Canvas& cv, const Rect* repair, bool refresh) {
     look_.flashCol = flashCol_;
   }
   if (!look_.any()) return;
-  if (!refresh && repair) {
-    if (repair->empty()) return;
-    cv.setClip(*repair);
-  }
   // one light at a time on the rim (no glow on the device: flat rings)
   const float S = (float)(W_ < H_ ? W_ : H_);
   Raster& ras = ren_.raster();
@@ -227,20 +223,31 @@ void SoulFace::renderRings(Canvas& cv, const Rect* repair, bool refresh) {
     if (a <= 0.01f) return;
     ras.ring(cv, R, R, 0.47f * S - w * 0.5f, w, c, a > 1 ? 1 : a, a0, a1);
   };
-  const float lv = look_.level;
-  if (look_.listen > 0.01f) ring(Rgb::hex(0x9FC6FF), (0.3f + 0.3f * (0.5f + 0.5f * sinf(t * 3)) + 0.35f * lv) * look_.listen, 0.01f * S + 0.02f * S * lv);
-  if (look_.alert > 0.01f) {
-    const float pz = 0.5f + 0.5f * sinf(t * 5);
-    ring(Rgb::hex(0xFFB347), (0.3f + 0.45f * pz) * look_.alert, 0.012f * S + 0.008f * S * pz);
-  }
-  if (look_.think > 0.01f) {
-    const float a = t * 2.4f - 1.5707963f;
-    ring(Rgb::hex(0xFFB347), 0.85f * look_.think, 0.012f * S, a, a + 0.9f);
-  }
-  if (look_.flash > 0.01f) ring(look_.flashCol, 0.55f * look_.flash, 0.012f * S);
-  if (look_.progress > 0.005f) {
-    const float a0 = -1.5707963f;
-    ring(Rgb::hex(0xC9F2E4), 0.95f, 0.028f * S, a0, a0 + 6.2831853f * (look_.progress < 0.999f ? look_.progress : 0.999f));
+  auto draw = [&]() {
+    const float lv = look_.level;
+    if (look_.listen > 0.01f) ring(Rgb::hex(0x9FC6FF), (0.3f + 0.3f * (0.5f + 0.5f * sinf(t * 3)) + 0.35f * lv) * look_.listen, 0.01f * S + 0.02f * S * lv);
+    if (look_.alert > 0.01f) {
+      const float pz = 0.5f + 0.5f * sinf(t * 5);
+      ring(Rgb::hex(0xFFB347), (0.3f + 0.45f * pz) * look_.alert, 0.012f * S + 0.008f * S * pz);
+    }
+    if (look_.think > 0.01f) {
+      const float a = t * 2.4f - 1.5707963f;
+      ring(Rgb::hex(0xFFB347), 0.85f * look_.think, 0.012f * S, a, a + 0.9f);
+    }
+    if (look_.flash > 0.01f) ring(look_.flashCol, 0.55f * look_.flash, 0.012f * S);
+    if (look_.progress > 0.005f) {
+      const float a0 = -1.5707963f;
+      ring(Rgb::hex(0xC9F2E4), 0.95f, 0.028f * S, a0, a0 + 6.2831853f * (look_.progress < 0.999f ? look_.progress : 0.999f));
+    }
+  };
+  if (refresh || !repair) {
+    draw();
+  } else {
+    for (int i = 0; i < repair->n; ++i) {  // the last look again, inside each repaired rectangle
+      if (repair->r[i].empty()) continue;
+      cv.setClip(repair->r[i]);
+      draw();
+    }
   }
   cv.clearClip();
 }

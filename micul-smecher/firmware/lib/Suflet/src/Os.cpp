@@ -1825,11 +1825,19 @@ float Os::backlight(float hour, const Brain& b) const {
 }
 
 Rect Os::takeDirty() {
-  Rect r = dirty_;
-  if (dirtyAll_) r = Rect{0, 0, g_.w, g_.h};
+  RectList l;
+  takeDirty(l);
+  return l.bounds();
+}
+
+void Os::takeDirty(RectList& out) {
+  out = dirty_;
+  if (dirtyAll_) {
+    out.clear();
+    out.add(Rect{0, 0, g_.w, g_.h});
+  }
   dirtyAll_ = false;
-  dirty_ = Rect{};
-  return r;
+  dirty_.clear();
 }
 
 // ------------------------------------------------------------ persistence ---

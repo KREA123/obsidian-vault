@@ -71,14 +71,22 @@ class SoulFace {
     renderEyes(cv);
     renderRings(cv, nullptr, false);
   }
-  void renderEyes(Canvas& cv);
+  // parts: where each eye and the overlays landed (one rectangle each)
+  void renderEyes(Canvas& cv, RectList* parts = nullptr);
   // The rim rings change at most 12 times a second (or every frame while
   // the approve arc fills). refresh = draw the current look everywhere (the
   // caller repaired the whole glass); otherwise redraw the last look inside
   // `repair` only (nullptr = everywhere), so the moving eyes don't erase it.
-  void renderRings(Canvas& cv, const Rect* repair, bool refresh);
+  void renderRings(Canvas& cv, const RectList* repair, bool refresh);
   bool ringRefreshDue() const;
   bool ringsActive() const;  // a ring is lit now
+  bool ringsShown() const { return look_.any(); }  // the last look drawn has a ring
+  // could a rim ring (any of them, any width, with its anti-aliasing) reach into r?
+  bool ringMayTouch(const Rect& r) const {
+    const float S = (float)(W_ < H_ ? W_ : H_), c = S * 0.5f, inner = 0.44f * S - 3;
+    const float dx = fmaxf(fabsf(r.x0 - c), fabsf(r.x1 - c)), dy = fmaxf(fabsf(r.y0 - c), fabsf(r.y1 - c));
+    return dx * dx + dy * dy >= inner * inner;
+  }
   Raster& raster() { return ren_.raster(); }
   const eyes::EyeRig& rig() const { return rig_; }
   eyes::EyeRig& rig() { return rig_; }

@@ -279,7 +279,10 @@ bool Raster::begin(int w, int h) {
   orderCap_ = 4096;
   order_ = (uint16_t*)malloc(sizeof(uint16_t) * orderCap_);
   active_ = (uint16_t*)malloc(sizeof(uint16_t) * orderCap_);
-  return acc_ && run_ && cross_ && order_ && active_ && scratch_.reserve(64 * 64);
+  cross2_ = (Cross*)malloc(sizeof(Cross) * crossCap_);
+  slotOf_ = (uint16_t*)malloc(sizeof(uint16_t) * orderCap_);
+  new_ = (uint16_t*)malloc(sizeof(uint16_t) * orderCap_);
+  return acc_ && run_ && cross_ && order_ && active_ && cross2_ && slotOf_ && new_ && scratch_.reserve(64 * 64);
 }
 
 void Raster::cover(const Path& p, Mask& m, FillRule rule) {
@@ -306,6 +309,17 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
   int next = 0, nActive = 0;
   const float fx0 = (float)x0;
   const bool nonzero = rule == FillRule::NonZero;
+  // The crossings of each sub-scanline in x order, ties in the order the active list holds the edges
+  // (1.7 gathered them in that order and insertion-sorted them stably; the tie order decides whether a
+  // span closes and reopens at a shared x, which can move a pixel by one level, so it is kept). With
+  // many edges (a spiral pupil: 60+ crossings) the active order is far from x order, so instead the
+  // previous sub-scanline's sorted crossings are re-evaluated in that order (nearly sorted already) and
+  // sorted by (x, slot in the active list): exactly the 1.7 order, at a fraction of the moves.
+  Cross* cur = cross_;
+  Cross* prev = cross2_;
+  int prevN = 0;
+  bool warm = false;
+  constexpr uint16_t kGone = 0xFFFF;
 
   for (int row = 0; row < h; ++row) {
     const int y = y0 + row;
@@ -315,45 +329,96 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
     int subs = 0;
     for (int s = 0; s < kSub; ++s) {
       const float sy = y + (s + 0.5f) / kSub;
-      while (next < n && E[order_[next]].y0 <= sy) active_[nActive++] = order_[next++];
-      int nc = 0;
-      for (int i = 0; i < nActive;) {
-        const Path::Edge& e = E[active_[i]];
-        if (e.y1 <= sy) {  // finished: remove (order does not matter)
-          active_[i] = active_[--nActive];
+      int nNew = 0;
+      while (next < n && E[order_[next]].y0 <= sy) {
+        const uint16_t id = order_[next++];
+        slotOf_[id] = (uint16_t)nActive;
+        active_[nActive++] = id;
+        new_[nNew++] = id;
+      }
+      for (int i = 0; i < nActive;) {  // finished edges leave; the last one takes the slot (as in 1.7)
+        const uint16_t id = active_[i];
+        if (E[id].y1 <= sy) {
+          slotOf_[id] = kGone;
+          if (i < --nActive) {
+            active_[i] = active_[nActive];
+            slotOf_[active_[i]] = (uint16_t)i;
+          }
           continue;
-        }
-        if (e.y0 <= sy && nc < crossCap_) {
-          cross_[nc].x = e.x0 + (sy - e.y0) * e.dxdy - fx0;
-          cross_[nc].dir = e.dir;
-          ++nc;
         }
         ++i;
       }
+      int nc = 0;
+      bool nan = false;
+      auto put = [&](uint16_t id, uint16_t k) {
+        const Path::Edge& e = E[id];
+        const float cx = e.x0 + (sy - e.y0) * e.dxdy - fx0;
+        Cross& c = cur[nc++];
+        c.x = cx;
+        c.dir = e.dir;
+        c.id = id;
+        c.k = k;
+        nan |= !(cx == cx);
+      };
+      if (nActive > crossCap_) {  // more than 1.7 kept (it dropped the rest in slot order): 1.7's way
+        for (int i = 0; i < crossCap_; ++i) put(active_[i], (uint16_t)i);
+        nan = true;
+      } else if (warm) {
+        for (int i = 0; i < prevN; ++i) {
+          const uint16_t id = prev[i].id, k = slotOf_[id];
+          if (k != kGone) put(id, k);
+        }
+        for (int i = 0; i < nNew; ++i)
+          if (slotOf_[new_[i]] != kGone) put(new_[i], slotOf_[new_[i]]);
+      } else {
+        for (int i = 0; i < nActive; ++i) put(active_[i], (uint16_t)i);
+      }
+      if (nan) {  // NaN (never from lineTo, which drops NaN points) or overflow: 1.7's sort, verbatim
+        for (int i = 0; i < nc; ++i) prev[cur[i].k] = cur[i];
+        Cross* t = cur;
+        cur = prev;
+        prev = t;
+        for (int i = 1; i < nc; ++i) {
+          const Cross c = cur[i];
+          int j = i - 1;
+          while (j >= 0 && cur[j].x > c.x) {
+            cur[j + 1] = cur[j];
+            --j;
+          }
+          cur[j + 1] = c;
+        }
+        warm = false;
+      } else {
+        for (int i = 1; i < nc; ++i) {
+          const Cross c = cur[i];
+          int j = i - 1;
+          while (j >= 0 && (cur[j].x > c.x || (cur[j].x == c.x && cur[j].k > c.k))) {
+            cur[j + 1] = cur[j];
+            --j;
+          }
+          cur[j + 1] = c;
+        }
+        warm = true;
+      }
+      // this order is the next sub-scanline's starting point
+      Cross* const C = cur;
+      cur = prev;
+      prev = C;
+      prevN = nc;
       if (nc < 2) {
         single = false;
         continue;
-      }
-      // insertion sort: crossings are few and nearly sorted row to row
-      for (int i = 1; i < nc; ++i) {
-        const Cross c = cross_[i];
-        int j = i - 1;
-        while (j >= 0 && cross_[j].x > c.x) {
-          cross_[j + 1] = cross_[j];
-          --j;
-        }
-        cross_[j + 1] = c;
       }
       int wind = 0, spans = 0;
       float start = 0;
       for (int i = 0; i < nc; ++i) {
         const bool was = nonzero ? wind != 0 : (wind & 1);
-        wind += cross_[i].dir;
+        wind += C[i].dir;
         const bool is = nonzero ? wind != 0 : (wind & 1);
         if (!was && is) {
-          start = cross_[i].x;
+          start = C[i].x;
         } else if (was && !is) {
-          float xa = start, xb = cross_[i].x;
+          float xa = start, xb = C[i].x;
           if (xa < 0) xa = 0;
           if (xb > (float)w) xb = (float)w;
           if (xb <= xa) continue;
@@ -401,10 +466,12 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
       acc_[x] = 0;
     }
     if (f1 > f0) {
-      // nothing was accumulated strictly inside a single-span interior: the
-      // running sum at f1 is the sum at f0 plus the deltas in between (none)
-      for (int x = f0; x < f1; ++x) r += run_[x];
-      for (int x = f0; x < f1; ++x) run_[x] = acc_[x] = 0;
+      // a single-span interior: every sub-scanline covers each of its pixels fully (64 each, from the
+      // run or, where a span starts exactly on the pixel, from acc), so coverage there is exactly 256
+      // and the running sum after it is 256 - acc at its last pixel: no need to walk the run
+      r = 256 - acc_[f1 - 1];
+      memset(run_ + f0, 0, sizeof(int16_t) * (size_t)(f1 - f0));
+      memset(acc_ + f0, 0, sizeof(int16_t) * (size_t)(f1 - f0));
     }
     for (int x = f1 > f0 ? f1 : f0; x < hi; ++x) {
       r += run_[x];

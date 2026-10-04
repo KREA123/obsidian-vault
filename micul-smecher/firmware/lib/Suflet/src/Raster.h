@@ -205,9 +205,13 @@ class Raster {
   uint16_t* active_ = nullptr;
   struct Cross {
     float x;
+    uint16_t id, k;  // the edge, and its slot in the active list (the tie order)
     int8_t dir;
   };
   Cross* cross_ = nullptr;
+  Cross* cross2_ = nullptr;      // the previous sub-scanline's crossings, sorted (cover() swaps the two)
+  uint16_t* slotOf_ = nullptr;   // edge -> its slot in active_ (0xFFFF: finished)
+  uint16_t* new_ = nullptr;      // edges that became active on this sub-scanline
   int crossCap_ = 0;
   Mask scratch_;
   bool disc_ = false;

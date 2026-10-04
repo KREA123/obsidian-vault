@@ -384,6 +384,7 @@ void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, S
   const float glowR = s.glowA > 0 ? 15.0f : 0.0f;
   const float pad = (glowR > kShadowR + kShadowDy ? glowR : kShadowR + kShadowDy) + 1;
   Rect r{(int)floorf(bx0 - pad), (int)floorf(by0 - pad), (int)ceilf(bx1 + pad), (int)ceilf(by1 + pad)};
+  const int fullX0 = r.x0 > 0 ? r.x0 : 0;  // the left edge with no clip but the canvas
   r = cv.clip(r);
   if (r.empty()) return;
   cv.markDirty(r);
@@ -407,10 +408,13 @@ void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, S
     const uint16_t* fr = see ? frost_ + (size_t)(y + kMargin + dy_) * bw_ + kMargin + dx_ : nullptr;
     // the solid middle of the row: straight through the LUTs (most of a panel's pixels)
     float fxa = 0, fxb = -1;
-    int ia = 0, ib = 0;
+    int ia = 0, ib = 0, iaFull = 0;
     if (inner(py, fxa, fxb) && s.alpha >= 0.999f) {
       ia = (int)ceilf(fxa - 0.5f);
       ib = (int)floorf(fxb - 0.5f) + 1;
+      // where an unclipped paint starts the run: the gradient is stepped from there, so a paint under a
+      // smaller clip (one rectangle of a frame's repair) gives exactly the same pixels as a whole one
+      iaFull = ia < fullX0 ? fullX0 : ia;
       if (ia < r.x0) ia = r.x0;
       if (ib > r.x1) ib = r.x1;
     }
@@ -419,8 +423,8 @@ void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, S
       if (x == ia && ib > ia) {
         const uint8_t* bay = kBayer[y & 3];
         // the gradient step in 16.16 fixed point, stepped along the row (+ the dither)
-        int32_t acc = (int32_t)((((x + 0.5f) * gdx + growBase) * ginv) * 65536.0f);
         const int32_t inc = (int32_t)(gdx * ginv * 65536.0f);
+        int32_t acc = (int32_t)((((iaFull + 0.5f) * gdx + growBase) * ginv) * 65536.0f) + (x - iaFull) * inc;
         for (; x < ib; ++x, acc += inc) {
           uint16_t f = fr ? fr[x] : 0;
           if (fr && lvl < 32) f = blend565(0, f, lvl);

@@ -1430,6 +1430,7 @@ void runWifiTests();
 void runMemoryTests();
 void runVoiceTests();
 void runAppsTests();
+void runPerfTests();
 
 int main(int, char**) {
   UNITY_BEGIN();
@@ -1508,5 +1509,6 @@ int main(int, char**) {
   runMemoryTests();
   runVoiceTests();
   runAppsTests();
+  runPerfTests();
   return UNITY_END();
 }

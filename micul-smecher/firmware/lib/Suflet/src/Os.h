@@ -290,7 +290,8 @@ class Os {
   // Draw the UI layer (below the eyes) under the canvas clip.
   void render(Canvas& cv);
   // The part of the UI that changed since the last call (redraw + push it).
-  Rect takeDirty();
+  Rect takeDirty();               // the bounding box (and clears)
+  void takeDirty(RectList& out);  // the rectangles (and clears)
   bool wantsTextTouch() const { return true; }
   float fpsHint(const Brain& b) const;
   float backlight(float hour, const Brain& b) const;  // 0..1
@@ -636,7 +637,7 @@ class Os {
 
   // dirty tracking
   bool dirtyAll_ = true;
-  Rect dirty_;
+  RectList dirty_;
   int lastMinute_ = -1;
   View drawnView_ = View::Count;
   mutable std::vector<Item> items_;  // scratch for hit-testing

@@ -184,14 +184,17 @@ static void displayInit() {
   pushBuf = (uint16_t*)heap_caps_malloc(LCD_W * LCD_H * 2, MALLOC_CAP_SPIRAM);
   cv = new Canvas(LCD_W, LCD_H, canvasBuf);
 }
-static void displayPresent(Rect r) {
-  r.x0 &= ~1;  // CO5300 wants even start/size
-  r.y0 &= ~1;
-  r.x1 = min((r.x1 + 1) & ~1, LCD_W);
-  r.y1 = min((r.y1 + 1) & ~1, LCD_H);
-  if (r.empty()) return;
-  for (int y = r.y0; y < r.y1; ++y) memcpy(pushBuf + (y - r.y0) * r.w(), canvasBuf + y * LCD_W + r.x0, r.w() * 2);
-  panel->draw16bitRGBBitmap(r.x0, r.y0, pushBuf, r.w(), r.h());
+static void displayPresent(const RectList& list) {
+  for (int i = 0; i < list.n; ++i) {  // each changed rectangle on its own (the panel keeps the rest)
+    Rect r = list.r[i];
+    r.x0 &= ~1;  // CO5300 wants even start/size
+    r.y0 &= ~1;
+    r.x1 = min((r.x1 + 1) & ~1, LCD_W);
+    r.y1 = min((r.y1 + 1) & ~1, LCD_H);
+    if (r.empty()) continue;
+    for (int y = r.y0; y < r.y1; ++y) memcpy(pushBuf + (y - r.y0) * r.w(), canvasBuf + y * LCD_W + r.x0, r.w() * 2);
+    panel->draw16bitRGBBitmap(r.x0, r.y0, pushBuf, r.w(), r.h());
+  }
 }
 static void backlight(float v) { panel->setBrightness((uint8_t)(v * 255)); }
 static void displayPower(bool on) {
@@ -204,7 +207,7 @@ static void displayInit() {
   if (!lcd28::displayInit()) Serial.println("[lcd] display init FAILED");
   cv = new Canvas(LCD_W, LCD_H, lcd28::displayCanvas());
 }
-static void displayPresent(const Rect& r) { lcd28::displayPresent(r); }
+static void displayPresent(const RectList& r) { lcd28::displayPresent(r); }
 static void backlight(float v) { lcd28::backlight(v); }
 static void displayPower(bool on) { lcd28::displayPower(on); }
 #endif
@@ -1066,9 +1069,9 @@ void loop() {
   const int64_t r0 = esp_timer_get_time();
   int64_t r1 = r0, r2 = r0;
   if (displayOn) {
-    const Rect changed = composer.compose(os);
+    composer.compose(os);
     r1 = esp_timer_get_time();
-    displayPresent(changed);
+    displayPresent(composer.changedList());
     r2 = esp_timer_get_time();
   }
   audioSetFocus(os.soundOn() && !os.ringing() ? &os.sound() : nullptr);  // Music: focus sounds

@@ -9,7 +9,7 @@
 #if defined(SUFLET_BOARD_LCD28)
 #include <stdint.h>
 
-#include "Canvas.h"  // suflet::Rect
+#include "Canvas.h"  // suflet::Rect, RectList
 
 namespace lcd28 {
 
@@ -22,10 +22,11 @@ void buzzer(bool on);
 bool displayInit();
 // The persistent canvas SoulOS draws into (PSRAM, LCD_W x LCD_H RGB565).
 uint16_t* displayCanvas();
-// Push what changed: copies `changed` (+ what the other frame buffer missed)
-// from the canvas into the back frame buffer and makes it the shown one at
-// the next frame boundary. Never writes into the buffer being scanned out.
-void displayPresent(const suflet::Rect& changed);
+// Push what changed: copies the `changed` rectangles (+ what the other frame
+// buffer missed) from the canvas into the back frame buffer and makes it the
+// shown one at the next frame boundary. Never writes into the buffer being
+// scanned out.
+void displayPresent(const suflet::RectList& changed);
 // Restart the RGB transmission at the next VSYNC (after flash writes).
 void displayResync();
 // Panel sleep (backlight off, ST7701 sleep-in, slower pixel clock) / wake.

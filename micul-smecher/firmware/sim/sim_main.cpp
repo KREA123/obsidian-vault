@@ -35,6 +35,7 @@
 #include <openssl/rand.h>
 
 #include "BridgeLink.h"
+#include "sim_util.h"
 #include "sim_cloud.h"
 #include "sim_lan.h"
 
@@ -59,16 +60,23 @@ struct Recorder {
   std::string dir, name;
   FILE* f = nullptr;
   int frames = 0;
+  bool hashOnly = getenv("SIM_HASH") != nullptr;
   std::vector<int> stills;
   std::string extra;  // more JSON fields (",\"pose\":[...]")
   void open() {
-    f = fopen((dir + "/" + name + ".rgb").c_str(), "wb");
+    f = fopen((dir + "/" + name + (hashOnly ? ".hash" : ".rgb")).c_str(), "wb");
     if (!f) {
       perror("open");
       exit(1);
     }
   }
   void frame(const Canvas& cv) {
+    if (hashOnly) {
+      fprintf(f, "%016llx\n", (unsigned long long)frameHash(cv.data(), (size_t)W * H));
+      dumpPpm(cv, (dir + "/" + name).c_str(), frames);  // SIM_DUMP=<frame,frame,...>: those frames as .ppm too
+      ++frames;
+      return;
+    }
     static std::vector<uint8_t> rgb;
     rgb.resize((size_t)W * H * 3);
     for (int i = 0; i < W * H; ++i) {
@@ -129,7 +137,9 @@ struct Sim {
   std::function<void(OsCmd)> onCmd;            // lan mode: the SOUL Bridge commands (a new code, forget)
   float aiDelay = 1.3f;
   double composeMs = 0;
-  uint64_t changedPx = 0;
+  uint64_t changedPx = 0, copiedPx = 0, repairPx = 0;
+  int fullRepairs = 0;  // copied: what the 2.8C's displayPresent() copies into the back buffer
+  RectList lastChanged;
   int composed = 0;
   // the device in space (EyeMotion): roll in the glass plane (+ = counter-clockwise),
   // pitch (+ = top toward you, 90 = face down), yaw (+ = turned to its right), radians.
@@ -146,6 +156,7 @@ struct Sim {
     const eyes::RollResult r = eyes::rollFromMac(gMac);
     BirthInfo b;
     b.design = r.design;
+    if (const char* d = getenv("SIM_DESIGN")) b.design = atoi(d);  // tools/perf_bench.py: every design
     char chip[24];
     snprintf(chip, sizeof chip, "%02X:%02X:%02X:%02X:%02X:%02X", gMac[0], gMac[1], gMac[2], gMac[3], gMac[4], gMac[5]);
     b.chip = chip;
@@ -273,7 +284,48 @@ struct Sim {
     const auto t0 = std::chrono::high_resolution_clock::now();
     const Rect ch = comp.compose(os);
     composeMs += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
-    changedPx += ch.empty() ? 0 : (uint64_t)ch.w() * ch.h();
+    changedPx += comp.stats().changedPx;
+    copiedPx += presentCost(comp.changedList(), lastChanged);
+    repairPx += comp.stats().repairPx;
+    if (getenv("SIM_VERIFY")) {  // debugging the frame pipeline: incremental vs a full redraw of the same state
+      static std::vector<uint16_t> ref((size_t)W * H);
+      static Canvas rc(W, H, ref.data());
+      // an independent reference: the UI and the face drawn whole (rings with the look last drawn)
+      std::fill(ref.begin(), ref.end(), 0);
+      rc.clearClip();
+      os.render(rc);
+      os.face().renderEyes(rc);
+      os.face().renderRings(rc, nullptr, false);
+      Rect bad;
+      int n = 0;
+      for (int y = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x)
+          if (ref[(size_t)y * W + x] != fb[(size_t)y * W + x]) {
+            ++n;
+            bad.add(Rect{x, y, x + 1, y + 1});
+          }
+      if (getenv("SIM_VERIFY_RECTS")) {
+        const FrameStats& st = comp.stats();
+        fprintf(stderr, "  frame %d repair:", composed);
+        for (int i = 0; i < st.repairList.n; ++i) fprintf(stderr, " [%d,%d)-[%d,%d)", st.repairList.r[i].x0, st.repairList.r[i].y0, st.repairList.r[i].x1, st.repairList.r[i].y1);
+        fprintf(stderr, "  eyes:");
+        for (int i = 0; i < st.eyesList.n; ++i) fprintf(stderr, " [%d,%d)-[%d,%d)", st.eyesList.r[i].x0, st.eyesList.r[i].y0, st.eyesList.r[i].x1, st.eyesList.r[i].y1);
+        fprintf(stderr, " rings %d\n", (int)os.face().ringsActive());
+      }
+      if (n && getenv("SIM_VERIFY_DUMP") && atoi(getenv("SIM_VERIFY_DUMP")) == composed) {
+        char w[16];
+        snprintf(w, sizeof w, "%d", composed);
+        setenv("SIM_DUMP", w, 1);
+        dumpPpm(rc, "/tmp/claude-0/vref", composed);
+        dumpPpm(cv, "/tmp/claude-0/vinc", composed);
+      }
+      if (n) {
+        const Rect& rp = comp.stats().repair;
+        fprintf(stderr, "frame %d view %s: %d px differ in [%d,%d)-[%d,%d)  repair box [%d,%d)-[%d,%d) n=%d\n", composed, viewName(os.view()), n,
+                bad.x0, bad.y0, bad.x1, bad.y1, rp.x0, rp.y0, rp.x1, rp.y1, comp.stats().repairList.n);
+      }
+    }
+    fullRepairs += comp.stats().repairPx >= (uint32_t)(W * H);
     ++composed;
     if (render && rec) {
       rec->frame(cv);
@@ -762,6 +814,27 @@ std::vector<Scenario> scenarios() {
            s.run(1.0f);
            s.os.go(View::Home);
            s.run(1.0f);
+         }
+       }},
+      // 1.8 perf pass (firmware/PERF.md, tools/perf_bench.py): one design (SIM_DESIGN=<index>), notifications,
+      // the aura's drift/tilt repaint
+      {"bench_eyes", "Bench: standby on one design (SIM_DESIGN), 4 s", true, [](Sim& s) { s.run(4.0f); }},
+      {"bench_notify", "Bench: notification capsules on standby, one every 1.5 s", true,
+       [](Sim& s) {
+         s.run(0.5f);
+         for (int i = 0; i < 6; ++i) {
+           s.os.toast(i % 2 ? "Ana: dinner at 8? I'll bring figs" : "Timer done: tea", Rgb::hex(0xFFF0C8), 1.2f);
+           s.run(1.5f);
+         }
+       }},
+      {"bench_drift", "Bench: Settings open, the device tilted slowly (aura drift / tilt repaints)", true,
+       [](Sim& s) {
+         s.os.go(View::Settings);
+         s.run(0.6f);
+         for (int i = 0; i < 240; ++i) {
+           s.pitch = 0.35f * sinf(i * 0.03f);
+           s.roll = 0.25f * sinf(i * 0.021f);
+           s.step(true);
          }
        }},
       {"motion", "Motion: level keeping, marble pupils, a spin (dizzy, ufff), double tap, a nod", true,
@@ -1308,6 +1381,7 @@ int lanMode(const std::string& dir, int port) {
 }  // namespace
 
 int appsMode(const std::string& dir, const std::string& which, int px);  // sim_apps.cpp
+int microBench(const std::string& which);                                // sim_bench.cpp
 
 int main(int argc, char** argv) {
   setvbuf(stdout, nullptr, _IOLBF, 0);  // cloud mode is driven line by line through a pipe
@@ -1339,6 +1413,8 @@ int main(int argc, char** argv) {
   }
   if (which == "apps" || which == "bench_maps" || which == "bench_games")  // SoulOS apps (sim_apps.cpp)
     return appsMode(dir, which, argc > 4 ? atoi(argv[4]) : 480);
+  if (which == "bench_json" || which == "bench_memory" || which == "bench_wifi" || which == "bench_boot")
+    return microBench(which);  // sim_bench.cpp: the non-frame work (callgrind: --toggle-collect='suflet_bench_*')
   if (which == "lan") return lanMode(dir, argc > 3 ? atoi(argv[3]) : 0);  // SOUL Bridge on the LAN (see lanMode)
   if (which == "keys") {  // drive it by hand (see keysMode)
     Recorder rec;
@@ -1369,6 +1445,9 @@ int main(int argc, char** argv) {
            sc.name, rec.frames, s.composeMs / (s.composed ? s.composed : 1),
            100.0 * s.changedPx / ((double)W * H * (s.composed ? s.composed : 1)), (unsigned)(glass().rebuilds - rebuilt), sc.caption);
     rebuilt = glass().rebuilds;
+    printf("BENCH %s composed=%d changed_px=%.0f copied_px=%.0f repair_px=%.0f full_repairs=%d ring_passes=%u\n", sc.name, s.composed,
+           (double)s.changedPx / (s.composed ? s.composed : 1), (double)s.copiedPx / (s.composed ? s.composed : 1),
+           (double)s.repairPx / (s.composed ? s.composed : 1), s.fullRepairs, s.comp.stats().ringPasses);
   }
   return 0;
 }
