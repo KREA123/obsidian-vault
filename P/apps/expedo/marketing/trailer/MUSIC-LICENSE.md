@@ -15,7 +15,10 @@
 **How it is used:** `audio.py` downloads the mp3 at build time into a scratch folder. It is not committed, because the licence does not allow redistributing it as a standalone file. The track is 120 BPM (1 beat = 0.5 s, beat grid at 0.047 s + 0.5 k) and is edited to picture on its own grid:
 - video 0–40 s ← track 8–48 s: the filtered intro build sits under the "pain" scene; the drop lands on the Expedo logo at 8 s
 - video 40–44 s ← track 60–64 s: the last two bars of the breakdown, under the "safety" scene
-- video 44–56 s ← track 64–76 s: the second drop on tracking and cash on delivery, then the end card, with a low-pass close and a fade
+- video 44–50 s ← track 64–70 s: the second drop on tracking and cash on delivery
+- video 50–56 s ← track 108–114 s: the track's own last two bars under the end card; the music stops by itself on the downbeat at 54 s, with its natural tail
+
+The bed sits about 3.5 dB under the voice and ducks a further ~7 dB while the voice speaks; the mix is normalized to -14 LUFS with the true peak of the encoded AAC kept at or under -2 dBTP.
 
 An original trailer layer synthesized in `audio.py` sits on top: braams, impacts, sub drops, risers, reversed cymbals, glitches, packing-tape rips, and UI sounds (clicks, key taps, pops, ticks, chimes, whooshes).
 
