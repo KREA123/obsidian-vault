@@ -2,14 +2,15 @@
 """Capture the real Expedo UI for the trailer (Playwright, deviceScaleFactor 2). Re-runnable, one command:
 
   python3 capture.py                                              # frozen snapshot (default APP_DIR)
-  python3 capture.py --app /home/user/obsidian-vault/P/apps/expedo --port 3302    # the current app (English UI)
+  python3 capture.py --app /tmp/claude-0/expedo-snap2/P/apps/expedo --port 3302 --ui-lang en   # → ui/en/
+  python3 capture.py --app /tmp/claude-0/expedo-snap2/P/apps/expedo --port 3302 --ui-lang ro   # → ui/ro/
 
 Starts the app in demo mode on a fresh database (DEMO=1, its own PORT and DB_FILE), drives it through the UI and the
 API (what a merchant would click), and writes:
 
-  ui/<shot>.png          2x screenshots (a page viewport, or one element such as the order drawer)
-  ui/label_<n>.png       pages of the labels PDF (one PDF for the whole bulk run), rasterised by pdftoppm
-  ui/manifest.json(.js)  {shot: {w, h, rects: {name: [x, y, w, h]}}} in CSS px of the shot (image px / 2), plus the UI
+  ui/<lang>/<shot>.png   2x screenshots (a page viewport, or one element such as the order drawer)
+  ui/<lang>/label_<n>.png pages of the labels PDF (one PDF for the whole bulk run), rasterised by pdftoppm
+  ui/<lang>/manifest.json(.js) {shot: {w, h, rects: {name: [x, y, w, h]}}} in CSS px of the shot (image px / 2), plus the UI
                          language, live values (stats, texts) and indices the trailer needs. The trailer only reads
                          ui/, so re-capturing swaps every UI layer (e.g. Romanian → English UI) without touching it.
 
@@ -25,7 +26,7 @@ The app source is never edited. What is set up in the demo database, and why:
     demo customer with a refused parcel is captured. Older builds without the feature get the app's own .warn-box
     markup with the exact message text of src/core/build.js (CUSTOMER_REFUSED_BEFORE), rendered into the drawer.
 
-options / env: --app APP_DIR  --port PORT (3301)  --db DB_FILE  --locale (en-US)  --loc-order (#1110)  --track-order (#1118)
+options / env: --app APP_DIR  --port PORT (3301)  --db DB_FILE  --ui-lang en|ro (→ ui/en, ui/ro)  --locale  --loc-order (#1110)  --track-order (#1118)
                --out DIR (dry run elsewhere; the trailer reads ui/)
 """
 import argparse, json, os, pathlib, re, signal, socket, subprocess, sys, time, urllib.parse, urllib.request
@@ -35,10 +36,12 @@ ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
 ap.add_argument('--app', default=os.environ.get('APP_DIR', '/tmp/claude-0/expedo-snap/P/apps/expedo'))
 ap.add_argument('--port', type=int, default=int(os.environ.get('PORT', 3301)))
 ap.add_argument('--db', default=os.environ.get('DB_FILE', '/tmp/claude-0/trailer-demo.db'))
-ap.add_argument('--locale', default=os.environ.get('UI_LOCALE', 'en-US'), help='browser locale (the app may pick its UI language from it)')
+ap.add_argument('--ui-lang', default=os.environ.get('UI_LANG', 'en'), choices=['en', 'ro'],
+                help='UI language: sets the demo store\'s language setting and the browser locale; output goes to ui/<lang>/')
+ap.add_argument('--locale', default=None, help='browser locale (default: en-US for --ui-lang en, ro-RO for ro)')
 ap.add_argument('--loc-order', default='#1110', help='order that gets the Cargus locality error ("Eforie")')
 ap.add_argument('--track-order', default='#1118', help='ramburs order walked through tracking to delivered')
-ap.add_argument('--out', default=None, help='output folder (default: ui/ next to this script, which the trailer reads)')
+ap.add_argument('--out', default=None, help='output folder (default: ui/<ui-lang>/ next to this script, which the trailer reads)')
 ARGS = ap.parse_args()
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -46,7 +49,8 @@ APP = pathlib.Path(ARGS.app)
 PORT = ARGS.port
 DB = pathlib.Path(ARGS.db)
 BASE = f'http://localhost:{PORT}'
-OUT = pathlib.Path(ARGS.out) if ARGS.out else HERE / 'ui'
+OUT = pathlib.Path(ARGS.out) if ARGS.out else HERE / 'ui' / ARGS.ui_lang
+LOCALE = ARGS.locale or {'en': 'en-US', 'ro': 'ro-RO'}[ARGS.ui_lang]
 FD = HERE / 'fonts'
 MAN = {}
 
@@ -62,7 +66,7 @@ def route(r):
 
 def api(method, path, body=None):
     req = urllib.request.Request(BASE + '/api' + path, method=method, data=None if body is None else json.dumps(body).encode(),
-                                 headers={'X-Expedo-Request': '1', 'Content-Type': 'application/json'})
+                                 headers={'X-Expedo-Request': '1', 'Content-Type': 'application/json', 'X-Expedo-Locale': ARGS.ui_lang})
     with urllib.request.urlopen(req) as r:
         b = r.read()
         return json.loads(b) if r.headers.get('content-type', '').startswith('application/json') else b
@@ -119,7 +123,7 @@ def setup_locality_error(name):
       db.logEvent(row.store_id, row.id, 'error', 'awb', msg, { hint, code: e.code, details: e.details });
       const txt = e.render ? e.render(P.lang) : { message: e.message, hint: e.hint };
       console.log(JSON.stringify({ id: row.id, message: txt.message, hint: txt.hint }));
-    """, name=name, app=str(APP), lang=(ARGS.locale or 'en')[:2])
+    """, name=name, app=str(APP), lang=ARGS.ui_lang)
     print('locality error on', name, ':', r['message'], '|', r['hint'])
     return r['id'], r
 
@@ -261,15 +265,18 @@ REFUSED_FALLBACK = {   # src/core/build.js (CUSTOMER_REFUSED_BEFORE), for builds
 }
 
 def main():
-    OUT.mkdir(exist_ok=True)
+    OUT.mkdir(parents=True, exist_ok=True)
     for f in OUT.glob('*.png'): f.unlink()
     srv = start_server()
     try:
+        # the demo store's UI language (apps with i18n; older builds ignore the unknown setting or answer 400)
+        try: api('PUT', '/settings', {'settings': {'language': ARGS.ui_lang}})
+        except Exception as e: print('language setting not supported:', e)
         refused = refusal_order()                       # find it before we change anything
         loc_id, loc_err = setup_locality_error(ARGS.loc_order)
         with sync_playwright() as p:
             b = p.chromium.launch(args=['--force-color-profile=srgb', '--font-render-hinting=none'])
-            ctx = b.new_context(viewport={'width': 1440, 'height': 900}, device_scale_factor=2, color_scheme='light', locale=ARGS.locale,
+            ctx = b.new_context(viewport={'width': 1440, 'height': 900}, device_scale_factor=2, color_scheme='light', locale=LOCALE,
                                 timezone_id='Europe/Bucharest')
             pg = ctx.new_page(); pg.route('**/*', route)
             pg.on('dialog', lambda d: d.accept())

@@ -5,7 +5,7 @@
 //   node marketing/listing/build.mjs icon screens # only some parts: icon | screens | video | copy
 //
 // Env (all optional):
-//   EXPEDO_APP_DIR   app to run (default: the frozen snapshot if present, else ../..)
+//   EXPEDO_APP_DIR   app to run (default: the frozen snapshot expedo-snap2 if present, else ../..)
 //   PORT             demo server port (3302)
 //   DB_FILE          demo database, recreated on every run (/tmp/claude-0/listing-demo.db)
 //   CHROMIUM_PATH    Chromium for Playwright (/opt/pw-browsers/chromium-1194/chrome-linux/chrome)
@@ -22,10 +22,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
-import { COPY, LIMITS, SCREENSHOTS, MOBILE, FEATURE, INTEGRATIONS } from './copy.mjs';
+import { COPY, LIMITS, SCREENSHOTS, MOBILE, FEATURE, INTEGRATIONS, PRICING } from './copy.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const SNAP = '/tmp/claude-0/expedo-snap/P/apps/expedo';
+const SNAP = '/tmp/claude-0/expedo-snap2/P/apps/expedo';
 const APP_DIR = resolve(process.env.EXPEDO_APP_DIR || (existsSync(SNAP) ? SNAP : join(HERE, '..', '..')));
 const PORT = Number(process.env.PORT || 3302);
 const BASE = `http://localhost:${PORT}`;
@@ -145,35 +145,32 @@ async function orderByName(name) {
  */
 async function stageDemo() {
   await api('/track', { method: 'POST' });
-  const { findLocality } = await import(pathToFileURL(join(APP_DIR, 'src/couriers/locality.js')).href);
+  const mod = (f) => import(pathToFileURL(join(APP_DIR, f)).href);
+  const { findLocality } = await mod('src/couriers/locality.js');
   const rows = ensureFanIlfov().map((d) => [d.name, d.county]);
   let err;
   try {
     findLocality(rows, { city: 'Volutari', county: 'Ilfov' }, { nameOf: (r) => r[0], countyOf: (r) => r[1], sameNameIsSame: true, provider: 'fancourier', providerName: 'FAN Courier' });
   } catch (e) { err = e; }
-  if (!err?.hint?.startsWith('Ai vrut:')) throw new Error('expected an "Ai vrut" locality error');
+  if (err?.code !== 'ADDRESS_CITY_NOT_FOUND' || !/Did you mean/.test(err.hint || '')) throw new Error('expected a "Did you mean" locality error');
 
-  const o = await orderByName('#1116');
-  const { DatabaseSync } = await import('node:sqlite');
-  const db = new DatabaseSync(DB_FILE);
-  db.exec('PRAGMA busy_timeout = 5000');
-  const row = db.prepare('SELECT data FROM orders WHERE id = ?').get(o.id);
-  const data = JSON.parse(row.data);
+  // The app's own db/pipeline modules write the state (same DB file and APP_SECRET as the server).
+  const db = await mod('src/db.js');
+  const P = await mod('src/core/pipeline.js');
+  const { errorMessage, errorHint } = await mod('src/core/errors.js');
+  db.openDb(DB_FILE);
+  const id = (await orderByName('#1116')).id;
+  const o = db.getOrder(id);
+  const data = structuredClone(o.data);
   data.shippingAddress.city = 'Volutari';
-  data.billingAddress.city = 'Volutari';
-  db.prepare('UPDATE orders SET data = ? WHERE id = ?').run(JSON.stringify(data), o.id);
-  db.close();
-  await api(`/orders/${o.id}`, { method: 'PATCH', body: { courier: 'fancourier' } });
-  const db2 = new DatabaseSync(DB_FILE);
-  db2.exec('PRAGMA busy_timeout = 5000');
-  const at = new Date().toISOString();
-  db2.prepare("UPDATE orders SET last_error = ?, status = 'needs_attention' WHERE id = ?")
-    .run(JSON.stringify({ ...err.toJSON(), step: 'awb', at }), o.id);
-  db2.prepare('INSERT INTO events (store_id, order_id, level, step, message, data) VALUES ((SELECT store_id FROM orders WHERE id = ?), ?, ?, ?, ?, ?)')
-    .run(o.id, o.id, 'error', 'awb', err.message, JSON.stringify({ hint: err.hint, code: err.code }));
-  db2.close();
+  if (data.billingAddress) data.billingAddress.city = 'Volutari';
+  db.updateOrder(id, { data, overrides: { ...o.overrides, courier: 'fancourier' } });
+  const store = db.getStore(o.store_id);
+  P.validateOrder(store, id);
+  db.updateOrder(id, { last_error: { ...err.toJSON(), step: 'awb', at: new Date().toISOString() }, status: 'needs_attention' });
+  db.logEvent(store.id, id, 'error', 'awb', errorMessage(err), { hint: errorHint(err), code: err.code, details: err.details });
   log('staged:', err.message, '|', err.hint);
-  return { stagedOrderId: o.id };
+  return { stagedOrderId: id };
 }
 
 // ------------------------------------------------------------------ helpers for captures
@@ -181,7 +178,7 @@ const HIDE_BANNER = '#test-banner{display:none!important}';
 const NO_ANIM = '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}';
 
 async function newAppPage(browser, { width, height, dsf = 2, hideBanner = true, mobile = false }) {
-  const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dsf, isMobile: mobile, hasTouch: mobile, locale: 'ro-RO', timezoneId: 'Europe/Bucharest' });
+  const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dsf, isMobile: mobile, hasTouch: mobile, locale: 'en-US', timezoneId: 'Europe/Bucharest' });
   await routeFonts(context);
   const page = await context.newPage();
   page.on('pageerror', (e) => log('pageerror', e.message));
@@ -274,9 +271,9 @@ async function captureAll(browser, dir) {
   // 5. Tracking + cash on delivery collected (oldest delivered COD order)
   {
     const { orders } = await api('/orders?status=delivered');
-    const cod = orders.filter((o) => o.paymentMethod === 'cod' && o.codCollectedAt).sort((a, b) => a.name.localeCompare(b.name))[0];
+    // Orders processed by the app in this demo (the seeded past orders #10xx have no AWB history).
+    const cod = orders.filter((o) => o.paymentMethod === 'cod' && o.codCollectedAt && o.name >= '#1100').sort((a, b) => a.name.localeCompare(b.name))[0];
     C.deliveredId = cod.id;
-    C.deliveredIds = orders.map((o) => o.id);
     const p = await newAppPage(browser, { width: 1180, height: 1400 });
     await go(p, '#/orders?status=delivered');
     await go(p, `#/orders/${cod.id}`);
@@ -285,7 +282,7 @@ async function captureAll(browser, dir) {
     C.deliveredTop = await cap(p, 'delivered-top', { x: Math.floor(liv.x - 6), y: Math.floor(head.y - 6), width: Math.ceil(liv.width + 12), height: Math.ceil(liv.y + liv.height - head.y + 12) },
       [['.drawer-panel .kv .badge.ok', 5]]);
     // Feature image: the same view for another delivered cash-on-delivery order (unique image)
-    const cod2 = orders.filter((o) => o.paymentMethod === 'cod' && o.codCollectedAt && o.id !== cod.id)[0] || cod;
+    const cod2 = orders.filter((o) => o.paymentMethod === 'cod' && o.codCollectedAt && o.name >= '#1100' && o.id !== cod.id)[0] || cod;
     await go(p, `#/orders/${cod2.id}`);
     {
       const h2 = await p.locator('.drawer-head').boundingBox();
@@ -295,7 +292,7 @@ async function captureAll(browser, dir) {
     }
     await p.setViewportSize({ width: 600, height: 1400 });
     await go(p, `#/orders/${cod.id}`);
-    const hist = p.locator('.drawer-panel .card', { has: p.locator('h2', { hasText: 'Istoric' }) });
+    const hist = p.locator('.drawer-panel .card', { has: p.locator('h2', { hasText: /^\s*History\s*$/ }) });
     C.history = await cap(p, 'history', clipOf(await hist.boundingBox()));
     await p.context().close();
   }
@@ -307,8 +304,8 @@ async function captureAll(browser, dir) {
     const full = { x: 0, y: 0, width: MW, height: MH };
     await go(p, '#/');
     C.mDash = await cap(p, 'm-dash', full);
-    await go(p, `#/orders/${id1116}`);
-    C.mOrder = await cap(p, 'm-order', full);
+    await go(p, `#/orders/${(await orderByName('#1111')).id}`);
+    C.mRefused = await cap(p, 'm-refused', full);
     await go(p, `#/orders/${C.deliveredId}`);
     C.mDelivered = await cap(p, 'm-delivered', full);
     await p.context().close();
@@ -321,7 +318,8 @@ async function captureAll(browser, dir) {
     await p.locator('#check-all').check();
     await p.mouse.move(5, 300);
     await p.waitForTimeout(200);
-    C.bulk = await cap(p, 'bulk', { x: MAIN, y: 0, width: 1060, height: 600 }, [['[data-bulk=all]', 5]]);
+    const id1111 = (await orderByName('#1111')).id;
+    C.bulk = await cap(p, 'bulk', { x: MAIN, y: 0, width: 1060, height: 600 }, [['[data-bulk=all]', 5], [`tr[data-id="${id1111}"] .issue-line.warning`, 5]]);
     const ids = (await api('/orders?status=ready')).orders.map((o) => o.id);
     await p.locator('[data-bulk=all]').click();
     await p.waitForFunction(() => location.hash.includes('ids='), null, { timeout: 30000 });
@@ -402,13 +400,13 @@ const SCENES = {
       `<div class="arrow" style="left:740px;top:${244 + eh + 14}px"></div>` +
       placeShot(C.addressCard, { x: 528, y: 244 + eh + 56, w: 1000, h: 900 - (244 + eh + 56), z: 3, fade: true });
   },
-  bulk: (C, lang) => {
+  bulk: (C) => {
     const labels = C.labels.slice(0, 3).map((f, i) => {
       const { w, h } = pngSize(f);
       const lw = 250, lh = (h / w) * lw;
       return `<div class="shot" style="left:${1240 + i * 42}px;top:${282 + i * 58}px;width:${lw}px;height:${lh}px;z-index:${5 + i};border-radius:6px;transform:rotate(${(i - 1) * 2.2}deg)"><img src="${img(f)}" style="height:${lh}px"></div>`;
     }).join('');
-    const tag = lang === 'en' ? `labels.pdf · ${C.labelCount} A6 labels` : `labels.pdf · ${C.labelCount} etichete A6`;
+    const tag = `labels.pdf · ${C.labelCount} A6 labels`;
     return placeShot(C.bulk, { x: 72, y: 236, w: 1120 }) + labels + `<div class="tag" style="left:1232px;top:${282 + 2 * 58 + 384}px;z-index:9">${esc(tag)}</div>`;
   },
   rules: (C) => placeShot(C.rules, { x: 72, y: 236, w: 1060, h: 664, fade: true }) + placeShot(C.mode, { x: 928, y: 486, w: 600, z: 3 }),
@@ -416,20 +414,20 @@ const SCENES = {
   settings: (C) => placeShot(C.couriers, { x: 72, y: 236, w: 1060, h: 664, fade: true }) + placeShot(C.invoicing, { x: 928, y: 520, w: 600, z: 3 }),
 };
 
-function desktopHtml(scene, lang, C) {
-  const t = SCREENSHOTS.find((s) => s.scene === scene)[lang];
-  return caption(t) + SCENES[scene](C, lang);
+function desktopHtml(scene, C) {
+  const t = SCREENSHOTS.find((s) => s.scene === scene);
+  return caption(t) + SCENES[scene](C);
 }
 
-function mobileHtml(m, lang, C) {
-  const t = m[lang];
-  const c = { 'm-dash': C.mDash, 'm-order': C.mOrder, 'm-delivered': C.mDelivered }[m.scene];
+function mobileHtml(m, C) {
+  const t = m;
+  const c = { 'm-dash': C.mDash, 'm-refused': C.mRefused, 'm-delivered': C.mDelivered }[m.scene];
   return `<div class="cap" data-fit style="left:60px;right:60px;top:70px;height:150px"><h1 style="font-size:50px">${esc(t.title)}</h1></div>` +
     placeShot(c, { x: 60, y: 250, w: 780, radius: 28 });
 }
 
-function featureHtml(lang, C) {
-  const t = FEATURE[lang];
+function featureHtml(C) {
+  const t = FEATURE;
   return `<div style="position:absolute;inset:0;background:${BRAND.cobalt}"></div>
   <div style="position:absolute;left:84px;top:96px;display:flex;align-items:center;gap:18px">
     <svg viewBox="0 0 32 32" width="64" height="64"><rect width="32" height="32" rx="7.5" fill="#fff"/>${ICON_PATHS(32, 1, BRAND.cobalt)}</svg>
@@ -512,11 +510,9 @@ async function buildScreens(browser) {
   const C = await captureAll(browser, capDir);
   await stopServer();
   const out = [];
-  for (const lang of ['en', 'ro']) {
-    for (const s of SCREENSHOTS) out.push(await renderHtml(browser, desktopHtml(s.scene, lang, C), join(HERE, 'screenshots', lang, `${s.id}.png`), { width: 1600, height: 900 }));
-    for (const m of MOBILE) out.push(await renderHtml(browser, mobileHtml(m, lang, C), join(HERE, 'screenshots', lang, 'mobile', `${m.id}.png`), { width: 900, height: 1600 }));
-    out.push(await renderHtml(browser, featureHtml(lang, C), join(HERE, 'feature', `feature-${lang}.png`), { width: 1600, height: 900 }));
-  }
+  for (const s of SCREENSHOTS) out.push(await renderHtml(browser, desktopHtml(s.scene, C), join(HERE, 'screenshots', `${s.id}.png`), { width: 1600, height: 900 }));
+  for (const m of MOBILE) out.push(await renderHtml(browser, mobileHtml(m, C), join(HERE, 'screenshots', 'mobile', `${m.id}.png`), { width: 900, height: 1600 }));
+  out.push(await renderHtml(browser, featureHtml(C), join(HERE, 'feature', 'feature.png'), { width: 1600, height: 900 }));
   copyFileSync(join(capDir, 'labels.pdf'), join(HERE, 'screenshots', 'labels-sample.pdf'));
   return out;
 }
@@ -534,35 +530,42 @@ async function buildScreencast(browser) {
 // ------------------------------------------------------------------ copy docs (generated from copy.mjs, with limit checks)
 function checkLimits() {
   const errs = [];
-  for (const [lang, c] of Object.entries(COPY)) {
-    const chk = (field, v, lim) => { if (v.length > lim) errs.push(`${lang}.${field}: ${v.length} > ${lim}`); };
-    chk('appName', c.appName, LIMITS.appName);
-    for (const a of c.appNameAlternatives || []) chk('appNameAlternative', a, LIMITS.appName);
-    chk('subtitle', c.subtitle, LIMITS.subtitle);
-    chk('introduction', c.introduction, LIMITS.introduction);
-    chk('details', c.details, LIMITS.details);
-    [...c.features, ...c.featuresPending].forEach((f, i) => chk(`feature[${i}]`, f, LIMITS.feature));
-    if (c.searchTerms.length > LIMITS.searchTerms) errs.push(`${lang}.searchTerms: ${c.searchTerms.length} terms`);
-  }
+  const c = COPY;
+  const chk = (field, v, lim) => { if (v.length > lim) errs.push(`${field}: ${v.length} > ${lim}`); };
+  chk('appName', c.appName, LIMITS.appName);
+  for (const a of c.appNameAlternatives || []) chk('appNameAlternative', a, LIMITS.appName);
+  chk('subtitle', c.subtitle, LIMITS.subtitle);
+  chk('introduction', c.introduction, LIMITS.introduction);
+  chk('details', c.details, LIMITS.details);
+  c.features.forEach((f, i) => chk(`feature[${i}]`, f, LIMITS.feature));
+  if (c.searchTerms.length > LIMITS.searchTerms) errs.push(`searchTerms: ${c.searchTerms.length} terms`);
   if (INTEGRATIONS.recommendedSix.length > LIMITS.integrations) errs.push('integrations > 6');
+  if (PRICING.plans.length > LIMITS.publicPlans) errs.push('more than 8 public plans');
+  for (const p of PRICING.plans) {
+    chk(`plan ${p.name} name`, p.name, LIMITS.planName);
+    p.features.forEach((f, i) => chk(`plan ${p.name} feature[${i}]`, f, LIMITS.planFeature));
+  }
+  const prices = /(\$|USD|\bRON\b|\blei\b)\s?\d|\d\s?(\$|USD|RON|lei)\b/i;
+  for (const t of [...SCREENSHOTS.flatMap((x) => [x.title, x.sub]), ...MOBILE.map((x) => x.title), FEATURE.title, FEATURE.sub]) if (prices.test(t)) errs.push(`price in an image caption: ${t}`);
   if (errs.length) throw new Error(`copy over limits:\n${errs.join('\n')}`);
 }
 
 function writeCopyDocs() {
   checkLimits();
-  for (const lang of ['en', 'ro']) {
-    const c = COPY[lang];
-    const L = lang === 'en';
-    const cnt = (s, lim) => `\`${s.length}/${lim}\``;
-    const md = `# Expedo listing copy, ${L ? 'English (primary listing)' : 'Romanian (translated listing)'}
+  const c = COPY;
+  const cnt = (s, lim) => `\`${s.length}/${lim}\``;
+  const usd = (n) => (n === 0 ? 'Free' : `$${n.toFixed(2)} USD ${PRICING.interval}`);
+  const md = `# Expedo listing copy (English, the only listing)
 
-Generated by \`node marketing/listing/build.mjs copy\` from \`copy.mjs\`; edit there, not here.
-Counts are characters as typed in the Partner Dashboard (limits in REQUIREMENTS.md).
+Generated by \`node P/apps/expedo/marketing/listing/build.mjs copy\` from \`copy.mjs\`; edit there, not here.
+Counts are characters as typed in the Partner Dashboard (limits and sources in REQUIREMENTS.md).
 
 ## App name ${cnt(c.appName, LIMITS.appName)}
 
 ${c.appName}
-${c.appNameAlternatives ? `\nAlternatives (must stay "similar" to the TOML name \`Expedo\`, req. 4.1.1): ${c.appNameAlternatives.map((a) => `"${a}" ${cnt(a, LIMITS.appName)}`).join(', ')}\n` : ''}
+
+Alternatives (must stay "similar" to the TOML name \`Expedo\`, req. 4.1.1): ${c.appNameAlternatives.map((a) => `"${a}" ${cnt(a, LIMITS.appName)}`).join(', ')}
+
 ## App card subtitle ${cnt(c.subtitle, LIMITS.subtitle)}
 
 ${c.subtitle}
@@ -579,29 +582,38 @@ ${c.details}
 
 ${c.features.map((f) => `- ${f} ${cnt(f, LIMITS.feature)}`).join('\n')}
 
-${L ? 'Add only after it is live in the app' : 'De adăugat doar după ce e live în aplicație'}:
-${c.featuresPending.map((f) => `- ${f} ${cnt(f, LIMITS.feature)}`).join('\n')}
-
 ## Search terms (max ${LIMITS.searchTerms}, one idea each)
 
 ${c.searchTerms.map((s) => `- ${s}`).join('\n')}
 
+## Languages
+
+${c.languages.join(', ')} (the app UI is usable in both; req. 4.3.2)
+
+## Pricing (Shopify App Pricing, ${PRICING.currency}, billed ${PRICING.interval})
+
+Billing method: ${PRICING.billing}. Free trial: **${PRICING.trialDays} days** on every paid plan (a free plan has nothing to trial).
+Plan display names and top features: shopify.dev gives no character limit; names kept ≤ ${LIMITS.planName} and each feature ≤ ${LIMITS.planFeature} characters (counts below).
+
+${PRICING.plans.map((p) => `### ${p.name} ${cnt(p.name, LIMITS.planName)}: ${usd(p.price)}${p.price ? `, ${PRICING.trialDays}-day free trial` : ''}
+
+${p.features.map((f) => `- ${f} ${cnt(f, LIMITS.planFeature)}`).join('\n')}`).join('\n\n')}
+
 ## Screenshot alt text
 
-${SCREENSHOTS.map((s) => `- \`${lang}/${s.id}.png\`: ${s[lang].alt}`).join('\n')}
-${MOBILE.map((s) => `- \`${lang}/mobile/${s.id}.png\`: ${s[lang].alt}`).join('\n')}
+${SCREENSHOTS.map((s) => `- \`screenshots/${s.id}.png\`: ${s.alt}`).join('\n')}
+${MOBILE.map((s) => `- \`screenshots/mobile/${s.id}.png\`: ${s.alt}`).join('\n')}
 
 ## Feature image alt text
 
-- \`feature-${lang}.png\`: ${FEATURE[lang].alt}
+- \`feature/feature.png\`: ${FEATURE.alt}
 
 ## Screenshot captions (already on the images)
 
-${SCREENSHOTS.map((s) => `- **${s[lang].title}.** ${s[lang].sub}`).join('\n')}
+${SCREENSHOTS.map((s) => `- **${s.title}.** ${s.sub}`).join('\n')}
 `;
-    writeFileSync(join(HERE, `LISTING-COPY.${lang}.md`), md);
-  }
-  log('wrote LISTING-COPY.en.md / LISTING-COPY.ro.md');
+  writeFileSync(join(HERE, 'LISTING-COPY.md'), md);
+  log('wrote LISTING-COPY.md');
 }
 
 // ------------------------------------------------------------------ LISTING.md asset table (from the files on disk)
@@ -631,12 +643,9 @@ function writeAssetTable() {
   add('icon/expedo-icon.svg', 'Vector master of the icon', 'Source');
   add('icon/expedo-icon-rounded.svg', 'Vector master, rounded variant', 'Source');
   add('icon/icon-preview.png', 'Icon at 160/96/64/32 px on light and dark', 'Check only');
-  for (const lang of ['en', 'ro']) {
-    const L = lang === 'en' ? 'English (primary) listing' : 'Romanian listing / translation';
-    add(`feature/feature-${lang}.png`, `Feature image: ${FEATURE[lang].title}`, `**Feature media** (static image), ${L}`);
-    SCREENSHOTS.forEach((sc, i) => add(`screenshots/${lang}/${sc.id}.png`, `Screenshot ${i + 1}: ${sc[lang].title}`, `**Desktop screenshots**, position ${i + 1}, ${L}`));
-    MOBILE.forEach((m, i) => add(`screenshots/${lang}/mobile/${m.id}.png`, `Mobile screenshot ${i + 1}: ${m[lang].title}`, `**Mobile screenshots**, position ${i + 1}, ${L}`));
-  }
+  add('feature/feature.png', `Feature image: ${FEATURE.title}`, '**Feature media** (static image)');
+  SCREENSHOTS.forEach((sc, i) => add(`screenshots/${sc.id}.png`, `Screenshot ${i + 1}: ${sc.title}`, `**Desktop screenshots**, position ${i + 1}`));
+  MOBILE.forEach((m, i) => add(`screenshots/mobile/${m.id}.png`, `Mobile screenshot ${i + 1}: ${m.title}`, `**Mobile screenshots**, position ${i + 1}`));
   add('screenshots/labels-sample.pdf', 'The labels PDF rendered in screenshot 3 (test labels)', 'Reference only');
   add('review/expedo-review-screencast.mp4', 'Screencast for review: real walkthrough of the demo UI, English captions burned in, H.264 CRF 23', '**Testing instructions → screencast** (upload, or unlisted video link)');
   add('review/expedo-review-screencast.en.srt', 'The screencast captions as subtitles', 'Optional: subtitles if uploaded to YouTube/Vimeo');

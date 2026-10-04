@@ -52,7 +52,11 @@ html,body{background:#0b0d12;overflow:hidden}
   <div id="scenes" class="full"></div>
   <div id="fx" class="full" style="pointer-events:none"></div>
 </div>
-<script src="ui/manifest.js"></script>
+<script>
+  // UI layers in the video's language: ui/en/ or ui/ro/ (capture.py --ui-lang); ?ui=en|ro overrides
+  window.UI_DIR = 'ui/' + (new URLSearchParams(location.search).get('ui') || (new URLSearchParams(location.search).get('lang') === 'ro' ? 'ro' : 'en')) + '/';
+  document.write('<script src="' + window.UI_DIR + 'manifest.js"><\/script>');
+</script>
 <script>
 'use strict';
 /* ───────────────────────── params / layout ───────────────────────── */
@@ -64,7 +68,7 @@ const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
 const pick = (h, v) => V ? v : h;
 const BEAT = 0.5, b = n => n * BEAT;          // 120 BPM grid
 const T_END = 56;
-const M = window.UI_MANIFEST;
+const M = window.UI_MANIFEST, UI_DIR = window.UI_DIR;
 document.documentElement.lang = LANG;
 
 /* ───────────────────────── palette ───────────────────────── */
@@ -238,7 +242,7 @@ class Frame {
     this.el = mk('div', 'uif', parent, `width:${fw}px;height:${fh}px;${css}`);
     this.world = mk('div', 'world', this.el);
     this.L = {}; this.ww = M[shots[0]].w; this.wh = M[shots[0]].h;
-    for (const s of shots){ const m = M[s]; const im = mk('img', 'lay', this.world, `width:${m.w}px;height:${m.h}px`); im.src = `ui/${s}.png`; this.L[s] = im; }
+    for (const s of shots){ const m = M[s]; const im = mk('img', 'lay', this.world, `width:${m.w}px;height:${m.h}px`); im.src = `${UI_DIR}${s}.png`; this.L[s] = im; }
     this.over = mk('div', 'a', this.world);
     this.hud = mk('div', 'a', this.el, `width:${fw}px;height:${fh}px`);
     this.cur = mk('div', 'cursor', this.hud, null, CURSOR);
@@ -275,7 +279,7 @@ class Frame {
 // crop div showing part of a 2x screenshot at css size (rect in shot css px)
 function cropEl(parent, shot, r, scale = 1, css = ''){
   const m = M[shot];
-  return mk('div', 'crop', parent, `width:${r.w*scale}px;height:${r.h*scale}px;background-image:url(ui/${shot}.png);
+  return mk('div', 'crop', parent, `width:${r.w*scale}px;height:${r.h*scale}px;background-image:url(${UI_DIR}${shot}.png);
     background-size:${m.w*scale}px ${m.h*scale}px;background-position:${-r.x*scale}px ${-r.y*scale}px;${css}`);
 }
 // highlight ring around a world rect (constant on-screen stroke)
@@ -614,7 +618,7 @@ scene(b(56), b(72), root => {
   // the labels PDF: one page per order (pdftoppm render of the real PDF, top part)
   const LW = pick(360, 420), LH = LW*620/920;
   s.nl = Math.min(6, M.labels.count);
-  s.labels = Array.from({length: s.nl}, (_, i) => mk('div', 'a', root, `width:${LW}px;height:${LH}px;background:#fff url(ui/label_${i+1}.png) no-repeat;
+  s.labels = Array.from({length: s.nl}, (_, i) => mk('div', 'a', root, `width:${LW}px;height:${LH}px;background:#fff url(${UI_DIR}label_${i+1}.png) no-repeat;
       background-size:100% auto;background-position:0 ${-60*LW/920}px;border-radius:10px;box-shadow:0 24px 50px rgba(0,0,0,.35)`));
   s.pdf = mk('div', 'chip', root, `font-size:${pick(30, 32)}px;padding:16px 28px;color:${C.ink};font-family:Archivo;font-weight:800;font-stretch:108%`,
     `<span style="display:inline-flex;width:40px;height:40px;border-radius:10px;background:#d93025;color:#fff;font:800 13px Inter;align-items:center;justify-content:center">PDF</span>${T.pdfTag(M.labels.count)}`);
