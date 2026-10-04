@@ -37,7 +37,7 @@ export async function recordScreencast({ browser, BASE, TMP, HERE, api, orderByN
   const outDir = join(HERE, 'review');
   mkdirSync(outDir, { recursive: true });
 
-  const context = await browser.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: DSF, locale: 'ro-RO', timezoneId: 'Europe/Bucharest' });
+  const context = await browser.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: DSF, locale: 'en-US', timezoneId: 'Europe/Bucharest' });
   await routeFonts(context);
   await context.addInitScript(INIT);
   const page = await context.newPage();
@@ -129,14 +129,14 @@ export async function recordScreencast({ browser, BASE, TMP, HERE, api, orderByN
   const id = async (name) => (await orderByName(name)).id;
   const popup = () => context.waitForEvent('page', { timeout: 15000 });
 
-  setCap('Expedo', 'Screencast for app review. The app UI is in Romanian; these captions explain each step in English.');
+  setCap('Expedo', 'Screencast for app review. The app UI is in English (Romanian is the second language); captions explain each step.');
   await card(`<h2>Screencast for Shopify app review</h2><h1>Expedo: Romanian orders to AWB,<br>invoice and collected cash on delivery</h1>
-    <ul><li>Demo store with 19 Romanian orders, including problem orders</li><li>Test mode: no courier or invoicing account needed, nothing is sent anywhere</li><li>Walkthrough: install, orders, address fix, bulk AWB + invoice, labels, tracking, settings</li></ul>`, 7);
+    <ul><li>Demo store with realistic Romanian orders, including problem orders</li><li>Test mode: no courier or invoicing account needed, nothing is sent anywhere</li><li>Walkthrough: install, orders, address fix, refused-parcel warning, bulk AWB + invoice, labels, tracking, settings</li></ul>`, 7);
 
-  setCap('1 · Install', 'Install on a development store, approve access to orders and fulfillments, then open Expedo from Apps in the Shopify admin.');
+  setCap('1 · Install', 'Install on a development store, approve access, pick a plan (no charge on development stores), then open Expedo from Apps.');
   await card(`<h2>Step 1 · Install</h2><h1>Install and open the app</h1>
     <ol><li>Open the install link for your development store and approve the requested access (orders, merchant-managed fulfillments).</li>
-    <li>Expedo opens inside the Shopify admin: <code>Apps → Expedo</code>.</li>
+    <li>Pick a plan on Shopify’s plan page (free of charge on development stores). Expedo opens inside the admin: <code>Apps → Expedo</code>.</li>
     <li>It imports the last 14 days of orders and listens for new ones.</li>
     <li>New stores start in <b>Test mode</b>: real orders, test AWBs and test invoices.</li></ol>`, 11);
 
@@ -145,13 +145,13 @@ export async function recordScreencast({ browser, BASE, TMP, HERE, api, orderByN
   await moveTo('.stat.alert', { steps: 16 });
   await hold(2.5);
 
-  setCap('3 · Test mode', 'The store is in Test mode (yellow banner): AWBs and invoices are test documents, couriers and invoicing apps are not called, Shopify is not changed.');
+  setCap('3 · Test mode', 'The store is in Test mode (yellow banner): AWBs and invoices are test documents, couriers and invoicing apps are not called, Shopify is not changed. Settings → General also sets the language.');
   await click('#nav a[data-route=settings]', { after: 5.5 });
 
-  setCap('4 · Couriers', 'Five couriers: Cargus, Sameday, FAN Courier, GLS, DPD. On a live store you paste the API credentials and click “Testează conexiunea” (Test connection).');
+  setCap('4 · Couriers', 'Five couriers: Cargus, Sameday, FAN Courier, GLS, DPD. On a live store you paste the API credentials and click “Test connection”.');
   await click('.subnav a[href="#/settings/couriers"]', { after: 3.5 });
   await click('.provider[data-p=sameday]', { after: 3.5 });
-  setCap('4 · Couriers', 'Reviewers: in Test mode no account is needed. Click “Salvează” (Save) with empty fields, then “Folosește ca implicit” (Use as default).');
+  setCap('4 · Couriers', 'Reviewers: in Test mode no account is needed. Click “Save” with empty fields, then “Use as default”.');
   await click('#pf button.btn.primary', { after: 1.6 });
   await click('#make-default', { after: 3 });
 
@@ -161,12 +161,12 @@ export async function recordScreencast({ browser, BASE, TMP, HERE, api, orderByN
   setCap('6 · Rules', 'Rules choose the courier per order: easybox orders go to Sameday, heavy orders get two parcels, large cash-on-delivery orders wait for a check.');
   await click('.subnav a[href="#/settings/rules"]', { after: 6 });
 
-  setCap('7 · Orders', 'Orders with a problem are stopped before any courier call. Each problem says, in Romanian, what is wrong and what to do.');
+  setCap('7 · Orders', 'Orders with a problem are stopped before any courier call. Each problem says what is wrong and what to do.');
   await click('#nav a[data-route=orders]', { after: 1.5 });
   await click('.tabs a[href="#/orders?status=needs_attention"]', { after: 4.5 });
 
   const o1115 = await id('#1115');
-  setCap('8 · Address fix', 'Order #1115 has no county (“Lipsește județul”). Pick it from the list and save: the address is checked again.');
+  setCap('8 · Address fix', 'Order #1115 has no county (“The county is missing.”). Pick it from the list and save: the address is checked again.');
   await click(`tr[data-id="${o1115}"] .order-name`, { after: 2.5 });
   await moveTo('#addr-form select[name=province]');
   await page.locator('#addr-form select[name=province]').selectOption({ label: 'Ilfov' });
@@ -175,27 +175,29 @@ export async function recordScreencast({ browser, BASE, TMP, HERE, api, orderByN
   await click('.drawer-panel [data-close]', { after: 0.8 });
 
   const o1116 = await id('#1116');
-  setCap('8 · Address fix', 'Order #1116: FAN Courier does not know the locality “Volutari”. Expedo suggests “Ai vrut: Voluntari, …?” (Did you mean…?).');
+  setCap('8 · Address fix', 'Order #1116: FAN Courier does not know the locality “Volutari”. Expedo suggests “Did you mean: Voluntari, …?” from the courier’s list.');
   await click(`tr[data-id="${o1116}"] .order-name`, { after: 4 });
   setCap('8 · Address fix', 'Type the right locality and save. The change stays in Expedo; the order in Shopify is not modified.');
   await type('#addr-form input[name=city]', 'Voluntari');
   await click('#addr-form button.btn', { after: 2.5 });
-  setCap('9 · AWB + invoice', '“Generează AWB + factură” creates the AWB at the courier and the invoice. In Test mode both are test documents.');
+  setCap('9 · AWB + invoice', '“Create AWB + invoice” creates the AWB at the courier and the invoice. In Test mode both are test documents.');
   await page.locator('.drawer-panel').evaluate((el) => el.scrollTo(0, 0));
   await click('.drawer-panel [data-act=process]', { after: 4.5 });
   await click('.drawer-panel [data-close]', { after: 0.6 });
 
-  setCap('10 · Bulk', 'Open “Gata de procesat” (Ready), select the orders and click “Generează AWB + factură” once for all of them.');
+  setCap('10 · Bulk', 'Open “Ready to process”, select the orders and click “Create AWB + invoice” once for all of them. Order #1111 is flagged: this customer refused a parcel before.');
   await click('.tabs a[href="#/orders?status=ready"]', { after: 2 });
   const readyIds = (await api('/orders?status=ready')).orders.map((o) => o.id);
   await click('#check-all', { after: 1.2 });
+  await moveTo(`tr[data-id="${await id('#1111')}"] .issue-line.warning`, { steps: 14 });
+  await hold(3);
   await click('[data-bulk=all]', { after: 0 });
   await page.waitForFunction(() => location.hash.includes('ids='), null, { timeout: 30000 });
   await settle(400);
   setCap('10 · Bulk', 'Done: every order has one AWB and one invoice. Clicking again never creates a second AWB or invoice for the same order.');
   await hold(5);
 
-  setCap('11 · Labels', '“Etichete” (Labels) downloads one PDF with every label, A6 or A4. In Test mode the labels are marked as test labels.');
+  setCap('11 · Labels', '“Labels” opens one PDF with every label, A6 or A4. In Test mode the labels are marked as test labels.');
   const pdfPopup = popup();
   await click('[data-bulk=labels]', { after: 0 });
   try { (await pdfPopup).close(); } catch {}
@@ -213,7 +215,7 @@ export async function recordScreencast({ browser, BASE, TMP, HERE, api, orderByN
   await cardPage.waitForFunction(() => [...document.images].every((i) => i.complete));
   await frame(5.5, cardPage);
 
-  setCap('11 · Picking list', '“Listă de picking” (Picking list) adds up the products to pick for the selected orders, ready to print.');
+  setCap('11 · Picking list', '“Picking list” adds up the products to pick for the selected orders, ready to print.');
   const pickPopup = popup();
   await click('[data-bulk=picking]', { after: 0 });
   try {
@@ -225,24 +227,24 @@ export async function recordScreencast({ browser, BASE, TMP, HERE, api, orderByN
     await pp.close();
   } catch (e) { log('picking popup:', e.message); }
 
-  setCap('12 · Tracking', 'Parcels are checked every 30 minutes, or on demand with “Verifică coletele” (Check parcels).');
+  setCap('12 · Tracking', 'Parcels are checked every 30 minutes, or on demand with “Check parcels”.');
   await click('#nav a[data-route=dashboard]', { after: 1 });
   await click('#btn-track', { after: 3.5 });
 
-  const delivered = (await api('/orders?status=delivered')).orders.filter((o) => o.paymentMethod === 'cod' && o.codCollectedAt).sort((a, b) => a.name.localeCompare(b.name))[0];
-  setCap('12 · Cash on delivery', 'A delivered cash-on-delivery parcel is marked collected (“încasat”). On a live store the order is also marked paid in Shopify.');
+  const delivered = (await api('/orders?status=delivered')).orders.filter((o) => o.paymentMethod === 'cod' && o.codCollectedAt && o.name >= '#1100').sort((a, b) => a.name.localeCompare(b.name))[0];
+  setCap('12 · Cash on delivery', 'A delivered cash-on-delivery parcel is marked “collected”. On a live store the order is also marked paid in Shopify.');
   await go(`#/orders?status=delivered`);
   await click(`tr[data-id="${delivered.id}"] .order-name`, { after: 1 });
   await moveTo('.drawer-panel .kv .badge.ok', { steps: 14 });
   await hold(4.5);
   setCap('12 · History', 'Every step is in the order history: import, AWB, invoice, tracking, delivery, cash collected and payment recorded on the invoice.');
-  const hist = page.locator('.drawer-panel .card', { has: page.locator('h2', { hasText: 'Istoric' }) });
+  const hist = page.locator('.drawer-panel .card', { has: page.locator('h2', { hasText: /^\s*History\s*$/ }) });
   await hist.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(150);
   await hold(5.5);
   await click('.drawer-panel [data-close]', { after: 0.4 });
 
-  setCap('13 · COD export', '“Export ramburs (CSV)” exports cash-on-delivery amounts per parcel, to check courier payments.');
+  setCap('13 · COD export', '“COD export (CSV)” exports cash-on-delivery amounts per parcel, to check courier payments.');
   await go('#/', 0.8);
   await moveTo('#btn-cod', { steps: 16 });
   await hold(4);

@@ -32,26 +32,16 @@ Partner Dashboard → Apps → Expedo → Distribution → Shopify App Store →
 | `icon/expedo-icon.svg` | 1 KB | Vector master of the icon | Source |
 | `icon/expedo-icon-rounded.svg` | 1 KB | Vector master, rounded variant | Source |
 | `icon/icon-preview.png` | 900×300, 24 KB | Icon at 160/96/64/32 px on light and dark | Check only |
-| `feature/feature-en.png` | 1600×900, 99 KB | Feature image: From order to AWB, invoice and collected cash | **Feature media** (static image), English (primary) listing |
-| `screenshots/en/01-dashboard.png` | 1600×900, 221 KB | Screenshot 1: See what needs doing today | **Desktop screenshots**, position 1, English (primary) listing |
-| `screenshots/en/02-address-check.png` | 1600×900, 142 KB | Screenshot 2: Fix the address before the courier rejects it | **Desktop screenshots**, position 2, English (primary) listing |
-| `screenshots/en/03-bulk-awb-invoice.png` | 1600×900, 258 KB | Screenshot 3: AWB and invoice for many orders at once | **Desktop screenshots**, position 3, English (primary) listing |
-| `screenshots/en/04-rules-test-mode.png` | 1600×900, 197 KB | Screenshot 4: Your rules, tried safely in test mode | **Desktop screenshots**, position 4, English (primary) listing |
-| `screenshots/en/05-tracking-cod.png` | 1600×900, 163 KB | Screenshot 5: Track every parcel until the cash is in | **Desktop screenshots**, position 5, English (primary) listing |
-| `screenshots/en/06-couriers-invoicing.png` | 1600×900, 140 KB | Screenshot 6: Connect your couriers and invoicing | **Desktop screenshots**, position 6, English (primary) listing |
-| `screenshots/en/mobile/m1-dashboard.png` | 900×1600, 162 KB | Mobile screenshot 1: Today's orders, on your phone too | **Mobile screenshots**, position 1, English (primary) listing |
-| `screenshots/en/mobile/m2-order.png` | 900×1600, 182 KB | Mobile screenshot 2: Fix an address from anywhere | **Mobile screenshots**, position 2, English (primary) listing |
-| `screenshots/en/mobile/m3-delivered.png` | 900×1600, 172 KB | Mobile screenshot 3: Delivered and cash collected, at a glance | **Mobile screenshots**, position 3, English (primary) listing |
-| `feature/feature-ro.png` | 1600×900, 106 KB | Feature image: De la comandă la AWB, factură și ramburs încasat | **Feature media** (static image), Romanian listing / translation |
-| `screenshots/ro/01-dashboard.png` | 1600×900, 220 KB | Screenshot 1: Vezi dintr-o privire ce ai de făcut azi | **Desktop screenshots**, position 1, Romanian listing / translation |
-| `screenshots/ro/02-address-check.png` | 1600×900, 140 KB | Screenshot 2: Adresa greșită, prinsă înainte de curier | **Desktop screenshots**, position 2, Romanian listing / translation |
-| `screenshots/ro/03-bulk-awb-invoice.png` | 1600×900, 262 KB | Screenshot 3: AWB și factură pentru mai multe comenzi deodată | **Desktop screenshots**, position 3, Romanian listing / translation |
-| `screenshots/ro/04-rules-test-mode.png` | 1600×900, 200 KB | Screenshot 4: Regulile tale, verificate în modul de probă | **Desktop screenshots**, position 4, Romanian listing / translation |
-| `screenshots/ro/05-tracking-cod.png` | 1600×900, 164 KB | Screenshot 5: Urmărești coletul până încasezi rambursul | **Desktop screenshots**, position 5, Romanian listing / translation |
-| `screenshots/ro/06-couriers-invoicing.png` | 1600×900, 141 KB | Screenshot 6: Conectezi curierii și programul de facturare | **Desktop screenshots**, position 6, Romanian listing / translation |
-| `screenshots/ro/mobile/m1-dashboard.png` | 900×1600, 161 KB | Mobile screenshot 1: Comenzile de azi, și pe telefon | **Mobile screenshots**, position 1, Romanian listing / translation |
-| `screenshots/ro/mobile/m2-order.png` | 900×1600, 181 KB | Mobile screenshot 2: Corectezi adresa de oriunde | **Mobile screenshots**, position 2, Romanian listing / translation |
-| `screenshots/ro/mobile/m3-delivered.png` | 900×1600, 168 KB | Mobile screenshot 3: Livrat și încasat, dintr-o privire | **Mobile screenshots**, position 3, Romanian listing / translation |
+| `feature/feature.png` | 1600×900, 97 KB | Feature image: From order to AWB, invoice and collected cash | **Feature media** (static image) |
+| `screenshots/01-dashboard.png` | 1600×900, 207 KB | Screenshot 1: See what needs doing today | **Desktop screenshots**, position 1 |
+| `screenshots/02-address-check.png` | 1600×900, 139 KB | Screenshot 2: Fix the address before the courier rejects it | **Desktop screenshots**, position 2 |
+| `screenshots/03-bulk-awb-invoice.png` | 1600×900, 259 KB | Screenshot 3: AWB and invoice for many orders at once | **Desktop screenshots**, position 3 |
+| `screenshots/04-rules-test-mode.png` | 1600×900, 202 KB | Screenshot 4: Your rules, tried safely in test mode | **Desktop screenshots**, position 4 |
+| `screenshots/05-tracking-cod.png` | 1600×900, 158 KB | Screenshot 5: Track every parcel until the cash is in | **Desktop screenshots**, position 5 |
+| `screenshots/06-couriers-invoicing.png` | 1600×900, 139 KB | Screenshot 6: Connect your couriers and invoicing | **Desktop screenshots**, position 6 |
+| `screenshots/mobile/m1-dashboard.png` | 900×1600, 187 KB | Mobile screenshot 1: Today's orders, on your phone too | **Mobile screenshots**, position 1 |
+| `screenshots/mobile/m2-refused.png` | 900×1600, 168 KB | Mobile screenshot 2: Know who refused parcels before | **Mobile screenshots**, position 2 |
+| `screenshots/mobile/m3-delivered.png` | 900×1600, 186 KB | Mobile screenshot 3: Delivered and cash collected, at a glance | **Mobile screenshots**, position 3 |
 | `screenshots/labels-sample.pdf` | 3 KB | The labels PDF rendered in screenshot 3 (test labels) | Reference only |
 | `review/expedo-review-screencast.mp4` | 1920×1080, 2:36, 4.9 MB | Screencast for review: real walkthrough of the demo UI, English captions burned in, H.264 CRF 23 | **Testing instructions → screencast** (upload, or unlisted video link) |
 | `review/expedo-review-screencast.en.srt` | 4 KB | The screencast captions as subtitles | Optional: subtitles if uploaded to YouTube/Vimeo |

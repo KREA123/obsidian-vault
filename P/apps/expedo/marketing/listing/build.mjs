@@ -144,8 +144,19 @@ async function orderByName(name) {
  *    the rejection that FAN's locality list produces, built by the app's own localityError().
  */
 async function stageDemo() {
-  await api('/track', { method: 'POST' });
   const mod = (f) => import(pathToFileURL(join(APP_DIR, f)).href);
+  const db = await mod('src/db.js');
+  db.openDb(DB_FILE);
+  {
+    // Like the app's own advanceDemo(): age the demo's test AWBs (4 more minutes) so several
+    // cash-on-delivery parcels are already delivered when tracked, then track once.
+    const store0 = db.getStoreByShop('demo.myshopify.com');
+    const cache = db.storeCache(store0.id);
+    const issued = cache.get('mock:issued') || {};
+    for (const k of Object.keys(issued)) issued[k].at -= 4 * 60_000;
+    cache.set('mock:issued', issued, 60 * 60 * 24 * 30);
+  }
+  await api('/track', { method: 'POST' });
   const { findLocality } = await mod('src/couriers/locality.js');
   const rows = ensureFanIlfov().map((d) => [d.name, d.county]);
   let err;
@@ -155,10 +166,8 @@ async function stageDemo() {
   if (err?.code !== 'ADDRESS_CITY_NOT_FOUND' || !/Did you mean/.test(err.hint || '')) throw new Error('expected a "Did you mean" locality error');
 
   // The app's own db/pipeline modules write the state (same DB file and APP_SECRET as the server).
-  const db = await mod('src/db.js');
   const P = await mod('src/core/pipeline.js');
   const { errorMessage, errorHint } = await mod('src/core/errors.js');
-  db.openDb(DB_FILE);
   const id = (await orderByName('#1116')).id;
   const o = db.getOrder(id);
   const data = structuredClone(o.data);
@@ -214,7 +223,13 @@ async function captureAll(browser, dir) {
   const C = {};
   const MAIN = 220; // sidebar width: captures of a page start after it unless the sidebar is wanted
   const clipOf = (b, pad = 0) => ({ x: Math.floor(b.x - pad), y: Math.floor(b.y - pad), width: Math.ceil(b.width + pad * 2), height: Math.ceil(b.height + pad * 2) });
-  const cap = async (p, name, clip, marks = []) => ({ file: await shot(p, join(dir, `${name}.png`), clip), w: clip.width, h: clip.height, marks: await Promise.all(marks.map(([sel, pad]) => boxIn(p, sel, clip, pad))) });
+  const cap = async (p, name, clip, marks = []) => {
+    const file = await shot(p, join(dir, `${name}.png`), clip);
+    const { w, h } = pngSize(file);
+    const vp = p.viewportSize();
+    if (Math.abs(w / h - clip.width / clip.height) > 0.01) throw new Error(`capture ${name}: clip ${clip.width}x${clip.height} outside the ${vp.width}x${vp.height} viewport`);
+    return { file, w: clip.width, h: clip.height, marks: await Promise.all(marks.map(([sel, pad]) => boxIn(p, sel, clip, pad))) };
+  };
   const id1116 = (await orderByName('#1116')).id;
 
   // 1. Dashboard, wide enough for the five stat tiles on one row
@@ -293,7 +308,9 @@ async function captureAll(browser, dir) {
     await p.setViewportSize({ width: 600, height: 1400 });
     await go(p, `#/orders/${cod.id}`);
     const hist = p.locator('.drawer-panel .card', { has: p.locator('h2', { hasText: /^\s*History\s*$/ }) });
-    C.history = await cap(p, 'history', clipOf(await hist.boundingBox()));
+    const histFile = join(dir, 'history.png');
+    await hist.screenshot({ path: histFile, animations: 'disabled' });
+    { const { w, h } = pngSize(histFile); C.history = { file: histFile, w: w / 2, h: h / 2, marks: [] }; }
     await p.context().close();
   }
 
@@ -313,13 +330,13 @@ async function captureAll(browser, dir) {
 
   // 3. Bulk: every ready order selected, bulk bar in view; then really process them and render the labels PDF
   {
-    const p = await newAppPage(browser, { width: 1280, height: 600 });
+    const p = await newAppPage(browser, { width: 1360, height: 640 });
     await go(p, '#/orders?status=ready');
     await p.locator('#check-all').check();
     await p.mouse.move(5, 300);
     await p.waitForTimeout(200);
     const id1111 = (await orderByName('#1111')).id;
-    C.bulk = await cap(p, 'bulk', { x: MAIN, y: 0, width: 1060, height: 600 }, [['[data-bulk=all]', 5], [`tr[data-id="${id1111}"] .issue-line.warning`, 5]]);
+    C.bulk = await cap(p, 'bulk', { x: MAIN, y: 0, width: 1140, height: 640 }, [['[data-bulk=all]', 5], [`tr[data-id="${id1111}"] .issue-line.warning`, 5]]);
     const ids = (await api('/orders?status=ready')).orders.map((o) => o.id);
     await p.locator('[data-bulk=all]').click();
     await p.waitForFunction(() => location.hash.includes('ids='), null, { timeout: 30000 });
@@ -410,7 +427,7 @@ const SCENES = {
     return placeShot(C.bulk, { x: 72, y: 236, w: 1120 }) + labels + `<div class="tag" style="left:1232px;top:${282 + 2 * 58 + 384}px;z-index:9">${esc(tag)}</div>`;
   },
   rules: (C) => placeShot(C.rules, { x: 72, y: 236, w: 1060, h: 664, fade: true }) + placeShot(C.mode, { x: 928, y: 486, w: 600, z: 3 }),
-  tracking: (C) => placeShot(C.deliveredTop, { x: 72, y: 244, w: 940 }) + placeShot(C.history, { x: 880, y: 380, w: 648, z: 3 }),
+  tracking: (C) => placeShot(C.deliveredTop, { x: 72, y: 244, w: 940 }) + placeShot(C.history, { x: 880, y: 380, w: 648, h: Math.min(C.history.h * 648 / C.history.w, 520), z: 3, fade: C.history.h * 648 / C.history.w > 520 }),
   settings: (C) => placeShot(C.couriers, { x: 72, y: 236, w: 1060, h: 664, fade: true }) + placeShot(C.invoicing, { x: 928, y: 520, w: 600, z: 3 }),
 };
 
