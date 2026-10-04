@@ -59,7 +59,7 @@ void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
   birth_ = b;
   kb_.setGeometry(g);
   tp_.setGeometry(g);
-  glass().begin(g.w, g.h);  // the aura + frosted buffers (PSRAM); without them the glass falls back to black
+  glass().begin(g.w, g.h, !deferGlass_);  // the aura + frosted buffers (PSRAM); without them the glass falls back to black
   glass().setOn(false);
   glass().setLevel(0);
   face_.begin(g.w, g.h);
@@ -500,7 +500,9 @@ void Os::touch(const TouchEv& e) {
 }
 
 void Os::setDirtyFromKeyboard() {
-  if (kb_.changed()) invalidate(kb_.bounds());
+  RectList d;  // only what looks different (a key, the field, the bar): 1.7 repainted all 35 glass caps
+  kb_.takeDamage(d);
+  for (int i = 0; i < d.n; ++i) invalidate(d.r[i]);
 }
 
 static bool claudeHoldView(View v) {

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Canvas.h"
+#include "Glass.h"
 #include "Raster.h"
 #include "Rng.h"
 
@@ -169,6 +170,63 @@ struct RefCover {
   }
 };
 
+
+// Raster::ring as in 1.7 (every pixel of the two spans through sqrt / atan2).
+void refRasterRing(Canvas& cv, float cx, float cy, float r, float w, Rgb c, float alpha, float a0, float a1) {
+  if (alpha <= 0.004f || w <= 0 || r <= 0) return;
+  const float hw = w * 0.5f;
+  const bool full = a1 - a0 >= 6.2831f;
+  float span = a1 - a0;
+  if (span < 0) span = 0;
+  const float e0x = cx + cosf(a0) * r, e0y = cy + sinf(a0) * r;
+  const float e1x = cx + cosf(a1) * r, e1y = cy + sinf(a1) * r;
+  const Rect& cr = cv.clipRect();
+  const float ro = r + hw + 1.0f, ri = r - hw - 1.0f;
+  int y0 = (int)floorf(cy - ro), y1 = (int)ceilf(cy + ro);
+  if (y0 < cr.y0) y0 = cr.y0;
+  if (y1 > cr.y1) y1 = cr.y1;
+  const uint16_t fg = c.to565();
+  const uint32_t ga = (uint32_t)(alpha >= 1 ? 256 : alpha * 256.0f);
+  uint16_t* fb = cv.data();
+  const int W = cv.width();
+  for (int y = y0; y < y1; ++y) {
+    const float dy = y + 0.5f - cy;
+    if (fabsf(dy) >= ro) continue;
+    const float xo = sqrtf(ro * ro - dy * dy);
+    const float xi = (ri > 0 && fabsf(dy) < ri) ? sqrtf(ri * ri - dy * dy) : 0;
+    float sx[2][2] = {{cx - xo, cx - xi}, {cx + xi, cx + xo}};
+    const int nspan = xi > 0 ? 2 : 1;
+    if (nspan == 1) sx[0][1] = cx + xo;
+    uint16_t* drow = fb + y * W;
+    for (int k = 0; k < nspan; ++k) {
+      int xa = (int)floorf(sx[k][0]), xb = (int)ceilf(sx[k][1]);
+      if (xa < cr.x0) xa = cr.x0;
+      if (xb > cr.x1) xb = cr.x1;
+      for (int x = xa; x < xb; ++x) {
+        const float dx = x + 0.5f - cx;
+        const float d = sqrtf(dx * dx + dy * dy);
+        float cov = hw + 0.5f - fabsf(d - r);
+        if (!full) {
+          float ang = atan2f(dy, dx) - a0;
+          while (ang < 0) ang += 6.2831853f;
+          while (ang >= 6.2831853f) ang -= 6.2831853f;
+          if (ang > span) {
+            const float d0 = sqrtf((x + 0.5f - e0x) * (x + 0.5f - e0x) + (y + 0.5f - e0y) * (y + 0.5f - e0y));
+            const float d1 = sqrtf((x + 0.5f - e1x) * (x + 0.5f - e1x) + (y + 0.5f - e1y) * (y + 0.5f - e1y));
+            cov = hw + 0.5f - (d0 < d1 ? d0 : d1);
+          }
+        }
+        if (cov <= 0) continue;
+        if (cov > 1) cov = 1;
+        const uint32_t a = ((uint32_t)(cov * 255.0f) * ga) >> 8;
+        const uint32_t a32 = (a * 33) >> 8;
+        if (!a32) continue;
+        drow[x] = a32 >= 32 ? fg : blend565(drow[x], fg, a32);
+      }
+    }
+  }
+}
+
 float frand(Rng& r, float a, float b) { return a + (b - a) * r.uniform(); }
 
 // One random path of the kinds the eyes and the UI draw.
@@ -267,4 +325,140 @@ void test_perf_cover_matches_the_17_rasterizer() {
   TEST_ASSERT_TRUE(pixels > 100000);
 }
 
-void runPerfTests() { RUN_TEST(test_perf_cover_matches_the_17_rasterizer); }
+// Canvas::ring / arc visit only the annulus of each row; 1.7 evaluated the distance over the whole box.
+void test_perf_canvas_ring_and_arc_match_the_full_box() {
+  std::vector<uint16_t> a(480 * 480), b(480 * 480);
+  Canvas ca(480, 480, a.data()), cb(480, 480, b.data());
+  Rng rng(0xA11CE);
+  for (int it = 0; it < 300; ++it) {
+    for (size_t i = 0; i < a.size(); ++i) a[i] = b[i] = (uint16_t)(i * 2654435761u >> 7);
+    const float cx = rng.range(-50, 530), cy = rng.range(-50, 530), r = rng.range(0.5f, 260), th = rng.range(0.5f, 40);
+    const float glowR = rng.chance(0.5f) ? rng.range(0, 30) : 0, glowA = glowR > 0 ? rng.range(0, 0.8f) : 0;
+    const float al = rng.range(0.1f, 1.0f);
+    const Rgb c = Rgb((uint8_t)rng.irange(0, 255), (uint8_t)rng.irange(0, 255), (uint8_t)rng.irange(0, 255));
+    if (rng.chance(0.3f)) {
+      const Rect clip{rng.irange(0, 300), rng.irange(0, 300), rng.irange(300, 480), rng.irange(300, 480)};
+      ca.setClip(clip);
+      cb.setClip(clip);
+    } else {
+      ca.clearClip();
+      cb.clearClip();
+    }
+    const float h = th * 0.5f;
+    if (it % 2) {
+      ca.ring(cx, cy, r, th, c, al, glowR, glowA);
+      cb.fillSdf(cx - r - h, cy - r - h, cx + r + h, cy + r + h, [=](float px, float py) {
+        const float dx = px - cx, dy = py - cy;
+        return fabsf(sqrtf(dx * dx + dy * dy) - r) - h;
+      }, c, al, glowR, glowA);
+    } else {
+      const float a0 = rng.range(-7, 7), a1 = a0 + rng.range(0, 7);
+      ca.arc(cx, cy, r, a0, a1, th, c, al, glowR, glowA);
+      cb.fillSdf(cx - r - h, cy - r - h, cx + r + h, cy + r + h,
+                 [=](float px, float py) { return Canvas::sdArc(px, py, cx, cy, r, a0, a1) - h; }, c, al, glowR, glowA);
+    }
+    TEST_ASSERT_EQUAL_MEMORY(b.data(), a.data(), a.size() * 2);
+  }
+}
+
+// Raster::ring fills a full ring's fully covered middle without the square root.
+void test_perf_raster_ring_matches_the_17_ring() {
+  std::vector<uint16_t> a(480 * 480), b(480 * 480);
+  Canvas ca(480, 480, a.data()), cb(480, 480, b.data());
+  Raster ras;
+  TEST_ASSERT_TRUE(ras.begin(480, 480));
+  Rng rng(0xB0B);
+  for (int it = 0; it < 400; ++it) {
+    for (size_t i = 0; i < a.size(); ++i) a[i] = b[i] = (uint16_t)(i * 2654435761u >> 9);
+    const float cx = rng.range(-30, 510), cy = rng.range(-30, 510), r = rng.range(0.3f, 250), w = rng.range(0.2f, 60);
+    const float al = rng.range(0.05f, 1.2f);
+    const Rgb c = Rgb((uint8_t)rng.irange(0, 255), (uint8_t)rng.irange(0, 255), (uint8_t)rng.irange(0, 255));
+    float a0 = 0, a1 = 6.2831853f;
+    if (it % 3 == 0) {
+      a0 = rng.range(-4, 4);
+      a1 = a0 + rng.range(0, 6.5f);
+    }
+    if (rng.chance(0.3f)) {
+      const Rect clip{rng.irange(0, 300), rng.irange(0, 300), rng.irange(300, 480), rng.irange(300, 480)};
+      ca.setClip(clip);
+      cb.setClip(clip);
+    } else {
+      ca.clearClip();
+      cb.clearClip();
+    }
+    ras.ring(ca, cx, cy, r, w, c, al, a0, a1);
+    refRasterRing(cb, cx, cy, r, w, c, al, a0, a1);
+    TEST_ASSERT_EQUAL_MEMORY(b.data(), a.data(), a.size() * 2);
+  }
+}
+
+// A frame repairs a few rectangles, drawing everything again under each one's clip: what lands inside a clip
+// must be what an unclipped draw puts there (1.7's gradient runs and glass fills were stepped from the clip's
+// edge, so a clipped redraw could differ by a level here and there).
+void test_perf_draws_under_a_clip_match_unclipped_draws() {
+  std::vector<uint16_t> a(480 * 480), b(480 * 480);
+  Canvas ca(480, 480, a.data()), cb(480, 480, b.data());
+  Raster ras;
+  TEST_ASSERT_TRUE(ras.begin(480, 480));
+  Path p;
+  TEST_ASSERT_TRUE(p.reserve(4096));
+  GlassLayer g;
+  TEST_ASSERT_TRUE(g.begin(480, 480));
+  g.setOn(true);
+  Rng rng(0xC11B);
+  int checked = 0;
+  for (int it = 0; it < 240; ++it) {
+    for (size_t i = 0; i < a.size(); ++i) a[i] = b[i] = (uint16_t)(i * 2654435761u >> 11);
+    const Rect clip{rng.irange(0, 240), rng.irange(0, 240), rng.irange(240, 480), rng.irange(240, 480)};
+    g.setLevel(rng.chance(0.5f) ? 1.0f : rng.range(0, 1));
+    g.setOffset(rng.irange(-12, 12), rng.irange(-12, 12));
+    auto draw = [&](Canvas& cv) {
+      switch (it % 4) {
+        case 0: {  // a gradient (the chrome / aurora whites) through a mask, inside the eyes' disc
+          randomPath(rng, p, 0);
+          Paint pt;
+          pt.kind = Paint::Linear;
+          pt.x0 = rng.range(0, 480), pt.y0 = rng.range(0, 480), pt.x1 = rng.range(0, 480), pt.y1 = rng.range(0, 480);
+          for (int k = 0; k < 5; ++k) pt.addStop(k / 4.0f, Rgb((uint8_t)rng.irange(0, 255), (uint8_t)rng.irange(0, 255), (uint8_t)rng.irange(0, 255)));
+          if (rng.chance(0.5f)) ras.setDiscClip(240, 240, rng.range(100, 260));
+          ras.fill(cv, p, pt, rng.range(0.3f, 1.0f));
+          ras.clearDiscClip();
+          break;
+        }
+        case 1: {
+          GlassStyle st = rng.chance(0.5f) ? GlassStyle::plain(rng.chance(0.5f) ? 1.0f : rng.range(0.2f, 1)) : GlassStyle::accent(Rgb(255, 160, 60));
+          const float x = rng.range(-40, 400), y = rng.range(-40, 400);
+          g.panel(cv, x, y, x + rng.range(20, 300), y + rng.range(20, 200), rng.range(0, 40), st);
+          break;
+        }
+        case 2:
+          g.capsuleArc(cv, 240, 240, rng.range(150, 225), rng.range(8, 30), rng.range(-3.1f, 0), rng.range(0.1f, 3.1f),
+                       GlassStyle::plain(rng.chance(0.5f) ? 1.0f : 0.6f));
+          break;
+        default:
+          g.band(cv, 240, 240, rng.range(80, 220), rng.range(4, 20), GlassStyle::plain());
+          break;
+      }
+    };
+    const uint64_t seed = rng.next();
+    rng = Rng(seed);
+    draw(ca);
+    rng = Rng(seed);
+    cb.setClip(clip);
+    draw(cb);
+    cb.clearClip();
+    for (int y = clip.y0; y < clip.y1; ++y)
+      for (int x = clip.x0; x < clip.x1; ++x) {
+        TEST_ASSERT_EQUAL_UINT16(a[(size_t)y * 480 + x], b[(size_t)y * 480 + x]);
+        ++checked;
+      }
+  }
+  TEST_ASSERT_TRUE(checked > 1000000);
+}
+
+void runPerfTests() {
+  RUN_TEST(test_perf_draws_under_a_clip_match_unclipped_draws);
+  RUN_TEST(test_perf_raster_ring_matches_the_17_ring);
+  RUN_TEST(test_perf_cover_matches_the_17_rasterizer);
+  RUN_TEST(test_perf_canvas_ring_and_arc_match_the_full_box);
+}

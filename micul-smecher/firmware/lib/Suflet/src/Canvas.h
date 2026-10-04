@@ -161,6 +161,15 @@ class Canvas {
   template <class F>
   void fillSdf(float bx0, float by0, float bx1, float by1, F sdf, Rgb c, float alpha,
                float glowR = 0, float glowA = 0) {
+    fillSdfSpans(bx0, by0, bx1, by1, sdf, [](float, int& a0, int& a1, int& b0, int& b1) {
+      a0 = -(1 << 30), a1 = 1 << 30, b0 = b1 = 0;
+    }, c, alpha, glowR, glowA);
+  }
+  // The same, visiting per row only x in [a0, a1) and [b0, b1) (spans(py, a0, a1, b0, b1)): the caller
+  // promises every pixel left out would draw nothing (a ring's hole and the corners around it).
+  template <class F, class Spans>
+  void fillSdfSpans(float bx0, float by0, float bx1, float by1, F sdf, Spans spans, Rgb c, float alpha,
+                    float glowR = 0, float glowA = 0) {
     if (alpha <= 0.004f) return;
     const float m = (glowR > 0 && glowA > 0 ? glowR : 0) + 1.5f;
     Rect r{(int)floorf(bx0 - m), (int)floorf(by0 - m), (int)ceilf(bx1 + m), (int)ceilf(by1 + m)};
@@ -170,25 +179,48 @@ class Canvas {
     const float invG = glowR > 0 ? 1.0f / glowR : 0;
     for (int y = r.y0; y < r.y1; ++y) {
       const float py = y + 0.5f;
-      for (int x = r.x0; x < r.x1; ++x) {
-        const float d = sdf(x + 0.5f, py);
-        float a;
-        if (d <= -0.5f) {
-          a = 1.0f;
-        } else if (d < 0.5f) {
-          a = 0.5f - d;
-          if (glowA > 0) {
-            const float g = glowA;
-            if (g > a) a = a + (g - a) * (d + 0.5f);  // smooth join into the halo
+      int sp[4];
+      spans(py, sp[0], sp[1], sp[2], sp[3]);
+      for (int k = 0; k < 4; k += 2) {
+        const int xa = sp[k] > r.x0 ? sp[k] : r.x0, xb = sp[k + 1] < r.x1 ? sp[k + 1] : r.x1;
+        for (int x = xa; x < xb; ++x) {
+          const float d = sdf(x + 0.5f, py);
+          float a;
+          if (d <= -0.5f) {
+            a = 1.0f;
+          } else if (d < 0.5f) {
+            a = 0.5f - d;
+            if (glowA > 0) {
+              const float g = glowA;
+              if (g > a) a = a + (g - a) * (d + 0.5f);  // smooth join into the halo
+            }
+          } else if (glowA > 0 && d < glowR) {
+            const float k2 = 1.0f - d * invG;
+            a = glowA * k2 * k2;
+          } else {
+            continue;
           }
-        } else if (glowA > 0 && d < glowR) {
-          const float k = 1.0f - d * invG;
-          a = glowA * k * k;
-        } else {
-          continue;
+          blend(x, y, c, a * alpha);
         }
-        blend(x, y, c, a * alpha);
       }
+    }
+  }
+  // fillSdfSpans' spans for anything drawn within `reach` px of a circle of radius r around (cx, cy)
+  // (rings, arcs, their glow): the annulus of each row, with a pixel to spare on every side.
+  static void annulusSpans(float py, float cx, float cy, float r, float reach, int& a0, int& a1, int& b0, int& b1) {
+    const float dy = py - cy, ro = r + reach + 1, ri = r - reach - 1;
+    a0 = a1 = b0 = b1 = 0;
+    if (fabsf(dy) >= ro) return;
+    const float xo = sqrtf(ro * ro - dy * dy);
+    a0 = (int)floorf(cx - xo) - 1;
+    b1 = (int)ceilf(cx + xo) + 1;
+    if (ri > 1 && fabsf(dy) < ri - 1) {
+      const float xi = sqrtf(ri * ri - dy * dy) - 1;  // inside the hole by more than a pixel
+      a1 = (int)ceilf(cx - xi) + 1;
+      b0 = (int)floorf(cx + xi) - 1;
+      if (b0 < a1) a1 = b0 = b1;  // no real hole on this row
+    } else {
+      a1 = b0 = b1;
     }
   }
 

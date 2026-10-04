@@ -23,6 +23,9 @@
 #include <esp_sleep.h>
 #include <esp_timer.h>
 
+#include <string>
+#include <vector>
+
 #include "AiProtocol.h"
 #include "AlarmTone.h"
 #include "Alarms.h"
@@ -70,13 +73,13 @@ static float backlightNow = 0;
 static bool displayOn = true;
 
 static SensorQMI8658 imu;
-static bool imuOk = false, imuGyro = false;
+static bool imuOk = false, imuGyro = false, imuGyroOk = false;  // imuGyroOk: it exists (imuGyro: it is on now)
 static SensorPCF85063 rtc;
 static bool rtcOk = false;
 #if TOUCH_CST9217
 static TouchDrvCST92xx touchDrv;
 #endif
-static bool touchOk = false;
+static volatile bool touchOk = false;  // set by the touch init task (1.8: it runs beside the boot)
 
 static Preferences prefs;
 static Brain* brain = nullptr;
@@ -201,10 +204,28 @@ static void displayPower(bool on) {
   if (on) panel->displayOn();
   else panel->displayOff();
 }
+static void displayInitStart() { displayInit(); }
+static void displayInitWait() {}
 #else
-static void displayInit() {
+// 1.8: the ST7701 bring-up (~370 ms of reset / sleep-out waits) runs in a task on core 0 while setup() reads
+// the RTC, the IMU and NVS and builds SoulOS on core 1; displayInitWait() joins before the first frame.
+// Both sides use Wire (the expander, the IMU): the driver locks each transaction.
+static SemaphoreHandle_t displayReady = nullptr;
+static volatile bool displayOk = false;
+static void displayInitTask(void*) {
+  displayOk = lcd28::displayInit();
+  xSemaphoreGive(displayReady);
+  vTaskDelete(nullptr);
+}
+static void displayInitStart() {
   lcd28::backlightInit();
-  if (!lcd28::displayInit()) Serial.println("[lcd] display init FAILED");
+  displayReady = xSemaphoreCreateBinary();
+  xTaskCreatePinnedToCore(displayInitTask, "lcd-boot", 6144, nullptr, 5, nullptr, 0);
+}
+static void displayInitWait() {
+  xSemaphoreTake(displayReady, portMAX_DELAY);
+  vSemaphoreDelete(displayReady);
+  if (!displayOk) Serial.println("[lcd] display init FAILED");
   cv = new Canvas(LCD_W, LCD_H, lcd28::displayCanvas());
 }
 static void displayPresent(const RectList& r) { lcd28::displayPresent(r); }
@@ -245,6 +266,12 @@ static void touchInit() {
   touchOk = lcd28::touchInit();
 #endif
   Serial.printf("[touch] %s\n", touchOk ? "ok" : "NOT FOUND");
+}
+
+// the GT911 reset wants ~400 ms of waits: done beside the boot, after the first frame (taps start then)
+static void touchInitTask(void*) {
+  touchInit();
+  vTaskDelete(nullptr);
 }
 
 // ----------------------------------------------------------------- clock ---
@@ -357,10 +384,44 @@ static void loadAll() {
 
 // ---------------------------------------------------------------- serial ---
 
+// 'm' on the serial monitor (1.8, BRINGUP §5): every task's stack head-room and CPU share since the last
+// 'm', and the heaps (free, lowest ever, largest block: fragmentation)
+static void memReport() {
+  static uint32_t lastTotal = 0;
+  static std::vector<std::pair<std::string, uint32_t>> lastRun;
+  UBaseType_t n = uxTaskGetNumberOfTasks() + 4;
+  std::vector<TaskStatus_t> st(n);
+  uint32_t total = 0;
+  n = uxTaskGetSystemState(st.data(), n, &total);
+  const uint32_t span = total - lastTotal;
+  Serial.printf("[mem] %u tasks (stack head-room = bytes never used; cpu = share of one core since the last 'm'):\n", (unsigned)n);
+  std::vector<std::pair<std::string, uint32_t>> now;
+  for (UBaseType_t i = 0; i < n; ++i) {
+    const TaskStatus_t& t = st[i];
+    uint32_t prev = 0;
+    for (const auto& p : lastRun)
+      if (p.first == t.pcTaskName) prev = p.second;
+    now.push_back({t.pcTaskName, t.ulRunTimeCounter});
+    Serial.printf("  %-16s prio %2u  stack head-room %5u B  cpu %5.1f%%\n", t.pcTaskName, (unsigned)t.uxCurrentPriority,
+                  (unsigned)t.usStackHighWaterMark,
+                  lastTotal && span ? 100.0 * (t.ulRunTimeCounter - prev) / span : 0.0);
+  }
+  lastRun.swap(now);
+  lastTotal = total;
+  Serial.printf("[mem] internal: %u K free, %u K lowest, %u K largest block; psram: %u K free, %u K lowest, %u K largest\n",
+                (unsigned)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024),
+                (unsigned)(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL) / 1024),
+                (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) / 1024),
+                (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024),
+                (unsigned)(heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM) / 1024),
+                (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) / 1024));
+}
+
 static void help() {
   Serial.println(
       "SOUL " FW_VERSION " serial commands:\n"
       "  F   perf overlay on/off      p   perf line now        i  IMU + eyes motion   t  time\n"
+      "  m   tasks (stack head-room, CPU share) + heaps (free, lowest, largest block)\n"
       "  M   eyes motion (level keeping, marble pupils, dizzy, nods) on/off\n"
       "  T<local epoch>  set clock    P   personality + design U  unpair Claude\n"
       "  W   Wi-Fi setup portal       w   stop the portal      B  re-run first boot\n"
@@ -393,6 +454,7 @@ static void serialCommands() {
     switch (c) {
       case 'F': os.settings().debug = !os.settings().debug; break;
       case 'p': lastPerfMs = 0; break;
+      case 'm': memReport(); break;
       case 'M':
         os.face().motionOn = !os.face().motionOn;
         Serial.printf("eyes motion %s\n", os.face().motionOn ? "on" : "off");
@@ -577,11 +639,31 @@ static void maybeDeepSleep(uint32_t nowMs) {
   deepSleepNow(wakeIn, poll);
 }
 
+// 1.8 power: with the screen off (face down, the night, Mode Off: 4 fps of nothing to draw) the CPU runs at
+// SUFLET_OFF_MHZ and the gyro sleeps (the eyes' motion needs it only on screen; pick-up and the Brain's
+// gestures are the accelerometer's). The panel keeps scanning at 6 MHz from its own PLL clock; Wi-Fi and BLE
+// work at 80 MHz. -DSUFLET_OFF_MHZ=240 turns the CPU scaling off (BRINGUP §5 measures both).
+#ifndef SUFLET_OFF_MHZ
+#define SUFLET_OFF_MHZ 80
+#endif
+static void powerScreenOff() {
+  if (SUFLET_OFF_MHZ < 240 && !wakePolling) setCpuFrequencyMhz(SUFLET_OFF_MHZ);  // a wake-poll's TLS runs at full speed
+  if (imuGyro && imu.disableGyroscope()) imuGyro = false;
+}
+
+static void powerScreenOn() {
+  if (getCpuFrequencyMhz() != 240) setCpuFrequencyMhz(240);
+  if (imuGyroOk && !imuGyro) imuGyro = imu.enableGyroscope();
+}
+
 // ------------------------------------------------------------ setup/loop ---
 
 void setup() {
+  // 1.8 boot order: the eyes first (eyes on the glass ~0.6-0.8 s from power-on instead of ~1.8 s): no
+  // serial delay, the panel's init beside the app's, the aura built over the first frames, then touch,
+  // audio, BLE, SOUL Cloud and Wi-Fi after the first frame. `[boot]` lines give the times (millis from
+  // the app's start; the ROM + bootloader add ~0.3 s before it, see BRINGUP §5).
   Serial.begin(115200);
-  delay(150);
   Wire.begin(I2C_SDA, I2C_SCL, 400000);
 #if HAS_PMU
   pmuInit();
@@ -589,17 +671,15 @@ void setup() {
 #if defined(SUFLET_BOARD_LCD28)
   if (!lcd28::exioInit()) Serial.println("[exio] TCA9554 NOT FOUND (display/touch will fail)");
 #endif
-  displayInit();
-  touchInit();
-  audioInit();
+  displayInitStart();
   imuOk = imu.begin(Wire, IMU_ADDR, I2C_SDA, I2C_SCL);
   if (imuOk) {
     imu.configAccelerometer(SensorQMI8658::ACC_RANGE_4G, SensorQMI8658::ACC_ODR_125Hz, SensorQMI8658::LPF_MODE_0);
     imu.enableAccelerometer();
     // the gyro for the eyes' motion behaviours (level keeping, spin -> dizzy, nods)
-    imuGyro = imu.configGyroscope(SensorQMI8658::GYR_RANGE_1024DPS, SensorQMI8658::GYR_ODR_112_1Hz,
-                                  SensorQMI8658::LPF_MODE_3) &&
-              imu.enableGyroscope();
+    imuGyro = imuGyroOk = imu.configGyroscope(SensorQMI8658::GYR_RANGE_1024DPS, SensorQMI8658::GYR_ODR_112_1Hz,
+                                              SensorQMI8658::LPF_MODE_3) &&
+                          imu.enableGyroscope();
   }
   rtcOk = rtc.begin(Wire, I2C_SDA, I2C_SCL);
   Serial.printf("[board] %s %dx%d  [imu] %s  [rtc] %s  psram %u KB free\n", BOARD_NAME, kGeom.w, kGeom.h,
@@ -634,15 +714,33 @@ void setup() {
 
   memoryStoreBegin(soulMem);
   os.setMemory(&soulMem);
-  os.setVoiceAvailable(SUFLET_VOICE && audioHasMic());
+  os.setDeferGlass(true);  // the aura is built over the first frames (standby shows none anyway)
   os.begin(kGeom, birth);
+  // a timer wake from deep sleep for a SOUL Cloud poll (§6.11) keeps the screen off
+  wakePolling = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER && rtcPollWake;
+  if (wakePolling) wakePollStartMs = millis();
+
+  // the first frame: the eyes, as soon as the panel is up
+  displayInitWait();
+  composer.setCanvas(cv);
+  if (!wakePolling) {
+    composer.compose(os);
+    displayPresent(composer.changedList());
+    in.hour = hourNow();
+    backlightNow = os.backlight(in.hour, *brain);  // straight on: the frame is already on the glass
+    backlight(backlightNow);
+  }
+  Serial.printf("[boot] eyes on the glass at %lu ms (app start)\n", (unsigned long)millis());
+
+  xTaskCreatePinnedToCore(touchInitTask, "touch-init", 4096, nullptr, 3, nullptr, 0);
+  audioInit();
+  os.setVoiceAvailable(SUFLET_VOICE && audioHasMic());
   // offline voice commands (ESP-SR MultiNet, SUFLET_VOICE_SR builds): after the glass took its PSRAM
   if (voiceSrBegin()) {
     audioSetSrOwner(true);
     os.setVoiceAvailable(audioHasMic());
   }
   Serial.printf("[voice] offline commands: %s\n", voiceSrStatus());
-  composer.setCanvas(cv);
   touch.setMode(TouchMode::Text);
 
   char name[32];
@@ -658,9 +756,7 @@ void setup() {
     snprintf(mdns, sizeof mdns, "soul-%02x%02x", mac[4], mac[5]);
     bridgeLanBegin(CloudLink::deviceId(mac), mdns);
   }
-  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER && rtcPollWake) {  // §6.11 wake-poll
-    wakePolling = true;
-    wakePollStartMs = millis();
+  if (wakePolling) {  // §6.11 wake-poll
     bool poll = false;
     const uint32_t wakeIn = min<uint32_t>(nextWake(poll), 15 * 60);  // it was paired when it went to sleep
     cloudWakePoll(time(nullptr) > 1735689600 ? (uint32_t)time(nullptr) + wakeIn : 0);
@@ -670,6 +766,7 @@ void setup() {
   netBegin(ap, CloudLink::deviceId(mac));
   netSetMode(os.aiMode());
   cloudSetPrefs(os.aiMode(), os.ro(), netTz());
+  Serial.printf("[boot] radios started at %lu ms\n", (unsigned long)millis());
 
   pinMode(BOOT_BUTTON, INPUT_PULLUP);
   if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED && digitalRead(BOOT_BUTTON) == LOW) demo = true;
@@ -1063,8 +1160,10 @@ void loop() {
   const bool wantOn = !wakePolling && (brain->mode() != Mode::Off || os.ringing());
   if (wantOn != displayOn) {
     displayOn = wantOn;
+    if (wantOn) powerScreenOn();
     displayPower(wantOn);
     if (wantOn) composer.invalidateAll();
+    else powerScreenOff();
   }
   const int64_t r0 = esp_timer_get_time();
   int64_t r1 = r0, r2 = r0;
@@ -1103,10 +1202,18 @@ void loop() {
     os.perf.heapKb = (uint32_t)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024);
     os.perf.psramKb = (uint32_t)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024);
     Serial.printf("[perf] %.1f fps (asked %.0f), frame %.1f ms (draw %.1f, push %.1f), loop cpu %.0f%%, view %s, "
-                  "mode %s, heap %u K (min %u K), psram %u K\n",
+                  "mode %s, heap %u K (min %u K), psram %u K",
                   os.perf.fps, os.fpsHint(*brain), os.perf.frameMs, os.perf.renderMs, os.perf.pushMs, os.perf.cpu * 100,
                   viewName(os.view()), modeName(brain->mode()), (unsigned)os.perf.heapKb,
                   (unsigned)(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL) / 1024), (unsigned)os.perf.psramKb);
+#if defined(SUFLET_BOARD_LCD28)
+    {  // 1.8: the last present (copy into the back buffer, the wait for the panel) and the clock
+      const lcd28::DisplayStats& ds = lcd28::displayStats();
+      Serial.printf(", copy %.1f ms (%u px), wait %.1f ms", ds.copyMs, (unsigned)ds.copiedPx, ds.waitMs);
+    }
+#endif
+    Serial.printf(", cpu %u MHz, loop stack head-room %u B\n", (unsigned)getCpuFrequencyMhz(),
+                  (unsigned)uxTaskGetStackHighWaterMark(nullptr));
     lastPerfMs = nowMs;
     accFrameMs = accRenderMs = accPushMs = accBusyMs = 0;
     accFrames = 0;

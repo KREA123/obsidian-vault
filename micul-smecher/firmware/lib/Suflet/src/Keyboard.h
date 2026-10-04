@@ -61,7 +61,10 @@ class Keyboard {
   int rowH() const { return rowH_; }
 
   void open(const KbConfig& cfg, const std::string& initial = "");
-  void close() { open_ = false; }
+  void close() {
+    open_ = false;
+    drawn_.valid = false;
+  }
   bool isOpen() const { return open_; }
 
   // ---- input -------------------------------------------------------------
@@ -109,7 +112,11 @@ class Keyboard {
   // ---- rendering -----------------------------------------------------------
   Rect bounds() const { return g_.rect(0, 60, (int)DisplayGeometry::kDesignPx, 402); }
   bool changed() const { return changed_; }
-  void render(Canvas& cv);  // clears bounds() and draws everything
+  // What looks different since the last call: the field, the suggestion bar, the key that went down or
+  // up, the callout, the tray; bounds() when the keys themselves changed (layer, shift, a new open).
+  // The caller repaints these rectangles this frame (SoulOS adds them to its dirty list). Empty = none.
+  void takeDamage(RectList& out);
+  void render(Canvas& cv);  // clears bounds() and draws everything (under the canvas clip)
 
  private:
   struct Tray {
@@ -131,6 +138,17 @@ class Keyboard {
   bool openTray(const Key& k);
   void trackTray(float x, float y);
   void touched() { blinkT_ = 0; changed_ = true; }
+  // what render() would show, region by region (takeDamage compares it with the last one taken)
+  struct Look {
+    uint64_t field = 0, sug = 0, keys = 0, tray = 0;
+    int pressed = -1, callout = -1;
+    Rect trayBox;
+    bool valid = false;
+  };
+  Look look() const;
+  Rect keyBox(int i) const;
+  Rect calloutBox(int i) const;
+  Look drawn_;
   // drawing helpers
   void drawField(Canvas& cv);
   void drawSuggestions(Canvas& cv);

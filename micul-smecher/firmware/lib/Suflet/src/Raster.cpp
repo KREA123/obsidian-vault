@@ -1,3 +1,4 @@
+#pragma GCC optimize("O3")  // 1.8: the pixel loops (firmware/PERF.md: -5..-16 % instructions in the sim, +18 KB flash)
 #include "Raster.h"
 
 #include <stdlib.h>
@@ -389,13 +390,15 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
         }
         warm = false;
       } else {
+        auto after = [](const Cross& a, const Cross& b) { return a.x > b.x || (a.x == b.x && a.k > b.k); };
         for (int i = 1; i < nc; ++i) {
+          if (!after(cur[i - 1], cur[i])) continue;  // already in place (most of them)
           const Cross c = cur[i];
           int j = i - 1;
-          while (j >= 0 && (cur[j].x > c.x || (cur[j].x == c.x && cur[j].k > c.k))) {
+          do {
             cur[j + 1] = cur[j];
             --j;
-          }
+          } while (j >= 0 && after(cur[j], c));
           cur[j + 1] = c;
         }
         warm = true;
@@ -504,6 +507,11 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
   if (y0 < cr.y0) y0 = cr.y0;
   if (x1 > cr.x1) x1 = cr.x1;
   if (y1 > cr.y1) y1 = cr.y1;
+  // the left edge with no clip but the canvas: a gradient run is stepped from where an unclipped
+  // composite starts it, so drawing under a smaller clip gives exactly the same pixels (1.8)
+  int xFull0 = sm.x0;
+  if (clip && clip->x0 > xFull0) xFull0 = clip->x0;
+  if (xFull0 < 0) xFull0 = 0;
   if (disc_) {  // rows and columns outside the disc never draw
     const int dy0 = (int)floorf(dcy_ - dr_), dy1 = (int)ceilf(dcy_ + dr_);
     const int dx0 = (int)floorf(dcx_ - dr_), dx1 = (int)ceilf(dcx_ + dr_);
@@ -511,6 +519,7 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
     if (y1 > dy1) y1 = dy1;
     if (x0 < dx0) x0 = dx0;
     if (x1 > dx1) x1 = dx1;
+    if (xFull0 < dx0) xFull0 = dx0;
   }
   if (x1 <= x0 || y1 <= y0) return;
   const uint32_t ga = (uint32_t)(alpha >= 1 ? 256 : alpha * 256.0f);  // 0..256
@@ -535,6 +544,7 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
   for (int y = y0; y < y1; ++y) {
     const Mask::Row& sr = sm.rows[y - sm.y0];
     int lo = sr.lo > x0 ? sr.lo : x0, hi = sr.hi < x1 ? sr.hi : x1;
+    int loFull = sr.lo > xFull0 ? sr.lo : xFull0;
     int f0 = sr.f0, f1 = sr.f1;
     const uint8_t* srow = sm.data + (y - sm.y0) * sm.w - sm.x0;
     const Mask::Row* crw = nullptr;
@@ -542,6 +552,7 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
     if (clip) {
       crw = &clip->rows[y - clip->y0];
       if (crw->lo > lo) lo = crw->lo;
+      if (crw->lo > loFull) loFull = crw->lo;
       if (crw->hi < hi) hi = crw->hi;
       if (crw->f0 > f0) f0 = crw->f0;  // solid where both are solid
       if (crw->f1 < f1) f1 = crw->f1;
@@ -560,8 +571,10 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
       if (ir < f1) f1 = ir;
       const int l2 = (int)floorf(dl - 0.5f), r2 = (int)ceilf(dr + 0.5f);
       if (l2 > lo) lo = l2;
+      if (l2 > loFull) loFull = l2;
       if (r2 < hi) hi = r2;
     }
+    const int f0Full = f0 > loFull ? f0 : loFull;  // where an unclipped composite starts the solid run
     if (hi <= lo) continue;
     if (f0 < lo) f0 = lo;
     if (f0 > hi) f0 = hi;  // never read past the row's coverage
@@ -625,7 +638,8 @@ void Raster::composite(Canvas& cv, const Mask& sm, const Paint& paint, float alp
       } else if (solid) {
         for (int x = f0; x < f1; ++x) drow[x] = blend565(drow[x], fg, fullA);
       } else {
-        float gt = ((f0 + 0.5f - paint.x0) * gdx + (y + 0.5f - paint.y0) * gdy) * gk;
+        float gt = ((f0Full + 0.5f - paint.x0) * gdx + (y + 0.5f - paint.y0) * gdy) * gk;
+        for (int x = f0Full; x < f0; ++x) gt += gstep;  // the same steps as an unclipped run (1.8)
         for (int x = f0; x < f1; ++x, gt += gstep) {
           int gi = (int)gt;
           const uint16_t c = lut[gi < 0 ? 0 : (gi > 63 ? 63 : gi)];
@@ -657,6 +671,7 @@ void Raster::ring(Canvas& cv, float cx, float cy, float r, float w, Rgb c, float
   if (y1 > cr.y1) y1 = cr.y1;
   const uint16_t fg = c.to565();
   const uint32_t ga = (uint32_t)(alpha >= 1 ? 256 : alpha * 256.0f);
+  const uint32_t solidA32 = (((255u * ga) >> 8) * 33) >> 8;  // what a fully covered pixel gets (cov = 1)
   uint16_t* fb = cv.data();
   const int W = cv.width();
   int minX = cr.x1, maxX = cr.x0 - 1, minY = y1, maxY = y0 - 1;
@@ -671,11 +686,41 @@ void Raster::ring(Canvas& cv, float cx, float cy, float r, float w, Rgb c, float
     if (nspan == 1) sx[0][1] = cx + xo;
     uint16_t* drow = fb + y * W;
     bool any = false;
+    // a full ring: the pixels at least half a pixel (+ a safety margin) inside both edges are fully
+    // covered (cov >= 1): one constant blend, no square root (the map's rim vignette: 36 K px a frame)
+    int sl0 = 1, sl1 = 0, sr0 = 1, sr1 = 0;  // [sl0, sl1] and [sr0, sr1]: solid on the left / right
+    if (full && solidA32) {
+      const double ra = r - hw + 0.5 + 0.25, rb = r + hw - 0.5 - 0.25, dd = (double)dy * dy;
+      if (ra < rb && dd < rb * rb) {
+        const double ob = sqrt(rb * rb - dd), ia = ra > 0 && ra * ra > dd ? sqrt(ra * ra - dd) : 0.0;
+        sr0 = (int)ceil(cx + ia - 0.5) + 1;
+        sr1 = (int)floor(cx + ob - 0.5) - 1;
+        sl0 = (int)ceil(cx - ob - 0.5) + 1;
+        sl1 = (int)floor(cx - ia - 0.5) - 1;
+        if (ia == 0.0) {  // the row crosses the hole's top or bottom: one solid run through the middle
+          sl1 = sr1;
+          sr0 = 1, sr1 = 0;
+        }
+      }
+    }
     for (int k = 0; k < nspan; ++k) {
       int xa = (int)floorf(sx[k][0]), xb = (int)ceilf(sx[k][1]);
       if (xa < cr.x0) xa = cr.x0;
       if (xb > cr.x1) xb = cr.x1;
       for (int x = xa; x < xb; ++x) {
+        if ((x >= sl0 && x <= sl1) || (x >= sr0 && x <= sr1)) {  // the solid run: one tight loop to its end
+          const int e = x >= sl0 && x <= sl1 ? sl1 : sr1, last = e < xb - 1 ? e : xb - 1;
+          if (solidA32 >= 32) {
+            for (int q = x; q <= last; ++q) drow[q] = fg;
+          } else {
+            for (int q = x; q <= last; ++q) drow[q] = blend565(drow[q], fg, solidA32);
+          }
+          any = true;
+          if (x < minX) minX = x;
+          if (last > maxX) maxX = last;
+          x = last;
+          continue;
+        }
         const float dx = x + 0.5f - cx;
         const float d = sqrtf(dx * dx + dy * dy);
         float cov = hw + 0.5f - fabsf(d - r);

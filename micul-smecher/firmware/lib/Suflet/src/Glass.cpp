@@ -1,8 +1,11 @@
+#pragma GCC optimize("O3")  // 1.8: the pixel loops (firmware/PERF.md: -5..-16 % instructions in the sim, +18 KB flash)
 #include "Glass.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <new>
 
 #include "Raster.h"  // blend565
 
@@ -57,6 +60,52 @@ void boxBlur(uint16_t* img, uint16_t* tmp, int w, int h, int r, int passes) {
   }
 }
 
+// Rows of an annulus around (cx, cy), radii ri..ro, for GlassLayer::shade: the pixels whose centre may lie
+// in it (widened by a pixel each side: `reach`), or that surely lie in it (narrowed: `deep`). n = 0..2.
+int annulusReach(float py, float cx, float cy, float ri, float ro, int lo[2], int hi[2]) {
+  const double dy = py - cy, dd = dy * dy;
+  if (ro <= 0 || dd >= (double)ro * ro) return 0;
+  const double xo = sqrt((double)ro * ro - dd);
+  if (ri > 0 && dd < (double)ri * ri) {
+    const double xi = sqrt((double)ri * ri - dd);
+    lo[0] = (int)floor(cx - xo - 0.5) - 1;
+    hi[0] = (int)ceil(cx - xi - 0.5) + 2;
+    lo[1] = (int)floor(cx + xi - 0.5) - 1;
+    hi[1] = (int)ceil(cx + xo - 0.5) + 2;
+    if (hi[0] >= lo[1]) {
+      hi[0] = hi[1];
+      return 1;
+    }
+    return 2;
+  }
+  lo[0] = (int)floor(cx - xo - 0.5) - 1;
+  hi[0] = (int)ceil(cx + xo - 0.5) + 2;
+  return 1;
+}
+
+int annulusDeep(float py, float cx, float cy, float ri, float ro, int lo[2], int hi[2]) {
+  const double dy = py - cy, dd = dy * dy;
+  if (ro <= ri || dd >= (double)ro * ro) return 0;
+  const double xo = sqrt((double)ro * ro - dd);
+  int n = 0;
+  auto put = [&](double a, double b) {  // centres in [a, b] -> pixels x with a <= x + 0.5 <= b, a pixel spare
+    const int l = (int)ceil(a - 0.5) + 1, h = (int)floor(b - 0.5);
+    if (h > l) {
+      lo[n] = l;
+      hi[n] = h;
+      ++n;
+    }
+  };
+  if (ri > 0 && dd < (double)ri * ri) {
+    const double xi = sqrt((double)ri * ri - dd);
+    put(cx - xo, cx - xi);
+    put(cx + xi, cx + xo);
+  } else {
+    put(cx - xo, cx + xo);
+  }
+  return n;
+}
+
 }  // namespace
 
 GlassLayer& glass() {
@@ -70,6 +119,7 @@ GlassLayer::~GlassLayer() {
   free(backA_);
   free(backF_);
   free(lo_);
+  if (lut_ && lutSlots_ == 4) free(lut_);
 }
 
 Rgb GlassLayer::toneColor(GlassTone t) {
@@ -85,8 +135,9 @@ Rgb GlassLayer::toneColor(GlassTone t) {
   }
 }
 
-bool GlassLayer::begin(int w, int h) {
+bool GlassLayer::begin(int w, int h, bool buildNow) {
   if (aura_ && w == w_ && h == h_) return true;
+  built_ = false;
   free(aura_);
   free(frost_);
   free(backA_);
@@ -120,7 +171,7 @@ bool GlassLayer::begin(int w, int h) {
     backA_ = backF_ = nullptr;
   }
   dirty_ = true;
-  rebuild();
+  if (buildNow) rebuild();
   return true;
 }
 
@@ -178,6 +229,7 @@ bool GlassLayer::step(int rows) {
   frost_ = backF_;
   backF_ = t;
   building_ = false;
+  built_ = true;
   ++rebuilds;
   return true;
 }
@@ -188,6 +240,7 @@ bool GlassLayer::rebuild() {
   upscale(0, bh_, aura_, frost_);
   dirty_ = false;
   building_ = false;
+  built_ = true;
   ++rebuilds;
   return true;
 }
@@ -293,12 +346,12 @@ void GlassLayer::upscale(int y0, int y1, uint16_t* oaBuf, uint16_t* ofBuf) const
 }
 
 uint16_t GlassLayer::auraAt(int x, int y) const {
-  if (!aura_ || (unsigned)x >= (unsigned)w_ || (unsigned)y >= (unsigned)h_) return 0;
+  if (!aura_ || !built_ || (unsigned)x >= (unsigned)w_ || (unsigned)y >= (unsigned)h_) return 0;
   return aura_[(size_t)(y + kMargin + dy_) * bw_ + x + kMargin + dx_];
 }
 
 uint16_t GlassLayer::frostAt(int x, int y) const {
-  if (!frost_ || (unsigned)x >= (unsigned)w_ || (unsigned)y >= (unsigned)h_) return 0;
+  if (!frost_ || !built_ || (unsigned)x >= (unsigned)w_ || (unsigned)y >= (unsigned)h_) return 0;
   return frost_[(size_t)(y + kMargin + dy_) * bw_ + x + kMargin + dx_];
 }
 
@@ -310,7 +363,7 @@ void GlassLayer::background(Canvas& cv, Rect r) const {
   cv.markDirty(r);
   uint16_t* buf = cv.data();
   const int cw = cv.width();
-  const bool show = on_ && aura_ && cv.width() == w_ && cv.height() == h_ && level16_ > 0;
+  const bool show = on_ && aura_ && built_ && cv.width() == w_ && cv.height() == h_ && level16_ > 0;
   for (int y = r.y0; y < r.y1; ++y) {
     uint16_t* row = buf + (size_t)y * cw;
     if (!show) {
@@ -350,10 +403,19 @@ void GlassLayer::backgroundRing(Canvas& cv, float cx, float cy, float ri, float 
 // lookup tables: frosted channel -> glass channel, for 8 steps of the fill gradient (cached per style)
 const GlassLayer::Lut& GlassLayer::lutFor(const GlassStyle& s) const {
   const float key[6] = {s.fillTop, s.fillBottom, (float)s.tint.r, (float)s.tint.g, (float)s.tint.b, s.tintA};
-  for (const Lut& l : lut_)
-    if (memcmp(l.key, key, sizeof key) == 0) return l;
-  Lut& L = lut_[lutNext_];
-  lutNext_ = (lutNext_ + 1) % 4;
+  if (!lut_) {
+    lut_ = (Lut*)malloc(sizeof(Lut) * 4);
+    if (!lut_) {  // no memory: one slot that is always rebuilt
+      static Lut spare;
+      lut_ = &spare;
+      lutSlots_ = 1;
+    }
+    for (int i = 0; i < lutSlots_; ++i) new (&lut_[i]) Lut();
+  }
+  for (int i = 0; i < lutSlots_; ++i)
+    if (memcmp(lut_[i].key, key, sizeof key) == 0) return lut_[i];
+  Lut& L = lut_[lutNext_ % lutSlots_];
+  lutNext_ = (lutNext_ + 1) % lutSlots_;
   memcpy(L.key, key, sizeof key);
   for (int k = 0; k < 8; ++k) {
     const float f = s.fillTop + (s.fillBottom - s.fillTop) * k / 7.0f;
@@ -361,23 +423,23 @@ const GlassLayer::Lut& GlassLayer::lutFor(const GlassStyle& s) const {
       const float v8g = (float)((v << 2) | (v >> 4));
       float og = v8g + (255 - v8g) * f;
       og += (s.tint.g - og) * s.tintA;
-      L.g[k][v] = (uint8_t)clampi((int)(og * (63.0f / 255.0f) + 0.5f), 0, 63);
+      L.g[k][v] = (uint16_t)(clampi((int)(og * (63.0f / 255.0f) + 0.5f), 0, 63) << 5);
       if (v < 32) {
         const float v8 = (float)((v << 3) | (v >> 2));
         float orr = v8 + (255 - v8) * f, ob = orr;
         orr += (s.tint.r - orr) * s.tintA;
         ob += (s.tint.b - ob) * s.tintA;
-        L.r[k][v] = (uint8_t)clampi((int)(orr * (31.0f / 255.0f) + 0.5f), 0, 31);
-        L.b[k][v] = (uint8_t)clampi((int)(ob * (31.0f / 255.0f) + 0.5f), 0, 31);
+        L.r[k][v] = (uint16_t)(clampi((int)(orr * (31.0f / 255.0f) + 0.5f), 0, 31) << 11);
+        L.b[k][v] = (uint16_t)clampi((int)(ob * (31.0f / 255.0f) + 0.5f), 0, 31);
       }
     }
   }
   return L;
 }
 
-template <class Sdf, class Inner>
-void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, Sdf sdf, Inner inner,
-                       const GlassStyle& s) const {
+template <class Sdf, class Inner, class Rows, class DeepPx>
+void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, Sdf sdf, Inner inner, Rows rows,
+                       DeepPx deepPx, const GlassStyle& s) const {
   if (s.alpha <= 0.004f) return;
   const float kShadowR = s.shadow > 0.01f ? s.shadowR : 0.0f, kShadowDy = s.shadowDy;
   constexpr float kEdgeW = 1.5f;
@@ -392,7 +454,7 @@ void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, S
   const auto& lr = L.r;
   const auto& lg = L.g;
   const auto& lb = L.b;
-  const bool see = on_ && frost_ && cv.width() == w_ && cv.height() == h_ && level16_ > 0;
+  const bool see = on_ && frost_ && built_ && cv.width() == w_ && cv.height() == h_ && level16_ > 0;
   const uint32_t lvl = (uint32_t)level16_ * 2;
   const uint16_t glow565 = s.glow.to565();
   const float gdx = 0.42f, gdy = 0.91f;  // the 155 deg fill gradient
@@ -419,21 +481,56 @@ void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, S
       if (ib > r.x1) ib = r.x1;
     }
     const float growBase = (py - by0) * gdy - bx0 * gdx;
-    for (int x = r.x0; x < r.x1; ++x) {
+    RowSpans sp;
+    rows(py, sp);
+    int dk = 0;  // the current deep span: [dLo, dHi)
+    int dLo = sp.nDeep ? sp.deepLo[0] : (1 << 30), dHi = sp.nDeep ? sp.deepHi[0] : (1 << 30);
+    for (int k = 0; k < sp.nReach; ++k)
+    for (int x = sp.reachLo[k] > r.x0 ? sp.reachLo[k] : r.x0, xEnd = sp.reachHi[k] < r.x1 ? sp.reachHi[k] : r.x1; x < xEnd; ++x) {
       if (x == ia && ib > ia) {
         const uint8_t* bay = kBayer[y & 3];
+        const int32_t dith[4] = {bay[0] << 12, bay[1] << 12, bay[2] << 12, bay[3] << 12};
         // the gradient step in 16.16 fixed point, stepped along the row (+ the dither)
         const int32_t inc = (int32_t)(gdx * ginv * 65536.0f);
         int32_t acc = (int32_t)((((iaFull + 0.5f) * gdx + growBase) * ginv) * 65536.0f) + (x - iaFull) * inc;
-        for (; x < ib; ++x, acc += inc) {
-          uint16_t f = fr ? fr[x] : 0;
-          if (fr && lvl < 32) f = blend565(0, f, lvl);
-          int step = (acc + (bay[x & 3] << 12)) >> 16;
-          step = step < 0 ? 0 : (step > 7 ? 7 : step);
-          row[x] = pack565(lr[step][f >> 11], lg[step][(f >> 5) & 63], lb[step][f & 31]);
+        if (fr && lvl >= 32) {  // the usual case: the frosted aura at full level, straight through the tables
+          for (; x < ib; ++x, acc += inc) {
+            const uint32_t f = fr[x];
+            int step = (acc + dith[x & 3]) >> 16;
+            step = step < 0 ? 0 : (step > 7 ? 7 : step);
+            row[x] = (uint16_t)(lr[step][f >> 11] | lg[step][(f >> 5) & 63] | lb[step][f & 31]);
+          }
+        } else {
+          for (; x < ib; ++x, acc += inc) {
+            uint16_t f = fr ? fr[x] : 0;
+            if (fr && lvl < 32) f = blend565(0, f, lvl);
+            int step = (acc + dith[x & 3]) >> 16;
+            step = step < 0 ? 0 : (step > 7 ? 7 : step);
+            row[x] = (uint16_t)(lr[step][f >> 11] | lg[step][(f >> 5) & 63] | lb[step][f & 31]);
+          }
         }
         shaded += (uint32_t)(ib - ia);
-        if (x >= r.x1) break;
+        if (x >= xEnd) break;
+      }
+      if (x >= dLo) {
+        while (x >= dHi) {  // past this deep span: the next one (or none)
+          ++dk;
+          dLo = dk < sp.nDeep ? sp.deepLo[dk] : (1 << 30);
+          dHi = dk < sp.nDeep ? sp.deepHi[dk] : (1 << 30);
+        }
+      }
+      if (x >= dLo && deepPx(x + 0.5f, py)) {
+        // surely >= 1.6 px inside (d <= -kEdgeW): no rim light, full coverage. The same as below, without
+        // the distance function
+        ++shaded;
+        uint16_t f = fr ? fr[x] : 0;
+        if (fr && lvl < 32) f = blend565(0, f, lvl);
+        int step = (int)(((x + 0.5f - bx0) * gdx + (py - by0) * gdy) * ginv + kBayer[y & 3][x & 3] * (1.0f / 16));
+        step = step < 0 ? 0 : (step > 7 ? 7 : step);
+        const uint16_t c = (uint16_t)(lr[step][f >> 11] | lg[step][(f >> 5) & 63] | lb[step][f & 31]);
+        const float cov = 1.0f * s.alpha;
+        row[x] = cov >= 0.999f ? c : blend565(row[x], c, (uint32_t)(cov * 32.0f + 0.5f));
+        continue;
       }
       const float px = x + 0.5f;
       const float d = sdf(px, py);
@@ -461,7 +558,7 @@ void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, S
       int step = (int)(((px - bx0) * gdx + (py - by0) * gdy) * ginv +
                        kBayer[y & 3][x & 3] * (1.0f / 16));  // dithered: no bands
       step = step < 0 ? 0 : (step > 7 ? 7 : step);
-      uint16_t c = pack565(lr[step][f >> 11], lg[step][(f >> 5) & 63], lb[step][f & 31]);
+      uint16_t c = (uint16_t)(lr[step][f >> 11] | lg[step][(f >> 5) & 63] | lb[step][f & 31]);
       // the 1.5 px rim, lit from the top-left
       if (d > -kEdgeW) {
         const float nx = sdf(px + 0.5f, py) - sdf(px - 0.5f, py), ny = sdf(px, py + 0.5f) - sdf(px, py - 0.5f);
@@ -503,7 +600,17 @@ void GlassLayer::panel(Canvas& cv, float x0, float y0, float x1, float y1, float
     xb = cx + half;
     return half > 0;
   };
-  shade(cv, x0, y0, x1, y1, sdf, inner, s);
+  // the same deep middle for a panel fading in (alpha < 1: no LUT run), visited with the per-pixel gradient
+  const bool fading = s.alpha < 0.999f;
+  auto rows = [=](float py, RowSpans& sp) {
+    float xa, xb;
+    if (fading && inner(py, xa, xb)) {
+      sp.nDeep = 1;
+      sp.deepLo[0] = (int)ceilf(xa - 0.5f) + 1;
+      sp.deepHi[0] = (int)floorf(xb - 0.5f);
+    }
+  };
+  shade(cv, x0, y0, x1, y1, sdf, inner, rows, [](float, float) { return true; }, s);
 }
 
 void GlassLayer::capsuleArc(Canvas& cv, float cx, float cy, float rm, float hw, float a0, float a1,
@@ -526,7 +633,18 @@ void GlassLayer::capsuleArc(Canvas& cv, float cx, float cy, float rm, float hw, 
     const float d1 = sqrtf((px - p1x) * (px - p1x) + (py - p1y) * (py - p1y));
     return (d0 < d1 ? d0 : d1) - hw;
   };
-  shade(cv, bx0 - hw, by0 - hw, bx1 + hw, by1 + hw, sdf, [](float, float&, float&) { return false; }, s);
+  // rows: only the annulus within the pad of the band is visited (a rim capsule's box is mostly empty);
+  // deep: the band 1.6 px inside both radii, confirmed by the same angle test as the distance function
+  const float kShadowR = s.shadow > 0.01f ? s.shadowR : 0.0f, pad = (s.glowA > 0 && 15.0f > kShadowR + s.shadowDy ? 15.0f : kShadowR + s.shadowDy) + 1;
+  auto rows = [=](float py, RowSpans& sp) {
+    sp.nReach = annulusReach(py, cx, cy, rm - hw - pad - 1, rm + hw + pad + 1, sp.reachLo, sp.reachHi);
+    sp.nDeep = annulusDeep(py, cx, cy, rm - hw + 1.65f, rm + hw - 1.65f, sp.deepLo, sp.deepHi);
+  };
+  auto deepPx = [=](float px, float py) {
+    const float vx = px - cx, vy = py - cy;
+    return e0x * vy - e0y * vx >= 0 && vx * e1y - vy * e1x >= 0;
+  };
+  shade(cv, bx0 - hw, by0 - hw, bx1 + hw, by1 + hw, sdf, [](float, float&, float&) { return false; }, rows, deepPx, s);
 }
 
 void GlassLayer::band(Canvas& cv, float cx, float cy, float rm, float hw, const GlassStyle& s) const {
@@ -535,6 +653,11 @@ void GlassLayer::band(Canvas& cv, float cx, float cy, float rm, float hw, const 
   auto sdf = [=](float px, float py) {
     const float dx = px - cx, dy = py - cy;
     return fabsf(sqrtf(dx * dx + dy * dy) - rm) - hw;
+  };
+  const float kShadowR = s.shadow > 0.01f ? s.shadowR : 0.0f, pad = (s.glowA > 0 && 15.0f > kShadowR + s.shadowDy ? 15.0f : kShadowR + s.shadowDy) + 1;
+  auto rows = [=](float py, RowSpans& sp) {
+    sp.nReach = annulusReach(py, cx, cy, rm - hw - pad - 1, rm + hw + pad + 1, sp.reachLo, sp.reachHi);
+    sp.nDeep = annulusDeep(py, cx, cy, rm - hw + 1.65f, rm + hw - 1.65f, sp.deepLo, sp.deepHi);
   };
   const Rect keep = cv.clipRect();
   const Rect strips[4] = {
@@ -552,7 +675,8 @@ void GlassLayer::band(Canvas& cv, float cx, float cy, float rm, float hw, const 
     if (c.empty()) continue;
     cv.setClip(c);
     // the gradient spans the whole ring, so the fill matches across the strips
-    shade(cv, cx - ro, cy - ro, cx + ro, cy + ro, sdf, [](float, float&, float&) { return false; }, s);
+    shade(cv, cx - ro, cy - ro, cx + ro, cy + ro, sdf, [](float, float&, float&) { return false; }, rows,
+          [](float, float) { return true; }, s);
   }
   cv.setClip(keep);
 }

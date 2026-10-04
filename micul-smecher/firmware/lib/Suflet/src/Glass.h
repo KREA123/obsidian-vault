@@ -66,8 +66,10 @@ class GlassLayer {
   ~GlassLayer();
   // Allocates the two buffers (about 1 MB at 480 px: PSRAM on the device).
   // false = out of memory: everything falls back to black (the old look).
-  bool begin(int w, int h);
-  bool ready() const { return aura_ != nullptr; }
+  // buildNow = false (the device's boot, 1.8): the first aura is built by step() over the next frames
+  // instead of now (~55 M instructions, ~125 ms before the eyes could show); until then it is black.
+  bool begin(int w, int h, bool buildNow = true);
+  bool ready() const { return aura_ != nullptr && built_; }
   int width() const { return w_; }
   int height() const { return h_; }
 
@@ -116,8 +118,16 @@ class GlassLayer {
  private:
   // `inner(py, xa, xb)` may give a span of the row known to be deep inside the shape (no edge,
   // no anti-aliasing): those pixels skip the distance function and go straight through the LUTs.
-  template <class Sdf, class Inner>
-  void shade(Canvas& cv, float bx0, float by0, float bx1, float by1, Sdf sdf, Inner inner, const GlassStyle& s) const;
+  // `rows(py, RowSpans&)` (1.8) narrows each row: `reach` = where a pixel may be touched at all (outside
+  // it the distance is surely >= the shadow / glow pad), `deep` = candidates surely 1.6 px inside, which
+  // `deepPx(px, py)` confirms; those skip the distance function too but keep the per-pixel gradient.
+  struct RowSpans {
+    int nReach = 1, nDeep = 0;
+    int reachLo[2] = {-(1 << 30), 0}, reachHi[2] = {1 << 30, 0}, deepLo[2] = {0, 0}, deepHi[2] = {0, 0};
+  };
+  template <class Sdf, class Inner, class Rows, class DeepPx>
+  void shade(Canvas& cv, float bx0, float by0, float bx1, float by1, Sdf sdf, Inner inner, Rows rows, DeepPx deepPx,
+             const GlassStyle& s) const;
   void buildLow(int phase);  // glows at 1/4 res (0), the aura blur (1), the frosted blur (2); -1 = all
   void upscale(int y0, int y1, uint16_t* oa, uint16_t* of) const;  // rows of the two 565 buffers
   int w_ = 0, h_ = 0, bw_ = 0, bh_ = 0;                            // screen and buffer sizes
@@ -131,13 +141,13 @@ class GlassLayer {
   // the panel lookup tables of the last few styles (a keyboard draws 35 caps in 3 styles)
   struct Lut {
     float key[6] = {-1, -1, -1, -1, -1, -1};
-    uint8_t r[8][32] = {}, g[8][64] = {}, b[8][32] = {};
+    uint16_t r[8][32] = {}, g[8][64] = {}, b[8][32] = {};  // already in place: pixel = r | g | b
   };
-  mutable Lut lut_[4];
-  mutable int lutNext_ = 0;
+  mutable Lut* lut_ = nullptr;  // 4 slots, allocated on first use (8 KB: PSRAM on the device, not DRAM)
+  mutable int lutNext_ = 0, lutSlots_ = 4;
   const Lut& lutFor(const GlassStyle& s) const;
   int lw_ = 0, lh_ = 0;
-  bool on_ = false, dirty_ = true;
+  bool on_ = false, dirty_ = true, built_ = false;
   GlassTone tone_ = GlassTone::Default;
   int dx_ = 0, dy_ = 0, level16_ = 16;
 };

@@ -1,3 +1,4 @@
+#pragma GCC optimize("O3")  // 1.8: the pixel loops (firmware/PERF.md: -5..-16 % instructions in the sim, +18 KB flash)
 #include "Canvas.h"
 
 namespace suflet {
@@ -86,12 +87,15 @@ void Canvas::ellipse(float cx, float cy, float rx, float ry, Rgb c, float alpha,
 void Canvas::ring(float cx, float cy, float r, float thick, Rgb c, float alpha, float glowR,
                   float glowA) {
   const float h = thick * 0.5f;
-  fillSdf(
+  // nothing is drawn where |distance - r| - h >= 0.5 (and past the glow): only the annulus is visited
+  const float reach = h + (glowR > 0 && glowA > 0 && glowR > 0.5f ? glowR : 0.5f);
+  fillSdfSpans(
       cx - r - h, cy - r - h, cx + r + h, cy + r + h,
       [=](float px, float py) {
         const float dx = px - cx, dy = py - cy;
         return fabsf(sqrtf(dx * dx + dy * dy) - r) - h;
       },
+      [=](float py, int& a0, int& a1, int& b0, int& b1) { annulusSpans(py, cx, cy, r, reach, a0, a1, b0, b1); },
       c, alpha, glowR, glowA);
 }
 
@@ -107,10 +111,13 @@ void Canvas::segment(float x0, float y0, float x1, float y1, float thick, Rgb c,
 void Canvas::arc(float cx, float cy, float r, float a0, float a1, float thick, Rgb c, float alpha,
                  float glowR, float glowA) {
   const float h = thick * 0.5f;
-  fillSdf(
+  // sdArc >= |distance - r| (the caps are points on the circle): the annulus holds every drawn pixel
+  const float reach = h + (glowR > 0 && glowA > 0 && glowR > 0.5f ? glowR : 0.5f);
+  fillSdfSpans(
       cx - r - h, cy - r - h, cx + r + h, cy + r + h,
-      [=](float px, float py) { return sdArc(px, py, cx, cy, r, a0, a1) - h; }, c, alpha, glowR,
-      glowA);
+      [=](float px, float py) { return sdArc(px, py, cx, cy, r, a0, a1) - h; },
+      [=](float py, int& s0, int& s1, int& s2, int& s3) { annulusSpans(py, cx, cy, r, reach, s0, s1, s2, s3); },
+      c, alpha, glowR, glowA);
 }
 
 void Canvas::heart(float cx, float cy, float size, Rgb c, float alpha, float glowR, float glowA) {

@@ -290,6 +290,9 @@ class Os {
   // Draw the UI layer (below the eyes) under the canvas clip.
   void render(Canvas& cv);
   // The part of the UI that changed since the last call (redraw + push it).
+  // The device's boot (1.8): begin() leaves the glass aura to be built over the first frames, so the eyes
+  // show ~125 ms sooner (a screen opened in that first half second shows black glass until it is ready).
+  void setDeferGlass(bool on) { deferGlass_ = on; }
   Rect takeDirty();               // the bounding box (and clears)
   void takeDirty(RectList& out);  // the rectangles (and clears)
   bool wantsTextTouch() const { return true; }
@@ -638,6 +641,7 @@ class Os {
   // dirty tracking
   bool dirtyAll_ = true;
   RectList dirty_;
+  bool deferGlass_ = false;
   int lastMinute_ = -1;
   View drawnView_ = View::Count;
   mutable std::vector<Item> items_;  // scratch for hit-testing

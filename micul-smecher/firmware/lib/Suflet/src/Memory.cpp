@@ -109,57 +109,95 @@ static bool isStop(const std::string& w) {
       "mea", "meu", "mele", "mei", "tau", "ta", "ce", "cand", "cine", "unde", "cum", "de", "la", "pe", "in", "si",
       "sa", "ca", "cu", "care", "despre", "imi", "mi", "ma", "stii", "spune", "o", "un", "una", "le", "lor", "eu",
       "tu", "el", "ea", "noi", "am", "ai", "are", "fost", "user", "users", "owner", "utilizatorul", "has", "have"};
+  if (w.empty()) return false;
   for (const char* s : k)
-    if (w == s) return true;
+    if (s[0] == w[0] && w == s) return true;  // the first letter first: no strlen for most of the list
   return false;
 }
 
 // The RO/EN synonym groups (folded). A query word and a fact word in the same group match.
-static const char* const kSyn0[] = {"birthday", "birthdays", "ziua", "zi", "nastere", "aniversare", "aniversarea", "born", "nascut", "nascuta", nullptr};
-static const char* const kSyn1[] = {"wife", "sotia", "sotie", "nevasta", "partner", "partenera", nullptr};
-static const char* const kSyn2[] = {"husband", "sotul", "sot", "barbatul", "partener", nullptr};
-static const char* const kSyn3[] = {"sister", "sora", "surioara", nullptr};
-static const char* const kSyn4[] = {"brother", "frate", "fratele", "fratior", nullptr};
-static const char* const kSyn5[] = {"mother", "mom", "mum", "mama", "mamica", nullptr};
-static const char* const kSyn6[] = {"father", "dad", "tata", "tatal", "taticu", nullptr};
-static const char* const kSyn7[] = {"son", "fiu", "fiul", "baiatul", nullptr};
-static const char* const kSyn8[] = {"daughter", "fiica", "fata", nullptr};
-static const char* const kSyn9[] = {"child", "children", "kid", "kids", "copil", "copilul", "copii", "copiii", nullptr};
-static const char* const kSyn10[] = {"friend", "friends", "prieten", "prietenul", "prietena", "prieteni", nullptr};
-static const char* const kSyn11[] = {"wifi", "network", "retea", "reteaua", "internet", "router", nullptr};
-static const char* const kSyn12[] = {"dog", "caine", "cainele", "catel", "catelul", nullptr};
-static const char* const kSyn13[] = {"cat", "pisica", "pisicuta", "motan", "motanul", nullptr};
-static const char* const kSyn14[] = {"like", "likes", "love", "loves", "place", "plac", "ador", "prefer", "prefers", "favorite",
+static constexpr const char* kSyn0[] = {"birthday", "birthdays", "ziua", "zi", "nastere", "aniversare", "aniversarea", "born", "nascut", "nascuta", nullptr};
+static constexpr const char* kSyn1[] = {"wife", "sotia", "sotie", "nevasta", "partner", "partenera", nullptr};
+static constexpr const char* kSyn2[] = {"husband", "sotul", "sot", "barbatul", "partener", nullptr};
+static constexpr const char* kSyn3[] = {"sister", "sora", "surioara", nullptr};
+static constexpr const char* kSyn4[] = {"brother", "frate", "fratele", "fratior", nullptr};
+static constexpr const char* kSyn5[] = {"mother", "mom", "mum", "mama", "mamica", nullptr};
+static constexpr const char* kSyn6[] = {"father", "dad", "tata", "tatal", "taticu", nullptr};
+static constexpr const char* kSyn7[] = {"son", "fiu", "fiul", "baiatul", nullptr};
+static constexpr const char* kSyn8[] = {"daughter", "fiica", "fata", nullptr};
+static constexpr const char* kSyn9[] = {"child", "children", "kid", "kids", "copil", "copilul", "copii", "copiii", nullptr};
+static constexpr const char* kSyn10[] = {"friend", "friends", "prieten", "prietenul", "prietena", "prieteni", nullptr};
+static constexpr const char* kSyn11[] = {"wifi", "network", "retea", "reteaua", "internet", "router", nullptr};
+static constexpr const char* kSyn12[] = {"dog", "caine", "cainele", "catel", "catelul", nullptr};
+static constexpr const char* kSyn13[] = {"cat", "pisica", "pisicuta", "motan", "motanul", nullptr};
+static constexpr const char* kSyn14[] = {"like", "likes", "love", "loves", "place", "plac", "ador", "prefer", "prefers", "favorite",
                           "favourite", "preferat", "preferata", "preferatul", nullptr};
-static const char* const kSyn15[] = {"hate", "hates", "dislike", "urasc", "uraste", "detest", nullptr};
-static const char* const kSyn16[] = {"coffee", "cafea", "cafeaua", "espresso", nullptr};
-static const char* const kSyn17[] = {"tea", "ceai", "ceaiul", nullptr};
-static const char* const kSyn18[] = {"work", "job", "works", "serviciu", "serviciul", "munca", "lucrez", "lucreaza", "birou",
+static constexpr const char* kSyn15[] = {"hate", "hates", "dislike", "urasc", "uraste", "detest", nullptr};
+static constexpr const char* kSyn16[] = {"coffee", "cafea", "cafeaua", "espresso", nullptr};
+static constexpr const char* kSyn17[] = {"tea", "ceai", "ceaiul", nullptr};
+static constexpr const char* kSyn18[] = {"work", "job", "works", "serviciu", "serviciul", "munca", "lucrez", "lucreaza", "birou",
                           "office", nullptr};
-static const char* const kSyn19[] = {"home", "house", "acasa", "casa", "address", "adresa", "live", "lives", "locuiesc",
+static constexpr const char* kSyn19[] = {"home", "house", "acasa", "casa", "address", "adresa", "live", "lives", "locuiesc",
                           "locuieste", "stau", nullptr};
-static const char* const kSyn20[] = {"name", "named", "called", "nume", "numele", "cheama", "numesc", "numeste", nullptr};
-static const char* const kSyn21[] = {"doctor", "medic", "medicul", "dentist", nullptr};
-static const char* const kSyn22[] = {"car", "masina", "masinii", nullptr};
-static const char* const kSyn23[] = {"school", "scoala", "liceu", "university", "facultate", nullptr};
-static const char* const kSyn24[] = {"food", "eat", "eats", "mancare", "mananc", "mananca", "dish", "fel", nullptr};
-static const char* const kSyn25[] = {"music", "song", "songs", "muzica", "melodie", "melodia", "band", "trupa", nullptr};
-static const char* const kSyn26[] = {"allergy", "allergic", "alergie", "alergic", "alergica", nullptr};
-static const char* const kSyn27[] = {"city", "town", "oras", "orasul", nullptr};
-static const char* const kSyn28[] = {"trip", "travel", "vacation", "holiday", "calatorie", "concediu", "concediul", "vacanta",
+static constexpr const char* kSyn20[] = {"name", "named", "called", "nume", "numele", "cheama", "numesc", "numeste", nullptr};
+static constexpr const char* kSyn21[] = {"doctor", "medic", "medicul", "dentist", nullptr};
+static constexpr const char* kSyn22[] = {"car", "masina", "masinii", nullptr};
+static constexpr const char* kSyn23[] = {"school", "scoala", "liceu", "university", "facultate", nullptr};
+static constexpr const char* kSyn24[] = {"food", "eat", "eats", "mancare", "mananc", "mananca", "dish", "fel", nullptr};
+static constexpr const char* kSyn25[] = {"music", "song", "songs", "muzica", "melodie", "melodia", "band", "trupa", nullptr};
+static constexpr const char* kSyn26[] = {"allergy", "allergic", "alergie", "alergic", "alergica", nullptr};
+static constexpr const char* kSyn27[] = {"city", "town", "oras", "orasul", nullptr};
+static constexpr const char* kSyn28[] = {"trip", "travel", "vacation", "holiday", "calatorie", "concediu", "concediul", "vacanta",
                           "excursie", nullptr};
-static const char* const kSyn29[] = {"meeting", "appointment", "sedinta", "intalnire", "programare", nullptr};
-static const char* const kSyn30[] = {"color", "colour", "culoare", "culoarea", nullptr};
-static const char* const kSyn31[] = {"team", "echipa", "echipe", nullptr};
-static const char* const kSyn32[] = {"wake", "morning", "dimineata", "trezesc", "scol", nullptr};
-static const char* const kSyn33[] = {"sleep", "bed", "night", "dorm", "culc", "noaptea", "seara", nullptr};
-static const char* const* const kSyn[] = {kSyn0, kSyn1, kSyn2, kSyn3, kSyn4, kSyn5, kSyn6, kSyn7, kSyn8, kSyn9, kSyn10, kSyn11, kSyn12, kSyn13, kSyn14, kSyn15, kSyn16, kSyn17, kSyn18, kSyn19, kSyn20, kSyn21, kSyn22, kSyn23, kSyn24, kSyn25, kSyn26, kSyn27, kSyn28, kSyn29, kSyn30, kSyn31, kSyn32, kSyn33};
+static constexpr const char* kSyn29[] = {"meeting", "appointment", "sedinta", "intalnire", "programare", nullptr};
+static constexpr const char* kSyn30[] = {"color", "colour", "culoare", "culoarea", nullptr};
+static constexpr const char* kSyn31[] = {"team", "echipa", "echipe", nullptr};
+static constexpr const char* kSyn32[] = {"wake", "morning", "dimineata", "trezesc", "scol", nullptr};
+static constexpr const char* kSyn33[] = {"sleep", "bed", "night", "dorm", "culc", "noaptea", "seara", nullptr};
+static constexpr const char* const* kSyn[] = {kSyn0, kSyn1, kSyn2, kSyn3, kSyn4, kSyn5, kSyn6, kSyn7, kSyn8, kSyn9, kSyn10, kSyn11, kSyn12, kSyn13, kSyn14, kSyn15, kSyn16, kSyn17, kSyn18, kSyn19, kSyn20, kSyn21, kSyn22, kSyn23, kSyn24, kSyn25, kSyn26, kSyn27, kSyn28, kSyn29, kSyn30, kSyn31, kSyn32, kSyn33};
+
+// every synonym once, sorted at compile time (flash, no RAM): a binary search instead of 1.7's walk over all
+// ~250 words for every word of every fact
+struct SynWord {
+  const char* w;
+  int g;
+};
+constexpr int synCount() {
+  int c = 0;
+  for (const char* const* grp : kSyn)
+    for (const char* const* p = grp; *p; ++p) ++c;
+  return c;
+}
+constexpr int cstrcmp(const char* a, const char* b) {
+  while (*a && *a == *b) ++a, ++b;
+  return (int)(unsigned char)*a - (int)(unsigned char)*b;
+}
+struct SynTable {
+  SynWord t[synCount()];
+};
+constexpr SynTable buildSyn() {
+  SynTable s{};
+  int c = 0;
+  for (int g = 0; g < (int)(sizeof(kSyn) / sizeof(kSyn[0])); ++g)
+    for (const char* const* p = kSyn[g]; *p; ++p) s.t[c++] = SynWord{*p, g};
+  for (int i = 1; i < c; ++i) {  // stable: a word in two groups keeps the first (as the linear walk did)
+    const SynWord v = s.t[i];
+    int j = i - 1;
+    while (j >= 0 && cstrcmp(s.t[j].w, v.w) > 0) {
+      s.t[j + 1] = s.t[j];
+      --j;
+    }
+    s.t[j + 1] = v;
+  }
+  return s;
+}
+static constexpr SynTable kSynSorted = buildSyn();
 
 static int synGroup(const std::string& w) {
-  for (size_t g = 0; g < sizeof(kSyn) / sizeof(kSyn[0]); ++g)
-    for (const char* const* p = kSyn[g]; *p; ++p)
-      if (w == *p) return (int)g;
-  return -1;
+  const SynWord* t = kSynSorted.t;
+  const SynWord* e = t + synCount();
+  const SynWord* it = std::lower_bound(t, e, w.c_str(), [](const SynWord& a, const char* key) { return strcmp(a.w, key) < 0; });
+  return it != e && w == it->w ? it->g : -1;
 }
 
 // a Romanian genitive (Anei, Mariei) -> its nominative (Ana, Maria)
@@ -440,15 +478,22 @@ static float matchScore(const std::vector<QueryTok>& q, const Fact& f) {
   if (q.empty()) return 0;
   const std::vector<std::string> fw = words(SoulMemory::fold(f.text + " " + f.subject));
   const std::string subj = SoulMemory::fold(f.subject);
+  // each fact word's nominative and synonym group once (1.7 looked them up again for every query word:
+  // a 200-fact question cost ~24 M instructions, ~55 ms on the S3)
+  const size_t n = fw.size();
+  std::vector<std::string> nom(n);
+  std::vector<int> grp(n, -2);  // -2: not looked up yet (only needed when a query word has a group)
+  for (size_t i = 0; i < n; ++i) nom[i] = nominative(fw[i]);
   float s = 0;
   for (const QueryTok& t : q) {
     float best = 0;
-    for (const std::string& w : fw) {
-      if (w == t.w || nominative(w) == t.w) {
+    for (size_t i = 0; i < n; ++i) {
+      const std::string& w = fw[i];
+      if (w == t.w || nom[i] == t.w) {
         best = 3;
         break;
       }
-      if (t.group >= 0 && synGroup(w) == t.group) best = fmaxf(best, 2.0f);
+      if (t.group >= 0 && (grp[i] == -2 ? (grp[i] = synGroup(w)) : grp[i]) == t.group) best = fmaxf(best, 2.0f);
       else if (t.w.size() >= 4 && w.size() >= 4 && (w.compare(0, t.w.size(), t.w) == 0 || t.w.compare(0, w.size(), w) == 0))
         best = fmaxf(best, 1.2f);
     }

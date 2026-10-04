@@ -180,6 +180,7 @@ std::string fitText(const Font& f, const std::string& s, int maxW) {
 
 void Keyboard::setGeometry(const DisplayGeometry& g) {
   g_ = g;
+  drawn_.valid = false;
   rowH_ = SI(kRowH);
   fieldBottom_ = SI(kFieldBottom);
   sugBottom_ = SI(kSugBottom);
@@ -189,6 +190,7 @@ void Keyboard::setGeometry(const DisplayGeometry& g) {
 
 void Keyboard::open(const KbConfig& cfg, const std::string& initial) {
   cfg_ = cfg;
+  drawn_.valid = false;
   field_ = TextField(cfg.maxChars);
   field_.set(initial, false);
   pred_.uiLang = cfg.uiLang;
@@ -812,6 +814,138 @@ void Keyboard::drawTray(Canvas& cv) {
     const uint32_t cp = utf8::next(p);
     cv.drawText(lf, cx, baselineFor(lf, cp, (y0 + y1) * 0.5f), tray_.items[i].c_str(), kCream, 1.0f,
                 Align::Center);
+  }
+}
+
+// ------------------------------------------------------------------ damage ---
+
+namespace {
+struct Fnv {
+  uint64_t h = 1469598103934665603ull;
+  void bytes(const void* p, size_t n) {
+    const uint8_t* b = (const uint8_t*)p;
+    for (size_t i = 0; i < n; ++i) h = (h ^ b[i]) * 1099511628211ull;
+  }
+  void str(const std::string& s) {
+    bytes(s.data(), s.size());
+    i(-1);
+  }
+  void cstr(const char* s) { str(s ? std::string(s) : std::string()); }
+  void i(int64_t v) { bytes(&v, sizeof v); }
+  void f(float v) { bytes(&v, sizeof v); }
+};
+constexpr int kPad = 16;  // the reach of a glass panel's shadow / accent glow (GlassLayer::shade pads 15 + 1)
+Rect grow(Rect r, int m) { return Rect{r.x0 - m, r.y0 - m, r.x1 + m, r.y1 + m}; }
+}  // namespace
+
+Keyboard::Look Keyboard::look() const {
+  Look L;
+  L.valid = true;
+  Fnv f;  // the field: drawField()
+  f.str(field_.text());
+  f.cstr(cfg_.placeholder);
+  f.i(caretOn_);
+  f.i(auto_.active);
+  if (auto_.active) {
+    f.str(auto_.after);
+    f.str(auto_.repl);
+    f.i((int64_t)auto_.pos);
+    const float age = t_ - auto_.t;
+    f.f(age < 0.4f ? 1.0f : 1.0f - (age - 0.4f) / 0.6f);
+  }
+  L.field = f.h;
+  Fnv g;  // the suggestion bar: drawSuggestions()
+  for (const Suggestion& sg : sug_) {
+    g.str(sg.label);
+    g.i(sg.bold);
+    g.i(sg.undo);
+    g.i(sg.empty());
+  }
+  g.i(field_.blank());
+  g.i(undoChipUntil_ > t_);
+  L.sug = g.h;
+  Fnv k;  // every key: drawKey() (+ the callout's letter)
+  k.i((int)layer_);
+  k.i((int)shift_);
+  k.i(nKeys_);
+  k.i(rowH_);
+  for (int i = 0; i < nKeys_; ++i) {
+    const Key& q = keys_[i];
+    k.i((int)q.id);
+    k.i(q.cp);
+    k.i(q.cx);
+    k.i(q.x0);
+    k.i(q.x1);
+    k.i(q.y0);
+  }
+  k.i(field_.blank());
+  k.i((int)cfg_.action);
+  k.i((int)cfg_.uiLang);
+  k.i(tray_.open);
+  L.keys = k.h;
+  L.pressed = pressed_ >= 0 && !tray_.open ? pressed_ : -1;
+  L.callout = !tray_.open && pressed_ >= 0 && pressed_ < nKeys_ && keys_[pressed_].id == KeyId::Char && zone_ == Zone::Key ? pressed_ : -1;
+  Fnv t;  // the tray: drawTray()
+  t.i(tray_.open);
+  if (tray_.open) {
+    t.i(tray_.n);
+    t.i(tray_.sel);
+    t.i(tray_.left);
+    t.i(tray_.top);
+    for (int i = 0; i < tray_.n; ++i) t.str(tray_.items[i]);
+    L.trayBox = grow(Rect{(int)floorf(tray_.left - S(6)), tray_.top, (int)ceilf(tray_.left + S(44) * tray_.n + S(6)) + 1,
+                          (int)ceilf(tray_.top + S(62)) + 1}, kPad);
+  }
+  L.tray = t.h;
+  return L;
+}
+
+Rect Keyboard::keyBox(int i) const {
+  if (i < 0 || i >= nKeys_) return Rect{};
+  const Key& k = keys_[i];
+  return grow(Rect{k.x0, k.y0, k.x1, k.y0 + rowH_}, kPad);
+}
+
+Rect Keyboard::calloutBox(int i) const {
+  if (i < 0 || i >= nKeys_) return Rect{};
+  const Key& k = keys_[i];
+  const float x = clampf(k.cx - S(29), S(30), S(378)), y = k.y0 - S(64);
+  return grow(Rect{(int)floorf(x), (int)floorf(y), (int)ceilf(x + S(58)) + 1, (int)ceilf(y + S(66)) + 1}, kPad);
+}
+
+void Keyboard::takeDamage(RectList& out) {
+  if (!open_) {
+    drawn_.valid = false;
+    return;
+  }
+  const Look now = look();
+  const Look was = drawn_;
+  drawn_ = now;
+  const Rect b = bounds();
+  auto add = [&](Rect r) {
+    if (r.x0 < b.x0) r.x0 = b.x0;
+    if (r.y0 < b.y0) r.y0 = b.y0;
+    if (r.x1 > b.x1) r.x1 = b.x1;
+    if (r.y1 > b.y1) r.y1 = b.y1;
+    out.add(r);
+  };
+  if (!was.valid || was.keys != now.keys) {  // a new layout, layer or shift: everything
+    add(b);
+    return;
+  }
+  if (was.field != now.field) add(grow(Rect{(int)S(76), (int)S(62), (int)ceilf(S(390)) + 1, (int)ceilf(S(130)) + 1}, kPad));
+  if (was.sug != now.sug) add(Rect{b.x0, (int)S(138) - kPad, b.x1, (int)ceilf(S(178)) + 1 + kPad});
+  if (was.pressed != now.pressed) {
+    add(keyBox(was.pressed));
+    add(keyBox(now.pressed));
+  }
+  if (was.callout != now.callout) {
+    add(calloutBox(was.callout));
+    add(calloutBox(now.callout));
+  }
+  if (was.tray != now.tray) {
+    add(was.trayBox);
+    add(now.trayBox);
   }
 }
 

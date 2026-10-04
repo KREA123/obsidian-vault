@@ -144,6 +144,10 @@ void bleInit(const char* deviceName) {
   adv->setScanResponse(true);
   adv->setMinPreferred(0x06);
   adv->setMaxPreferred(0x12);
+  // 1.8: advertise every 152.5-211.25 ms (the stack's default is ~30-60 ms): a third of the radio time, still
+  // found by Claude Desktop in about a second (Apple's recommended intervals)
+  adv->setMinInterval(0xF4);
+  adv->setMaxInterval(0x152);
   BLEDevice::startAdvertising();
   Serial.printf("[ble] advertising as '%s'\n", deviceName);
 }
