@@ -33,6 +33,9 @@
 #ifndef LCD_ISR_CORE
 #define LCD_ISR_CORE 0  // the bounce-buffer ISR runs on core 0 (Wi-Fi/BLE); rendering owns core 1
 #endif
+#ifndef LCD_SKIP_SWRESET
+#define LCD_SKIP_SWRESET 0  // 1: no ST7701 software reset after the hardware one (-120 ms of boot)
+#endif
 #ifndef LCD_PCLK_SLEEP_HZ
 #define LCD_PCLK_SLEEP_HZ 6000000
 #endif
@@ -170,8 +173,10 @@ static void st7701Init() {
   exioWrite(EXIO_LCD_RST, true);
   delay(120);
   spiPins(true);
+#if !LCD_SKIP_SWRESET  // 1.8 board-day experiment (BRINGUP §5): the hardware reset above already reset it
   st7701Cmd(0x01, nullptr, 0);  // software reset
   delay(120);
+#endif
   for (const InitCmd& c : kInit) {
     st7701Cmd(c.cmd, c.data, c.len);
     if (c.delayMs) delay(c.delayMs);

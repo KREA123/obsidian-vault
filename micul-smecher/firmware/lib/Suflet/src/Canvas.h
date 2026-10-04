@@ -35,7 +35,7 @@ struct Rect {
 // the UI under a clip); with no room left the cheapest pair is merged. Drawing every rectangle in turn
 // gives the same pixels as drawing their bounding box once (each pass clears and redraws its area).
 struct RectList {
-  static constexpr int kMax = 6;
+  static constexpr int kMax = 10;
   Rect r[kMax];
   int n = 0;
   bool empty() const { return n == 0; }
@@ -45,10 +45,10 @@ struct RectList {
     a.add(b);
     return a;
   }
-  // worth one box: they touch, or the box wastes at most a quarter of it plus a strip of 2K px
+  // worth one box: they overlap, or the box wastes at most 1/16 of it plus 512 px (side by side: none)
   static bool mergeable(const Rect& a, const Rect& b) {
     const int64_t u = area(hull(a, b));
-    return (a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1) || u - area(a) - area(b) <= u / 16 + 512;
+    return (a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1) || u - area(a) - area(b) <= u / 16 + 512;
   }
   Rect bounds() const {
     Rect b;

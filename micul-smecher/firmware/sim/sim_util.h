@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "Canvas.h"
 #include "Frame.h"
@@ -32,6 +33,10 @@ inline uint64_t frameHash(const uint16_t* px, size_t n) {
 inline void dumpPpm(const Canvas& cv, const char* prefix, int frame) {
   const char* want = getenv("SIM_DUMP");
   if (!want) return;
+  if (const char* only = getenv("SIM_DUMP_NAME")) {  // only this scenario's frames (prefix ends in "/<name>")
+    const char* slash = strrchr(prefix, '/');
+    if (strcmp(slash ? slash + 1 : prefix, only) != 0) return;
+  }
   bool hit = false;
   for (const char* p = want; *p;) {
     if (atoi(p) == frame) hit = true;

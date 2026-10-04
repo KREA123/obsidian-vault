@@ -1,6 +1,6 @@
 # SOUL M bring-up: the first 15 minutes on a real 2.8C
 
-*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0 (§4b: 1.4.x, §4c: 1.5.0). Nothing below has run on a board yet: every line
+*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0 (§4b: 1.4.x, §4c: 1.5.0, §4d: 1.6, §4e: 1.7, §5: 1.8.0). Nothing below has run on a board yet: every line
 is either "verified on the PC" (native tests, the simulator) or "expected, check it". This page is the
 checklist that turns the second kind into the first. Write the numbers you measure into the table at
 the end and commit them.*
@@ -27,11 +27,17 @@ If the port does not show up: hold **BOOT**, tap **RESET**, release BOOT, try ag
 
 ```text
 [board] LCD-2.8C 480x480  [imu] ok  [rtc] ok  psram ~7xxx KB free
-[lcd] ST7701 480x480 RGB565, 2 PSRAM frame buffers, 10-line bounce buffers, pclk 18.0 MHz
-[touch] ok
 [soul] chip XX:XX:XX:XX:XX:XX: design #nnn <Name> (<rarity>, 1 in N)
 [store] 0 alarms, 0 notes, 0 reminders
+[lcd] ST7701 480x480 RGB565, 2 PSRAM frame buffers, 10-line bounce buffers, pclk 18.0 MHz
+[boot] eyes on the glass at ~4xx ms (app start)
+[touch] ok
+[ble] advertising as 'Claude-Suflet-XXXX'
+[boot] radios started at ~6xx ms
 ```
+
+(1.8 boots the eyes first: the panel's init runs on core 0 beside the app's, so `[lcd]` may print before or after
+`[soul]`/`[store]`; touch, audio, BLE and Wi-Fi start after the first frame. §5b times it.)
 
 - [ ] `[touch] NOT FOUND` → GT911 address select timing; see `touchInit()` (vendor 150/150/50 ms).
 - [ ] `[exio] TCA9554 NOT FOUND` → nothing else will work; check I2C SDA15/SCL7.
@@ -105,7 +111,8 @@ Type `F` on the serial monitor for the on-screen overlay; every 5 s the log prin
 [perf] 30.0 fps (asked 30), frame 9.8 ms (draw 7.1, push 1.9), loop cpu 29%, view home, mode awake, heap 1xx K (min 1xx K), psram 6xxx K
 ```
 
-Targets (estimates from callgrind instruction counts on the PC, **not measured on a board**):
+Targets (estimates from callgrind instruction counts on the PC, **not measured on a board**; firmware 1.8's
+numbers and the measuring steps are in §5):
 
 | Situation | fps asked | frame ms expected | loop CPU expected |
 |---|---|---|---|
@@ -286,7 +293,103 @@ Frame cost (callgrind instructions per composed frame on the PC, `--toggle-colle
 By §4b's scale (6.3 M ≈ 11–18 ms) maps and games land around 16–30 ms: 30 fps asked, the adaptive cap may settle
 at ~24 while panning or playing. **Measure** with `F` and write the numbers: maps pan ____ fps, games ____ fps.
 
-## 5 · Wi-Fi and the AI (4 min)
+## 5 · Performance on the board (firmware 1.8, 15 min)
+
+[`PERF.md`](PERF.md) has the 1.7 → 1.8 tables: every number there is an **estimate** (instructions counted on the
+PC × 2.3 ns, a PSRAM copy at 50 MB/s, datasheet currents). This section turns them into measurements. Flash the
+1.8.0 image (`release/SOUL-2.8C-install.bin` or `pio run -e lcd28 -t upload`), open the monitor
+(`pio device monitor -b 115200`), type `F` (overlay) and `p` (a perf line now). Every 5 s:
+
+```text
+[perf] 24.0 fps (asked 24), frame 11.x ms (draw 8.x, push 2.x), loop cpu 2x%, view home, mode awake, heap 1xx K (min 1xx K), psram 6xxx K, copy 2.x ms (5xxxx px), wait 0.x ms, cpu 240 MHz, loop stack head-room 3xxx B
+```
+
+`draw` = compose (the estimate's *render*), `push` = present: `copy` (canvas → back frame buffer, `px` copied) +
+`wait` (for the panel to finish two frames from the new buffer). Two lines per state, the second one counts.
+
+### 5a · Frame time per scenario (8 min)
+
+| State (how to get there) | est. draw ms | est. copy ms (px) | fps asked | Measured: fps / draw / copy |
+|---|---:|---:|---:|---|
+| Standby, nobody touches it (the born design; serial `P` names it) | 8.2 × (M instr of your design / 3.56) | 2.3 (57 K) | 24 | |
+| Standby on an outline design (#107 laser-show, the worst) | 13.5 | ~2.5 | 24 | (only if this unit is one) |
+| Boop, laugh (`elaugh` on serial) | 4.6 | 1.8 (45 K) | 30 | |
+| Tilt, spin (dizzy), nod | 10.9 | 3.7 (91 K) | 30 | |
+| A notification capsule on standby (a SOUL Cloud push: a connector note) | 8.4 | 2.9 (72 K) | 30 | |
+| Launcher orbit, open Alarms | 7.2 | 3.0 (74 K) | 30 | |
+| Typing on the keyboard (Notes) | 7.4 | 2.7 (67 K) | 30 | |
+| Settings open, still / tilted slowly | 5.1 / 6.0 | 1.3 / 2.1 | 30 | |
+| Claude's ask (amber ring, "!") | 12.6 | 5.2 (131 K) | 30 | |
+| Maps: drag / walking a route | 11.2 | 4.4 (110 K) | 30 | |
+| Games: tilt ball / rhythm | 11.5 | 6.5 (162 K) | 30 | |
+
+- [ ] **The S3's speed vs the estimate**: divide the measured standby `draw` by the M instructions of the born
+      design (`python3 tools/perf_bench.py --designs` lists all 120; `SIM_DESIGN=<index>`). PERF.md assumes 2.3 ns;
+      write the real figure here: ____ ns. Every est. column scales with it.
+- [ ] **Copy speed**: `px × 2 / (copy ms × 1000)` = MB/s (PERF.md assumes 50): ____ MB/s. If `copy` is much more
+      than 3 ms in standby, note it (the GDMA async copy in PERF.md *Not done* is then worth trying).
+- [ ] fps = asked in every row above (the adaptive cap lowers fps only if a frame costs more than ~60 % of its
+      period: `asked 30` with a lower fps means it did).
+- [ ] **-O3 on Xtensa**: build once with the three `#pragma GCC optimize("O3")` lines (top of `lib/Suflet/src/
+      Raster.cpp`, `Glass.cpp`, `Canvas.cpp`) commented out, compare standby / typing / maps `draw`. Keep `-O3` only
+      if it is faster here too (it costs 18 KB of flash): ____ / ____ ms.
+- [ ] **What the eye sees** (the new partial repaints; any stale pixel is a bug — note where): typing fast, no key
+      stays lit and no callout lingers; the tilt ball leaves no trail and the star spins; navigating, the pulse
+      around "you" animates and nothing ghosts when a new fix comes; Claude's ask with the "!" near the rim: the
+      amber ring stays *over* the "!"; a screen opened in the first half second after boot shows black glass, then
+      the aura (by design: the aura is built in the background).
+
+### 5b · Boot time (2 min)
+
+- [ ] `[boot] eyes on the glass at ____ ms` and `[boot] radios started at ____ ms` (app time; expected ~400–450 and
+      ~600–700). Power-on to eyes, filmed (a phone's slow-motion at 240 fps from pressing the power switch / plugging
+      USB to the first light of the eyes): ____ ms. Target **< 600 ms**; estimate ~650 ms.
+- [ ] With `-DLCD_SKIP_SWRESET=1` (add to `build_flags`; −120 ms): the picture must be exactly the same (colours,
+      no flicker, no shift) over 5 power cycles: ____ ms, OK / not OK. Keep it off unless it is perfect.
+- [ ] Touch works within ~0.5 s of the eyes (it initialises beside the boot) and the first tap is not lost.
+
+### 5c · Memory and stacks (2 min)
+
+Type `m`: every task's stack head-room (bytes never used) and CPU share since the last `m`, then the heaps.
+
+- [ ] After boot, idle: `m` → write down internal free / lowest / largest block and PSRAM free.
+- [ ] After a SOUL Cloud turn **with Claude Desktop connected over BLE** (the TLS + BLE peak), maps open, the
+      keyboard open, 1 h of use: `m` each time. Targets: internal lowest ≥ 40 KB, largest block ≥ 16 KB; PSRAM free
+      ≥ 1 MB (≥ 1 MB with the voice build too); every stack head-room ≥ 512 B (`loopTask` ≥ 1 KB). A task under
+      512 B: raise its stack in its `xTaskCreatePinnedToCore` (`soul-net` 12 KB, `soul-cloud` 16 KB, `loopTask` 8 KB).
+- [ ] The `cpu` column: `loopTask` ≈ the `[perf]` loop cpu; `IDLE0`/`IDLE1` = what is left; `soul-net` /
+      `soul-cloud` spikes during turns only.
+
+### 5d · Power (3 min, USB meter, 5 V in)
+
+| State | 1.7 expected (§4) | 1.8 estimate | Measured |
+|---|---|---|---|
+| Awake, standby, backlight 100 % | 180–230 mA | ~177–227 | |
+| Typing | — | ~9 mA less than 1.7 | |
+| Screen off (face down 10 s, Mode Off) | 45–70 mA | **35–60** | |
+| Screen off with `-DSUFLET_OFF_MHZ=240` (the 1.7 clock) | | +~10 | |
+
+- [ ] Screen off → pick SOUL up: the eyes come back at once, **level keeping and dizzy work** (the gyro was asleep),
+      no garbage line on the panel when the clock goes back to 240 MHz. `cpu 80 MHz` in the perf line while off
+      (`p` with the screen off), `cpu 240 MHz` on.
+- [ ] Wi-Fi stays joined with the screen off (a connector push while face down arrives); Claude Desktop finds
+      `Claude-Suflet-XXXX` within ~2 s with the slower adverts.
+
+### 5e · Flash writes vs the panel: PSRAM XIP (optional, 20 min; the first build is long)
+
+The 1.7 workaround restarts the RGB transfer at the next VSYNC after every NVS / SOUL Memory write
+(`soulFlashWritten()`); the real fix is to run code from PSRAM so a flash write never stalls the panel's reads.
+
+1. On `lcd28`: Settings › Brightness five times quickly: note the flicker (one frame? a roll?).
+2. `pio run -e lcd28_xip -t upload` (pioarduino rebuilds the Arduino libraries for `CONFIG_SPIRAM_XIP_FROM_PSRAM`,
+   `CONFIG_LCD_RGB_ISR_IRAM_SAFE`, `CONFIG_LCD_RGB_RESTART_IN_VSYNC`: ~15 min, ~3 GB the first time).
+- [ ] It boots, the boot log is the same, §2 picture checks pass.
+- [ ] Brightness × 5, "remember that…" + 25 s (a SOUL Memory write): **no flicker at all** expected.
+- [ ] `draw` in standby / maps vs `lcd28` (code now runs from PSRAM: ≤ 10 % slower is fine): ____ / ____ ms.
+- [ ] If all pass: tell the firmware side to make `lcd28_xip` the release env. If it does not boot or flickers
+      more: stay on `lcd28` and note what you saw.
+
+## 6 · Wi-Fi and the AI (4 min)
 
 1. Settings → Wi-Fi → **Set up from a phone**. SOUL scans the networks first, then opens the access
    point `SOUL-XXXX` with a random 8-digit WPA2 password and shows a **QR code**.
@@ -327,7 +430,7 @@ Checks:
 - [ ] Wake-polls (night, paired, `nightOff` on): after 10 min dark at night `[power] deep sleep for 900 s (then a
       SOUL Cloud wake-poll)`; 15 min later the screen stays **off**, `[power] wake-poll: screen off, one poll, back
       to sleep`, and within ~12 s it sleeps again. Send a connector reminder while it sleeps → it is on SOUL after the
-      next wake (≤ 15 min). Write down the awake time and the current of one wake-poll (§6).
+      next wake (≤ 15 min). Write down the awake time and the current of one wake-poll (§7).
 
 **Factory key** (the provisioning station, `../ai/tools/factory_enrol.py`; also fine on a dev unit):
 - [ ] Serial `SOULKEY GEN` (type it, Enter) → `SOULKEY PUB soul-<12 hex> <87 chars> new` the first time, the same
@@ -355,11 +458,16 @@ Mode → Developer → Open Hardware Buddy… → Connect → type the 6-digit c
 run a command → SOUL's eyes go wide with an amber rim → hold the glass = approve.
 - [ ] One approval → exactly one decision on the desktop (the duplicate-prompt bug is fixed and tested).
 
-## 6 · Write down
+## 7 · Write down
 
 | Measured on (date, unit MAC) | |
 |---|---|
 | fps / frame ms home | |
+| §5a: ns per instruction, copy MB/s, -O3 kept? | |
+| §5b: eyes on the glass (ms from power-on), SKIP_SWRESET OK? | |
+| §5c: internal lowest / largest block after a turn + BLE; smallest stack head-room | |
+| §5d: mA screen off (80 MHz) vs 240 MHz | |
+| §5e: XIP boots? flicker gone? draw ms vs lcd28 | |
 | fps / frame ms Claude prompt | |
 | min free internal heap after a cloud turn + BLE | |
 | mA awake 100 % / night / asleep / off | |
@@ -382,5 +490,5 @@ run a command → SOUL's eyes go wide with an amber rim → hold the glass = app
 | SOUL Cloud protocol v1 | frames in/out, push mapping, dedupe, close codes, backoff, auth; long-poll and wake-polls against a scripted cloud; the simulator over long-poll against a real cloud | the WebSocket against a real server; TLS memory with BLE on; a wake-poll's time and current |
 | SOUL Bridge (docs/08) | the LAN server, the cloud frames, the Os screen and eyes (native); simulator → cloud → `soul-bridge` → mocked Claude Code, and on the LAN | `esp_http_server` + mDNS on a real router; a signed-in Claude Code |
 | QR codes (pairing, Wi-Fi join) | decoded from simulator frames with zxing | phone cameras at arm's length |
-| Rendering cost | callgrind instruction counts, PC timings | real fps / CPU on the S3 |
+| Rendering cost | callgrind instruction counts per scenario and design (`tools/perf_bench.py`, `PERF.md`); every incremental frame vs a full redraw (`--verify`), 1.7 vs 1.8 frame hashes | real fps / CPU on the S3 (§5) |
 | Display driver, touch, IMU, RTC, buzzer, deep sleep | compiles warning-free | everything in this checklist |

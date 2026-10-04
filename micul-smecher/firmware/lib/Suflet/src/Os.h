@@ -624,6 +624,8 @@ class Os {
   void navStart();
   void navStep(float dt);
   void gamesStep(float dt);
+  void gamesInvalidate();
+  void mapsInvalidate();
   int wrapInto(const Font& f, const std::string& s, float maxW, std::string* lines, int maxLines) const {
     return wrapLines(f, s, maxW, lines, maxLines);
   }

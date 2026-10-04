@@ -356,9 +356,7 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
         const float cx = e.x0 + (sy - e.y0) * e.dxdy - fx0;
         Cross& c = cur[nc++];
         c.x = cx;
-        c.dir = e.dir;
-        c.id = id;
-        c.k = k;
+        c.p = (uint32_t)id | ((uint32_t)k << 13) | (e.dir < 0 ? 1u << 23 : 0u);
         nan |= !(cx == cx);
       };
       if (nActive > crossCap_) {  // more than 1.7 kept (it dropped the rest in slot order): 1.7's way
@@ -366,7 +364,7 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
         nan = true;
       } else if (warm) {
         for (int i = 0; i < prevN; ++i) {
-          const uint16_t id = prev[i].id, k = slotOf_[id];
+          const uint16_t id = (uint16_t)prev[i].id(), k = slotOf_[id];
           if (k != kGone) put(id, k);
         }
         for (int i = 0; i < nNew; ++i)
@@ -375,7 +373,7 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
         for (int i = 0; i < nActive; ++i) put(active_[i], (uint16_t)i);
       }
       if (nan) {  // NaN (never from lineTo, which drops NaN points) or overflow: 1.7's sort, verbatim
-        for (int i = 0; i < nc; ++i) prev[cur[i].k] = cur[i];
+        for (int i = 0; i < nc; ++i) prev[cur[i].k()] = cur[i];
         Cross* t = cur;
         cur = prev;
         prev = t;
@@ -390,7 +388,7 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
         }
         warm = false;
       } else {
-        auto after = [](const Cross& a, const Cross& b) { return a.x > b.x || (a.x == b.x && a.k > b.k); };
+        auto after = [](const Cross& a, const Cross& b) { return a.x > b.x || (a.x == b.x && a.k() > b.k()); };
         for (int i = 1; i < nc; ++i) {
           if (!after(cur[i - 1], cur[i])) continue;  // already in place (most of them)
           const Cross c = cur[i];
@@ -416,7 +414,7 @@ void Raster::cover(const Path& p, Mask& m, FillRule rule) {
       float start = 0;
       for (int i = 0; i < nc; ++i) {
         const bool was = nonzero ? wind != 0 : (wind & 1);
-        wind += C[i].dir;
+        wind += C[i].dir();
         const bool is = nonzero ? wind != 0 : (wind & 1);
         if (!was && is) {
           start = C[i].x;
@@ -754,6 +752,13 @@ void Raster::ring(Canvas& cv, float cx, float cy, float r, float w, Rgb c, float
 }
 
 void Raster::fill(Canvas& cv, const Path& p, const Paint& paint, float alpha, const Mask* clip, FillRule rule) {
+  // nothing of it inside the canvas clip (a frame repairs a few rectangles, drawing the UI under each one's
+  // clip): composite() would draw nothing, so skip the coverage too (1.8)
+  const Rect& cr = cv.clipRect();
+  if (p.bx1 + 1 < cr.x0 || p.bx0 - 1 > cr.x1 || p.by1 + 1 < cr.y0 || p.by0 - 1 > cr.y1 || p.bx1 < p.bx0) {
+    scratch_.w = scratch_.h = 0;
+    return;
+  }
   cover(p, scratch_, rule);
   composite(cv, scratch_, paint, alpha, clip);
 }

@@ -39,7 +39,7 @@ struct AppFetch {
 // what the device knows about its storage (the Device app)
 struct StorageInfo {
   uint32_t flashKb = 0, appKb = 0, appMaxKb = 0, nvsUsed = 0, nvsTotal = 0, heapKb = 0, psramKb = 0, psramTotalKb = 0;
-  std::string fw = "1.7.0", board;
+  std::string fw = "1.8.0", board;
   int rssi = 0;
 };
 
@@ -100,6 +100,9 @@ struct AppsState {
   float judgeT = 0, cueGlow = 0;
   int lastTap = -1;
   float tapGlow = 0;
+  uint64_t gameSig = 0;          // what the game's glass showed last (Os::gamesInvalidate)
+  uint64_t mapsSig = 0;          // what the map view showed last (Os::mapsInvalidate)
+  float ballX = 0, ballY = 0;    // where the tilt ball was drawn last
   uint32_t seed = 1;
   // ---- focus / breathe / stopwatch ----------------------------------------
   apps::Pomodoro pomo;

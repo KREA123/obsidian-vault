@@ -587,7 +587,138 @@ void Os::gamesStep(float dt) {
       face_.react(X_happy, 1.2f);
     }
   }
-  invalidate();
+  gamesInvalidate();
+}
+
+// 1.8: while waiting or navigating the map view was repainted whole every frame (8-9 M instructions) for the
+// pulse around "you". Now: if nothing the view shows changed (the view, the fix, the route and the step, the
+// second of the clock for the ETA, the waits, the fade), only the pulse's square is repainted.
+void Os::mapsInvalidate() {
+  AppsState& A = apps_;
+  uint64_t h = 1469598103934665603ull;
+  auto mix = [&](uint64_t v) { h = (h ^ v) * 1099511628211ull; };
+  auto mixd = [&](double d) {
+    uint64_t u;
+    memcpy(&u, &d, sizeof u);
+    mix(u);
+  };
+  auto mixs = [&](const std::string& t) {
+    for (char c : t) mix((uint8_t)c);
+    mix(0xFFFF);
+  };
+  const maps::MapView& v = A.view;
+  mix((uint64_t)v.z);
+  mixd(v.scale);
+  mixd(v.cx);
+  mixd(v.cy);
+  mix(A.mapDirty);
+  mix(A.navOn);
+  mix(A.preview);
+  mix(A.sendSheet);
+  mix(A.followMe);
+  mix(A.haveFix);
+  mixd(A.fix.lat);
+  mixd(A.fix.lon);
+  mixd(A.fix.accM);
+  mix(A.fix.at);
+  mixs(A.fixSrc);
+  mixs(A.fixLabel);
+  mix((uint64_t)(int64_t)A.mapErr);
+  mix(A.mapAt);
+  mix(A.whereWait);
+  mix(A.viewWait);
+  mix(A.routeWait);
+  mix(A.route.valid());
+  mixs(A.route.to);
+  mix((uint64_t)A.route.points());
+  mix((uint64_t)(int64_t)A.nav.step());
+  mix(A.nav.offRoute());
+  mix(A.nav.arrived());
+  mix(A.nav.hasFix());
+  mixd(A.nav.leftM());
+  mixd(A.nav.toTurnM());
+  mix((uint64_t)(int64_t)A.nav.etaS());
+  mixd(A.nav.alongM());
+  mix(now_);
+  mixd(fade_);
+  mix(ro());
+  mix((uint64_t)(int64_t)holdItem_);
+  if (h != A.mapsSig || !A.haveFix) {
+    invalidate();
+  } else {  // only the pulse moves: "you" (the pulse ring <= 14 px + 2 wide, the dot's glow 6 px) + AA
+    double la = A.fix.lat, lo = A.fix.lon;
+    if (A.navOn && !A.nav.offRoute() && A.nav.hasFix()) A.nav.position(la, lo);
+    double wx, wy;
+    maps::worldPx(la, lo, v.z, wx, wy);
+    float sx, sy;
+    v.toScreen(wx, wy, sx, sy);
+    const float half = 22;
+    invalidate(Rect{(int)floorf(sx - half), (int)floorf(sy - half), (int)ceilf(sx + half) + 1, (int)ceilf(sy + half) + 1});
+  }
+  A.mapsSig = h;
+}
+
+// 1.8: what changed on the game's glass. Tilt ball: the ball and the spinning star move every frame; the rest
+// (holes, score, lives, the clock's second, the arena) only on an event: then everything, else just their
+// rectangles (1.7 repainted the whole glass every frame, ~6 M instructions). Eye memory: nothing moves, so
+// only a change repaints. Rhythm: the rings sweep the whole disc, everything every frame.
+void Os::gamesInvalidate() {
+  AppsState& A = apps_;
+  uint64_t h = 1469598103934665603ull;
+  auto mix = [&](uint64_t v) { h = (h ^ v) * 1099511628211ull; };
+  auto mixf = [&](float f) {
+    uint32_t u;
+    memcpy(&u, &f, sizeof u);
+    mix(u);
+  };
+  mix((uint64_t)(A.game + 1));
+  mixf(fade_);
+  mix(ro());
+  mix(arenaKey(A.game < 0 ? 0 : A.game));
+  mix(A.newBest);
+  mix((uint64_t)A.best[A.game < 0 ? 0 : A.game]);
+  bool partial = false;
+  if (A.game == 0) {
+    const games::TiltBall& T = A.tilt;
+    mix(T.running());
+    mix(T.over());
+    mix((uint64_t)T.score());
+    mix((uint64_t)T.lives());
+    mix((uint64_t)(int64_t)ceilf(T.left()));
+    for (const games::TiltBall::Hole& o : T.holes()) {
+      mixf(o.x);
+      mixf(o.y);
+    }
+    mixf(T.star().x);
+    mixf(T.star().y);
+    partial = !T.over();
+  } else if (A.game == 2) {
+    const games::EyeMemory& M = A.memory;
+    mix((uint64_t)(M.cue() + 1));
+    mix((uint64_t)M.phase());
+    mix((uint64_t)M.round());
+    mix((uint64_t)M.progress());
+    mix((uint64_t)M.score());
+    mix(A.tapGlow > 0);
+    mix((uint64_t)(A.lastTap + 1));
+    partial = M.phase() != games::EyeMemory::Phase::Over;
+  }
+  if (!partial || h != A.gameSig) {
+    invalidate();
+  } else if (A.game == 0) {
+    const games::TiltBall& T = A.tilt;
+    const float cx = g_.cx(), cy = g_.cy();
+    auto box = [&](float x, float y, float half) {
+      invalidate(Rect{(int)floorf(x - half), (int)floorf(y - half), (int)ceilf(x + half) + 1, (int)ceilf(y + half) + 1});
+    };
+    const float ball = g_.s(games::TiltBall::kBall) + 18;  // the glass orb + its glow / shadow pad (16) + 2
+    box(cx + g_.s(A.ballX), cy + g_.s(A.ballY), ball);
+    box(cx + g_.s(T.x()), cy + g_.s(T.y()), ball);
+    if (T.running()) box(cx + g_.s(T.star().x), cy + g_.s(T.star().y), g_.s(games::TiltBall::kStar) + 14);  // + glow 10
+  }
+  A.gameSig = h;
+  A.ballX = A.tilt.x();
+  A.ballY = A.tilt.y();
 }
 
 void Os::appsUpdate(float dt) {
@@ -631,7 +762,7 @@ void Os::appsUpdate(float dt) {
   }
   if (view_ == View::Maps) {
     navStep(dt);
-    if (A.whereWait || A.viewWait || A.routeWait || A.nav.active()) invalidate();
+    if (A.whereWait || A.viewWait || A.routeWait || A.nav.active()) mapsInvalidate();
     if (!A.haveFix && cloudUsable(net_) && t_ - A.whereAsked > 20) {  // waiting for the phone to share
       A.whereAsked = t_;
       fetch(Fetch::Where, "/v1/device/maps/where");

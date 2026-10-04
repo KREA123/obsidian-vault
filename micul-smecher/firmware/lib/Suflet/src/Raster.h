@@ -203,10 +203,12 @@ class Raster {
   uint16_t* order_ = nullptr;  // edges sorted by y0
   int orderCap_ = 0;
   uint16_t* active_ = nullptr;
-  struct Cross {
+  struct Cross {  // 8 bytes: two 512-entry arrays stay at 4 KB each (internal RAM on the S3, not PSRAM)
     float x;
-    uint16_t id, k;  // the edge, and its slot in the active list (the tie order)
-    int8_t dir;
+    uint32_t p;  // the edge (bits 0-12), its slot in the active list = the tie order (13-22), dir < 0 (23)
+    uint32_t id() const { return p & 0x1FFFu; }
+    uint32_t k() const { return (p >> 13) & 0x3FFu; }
+    int dir() const { return (p >> 23) & 1u ? -1 : 1; }
   };
   Cross* cross_ = nullptr;
   Cross* cross2_ = nullptr;      // the previous sub-scanline's crossings, sorted (cover() swaps the two)

@@ -3,7 +3,7 @@
 //   program <out_dir> bench_json     SOUL Cloud's socket frames (the recorded session) + Claude answers, parsed
 //   program <out_dir> bench_memory   SOUL Memory: 200 facts, ranked for 50 questions, the context block built
 //   program <out_dir> bench_wifi     the roamer: 40 scans of 30 access points against 8 saved networks
-//   program <out_dir> bench_boot     SoulOS begin (the glass aura built) + the first frame
+//   program <out_dir> bench_boot     SoulOS begin + the first frame, as the device boots (the aura deferred)
 //
 //   valgrind --tool=callgrind --toggle-collect='suflet_bench_*' program out bench_json
 // Each prints `MICRO <name> ops=<n>`: the per-op cost is the collected instructions / n.
@@ -138,6 +138,7 @@ int microBench(const std::string& which) {
     Alarms alarms;
     Os os(&alarms);
     os.settings().booted = 1;
+    os.setDeferGlass(true);  // as the device boots (1.8): the aura is built over the first frames
     std::vector<uint16_t> fb(480 * 480);
     Canvas cv(480, 480, fb.data());
     FrameComposer comp(&cv);

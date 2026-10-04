@@ -88,7 +88,7 @@ struct AppSim {
     pw.batPct = 78;
     os.setPower(pw);
     StorageInfo si;
-    si.fw = "1.7.0";
+    si.fw = "1.8.0";
     si.board = "lcd28";
     si.appKb = 2404;
     si.appMaxKb = 6400;
@@ -192,7 +192,14 @@ struct AppSim {
       os.face().renderRings(rc, nullptr, false);
       int n = 0;
       for (size_t i = 0; i < ref.size(); ++i) n += ref[i] != fb[i];
-      if (n) fprintf(stderr, "frame %d view %s: %d px differ\n", composedAll - 1, viewName(os.view()), n);
+      if (n) {
+        Rect bad;
+        for (int y = 0; y < H; ++y)
+          for (int x = 0; x < W; ++x)
+            if (ref[(size_t)y * W + x] != fb[(size_t)y * W + x]) bad.add(Rect{x, y, x + 1, y + 1});
+        fprintf(stderr, "frame %d view %s: %d px differ in [%d,%d)-[%d,%d)\n", composedAll - 1, viewName(os.view()), n,
+                bad.x0, bad.y0, bad.x1, bad.y1);
+      }
     }
     dumpPpm(cv, (dir + "/apps").c_str(), composedAll - 1);
     if (hashF) fprintf(hashF, "%016llx\n", (unsigned long long)frameHash(fb.data(), fb.size()));

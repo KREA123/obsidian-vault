@@ -91,7 +91,7 @@ geometry differ. On this disc a keyboard key is **~6.6 mm wide and ~7.9 mm tall*
 
 **Build, test, flash**
 ```bash
-pio test -e native                  # 131 native tests (eyes + motion parity, SoulOS flows, AI + SOUL Cloud + SOUL Bridge);
+pio test -e native                  # 198 native tests (eyes + motion parity, SoulOS flows, AI + SOUL Cloud + SOUL Bridge);
                                     # needs OpenSSL's libcrypto on the PC (the device key; apt install libssl-dev)
 pio run -e sim && .pio/build/sim/program /tmp/out all   # the simulator (stills: sim/shots/)
 .pio/build/sim/program /tmp/out cloud http://127.0.0.1:8790 /tmp/key.hex   # a live local SOUL Cloud (see below)
@@ -105,6 +105,10 @@ pio run -e lcd28 -t upload          # flash over USB-C (native USB, CDC serial)
 pio device monitor -b 115200        # '?' lists the serial commands; 'F' = perf overlay
 ```
 If the upload does not start: hold **BOOT**, tap **RESET**, release BOOT, upload again.
+
+**Performance (1.8):** [`PERF.md`](PERF.md) — the frame cost of every scenario and of all 120 designs, before /
+after, and how each number is measured (`python3 tools/perf_bench.py`: callgrind tables, per-frame hashes, and
+`--verify`: every incremental frame vs a full redraw); BRINGUP §5 measures it on the board (`F`, `p`, `m`).
 
 Build size (2026-10-03, 1.4.1): `lcd28` flash ~2.14 MB (33 % of the 6.25 MB app slot), static RAM 84 KB (26 %);
 the Glass buffers take ~2 MB of PSRAM at boot (`Glass.h`).

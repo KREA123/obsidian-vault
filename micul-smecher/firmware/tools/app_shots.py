@@ -22,7 +22,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
     ap.add_argument("out")
-    ap.add_argument("--title", default="SoulOS apps on the device (firmware v1.7.0 simulator, 480 px)")
+    ap.add_argument("--title", default="SoulOS apps on the device (firmware v1.8.0 simulator, 480 px)")
     ap.add_argument("--sub", default="The firmware's own pixels: every app, the map and the games. Behind the eyes always black; the aura only on OS screens.")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)

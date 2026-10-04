@@ -56,7 +56,7 @@ MICROS = [
     ("bench_json", "Cloud JSON: the recorded SOUL Cloud session (33 frames) + a Claude answer", "session"),
     ("bench_memory", "SOUL Memory: rank + context block over 200 facts", "question"),
     ("bench_wifi", "Wi-Fi roam: a scan of 30 APs against 8 saved networks", "scan"),
-    ("bench_boot", "Boot: SoulOS begin (glass aura built) + the first frame", "boot"),
+    ("bench_boot", "Boot: SoulOS begin + the first frame (1.7: the aura built first; 1.8: deferred)", "boot"),
 ]
 APPS_STILLS = "apps"
 

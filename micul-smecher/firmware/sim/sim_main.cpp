@@ -11,6 +11,12 @@
 // (the same JSON api.anthropic.com returns), parsed by the real protocol code.
 // It also reports the frame cost on this PC and how much of the glass each
 // frame touches (the device numbers scale from these, see BRINGUP.md).
+//
+// 1.8 (firmware/PERF.md, tools/perf_bench.py): SIM_HASH=1 writes one hash per frame (<name>.hash) instead
+// of the raw frames; SIM_DESIGN=<0..119> picks the eye design; SIM_DUMP=<n,n> (+ SIM_DUMP_NAME=<scene>)
+// writes those frames as .ppm; SIM_VERIFY=1 compares every incremental frame with the same state drawn
+// whole (+ SIM_VERIFY_RECTS=1: the repair / eye rectangles; SIM_VERIFY_DUMP=<n>: both pictures of frame n).
+// `program <out> bench_json|bench_memory|bench_wifi|bench_boot`: the non-frame benches (sim_bench.cpp).
 #include <chrono>
 #include <cmath>
 #include <cctype>
@@ -316,8 +322,9 @@ struct Sim {
         char w[16];
         snprintf(w, sizeof w, "%d", composed);
         setenv("SIM_DUMP", w, 1);
-        dumpPpm(rc, "/tmp/claude-0/vref", composed);
-        dumpPpm(cv, "/tmp/claude-0/vinc", composed);
+        const std::string d = rec ? rec->dir : std::string(".");  // SIM_VERIFY_DUMP=<frame>: both pictures
+        dumpPpm(rc, (d + "/verify-full").c_str(), composed);
+        dumpPpm(cv, (d + "/verify-incremental").c_str(), composed);
       }
       if (n) {
         const Rect& rp = comp.stats().repair;

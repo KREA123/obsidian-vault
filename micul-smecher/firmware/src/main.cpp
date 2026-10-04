@@ -58,7 +58,10 @@
 #ifndef SUFLET_VOICE
 #define SUFLET_VOICE 0
 #endif
-#define FW_VERSION "1.7.0"
+#ifndef SUFLET_LCD_XIP
+#define SUFLET_LCD_XIP 0  // env lcd28_xip: code + rodata run from PSRAM, flash writes no longer stall the panel
+#endif
+#define FW_VERSION "1.8.0"
 
 using namespace suflet;
 
@@ -293,7 +296,9 @@ static uint32_t localEpoch() {  // the RTC keeps local time
 }
 
 void soulFlashWritten() {
-#if defined(SUFLET_BOARD_LCD28)
+#if defined(SUFLET_BOARD_LCD28) && !SUFLET_LCD_XIP
+  // a flash write stalls the cache the bounce buffers read PSRAM through: the panel can lose its line and
+  // roll; restart the transfer at the next VSYNC. Not needed with CONFIG_SPIRAM_XIP_FROM_PSRAM (env lcd28_xip).
   lcd28::displayResync();
 #endif
 }
