@@ -20,19 +20,18 @@ Also: labels for many orders in one PDF (A6 or A4), a picking list, a COD export
 
 ## Pricing
 
-Four plans, billed by Shopify (Shopify App Pricing, formerly Managed Pricing). Prices are in USD every 30 days, and every paid plan has a 30-day free trial:
+Two plans, billed by Shopify (Shopify App Pricing, formerly Managed Pricing). There is no free plan: **every plan starts with a 5-day free trial**, then it's paid every 30 days (USD):
 
-| Plan | Price | Orders / month | Adds |
+| Plan | Price | Orders / 30 days | Includes |
 |---|---|---|---|
-| Free | $0 | 50 | all couriers and invoicing apps, address & phone check, test mode, bulk processing, rules, tracking, COD reconciliation |
-| Starter | $14.99 | 1,000 | everything in Free, more orders |
-| Growth | $24.99 | unlimited | automatic processing of new orders, customer refusal history, COD export (CSV), priority support |
-| Plus | $49.99 | unlimited | everything in Growth + multiple stores under one account, one custom integration (set up by us) |
+| Pro | $15 | 1,000 | all couriers and invoicing apps, address & phone check, test mode, bulk processing, rules, tracking, COD reconciliation |
+| Pro Max | $30 | unlimited | everything in Pro + automatic processing of new orders, customer refusal history, COD export (CSV), multiple stores, priority support |
 
-- The **address & phone check is on in every plan**: it is what prevents failed AWBs. Only the monthly limit and the Growth/Plus features are gated.
-- **What counts:** orders with a **live** AWB in the current billing period. Test mode never counts. At the limit, new live AWBs are refused with an "Upgrade your plan" hint. Tracking, labels, canceling, reversing invoices and orders that already have an AWB keep working. A banner appears from 80% of the limit.
-- **Settings → Plan:** the current plan, usage ("37 / 50 orders this month"), trial days left, and **Change plan**, which opens Shopify's plan page.
-- The plan is cached on the store and re-checked on install, on return from the plan page, on the `app_subscriptions/update` webhook and every 6 hours. The demo store and `SHOPIFY_OWN_STORES` are always on Plus.
+- The **address & phone check is on in every plan**: it is what prevents failed AWBs. Only the Pro limit and the Pro Max features are gated.
+- **No plan** (never chose one, trial canceled, subscription expired or frozen): live AWBs and invoices are refused with "Choose a plan to start shipping — every plan starts with a 5-day free trial" (`PLAN_REQUIRED`). Test mode works fully, so merchants can explore; tracking, labels, canceling and reversing existing documents are never blocked. The dashboard shows a "Choose a plan — 5-day free trial" banner until a plan is active.
+- **What counts on Pro:** orders with a **live** AWB in the current billing period. Test mode never counts. At the limit, new live AWBs are refused (`PLAN_LIMIT_REACHED`) with an "Upgrade to Pro Max" hint. Tracking, labels, canceling, reversing invoices and orders that already have an AWB keep working. A banner appears from 80% of the limit.
+- **Settings → Plan:** the current plan, usage ("812 / 1,000 orders this month") on Pro, trial days left, both plans side by side, and **Choose a plan** / **Change plan**, which opens Shopify's plan page.
+- The plan is cached on the store and re-checked on install, on return from the plan page, on the `app_subscriptions/update` webhook and every 6 hours. Stores cached on an old plan id map to the new ones (Growth / Plus → Pro Max, Starter → Pro, Free → no plan). The demo store and `SHOPIFY_OWN_STORES` are always on Pro Max.
 - **Setup** (Partner Dashboard plans, the Partner API client, the variables): [`PRICING.md`](PRICING.md). Code: [`src/core/plans.js`](src/core/plans.js).
 
 ## Customer data

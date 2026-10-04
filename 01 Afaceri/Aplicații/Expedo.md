@@ -56,7 +56,7 @@ Ce face, pentru fiecare comandă:
 ## 4. Stadiu nou (04.10.2026)
 
 - **Interfața în engleză**, cu româna ca a doua limbă (se alege după limba din adminul Shopify).
-- **Planuri de preț** (Shopify App Pricing, 30 de zile gratuite la planurile plătite): Free $0 (50 comenzi/lună), Starter $14.99 (1.000/lună), Growth $24.99 (nelimitat + procesare automată, istoric refuzuri, export ramburs), Plus $49.99 (+ mai multe magazine, integrare personalizată). Inspirate din xConnector ($0 / $19.99 / $29.99 / $59.99). Pași de configurare: `P/apps/expedo/PRICING.md`.
+- **Planuri de preț** (Shopify App Pricing, decizie Andu 04.10): fără plan gratuit; 5 zile de probă gratuită, apoi **Pro $15** (1.000 comenzi/lună) sau **Pro Max $30** (nelimitat + procesare automată, istoric refuzuri, export ramburs, mai multe magazine, suport prioritar). Fără plan: doar modul de probă. Pași de configurare: `P/apps/expedo/PRICING.md`.
 - **Protecția datelor pentru App Store:** date criptate, ștergere automată după 180 de zile, jurnal de acces, GDPR, pagini /privacy și /terms.
 - **Istoric colete refuzate** după telefon/e-mail (Growth).
 - **Trailer motion design** 56 s, EN + RO, orizontal + vertical: `P/apps/expedo/marketing/trailer/`. Muzică Mixkit (licență gratuită comercială, fără TV/radio), voce Microsoft neurală.

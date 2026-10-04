@@ -85,6 +85,8 @@ before(() => {
   });
   db.saveIntegration(store.id, 'courier', 'fake', { credentials: { key: 'x' }, settings: {} });
   db.saveIntegration(store.id, 'invoicing', 'fakeinv', { credentials: { key: 'y' }, settings: {} });
+  // Live documents need a plan (test/plans.test.js covers 'none' and the Pro limit).
+  db.saveStorePlan(store.id, 'promax', { name: 'Pro Max' });
   store = db.getStore(store.id);
 });
 

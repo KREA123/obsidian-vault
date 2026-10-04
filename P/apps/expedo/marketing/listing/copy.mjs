@@ -43,20 +43,17 @@ export const COPY = {
   languages: ['English', 'Romanian'],
 };
 
-// Pricing: Shopify App Pricing (managed pricing), USD, billed every 30 days, 30-day free trial on every
-// paid plan. Prices appear ONLY here and in the Pricing section of the form, never in images (req. 4.2).
+// Pricing: Shopify App Pricing (managed pricing), USD, billed every 30 days. No free plan: every plan has a
+// 5-day free trial. Prices appear ONLY here and in the Pricing section of the form, never in images (req. 4.2).
 export const PRICING = {
-  billing: 'Recurring charge, Shopify App Pricing (one public plan marked Free)',
+  billing: 'Recurring charge, Shopify App Pricing (no free plan)',
   currency: 'USD',
   interval: 'every 30 days',
-  trialDays: 30,
-  // Top features: the English text from P/apps/expedo/PRICING.md; Free and Starter also list what
-  // the app gives them per PRICING.md section 4 (bulk, rules, tracking, COD reconciliation).
+  trialDays: 5,
+  // Top features: the English text from P/apps/expedo/PRICING.md section 2.
   plans: [
-    { name: 'Free', handle: 'free', price: 0, features: ['Up to 50 orders a month', 'All couriers and invoicing apps', 'Address & phone check', 'Bulk processing and rules', 'Tracking and COD reconciliation', 'Test mode'] },
-    { name: 'Starter', handle: 'starter', price: 14.99, features: ['Up to 1,000 orders a month', 'Address & phone check', 'Bulk processing and rules', 'Tracking and COD reconciliation'] },
-    { name: 'Growth', handle: 'growth', price: 24.99, features: ['Unlimited orders', 'Automatic processing of new orders', 'Customer refusal history', 'COD export (CSV)', 'Priority support'] },
-    { name: 'Plus', handle: 'plus', price: 49.99, features: ['Everything in Growth', 'Multiple stores under one account', 'One custom integration, set up by us'] },
+    { name: 'Pro', handle: 'pro', price: 15, features: ['Up to 1,000 orders every 30 days', 'All couriers and invoicing apps', 'Address & phone check', 'Test mode', 'Bulk processing and rules', 'Tracking and COD reconciliation'] },
+    { name: 'Pro Max', handle: 'pro_max', price: 30, features: ['Unlimited orders', 'Everything in Pro', 'Automatic processing of new orders', 'Customer refusal history', 'COD export (CSV)', 'Multiple stores', 'Priority support'] },
   ],
   // "Description of additional charges" / notes: none. What counts toward the limit (PRICING.md §4):
   note: 'Orders = orders that get a live AWB in the billing period; test-mode AWBs never count and a canceled AWB frees its slot.',

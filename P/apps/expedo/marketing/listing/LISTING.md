@@ -68,16 +68,14 @@ Partner Dashboard → Apps → Expedo → Distribution → Shopify App Store →
 
 ## Pricing
 
-Matches the app (`P/apps/expedo/PRICING.md`, `src/core/plans.js` in the live tree). **Shopify App Pricing** (formerly "managed pricing"), billing method **Recurring charge** with one plan marked Free, prices in **USD every 30 days**, **30-day free trial on the three paid plans**. Set up the plans as described in PRICING.md (display names exactly Free / Starter / Growth / Plus; "Free for partners and developers" on for paid plans). Display names and top features for the listing are in `LISTING-COPY.md`.
+Matches the app (`P/apps/expedo/PRICING.md`, `src/core/plans.js` in the live tree). **Shopify App Pricing** (formerly "managed pricing"), billing method **Recurring charge**, prices in **USD every 30 days**. **No free plan: both plans have a 5-day free trial.** Set up the plans as described in PRICING.md (display names exactly Pro / Pro Max; "Free for partners and developers" on). Display names and top features for the listing are in `LISTING-COPY.md`.
 
-| Plan | Price | Trial | Orders / month | Top features (English, as in PRICING.md) |
+| Plan | Price | Trial | Orders | Top features (English, as in PRICING.md) |
 |---|---|---|---|---|
-| Free | $0 | — | 50 | Up to 50 orders a month · All couriers and invoicing apps · Address & phone check · Bulk processing and rules · Tracking and COD reconciliation · Test mode |
-| Starter | $14.99 | 30 days | 1,000 | Up to 1,000 orders a month · Address & phone check · Bulk processing and rules · Tracking and COD reconciliation |
-| Growth | $24.99 | 30 days | unlimited | Unlimited orders · Automatic processing of new orders · Customer refusal history · COD export (CSV) · Priority support |
-| Plus | $49.99 | 30 days | unlimited | Everything in Growth · Multiple stores under one account · One custom integration, set up by us |
+| Pro | $15 | 5 days | up to 1,000 every 30 days | Up to 1,000 orders every 30 days · All couriers and invoicing apps · Address & phone check · Test mode · Bulk processing and rules · Tracking and COD reconciliation |
+| Pro Max | $30 | 5 days | unlimited | Unlimited orders · Everything in Pro · Automatic processing of new orders · Customer refusal history · COD export (CSV) · Multiple stores · Priority support |
 
-Free's top features add "Bulk processing and rules" and "Tracking and COD reconciliation" to PRICING.md's suggested text, because the app gives them on Free (PRICING.md section 4). "Orders" means orders that get a live AWB in the billing period; test-mode AWBs never count. shopify.dev states no character limit for plan display names or top features; each top feature here is under 80 characters (the listing's own feature limit). Prices appear only in the Pricing section, never in images (req. 4.2). No additional charges.
+"Orders" means orders that get a live AWB in the billing period; test-mode AWBs never count. Without an active plan (trial canceled, subscription expired) the app keeps test mode, tracking and existing documents working but creates no live AWBs or invoices. shopify.dev states no character limit for plan display names or top features; each top feature here is under 80 characters (the listing's own feature limit). Prices appear only in the Pricing section, never in images (req. 4.2). No additional charges. Shopify recommends a 14-day trial (REQUIREMENTS.md); 5 days is the owner's choice.
 
 ## Protected customer data request (level 2)
 
@@ -97,7 +95,7 @@ Then complete the data protection details (level 1 and 2 requirements, see REQUI
 - [ ] Upload `icon/expedo-icon-1200.png` in the app configuration (Dev Dashboard) and in the listing.
 - [ ] Paste the copy from `LISTING-COPY.md`. Check the subtitle counter in the form (62).
 - [ ] Upload `feature/feature.png`, the six `screenshots/*.png` in order 01–06 and the three `screenshots/mobile/*.png`; paste each alt text.
-- [ ] Set up the four plans in Shopify App Pricing exactly as in PRICING.md; check the listing shows the 30-day trial on Starter, Growth and Plus.
+- [ ] Set up the two plans (Pro $15, Pro Max $30, 5-day free trial each) in Shopify App Pricing exactly as in PRICING.md; unpublish any old Free / Starter / Growth / Plus plans; check the listing shows the 5-day trial on both.
 - [ ] Pick the 6 integrations, categories and structured features; Languages = English, Romanian; install eligibility = Romania.
 - [ ] Request protected customer data (level 2: name, address, phone, email) with the reasons above; complete data protection details.
 - [ ] Add the emergency developer contact (Partner account settings).

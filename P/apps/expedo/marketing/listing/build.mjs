@@ -609,7 +609,7 @@ ${c.languages.join(', ')} (the app UI is usable in both; req. 4.3.2)
 
 ## Pricing (Shopify App Pricing, ${PRICING.currency}, billed ${PRICING.interval})
 
-Billing method: ${PRICING.billing}. Free trial: **${PRICING.trialDays} days** on every paid plan (a free plan has nothing to trial).
+Billing method: ${PRICING.billing}. Free trial: **${PRICING.trialDays} days** on every plan (set on each plan).
 Plan display names and top features: shopify.dev gives no character limit; names kept ≤ ${LIMITS.planName} and each feature ≤ ${LIMITS.planFeature} characters (counts below).
 
 ${PRICING.plans.map((p) => `### ${p.name} ${cnt(p.name, LIMITS.planName)}: ${usd(p.price)}${p.price ? `, ${PRICING.trialDays}-day free trial` : ''}

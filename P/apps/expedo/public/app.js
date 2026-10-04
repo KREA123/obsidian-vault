@@ -190,11 +190,11 @@ async function refreshChrome() {
 }
 
 // ---------- plan ----------
-/** "Available on Growth" note next to a feature the store's plan doesn't include. */
+/** "Available on Pro Max" note next to a feature the store's plan doesn't include. */
 const lockedNote = (feature) => html`<span class="locked-note">${t('ui.plan.availableOn', { plan: planNameFor(feature) })}</span>`;
 const hasFeature = (feature) => !!state.me?.plan?.features?.[feature];
-// Lowest plan with the feature (same catalog as src/core/plans.js).
-const planNameFor = (feature) => (['multiStore', 'customIntegration'].includes(feature) ? 'Plus' : 'Growth');
+// Lowest plan with the feature (the server's catalog, src/core/plans.js).
+const planNameFor = (feature) => state.me?.plan?.catalog?.find((p) => p.features.includes(feature))?.name || 'Pro Max';
 
 /** Shopify's plan selection page: top-level inside the Shopify admin (it is outside the app frame). */
 function openPlanPage(url) {
@@ -203,14 +203,20 @@ function openPlanPage(url) {
   else window.open(url, '_blank', 'noopener');
 }
 
-/** Warning banner from 80% of the monthly limit; red once the limit is reached. */
+/**
+ * Plan banner: always shown without a plan ("Choose a plan — 5-day free trial"); otherwise a warning from
+ * 80% of the limit, red once the limit is reached. Never for demo / own stores (complimentary).
+ */
 function planBanner(plan) {
   const el = $('#plan-banner');
-  if (!plan || !plan.nearLimit) { el.hidden = true; return; }
+  const none = !!plan?.required && !plan.complimentary;
+  if (!plan || (!none && !plan.nearLimit)) { el.hidden = true; return; }
   el.className = `banner ${plan.reached ? 'bad' : 'warn'}`;
-  el.innerHTML = html`${plan.reached
-    ? t('ui.plan.banner.reached', { limit: plan.limit, plan: plan.name, date: fmtDay(plan.periodEnd) })
-    : t('ui.plan.banner.near', { used: plan.used, limit: plan.limit, plan: plan.name })}
+  el.innerHTML = html`${none
+    ? html`<strong>${t('ui.plan.banner.none', { days: plan.trialDays })}</strong> ${t('ui.plan.banner.noneHelp')}`
+    : plan.reached
+      ? t('ui.plan.banner.reached', { limit: plan.limit, plan: plan.name, date: fmtDay(plan.periodEnd) })
+      : t('ui.plan.banner.near', { used: plan.used, limit: plan.limit, plan: plan.name })}
     ${plan.upgradeUrl ? html`<a href="${safeUrl(plan.upgradeUrl)}" data-plan-link>${t('ui.plan.banner.action')}</a>` : ''}`;
   el.hidden = false;
   bindPlanLinks(el);
@@ -771,36 +777,49 @@ function sectionGeneral(el, s, integrations, save) {
   });
 }
 
-const PLAN_FEATURES = ['addressCheck', 'allIntegrations', 'testMode', 'bulk', 'rules', 'tracking', 'codReconciliation', 'autoProcess', 'refusalHistory', 'codExport', 'prioritySupport', 'multiStore', 'customIntegration'];
+const PLAN_FEATURES = ['addressCheck', 'allIntegrations', 'testMode', 'bulk', 'rules', 'tracking', 'codReconciliation', 'autoProcess', 'refusalHistory', 'codExport', 'multiStore', 'prioritySupport'];
 
 function sectionPlan(el) {
   const draw = (p) => {
+    const none = p.required && !p.complimentary;
     const pct = p.limit ? Math.min(100, Math.round((p.used / p.limit) * 100)) : 0;
+    const upgrade = safeUrl(p.upgradeUrl);
     el.innerHTML = html`<div class="card">
       <h2>${t('ui.settings.plan.title')}</h2>
       <div class="plan-head">
-        <span class="plan-name">${p.name}</span>
-        <span class="muted">${p.price ? t('ui.settings.plan.price', { price: money(p.price, 'USD') }) : t('ui.settings.plan.priceFree')}</span>
+        <span class="plan-name">${none ? t('ui.settings.plan.none') : p.name}</span>
+        ${!none && p.price ? html`<span class="muted">${t('ui.settings.plan.price', { price: money(p.price, 'USD') })}</span>` : ''}
         ${p.trialDaysLeft ? html`<span class="badge info">${t('ui.settings.plan.trial', { count: p.trialDaysLeft })}</span>` : ''}
         ${p.test ? html`<span class="pill test">${t('ui.settings.plan.test')}</span>` : ''}
       </div>
-      ${p.limit != null ? html`
+      ${none ? html`<p style="margin:10px 0 0">${t('ui.settings.plan.noneHelp', { days: p.trialDays })}</p>`
+        : p.limit != null ? html`
         <div class="meter ${p.reached ? 'bad' : p.nearLimit ? 'warn' : ''}" role="progressbar" aria-valuemin="0" aria-valuemax="${p.limit}" aria-valuenow="${p.used}"><span style="width:${pct}%"></span></div>
         <div><strong>${t('ui.settings.plan.usage', { used: p.used, limit: p.limit })}</strong></div>`
         : html`<p style="margin:10px 0 0"><strong>${t('ui.settings.plan.usageUnlimited', { count: p.used })}</strong></p>`}
-      <p class="muted small" style="margin:4px 0 0">${t('ui.settings.plan.usageHelp')} ${t('ui.settings.plan.resets', { date: fmtDay(p.periodEnd) })}</p>
+      ${none ? '' : html`<p class="muted small" style="margin:4px 0 0">${t('ui.settings.plan.usageHelp')} ${t('ui.settings.plan.resets', { date: fmtDay(p.periodEnd) })}</p>`}
       ${p.complimentary ? html`<p class="small" style="margin:12px 0 0">${t('ui.settings.plan.complimentary')}</p>` : html`
       <div class="form-actions">
-        ${safeUrl(p.upgradeUrl) ? html`<a class="btn primary" href="${safeUrl(p.upgradeUrl)}" data-plan-link>${t('ui.settings.plan.change')}</a>` : ''}
+        ${upgrade ? html`<a class="btn primary" href="${upgrade}" data-plan-link>${t(none ? 'ui.settings.plan.choose' : 'ui.settings.plan.change')}</a>` : ''}
         <button type="button" class="link small" id="plan-check">${t('ui.settings.plan.check')}</button>
       </div>
-      <p class="muted small" style="margin:8px 0 0">${t('ui.settings.plan.changeHelp')}</p>`}
+      <p class="muted small" style="margin:8px 0 0">${t('ui.settings.plan.changeHelp', { days: p.trialDays })}</p>`}
     </div>
     <div class="card">
-      <h2>${t('ui.settings.plan.included')}</h2>
-      <ul class="plan-features">${PLAN_FEATURES.filter((f) => p.features[f]).map((f) => html`<li>${icon('check')} ${t(`ui.settings.plan.features.${f}`)}</li>`)}</ul>
-      ${PLAN_FEATURES.some((f) => !p.features[f]) ? html`<h3 style="margin-top:16px">${t('ui.settings.plan.notIncluded')}</h3>
-      <ul class="plan-features">${PLAN_FEATURES.filter((f) => !p.features[f]).map((f) => html`<li class="off">${icon('x')} <span>${t(`ui.settings.plan.features.${f}`)} <span class="faint small">· ${planNameFor(f)}</span></span></li>`)}</ul>` : ''}
+      <h2>${t('ui.settings.plan.plans')}</h2>
+      <div class="plan-grid">${(p.catalog || []).map((c) => html`
+        <section class="plan-card ${c.id === p.id ? 'current' : ''}" aria-current="${c.id === p.id ? 'true' : 'false'}">
+          <div class="plan-card-head">
+            <h3>${c.name}</h3>
+            ${c.id === p.id ? html`<span class="badge ok">${t('ui.settings.plan.current')}</span>` : ''}
+          </div>
+          <div class="plan-price">${t('ui.settings.plan.price', { price: money(c.price, 'USD') })}</div>
+          <div class="plan-limit"><strong>${c.limit != null ? t('ui.settings.plan.limit', { count: c.limit }) : t('ui.settings.plan.unlimited')}</strong></div>
+          <div class="muted small">${t('ui.settings.plan.trialDays', { days: p.trialDays })}</div>
+          <ul class="plan-features">${PLAN_FEATURES.map((f) => (c.features.includes(f)
+            ? html`<li>${icon('check')} ${t(`ui.settings.plan.features.${f}`)}</li>`
+            : html`<li class="off">${icon('x')} <span>${t(`ui.settings.plan.features.${f}`)}</span></li>`))}</ul>
+        </section>`)}</div>
     </div>`;
     bindPlanLinks(el);
     $('#plan-check', el)?.addEventListener('click', async (e) => {

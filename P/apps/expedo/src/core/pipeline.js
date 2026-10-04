@@ -13,7 +13,7 @@ import { withDefaults } from './settings.js';
 import { planOrder, buildShipment, buildInvoice, bucharestDate } from './build.js';
 import { getShopify } from '../shopify/index.js';
 import { customerHistory, openOrdersOfCustomer } from './customers.js';
-import { can, planFor, usageThisPeriod, upgradeUrl, PLANS } from './plans.js';
+import { can, planFor, needsPlan, usageThisPeriod, upgradeUrl, PLANS, TRIAL_DAYS } from './plans.js';
 
 /** planOrder() options for this store: the customer's refusal history only on plans that include it. */
 export function historyOptions(store, order) {
@@ -145,7 +145,7 @@ export function importOrder(store, normalized, { source = 'sync' } = {}) {
 
   const settings = storeSettings(store);
   const fresh = db.getOrder(order.id);
-  // Automatic processing is a plan feature (Growth and up); on other plans the setting is kept but idle.
+  // Automatic processing is a plan feature (Pro Max); on other plans the setting is kept but idle.
   if (!existing && settings.automation.autoProcess && can(store, 'autoProcess') && fresh.status === 'ready' && !plan.blocking && !plan.hold && !skipTag) {
     const runAt = new Date(Date.now() + settings.automation.delayMinutes * 60_000).toISOString();
     enqueue(store.id, 'process_order', { orderId: order.id }, { runAt, key: `process:${order.id}` });
@@ -225,13 +225,23 @@ export async function processOrder(store, orderId, { steps = ['awb', 'invoice', 
     if (!force && held && !order.awb) {
       return refuse('ORDER_ON_HOLD');
     }
-    // Monthly limit of the plan: only new live AWBs. Test mode, tracking, labels, cancel, storno and
+    // No active subscription: no new live AWB or invoice (PLAN_REQUIRED). Test mode, tracking, labels,
+    // cancel, storno and fulfilling an order that already has its documents are never blocked.
+    const newAwb = steps.includes('awb') && !order.awb;
+    const newInvoice = steps.includes('invoice') && !!settings.invoicing.provider && !order.invoice_number && !plan.skipInvoice
+      && (settings.invoicing.when === 'on_awb' || !steps.includes('awb'));
+    if (!test && needsPlan(store) && (newAwb || newInvoice)) {
+      return { ok: false, error: new ProcessingError({
+        code: 'PLAN_REQUIRED', params: { days: TRIAL_DAYS }, details: { upgradeUrl: upgradeUrl(store) },
+      }).toJSON() };
+    }
+    // Limit of the plan per billing period: only new live AWBs. Test mode, tracking, labels, cancel, storno and
     // orders that already have their AWB are never blocked.
     const limit = planFor(store).limit;
-    if (steps.includes('awb') && !order.awb && !test && limit != null && usageThisPeriod(store) >= limit) {
+    if (newAwb && !test && limit != null && usageThisPeriod(store) >= limit) {
       const p = planFor(store);
       return { ok: false, error: new ProcessingError({
-        code: 'PLAN_LIMIT_REACHED', params: { limit, plan: p.name, next: PLANS[p.id === 'free' ? 'starter' : 'growth'].name },
+        code: 'PLAN_LIMIT_REACHED', params: { limit, plan: p.name, next: PLANS.promax.name },
         details: { upgradeUrl: upgradeUrl(store) },
       }).toJSON() };
     }

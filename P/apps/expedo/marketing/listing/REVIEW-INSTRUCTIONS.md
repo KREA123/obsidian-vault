@@ -12,7 +12,7 @@ Every new store starts in **Test mode** (yellow banner at the top). In Test mode
 
 ## Plan
 
-Expedo uses Shopify App Pricing. Every paid plan is free for partners and developers, so on a development store any plan can be picked at no charge. **Pick Growth or Plus** to see every feature (the refused-parcel warning, automatic processing and the cash-on-delivery CSV export are on Growth and Plus).
+Expedo uses Shopify App Pricing with two plans, **Pro** and **Pro Max**, each with a **5-day free trial**; there is no free plan. Both plans are free for partners and developers, so on a development store either can be picked at no charge. **Pick Pro Max** to see every feature (the refused-parcel warning, automatic processing and the cash-on-delivery CSV export are on Pro Max). Without a plan, Test mode still works but the dashboard shows a "Choose a plan — 5-day free trial" banner.
 
 ## Before you start: test orders on the development store
 
@@ -31,7 +31,7 @@ Expected after import (once a default courier is chosen in step 3): A and B are 
 Each step says what to do and what you should see.
 
 1. **Install.** Open the install link for your development store and approve access to orders and merchant-managed fulfillment orders.
-2. **Pick a plan.** On Shopify's plan page choose **Growth** (no charge on development stores). *Expected:* Expedo opens inside the admin (Apps → Expedo) on the **Dashboard**, with the yellow Test-mode banner. Orders appear within a few seconds; if not, Orders → **"Sync with Shopify"**. Until a courier is chosen (step 3) every order says that no courier is chosen.
+2. **Pick a plan.** On Shopify's plan page choose **Pro Max** (5-day free trial; no charge on development stores). *Expected:* Expedo opens inside the admin (Apps → Expedo) on the **Dashboard**, with the yellow Test-mode banner. Orders appear within a few seconds; if not, Orders → **"Sync with Shopify"**. Until a courier is chosen (step 3) every order says that no courier is chosen.
 3. **Choose a courier and an invoicing app (no credentials in Test mode).** Settings → **Couriers** → click e.g. **Sameday** → **"Save"** with the fields empty → **"Use as default"**. Then Settings → **Invoicing** → **SmartBill** → "Save" → "Use as default". *Expected:* a green confirmation; the provider card shows "default". On a live store the merchant would enter the API credentials here and click **"Test connection"**.
 4. **Dashboard.** Shows orders to process, orders needing attention, parcels on the way and cash on delivery to collect.
 5. **Fix an address.** Orders → tab **"Needs attention"** → click order C → in **"Shipping address"** type a phone number in **Phone** (e.g. 0721 888 999) → **"Save address"**. *Expected:* "Address saved and checked again."; the order moves to "Ready to process". The edit stays in Expedo and does not change the order in Shopify.
@@ -79,7 +79,7 @@ Expedo is an embedded admin app for stores shipping within Romania. UI in Englis
 No courier or invoicing account is needed: new stores start in TEST MODE (yellow banner). AWBs and invoices are test documents, nothing is sent to couriers or invoicing apps, and Shopify is not modified.
 
 1. Create 2-3 orders with a Romanian shipping address (e.g. Cluj-Napoca, county Cluj, 400394, phone 0745123456). For cash on delivery, add the manual payment method "Cash on Delivery (COD)" and order on the storefront. Leave the phone empty on one order to see an address problem.
-2. Install and pick the Growth plan (free on development stores). Open Apps > Expedo. Orders import automatically (or Orders > "Sync with Shopify").
+2. Install and pick the Pro Max plan (5-day free trial; free on development stores). Open Apps > Expedo. Orders import automatically (or Orders > "Sync with Shopify").
 3. Settings > Couriers > Sameday > "Save" (fields may stay empty in test mode) > "Use as default". Same in Settings > Invoicing > SmartBill.
 4. Orders > "Needs attention": open the order without a phone, add one, "Save address". It moves to "Ready to process".
 5. "Ready to process": tick all > "Create AWB + invoice". Expected: a TEST AWB + invoice per order, status "Shipped". Then "Labels" (one PDF with all labels) and "Picking list".

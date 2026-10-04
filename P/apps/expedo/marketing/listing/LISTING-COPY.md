@@ -49,38 +49,27 @@ English, Romanian (the app UI is usable in both; req. 4.3.2)
 
 ## Pricing (Shopify App Pricing, USD, billed every 30 days)
 
-Billing method: Recurring charge, Shopify App Pricing (one public plan marked Free). Free trial: **30 days** on every paid plan (a free plan has nothing to trial).
+Billing method: Recurring charge, Shopify App Pricing (no free plan). Free trial: **5 days** on every plan (set on each plan).
 Plan display names and top features: shopify.dev gives no character limit; names kept ≤ 20 and each feature ≤ 80 characters (counts below).
 
-### Free `4/20`: $0
+### Pro `3/20`: $15.00 USD every 30 days, 5-day free trial
 
-- Up to 50 orders a month `23/80`
+- Up to 1,000 orders every 30 days `32/80`
 - All couriers and invoicing apps `31/80`
 - Address & phone check `21/80`
-- Bulk processing and rules `25/80`
-- Tracking and COD reconciliation `31/80`
 - Test mode `9/80`
-
-### Starter `7/20`: $14.99 USD every 30 days, 30-day free trial
-
-- Up to 1,000 orders a month `26/80`
-- Address & phone check `21/80`
 - Bulk processing and rules `25/80`
 - Tracking and COD reconciliation `31/80`
 
-### Growth `6/20`: $24.99 USD every 30 days, 30-day free trial
+### Pro Max `7/20`: $30.00 USD every 30 days, 5-day free trial
 
 - Unlimited orders `16/80`
+- Everything in Pro `17/80`
 - Automatic processing of new orders `34/80`
 - Customer refusal history `24/80`
 - COD export (CSV) `16/80`
+- Multiple stores `15/80`
 - Priority support `16/80`
-
-### Plus `4/20`: $49.99 USD every 30 days, 30-day free trial
-
-- Everything in Growth `20/80`
-- Multiple stores under one account `33/80`
-- One custom integration, set up by us `36/80`
 
 ## Screenshot alt text
 

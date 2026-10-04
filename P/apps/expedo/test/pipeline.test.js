@@ -105,7 +105,7 @@ test('tracking: delivery marks COD as collected', async () => {
 });
 
 test('live mode without configured courier gives a clear error', async () => {
-  const live = { ...store, demo: false, settings: { ...store.settings, mode: 'live' } };
+  const live = { ...store, demo: false, plan: 'promax', settings: { ...store.settings, mode: 'live' } };
   const o = byName('#1106');
   const r = await P.processOrder(live, o.id);
   assert.equal(r.ok, false);

@@ -153,7 +153,7 @@ export function createApp() {
       rules: {
         fields: Object.fromEntries(Object.entries(RULE_FIELDS).map(([k, f]) => [k, {
           ...f, label: t(L, `rules.fields.${k}`),
-          // A field the plan doesn't include: shown, not selectable ("Available on Growth").
+          // A field the plan doesn't include: shown, not selectable ("Available on Pro Max").
           ...(k === 'refusedBefore' && !can(req.store, 'refusalHistory') ? { locked: PLANS[minPlanFor('refusalHistory')].name } : {}),
           ...(f.options ? { options: f.options.map((v) => [v, t(L, `rules.values.${k}.${v}`)]) } : {}),
         }])),
