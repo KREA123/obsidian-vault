@@ -1,16 +1,16 @@
-# Shopify app config (Dev Dashboard / Shopify CLI). Fill client_id and the URLs, then `shopify app deploy`.
-client_id = ""
+# Shopify app config (Dev Dashboard / Shopify CLI): `shopify app deploy` pushes it to the app.
+client_id = "f8ed5b7064a0b5d373c6bae33dd1f6b5"
 name = "Expedo"
 # Handle: part of the plan selection page URL (SHOPIFY_APP_HANDLE must match).
 handle = "expedo"
-application_url = "https://EXPEDO-HOST/"
+application_url = "https://expedo.onrender.com/"
 embedded = true
 
 [access_scopes]
 scopes = "read_orders,write_orders,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders"
 
 [auth]
-redirect_urls = ["https://EXPEDO-HOST/auth/callback"]
+redirect_urls = ["https://expedo.onrender.com/auth/callback"]
 
 [webhooks]
 api_version = "2026-07"
