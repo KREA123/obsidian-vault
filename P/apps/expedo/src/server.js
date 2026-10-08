@@ -24,6 +24,7 @@ import { searchHashes } from './core/identity.js';
 import { customerHistory } from './core/customers.js';
 import * as privacy from './core/privacy.js';
 import { legalPage } from './legal.js';
+import * as backup from './lib/backup.js';
 import { can, planSummary, refreshPlan, minPlanFor, PLANS } from './core/plans.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -694,6 +695,21 @@ function handleWebhook(topic, shop, payload) {
 
 // ---------- boot ----------
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  // No persistent disk: bring the database back from the key-value snapshot first. If the store
+  // can't be reached, don't start on an empty database (its first snapshot would overwrite the good one).
+  if (process.env.BACKUP_REDIS_URL) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const r = await backup.restore();
+        console.log(r.restored ? `backup: database restored (${r.bytes} bytes)` : 'backup: nothing to restore');
+        break;
+      } catch (err) {
+        console.error(`backup: restore failed (attempt ${attempt})`, err.message);
+        if (attempt >= 6) process.exit(1);
+        await new Promise((r) => setTimeout(r, attempt * 5000));
+      }
+    }
+  }
   db.openDb();
   if (config.demo) {
     const { store, created } = seedDemo();
@@ -709,6 +725,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     }
   }
   startWorker();
+  backup.startBackups(db.getDb);
+  backup.startKeepAwake();
   createApp().listen(config.port, () => {
     console.log(`Expedo running on ${config.appUrl}${config.demo ? ' (demo mode)' : ''}`);
   });

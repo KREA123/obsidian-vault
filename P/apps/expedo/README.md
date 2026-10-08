@@ -80,7 +80,12 @@ npm test
 
 1. **Shopify app:** create the "Expedo" app in the Dev Dashboard (dev.shopify.com). Fill in `client_id` and the URLs in `shopify.app.toml`, then `shopify app deploy`.
    - The app reads names, addresses and phone numbers from orders, so it needs access to **protected customer data** (level 2: name, address, phone, email). Request it in the Partner Dashboard → API access; the questionnaire answers are in `docs/security.md`. For "Privacy policy URL" use `https://<server>/privacy`.
-2. **Server:** `render.yaml` is ready for Render. **Note:** the database is SQLite, so it needs a persistent disk (Starter plan + disk, about $7/month). On the free plan the data is lost on every restart.
+2. **Server:** `render.yaml` is ready for Render and runs at no cost:
+   - a **free web service**: no persistent disk, and it sleeps after 15 minutes without traffic;
+   - a **free Key Value** instance (25 MB): the SQLite database is copied there, gzipped and encrypted with `APP_SECRET`, a few seconds after every change (at least every 15 minutes) and on shutdown; on boot it is restored before anything else. If the store can't be reached at boot, the server retries and then exits rather than start on an empty database. Code: [`src/lib/backup.js`](src/lib/backup.js);
+   - `KEEP_AWAKE=1`: the server calls its own `/healthz` every 10 minutes, so it doesn't sleep (one service fits the 750 free hours a month).
+
+   Limits: the free Key Value keeps data in memory only, so the copy survives restarts of the web service, but not a restart of both at the same time. A log warning appears above 20 MB. When there is income, move to Starter + a 1 GB disk (`DB_FILE=/var/data/expedo.db`, about $7/month) and drop `BACKUP_REDIS_URL`.
 3. **Variables:** see `.env.example` (for billing: `SHOPIFY_PARTNER_*`, `SHOPIFY_APP_GID`, `SHOPIFY_APP_HANDLE`; see [`PRICING.md`](PRICING.md)). `APP_SECRET` encrypts customer data, courier passwords and Shopify tokens; never change it after the first start. `PUBLISHER_DETAILS` (tax ID, registered office) appears on the privacy and terms pages.
 4. **Plans:** create them in the Partner Dashboard exactly as in [`PRICING.md`](PRICING.md).
 5. Install the app on the store → it opens in the Shopify admin → **Settings → Couriers** and **Invoicing**: login details + "Test connection".

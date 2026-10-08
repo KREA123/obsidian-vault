@@ -1,23 +1,35 @@
-# Render blueprint. SQLite needs a persistent disk (not available on the free plan).
+# Render blueprint, free plan: no persistent disk, so the SQLite database is snapshotted to a free
+# Key Value instance (BACKUP_REDIS_URL) and restored on boot; KEEP_AWAKE stops the 15-minute spin-down.
+# With a paid plan: plan: starter, add the disk below, DB_FILE=/var/data/expedo.db, drop the Key Value.
 services:
+  - type: keyvalue
+    name: expedo-store
+    plan: free
+    region: frankfurt
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
   - type: web
     name: expedo
     runtime: node
-    plan: starter
+    plan: free
     # EU region: the privacy policy and the data processing addendum say the data is stored in Frankfurt.
     region: frankfurt
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /healthz
-    disk:
-      name: data
-      mountPath: /var/data
-      sizeGB: 1
+    rootDir: P/apps/expedo
     envVars:
       - key: NODE_ENV
         value: production
       - key: DB_FILE
-        value: /var/data/expedo.db
+        value: data/expedo.db
+      - key: BACKUP_REDIS_URL
+        fromService:
+          type: keyvalue
+          name: expedo-store
+          property: connectionString
+      - key: KEEP_AWAKE
+        value: "1"
       - key: APP_URL
         sync: false
       - key: APP_SECRET
