@@ -102,6 +102,12 @@ export function createApp() {
     app.get(path, (req, res) => res.type('html').send(legalPage(page, lang)));
   }
   app.use(express.static(join(__dirname, '..', 'public'), { index: false }));
+  // App Store listing kit (icon, screenshots, review screencast, review instructions): public, CORS-open,
+  // so the listing form can be filled from these URLs.
+  const kit = join(__dirname, '..', 'marketing', 'listing');
+  app.use('/listing-kit', (req, res, next) => { res.setHeader('Access-Control-Allow-Origin', '*'); next(); });
+  for (const dir of ['icon', 'feature', 'screenshots', 'review']) app.use(`/listing-kit/${dir}`, express.static(join(kit, dir), { index: false }));
+  app.get('/listing-kit/REVIEW-INSTRUCTIONS.md', (req, res) => res.type('text/plain; charset=utf-8').sendFile(join(kit, 'REVIEW-INSTRUCTIONS.md')));
   // i18n for the SPA: the same engine as the server (src/i18n/core.js) and the `ui.` part of a catalog.
   const i18nCore = readFileSync(join(__dirname, 'i18n', 'core.js'), 'utf8');
   app.get('/i18n/core.js', (req, res) => res.type('text/javascript').send(i18nCore));

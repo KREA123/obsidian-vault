@@ -49,19 +49,14 @@ Each step says what to do and what you should see.
 - **Refused-parcel warning** ("The customer refused 1 parcel before (out of 2). Call them before creating the AWB, or ask for card payment.") appears when the same phone or e-mail had an earlier order that came back refused. On a fresh development store there is no such history; the screencast (1:29) and screenshot 3 show it on the demo data.
 - **"Did you mean: X, Y, Z?"** suggestions come from the courier's own list of localities, which is checked only when a real courier is called. In Test mode you see the checks Expedo does itself (county, Bucharest sector, phone, postal code). The screencast (1:14) shows the courier suggestion built from FAN Courier's public locality list.
 
-### Full live test (optional, if you want to see the Shopify fulfillment)
+### Live mode
 
-> OWNER: fill in before submitting, or delete this section.
->
-> - FAN Courier: the public test account published in FAN Courier's API documentation (EN_FANCourier_API, p. 4): username `…`, password `…`, client ID `…`. In Expedo: Settings → Couriers → FAN Courier.
-> - FGO test environment: an account created at testuat.fgo.ro: CUI `…`, private key `…`, series `…`; tick the FGO test environment option. In Expedo: Settings → Invoicing → FGO.
-> - Then Settings → General → Live, and repeat step 6 on a new order. Expected: the order is fulfilled in Shopify with the FAN AWB as tracking number.
+Live mode needs the merchant's own courier and invoicing accounts (API credentials from Cargus, Sameday, FAN Courier, GLS or DPD and from SmartBill, FGO or Oblio); Expedo has no shared test account to hand out. Everything Live does is shown in Test mode first, except the calls to those providers and the Shopify fulfillment with tracking. After entering credentials, **"Test connection"** in Settings checks them, and Settings → General → **Live** switches over.
 
 ## Demo store data
 
 Besides the reviewer's own development store, the app has a built-in demo store ("Demo store (toys)") with Romanian demo orders, including problem orders (no phone, no county, company with a VAT code, easybox delivery, cancelled order, a customer who refused a parcel before). It runs only in demo mode (`DEMO=1`) and always stays in Test mode. It is what the screenshots and the screencast show.
 
-> OWNER (optional): if you host a demo instance for reviewers, run a separate server with `DEMO=1` and `ADMIN_PASSWORD=<password>` on its own database (never the production one) and add here: URL `https://…`, password `…`.
 
 ## Data and privacy
 
@@ -84,7 +79,9 @@ No courier or invoicing account is needed: new stores start in TEST MODE (yellow
 4. Orders > "Needs attention": open the order without a phone, add one, "Save address". It moves to "Ready to process".
 5. "Ready to process": tick all > "Create AWB + invoice". Expected: a TEST AWB + invoice per order, status "Shipped". Then "Labels" (one PDF with all labels) and "Picking list".
 6. After ~10 minutes: Dashboard > "Check parcels". Expected: "Delivered"; the cash-on-delivery order shows "collected".
-7. Settings > Rules, Automation, General (Test/Live, Language) show the rest. Live needs real courier/invoicing credentials (see attached instructions).
+7. Settings > Rules, Automation, General (Test/Live, Language) show the rest. Live needs the merchant's own courier/invoicing credentials.
+
+Full instructions: https://expedo.onrender.com/listing-kit/REVIEW-INSTRUCTIONS.md
 
 Support: office@krea.ro
 ```
