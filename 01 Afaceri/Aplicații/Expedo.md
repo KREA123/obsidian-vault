@@ -63,9 +63,8 @@ Ce face, pentru fiecare comandă:
 - **Trusa App Store în engleză:** iconiță, imagine principală, 6 capturi + 3 pe telefon, texte, prețuri, filmuleț și instrucțiuni pentru recenzenți: `P/apps/expedo/marketing/listing/LISTING.md`.
 - 452 de teste automate trec.
 
-- **Publicat (04.10.2026):** serverul rulează la https://expedo.onrender.com (Render, Frankfurt, plan gratuit). Configurația Shopify (adresa aplicației, redirect, permisiuni, webhook-uri) e trimisă în aplicația „Expedo test” (versiunea expedo-2). Verificat pe dexters-laboratory: comenzile se sincronizează, iar o comandă nouă apare în aplicație în câteva secunde, prin webhook.
+- **Publicat (04.10.2026):** serverul rulează la https://expedo.onrender.com (Render, Frankfurt, totul gratuit: datele se copiază criptat într-un Key Value gratuit și se refac singure la repornire, verificat 08.10; serverul nu mai adoarme). Configurația Shopify (adresa aplicației, redirect, permisiuni, webhook-uri) e trimisă în aplicația „Expedo test” (versiunea expedo-2). Verificat pe dexters-laboratory: comenzile se sincronizează, iar o comandă nouă apare în aplicație în câteva secunde, prin webhook.
 
 **Rămâne (doar cu conturile lui Andu):**
-- un card pe Render (https://dashboard.render.com/billing), ca să trecem pe Starter + disc, cam $7/lună; pe planul gratuit datele se pierd la fiecare repornire;
 - cele două planuri de preț din Dev Dashboard (`PRICING.md`);
 - încărcarea listării și „Submit for review” (`marketing/listing/LISTING.md`).
