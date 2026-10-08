@@ -60,7 +60,7 @@ Besides the reviewer's own development store, the app has a built-in demo store 
 
 ## Data and privacy
 
-Expedo reads, from orders only: shipping/billing name, address, phone, e-mail, products, totals, payment gateway (to detect cash on delivery). It uses them to create the AWB and the invoice, to track the parcel and to warn about earlier refusals in the same store. Customer data, courier/invoicing credentials and the Shopify token are stored encrypted; customer data of finished orders is removed after the retention period set in Settings → Customer data. Mandatory compliance webhooks (`customers/data_request`, `customers/redact`, `shop/redact`) are implemented. Privacy policy: `https://<app-host>/privacy`.
+Expedo reads, from orders only: shipping/billing name, address, phone, e-mail, products, totals, payment gateway (to detect cash on delivery). It uses them to create the AWB and the invoice, to track the parcel and to warn about earlier refusals in the same store. Customer data, courier/invoicing credentials and the Shopify token are stored encrypted; customer data of finished orders is removed after the retention period set in Settings → Customer data. Mandatory compliance webhooks (`customers/data_request`, `customers/redact`, `shop/redact`) are implemented. Privacy policy: https://expedo.onrender.com/privacy.
 
 Support: **office@krea.ro** · Publisher: ARTEMIS DIGITAL SRL
 
