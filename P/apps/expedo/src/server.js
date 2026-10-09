@@ -17,6 +17,7 @@ import { request } from './lib/http.js';
 import { ProcessingError, toProcessingError, renderError } from './core/errors.js';
 import { t, m, has, catalogs, clientCatalog, requestLocale, acceptLanguageLocale, normalizeLocale, LOCALES } from './i18n/index.js';
 import { getShopify } from './shopify/index.js';
+import { migrateLegacyToken } from './shopify/client.js';
 import * as auth from './shopify/auth.js';
 import { startWorker, handlers } from './worker.js';
 import { seedDemo, advanceDemo } from './demo/seed.js';
@@ -606,8 +607,9 @@ async function resolveStore(req, res, next) {
       const v = auth.verifySessionToken(bearer);
       if (!v) return sendError(req, res, 401, 'SESSION_INVALID');
       let store = db.getStoreByShop(v.shop);
-      if (!store?.accessToken || store.uninstalled_at) {
-        // Embedded first load (Shopify managed install): get an offline token via token exchange.
+      if (!store || store.uninstalled_at || (!store.accessToken && !config.shopify.ownStores.includes(v.shop))) {
+        // Embedded first load (Shopify managed install) or a cleared token (refresh token no longer
+        // usable): get an expiring offline token via token exchange.
         const token = await auth.exchangeSessionToken(v.shop, bearer);
         store = await onInstalled(v.shop, token);
       }
@@ -643,7 +645,7 @@ async function resolveStore(req, res, next) {
 }
 
 async function onInstalled(shop, token) {
-  let store = db.upsertStore({ shop, accessToken: token.access_token, scopes: token.scope });
+  let store = db.upsertStore({ shop, ...auth.tokenFields(token) });
   const client = getShopify(store);
   try {
     const info = await client.shopInfo();
@@ -729,6 +731,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const store = db.upsertStore({ shop, name: shop });
       P.enqueue(store.id, 'sync_store', { days: 30 }, { key: `sync:${store.id}` });
     }
+  }
+  // Tokens saved before expiring offline tokens: swap them now, without waiting for the merchant.
+  for (const store of db.listStores()) {
+    migrateLegacyToken(store)
+      .then((done) => done && console.log(`shopify: ${store.shop} moved to an expiring offline token`))
+      .catch((err) => console.error(`shopify: token migration failed for ${store.shop}`, err.message));
   }
   startWorker();
   backup.startBackups(db.getDb);

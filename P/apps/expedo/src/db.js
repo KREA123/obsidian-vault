@@ -167,6 +167,8 @@ function migrate() {
   // Pricing plan cache (core/plans.js): plan id, what Shopify said (JSON), when it was last checked.
   const storeCols = new Set(db.prepare('PRAGMA table_info(stores)').all().map((c) => c.name));
   for (const c of ['plan', 'plan_info', 'plan_checked_at']) if (!storeCols.has(c)) db.exec(`ALTER TABLE stores ADD COLUMN ${c} TEXT`);
+  // Expiring offline tokens: the refresh token (encrypted) and when each expires.
+  for (const c of ['refresh_token', 'token_expires_at', 'refresh_expires_at']) if (!storeCols.has(c)) db.exec(`ALTER TABLE stores ADD COLUMN ${c} TEXT`);
   db.exec(`CREATE INDEX IF NOT EXISTS orders_phone ON orders(store_id, phone_hash);
     CREATE INDEX IF NOT EXISTS orders_email ON orders(store_id, email_hash);
     CREATE INDEX IF NOT EXISTS orders_finished ON orders(store_id, finished_at);`);
@@ -223,7 +225,11 @@ export function listStores() {
   return db.prepare('SELECT * FROM stores WHERE uninstalled_at IS NULL ORDER BY id').all().map(hydrateStore);
 }
 function hydrateStore(row) {
-  return { ...row, demo: !!row.demo, settings: j(row.settings, {}), plan_info: j(row.plan_info, {}), accessToken: row.access_token ? decrypt(row.access_token) : null };
+  return {
+    ...row, demo: !!row.demo, settings: j(row.settings, {}), plan_info: j(row.plan_info, {}),
+    accessToken: row.access_token ? decrypt(row.access_token) : null,
+    refreshToken: row.refresh_token ? decrypt(row.refresh_token) : null,
+  };
 }
 /** A failed plan check: keep the cached plan, check again after the usual interval. */
 export function touchPlanChecked(storeId) {
@@ -233,12 +239,20 @@ export function touchPlanChecked(storeId) {
 export function saveStorePlan(storeId, plan, info = {}) {
   db.prepare('UPDATE stores SET plan = ?, plan_info = ?, plan_checked_at = ? WHERE id = ?').run(plan, JSON.stringify(info), new Date().toISOString(), storeId);
 }
-export function upsertStore({ shop, name, accessToken, scopes, demo = false }) {
-  db.prepare(`INSERT INTO stores (shop, name, access_token, scopes, demo) VALUES (?, ?, ?, ?, ?)
+export function upsertStore({ shop, name, accessToken, scopes, refreshToken = null, tokenExpiresAt = null, refreshExpiresAt = null, demo = false }) {
+  db.prepare(`INSERT INTO stores (shop, name, access_token, scopes, demo, refresh_token, token_expires_at, refresh_expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(shop) DO UPDATE SET name = COALESCE(excluded.name, name), access_token = excluded.access_token,
-      scopes = excluded.scopes, uninstalled_at = NULL`)
-    .run(shop, name ?? null, accessToken ? encrypt(accessToken) : null, scopes ?? null, demo ? 1 : 0);
+      scopes = excluded.scopes, refresh_token = excluded.refresh_token, token_expires_at = excluded.token_expires_at,
+      refresh_expires_at = excluded.refresh_expires_at, uninstalled_at = NULL`)
+    .run(shop, name ?? null, accessToken ? encrypt(accessToken) : null, scopes ?? null, demo ? 1 : 0,
+      refreshToken ? encrypt(refreshToken) : null, tokenExpiresAt, refreshExpiresAt);
   return getStoreByShop(shop);
+}
+/** Saves a refreshed / migrated token pair (auth.tokenFields). `null` clears it: the next app open gets a new one. */
+export function saveStoreToken(storeId, f) {
+  db.prepare('UPDATE stores SET access_token = ?, refresh_token = ?, token_expires_at = ?, refresh_expires_at = ?, scopes = COALESCE(?, scopes) WHERE id = ?')
+    .run(f?.accessToken ? encrypt(f.accessToken) : null, f?.refreshToken ? encrypt(f.refreshToken) : null,
+      f?.tokenExpiresAt ?? null, f?.refreshExpiresAt ?? null, f?.scopes ?? null, storeId);
 }
 export function saveStoreSettings(storeId, settings) {
   db.prepare('UPDATE stores SET settings = ? WHERE id = ?').run(JSON.stringify(settings), storeId);

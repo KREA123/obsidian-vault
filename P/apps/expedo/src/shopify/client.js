@@ -4,15 +4,14 @@ import { ProcessingError } from '../core/errors.js';
 import { m } from '../i18n/index.js';
 import * as Q from './queries.js';
 import { mapOrder } from './mapper.js';
-import { clientCredentialsToken } from './auth.js';
-import { storeCache } from '../db.js';
+import { clientCredentialsToken, refreshOfflineToken, migrateOfflineToken, tokenFields } from './auth.js';
+import { storeCache, getStore, saveStoreToken } from '../db.js';
 import { planIdFromName } from '../core/plans.js';
 
 const isOwnStore = (store) => config.shopify.ownStores.includes(store.shop);
 
 /** Own-organization stores get a fresh client-credentials token when the cached one is gone. */
-async function accessToken(store, { refresh = false } = {}) {
-  if (!isOwnStore(store)) return store.accessToken;
+async function ownStoreToken(store, refresh) {
   const cache = storeCache(store.id);
   if (!refresh) {
     const cached = cache.get('shopify:cc-token');
@@ -21,6 +20,55 @@ async function accessToken(store, { refresh = false } = {}) {
   const t = await clientCredentialsToken(store.shop);
   cache.set('shopify:cc-token', t.access_token, Math.max(60, Number(t.expires_in || 86400) - 600));
   return t.access_token;
+}
+
+const RENEW_BEFORE_MS = 5 * 60_000;
+const renewing = new Map(); // store id → pending renewal: one refresh per store at a time
+
+/**
+ * Installed stores: expiring offline token (1 hour), renewed with the refresh token a few minutes
+ * before it expires, or when Shopify rejects it. A token saved before expiring tokens (no expiry) is
+ * used as is; migrateLegacyToken() swaps it.
+ */
+async function accessToken(store, { refresh = false } = {}) {
+  if (isOwnStore(store)) return ownStoreToken(store, refresh);
+  const saved = (store.id && getStore(store.id)) || store; // another request may have renewed it already
+  if (!saved.accessToken) return null;
+  const expires = saved.token_expires_at ? Date.parse(saved.token_expires_at) : null;
+  if (!saved.refreshToken || (!refresh && expires && expires - Date.now() > RENEW_BEFORE_MS)) return saved.accessToken;
+  if (!renewing.has(saved.id)) {
+    renewing.set(saved.id, renew(saved, () => refreshOfflineToken(saved.shop, saved.refreshToken), expires).finally(() => renewing.delete(saved.id)));
+  }
+  return renewing.get(saved.id);
+}
+
+async function renew(store, request, expires = null) {
+  let t;
+  try {
+    t = await request();
+  } catch (err) {
+    // 400 / 401: the refresh token (or old token) is no longer usable. Clear it; the next time the
+    // merchant opens the app, token exchange gets a new pair.
+    if (err.status === 400 || err.status === 401) {
+      saveStoreToken(store.id, null);
+      throw new ProcessingError({ code: 'SHOPIFY_NOT_CONNECTED', provider: 'shopify', details: err.message });
+    }
+    // Network error, timeout, 5xx, 429: retry later with the same refresh token; meanwhile the current
+    // token is fine if it hasn't expired.
+    if (!expires || expires > Date.now()) return store.accessToken;
+    throw err;
+  }
+  const f = tokenFields(t);
+  saveStoreToken(store.id, f);
+  Object.assign(store, { accessToken: f.accessToken, refreshToken: f.refreshToken, token_expires_at: f.tokenExpiresAt });
+  return f.accessToken;
+}
+
+/** Swaps a stored non-expiring offline token for an expiring pair. Returns true when it did. */
+export async function migrateLegacyToken(store) {
+  if (isOwnStore(store) || store.demo || !store.accessToken || store.token_expires_at || store.uninstalled_at) return false;
+  await renew(store, () => migrateOfflineToken(store.shop, store.accessToken));
+  return true;
 }
 
 // Admin GraphQL client for one store. Demo stores have no token and never reach this.
@@ -41,8 +89,8 @@ export function shopifyClient(store) {
           json: { query, variables },
         }));
       } catch (err) {
-        // An expired client-credentials token: get a new one once.
-        if (err.code === 'AUTH_FAILED' && isOwnStore(store) && attempt === 0) {
+        // An expired token: get a new one once (client credentials, or the refresh token).
+        if (err.code === 'AUTH_FAILED' && attempt === 0 && (isOwnStore(store) || getStore(store.id)?.refreshToken)) {
           token = await accessToken(store, { refresh: true });
           continue;
         }

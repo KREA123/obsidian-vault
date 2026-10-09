@@ -98,6 +98,7 @@ npm test
 - `src/couriers/`, `src/invoicing/` — one file per integration, all on the same contract (`contract.js`).
 - `src/i18n/` — the catalogs (English, Romanian) and the translation engine.
 - `src/shopify/` — OAuth, token exchange for the embedded app, webhooks, GraphQL Admin API (2026-07).
+  Offline tokens are **expiring** (1 hour + a 90-day refresh token, as Shopify requires of public apps from January 1, 2027): renewed a few minutes before they expire, or when Shopify rejects one, one renewal per store at a time. Tokens saved before that are migrated at startup. If a refresh token is no longer accepted, the token is cleared and the next time the merchant opens the app, token exchange gets a new pair.
 - `src/worker.js` — background jobs (automatic processing, parcel tracking every 30 min, re-sync every 15 min, plan check every 6 h), saved in the database, so nothing is lost on restart.
 - `public/` — the dashboard (HTML + plain JS). Works inside the Shopify admin (App Bridge) and on its own, with a password (`ADMIN_PASSWORD`).
 

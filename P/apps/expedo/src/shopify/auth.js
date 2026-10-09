@@ -35,26 +35,55 @@ export function verifyWebhookHmac(rawBody, header) {
 async function tokenRequest(shop, body) {
   const res = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ client_id: config.shopify.apiKey, client_secret: config.shopify.apiSecret, ...body }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+    body: new URLSearchParams({ client_id: config.shopify.apiKey, client_secret: config.shopify.apiSecret, ...body }),
     signal: AbortSignal.timeout(20000),
   });
-  if (!res.ok) throw new Error(`Shopify token request failed: ${res.status} ${await res.text()}`);
-  return res.json(); // { access_token, scope }
+  if (!res.ok) throw Object.assign(new Error(`Shopify token request failed: ${res.status} ${await res.text()}`), { status: res.status });
+  return res.json(); // { access_token, scope, expires_in?, refresh_token?, refresh_token_expires_in? }
 }
 
-export const exchangeCode = (shop, code) => tokenRequest(shop, { code });
+// Offline tokens are requested *expiring* (1 hour, with a 90-day refresh token): Shopify no longer
+// accepts non-expiring offline tokens from public apps (deadline January 1, 2027).
+const OFFLINE = 'urn:shopify:params:oauth:token-type:offline-access-token';
+
+export const exchangeCode = (shop, code) => tokenRequest(shop, { code, expiring: '1' });
 
 /** Stores owned by the app's own organization: token via client credentials (valid ~24h, no user involved). */
 export const clientCredentialsToken = (shop) => tokenRequest(shop, { grant_type: 'client_credentials' });
 
-/** Embedded apps: swap an App Bridge session token for an offline Admin API token. */
+/** Embedded apps: swap an App Bridge session token for an expiring offline Admin API token. */
 export const exchangeSessionToken = (shop, sessionToken) => tokenRequest(shop, {
   grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
   subject_token: sessionToken,
   subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
-  requested_token_type: 'urn:shopify:params:oauth:token-type:offline-access-token',
+  requested_token_type: OFFLINE,
+  expiring: '1',
 });
+
+/** A new access token (and a new refresh token, which replaces the old one) from the stored refresh token. */
+export const refreshOfflineToken = (shop, refreshToken) => tokenRequest(shop, { grant_type: 'refresh_token', refresh_token: refreshToken });
+
+/** One-time swap of an old non-expiring offline token for an expiring pair (no user session needed). */
+export const migrateOfflineToken = (shop, token) => tokenRequest(shop, {
+  grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+  subject_token: token,
+  subject_token_type: OFFLINE,
+  requested_token_type: OFFLINE,
+  expiring: '1',
+});
+
+/** Token response → the fields saved on the store (expiry times as ISO strings; null when not expiring). */
+export function tokenFields(t, now = Date.now()) {
+  const at = (sec) => (Number(sec) > 0 ? new Date(now + Number(sec) * 1000).toISOString() : null);
+  return {
+    accessToken: t.access_token,
+    scopes: t.scope,
+    refreshToken: t.refresh_token || null,
+    tokenExpiresAt: at(t.expires_in),
+    refreshExpiresAt: at(t.refresh_token_expires_in),
+  };
+}
 
 /** Verifies an App Bridge session token (HS256 JWT signed with the app secret). Returns the shop or null. */
 export function verifySessionToken(token) {
