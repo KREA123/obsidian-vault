@@ -1,0 +1,1441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SOUL</title>
+<meta name="description" content="SOUL is a palm-sized aluminium stone with a round glass face and two living eyes. It blinks, it follows you, it falls asleep when you leave, and it works with the AI you already have. From €249. Join the waitlist.">
+<meta property="og:title" content="SOUL · your ai has a brain. give it a soul.">
+<meta property="og:description" content="A palm-sized aluminium stone with two living eyes. Born with one of 120 eye designs. From €249.">
+<meta property="og:image" content="../media/soul-m-hero.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#FAF8F3">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<script>
+/* ==========================================================================
+   SITE CONFIG — the only place to change prices, dates, endpoint and contact.
+   ========================================================================== */
+window.SOUL_CONFIG = {
+  // Where the waitlist form POSTs JSON {email, colour, edition, consent, lang, ts, source}.
+  // Leave "" to keep sign-ups only in the visitor's browser (demo mode).
+  WAITLIST_ENDPOINT: "",
+  CURRENCY: "EUR",
+  PRICES: { from: 249 },          // SOUL size M, aluminium, "from" price incl. VAT
+  SHIP: { en: "spring 2027", ro: "primăvara 2027" },   // estimate; only after CE radio testing
+  CONTACT_EMAIL: "hello@soul.example"
+};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Martian+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one stone on paper. The giant SOUL wordmark is the stage and the device is its O;
+   every picture of SOUL on the page has live eyes on its glass. Bands alternate paper / glass-black. */
+:root{
+  --paper:#FAF8F3;      /* brand paper */
+  --paper-2:#F1EDE4;    /* a warmer band */
+  --card:#FFFFFF;
+  --ink:#16181D;        /* brand ink */
+  --ink-2:#5F636C;      /* secondary text */
+  --line:rgba(22,24,29,.12);
+  --line-2:rgba(22,24,29,.26);
+  --glass:#0B0B0C;      /* the face */
+  --cream:#FFF0C8;      /* the eyes and light */
+  --ember:#D2622C;      /* aluminium accent */
+  --ember-ink:#A8461A;  /* accent as text on paper */
+  --cobalt:#2440FF;     /* the signature left pupil */
+  --tangerine:#FF5A1F;  /* the signature right pupil */
+  --night:#060607;      /* the OU band, the same in both themes */
+  --night-ink:#F6F3EC;
+  --night-2:#9EA1A8;
+  --focus:#2440FF;
+  --shadow:0 1px 2px rgba(22,24,29,.05),0 24px 60px -28px rgba(22,24,29,.35);
+  --f-display:"Bricolage Grotesque",ui-rounded,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"Martian Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --gut:clamp(16px,4vw,48px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D0D0F;--paper-2:#151518;--card:#1A1A1E;--ink:#F6F3EC;--ink-2:#A4A7AE;
+    --line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.28);--ember-ink:#FF8A57;--focus:#8FA0FF;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 24px 60px -28px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D0D0F;--paper-2:#151518;--card:#1A1A1E;--ink:#F6F3EC;--ink-2:#A4A7AE;
+  --line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.28);--ember-ink:#FF8A57;--focus:#8FA0FF;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 24px 60px -28px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:72px}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.55 var(--f-display);font-optical-sizing:auto;-webkit-font-smoothing:antialiased;overflow-x:clip}
+h1,h2,h3,p,ul,ol,dl,dd,figure,blockquote{margin:0}
+h1,h2,h3{font-weight:700;letter-spacing:-.035em;line-height:.95;text-wrap:balance}
+p{text-wrap:pretty}
+ul,ol{padding:0;list-style:none}
+a{color:inherit}
+img,canvas,svg{max-width:100%}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1240px;margin-inline:auto;padding-inline:var(--gut)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+.eyebrow{font:500 .72rem/1.3 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.h-xl{font-size:clamp(3rem,10.5vw,9.5rem);font-weight:750;letter-spacing:-.055em;line-height:.86}
+.h-l{font-size:clamp(2.5rem,6.8vw,6rem);font-weight:720;letter-spacing:-.05em;line-height:.9}
+.h-m{font-size:clamp(1.4rem,2.4vw,2rem);font-weight:650;letter-spacing:-.03em;line-height:1.05}
+.lead{font-size:clamp(1.08rem,1.5vw,1.3rem);line-height:1.45;color:var(--ink-2);max-width:44ch}
+.sec{padding-block:clamp(84px,11vw,168px);position:relative}
+.band{background:var(--paper-2)}
+.head{display:grid;gap:18px;max-width:900px;margin-bottom:clamp(36px,6vw,72px)}
+.skip{position:absolute;left:16px;top:-80px;z-index:100;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;text-decoration:none}
+.skip:focus{top:12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* buttons */
+.btn{--bg:var(--ink);--fg:var(--paper);display:inline-flex;align-items:center;justify-content:center;gap:.55em;min-height:54px;padding:0 1.6em;border-radius:999px;background:var(--bg);color:var(--fg);font:600 1.02rem/1 var(--f-display);letter-spacing:-.01em;text-decoration:none;border:0;cursor:pointer;white-space:nowrap;transition:background-color .2s,box-shadow .2s;will-change:transform}
+.btn:hover{box-shadow:0 10px 30px -10px color-mix(in srgb,var(--bg) 70%,transparent)}
+.btn .arr{transition:transform .25s}
+.btn:hover .arr{transform:translateX(3px)}
+.btn-ghost{--bg:transparent;--fg:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.btn-ghost:hover{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.btn-cream{--bg:var(--cream);--fg:#16181D}
+.btn-sm{min-height:42px;padding:0 1.15em;font-size:.94rem}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;font:500 .74rem/1 var(--f-mono);letter-spacing:.04em;border:1px solid var(--line-2);color:var(--ink);background:transparent;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c,var(--ember));flex:none}
+
+/* nav */
+.nav{position:fixed;inset:0 0 auto;z-index:50;padding-top:env(safe-area-inset-top,0px);background:color-mix(in srgb,var(--paper) 78%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(16px);backdrop-filter:saturate(1.4) blur(16px);border-bottom:1px solid transparent;transition:border-color .3s}
+.nav.scrolled{border-bottom-color:var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:12px;height:62px}
+.brand{display:inline-flex;align-items:center;text-decoration:none;padding-block:8px;flex:none}
+.brand svg{display:block;height:22px;width:auto}
+.wm-ink{fill:var(--ink)}
+.nav-links{display:flex;gap:clamp(14px,1.8vw,26px);margin-left:auto;font-size:.95rem}
+.nav-links a{text-decoration:none;color:var(--ink-2);padding-block:8px}
+.nav-links a:hover{color:var(--ink)}
+.tools{display:flex;align-items:center;gap:8px}
+.lang{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:2px}
+.lang button,.snd{border:0;background:transparent;font:500 .72rem/1 var(--f-mono);letter-spacing:.06em;padding:9px 10px;border-radius:999px;cursor:pointer;color:var(--ink-2)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.snd{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2)}
+.snd[aria-pressed="true"]{color:var(--ink);border-color:var(--ink)}
+.snd svg{width:14px;height:14px}
+.nav .btn{min-height:40px;padding:0 1.1em;font-size:.92rem}
+@media (max-width:1060px){.nav-links{display:none}.tools{margin-left:auto}}
+@media (max-width:440px){.snd span{display:none}.nav .btn{padding:0 .9em}}
+
+/* live glass overlays: a canvas mapped onto the black glass of a render */
+.shot{position:relative;display:block;max-width:100%}
+.shot>img{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.live{position:absolute;transform-origin:50% 50%;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer;border-radius:50%}
+.sheen{position:absolute;transform-origin:50% 50%;border-radius:50%;pointer-events:none;background:linear-gradient(140deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.035) 30%,transparent 52%)}
+
+/* hero */
+.hero{padding-top:calc(62px + env(safe-area-inset-top,0px));overflow:clip;position:relative}
+.stage{--W:min(1180px,calc(100vw - 2 * var(--gut)));--ox:.5;position:relative;width:var(--W);margin-left:calc(50% - var(--ox) * var(--W));padding-block:calc(var(--W) * .095) calc(var(--W) * .085)}
+.wm{display:block;width:100%;height:auto;overflow:visible}
+.wm path{fill:var(--ink);transition:fill .3s}
+.dev{position:absolute;left:38.29%;top:calc(var(--W) * .095 + var(--W) * .1476);width:45%;transform:translate(-50%,-46.868%) translateY(var(--bob,0px)) rotate(var(--rot,0deg)) scale(var(--sc,1));z-index:2}
+.dev .shot{filter:drop-shadow(0 40px 50px rgba(22,24,29,.28)) drop-shadow(0 8px 14px rgba(22,24,29,.14))}
+.dev-float{animation:float 6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.6%)}}
+.hint{position:absolute;right:2%;bottom:calc(var(--W) * .03);display:inline-flex;align-items:center;gap:8px;font:500 .72rem/1.3 var(--f-mono);letter-spacing:.06em;color:var(--ink-2);z-index:3}
+.hint::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--tangerine);box-shadow:0 0 0 4px color-mix(in srgb,var(--tangerine) 25%,transparent);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--tangerine) 0%,transparent)}}
+.hero-copy{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px 56px;align-items:end;padding-bottom:clamp(64px,8vw,120px)}
+.hero h1{font-size:clamp(2.6rem,6vw,5.2rem);font-weight:720;letter-spacing:-.042em;line-height:.92}
+.hero h1 em{font-style:normal;color:var(--ink-2)}
+.hero-side{display:grid;gap:22px;justify-items:start}
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.price-chip{display:inline-flex;align-items:baseline;gap:6px;font:500 .78rem/1 var(--f-mono);color:var(--ink-2)}
+.price-chip b{font:700 1.5rem/1 var(--f-display);letter-spacing:-.03em;color:var(--ink)}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:860px){
+  .hero-copy{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:720px){
+  .stage{--W:134vw;--ox:.3829;padding-block:calc(var(--W) * .12) calc(var(--W) * .16)}
+  .dev{top:calc(var(--W) * .12 + var(--W) * .1476);width:52%}
+  .hint{left:calc(.3829 * var(--W) - 50vw + var(--gut));right:auto;bottom:calc(var(--W) * .02)}
+}
+
+/* statement */
+.state{text-align:left}
+.state .h-xl{max-width:12ch}
+.inl{display:inline-block;width:.86em;height:.86em;vertical-align:-.06em;margin-inline:.04em;position:relative}
+.inl canvas{width:100%;height:100%;display:block;cursor:pointer}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2vw,24px);margin-top:clamp(48px,7vw,96px)}
+.tcard{display:grid;gap:12px;align-content:start;padding:clamp(18px,2.4vw,28px);border-radius:28px;background:var(--card);box-shadow:var(--shadow)}
+.tcard .shot{width:min(62%,210px);margin:4px auto 10px}
+.tcard h3{font-size:clamp(1.5rem,2.2vw,1.9rem)}
+.tcard p{color:var(--ink-2)}
+.tcard .mono{font-size:.7rem;color:var(--ink-2);letter-spacing:.08em;text-transform:uppercase}
+@media (max-width:860px){.trio{grid-template-columns:minmax(0,1fr)}.tcard{grid-template-columns:120px minmax(0,1fr);column-gap:18px;align-items:center}.tcard .shot{grid-row:span 3;width:120px;margin:0}}
+
+/* hold */
+.split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(32px,6vw,96px);align-items:center}
+@media (max-width:860px){.split{grid-template-columns:minmax(0,1fr)}}
+.frame{border-radius:32px;overflow:hidden;background:var(--paper-2);position:relative}
+.frame .tag{position:absolute;left:16px;top:16px;z-index:3;pointer-events:none}
+.tag{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:color-mix(in srgb,var(--paper) 86%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:500 .7rem/1 var(--f-mono);letter-spacing:.05em;color:var(--ink)}
+.frame .hold-hint{left:50%;top:auto;bottom:16px;transform:translateX(-50%);white-space:nowrap;pointer-events:none}
+.hold-ring{position:absolute;inset:auto;pointer-events:none}
+.stack{display:grid;gap:22px;align-content:start}
+.bubbles{display:grid;gap:10px}
+.bubbles li{width:fit-content;max-width:100%;padding:11px 16px;border-radius:20px 20px 20px 6px;background:var(--card);box-shadow:var(--shadow)}
+.bubbles li:nth-child(even){margin-left:clamp(14px,4vw,44px);border-radius:20px 20px 6px 20px;background:var(--ink);color:var(--paper)}
+.privacy{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start;padding:18px 20px;border-radius:22px;border:1.5px solid var(--line-2)}
+.privacy svg{width:22px;height:22px;margin-top:2px}
+.privacy p{font-weight:500}
+
+/* born */
+.born{background:var(--glass);color:var(--night-ink);--ink:var(--night-ink);--ink-2:var(--night-2);--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.28);--card:#141416;--focus:#8FA0FF;--shadow:0 30px 60px -30px rgba(0,0,0,.9)}
+.born .h-l .count{color:var(--cream)}
+.roll{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,80px);align-items:center}
+@media (max-width:860px){.roll{grid-template-columns:minmax(0,1fr)}}
+.roll-stage{position:relative;justify-self:center;width:min(100%,420px);aspect-ratio:1}
+.roll-stage canvas{width:100%;height:100%;display:block;cursor:pointer}
+.roll-stage .burst{position:absolute;inset:0;pointer-events:none}
+.roll-card{display:grid;gap:18px;align-content:start}
+.rc-num{font:500 .8rem/1 var(--f-mono);letter-spacing:.08em;color:var(--night-2)}
+.rc-name{font-size:clamp(2.4rem,5vw,4.2rem);font-weight:750;letter-spacing:-.05em;line-height:.92}
+.rc-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rar{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;font:600 .74rem/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent)}
+.rar::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.rc-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 18px;font-size:.95rem;border-top:1px solid var(--line);padding-top:16px}
+.rc-dl dt{font:500 .7rem/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--night-2)}
+.rc-dl dd{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.roll .btn{--bg:var(--cream);--fg:#16181D;min-height:60px;font-size:1.1rem;justify-self:start}
+.roll .btn[disabled]{opacity:.6;cursor:progress}
+.odds{margin-top:clamp(48px,7vw,88px);overflow-x:auto}
+.odds table{width:100%;border-collapse:collapse;min-width:520px;font-variant-numeric:tabular-nums}
+.odds th,.odds td{text-align:left;padding:14px 10px;border-bottom:1px solid var(--line)}
+.odds th{font:500 .7rem/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--night-2)}
+.odds td.num{font-family:var(--f-mono);font-size:.88rem}
+.odds .bar{display:block;height:8px;border-radius:99px;background:var(--c);min-width:3px}
+.grid-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:16px;margin-top:clamp(56px,8vw,104px);margin-bottom:22px}
+.egrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:14px 10px}
+.ecell{display:grid;gap:6px;justify-items:center;text-align:center;padding:10px 4px 12px;border-radius:20px;border:1px solid transparent;background:none;cursor:pointer;color:inherit}
+.ecell:hover{border-color:var(--line);background:#111113}
+.ecell canvas{width:100%;max-width:104px;aspect-ratio:1;display:block}
+.ecell b{font-weight:600;font-size:.9rem;line-height:1.15}
+.ecell small{display:inline-flex;align-items:center;gap:6px;font:500 .62rem/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--night-2)}
+.ecell small::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+.born-note{margin-top:22px;color:var(--night-2);font-size:.95rem}
+
+/* colours */
+.family{border-radius:32px;overflow:hidden;background:#EFEAE2}
+.car-wrap{position:relative;margin-top:clamp(28px,4vw,48px)}
+.car{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(240px,30%,360px);gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:12px;scrollbar-width:thin;overscroll-behavior-x:contain}
+.ccard{scroll-snap-align:start;display:grid;gap:10px;padding:18px 18px 20px;border-radius:28px;background:var(--card);box-shadow:var(--shadow);border:0;text-align:left;color:inherit;cursor:pointer}
+.ccard .shot{width:78%;margin:6px auto 4px}
+.crow{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.crow b{font-size:1.35rem;font-weight:650;letter-spacing:-.03em}
+.crow>span:last-child{font:500 .78rem/1 var(--f-mono);color:var(--ink-2)}
+.sw{width:18px;height:18px;border-radius:50%;background:radial-gradient(90% 90% at 30% 25%,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 75%,#000));box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);flex:none}
+.cname{display:inline-flex;align-items:center;gap:10px}
+.car-nav{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.car-nav button{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line-2);background:transparent;cursor:pointer;display:grid;place-items:center}
+.car-nav button:hover{border-color:var(--ink)}
+.finish{margin-top:22px;color:var(--ink-2);max-width:62ch}
+
+/* ai */
+.ai-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.ai{display:grid;gap:10px;align-content:start;padding:20px;border-radius:26px;background:var(--card);box-shadow:var(--shadow)}
+.ai .shot{width:min(70%,150px);margin:2px auto 8px}
+.ai h3{font-size:1.45rem}
+.ai p{color:var(--ink-2);font-size:.96rem}
+.ai .mono{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ember-ink)}
+@media (max-width:980px){.ai-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.ai-grid{grid-template-columns:minmax(0,1fr)}.ai{grid-template-columns:96px minmax(0,1fr);column-gap:16px;align-items:center}.ai .shot{grid-row:span 3;width:96px;margin:0}}
+.ai-note{margin-top:18px;font-size:.85rem;color:var(--ink-2);max-width:80ch}
+
+/* claude */
+.steps{display:grid;border-top:1px solid var(--line-2)}
+.steps li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:2px 14px;padding-block:18px;border-bottom:1px solid var(--line)}
+.steps .n{grid-row:span 2;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:500 .8rem/1 var(--f-mono);background:var(--ink);color:var(--paper)}
+.steps h3{font-size:1.35rem;line-height:1.1}
+.steps p{color:var(--ink-2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+
+/* os */
+.os-row{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(200px,24%,280px);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:12px;margin-top:clamp(28px,4vw,44px);scrollbar-width:thin;overscroll-behavior-x:contain}
+.os-row figure{scroll-snap-align:start;display:grid;gap:10px}
+.os-row img{display:block;width:100%;height:auto;border-radius:26px;background:#E4E6E1}
+.os-row figcaption{font-size:.92rem;color:var(--ink-2)}
+.os-row figcaption b{display:block;color:var(--ink);font-weight:600}
+.os-cta{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;margin-top:clamp(28px,4vw,44px)}
+.os-cta p{color:var(--ink-2);max-width:52ch;flex:1 1 260px}
+
+/* night */
+.night{background:var(--night);color:var(--night-ink);--ink:var(--night-ink);--ink-2:var(--night-2);--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.28);--focus:#FFB347;overflow:clip}
+.night .split{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:860px){.night .split{grid-template-columns:minmax(0,1fr)}}
+.night .frame{background:#000;max-width:520px}
+.night .tag{background:rgba(255,255,255,.08);color:var(--night-ink)}
+.layers{display:grid;border-top:1px solid var(--line-2)}
+.layers li{display:grid;gap:4px;padding-block:16px;border-bottom:1px solid var(--line)}
+.layers b{font-size:1.15rem;font-weight:600;letter-spacing:-.02em}
+.layers span{color:var(--ink-2)}
+.glow{position:absolute;inset:auto -20% -40% -20%;height:70%;background:radial-gradient(50% 50% at 30% 50%,rgba(255,150,80,.16),transparent 70%);pointer-events:none}
+
+/* promises + specs */
+.prom{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 clamp(18px,3vw,40px)}
+.prom li{display:grid;gap:6px;align-content:start;padding-block:20px 26px;border-top:1.5px solid var(--ink)}
+.prom h3{font-size:1.25rem;line-height:1.1;letter-spacing:-.02em}
+.prom p{color:var(--ink-2);font-size:.95rem}
+@media (max-width:980px){.prom{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.prom{grid-template-columns:minmax(0,1fr)}}
+.specs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:clamp(24px,5vw,72px)}
+.specs div{display:grid;grid-template-columns:minmax(110px,.6fr) minmax(0,1fr);gap:12px;padding-block:14px;border-bottom:1px solid var(--line)}
+.specs dt{font:500 .7rem/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.specs dd{font-variant-numeric:tabular-nums}
+@media (max-width:760px){.specs{grid-template-columns:minmax(0,1fr)}}
+.note{margin-top:18px;font-size:.86rem;color:var(--ink-2)}
+
+/* faq */
+.faq-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(28px,6vw,96px);align-items:start}
+@media (max-width:860px){.faq-grid{grid-template-columns:minmax(0,1fr)}}
+.faq-grid .head{position:sticky;top:96px;margin-bottom:0}
+@media (max-width:860px){.faq-grid .head{position:static}}
+.faq details{border-top:1px solid var(--line)}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:18px;align-items:center;padding-block:20px;font-size:clamp(1.08rem,1.6vw,1.25rem);font-weight:550;letter-spacing:-.015em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line-2);font:400 1.1rem/1 var(--f-mono);transition:transform .25s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq .a{padding:0 44px 22px 0;color:var(--ink-2);max-width:62ch}
+
+/* reserve */
+.reserve{background:var(--glass);color:var(--night-ink);--ink:var(--night-ink);--ink-2:var(--night-2);--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.28);--focus:#FFB347;overflow:clip}
+.res-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(32px,6vw,96px);align-items:center}
+@media (max-width:860px){.res-grid{grid-template-columns:minmax(0,1fr)}}
+.res-dev{width:min(100%,400px);justify-self:center}
+@media (max-width:860px){.res-dev{width:min(62vw,280px)}}
+.form{display:grid;gap:14px;margin-top:6px}
+.field{display:grid;gap:8px}
+.field label{font:500 .7rem/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--night-2)}
+.input{width:100%;min-height:56px;padding:0 18px;border-radius:18px;border:1.5px solid rgba(255,255,255,.18);background:#121214;color:var(--night-ink);font-size:1.02rem;appearance:none;-webkit-appearance:none}
+.input:hover{border-color:rgba(255,255,255,.34)}
+.input:focus{border-color:var(--cream);outline:none;box-shadow:0 0 0 4px rgba(255,240,200,.16)}
+select.input{background-image:linear-gradient(45deg,transparent 50%,#C9CCD2 50%),linear-gradient(135deg,#C9CCD2 50%,transparent 50%);background-position:calc(100% - 22px) 50%,calc(100% - 16px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:44px}
+select.input option{background:#121214;color:#F6F3EC}
+.row2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px}
+@media (max-width:560px){.row2{grid-template-columns:minmax(0,1fr)}}
+.consent{display:grid;grid-template-columns:24px minmax(0,1fr);gap:12px;align-items:start;font-size:.92rem;color:#C9CCD2}
+.consent input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--cream)}
+.consent a{color:var(--cream)}
+.form .btn{--bg:var(--cream);--fg:#16181D;min-height:60px;font-size:1.08rem;justify-self:start}
+.form-msg{min-height:1.4em;font-size:.94rem;color:#FF9BB3}
+.form-fine{font-size:.84rem;color:#8C9098}
+.hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}
+.thanks{display:grid;gap:12px;padding:28px;border-radius:26px;background:#121214;border:1px solid rgba(255,240,200,.25)}
+.thanks h3{font-size:clamp(1.8rem,3.4vw,2.6rem);color:var(--cream)}
+.thanks p{color:#C9CCD2}
+
+/* footer */
+.foot{background:#050506;color:#9EA2AA;font-size:.88rem;padding-block:56px calc(40px + env(safe-area-inset-bottom,0px));--focus:#FFB347}
+.foot .wrap{display:grid;gap:26px}
+.foot-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:center}
+.foot .brand svg{height:26px}
+.foot .wm-ink{fill:#F6F3EC}
+.foot-links{display:flex;flex-wrap:wrap;gap:8px 20px}
+.foot-links a{color:#C9CCD2;text-decoration:none}
+.foot-links a:hover{color:#fff;text-decoration:underline}
+.legal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 40px;border-top:1px solid rgba(255,255,255,.1);padding-top:26px}
+@media (max-width:760px){.legal{grid-template-columns:minmax(0,1fr)}}
+.legal h4{margin:0 0 6px;font:500 .7rem/1.2 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:#C9CCD2}
+.legal p{line-height:1.6}
+.ph{color:#FFB347}
+.tm{border-top:1px solid rgba(255,255,255,.1);padding-top:22px;color:#8C9098;max-width:90ch}
+.email{user-select:all;-webkit-user-select:all;color:#F6F3EC;font-family:var(--f-mono);font-size:.84rem}
+.made{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;color:#C9CCD2}
+
+/* reveal: elements rest visible; they only rise a little as they come in */
+.rv{transition:transform .9s cubic-bezier(.2,.7,.2,1)}
+.rv.pre{transform:translateY(26px)}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .rv.pre{transform:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="SOUL, back to top"><svg viewBox="2.96 61.82 489.04 144.35" aria-hidden="true" focusable="false"><path class="wm-ink" d="M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z M408.8 200V68H437.6V175.2H490V200Z"/><circle cx="190.2" cy="134" r="70.18" fill="#CBCDCF"/><circle cx="190.2" cy="134" r="64.21" fill="#0B0B0C"/><path fill="#FFF0C8" d="M180.82 125.78A12.84 21.83 0 1 1 160.14 121.91ZM220.26 121.91A12.84 21.83 0 1 1 199.58 125.78Z"/></svg></a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#alive" data-i18n="nav.alive">alive</a>
+      <a href="#born" data-i18n="nav.born">born</a>
+      <a href="#colours" data-i18n="nav.colours">colours</a>
+      <a href="#ai" data-i18n="nav.ai">your ai</a>
+      <a href="#os" data-i18n="nav.os">SoulOS</a>
+      <a href="#faq" data-i18n="nav.faq">faq</a>
+    </nav>
+    <div class="tools">
+      <button class="snd" type="button" id="snd" aria-pressed="false" data-i18n-attr="aria-label:nav.sound" aria-label="Sound effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor"/><path id="snd-wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="nav.soundL">sound</span></button>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="ro" aria-pressed="false">RO</button>
+      </div>
+      <a class="btn mag" href="#reserve" data-i18n="nav.cta">waitlist</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- HERO: the device is the O of the wordmark -->
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="stage" id="stage">
+    <svg class="wm" id="wm" viewBox="2.96 61.82 489.04 144.35" role="img" aria-label="SOUL">
+      <path id="wm-s" d="M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z"/>
+      <path id="wm-u" d="M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z"/>
+      <path id="wm-l" d="M408.8 200V68H437.6V175.2H490V200Z"/>
+    </svg>
+    <div class="dev" id="hero-dev">
+      <div class="dev-float">
+        <div class="shot" data-glass="front" data-design="original" data-role="hero">
+          <img src="../media/v2/front.webp" srcset="../media/v2/front-sm.webp 640w, ../media/v2/front.webp 1100w" sizes="(max-width:720px) 70vw, 540px" width="1100" height="1257" fetchpriority="high" alt="Concept render of SOUL in silver aluminium, seen from the front: a soft pebble whose face is one round black glass, with two live cartoon eyes looking at you." data-i18n-attr="alt:hero.alt">
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="hint" data-i18n="hero.hint">psst. move your cursor.</p>
+  </div>
+  <div class="wrap hero-copy">
+    <h1 id="hero-title" class="rv" data-i18n="hero.h1">your ai has a brain.<br><em>give it a soul.</em></h1>
+    <div class="hero-side rv">
+      <p class="lead" data-i18n="hero.lead">A palm-sized aluminium stone with two living eyes. It blinks, it follows you, it dozes off when you leave. And it works with the AI you already have.</p>
+      <div class="cta">
+        <a class="btn mag" href="#reserve" data-react="happy"><span data-i18n="hero.cta">join the waitlist</span><span class="arr" aria-hidden="true">→</span></a>
+        <span class="price-chip" data-react="smirk"><span data-i18n="price.from">from</span> <b data-price="from">€249</b></span>
+      </div>
+      <div class="facts"><span class="pill" data-i18n="hero.f1">size M · 90 × 101 mm</span><span class="pill" data-i18n="hero.f2">no subscription to be alive</span><span class="pill" data-i18n="hero.f3">designed in Romania</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ALIVE -->
+<section class="sec band" id="alive" aria-labelledby="alive-title">
+  <div class="wrap state">
+    <p class="eyebrow rv" data-i18n="alive.eyebrow">alive, offline</p>
+    <h2 class="h-xl rv" id="alive-title" style="margin-top:18px"><span data-i18n="alive.h1">it looks</span> <span class="inl"><canvas data-inline aria-hidden="true"></canvas></span> <span data-i18n="alive.h2">back.</span></h2>
+    <p class="lead rv" style="margin-top:26px" data-i18n="alive.lead">No app to open, no account, no internet needed. Everything you see on the glass runs on the stone itself, and keeps running if the Wi-Fi never comes back.</p>
+    <div class="trio">
+      <article class="tcard rv">
+        <div class="shot" data-glass="front" data-design="mint-condition" data-role="blink"><img src="../media/v2/front-sm.webp" width="640" height="732" loading="lazy" alt="" aria-hidden="true"></div>
+        <h3 data-i18n="alive.c1t">it blinks.</h3>
+        <p data-i18n="alive.c1p">At random, never on a timer. Sometimes twice, when it's curious.</p>
+      </article>
+      <article class="tcard rv">
+        <div class="shot" data-glass="front" data-design="original" data-role="follow"><img src="../media/v2/front-sm.webp" width="640" height="732" loading="lazy" alt="" aria-hidden="true"></div>
+        <h3 data-i18n="alive.c2t">it follows you.</h3>
+        <p data-i18n="alive.c2p">Your cursor, here. Your finger, on the desk. It always knows where you went.</p>
+      </article>
+      <article class="tcard rv">
+        <div class="shot" data-glass="front" data-design="coral-snorkel" data-role="moods"><img src="../media/v2/front-sm.webp" width="640" height="732" loading="lazy" alt="" aria-hidden="true"></div>
+        <h3 data-i18n="alive.c3t">it has moods.</h3>
+        <p data-i18n="alive.c3p">Happy, sleepy, suspicious, <i>șmecher</i>. Tap it and see what you get.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- HOLD THE GLASS -->
+<section class="sec" id="hold" aria-labelledby="hold-title">
+  <div class="wrap split">
+    <figure class="frame rv">
+      <span class="tag" data-i18n="fig.render">concept render</span>
+      <div class="shot" data-glass="hand" data-design="original" data-role="hand" id="hand-shot">
+        <img src="../media/v2/hand.webp" srcset="../media/v2/hand-sm.webp 760w, ../media/v2/hand.webp 1400w" sizes="(max-width:860px) calc(100vw - 32px), 640px" width="1400" height="1200" loading="lazy" alt="Concept render of SOUL in silver resting on an open hand. It covers the palm like a big smooth stone, and its eyes look up at you." data-i18n-attr="alt:hold.alt">
+      </div>
+      <span class="tag hold-hint" id="hold-hint" data-i18n="hold.hint">press and hold the glass</span>
+    </figure>
+    <div class="stack">
+      <p class="eyebrow" data-i18n="hold.eyebrow">hold to talk · in development</p>
+      <h2 class="h-l" id="hold-title" data-i18n="hold.h2">hold the glass.<br>it listens.</h2>
+      <p class="lead" data-i18n="hold.lead">Put a finger on the glass and talk. It answers with the AI you chose, remembers the people and plans in your life, and wakes you up gently.</p>
+      <ul class="bubbles" aria-label="Things you can say" data-i18n-attr="aria-label:hold.say">
+        <li data-i18n="hold.b1">remind me to call mum on sunday.</li>
+        <li data-i18n="hold.b2">on it. sunday, 11:00.</li>
+        <li data-i18n="hold.b3">wake me at seven. gently.</li>
+      </ul>
+      <div class="privacy">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4Zm-7 10a7 7 0 0 0 14 0M12 19v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <p data-i18n="hold.privacy">It listens only while your finger is on the glass. Lift it and the microphone is off. No wake word. No camera. Ever.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BORN -->
+<section class="sec born" id="born" aria-labelledby="born-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="born.eyebrow">born, not made</p>
+      <h2 class="h-l rv" id="born-title"><span data-i18n="born.h1">born with one of</span> <span class="count" data-count>120</span> <span data-i18n="born.h2">eyes.</span></h2>
+      <p class="lead rv" data-i18n="born.lead">At first power-on, each SOUL is born from its chip's unique ID. The eyes it gets are the eyes it keeps. Nobody picks them. Not even us.</p>
+    </div>
+    <div class="roll">
+      <div class="roll-stage">
+        <canvas id="roll-cv" role="img" aria-label="A newborn SOUL's eyes" data-i18n-attr="aria-label:born.cvaria"></canvas>
+        <canvas class="burst" id="burst" aria-hidden="true"></canvas>
+      </div>
+      <div class="roll-card" aria-live="polite">
+        <p class="rc-num" id="rc-num">#001 / 120</p>
+        <p class="rc-name" id="rc-name">Original</p>
+        <div class="rc-meta"><span class="rar" id="rc-rar" style="--c:#C9C4B8">Common</span><span class="pill" id="rc-odds" style="color:var(--cream);border-color:rgba(255,240,200,.35)">1 in 96</span></div>
+        <dl class="rc-dl">
+          <dt data-i18n="born.name">name</dt><dd id="rc-pet">Mira</dd>
+          <dt data-i18n="born.chip">chip id</dt><dd class="mono" id="rc-chip">34:85:18:6A:C2:9F</dd>
+          <dt data-i18n="born.date">born</dt><dd class="mono" id="rc-date">02.10.2026</dd>
+        </dl>
+        <button class="btn mag" type="button" id="roll-btn"><span data-i18n="born.roll">birth yours</span><span class="arr" aria-hidden="true">↻</span></button>
+        <p class="born-note" data-i18n="born.sample">A sample birth. Yours happens once, the first time your SOUL is switched on.</p>
+      </div>
+    </div>
+    <div class="odds rv">
+      <table>
+        <caption class="sr" data-i18n="born.oddsCap">Odds of each rarity at birth</caption>
+        <thead><tr><th data-i18n="born.th1">rarity</th><th data-i18n="born.th2">chance</th><th data-i18n="born.th3">designs</th><th data-i18n="born.th4">one exact pair</th><th style="width:34%" aria-hidden="true"></th></tr></thead>
+        <tbody id="odds-body"></tbody>
+      </table>
+    </div>
+    <div class="grid-head">
+      <h3 class="h-m" data-i18n="born.gridT">the collection</h3>
+      <button class="btn btn-ghost btn-sm" type="button" id="grid-more" aria-expanded="false"><span data-i18n="born.more">show all</span> <span data-count>120</span></button>
+    </div>
+    <div class="egrid" id="egrid"></div>
+    <p class="born-note" data-i18n="born.note">Rarity changes only the eyes. Every SOUL does exactly the same things.</p>
+  </div>
+</section>
+
+<!-- COLOURS -->
+<section class="sec" id="colours" aria-labelledby="col-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="col.eyebrow">five aluminiums</p>
+      <h2 class="h-l rv" id="col-title" data-i18n="col.h2">you pick the body.<br>the eyes pick themselves.</h2>
+    </div>
+    <figure class="family rv">
+      <div class="shot" data-glass="family" data-design="bucharest-night,tangerine-dream,original,mint-condition,bubblegum-bus" data-role="family">
+        <img src="../media/v2/family.webp" srcset="../media/v2/family-sm.webp 900w, ../media/v2/family.webp 1800w" sizes="(max-width:1240px) calc(100vw - 32px), 1144px" width="1800" height="1012" loading="lazy" alt="Concept render of five SOULs in a row, in Graphite, Ember, Silver, Midnight and Champagne aluminium, each with its own pair of live eyes." data-i18n-attr="alt:col.alt">
+      </div>
+    </figure>
+    <div class="car-wrap">
+      <div class="car" id="car" tabindex="0" aria-label="Colours" data-i18n-attr="aria-label:col.car"></div>
+      <div class="car-nav"><button type="button" id="car-prev" aria-label="Previous colour" data-i18n-attr="aria-label:col.prev"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" id="car-next" aria-label="Next colour" data-i18n-attr="aria-label:col.next"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    </div>
+    <p class="finish" data-i18n="col.finish">Bead-blasted, anodised aluminium 6061 with a black glass face. No logo on the front, no buttons, no holes. Every colour costs the same.</p>
+  </div>
+</section>
+
+<!-- YOUR AI -->
+<section class="sec band" id="ai" aria-labelledby="ai-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="ai.eyebrow">your ai, your choice</p>
+      <h2 class="h-l rv" id="ai-title" data-i18n="ai.h2">works with the ai<br>you already have.</h2>
+      <p class="lead rv" data-i18n="ai.lead">Switch modes from its Control Center in one tap. Your account, your data, your choice.</p>
+    </div>
+    <div class="ai-grid">
+      <article class="ai rv">
+        <div class="shot" data-glass="col-graphite" data-design="pistachio" data-role="ai" data-mood="neutral"><img src="../media/v2/col-graphite.webp" width="640" height="769" loading="lazy" alt="" aria-hidden="true"></div>
+        <span class="mono" data-i18n="ai.t1k">no account</span>
+        <h3 data-i18n="ai.t1">No AI.</h3>
+        <p data-i18n="ai.p1">Still alive. Notes, reminders, alarms and focus on its own keyboard. No sign-up, ever.</p>
+      </article>
+      <article class="ai rv">
+        <div class="shot" data-glass="col-ember" data-design="original" data-role="ai" data-mood="working"><img src="../media/v2/col-ember.webp" width="640" height="769" loading="lazy" alt="" aria-hidden="true"></div>
+        <span class="mono" data-i18n="ai.t2k">connector</span>
+        <h3 data-i18n="ai.t2">Your Claude.</h3>
+        <p data-i18n="ai.p2">Add SOUL as a connector. Ask Claude to put today's plan, a reminder or a note on it.</p>
+      </article>
+      <article class="ai rv">
+        <div class="shot" data-glass="col-midnight" data-design="mint-condition" data-role="ai" data-mood="thinking"><img src="../media/v2/col-midnight.webp" width="640" height="769" loading="lazy" alt="" aria-hidden="true"></div>
+        <span class="mono" data-i18n="ai.t3k">app</span>
+        <h3 data-i18n="ai.t3">Your ChatGPT.</h3>
+        <p data-i18n="ai.p3">Add SOUL as an app and send it your list or a reminder. Same stone, same soul.</p>
+      </article>
+      <article class="ai rv">
+        <div class="shot" data-glass="col-champagne" data-design="lemonade-stand" data-role="ai" data-mood="smirk"><img src="../media/v2/col-champagne.webp" width="640" height="769" loading="lazy" alt="" aria-hidden="true"></div>
+        <span class="mono" data-i18n="ai.t4k">bring your key</span>
+        <h3 data-i18n="ai.t4">Your API key.</h3>
+        <p data-i18n="ai.p4">Paste an Anthropic or OpenAI key and talk to it by voice. You pay the AI, not us.</p>
+      </article>
+    </div>
+    <p class="ai-note" data-i18n="ai.note">Claude and ChatGPT connections are in development. Claude is a trademark of Anthropic, ChatGPT of OpenAI. SOUL is independent and not endorsed by either.</p>
+  </div>
+</section>
+
+<!-- CLAUDE -->
+<section class="sec" id="claude" aria-labelledby="claude-title">
+  <div class="wrap split">
+    <div class="stack">
+      <p class="eyebrow" data-i18n="cl.eyebrow">works with Claude</p>
+      <h2 class="h-l" id="claude-title" data-i18n="cl.h2">it keeps an eye on Claude.<br>so you don't have to.</h2>
+      <ol class="steps">
+        <li><span class="n" aria-hidden="true">1</span><h3 data-i18n="cl.s1t">Claude works.</h3><p data-i18n="cl.s1p">Your SOUL reads along, eyes moving line by line.</p></li>
+        <li><span class="n" aria-hidden="true">2</span><h3 data-i18n="cl.s2t">Claude asks.</h3><p data-i18n="cl.s2p">When Claude needs permission, it stops and looks straight at you.</p></li>
+        <li><span class="n" aria-hidden="true">3</span><h3 data-i18n="cl.s3t">You decide.</h3><p data-i18n="cl.s3p">Hold the glass to approve. Double-tap to deny. No window switching.</p></li>
+      </ol>
+      <div class="chips"><span class="pill">Claude Code</span><span class="pill">Claude Cowork</span><span class="pill">macOS · Windows</span><span class="pill">Bluetooth LE</span></div>
+    </div>
+    <figure class="frame rv">
+      <span class="tag" data-i18n="fig.render">concept render</span>
+      <div class="shot" data-glass="desk" data-design="original" data-role="desk" id="desk-shot">
+        <img src="../media/v2/desk.webp" srcset="../media/v2/desk-sm.webp 800w, ../media/v2/desk.webp 1600w" sizes="(max-width:860px) calc(100vw - 32px), 600px" width="1600" height="900" loading="lazy" alt="Concept render of SOUL in silver on an oak desk next to a phone, reading along while Claude works." data-i18n-attr="alt:cl.alt">
+      </div>
+      <span class="tag hold-hint" id="desk-hint" data-i18n="cl.hint">tap the glass to approve</span>
+    </figure>
+  </div>
+</section>
+
+<!-- SOULOS -->
+<section class="sec band" id="os" aria-labelledby="os-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="os.eyebrow">SoulOS</p>
+      <h2 class="h-l rv" id="os-title" data-i18n="os.h2">a whole little os.<br>on a circle.</h2>
+      <p class="lead rv" data-i18n="os.lead">You type on it, you write to Claude and Claude does it. It keeps your notes, reminders and alarms, with or without AI.</p>
+    </div>
+    <figure class="frame rv">
+      <span class="tag" data-i18n="fig.render">concept render</span>
+      <img src="../media/v2/typing.webp" srcset="../media/v2/typing-sm.webp 800w, ../media/v2/typing.webp 1600w" sizes="(max-width:1240px) calc(100vw - 32px), 1144px" width="1600" height="900" loading="lazy" style="display:block;width:100%;height:auto" alt="Concept render of SOUL on a wooden desk with the SoulOS keyboard on its round screen: the word Hello typed above a round QWERTY keyboard." data-i18n-attr="alt:os.alt0">
+    </figure>
+    <div class="os-row" tabindex="0" aria-label="SoulOS screens" data-i18n-attr="aria-label:os.row">
+      <figure><img src="../media/os-keyboard.jpg" width="628" height="719" loading="lazy" alt="SoulOS keyboard on the round screen: Hello typed above a round QWERTY keyboard." data-i18n-attr="alt:os.a1"><figcaption><b data-i18n="os.c1t">a real keyboard</b><span data-i18n="os.c1">Round QWERTY with suggestions, accents and undo.</span></figcaption></figure>
+      <figure><img src="../media/os-claude.jpg" width="628" height="719" loading="lazy" alt="SoulOS after a message to Claude: Done. I'll ping you at 5:00 PM. Reminder set." data-i18n-attr="alt:os.a2"><figcaption><b data-i18n="os.c2t">write to Claude</b><span data-i18n="os.c2">“Remind me at 5 to call the bank” becomes a real reminder.</span></figcaption></figure>
+      <figure><img src="../media/os-modes.jpg" width="628" height="719" loading="lazy" alt="SoulOS AI mode picker: No AI, Your Claude, Your ChatGPT and Your API key." data-i18n-attr="alt:os.a3"><figcaption><b data-i18n="os.c3t">ai modes</b><span data-i18n="os.c3">No AI, your Claude, your ChatGPT or your own key.</span></figcaption></figure>
+      <figure><img src="../media/os-alarm.jpg" width="628" height="719" loading="lazy" alt="SoulOS alarm set by turning a dial on the rim, here at 7." data-i18n-attr="alt:os.a4"><figcaption><b data-i18n="os.c4t">alarms on a dial</b><span data-i18n="os.c4">Turn the rim to the hour. It wakes up first, then wakes you.</span></figcaption></figure>
+      <figure><img src="../media/os-launcher.jpg" width="628" height="719" loading="lazy" alt="The SoulOS Orbit: app names ride the lower rim like a smile." data-i18n-attr="alt:os.a5"><figcaption><b data-i18n="os.c5t">the orbit</b><span data-i18n="os.c5">Your apps sit on the rim like a smile. Spin them with a finger.</span></figcaption></figure>
+      <figure><img src="../media/os-today.jpg" width="628" height="719" loading="lazy" alt="SoulOS Today: the weather, 17 degrees and cloudy, one thing at a time." data-i18n-attr="alt:os.a6"><figcaption><b data-i18n="os.c6t">today</b><span data-i18n="os.c6">Swipe up and it tells you one thing at a time.</span></figcaption></figure>
+    </div>
+    <div class="os-cta">
+      <a class="btn mag" href="../os.html"><span data-i18n="os.cta">try SoulOS</span><span class="arr" aria-hidden="true">→</span></a>
+      <p data-i18n="os.ctap">It runs right here in your browser. The same OS as on the stone.</p>
+    </div>
+  </div>
+</section>
+
+<!-- NIGHT -->
+<section class="sec night" id="night" aria-labelledby="night-title">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap split">
+    <figure class="frame rv">
+      <span class="tag" data-i18n="fig.render">concept render</span>
+      <div class="shot" data-glass="night" data-design="original" data-role="night" id="night-shot">
+        <img src="../media/v2/night.webp" srcset="../media/v2/night-sm.webp 560w, ../media/v2/night.webp 960w" sizes="(max-width:860px) calc(100vw - 32px), 520px" width="960" height="1200" loading="lazy" alt="Concept render at night: SOUL resting in its open OU egg in the dark, sleepy eyes, lit only by the warm glow of the egg." data-i18n-attr="alt:night.alt">
+      </div>
+      <span class="tag hold-hint" data-i18n="night.hint">tap to wake it. it won't love that.</span>
+    </figure>
+    <div class="stack">
+      <p class="eyebrow" data-i18n="night.eyebrow">OU · its charging egg</p>
+      <h2 class="h-l" id="night-title" data-i18n="night.h2">at night,<br>it sleeps in its egg.</h2>
+      <ul class="layers">
+        <li><b data-i18n="night.l1t">charges from the bottom</b><span data-i18n="night.l1">Five gold contacts in its foot. Set it in OU and it charges. No cable.</span></li>
+        <li><b data-i18n="night.l2t">a night-light that never stares</b><span data-i18n="night.l2">The warm glow comes from the egg, not from the screen.</span></li>
+        <li><b data-i18n="night.l3t">lid closed, microphone gone</b><span data-i18n="night.l3">A hardware switch disconnects the microphone when the lid shuts. Not muted. Disconnected.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- PROMISES + SPECS -->
+<section class="sec" id="promises" aria-labelledby="prom-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="pr.eyebrow">companion charter</p>
+      <h2 class="h-l rv" id="prom-title" data-i18n="pr.h2">promises, in writing.</h2>
+    </div>
+    <ul class="prom">
+      <li class="rv"><h3 data-i18n="pr1t">it listens only while you hold it.</h3><p data-i18n="pr1p">No wake word. No microphone that's always on.</p></li>
+      <li class="rv"><h3 data-i18n="pr2t">no camera.</h3><p data-i18n="pr2p">It sees nothing. The eyes are only for looking back.</p></li>
+      <li class="rv"><h3 data-i18n="pr3t">it always says it's an AI.</h3><p data-i18n="pr3p">It never pretends to be a person, and it has no romantic mode.</p></li>
+      <li class="rv"><h3 data-i18n="pr4t">no guilt trips.</h3><p data-i18n="pr4p">No streaks, no “don't leave me”, no sulking for attention.</p></li>
+      <li class="rv"><h3 data-i18n="pr5t">memory you can read.</h3><p data-i18n="pr5p">Everything it remembers about you, in plain words, one tap from gone.</p></li>
+      <li class="rv"><h3 data-i18n="pr6t">EU servers.</h3><p data-i18n="pr6p">Our voice and memory servers are in the European Union.</p></li>
+      <li class="rv"><h3 data-i18n="pr7t">it never becomes a brick.</h3><p data-i18n="pr7p">It's alive with no cloud. If we ever disappear, we publish the firmware.</p></li>
+      <li class="rv"><h3 data-i18n="pr8t">16+. not a toy.</h3><p data-i18n="pr8p">Made for adults and older teens.</p></li>
+    </ul>
+
+    <div class="head" id="specs" style="margin-top:clamp(84px,10vw,140px)">
+      <p class="eyebrow rv" data-i18n="sp.eyebrow">size M · specifications</p>
+      <h2 class="h-l rv" data-i18n="sp.h2">the boring bits.</h2>
+    </div>
+    <dl class="specs">
+      <div><dt data-i18n="sp.k1">display</dt><dd data-i18n="sp.v1">round 2.8″ IPS, 480 × 480, under black glass</dd></div>
+      <div><dt data-i18n="sp.k2">size</dt><dd>≈ 90 × 101 × 31 mm</dd></div>
+      <div><dt data-i18n="sp.k3">body</dt><dd data-i18n="sp.v3">aluminium 6061, bead-blasted and anodised</dd></div>
+      <div><dt data-i18n="sp.k4">colours</dt><dd data-i18n="sp.v4">Silver, Graphite, Midnight, Ember, Champagne</dd></div>
+      <div><dt data-i18n="sp.k5">eyes</dt><dd data-i18n="sp.v5">one of <span data-count>120</span> designs, decided at birth</dd></div>
+      <div><dt data-i18n="sp.k6">brain</dt><dd data-i18n="sp.v6">ESP32-S3, Bluetooth LE and Wi-Fi</dd></div>
+      <div><dt data-i18n="sp.k7">ai</dt><dd data-i18n="sp.v7">no AI, your Claude, your ChatGPT or your API key</dd></div>
+      <div><dt data-i18n="sp.k8">sound</dt><dd data-i18n="sp.v8">speaker in the side seam; microphone only while held</dd></div>
+      <div><dt data-i18n="sp.k9">camera</dt><dd data-i18n="sp.v9">none</dd></div>
+      <div><dt data-i18n="sp.k10">charging</dt><dd data-i18n="sp.v10">in OU, its egg, through five gold contacts</dd></div>
+      <div><dt data-i18n="sp.k11">price</dt><dd><span data-i18n="price.from">from</span> <span data-price="from">€249</span> <span data-i18n="sp.vat">incl. VAT</span></dd></div>
+      <div><dt data-i18n="sp.k12">ships</dt><dd><span data-i18n="sp.ship">after CE radio testing · est.</span> <span data-cfg="ship">spring 2027</span></dd></div>
+    </dl>
+    <p class="note" data-i18n="sp.note">All product images are concept renders, not photos. Final materials, colours and finishes may change before production.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec band" id="faq" aria-labelledby="faq-title">
+  <div class="wrap faq-grid">
+    <div class="head">
+      <p class="eyebrow" data-i18n="faq.eyebrow">questions</p>
+      <h2 class="h-l" id="faq-title" data-i18n="faq.h2">good questions.</h2>
+    </div>
+    <div class="faq">
+      <details><summary data-i18n="q1">When will it ship?</summary><div class="a" data-i18n="a1">Only after it passes CE radio testing: estimated <span data-cfg="ship">spring 2027</span>. Right now there is only a waitlist. Nothing is charged and there are no pre-orders. After delivery you have the EU 14-day right of withdrawal and a 2-year legal guarantee.</div></details>
+      <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">No. SOUL is alive with no internet and no account, forever. SoulOS, the keyboard, notes, reminders, alarms and focus all work offline. For AI, you connect the Claude or ChatGPT you already have, or your own API key.</div></details>
+      <details><summary data-i18n="q3">Can I choose its eyes?</summary><div class="a" data-i18n="a3">No, and that's the fun. You choose the colour of the body. The eyes are decided once, at first power-on, from the chip's unique ID: one of <span data-count>120</span> designs, some much rarer than others. Rarity changes only the look. Every SOUL does exactly the same things.</div></details>
+      <details><summary data-i18n="q4">Which AI does it use?</summary><div class="a" data-i18n="a4">The one you choose: no AI at all, your Claude, your ChatGPT, or your own Anthropic or OpenAI API key. You switch from its Control Center. Claude and ChatGPT connections are in development. “Works with Claude” uses the Hardware Buddy developer API of the Claude desktop apps, so SOUL can show what Claude Code and Claude Cowork are doing and let you approve their requests.</div></details>
+      <details><summary data-i18n="q5">What happens to my voice and my data?</summary><div class="a" data-i18n="a5">It listens only while your finger is on the glass. Close the lid of its egg and the microphone is cut in hardware. With no AI, nothing leaves the stone. With AI, your request goes only to the AI you chose. Our own servers are in the EU. No camera, no ads, and we never sell your data.</div></details>
+      <details><summary data-i18n="q6">How long does the battery last?</summary><div class="a" data-i18n="a6">It has a small rechargeable lithium battery and charges in OU, its egg, through five gold contacts in its foot. We'll publish measured battery life before we ask anyone to pay.</div></details>
+      <details><summary data-i18n="q7">Is it CE certified?</summary><div class="a" data-i18n="a7">Not yet, and that's why SOUL waits. It has Bluetooth and Wi-Fi, so it must pass CE radio testing (the EU Radio Equipment Directive) at an accredited lab before anyone can sell it. We won't ship a single unit before that.</div></details>
+      <details><summary data-i18n="q8">Is it a toy?</summary><div class="a" data-i18n="a8">No. SOUL is made for adults and teens 16 and over. It contains small parts and a lithium battery.</div></details>
+      <details><summary data-i18n="q9">What if your company disappears?</summary><div class="a" data-i18n="a9">Your SOUL keeps living, because its personality runs on the device. We'll also publish the firmware, so it never becomes a brick.</div></details>
+      <details><summary data-i18n="q10">Where is it made?</summary><div class="a" data-i18n="a10">Designed in Romania. We'll name our manufacturing partners before we ask anyone to pay.</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- WAITLIST -->
+<section class="sec reserve" id="reserve" aria-labelledby="res-title">
+  <div class="wrap res-grid">
+    <div class="res-dev">
+      <div class="shot" data-glass="col-silver" data-design="original" data-role="reserve" id="res-shot">
+        <img id="res-img" src="../media/v2/col-silver.webp" width="640" height="769" loading="lazy" alt="SOUL in the colour you picked, its eyes watching you fill in the form." data-i18n-attr="alt:res.alt">
+      </div>
+    </div>
+    <div>
+      <div class="head" style="margin-bottom:24px">
+        <p class="eyebrow" data-i18n="res.eyebrow">waitlist · from €249</p>
+        <h2 class="h-l" id="res-title" data-i18n="res.h2">be there when it opens its eyes.</h2>
+        <p class="lead" data-i18n="res.lead">Leave your email. We'll write when reservations open, before anyone else. No payment, no pre-order.</p>
+      </div>
+      <form class="form" id="waitlist" novalidate>
+        <div class="row2">
+          <div class="field">
+            <label for="wl-email" data-i18n="res.email">email</label>
+            <input class="input" id="wl-email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com" aria-describedby="wl-msg">
+          </div>
+          <div class="field">
+            <label for="wl-colour" data-i18n="res.colour">favourite colour</label>
+            <select class="input" id="wl-colour" name="colour">
+              <option value="silver" data-i18n="c.silver">Silver</option>
+              <option value="graphite" data-i18n="c.graphite">Graphite</option>
+              <option value="midnight" data-i18n="c.midnight">Midnight</option>
+              <option value="ember" data-i18n="c.ember">Ember</option>
+              <option value="champagne" data-i18n="c.champagne">Champagne</option>
+            </select>
+          </div>
+        </div>
+        <div class="hp" aria-hidden="true"><label for="wl-web">Website</label><input id="wl-web" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+        <label class="consent" for="wl-consent"><input id="wl-consent" name="consent" type="checkbox" required><span data-i18n="res.consent">I agree to receive emails about SOUL and can unsubscribe at any time. Read the <a href="#privacy">Privacy Policy</a>.</span></label>
+        <p class="form-msg" id="wl-msg" role="alert"></p>
+        <button class="btn mag" type="submit" id="wl-submit"><span data-i18n="res.submit">join the waitlist</span><span class="arr" aria-hidden="true">→</span></button>
+        <p class="form-fine" data-i18n="res.fine">Nothing is charged here. We only email you when orders open.</p>
+      </form>
+      <div class="thanks" id="wl-thanks" hidden tabindex="-1">
+        <h3 data-i18n="res.th">you're on the list.</h3>
+        <p data-i18n="res.tp">It just smiled at you. We'll write before anyone else.</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot" id="legal">
+  <div class="wrap">
+    <div class="foot-top">
+      <a class="brand" href="#top" aria-label="SOUL"><svg viewBox="2.96 61.82 489.04 144.35" aria-hidden="true" focusable="false"><path class="wm-ink" d="M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z M408.8 200V68H437.6V175.2H490V200Z"/><circle cx="190.2" cy="134" r="70.18" fill="#CBCDCF"/><circle cx="190.2" cy="134" r="64.21" fill="#0B0B0C"/><path fill="#FFF0C8" d="M180.82 125.78A12.84 21.83 0 1 1 160.14 121.91ZM220.26 121.91A12.84 21.83 0 1 1 199.58 125.78Z"/></svg></a>
+      <nav class="foot-links" aria-label="Legal">
+        <a href="#privacy" id="privacy" data-i18n="f.privacy">Privacy Policy</a>
+        <a href="#terms" id="terms" data-i18n="f.terms">Terms of Sale</a>
+        <a href="#cookies" id="cookies" data-i18n="f.cookies">Cookies</a>
+        <a href="../os.html" data-i18n="f.os">Try SoulOS</a>
+        <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener" data-i18n="f.anpc">Consumer disputes (ANPC · SAL)</a>
+      </nav>
+    </div>
+    <div class="legal">
+      <div>
+        <h4 data-i18n="f.seller">Seller</h4>
+        <p><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span><br><span data-i18n="f.addr">Address:</span> <span class="ph">[street, number, Bucharest, Romania]</span><br><span data-i18n="f.cui">Tax ID (CUI):</span> <span class="ph">[RO00000000]</span> · <span data-i18n="f.reg">Trade Register No.:</span> <span class="ph">[J40/0000/2026]</span><br><span data-i18n="f.contact">Contact:</span> <span class="email" data-cfg="email">hello@soul.example</span></p>
+      </div>
+      <div>
+        <h4 data-i18n="f.gpsr">Manufacturer (GPSR)</h4>
+        <p data-i18n="f.gpsrp"><span class="ph">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class="ph">[postal address]</span>, <span class="ph">[email]</span>. Product: SOUL, model <span class="ph">[SL-M]</span>, with the OU charging egg. Not a toy. For ages 16+. Contains a lithium battery.</p>
+      </div>
+    </div>
+    <p class="tm" data-i18n="f.tm">Claude is a trademark of Anthropic. SOUL is independent and not affiliated with or endorsed by Anthropic. 'Works with Claude' uses the Hardware Buddy developer API of the Claude desktop apps. ChatGPT is a trademark of OpenAI; SOUL is not affiliated with OpenAI.</p>
+    <div class="made"><span data-i18n="f.made">© 2026 SOUL. Hold the glass.</span><span data-i18n="f.ro">Designed in Romania.</span></div>
+  </div>
+</footer>
+
+<script src="../eyes/eyes.js"></script>
+<script src="../eyes/designs.js"></script>
+<script>
+(() => {
+"use strict";
+const CFG = window.SOUL_CONFIG || {};
+const SE = window.SoulEyes;
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const HOVER = matchMedia("(hover: hover) and (pointer: fine)").matches;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const pick = a => a[(Math.random() * a.length) | 0];
+
+/* ------------------------------------------------------------------ i18n */
+const RO = {
+  "skip": "Sari la conținut",
+  "nav.alive": "viu", "nav.born": "născut", "nav.colours": "culori", "nav.ai": "AI-ul tău", "nav.os": "SoulOS", "nav.faq": "întrebări", "nav.cta": "listă", "nav.sound": "Efecte sonore", "nav.soundL": "sunet",
+  "hero.alt": "Randare de concept: SOUL din aluminiu argintiu, din față, o pietricică moale cu fața dintr-o singură sticlă neagră rotundă și doi ochi vii care se uită la tine.",
+  "hero.hint": "psst. mișcă mouse-ul.",
+  "hero.h1": "AI-ul tău are creier.<br><em>dă-i un suflet.</em>",
+  "hero.lead": "O piatră de aluminiu cât palma, cu doi ochi vii. Clipește, te urmărește cu privirea, ațipește când pleci. Și merge cu AI-ul pe care îl ai deja.",
+  "hero.cta": "intră pe listă", "price.from": "de la",
+  "hero.f1": "mărimea M · 90 × 101 mm", "hero.f2": "fără abonament ca să fie viu", "hero.f3": "proiectat în România",
+  "alive.eyebrow": "viu, offline", "alive.h1": "se uită", "alive.h2": "înapoi.",
+  "alive.lead": "Fără aplicație, fără cont, fără internet. Tot ce vezi pe sticlă rulează pe piatră și merge mai departe chiar dacă Wi-Fi-ul nu mai revine niciodată.",
+  "alive.c1t": "clipește.", "alive.c1p": "La întâmplare, niciodată după ceas. Uneori de două ori, când e curios.",
+  "alive.c2t": "te urmărește.", "alive.c2p": "Mouse-ul tău, aici. Degetul tău, pe birou. Știe mereu unde ai plecat.",
+  "alive.c3t": "are toane.", "alive.c3p": "Vesel, somnoros, bănuitor, <i>șmecher</i>. Atinge-l și vezi ce-ți iese.",
+  "fig.render": "randare de concept",
+  "hold.alt": "Randare de concept: SOUL argintiu pe o palmă deschisă. Acoperă palma ca o piatră mare și netedă, iar ochii lui se uită în sus, la tine.",
+  "hold.hint": "ține apăsat pe sticlă",
+  "hold.eyebrow": "ține și vorbește · în dezvoltare",
+  "hold.h2": "ține sticla.<br>te ascultă.",
+  "hold.lead": "Pune degetul pe sticlă și vorbește. Îți răspunde cu AI-ul ales de tine, ține minte oamenii și planurile din viața ta și te trezește cu blândețe.",
+  "hold.say": "Lucruri pe care i le poți spune",
+  "hold.b1": "amintește-mi să o sun pe mama duminică.", "hold.b2": "s-a făcut. duminică, la 11:00.", "hold.b3": "trezește-mă la șapte. cu blândețe.",
+  "hold.privacy": "Ascultă doar cât timp ții degetul pe sticlă. Ridică-l și microfonul se oprește. Fără cuvânt de trezire. Fără cameră. Niciodată.",
+  "born.eyebrow": "născut, nu fabricat", "born.h1": "se naște cu unul din", "born.h2": "perechi de ochi.",
+  "born.lead": "La prima pornire, fiecare SOUL se naște din ID-ul unic al cipului său. Ochii pe care îi primește sunt ochii pe care îi păstrează. Nu îi alege nimeni. Nici măcar noi.",
+  "born.cvaria": "Ochii unui SOUL nou-născut",
+  "born.name": "nume", "born.chip": "ID cip", "born.date": "născut",
+  "born.roll": "naște-l pe al tău",
+  "born.sample": "O naștere de probă. A ta are loc o singură dată, prima oară când pornești SOUL-ul.",
+  "born.oddsCap": "Șansele fiecărei rarități la naștere",
+  "born.th1": "raritate", "born.th2": "șansă", "born.th3": "modele", "born.th4": "o pereche anume",
+  "born.gridT": "colecția", "born.more": "arată toate", "born.less": "arată mai puține",
+  "born.note": "Raritatea schimbă doar ochii. Fiecare SOUL face exact aceleași lucruri.",
+  "col.eyebrow": "cinci aluminiuri",
+  "col.h2": "tu alegi corpul.<br>ochii se aleg singuri.",
+  "col.alt": "Randare de concept: cinci SOUL-uri în șir, din aluminiu Grafit, Jar, Argint, Albastru noapte și Șampanie, fiecare cu perechea lui de ochi vii.",
+  "col.car": "Culori", "col.prev": "Culoarea anterioară", "col.next": "Culoarea următoare",
+  "col.finish": "Aluminiu 6061 sablat și anodizat, cu fața din sticlă neagră. Fără logo pe față, fără butoane, fără găuri. Toate culorile costă la fel.",
+  "c.silver": "Argint", "c.graphite": "Grafit", "c.midnight": "Albastru noapte", "c.ember": "Jar", "c.champagne": "Șampanie",
+  "ai.eyebrow": "AI-ul tău, alegerea ta",
+  "ai.h2": "merge cu AI-ul<br>pe care îl ai deja.",
+  "ai.lead": "Schimbi modul din Centrul de control, dintr-o atingere. Contul tău, datele tale, alegerea ta.",
+  "ai.t1k": "fără cont", "ai.t1": "Fără AI.", "ai.p1": "Tot viu. Notițe, mementouri, alarme și focus, pe tastatura lui. Fără înregistrare. Niciodată.",
+  "ai.t2k": "conector", "ai.t2": "Claude-ul tău.", "ai.p2": "Adaugi SOUL ca un conector. Îi ceri lui Claude să-i pună planul zilei, un memento sau o notiță.",
+  "ai.t3k": "aplicație", "ai.t3": "ChatGPT-ul tău.", "ai.p3": "Adaugi SOUL ca aplicație și îi trimiți lista sau un memento. Aceeași piatră, același suflet.",
+  "ai.t4k": "cheia ta", "ai.t4": "Cheia ta API.", "ai.p4": "Pui o cheie Anthropic sau OpenAI și vorbești cu el. Plătești AI-ul, nu pe noi.",
+  "ai.note": "Conectarea cu Claude și ChatGPT e în dezvoltare. Claude e marcă Anthropic, ChatGPT e marcă OpenAI. SOUL e independent și nu e susținut de niciunul.",
+  "cl.eyebrow": "merge cu Claude",
+  "cl.h2": "stă cu ochii pe Claude.<br>ca să nu stai tu.",
+  "cl.s1t": "Claude lucrează.", "cl.s1p": "SOUL-ul tău citește odată cu el, cu ochii mișcându-se rând cu rând.",
+  "cl.s2t": "Claude întreabă.", "cl.s2p": "Când Claude are nevoie de permisiune, se oprește și se uită fix la tine.",
+  "cl.s3t": "Tu decizi.", "cl.s3p": "Ții sticla ca să aprobi. Atingi de două ori ca să refuzi. Fără să schimbi ferestre.",
+  "cl.alt": "Randare de concept: SOUL argintiu pe un birou de stejar, lângă un telefon, citind odată cu Claude.",
+  "cl.hint": "atinge sticla ca să aprobi",
+  "os.eyebrow": "SoulOS", "os.h2": "un mic sistem de operare.<br>pe un cerc.",
+  "os.lead": "Scrii pe el, îi scrii lui Claude și Claude face. Îți păstrează notițele, mementourile și alarmele, cu AI sau fără.",
+  "os.alt0": "Randare de concept: SOUL pe un birou de lemn, cu tastatura SoulOS pe ecranul rotund: cuvântul Hello deasupra unei tastaturi QWERTY rotunde.",
+  "os.row": "Ecrane SoulOS",
+  "os.a1": "Tastatura SoulOS pe ecranul rotund: Hello scris deasupra unei tastaturi QWERTY rotunde.",
+  "os.a2": "SoulOS după un mesaj către Claude: memento pus pentru ora 17:00.",
+  "os.a3": "Alegerea modului AI în SoulOS: Fără AI, Claude-ul tău, ChatGPT-ul tău și Cheia ta API.",
+  "os.a4": "Alarmă SoulOS pusă rotind un cadran pe margine, aici la 7.",
+  "os.a5": "Orbita din SoulOS: numele aplicațiilor stau pe marginea de jos ca un zâmbet.",
+  "os.a6": "Azi în SoulOS: vremea, 17 grade și înnorat, câte un lucru pe rând.",
+  "os.c1t": "o tastatură adevărată", "os.c1": "QWERTY rotund, cu sugestii, diacritice și anulare.",
+  "os.c2t": "îi scrii lui Claude", "os.c2": "„Amintește-mi la 5 să sun la bancă” devine un memento adevărat.",
+  "os.c3t": "moduri AI", "os.c3": "Fără AI, Claude-ul tău, ChatGPT-ul tău sau cheia ta.",
+  "os.c4t": "alarme pe cadran", "os.c4": "Rotești marginea până la oră. Se trezește el întâi, apoi te trezește pe tine.",
+  "os.c5t": "orbita", "os.c5": "Aplicațiile stau pe margine ca un zâmbet. Le învârți cu degetul.",
+  "os.c6t": "azi", "os.c6": "Glisezi în sus și îți spune câte un lucru pe rând.",
+  "os.cta": "încearcă SoulOS", "os.ctap": "Rulează chiar aici, în browser. Același sistem ca pe piatră.",
+  "night.alt": "Randare de concept, noaptea: SOUL în oul lui OU deschis, în întuneric, cu ochi somnoroși, luminat doar de strălucirea caldă a oului.",
+  "night.hint": "atinge-l ca să-l trezești. n-o să-i placă.",
+  "night.eyebrow": "OU · oul lui de încărcare",
+  "night.h2": "noaptea,<br>doarme în oul lui.",
+  "night.l1t": "se încarcă pe dedesubt", "night.l1": "Cinci contacte aurii în picior. Îl pui în OU și se încarcă. Fără cablu.",
+  "night.l2t": "o lampă de veghe care nu te fixează", "night.l2": "Lumina caldă vine din ou, nu din ecran.",
+  "night.l3t": "capac închis, microfon dispărut", "night.l3": "Un comutator hardware deconectează microfonul când se închide capacul. Nu pus pe mut. Deconectat.",
+  "pr.eyebrow": "carta companionului", "pr.h2": "promisiuni, în scris.",
+  "pr1t": "ascultă doar cât îl ții.", "pr1p": "Fără cuvânt de trezire. Fără microfon mereu pornit.",
+  "pr2t": "fără cameră.", "pr2p": "Nu vede nimic. Ochii sunt doar ca să se uite înapoi.",
+  "pr3t": "spune mereu că e un AI.", "pr3p": "Nu se dă niciodată drept om și nu are mod romantic.",
+  "pr4t": "fără șantaj emoțional.", "pr4p": "Fără serii de zile, fără „nu mă lăsa”, fără bosumflări pentru atenție.",
+  "pr5t": "memorie pe care o citești.", "pr5p": "Tot ce ține minte despre tine, în cuvinte simple, la o atingere de ștergere.",
+  "pr6t": "servere în UE.", "pr6p": "Serverele noastre pentru voce și memorie sunt în Uniunea Europeană.",
+  "pr7t": "nu devine niciodată o cărămidă.", "pr7p": "E viu fără cloud. Dacă dispărem vreodată, publicăm firmware-ul.",
+  "pr8t": "16+. nu e o jucărie.", "pr8p": "Făcut pentru adulți și adolescenți mari.",
+  "sp.eyebrow": "mărimea M · specificații", "sp.h2": "partea plictisitoare.",
+  "sp.k1": "ecran", "sp.v1": "rotund, IPS de 2,8″, 480 × 480, sub sticlă neagră",
+  "sp.k2": "dimensiuni", "sp.k3": "corp", "sp.v3": "aluminiu 6061, sablat și anodizat",
+  "sp.k4": "culori", "sp.v4": "Argint, Grafit, Albastru noapte, Jar, Șampanie",
+  "sp.k5": "ochi", "sp.v5": "unul din <span data-count>120</span> de modele, decis la naștere",
+  "sp.k6": "creier", "sp.v6": "ESP32-S3, Bluetooth LE și Wi-Fi",
+  "sp.k7": "AI", "sp.v7": "fără AI, Claude-ul tău, ChatGPT-ul tău sau cheia ta API",
+  "sp.k8": "sunet", "sp.v8": "difuzor în cusătura laterală; microfon doar cât îl ții",
+  "sp.k9": "cameră", "sp.v9": "niciuna",
+  "sp.k10": "încărcare", "sp.v10": "în OU, oul lui, prin cinci contacte aurii",
+  "sp.k11": "preț", "sp.vat": "cu TVA", "sp.k12": "livrare", "sp.ship": "după testele radio CE · estimat",
+  "sp.note": "Toate imaginile produsului sunt randări de concept, nu fotografii. Materialele, culorile și finisajele finale se pot schimba înainte de producție.",
+  "faq.eyebrow": "întrebări", "faq.h2": "întrebări bune.",
+  "q1": "Când se livrează?",
+  "a1": "Doar după ce trece testele radio CE: estimat <span data-cfg=\"ship\">primăvara 2027</span>. Acum există doar o listă de așteptare. Nu se plătește nimic și nu există precomenzi. După livrare ai dreptul UE de retragere în 14 zile și garanția legală de 2 ani.",
+  "q2": "Am nevoie de abonament?",
+  "a2": "Nu. SOUL e viu fără internet și fără cont, pentru totdeauna. SoulOS, tastatura, notițele, mementourile, alarmele și focusul merg toate offline. Pentru AI îți conectezi Claude-ul sau ChatGPT-ul pe care îl ai deja, ori propria cheie API.",
+  "q3": "Pot să-i aleg ochii?",
+  "a3": "Nu, și tocmai asta e distracția. Tu alegi culoarea corpului. Ochii se decid o singură dată, la prima pornire, din ID-ul unic al cipului: unul din <span data-count>120</span> de modele, unele mult mai rare decât altele. Raritatea schimbă doar aspectul. Fiecare SOUL face exact aceleași lucruri.",
+  "q4": "Ce AI folosește?",
+  "a4": "Pe care îl alegi tu: deloc AI, Claude-ul tău, ChatGPT-ul tău sau propria cheie API Anthropic ori OpenAI. Schimbi din Centrul de control. Conectarea cu Claude și ChatGPT e în dezvoltare. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy din aplicațiile desktop Claude, așa că SOUL îți arată ce fac Claude Code și Claude Cowork și te lasă să le aprobi cererile.",
+  "q5": "Ce se întâmplă cu vocea și datele mele?",
+  "a5": "Ascultă doar cât timp ții degetul pe sticlă. Închide capacul oului și microfonul e tăiat din hardware. Fără AI, nimic nu iese din piatră. Cu AI, cererea ta ajunge doar la AI-ul ales de tine. Serverele noastre sunt în UE. Fără cameră, fără reclame și nu îți vindem niciodată datele.",
+  "q6": "Cât ține bateria?",
+  "a6": "Are o baterie mică, reîncărcabilă, cu litiu, și se încarcă în OU, oul lui, prin cinci contacte aurii din picior. Publicăm autonomia măsurată înainte să cerem cuiva să plătească.",
+  "q7": "Are certificare CE?",
+  "a7": "Încă nu, și de asta SOUL așteaptă. Are Bluetooth și Wi-Fi, deci trebuie să treacă testele radio CE (Directiva UE privind echipamentele radio) într-un laborator acreditat înainte să-l poată vinde cineva. Nu livrăm nicio bucată înainte de asta.",
+  "q8": "E o jucărie?",
+  "a8": "Nu. SOUL e făcut pentru adulți și adolescenți de peste 16 ani. Conține piese mici și o baterie cu litiu.",
+  "q9": "Ce se întâmplă dacă firma voastră dispare?",
+  "a9": "SOUL-ul tău trăiește mai departe, pentru că personalitatea lui rulează pe dispozitiv. În plus, publicăm firmware-ul, ca să nu devină niciodată o cărămidă.",
+  "q10": "Unde e fabricat?",
+  "a10": "Proiectat în România. Anunțăm partenerii de producție înainte să cerem cuiva să plătească.",
+  "res.alt": "SOUL în culoarea aleasă, cu ochii urmărindu-te cum completezi formularul.",
+  "res.eyebrow": "listă de așteptare · de la 249 €",
+  "res.h2": "fii acolo când deschide ochii.",
+  "res.lead": "Lasă-ne emailul. Îți scriem când se deschid rezervările, înaintea tuturor. Fără plată, fără precomandă.",
+  "res.email": "email", "res.colour": "culoarea preferată",
+  "res.consent": "Sunt de acord să primesc emailuri despre SOUL și mă pot dezabona oricând. Citește <a href=\"#privacy\">Politica de confidențialitate</a>.",
+  "res.submit": "intră pe listă", "res.fine": "Aici nu se plătește nimic. Îți scriem doar când se deschid comenzile.",
+  "res.th": "ești pe listă.", "res.tp": "Tocmai ți-a zâmbit. Îți scriem înaintea tuturor.",
+  "f.privacy": "Politica de confidențialitate", "f.terms": "Termeni de vânzare", "f.cookies": "Cookie-uri", "f.os": "Încearcă SoulOS", "f.anpc": "ANPC · SAL",
+  "f.seller": "Vânzător", "f.addr": "Adresă:", "f.contact": "Contact:", "f.cui": "CUI:", "f.reg": "Nr. Reg. Com.:",
+  "f.gpsr": "Producător (GPSR)",
+  "f.gpsrp": "<span class=\"ph\">ARTEMIS DIGITAL S.R.L. [placeholder]</span>, <span class=\"ph\">[adresă poștală]</span>, <span class=\"ph\">[email]</span>. Produs: SOUL, modelul <span class=\"ph\">[SL-M]</span>, cu oul de încărcare OU. Nu e o jucărie. Pentru 16+. Conține o baterie cu litiu.",
+  "f.tm": "Claude este o marcă comercială a Anthropic. SOUL este independent și nu este afiliat cu Anthropic și nici susținut de aceasta. „Works with Claude” folosește API-ul pentru dezvoltatori Hardware Buddy al aplicațiilor desktop Claude. ChatGPT este o marcă comercială a OpenAI; SOUL nu este afiliat cu OpenAI.",
+  "f.made": "© 2026 SOUL. Ține sticla.", "f.ro": "Proiectat în România."
+};
+const DYN = {
+  en: {
+    email: "Enter an email address like name@example.com.",
+    consent: "Tick the box so we can write to you.",
+    net: "We couldn't reach the list. Check your connection and try again.",
+    sending: "Sending…",
+    rar: { common: "Common", uncommon: "Uncommon", rare: "Rare", epic: "Epic", legendary: "Legendary", mythic: "Mythic" },
+    oneIn: n => "1 in " + n.toLocaleString("en-GB"),
+    date: d => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).replace("Sept", "Sep"),
+    more: "show all", less: "show fewer",
+    hintTouch: "tap the glass.", hint: "psst. move your cursor.",
+    colours: { silver: "Silver", graphite: "Graphite", midnight: "Midnight", ember: "Ember", champagne: "Champagne" },
+    from: "from", wink: "tap for a wink"
+  },
+  ro: {
+    email: "Scrie o adresă de email, de exemplu nume@exemplu.ro.",
+    consent: "Bifează căsuța ca să-ți putem scrie.",
+    net: "Nu am putut ajunge la listă. Verifică conexiunea și încearcă din nou.",
+    sending: "Se trimite…",
+    rar: { common: "Comun", uncommon: "Neobișnuit", rare: "Rar", epic: "Epic", legendary: "Legendar", mythic: "Mitic" },
+    oneIn: n => "1 din " + n.toLocaleString("ro-RO"),
+    date: d => { const p = n => String(n).padStart(2, "0"); return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`; },
+    more: "arată toate", less: "arată mai puține",
+    hintTouch: "atinge sticla.", hint: "psst. mișcă mouse-ul.",
+    colours: { silver: "Argint", graphite: "Grafit", midnight: "Albastru noapte", ember: "Jar", champagne: "Șampanie" },
+    from: "de la", wink: "atinge pentru un ochi făcut"
+  }
+};
+const EN = {};
+$$("[data-i18n]").forEach(el => { EN[el.dataset.i18n] = el.innerHTML; });
+$$("[data-i18n-attr]").forEach(el => el.dataset.i18nAttr.split(",").forEach(pair => { const [a, k] = pair.split(":"); EN[k] = el.getAttribute(a) || ""; }));
+let LANG = "en";
+const D = () => DYN[LANG];
+function money(v) {
+  const cur = CFG.CURRENCY || "EUR", sym = { EUR: "€", RON: "lei", USD: "$", GBP: "£" }[cur] || cur;
+  const n = Number(v).toLocaleString(LANG === "ro" ? "ro-RO" : "en-IE", { maximumFractionDigits: 2 });
+  return LANG === "ro" || sym.length > 1 ? n + " " + sym : sym + n;
+}
+let DESIGNS = [], COUNT = 120;
+function fillConfig() {
+  const P = CFG.PRICES || {};
+  $$("[data-price]").forEach(el => { const v = P[el.dataset.price]; if (v != null) el.textContent = money(v); });
+  const map = { ship: CFG.SHIP && CFG.SHIP[LANG], email: CFG.CONTACT_EMAIL };
+  $$("[data-cfg]").forEach(el => { const v = map[el.dataset.cfg]; if (v) el.textContent = v; });
+  $$("[data-count]").forEach(el => { el.textContent = COUNT; });
+}
+const langHooks = [];
+function applyLang(lang, save) {
+  LANG = lang === "ro" ? "ro" : "en";
+  document.documentElement.lang = LANG;
+  $$("[data-i18n]").forEach(el => {
+    const k = el.dataset.i18n, v = LANG === "ro" ? (RO[k] != null ? RO[k] : EN[k]) : EN[k];
+    if (v != null && el.innerHTML !== v) el.innerHTML = v;
+  });
+  $$("[data-i18n-attr]").forEach(el => el.dataset.i18nAttr.split(",").forEach(pair => {
+    const [a, k] = pair.split(":"), v = LANG === "ro" ? (RO[k] != null ? RO[k] : EN[k]) : EN[k];
+    if (v != null) el.setAttribute(a, v);
+  }));
+  $$(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
+  fillConfig();
+  langHooks.forEach(f => f());
+  if (save) store.set("soul-lang", LANG);
+}
+
+/* ------------------------------------------------------------------ sound (off by default) */
+let SOUND = store.get("soul-sound") === "1", AC = null;
+function tone(f, d, type, g, when) {
+  if (!SOUND) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime + (when || 0), o = AC.createOscillator(), v = AC.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.5, t + d * .6);
+    v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(g || .05, t + .012); v.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(v).connect(AC.destination); o.start(t); o.stop(t + d + .02);
+  } catch (e) {}
+}
+const sfx = {
+  boop: () => tone(520 + Math.random() * 160, .14, "sine", .06),
+  tick: () => tone(1200 + Math.random() * 300, .03, "square", .012),
+  reveal: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, .32, "triangle", .045, i * .07)); },
+  wink: () => { tone(880, .07, "sine", .05); tone(1320, .09, "sine", .04, .07); }
+};
+const sndBtn = $("#snd");
+const paintSnd = () => sndBtn.setAttribute("aria-pressed", String(SOUND));
+paintSnd();
+sndBtn.addEventListener("click", () => { SOUND = !SOUND; store.set("soul-sound", SOUND ? "1" : "0"); paintSnd(); sfx.wink(); });
+
+/* ------------------------------------------------------------------ the eye collection */
+const DATA = window.SOUL_DESIGNS || { designs: [] };
+DESIGNS = DATA.designs && DATA.designs.length ? DATA.designs : [{ id: "original", n: 1, num: "#001", name: "Original", rarity: "common" }];
+COUNT = DESIGNS.length;
+const byId = id => DESIGNS.find(d => d.id === id) || DESIGNS[0];
+const RAR = {}; (SE ? SE.RARITIES : []).forEach(r => { RAR[r.key] = r; });
+const rarColor = k => (RAR[k] && RAR[k].color) || "#C9C4B8";
+
+/* where the glass is in each picture: centre (fraction of the image) and the 2×2 map of the unit disc, in image px */
+const GLASS = {"hand":{"w":1400,"h":1200,"glass":[{"c":[0.50417,0.48276],"m":[216.88,10.21,10.21,162.25]}]},"night":{"w":960,"h":1200,"glass":[{"c":[0.49863,0.4907],"m":[140.12,-2.42,-2.42,152.05]}]},"desk":{"w":1600,"h":900,"glass":[{"c":[0.51224,0.45695],"m":[119.74,0,0,119.74]}]},"family":{"w":2000,"h":1125,"glass":[{"c":[0.15108,0.49004],"m":[117.63,0,0,117.63]},{"c":[0.31614,0.4937],"m":[119.36,0,0,119.36]},{"c":[0.50151,0.50236],"m":[121.31,0,0,121.31]},{"c":[0.68943,0.49376],"m":[118.72,0,0,118.72]},{"c":[0.85907,0.48349],"m":[115.39,0,0,115.39]}]},"front":{"w":1956,"h":2236,"glass":[{"c":[0.5,0.46868],"m":[671.93,0,0,669.08]}]},"col-silver":{"w":1223,"h":1469,"glass":[{"c":[0.55014,0.46756],"m":[390.82,-18.17,22.56,432.22]}]}};
+["graphite", "midnight", "ember", "champagne"].forEach(c => { GLASS["col-" + c] = GLASS["col-silver"]; });
+
+const LIVE = [];   // { inst, cv, role, follow }
+function mountGlass(shot) {
+  const key = shot.dataset.glass, g = GLASS[key];
+  if (!g || !SE) return [];
+  const ids = (shot.dataset.design || "original").split(",");
+  const out = [];
+  g.glass.forEach((gl, i) => {
+    const [m11, m21, m12, m22] = gl.m;
+    const R = Math.max(Math.hypot(m11, m21), Math.hypot(m12, m22));
+    const cx = gl.c[0] * g.w, cy = gl.c[1] * g.h;
+    const pos = `left:${(cx - R) / g.w * 100}%;top:${(cy - R) / g.h * 100}%;width:${2 * R / g.w * 100}%;height:${2 * R / g.h * 100}%;transform:matrix(${m11 / R},${m21 / R},${m12 / R},${m22 / R},0,0)`;
+    const cv = document.createElement("canvas");
+    cv.className = "live"; cv.setAttribute("style", pos); cv.setAttribute("aria-hidden", "true");
+    shot.appendChild(cv);
+    if (key === "front" || key.startsWith("col-")) { const s = document.createElement("span"); s.className = "sheen"; s.setAttribute("style", pos); shot.appendChild(s); }
+    const design = byId(ids[i % ids.length]);
+    const inst = SE.createEyes(cv, design, { glass: false, fit: 1, interactive: false, seed: (Math.random() * 1e9) | 0 });
+    const rec = { inst, cv, role: shot.dataset.role, follow: true, shot, i };
+    LIVE.push(rec); out.push(rec);
+  });
+  return out;
+}
+
+/* everyone looks at the pointer (or the last touch) */
+const PTR = { x: innerWidth / 2, y: innerHeight * .4, t: -1e9, active: false };
+const nowS = () => performance.now() / 1000;
+addEventListener("pointermove", e => { PTR.x = e.clientX; PTR.y = e.clientY; PTR.t = nowS(); PTR.active = true; }, { passive: true });
+addEventListener("pointerdown", e => { PTR.x = e.clientX; PTR.y = e.clientY; PTR.t = nowS(); PTR.active = true; }, { passive: true });
+document.addEventListener("pointerleave", () => { PTR.active = false; });
+function lookLoop() {
+  const fresh = PTR.active && nowS() - PTR.t < (HOVER ? 6 : 2.5);
+  for (const r of LIVE) {
+    if (!r.inst._visible) continue;
+    if (!r.follow || !fresh) { if (r.looking) { r.inst.lookAt(null); r.looking = false; } continue; }
+    const b = r.cv.getBoundingClientRect();
+    const k = Math.max(220, b.width * 1.6);
+    r.inst.lookAt(clamp((PTR.x - (b.left + b.width / 2)) / k, -1, 1), clamp((PTR.y - (b.top + b.height / 2)) / k, -1, 1));
+    r.looking = true;
+  }
+  setTimeout(() => requestAnimationFrame(lookLoop), 33);
+}
+
+/* a little pool of reactions for taps */
+const TAPS = ["wink", "laugh", "happy", "smirk", "surprised", "love", "excited", "shy", "suspicious", "smug", "sneeze"];
+function tapReact(r, name) {
+  const n = name || pick(TAPS);
+  const sm = n === "smirk" || n === "suspicious" || n === "smug";
+  if (sm) { r.follow = false; setTimeout(() => { r.follow = true; }, 2600); }
+  r.inst.react(n, SE.MOODS[n] ? 2.2 : undefined);
+  (n === "wink" ? sfx.wink : sfx.boop)();
+}
+
+/* ------------------------------------------------------------------ mount every glass on the page */
+$$(".shot[data-glass]").forEach(s => mountGlass(s));
+const byRole = role => LIVE.filter(r => r.role === role);
+
+/* generic tap on any glass (roles with their own behaviour are excluded) */
+LIVE.forEach(r => {
+  if (["hand", "desk", "night", "moods", "reserve"].includes(r.role)) return;
+  r.cv.addEventListener("click", () => tapReact(r));
+});
+
+/* ------------------------------------------------------------------ hero */
+const hero = byRole("hero")[0];
+if (hero) {
+  hero.inst.setExpression("sleepy");
+  setTimeout(() => { hero.inst.setExpression("neutral"); hero.inst.react("wake"); sfx.boop(); }, RM ? 0 : 450);
+  let idleT = nowS(), asleep = false;
+  const poke = () => { idleT = nowS(); if (asleep) { asleep = false; hero.inst.setExpression("neutral"); hero.inst.react("wake"); } };
+  ["pointermove", "pointerdown", "keydown", "scroll"].forEach(ev => addEventListener(ev, poke, { passive: true }));
+  setInterval(() => { if (!asleep && nowS() - idleT > 22) { asleep = true; hero.inst.setExpression("sleepy"); } }, 1000);
+}
+const hint = $("#hint");
+langHooks.push(() => { if (hint && !HOVER) hint.textContent = D().hintTouch; });
+
+/* hero parallax: the device turns and grows, the letters drift apart */
+const stage = $("#stage"), dev = $("#hero-dev"), wS = $("#wm-s"), wU = $("#wm-u"), wL = $("#wm-l");
+let lastY = scrollY, lastT = performance.now(), surprisedAt = 0;
+function onScroll() {
+  const y = scrollY;
+  $("#nav").classList.toggle("scrolled", y > 10);
+  if (!RM && stage) {
+    const h = stage.offsetHeight || 1, p = clamp(y / h, 0, 1.2);
+    dev.style.setProperty("--sc", (1 + p * .16).toFixed(4));
+    dev.style.setProperty("--rot", (-7 * p).toFixed(3) + "deg");
+    dev.style.setProperty("--bob", (p * 40).toFixed(1) + "px");
+    wS.setAttribute("transform", `translate(${(-26 * p).toFixed(2)} 0)`);
+    wU.setAttribute("transform", `translate(${(26 * p).toFixed(2)} 0)`);
+    wL.setAttribute("transform", `translate(${(40 * p).toFixed(2)} 0)`);
+  }
+  /* a fast fling surprises the hero; it looks the way you're going */
+  const t = performance.now(), v = (y - lastY) / Math.max(1, t - lastT);
+  lastY = y; lastT = t;
+  if (hero && Math.abs(v) > 3.2 && t - surprisedAt > 4000 && y < innerHeight * 1.2) { surprisedAt = t; hero.inst.react("shocked"); }
+}
+let ticking = false;
+addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; onScroll(); }); } }, { passive: true });
+onScroll();
+
+/* hovering the call to action makes everyone happy; the price gets the side-eye */
+let lastMood = 0;
+$$("[data-react]").forEach(el => el.addEventListener("pointerenter", () => {
+  const t = performance.now(); if (t - lastMood < 1200) return; lastMood = t;
+  const n = el.dataset.react;
+  LIVE.filter(r => r.inst._visible).forEach((r, i) => setTimeout(() => {
+    if (n === "smirk") { r.follow = false; setTimeout(() => { r.follow = true; }, 2400); }
+    r.inst.react(n, 1.8);
+  }, i * 60));
+}));
+
+/* ------------------------------------------------------------------ inline eyes in the headline */
+const inl = $("canvas[data-inline]");
+if (inl && SE) {
+  const inst = SE.createEyes(inl, byId("original"), { fit: .98, bezel: false, interactive: false });
+  const rec = { inst, cv: inl, role: "inline", follow: true };
+  LIVE.push(rec);
+  inl.addEventListener("click", () => tapReact(rec, "wink"));
+}
+
+/* the three "alive" cards */
+const blinkCard = byRole("blink")[0];
+if (blinkCard) { blinkCard.follow = false; setInterval(() => { if (blinkCard.inst._visible && Math.random() < .5) blinkCard.inst.blink(Math.random() < .35 ? 2 : 1); }, 1400); }
+const moodCard = byRole("moods")[0];
+if (moodCard) {
+  const seq = ["happy", "sleepy", "suspicious", "smirk", "love", "surprised", "excited", "confused"];
+  let i = 0;
+  moodCard.inst.setExpression("smirk"); moodCard.follow = false;
+  moodCard.cv.addEventListener("click", () => {
+    i = (i + 1) % seq.length; const n = seq[i];
+    moodCard.follow = n === "happy" || n === "surprised";
+    moodCard.inst.setExpression(n); sfx.boop();
+  });
+}
+
+/* ------------------------------------------------------------------ hold the glass */
+const hand = byRole("hand")[0];
+if (hand) {
+  let holding = false, tHold = 0;
+  const down = e => { e.preventDefault(); holding = true; tHold = nowS(); hand.follow = false; hand.inst.lookAt(0, 0); hand.inst.setExpression("listening"); sfx.tick(); try { hand.cv.setPointerCapture(e.pointerId); } catch (x) {} };
+  const up = () => {
+    if (!holding) return; holding = false;
+    const long = nowS() - tHold > .5;
+    hand.inst.setExpression("thinking");
+    setTimeout(() => { hand.inst.setExpression("neutral"); hand.inst.react(long ? "happy" : "wink", 1.6); hand.follow = true; (long ? sfx.reveal : sfx.wink)(); }, long ? 1200 : 500);
+  };
+  hand.cv.addEventListener("pointerdown", down);
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => hand.cv.addEventListener(ev, up));
+  hand.cv.addEventListener("contextmenu", e => e.preventDefault());
+  hand.cv.setAttribute("tabindex", "0"); hand.cv.setAttribute("role", "button"); hand.cv.removeAttribute("aria-hidden");
+  hand.cv.setAttribute("aria-label", "Hold to talk demo");
+  hand.cv.addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); holding = true; tHold = nowS() - .6; hand.inst.setExpression("listening"); } });
+  hand.cv.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") up(); });
+}
+
+/* ------------------------------------------------------------------ Claude on the desk */
+const desk = byRole("desk")[0];
+if (desk) {
+  desk.follow = false; desk.inst.setExpression("working");
+  let asking = false, lastTap = 0, cycle;
+  const ask = () => { asking = true; desk.inst.setExpression("surprised"); setTimeout(() => { if (asking) desk.inst.setExpression("listening"); }, 700); };
+  const work = () => { asking = false; desk.inst.setExpression("working"); clearTimeout(cycle); cycle = setTimeout(ask, 5200); };
+  work();
+  desk.cv.addEventListener("click", () => {
+    const t = performance.now();
+    if (t - lastTap < 330) { asking = false; desk.inst.setExpression("sad"); setTimeout(work, 1600); lastTap = 0; return; }
+    lastTap = t;
+    setTimeout(() => { if (lastTap !== t) return; desk.inst.react("approve"); sfx.reveal(); setTimeout(work, 1700); }, 330);
+  });
+}
+
+/* ------------------------------------------------------------------ night */
+const night = byRole("night")[0];
+if (night) {
+  night.follow = false; night.inst.setExpression("sleepy");
+  let to;
+  night.cv.addEventListener("click", () => {
+    clearTimeout(to); night.inst.setExpression("neutral"); night.inst.react("wake"); night.follow = true; sfx.boop();
+    to = setTimeout(() => { night.inst.setExpression("bored"); setTimeout(() => { night.follow = false; night.inst.setExpression("sleepy"); }, 1800); }, 3200);
+  });
+}
+
+/* ------------------------------------------------------------------ AI tiles keep their moods */
+byRole("ai").forEach(r => {
+  const m = r.shot.dataset.mood || "neutral";
+  r.inst.setExpression(m);
+  if (m !== "neutral" && m !== "happy") r.follow = false;
+  r.shot.addEventListener("pointerenter", () => { r.inst.react("wink"); });
+});
+
+/* ------------------------------------------------------------------ family + colour carousel */
+const COLS = [["silver", "#CBCDCF"], ["graphite", "#55575B"], ["midnight", "#26324C"], ["ember", "#D2622C"], ["champagne", "#D8C3A2"]];
+const car = $("#car");
+const carDesigns = ["original", "swimming-pool", "lilac-hour", "northern-lights", "lemonade-stand"];
+COLS.forEach(([k, hex], i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "ccard";
+  b.innerHTML = `<div class="shot" data-glass="col-${k}" data-design="${carDesigns[i]}" data-role="colour"><img src="../media/v2/col-${k}.webp" width="640" height="769" loading="lazy" alt=""></div>
+    <div class="crow"><span class="cname"><span class="sw" style="--c:${hex}"></span><b data-col="${k}"></b></span><span><span data-from></span> <span data-price="from">€249</span></span></div>`;
+  car.appendChild(b);
+  const rec = mountGlass(b.querySelector(".shot"))[0];
+  b.addEventListener("click", () => rec && tapReact(rec, i % 2 ? "wink" : pick(["laugh", "smirk", "love", "wink"])));
+});
+function paintCols() {
+  $$("[data-col]").forEach(el => { el.textContent = D().colours[el.dataset.col]; });
+  $$("[data-from]").forEach(el => { el.textContent = D().from; });
+  $$(".ccard").forEach((b, i) => b.setAttribute("aria-label", D().colours[COLS[i][0]] + ", " + D().from + " " + money((CFG.PRICES || {}).from || 249) + ". " + D().wink));
+}
+langHooks.push(paintCols);
+const step = () => (car.firstElementChild ? car.firstElementChild.getBoundingClientRect().width + 16 : 300);
+$("#car-prev").addEventListener("click", () => car.scrollBy({ left: -step(), behavior: RM ? "auto" : "smooth" }));
+$("#car-next").addEventListener("click", () => car.scrollBy({ left: step(), behavior: RM ? "auto" : "smooth" }));
+
+/* ------------------------------------------------------------------ born: odds, grid and the roll */
+const ob = $("#odds-body");
+const counts = {}; DESIGNS.forEach(d => { counts[d.rarity] = (counts[d.rarity] || 0) + 1; });
+function paintOdds() {
+  if (!ob || !SE) return;
+  const maxRate = Math.max(...SE.RARITIES.map(r => r.rate));
+  ob.innerHTML = SE.RARITIES.map(r => {
+    const n = counts[r.key] || 0, each = n ? Math.round(n / r.rate) : 0;
+    return `<tr><td><span class="rar" style="--c:${r.color}">${D().rar[r.key]}</span></td><td class="num">${(r.rate * 100).toLocaleString(LANG === "ro" ? "ro-RO" : "en-GB")}%</td><td class="num">${n}</td><td class="num">${each ? D().oneIn(each) : "–"}</td><td aria-hidden="true"><span class="bar" style="--c:${r.color};width:${Math.max(1.5, r.rate / maxRate * 100)}%"></span></td></tr>`;
+  }).join("");
+}
+langHooks.push(paintOdds);
+
+const grid = $("#egrid"), more = $("#grid-more");
+const ORDER = { mythic: 0, legendary: 1, epic: 2, rare: 3, uncommon: 4, common: 5 };
+const featured = (() => {
+  const want = { mythic: 2, legendary: 3, epic: 4, rare: 5, uncommon: 5, common: 5 }, out = [];
+  Object.keys(want).forEach(k => DESIGNS.filter(d => d.rarity === k).slice(0, want[k]).forEach(d => out.push(d)));
+  let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
+})();
+const gridInst = [];
+function cell(d) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "ecell";
+  b.innerHTML = `<canvas aria-hidden="true"></canvas><b>${d.name}</b><small style="--c:${rarColor(d.rarity)}" data-rar="${d.rarity}">${d.num || "#" + String(d.n).padStart(3, "0")}</small>`;
+  grid.appendChild(b);
+  const inst = SE.createEyes(b.querySelector("canvas"), d, { fit: .92, interactive: false, seed: d.n * 977 });
+  const rec = { inst, cv: b.querySelector("canvas"), role: "grid", follow: true };
+  LIVE.push(rec); gridInst.push(rec);
+  b.setAttribute("aria-label", `${d.name}, ${D().rar[d.rarity]}`);
+  b.addEventListener("click", () => { showBirth({ design: d, rarity: d.rarity }, false); $(".roll").scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "center" }); });
+  b.addEventListener("pointerenter", () => inst.react(pick(["wink", "happy", "surprised", "smirk"]), 1.4));
+}
+let showingAll = false;
+function paintGrid() {
+  gridInst.splice(0).forEach(r => { r.inst.destroy(); const k = LIVE.indexOf(r); if (k >= 0) LIVE.splice(k, 1); });
+  grid.innerHTML = "";
+  (showingAll ? DESIGNS.slice().sort((a, b) => a.n - b.n) : featured).forEach(cell);
+  more.setAttribute("aria-expanded", String(showingAll));
+  more.firstElementChild.textContent = showingAll ? D().less : D().more;
+  more.lastElementChild.hidden = showingAll;
+}
+if (SE && grid) { paintGrid(); more.addEventListener("click", () => { showingAll = !showingAll; paintGrid(); }); }
+langHooks.push(() => {
+  $$("#egrid small[data-rar]").forEach(s => { s.parentElement.setAttribute("aria-label", `${s.previousElementSibling.textContent}, ${D().rar[s.dataset.rar]}`); });
+  if (more) { more.firstElementChild.textContent = showingAll ? D().less : D().more; }
+});
+
+/* the roll */
+const NAMES = ["Mira", "Luma", "Nova", "Kai", "Juno", "Tomi", "Nara", "Ivo", "Sia", "Pip", "Ada", "Luca", "Eli", "Ema", "Bobo", "Zia", "Dor", "Ilinca", "Toma", "Vali"];
+const rollCv = $("#roll-cv");
+const roller = SE && rollCv ? SE.createEyes(rollCv, byId("original"), { fit: .9, interactive: false }) : null;
+const rollRec = roller ? { inst: roller, cv: rollCv, role: "roll", follow: true } : null;
+if (rollRec) { LIVE.push(rollRec); rollCv.addEventListener("click", () => tapReact(rollRec)); }
+let BIRTH = null;
+function randChip() { const b = [0x34, 0x85, 0x18]; for (let i = 0; i < 3; i++) b.push((Math.random() * 256) | 0); return b.map(x => x.toString(16).toUpperCase().padStart(2, "0")).join(":"); }
+function paintBirth() {
+  if (!BIRTH) return;
+  const d = BIRTH.design, n = counts[d.rarity] || 1, rate = RAR[d.rarity] ? RAR[d.rarity].rate : .5;
+  $("#rc-num").textContent = `${d.num || "#" + String(d.n).padStart(3, "0")} / ${COUNT}`;
+  $("#rc-name").textContent = d.name;
+  const rr = $("#rc-rar"); rr.textContent = D().rar[d.rarity]; rr.style.setProperty("--c", rarColor(d.rarity));
+  $("#rc-odds").textContent = D().oneIn(Math.round(n / rate));
+  $("#rc-pet").textContent = BIRTH.pet; $("#rc-chip").textContent = BIRTH.chip; $("#rc-date").textContent = D().date(BIRTH.date);
+}
+langHooks.push(paintBirth);
+function showBirth(res, fresh) {
+  BIRTH = { design: res.design, pet: fresh ? pick(NAMES) : (BIRTH ? BIRTH.pet : "Mira"), chip: fresh ? randChip() : (BIRTH ? BIRTH.chip : "34:85:18:6A:C2:9F"), date: new Date() };
+  roller.setDesign(res.design, { instant: !fresh });
+  paintBirth();
+}
+function rollOnce() {
+  let r; for (let k = 0; k < 20; k++) { r = SE.rollRandom(DESIGNS); if (r && r.design) break; }
+  return r && r.design ? r : { design: DESIGNS[0], rarity: DESIGNS[0].rarity };
+}
+const burst = $("#burst"), bctx = burst ? burst.getContext("2d") : null;
+function confetti(color) {
+  if (!bctx || RM) return;
+  const dpr = Math.min(2, devicePixelRatio || 1), W = burst.width = burst.clientWidth * dpr, H = burst.height = burst.clientHeight * dpr;
+  const parts = Array.from({ length: 46 }, () => { const a = Math.random() * Math.PI * 2, s = (2 + Math.random() * 7) * dpr; return { x: W / 2, y: H / 2, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2 * dpr, r: (2 + Math.random() * 4) * dpr, c: Math.random() < .55 ? color : pick(["#FFF0C8", "#2440FF", "#FF5A1F"]), life: 1 }; });
+  const t0 = performance.now();
+  (function f(t) {
+    const k = (t - t0) / 1100; bctx.clearRect(0, 0, W, H); if (k > 1) return;
+    parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .22 * dpr; p.vx *= .985; bctx.globalAlpha = 1 - k; bctx.fillStyle = p.c; bctx.beginPath(); bctx.arc(p.x, p.y, p.r, 0, 6.283); bctx.fill(); });
+    requestAnimationFrame(f);
+  })(t0);
+}
+const rollBtn = $("#roll-btn");
+if (roller) {
+  showBirth({ design: byId("original") }, false);
+  rollBtn.addEventListener("click", () => {
+    rollBtn.disabled = true;
+    const res = rollOnce();
+    const spins = RM ? 0 : 16;
+    let i = 0;
+    roller.react("startled");
+    (function spin() {
+      if (i < spins) {
+        const d = DESIGNS[(Math.random() * DESIGNS.length) | 0];
+        roller.setDesign(d, { instant: true });
+        $("#rc-name").textContent = d.name; $("#rc-num").textContent = `${d.num || ""} / ${COUNT}`;
+        sfx.tick(); i++;
+        setTimeout(spin, 45 + i * i * 1.6);
+        return;
+      }
+      showBirth(res, true);
+      roller.setExpression("neutral"); roller.react("hello");
+      setTimeout(() => { const big = ["legendary", "mythic", "epic"].includes(res.design.rarity); roller.react(big ? "excited" : "happy", 2); }, 900);
+      confetti(rarColor(res.design.rarity)); sfx.reveal();
+      rollBtn.disabled = false;
+    })();
+  });
+}
+
+/* ------------------------------------------------------------------ waitlist */
+const form = $("#waitlist"), msg = $("#wl-msg"), email = $("#wl-email"), colSel = $("#wl-colour");
+const res = byRole("reserve")[0];
+if (res) { res.inst.setExpression("sleepy"); res.follow = false; res.cv.addEventListener("click", () => tapReact(res, "wink")); }
+const wakeRes = () => { if (res && res.inst.expression === "sleepy") { res.inst.setExpression("neutral"); res.inst.react("wake"); } };
+if (email && res) {
+  email.addEventListener("focus", () => { wakeRes(); res.follow = false; res.inst.lookAt(.45, .1); });
+  email.addEventListener("input", () => { res.follow = false; const k = clamp(email.value.length / 26, 0, 1); res.inst.lookAt(-.2 + k * .9, .22); });
+  email.addEventListener("blur", () => { res.follow = true; });
+}
+const resImg = $("#res-img");
+if (colSel && resImg) colSel.addEventListener("change", () => {
+  wakeRes();
+  if (res) res.inst.blink(1);
+  setTimeout(() => { resImg.src = `../media/v2/col-${colSel.value}.webp`; if (res) res.inst.react("excited", 1.4); }, 110);
+});
+if (form) form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const d = D(), em = email.value.trim(), consent = $("#wl-consent").checked;
+  msg.textContent = "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { msg.textContent = d.email; email.setAttribute("aria-invalid", "true"); email.focus(); if (res) res.inst.react("confused", 1.6); return; }
+  email.removeAttribute("aria-invalid");
+  if (!consent) { msg.textContent = d.consent; $("#wl-consent").focus(); if (res) res.inst.react("suspicious", 1.6); return; }
+  const data = { email: em, colour: colSel.value, edition: "soul-m", consent: true, lang: LANG, ts: new Date().toISOString(), source: "landing-v2" };
+  const btn = $("#wl-submit");
+  if ($("#wl-web").value) { done(); return; }
+  if (CFG.WAITLIST_ENDPOINT) {
+    btn.disabled = true; const old = btn.innerHTML; btn.textContent = d.sending;
+    try {
+      const r = await fetch(CFG.WAITLIST_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) });
+      if (!r.ok) throw new Error(String(r.status));
+    } catch (err) { msg.textContent = d.net; btn.disabled = false; btn.innerHTML = old; if (res) res.inst.react("sad", 2); return; }
+  } else {
+    try { const k = "soul-waitlist"; const arr = JSON.parse(store.get(k) || "[]"); arr.push(data); store.set(k, JSON.stringify(arr)); } catch (err) {}
+  }
+  done();
+  function done() {
+    form.hidden = true; const th = $("#wl-thanks"); th.hidden = false; th.focus({ preventScroll: true });
+    if (res) { res.follow = true; res.inst.setExpression("neutral"); res.inst.react("laugh"); setTimeout(() => res.inst.setExpression("love"), 1900); setTimeout(() => res.inst.setExpression("happy"), 5200); }
+    LIVE.filter(r => r.inst._visible && r !== res).forEach(r => r.inst.react("happy", 2));
+    sfx.reveal();
+  }
+});
+
+/* ------------------------------------------------------------------ magnetic buttons + reveals */
+if (HOVER && !RM) $$(".mag").forEach(b => {
+  b.addEventListener("pointermove", e => { const r = b.getBoundingClientRect(); b.style.transform = `translate(${((e.clientX - r.left) / r.width - .5) * 10}px,${((e.clientY - r.top) / r.height - .5) * 8}px)`; });
+  b.addEventListener("pointerleave", () => { b.style.transform = ""; });
+});
+if ("IntersectionObserver" in window && !RM) {
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
+  $$(".rv").forEach(el => { const b = el.getBoundingClientRect(); if (b.top > innerHeight) { el.classList.add("pre"); io.observe(el); } });
+  /* a glass that scrolls into view says hello */
+  const seen = new WeakSet();
+  const io2 = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting || seen.has(e.target)) return; seen.add(e.target);
+    const r = LIVE.find(x => x.cv === e.target);
+    if (r && ["blink", "follow", "family", "colour", "ai"].includes(r.role)) setTimeout(() => r.inst.react(pick(["hello", "wink", "happy"]), 1.4), 150 + Math.random() * 500);
+  }), { threshold: .6 });
+  LIVE.forEach(r => io2.observe(r.cv));
+}
+
+/* ------------------------------------------------------------------ language */
+$$(".lang button").forEach(b => b.addEventListener("click", () => applyLang(b.dataset.lang, true)));
+const saved = store.get("soul-lang");
+applyLang(location.hash === "#ro" ? "ro" : saved === "ro" ? "ro" : "en", false);
+requestAnimationFrame(lookLoop);
+})();
+</script>
+</body>
+</html>
