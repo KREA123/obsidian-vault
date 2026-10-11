@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SOUL size M · Product page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&amp;family=Martian+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#FAF8F3;color:#16181D;font-family:"Bricolage Grotesque",ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#16181D}a:hover{color:#A8461A}
+h1,h2,h3,p,ul,ol,dl,dd,figure{margin:0}
+ul,ol{padding:0;list-style:none}
+.mono{font-family:"Martian Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.eb{display:inline-flex;align-items:center;gap:10px;font:500 11.5px/1.3 "Martian Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:54px;padding:0 26px;border-radius:999px;font:600 16px/1 "Bricolage Grotesque",system-ui,sans-serif;text-decoration:none;border:0;cursor:pointer;white-space:nowrap}
+.blink{transform-box:fill-box;transform-origin:center;animation:blink 5.4s infinite}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}95.5%{transform:scaleY(.08)}}
+@keyframes born{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.04);opacity:1}100%{transform:scale(1)}}
+.born{animation:born .7s cubic-bezier(.2,.7,.2,1)}
+details>summary{cursor:pointer;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details[open] .plus{transform:rotate(45deg)}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #2440FF;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.blink,.born{animation:none}}
+</style>
+</helmet>
+<div onMouseMove="{{onMove}}" style="background: #FAF8F3; color: #16181D; overflow-x: clip">
+
+<div role="note" class="mono" style="background: #16181D; color: #FAF8F3; font-size: 11.5px; line-height: 1.35; letter-spacing: .04em; text-align: center; padding: 10px 16px">Pre-launch · <b style="font-weight: 500; color: #FFF0C8">not CE-certified yet</b> · waitlist only, nothing is charged.</div>
+
+<!-- section: header -->
+<header style="border-bottom: 1px solid rgba(22,24,29,.10); background: rgba(250,248,243,.9)">
+<div style="max-width: 1240px; margin: 0 auto; padding: 0 clamp(16px,4vw,48px); height: 64px; display: flex; align-items: center; gap: 16px">
+<a href="Main.dc.html" aria-label="SOUL home" style="display: inline-flex; padding: 8px 0"><svg viewBox="2.96 61.82 489.04 144.35" aria-hidden="true" style="height: 22px; width: auto; display: block"><path d="{{wmSUL}}" fill="#16181D"></path><path d="{{wmO}}" fill="#16181D"></path></svg></a>
+<nav aria-label="Breadcrumb" class="mono" style="margin-left: 8px; font-size: 12px; color: #5F636C; display: flex; gap: 8px; flex-wrap: wrap"><a href="Main.dc.html" style="color: #5F636C">home</a><span aria-hidden="true">/</span><span aria-current="page" style="color: #16181D">SOUL · size M</span></nav>
+<a class="btn" href="#reserve" style="margin-left: auto; min-height: 42px; padding: 0 18px; font-size: 15px; background: #16181D; color: #FAF8F3">waitlist</a>
+</div>
+</header>
+
+<main>
+<!-- section: product-main (Shopify: main-product.liquid; the buy button stays a waitlist until CE) -->
+<section id="buy" style="padding: 40px clamp(16px,4vw,48px) clamp(64px,8vw,112px)">
+<div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(520px,100%), 1fr)); gap: 40px clamp(32px,5vw,72px); align-items: start">
+
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="position: relative; border-radius: 32px; background: {{col.tint}}; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: background .4s">
+<span class="mono" style="position: absolute; left: 16px; top: 16px; z-index: 3; padding: 8px 12px; border-radius: 999px; background: rgba(250,248,243,.86); font-size: 11px; letter-spacing: .05em">concept render</span>
+<sc-if value="{{vFront}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; width: 62%"><img src="{{col.src}}" alt="Concept render of SOUL in {{col.name}} aluminium, front view, with the {{cur.name}} eyes." style="display: block; width: 100%; height: auto; filter: drop-shadow(0 30px 40px rgba(22,24,29,.25))"><div style="position: absolute; left: 23.06%; top: 17.33%; width: 63.9%; height: 58.85%; transform: rotate(-2.7deg)"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{e.lw}}" fill="{{e.white}}"></path><path d="{{e.lp}}" fill="{{e.L}}"></path></g><g class="blink"><path d="{{e.rw}}" fill="{{e.white}}"></path><path d="{{e.rp}}" fill="{{e.R}}"></path></g></svg></div></div>
+</sc-if>
+<sc-if value="{{vHand}}" hint-placeholder-val="{{ false }}">
+<div style="position: relative; width: 100%"><img src="/_blob/2e3457e6ce100cf724cbaf06d2222a93" alt="Concept render of SOUL in silver resting on an open hand, its eyes looking up at you." style="display: block; width: 100%; height: auto"><div style="position: absolute; left: 34.93%; top: 34.76%; width: 30.98%; height: 27.04%"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{e.lw}}" fill="{{e.white}}"></path><path d="{{e.lp}}" fill="{{e.L}}"></path></g><g class="blink"><path d="{{e.rw}}" fill="{{e.white}}"></path><path d="{{e.rp}}" fill="{{e.R}}"></path></g></svg></div></div>
+</sc-if>
+<sc-if value="{{vSide}}" hint-placeholder-val="{{ false }}">
+<div style="position: relative; height: 92%"><img src="/_blob/478d8cd96bc64c370610ccfb2ff3e215" alt="Concept render of SOUL from the side: a thin aluminium pebble, 31.5 mm deep." style="display: block; height: 100%; width: auto; border-radius: 24px"><svg viewBox="0 0 900 1160" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%"><path d="M760 140 V1050 M745 140 H775 M745 1050 H775 M270 1105 H630 M270 1092 V1118 M630 1092 V1118" stroke="#16181D" stroke-width="1.8" fill="none"></path><text x="600" y="600" fill="#16181D" style="font: 500 26px 'Martian Mono',monospace">101 mm</text><text x="380" y="1080" fill="#16181D" style="font: 500 26px 'Martian Mono',monospace">31.5 mm</text></svg></div>
+</sc-if>
+</div>
+<div role="group" aria-label="Views" style="display: flex; gap: 10px">
+<sc-for list="{{views}}" as="v" hint-placeholder-count="3">
+<button type="button" onClick="{{v.pick}}" aria-pressed="{{v.pressed}}" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; cursor: pointer; font: 600 15px 'Bricolage Grotesque',sans-serif; background: {{v.bg}}; color: {{v.fg}}; box-shadow: inset 0 0 0 1.5px rgba(22,24,29,.2)">{{v.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<p class="eb" style="color: #5F636C">SOUL · size M · MĂRGĂRITAR</p>
+<h1 style="font-size: clamp(48px,5.4vw,76px); font-weight: 750; letter-spacing: -.055em; line-height: .88">your ai has a brain.<br><span style="color: #5F636C">give it a soul.</span></h1>
+<p style="font-size: 18px; color: #5F636C; max-width: 46ch">A palm-sized aluminium stone with two living eyes. It blinks, it follows you, it dozes off when you leave. And it talks with the AI you already have.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; border-top: 1px solid rgba(22,24,29,.14); padding-top: 18px">
+<span class="mono" style="display: inline-flex; align-items: baseline; gap: 8px; font-size: 13px; color: #5F636C">from <b style="font: 720 40px/1 'Bricolage Grotesque',sans-serif; letter-spacing: -.04em; color: #16181D">€249</b> incl. VAT</span>
+<span class="mono" style="margin-left: auto; padding: 8px 12px; border-radius: 999px; background: #FFF0C8; font-size: 11px">pre-launch · not CE-certified yet</span>
+</div>
+
+<fieldset style="border: 0; padding: 0; margin: 0">
+<legend class="eb" style="color: #5F636C; margin-bottom: 14px">Colour · <span style="color: #16181D">{{col.name}}</span></legend>
+<div style="display: flex; flex-wrap: wrap; gap: 14px">
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
+<button type="button" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" aria-label="{{c.name}}" style="width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer; background: {{c.hex}}; box-shadow: inset 0 -6px 12px rgba(0,0,0,.18), 0 0 0 3px #FAF8F3, 0 0 0 5px {{c.ring}}"></button>
+</sc-for>
+</div>
+<p style="margin-top: 12px; font-size: 16px; color: #5F636C">{{col.d}} Every colour costs the same.</p>
+</fieldset>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 16px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(22,24,29,.05), 0 24px 60px -28px rgba(22,24,29,.35)">
+<div style="flex: none; width: 76px; height: 76px; border-radius: 50%; background: #000; box-shadow: 0 0 0 4px {{col.hex}}"><svg viewBox="0 0 100 100" aria-hidden="true" style="display: block; width: 100%; height: 100%"><path d="{{e0.lw}}" fill="{{e0.white}}"></path><path d="{{e0.lp}}" fill="{{e0.L}}"></path><path d="{{e0.rw}}" fill="{{e0.white}}"></path><path d="{{e0.rp}}" fill="{{e0.R}}"></path></svg></div>
+<div style="flex: 1 1 160px; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<p class="eb" style="color: #5F636C; font-size: 10.5px">eyes · decided at birth</p>
+<p style="font-size: 20px; font-weight: 680; letter-spacing: -.02em">{{cur.num}} {{cur.name}}</p>
+<p class="mono" style="font-size: 11.5px; color: #5F636C">{{cur.rar}} · {{cur.odds}}</p>
+</div>
+<button type="button" onClick="{{birth}}" class="btn" style="min-height: 44px; padding: 0 16px; font-size: 14px; background: transparent; color: #16181D; box-shadow: inset 0 0 0 1.5px rgba(22,24,29,.26)">birth yours <span aria-hidden="true">↻</span></button>
+</div>
+
+<div id="reserve" style="display: flex; flex-direction: column; gap: 14px; padding: clamp(20px,2.4vw,28px); border-radius: 28px; background: #F1EDE4">
+<sc-if value="{{notSent}}" hint-placeholder-val="{{ true }}">
+<form onSubmit="{{join}}" style="display: flex; flex-direction: column; gap: 14px">
+<h2 style="font-size: clamp(24px,2.4vw,32px); font-weight: 650; letter-spacing: -.03em; line-height: 1.05">be there when it opens its eyes.</h2>
+<p style="font-size: 16px; line-height: 1.45; color: #5F636C; max-width: 46ch">Leave your email. We'll write when reservations open, before anyone else. No payment, no pre-order.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<div style="flex: 3 1 220px; display: flex; flex-direction: column; gap: 6px"><label for="wl-email" class="eb" style="color: #5F636C">email</label><input id="wl-email" name="email" type="email" autocomplete="email" inputmode="email" required="required" placeholder="you@example.com" style="min-height: 52px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(22,24,29,.26); background: #FFFFFF; color: #16181D; font: 400 16px 'Bricolage Grotesque',sans-serif"></div>
+<div style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 6px"><label for="wl-lang" class="eb" style="color: #5F636C">emails in</label><select id="wl-lang" name="lang" style="min-height: 52px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(22,24,29,.26); background: #FFFFFF; color: #16181D; font: 400 16px 'Bricolage Grotesque',sans-serif"><option value="en">English</option><option value="ro">Română</option></select></div>
+</div>
+<label for="wl-consent" style="display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.45; color: #5F636C"><input id="wl-consent" name="consent" type="checkbox" required="required" style="flex: none; width: 22px; height: 22px; margin: 0; accent-color: #16181D"><span>I agree to receive emails about SOUL from ARTEMIS DIGITAL S.R.L. and can unsubscribe at any time. Read the <a href="#legal">Privacy Policy</a>.</span></label>
+<button type="submit" class="btn" style="background: #16181D; color: #FAF8F3; min-height: 60px; font-size: 17px">join the waitlist <span aria-hidden="true">→</span></button>
+<p style="font-size: 13.5px; color: #5F636C; text-align: center">Nothing is charged here. One email when reservations open, and the odd update before.</p>
+</form>
+</sc-if>
+<sc-if value="{{sent}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="font-size: clamp(24px,2.4vw,32px); font-weight: 650; letter-spacing: -.03em; line-height: 1.05">you're on the list.</h2>
+<p style="font-size: 16px; line-height: 1.45; color: #5F636C">It just smiled at you. We'll write before anyone else.</p>
+<dl class="mono" style="display: grid; grid-template-columns: 96px 1fr; gap: 8px 12px; font-size: 13px"><dt style="color: #5F636C">colour</dt><dd>{{col.name}}</dd><dt style="color: #5F636C">language</dt><dd>{{langName}}</dd></dl>
+<p style="font-size: 13.5px; color: #5F636C">Preview mode: this page doesn't send your email anywhere yet. The store version will.</p>
+</div>
+</sc-if>
+</div>
+
+<dl style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(120px,100%), 1fr)); gap: 16px; border-top: 1px solid rgba(22,24,29,.14); padding-top: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px"><dt class="eb" style="color: #5F636C; font-size: 10.5px">size M</dt><dd style="font-size: 16px">90 × 101 × 31.5 mm</dd></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><dt class="eb" style="color: #5F636C; font-size: 10.5px">glass</dt><dd style="font-size: 16px">2.8″ round, black</dd></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><dt class="eb" style="color: #5F636C; font-size: 10.5px">body</dt><dd style="font-size: 16px">aluminium 6061</dd></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><dt class="eb" style="color: #5F636C; font-size: 10.5px">finish</dt><dd style="font-size: 16px">bead-blasted, anodised</dd></div>
+</dl>
+
+<ul class="mono" style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 11.5px">
+<li style="padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(22,24,29,.22)">no camera</li>
+<li style="padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(22,24,29,.22)">listens only while you hold the glass</li>
+<li style="padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(22,24,29,.22)">your own Claude or ChatGPT</li>
+<li style="padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(22,24,29,.22)">alive offline</li>
+<li style="padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(22,24,29,.22)">memory lives on the device</li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- section: born-with (interactive birth, same math as the device) -->
+<section id="born" style="background: #060607; color: #F6F3EC; padding: clamp(72px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto">
+<div style="display: flex; flex-direction: column; gap: 18px; max-width: 920px">
+<p class="eb" style="color: #9EA1A8">born, not made</p>
+<h2 style="font-size: clamp(40px,6vw,84px); font-weight: 720; letter-spacing: -.05em; line-height: .9">born with one of <span style="color: #FFF0C8">120</span> eyes.</h2>
+<p style="font-size: 19px; line-height: 1.45; color: #A4A7AE; max-width: 46ch">At first power-on, each SOUL is born from its chip's unique ID. The eyes it gets are the eyes it keeps. Nobody picks them. Not even us.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px,100%), 1fr)); gap: 48px 72px; align-items: center; margin-top: 56px">
+<div class="born" key="{{cur.num}}" style="justify-self: center; width: min(100%,400px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #16171a, #000 62%); box-shadow: 0 0 0 12px #CBCDCF, 0 0 0 13px rgba(255,255,255,.25), 0 50px 120px -30px {{cur.glow}}">
+<svg viewBox="0 0 100 100" role="img" aria-label="{{cur.name}} eyes, design {{cur.num}} of 120" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{e.lw}}" fill="{{e.white}}"></path><path d="{{e.lp}}" fill="{{e.L}}"></path></g><g class="blink"><path d="{{e.rw}}" fill="{{e.white}}"></path><path d="{{e.rp}}" fill="{{e.R}}"></path></g></svg>
+</div>
+<div aria-live="polite" style="display: flex; flex-direction: column; gap: 16px">
+<p class="mono" style="font-size: 13px; color: #9EA1A8">{{cur.num}} / 120</p>
+<p style="font-size: clamp(44px,5vw,68px); font-weight: 720; letter-spacing: -.045em; line-height: .92">{{cur.name}}</p>
+<div class="mono" style="display: inline-flex; align-self: flex-start; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 999px; border: 1px solid {{cur.c}}; font-size: 12px"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{cur.c}}"></span><span>{{cur.rar}}</span><span style="color: #9EA1A8">{{cur.odds}}</span></div>
+<dl class="mono" style="display: grid; grid-template-columns: 110px 1fr; gap: 10px 16px; font-size: 13px; border-top: 1px solid rgba(255,255,255,.14); padding-top: 18px">
+<dt style="color: #9EA1A8">name</dt><dd>{{pet}}</dd>
+<dt style="color: #9EA1A8">chip id</dt><dd>{{chip}}</dd>
+<dt style="color: #9EA1A8">born</dt><dd>{{bornOn}}</dd>
+</dl>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<button type="button" onClick="{{birth}}" class="btn" style="background: #FFF0C8; color: #16181D">birth yours <span aria-hidden="true">↻</span></button>
+<button type="button" onClick="{{copy}}" class="btn" style="background: transparent; color: #F6F3EC; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3)">{{copyLabel}}</button>
+</div>
+<form onSubmit="{{lookup}}" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px">
+<label for="chip-in" class="eb" style="color: #A4A7AE">Chip ID (12 hex characters)</label>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<input id="chip-in" name="chip" value="{{chipIn}}" onChange="{{onChip}}" autocomplete="off" spellcheck="false" maxlength="17" placeholder="34:85:18:6A:C2:9F" class="mono" style="flex: 1 1 220px; min-height: 52px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.22); background: #111215; color: #F6F3EC; font-size: 15px; letter-spacing: .04em">
+<button type="submit" class="btn" style="min-height: 52px; background: transparent; color: #F6F3EC; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3)">look up a chip</button>
+</div>
+<sc-if value="{{chipBad}}" hint-placeholder-val="{{ false }}"><p role="alert" style="font-size: 14px; color: #FF8A57">A chip ID has 12 hex characters (0–9, A–F), like 34:85:18:6A:C2:9F.</p></sc-if>
+</form>
+<p style="font-size: 14px; color: #A4A7AE; max-width: 52ch">A sample birth. Type any chip ID to see exactly what that chip would be born as: the same math runs on the real SOUL.</p>
+</div>
+</div>
+
+<div role="table" aria-label="Odds of each rarity at birth" style="margin-top: 72px; font-size: 15px">
+<p class="eb" style="color: #9EA1A8; padding-bottom: 14px">Odds of each rarity at birth</p>
+<div role="row" class="mono" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 12px 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #9EA1A8"><span role="columnheader">rarity</span><span role="columnheader">chance</span><span role="columnheader">designs</span><span role="columnheader">one exact pair</span></div>
+<sc-for list="{{rar}}" as="r" hint-placeholder-count="6">
+<div role="row" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,.12); align-items: center; background: {{r.hl}}"><span role="cell" style="display: inline-flex; align-items: center; gap: 10px; font-weight: 620"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{r.c}}; flex: none"></span>{{r.n}}</span><span role="cell" class="mono">{{r.p}}</span><span role="cell" class="mono">{{r.k}}</span><span role="cell" class="mono" style="color: #A4A7AE">1 in {{r.x}}</span></div>
+</sc-for>
+</div>
+<p style="margin-top: 18px; font-size: 14px; color: #A4A7AE; max-width: 70ch">These are the real odds from the birth code. Inside a rarity, every design is equally likely. Rarity changes only the eyes: every SOUL does exactly the same things.</p>
+
+<div style="margin-top: 72px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px"><h3 style="font-size: 32px; font-weight: 700; letter-spacing: -.035em">the collection</h3>
+<div role="group" aria-label="Filter by rarity" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{filters}}" as="t" hint-placeholder-count="7">
+<button type="button" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" class="mono" style="min-height: 44px; padding: 0 14px; border-radius: 999px; border: 0; cursor: pointer; font-size: 12px; background: {{t.bg}}; color: {{t.fg}}; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22)">{{t.label}}</button>
+</sc-for>
+</div>
+</div>
+<ul style="display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 18px 14px">
+<sc-for list="{{grid}}" as="g" hint-placeholder-count="12">
+<li style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+<div style="width: 76px; height: 76px; border-radius: 50%; background: #000; box-shadow: 0 0 0 3px {{g.ring}}"><svg viewBox="0 0 100 100" role="img" aria-label="{{g.num}} {{g.name}}" style="display: block; width: 100%; height: 100%"><path d="{{g.e.lw}}" fill="{{g.e.white}}"></path><path d="{{g.e.lp}}" fill="{{g.e.L}}"></path><path d="{{g.e.rw}}" fill="{{g.e.white}}"></path><path d="{{g.e.rp}}" fill="{{g.e.R}}"></path></svg></div>
+<span class="mono" style="font-size: 10.5px; color: #9EA1A8">{{g.num}}</span>
+<span style="font-size: 13px; line-height: 1.2">{{g.name}}</span>
+</li>
+</sc-for>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- section: details (accordion: specs, box, your ai, shipping) -->
+<section style="padding: clamp(72px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 40px 72px; align-items: flex-start">
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 18px">
+<p class="eb" style="color: #5F636C">size M · specifications</p>
+<h2 style="font-size: clamp(40px,5vw,72px); font-weight: 720; letter-spacing: -.05em; line-height: .9">the boring bits.</h2>
+<p style="font-size: 13px; color: #5F636C">All product images are concept renders, not photos. Specifications describe the design in development and may change before production.</p>
+</div>
+<div style="flex: 999 1 560px; min-width: 0; border-top: 1px solid rgba(22,24,29,.14)">
+<details open="open" style="border-bottom: 1px solid rgba(22,24,29,.14)"><summary style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0; font-size: 21px; font-weight: 650; letter-spacing: -.02em">specifications<span class="plus" aria-hidden="true" style="font: 400 26px/1 'Martian Mono',monospace">+</span></summary>
+<dl style="display: flex; flex-direction: column; padding-bottom: 20px">
+<sc-for list="{{specs}}" as="s" hint-placeholder-count="12">
+<div style="display: grid; grid-template-columns: 130px 1fr; gap: 16px; padding: 11px 0; border-top: 1px solid rgba(22,24,29,.08)"><dt class="eb" style="color: #5F636C; font-size: 11px; padding-top: 3px">{{s.k}}</dt><dd style="font-size: 16.5px">{{s.v}}</dd></div>
+</sc-for>
+</dl>
+</details>
+<details style="border-bottom: 1px solid rgba(22,24,29,.14)"><summary style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0; font-size: 21px; font-weight: 650; letter-spacing: -.02em">what's in the box · planned<span class="plus" aria-hidden="true" style="font: 400 26px/1 'Martian Mono',monospace">+</span></summary><div style="padding-bottom: 20px; display: flex; flex-direction: column; gap: 10px; color: #5F636C; font-size: 16.5px"><p><b style="color: #16181D">SOUL, size M</b> · in the colour you choose, with the eyes it chooses</p><p><b style="color: #16181D">OU, its charging egg</b> · where it charges and sleeps</p><p>The final list, battery life and accessories will be published before reservations open.</p></div></details>
+<details style="border-bottom: 1px solid rgba(22,24,29,.14)"><summary style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0; font-size: 21px; font-weight: 650; letter-spacing: -.02em">which AI does it work with?<span class="plus" aria-hidden="true" style="font: 400 26px/1 'Martian Mono',monospace">+</span></summary><p style="padding-bottom: 20px; color: #5F636C; font-size: 16.5px; line-height: 1.55">Claude: your own Anthropic account or API key, plus a connector for the Claude app. ChatGPT: your own OpenAI API key works now; “Sign in with ChatGPT” is pending OpenAI's approval. Or no AI at all. We never sell or include AI.</p></details>
+<details style="border-bottom: 1px solid rgba(22,24,29,.14)"><summary style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0; font-size: 21px; font-weight: 650; letter-spacing: -.02em">can I buy it now?<span class="plus" aria-hidden="true" style="font: 400 26px/1 'Martian Mono',monospace">+</span></summary><p style="padding-bottom: 20px; color: #5F636C; font-size: 16.5px; line-height: 1.55">Not yet. SOUL has Bluetooth and Wi-Fi, so it must pass CE testing (the EU Radio Equipment Directive) at an accredited lab before anyone can sell it. It isn't CE-certified yet. Until then there is only a waitlist: no payment, no pre-orders, no deposits.</p></details>
+</div>
+</div>
+</section>
+
+<!-- section: cta-band -->
+<section style="background: #16181D; color: #F6F3EC; padding: clamp(56px,7vw,96px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px">
+<h2 style="font-size: clamp(34px,4.4vw,60px); font-weight: 720; letter-spacing: -.045em; line-height: .95; max-width: 16ch">your ai has a brain.<br><span style="color: #FFF0C8">give it a soul.</span></h2>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px">
+<span class="mono" style="font-size: 12px; color: #C9CBD0">from <b style="font: 700 26px 'Bricolage Grotesque',sans-serif; color: #F6F3EC">€249</b></span>
+<a class="btn" href="#reserve" style="background: #FFF0C8; color: #16181D">join the waitlist <span aria-hidden="true">↑</span></a>
+</div>
+</div>
+</section>
+</main>
+
+<footer id="legal" style="background: #F1EDE4; padding: 32px clamp(16px,4vw,48px)">
+<div class="mono" style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 12px; color: #5F636C"><span>© 2026 ARTEMIS DIGITAL S.R.L. Hold the glass.</span><span>Claude and ChatGPT are trademarks of Anthropic and OpenAI. SOUL is independent.</span></div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":5200}}'>
+var RAR=[["Common",0.5,"#C9C4B8",48],["Uncommon",0.25,"#5CFFB0",30],["Rare",0.15,"#3FA9FF",20],["Epic",0.07,"#B57BFF",12],["Legendary",0.025,"#FFC23A",7],["Mythic",0.005,"#FF4F9A",3]];
+function mix32(x){x>>>=0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return (x^(x>>>16))>>>0;}
+function rollChip(D,hex){hex=String(hex).replace(/[^0-9a-fA-F]/g,"").padStart(16,"0").slice(-16);var hi=parseInt(hex.slice(0,8),16),lo=parseInt(hex.slice(8),16);var h=mix32((lo>>>0)^mix32((hi>>>0)^0x534f554c));var u=mix32(h)/4294967296,acc=0,t=5;for(var i=0;i<6;i++){acc+=RAR[i][1];if(u<acc){t=i;break;}}var pool=D.filter(function(d){return d[2]===t;});return pool[Math.floor((mix32(h^0x9e3779b9)/4294967296)*pool.length)];}
+function petName(chip){var N=["Mira","Luma","Nova","Kai","Juno","Tomi","Nara","Ivo","Sia","Pip","Ada","Luca","Eli","Ema","Bobo","Zia","Dor","Ilinca","Toma","Vali"],s=String(chip).toLowerCase(),h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return N[h%N.length];}
+function f(n){return Math.round(n*100)/100;}
+function ell(cx,cy,rx,ry){return "M"+f(cx-rx)+" "+f(cy)+"a"+f(rx)+" "+f(ry)+" 0 1 0 "+f(2*rx)+" 0a"+f(rx)+" "+f(ry)+" 0 1 0 "+f(-2*rx)+" 0Z";}
+function ellR(cx,cy,rx,ry){return "M"+f(cx-rx)+" "+f(cy)+"a"+f(rx)+" "+f(ry)+" 0 1 1 "+f(2*rx)+" 0a"+f(rx)+" "+f(ry)+" 0 1 1 "+f(-2*rx)+" 0Z";}
+function poly(p){return "M"+p.map(function(q){return f(q[0])+" "+f(q[1]);}).join("L")+"Z";}
+function whiteP(t,cx,cy,rx,ry){
+ if(t==="almond")return "M"+f(cx-rx)+" "+f(cy)+"Q"+f(cx)+" "+f(cy-ry*2)+" "+f(cx+rx)+" "+f(cy)+"Q"+f(cx)+" "+f(cy+ry*2)+" "+f(cx-rx)+" "+f(cy)+"Z";
+ if(t==="drop")return "M"+f(cx)+" "+f(cy-ry*1.25)+"C"+f(cx+rx*1.05)+" "+f(cy-ry*.25)+" "+f(cx+rx)+" "+f(cy+ry)+" "+f(cx)+" "+f(cy+ry)+"C"+f(cx-rx)+" "+f(cy+ry)+" "+f(cx-rx*1.05)+" "+f(cy-ry*.25)+" "+f(cx)+" "+f(cy-ry*1.25)+"Z";
+ if(t==="squircle"){var x=cx-rx,y=cy-ry,w=2*rx,h=2*ry,r=Math.min(rx,ry)*.6;return "M"+f(x+r)+" "+f(y)+"H"+f(x+w-r)+"Q"+f(x+w)+" "+f(y)+" "+f(x+w)+" "+f(y+r)+"V"+f(y+h-r)+"Q"+f(x+w)+" "+f(y+h)+" "+f(x+w-r)+" "+f(y+h)+"H"+f(x+r)+"Q"+f(x)+" "+f(y+h)+" "+f(x)+" "+f(y+h-r)+"V"+f(y+r)+"Q"+f(x)+" "+f(y)+" "+f(x+r)+" "+f(y)+"Z";}
+ if(t==="crescent")return "M"+f(cx-rx)+" "+f(cy+ry*.35)+"A"+f(rx)+" "+f(ry*1.1)+" 0 0 1 "+f(cx+rx)+" "+f(cy+ry*.35)+"A"+f(rx*.8)+" "+f(ry*.62)+" 0 0 0 "+f(cx-rx)+" "+f(cy+ry*.35)+"Z";
+ return ell(cx,cy,rx,ry);
+}
+function pupilP(t,px,py,a,b){
+ if(t==="slit")return ell(px,py,a*.32,b);
+ if(t==="ring")return ell(px,py,a,b)+ellR(px,py,a*.55,b*.55);
+ if(t==="spiral")return ell(px,py,a,b)+ellR(px,py,a*.66,b*.66)+ell(px,py,a*.32,b*.32);
+ if(t==="double")return ell(px-a*.48,py,a*.42,a*.42)+ell(px+a*.48,py,a*.42,a*.42);
+ if(t==="crescent")return "M"+f(px)+" "+f(py-b)+"A"+f(a)+" "+f(b)+" 0 1 0 "+f(px)+" "+f(py+b)+"A"+f(a*.55)+" "+f(b)+" 0 1 1 "+f(px)+" "+f(py-b)+"Z";
+ if(t==="diamond")return poly([[px,py-b],[px+a*.75,py],[px,py+b],[px-a*.75,py]]);
+ if(t==="heart")return "M"+f(px)+" "+f(py+b*.9)+"C"+f(px-a*1.6)+" "+f(py-b*.1)+" "+f(px-a*.7)+" "+f(py-b*1.2)+" "+f(px)+" "+f(py-b*.35)+"C"+f(px+a*.7)+" "+f(py-b*1.2)+" "+f(px+a*1.6)+" "+f(py-b*.1)+" "+f(px)+" "+f(py+b*.9)+"Z";
+ if(t==="plus"){var w=Math.min(a,b)*.36,e=Math.min(a,b)*1.05;return poly([[px-w,py-e],[px+w,py-e],[px+w,py-w],[px+e,py-w],[px+e,py+w],[px+w,py+w],[px+w,py+e],[px-w,py+e],[px-w,py+w],[px-e,py+w],[px-e,py-w],[px-w,py-w]]);}
+ if(t==="star"){var o=Math.max(a,b)*1.15,pts=[];for(var i=0;i<10;i++){var r=i%2?o*.45:o,an=-Math.PI/2+i*Math.PI/5;pts.push([px+Math.cos(an)*r,py+Math.sin(an)*r]);}return poly(pts);}
+ return ell(px,py,a,b);
+}
+var PDEF={round:[.5,.56],pebble:[.44,.46],slit:[.5,.62]};
+function eyes(d,lx,ly){
+ var t=d[3],rx=d[4]*100,ry=d[5]*100,sp=d[6]*100,cy=50+d[7]*100,pd=PDEF[d[9]]||[.42,.42],a=(d[12]||pd[0])*rx,b=(d[13]||pd[1])*ry,dx=(lx||0)*rx*.34,dy=(ly||0)*ry*.3,o={white:d[8],L:d[10],R:d[11]};
+ o.lw=whiteP(t,50-sp,cy,rx,ry);o.rw=whiteP(t,50+sp,cy,rx,ry);
+ if(t==="crescent"){dy-=ry*.05;}
+ o.lp=pupilP(d[9],50-sp+dx,cy+dy,a,b);o.rp=pupilP(d[9],50+sp+dx,cy+dy,a,b);
+ return o;
+}
+var D=[["#001","Original",0,"egg",0.163,0.2,0.19,0.005,"#FFF0C8","round","#2440FF","#FF5A1F",0,0],["#002","Tangerine Dream",0,"egg",0.163,0.2,0.19,0.005,"#FF9A3D","round","#1B2BFF","#6A2BFF",0,0],["#003","Bucharest Night",0,"egg",0.163,0.2,0.19,0.005,"#7FC8FF","round","#FFE14A","#FF3FA4",0,0],["#004","Mint Condition",0,"egg",0.172,0.172,0.193,0.005,"#3DFFC8","round","#6A2BFF","#6A2BFF",0,0],["#005","Lemonade Stand",0,"egg",0.163,0.2,0.19,0.005,"#F0FF2E","round","#FF2E5B","#FF2E5B",0,0],["#006","Bubblegum Bus",0,"egg",0.172,0.172,0.193,0.005,"#FF8AD8","round","#2440FF","#2440FF",0,0],["#007","Pistachio",0,"egg",0.19,0.142,0.205,0.01,"#A8FF3D","round","#7A2BFF","#FF2E5B",0,0],["#008","Swimming Pool",0,"egg",0.163,0.2,0.19,0.005,"#2BD9FF","round","#FFE14A","#FFE14A",0,0],["#009","Peach Crate",0,"egg",0.172,0.172,0.193,0.005,"#FFB38A","round","#2440FF","#00A35C",0,0],["#010","Milk Tooth",0,"egg",0.163,0.2,0.19,0.005,"#F4F4F4","round","#111111","#111111",0,0],["#011","Lilac Hour",0,"egg",0.163,0.2,0.19,0.005,"#C79BFF","round","#FFE14A","#14E6FF",0,0],["#012","Coral Snorkel",0,"egg",0.19,0.142,0.205,0.01,"#FF6B6B","round","#14E6FF","#14E6FF",0,0],["#013","Sunday Toast",0,"egg",0.172,0.172,0.193,0.005,"#FFD23A","pebble","#5A2A10","#5A2A10",0.44,0.46],["#014","Ski Lift",0,"egg",0.13,0.215,0.158,0,"#7FC8FF","round","#FF5A1F","#FF5A1F",0,0],["#015","Rose Petal",0,"egg",0.163,0.2,0.19,0.005,"#FF9EBB","pebble","#5A0E5E","#5A0E5E",0.44,0.46],["#016","Lime Soda",0,"egg",0.172,0.172,0.193,0.005,"#A8FF3D","round","#FF1F8F","#2440FF",0,0],["#017","Arcade Token",0,"egg",0.163,0.2,0.19,0.005,"#FFD23A","round","#6A2BFF","#FF2E5B",0,0],["#018","Tram 41",0,"egg",0.19,0.142,0.205,0.01,"#FF4B4B","round","#FFE14A","#FFE14A",0,0],["#019","Snow Day",0,"egg",0.13,0.215,0.158,0,"#F4F4F4","round","#2440FF","#2440FF",0,0],["#020","Watermelon",0,"egg",0.163,0.2,0.19,0.005,"#FF6B8A","pebble","#0E7A3A","#0E7A3A",0.44,0.46],["#021","Blue Raspberry",0,"egg",0.172,0.172,0.193,0.005,"#5C8BFF","round","#FFE14A","#FF9A3D",0,0],["#022","Matcha Latte",0,"egg",0.163,0.2,0.19,0.005,"#B8F07A","round","#3A2A10","#3A2A10",0,0],["#023","Highlighter",0,"egg",0.19,0.142,0.205,0.01,"#E8FF3A","round","#FF1F8F","#FF1F8F",0,0],["#024","Flamingo Float",0,"egg",0.163,0.2,0.19,0.005,"#FF8AD8","round","#14E6FF","#FFE14A",0,0],["#025","Apricot Jam",0,"egg",0.172,0.172,0.193,0.005,"#FF9A3D","pebble","#5A0E5E","#5A0E5E",0.44,0.46],["#026","Glacier",0,"egg",0.13,0.215,0.158,0,"#BDF4FF","round","#1B2BFF","#6A2BFF",0,0],["#027","Sherbet",0,"egg",0.163,0.2,0.19,0.005,"#FFC38A","round","#FF1F8F","#2440FF",0,0],["#028","Pea Pod",0,"egg",0.172,0.172,0.193,0.005,"#7CFF8A","round","#111111","#111111",0,0],["#029","Grape Soda",0,"egg",0.163,0.2,0.19,0.005,"#B57BFF","round","#F0FF2E","#F0FF2E",0,0],["#030","Neon Taxi",0,"egg",0.19,0.142,0.205,0.01,"#FFD23A","round","#111111","#111111",0,0],["#031","Cotton Candy",0,"egg",0.172,0.172,0.193,0.005,"#FFB3E6","round","#2BD9FF","#B57BFF",0,0],["#032","Danube Blue",0,"egg",0.163,0.2,0.19,0.005,"#3FA9FF","round","#FFF0C8","#FFF0C8",0,0],["#033","Pumpkin Patch",0,"egg",0.163,0.2,0.19,0.005,"#FF7A1A","pebble","#1A1A1A","#1A1A1A",0.44,0.46],["#034","Spring Onion",0,"egg",0.13,0.215,0.158,0,"#C6FF5C","round","#2440FF","#FF2E5B",0,0],["#035","Marshmallow",0,"egg",0.172,0.172,0.193,0.005,"#FFF6EC","pebble","#FF5A1F","#FF5A1F",0.44,0.46],["#036","Fizzy Cola",0,"egg",0.163,0.2,0.19,0.005,"#FF4B4B","round","#FFF0C8","#14E6FF",0,0],["#037","Banana Boat",0,"egg",0.19,0.142,0.205,0.01,"#FFF27A","round","#2440FF","#2440FF",0,0],["#038","Morning Glory",0,"egg",0.163,0.2,0.19,0.005,"#9FB4FF","round","#FF1F8F","#FF1F8F",0,0],["#039","Kiwi Slice",0,"egg",0.172,0.172,0.193,0.005,"#B8FF5C","round","#3A2A10","#FF2E5B",0,0],["#040","Sea Breeze",0,"egg",0.163,0.2,0.19,0.005,"#5CFFE6","pebble","#1B2BFF","#1B2BFF",0.44,0.46],["#041","Strawberry Milk",0,"egg",0.13,0.215,0.158,0,"#FFB3C8","round","#D0102E","#D0102E",0,0],["#042","Cucumber",0,"egg",0.163,0.2,0.19,0.005,"#9BFFB0","round","#7A2BFF","#7A2BFF",0,0],["#043","Traffic Cone",0,"egg",0.172,0.172,0.193,0.005,"#FF8A2A","round","#14E6FF","#2440FF",0,0],["#044","Pastel de Nata",0,"egg",0.163,0.2,0.19,0.005,"#FFE08A","pebble","#8A3A0A","#8A3A0A",0.44,0.46],["#045","Polar Bear",0,"egg",0.19,0.142,0.205,0.01,"#F4FAFF","round","#111111","#3FA9FF",0,0],["#046","Sour Candy",0,"egg",0.163,0.2,0.19,0.005,"#D6FF2E","round","#FF2E5B","#7A2BFF",0,0],["#047","Blue Hour",0,"egg",0.172,0.172,0.193,0.005,"#7FA8FF","round","#FFF0C8","#FFE14A",0,0],["#048","Hot Chocolate",0,"egg",0.163,0.2,0.19,0.005,"#FFC9A0","round","#4A1E08","#4A1E08",0,0],["#049","Cat Café",1,"almond",0.185,0.15,0.205,0.01,"#F0FF2E","slit","#111111","#111111",0.5,0.62],["#050","Alley Cat",1,"almond",0.185,0.15,0.205,0.01,"#A8FF3D","slit","#111111","#111111",0.5,0.62],["#051","Siamese",1,"almond",0.185,0.15,0.205,0.01,"#7FC8FF","slit","#10184A","#10184A",0.5,0.62],["#052","Tabby Orange",1,"almond",0.185,0.15,0.205,0.01,"#FF9A3D","slit","#2A0E00","#2A0E00",0.5,0.62],["#053","Night Panther",1,"almond",0.185,0.15,0.205,0.01,"#C6FF5C","slit","#5A0E5E","#5A0E5E",0.5,0.62],["#054","Dewdrop",1,"drop",0.165,0.195,0.19,0.01,"#BDF4FF","round","#2440FF","#2440FF",0,0],["#055","Rain Boots",1,"drop",0.165,0.195,0.19,0.01,"#FFE14A","round","#FF2E5B","#2440FF",0,0],["#056","Teardrop Teal",1,"drop",0.165,0.195,0.19,0.01,"#2BFFE0","pebble","#6A2BFF","#6A2BFF",0.44,0.46],["#057","Gumdrop",1,"drop",0.165,0.195,0.19,0.01,"#FF8AD8","round","#FFF0C8","#FFE14A",0,0],["#058","Sugar Cube",1,"squircle",0.155,0.172,0.185,0.005,"#F4F4F4","round","#FF5A1F","#2440FF",0,0],["#059","Pixel Pal",1,"squircle",0.155,0.172,0.185,0.005,"#A8FF3D","plus","#111111","#111111",0.4,0.4],["#060","Tile Floor",1,"squircle",0.155,0.172,0.185,0.005,"#3FA9FF","round","#FFE14A","#FFE14A",0,0],["#061","Toaster",1,"squircle",0.155,0.172,0.185,0.005,"#FFB38A","ring","#2A2A2A","#2A2A2A",0.44,0.48],["#062","Post-it",1,"squircle",0.155,0.172,0.185,0.005,"#FFF27A","pebble","#FF1F8F","#2440FF",0.44,0.46],["#063","Half Moon Bay",1,"crescent",0.172,0.185,0.195,0.02,"#FFF0C8","round","#2440FF","#FF5A1F",0,0],["#064","Sleepy Lemon",1,"crescent",0.172,0.185,0.195,0.02,"#F0FF2E","round","#7A2BFF","#7A2BFF",0,0],["#065","Lagoon Lid",1,"crescent",0.172,0.185,0.195,0.02,"#2BD9FF","round","#FF1F8F","#FF1F8F",0,0],["#066","Bullseye",1,"egg",0.172,0.172,0.193,0.005,"#FFF0C8","ring","#FF2E5B","#FF2E5B",0.44,0.48],["#067","Target Practice",1,"egg",0.163,0.2,0.19,0.005,"#F4F4F4","ring","#2440FF","#FF2E5B",0.44,0.48],["#068","Saturn Ring",1,"egg",0.172,0.172,0.193,0.005,"#FFB38A","ring","#6A2BFF","#6A2BFF",0.44,0.48],["#069","Ladybug",1,"egg",0.163,0.2,0.19,0.005,"#FF4B4B","double","#111111","#111111",0.44,0.46],["#070","Domino",1,"egg",0.172,0.172,0.193,0.005,"#F4F4F4","double","#111111","#111111",0.44,0.46],["#071","Bubble Tea",1,"egg",0.163,0.2,0.19,0.005,"#FFD6A8","double","#3A1E08","#3A1E08",0.44,0.46],["#072","Moonbeam",1,"egg",0.172,0.172,0.193,0.005,"#BDF4FF","crescent","#2440FF","#2440FF",0.44,0.5],["#073","Croissant",1,"egg",0.163,0.2,0.19,0.005,"#FFD23A","crescent","#8A3A0A","#8A3A0A",0.44,0.5],["#074","Midnight Snack",1,"egg",0.19,0.142,0.205,0.01,"#C79BFF","crescent","#111111","#FFE14A",0.44,0.5],["#075","Odd Socks",1,"egg",0.163,0.2,0.19,0.005,"#FFF0C8","round","#2440FF","#FF5A1F",0,0],["#076","Two Scoops",1,"egg",0.172,0.172,0.193,0.005,"#FFB3E6","pebble","#5A2A10","#5A2A10",0.44,0.46],["#077","Split Decision",1,"egg",0.163,0.2,0.19,0.005,"#F0FF2E","round","#7A2BFF","#111111",0,0],["#078","Pebble Beach",1,"egg",0.19,0.142,0.205,0.01,"#BDB8AE","pebble","#2440FF","#2440FF",0.44,0.46],["#079","Starstruck",2,"egg",0.163,0.2,0.19,0.005,"#FFF0C8","star","#FFB800","#FFB800",0.42,0.42],["#080","Wish Upon",2,"egg",0.172,0.172,0.193,0.005,"#2440FF","star","#FFE14A","#FFE14A",0.42,0.42],["#081","Shooting Star",2,"egg",0.163,0.2,0.19,0.005,"#B57BFF","star","#F0FF2E","#FFFFFF",0.42,0.42],["#082","Gold Medal",2,"egg",0.172,0.172,0.193,0.005,"#FF4B4B","star","#FFD23A","#FFD23A",0.42,0.42],["#083","Smitten",2,"egg",0.163,0.2,0.19,0.005,"#FFF0C8","heart","#FF2E63","#FF2E63",0.4,0.4],["#084","Valentine Tram",2,"egg",0.172,0.172,0.193,0.005,"#FF8AD8","heart","#D0102E","#D0102E",0.4,0.4],["#085","Crush Soda",2,"egg",0.163,0.2,0.19,0.005,"#2BD9FF","heart","#FF2E63","#FF2E63",0.4,0.4],["#086","Puppy Love",2,"egg",0.19,0.142,0.205,0.01,"#FFF6EC","heart","#FF2E63","#B57BFF",0.4,0.4],["#087","Crown Jewel",2,"egg",0.163,0.2,0.19,0.005,"#F4F4F4","diamond","#6A2BFF","#14A0FF",0.38,0.48],["#088","Card Shark",2,"egg",0.172,0.172,0.193,0.005,"#FF4B4B","diamond","#111111","#111111",0.38,0.48],["#089","Harlequin",2,"egg",0.163,0.2,0.19,0.005,"#FFD23A","diamond","#FF2E5B","#2440FF",0.38,0.48],["#090","First Aid",2,"egg",0.172,0.172,0.193,0.005,"#F4F4F4","plus","#FF2E5B","#FF2E5B",0.4,0.4],["#091","Swiss Army",2,"squircle",0.155,0.172,0.185,0.005,"#FF4B4B","plus","#FFFFFF","#FFFFFF",0.4,0.4],["#092","Pharmacy Green",2,"squircle",0.155,0.172,0.185,0.005,"#3DFFC8","plus","#0E7A3A","#0E7A3A",0.4,0.4],["#093","Neon Sign",2,"egg",0.163,0.2,0.19,0.005,"#FF4FD8","round","#FF4FD8","#2BD9FF",0,0],["#094","Wireframe",2,"egg",0.172,0.172,0.193,0.005,"#2BD9FF","pebble","#2BD9FF","#2BD9FF",0.44,0.46],["#095","Dragonfruit",2,"almond",0.185,0.15,0.205,0.01,"#FF4FD8","slit","#F4F4F4","#F4F4F4",0.5,0.62],["#096","Eclipse",2,"egg",0.172,0.172,0.193,0.005,"#F4F4F4","crescent","#111111","#111111",0.44,0.5],["#097","Hypno Toad",2,"egg",0.163,0.2,0.19,0.005,"#A8FF3D","spiral","#5A0E5E","#5A0E5E",0.42,0.42],["#098","Lollipop",2,"egg",0.172,0.172,0.193,0.005,"#FFB3E6","spiral","#FF2E63","#2440FF",0.42,0.42],["#099","Opal",3,"egg",0.163,0.2,0.19,0.005,"#E6F6FF","round","#6A2BFF","#FF4FD8",0,0],["#100","Pearl Diver",3,"egg",0.172,0.172,0.193,0.005,"#F4F0FF","pebble","#10184A","#10184A",0.44,0.46],["#101","Champagne",3,"egg",0.163,0.2,0.19,0.005,"#FFE6A8","star","#7A2BFF","#7A2BFF",0.42,0.42],["#102","Disco Ball",3,"squircle",0.155,0.172,0.185,0.005,"#E8E8F0","diamond","#FF1F8F","#2BD9FF",0.38,0.48],["#103","Fairy Dust",3,"drop",0.165,0.195,0.19,0.01,"#FFB3E6","round","#6A2BFF","#2440FF",0,0],["#104","Firefly",3,"egg",0.163,0.2,0.19,0.005,"#C6FF5C","round","#111111","#111111",0,0],["#105","Northern Lights",3,"egg",0.163,0.2,0.19,0.005,"#5CFFB0","round","#10184A","#10184A",0,0],["#106","Tropical Sunset",3,"egg",0.19,0.142,0.205,0.01,"#FF9A3D","pebble","#2A0E3A","#2A0E3A",0.44,0.46],["#107","Laser Show",3,"egg",0.172,0.172,0.193,0.005,"#FF1F8F","ring","#14E6FF","#F0FF2E",0.44,0.48],["#108","Vortex",3,"egg",0.163,0.2,0.19,0.005,"#14E6FF","spiral","#111111","#111111",0.42,0.42],["#109","Ie Cobalt",3,"egg",0.172,0.172,0.193,0.005,"#FFF0C8","round","#1F4FBF","#1F4FBF",0.56,0.56],["#110","Ie Roșie",3,"egg",0.172,0.172,0.193,0.005,"#F4F4F4","round","#C8102E","#C8102E",0.56,0.56],["#111","Brushed Alu",4,"egg",0.163,0.2,0.19,0.005,"#D8DCE2","round","#111111","#2440FF",0,0],["#112","Rose Chrome",4,"egg",0.172,0.172,0.193,0.005,"#F2B8C0","pebble","#5A0E5E","#5A0E5E",0.44,0.46],["#113","Midas Touch",4,"egg",0.163,0.2,0.19,0.005,"#FFD23A","star","#3A1E00","#3A1E00",0.42,0.42],["#114","Prism Party",4,"egg",0.163,0.2,0.19,0.005,"#FF6B6B","round","#111111","#111111",0,0],["#115","Night Over Sibiu",4,"egg",0.172,0.172,0.193,0.005,"#FFF0C8","round","#0B1240","#0B1240",0.52,0.56],["#116","Deep Field",4,"egg",0.163,0.2,0.19,0.005,"#B8C8FF","round","#05081F","#2A0640",0.5,0.56],["#117","Altiță",4,"egg",0.163,0.2,0.19,0.005,"#FFF0C8","round","#C8102E","#C8102E",0.56,0.56],["#118","Genesis",5,"egg",0.163,0.2,0.19,0.005,"#FFF0C8","round","#0B1240","#2A0A00",0.5,0.56],["#119","Aurora Borealis",5,"egg",0.163,0.2,0.19,0.005,"#5CFFB0","round","#05081F","#05081F",0.5,0.55],["#120","Sânziana",5,"egg",0.172,0.172,0.193,0.005,"#FFE08A","round","#C8102E","#C8102E",0.56,0.56]];
+var COLS=[{k:"silver",name:"Silver",hex:"#CBCDCF",tint:"#ECEDEE",src:"/_blob/2ac905d7c6865a6c000003298af33a81",d:"The classic. Cool and bright, like a river stone in daylight."},{k:"graphite",name:"Graphite",hex:"#55575B",tint:"#E5E4E2",src:"/_blob/2ef4fa4e1da46bbf962f69e488152475",d:"Dark and quiet. The cream eyes look warmest against it."},{k:"midnight",name:"Midnight",hex:"#26324C",tint:"#E2E5EC",src:"/_blob/99e24b79d0e7fabd93c7e6fe6ef5ac8f",d:"A deep blue that reads almost black in the evening."},{k:"ember",name:"Ember",hex:"#D2622C",tint:"#F5E3D8",src:"/_blob/66e255c0c820a5edfc5edbf1ce7f951d",d:"Warm orange, the colour of a coal that's still glowing."},{k:"champagne",name:"Champagne",hex:"#D8C3A2",tint:"#F3ECE1",src:"/_blob/cb9adb001fa3326a4f6db37e77129f96",d:"Soft gold. At home on a wooden desk."}];
+var SPECS=[["display","round 2.8″, 480 × 480, under black glass"],["size","≈ 90 × 101 × 31.5 mm"],["body","aluminium 6061, bead-blasted and anodised"],["colours","Silver, Graphite, Midnight, Ember, Champagne"],["eyes","one of 120 designs, decided at birth"],["brain","ESP32-S3, Bluetooth LE and Wi-Fi"],["ai","your Claude, your ChatGPT, or offline"],["voice","hold the glass to talk; speaker in the side seam"],["camera","none"],["charging","in OU, its egg, through contacts in its foot"],["price","from €249 incl. VAT"],["status","pre-launch · not CE-certified yet"]];
+var WM_SUL="M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z M408.8 200V68H437.6V175.2H490V200Z";
+var WM_O="M120.02 134A70.18 70.18 0 1 1 260.38 134A70.18 70.18 0 1 1 120.02 134ZM157.34 120.78A14.04 23.86 0 1 0 179.94 125.01ZM200.46 125.01A14.04 23.86 0 1 0 223.06 120.78Z";
+var STILL=null;
+function fmtChip(h){h=h.toUpperCase();return h.match(/.{2}/g).join(":");}
+function today(){try{return new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}).replace("Sept","Sep");}catch(err){return "–";}}
+class Component extends DCLogic {
+  renderVals() {
+    var s = this.state || {}, self = this;
+    if (!STILL) STILL = D.map(function (d) { return eyes(d, 0, 0); });
+    var lx = s.lx || 0, ly = s.ly || 0, ci = s.col || 0, view = s.view || "front";
+    var chip = s.chip || "34:85:18:6A:C2:9F", d = rollChip(D, chip), ri = d[2];
+    var rf = s.rf === undefined ? ri : s.rf, col = COLS[ci], R = RAR[ri];
+    var setChip = function (hex, extra) { var c = fmtChip(hex), dd = rollChip(D, c), st = { chip: c, born: today(), rf: dd[2], chipBad: false, copied: false }; for (var k in (extra || {})) st[k] = extra[k]; self.setState(st); };
+    return {
+      wmSUL: WM_SUL, wmO: WM_O,
+      e: eyes(d, lx, ly), e0: STILL[D.indexOf(d)],
+      cur: { num: d[0], name: d[1], rar: R[0], c: R[2], glow: R[2] + "66", odds: "1 in " + Math.round(R[3] / R[1]) },
+      pet: petName(chip), chip: chip, bornOn: s.born || "–",
+      col: col,
+      cols: COLS.map(function (c, i) { return { name: c.name, hex: c.hex, pressed: String(i === ci), ring: i === ci ? "#16181D" : "transparent", pick: function () { self.setState({ col: i }); } }; }),
+      views: [["front", "front"], ["hand", "in the hand"], ["side", "side · 31.5 mm"]].map(function (v) { var on = v[0] === view; return { label: v[1], pressed: String(on), bg: on ? "#16181D" : "transparent", fg: on ? "#FAF8F3" : "#16181D", pick: function () { self.setState({ view: v[0] }); } }; }),
+      vFront: view === "front", vHand: view === "hand", vSide: view === "side",
+      birth: function () { var h = ""; for (var i = 0; i < 12; i++) h += "0123456789ABCDEF"[Math.floor(Math.random() * 16)]; setChip(h, { chipIn: "" }); },
+      copyLabel: s.copied ? "link copied" : "copy link",
+      copy: function () { try { navigator.clipboard.writeText("#born=" + (self.state && self.state.chip || chip).replace(/:/g, "")); } catch (err) {} self.setState({ copied: true }); },
+      sent: !!s.sent, notSent: !s.sent, langName: s.lang === "ro" ? "Română" : "English",
+      join: function (ev) { ev.preventDefault(); var f = ev.currentTarget || ev.target, l = f && f.elements && f.elements.lang ? f.elements.lang.value : "en"; self.setState({ sent: true, lang: l }); },
+      chipIn: s.chipIn || "", chipBad: !!s.chipBad,
+      onChip: function (ev) { self.setState({ chipIn: ev.target.value, chipBad: false }); },
+      lookup: function (ev) { ev.preventDefault(); var h = String((self.state && self.state.chipIn) || "").replace(/[^0-9a-fA-F]/g, ""); if (h.length !== 12) { self.setState({ chipBad: true }); return; } setChip(h); },
+      rar: RAR.map(function (r, i) { return { n: r[0], c: r[2], k: r[3], p: (r[1] * 100) + "%", x: Math.round(r[3] / r[1]), hl: i === ri ? "rgba(255,240,200,.07)" : "transparent" }; }),
+      filters: [[-1, "all 120"]].concat(RAR.map(function (r, i) { return [i, r[0]]; })).map(function (t) { var on = t[0] === rf; return { label: t[1], pressed: String(on), bg: on ? "#F6F3EC" : "transparent", fg: on ? "#16181D" : "#F6F3EC", pick: function () { self.setState({ rf: t[0] }); } }; }),
+      grid: D.map(function (x, i) { return { x: x, i: i }; }).filter(function (o) { return rf === -1 || o.x[2] === rf; }).map(function (o) { return { num: o.x[0], name: o.x[1], e: STILL[o.i], ring: o.x === d ? "#FFF0C8" : "#2A2C33" }; }),
+      specs: SPECS.map(function (r) { return { k: r[0], v: r[1] }; }),
+      onMove: function (ev) { var x = ev.clientX, y = ev.clientY; if (self._r) return; self._r = requestAnimationFrame(function () { self._r = 0; var w = window.innerWidth || 1440, h = window.innerHeight || 900, a = x / w * 2 - 1, b = y / h * 2 - 1, m = Math.sqrt(a * a + b * b); if (m > 1) { a /= m; b /= m; } self.setState({ lx: a, ly: b }); }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

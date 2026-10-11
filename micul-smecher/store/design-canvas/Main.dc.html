@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SOUL · Home desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&amp;family=Martian+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#FAF8F3;color:#16181D;font-family:"Bricolage Grotesque",ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#16181D}a:hover{color:#A8461A}
+h1,h2,h3,h4,p,ul,ol,dl,dd,figure{margin:0}
+ul,ol{padding:0;list-style:none}
+.mono{font-family:"Martian Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.eb{display:inline-flex;align-items:center;gap:10px;font:500 11.5px/1.3 "Martian Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
+.h2{font-size:clamp(40px,6.2vw,88px);font-weight:720;letter-spacing:-.05em;line-height:.9;text-wrap:balance}
+.lead{font-size:clamp(17px,1.4vw,20px);line-height:1.45;max-width:46ch;text-wrap:pretty}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:54px;padding:0 26px;border-radius:999px;font:600 16px/1 "Bricolage Grotesque",system-ui,sans-serif;text-decoration:none;border:0;cursor:pointer;white-space:nowrap}
+.blink{transform-box:fill-box;transform-origin:center;animation:blink 5.4s infinite}
+.blink2{transform-box:fill-box;transform-origin:center;animation:blink 7.1s 1.3s infinite}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}95.5%{transform:scaleY(.08)}}
+@keyframes marq{to{transform:translateX(-50%)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.4%)}}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(255,90,31,0)}}
+.marq{animation:marq 38s linear infinite}
+.float{animation:float 6s ease-in-out infinite}
+.pulse{animation:pulse 2s ease-in-out infinite}
+details>summary{cursor:pointer;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details[open] .plus{transform:rotate(45deg)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #2440FF;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.blink,.blink2,.marq,.float,.pulse{animation:none}}
+@media (max-width:1080px){.navlinks{display:none!important}}
+</style>
+</helmet>
+<div onMouseMove="{{onMove}}" style="background: #FAF8F3; color: #16181D; overflow-x: clip">
+
+<!-- section: announcement-bar -->
+<div role="note" class="mono" style="background: #16181D; color: #FAF8F3; font-size: 11.5px; line-height: 1.35; letter-spacing: .04em; text-align: center; padding: 10px 16px">Pre-launch · <b style="font-weight: 500; color: #FFF0C8">not CE-certified yet</b> · waitlist only, nothing is charged. <a href="#faq" style="color: #FAF8F3; text-underline-offset: 3px">Why?</a></div>
+
+<!-- section: header -->
+<header style="position: sticky; top: 0; z-index: 50; background: rgba(250,248,243,.86); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(22,24,29,.10)">
+<div style="max-width: 1240px; margin: 0 auto; padding: 0 clamp(16px,4vw,48px); height: 64px; display: flex; align-items: center; gap: 16px">
+<a href="#top" aria-label="SOUL, back to top" style="display: inline-flex; padding: 8px 0"><svg viewBox="2.96 61.82 489.04 144.35" style="height: 22px; width: auto; display: block" aria-hidden="true"><path d="{{wmSUL}}" fill="#16181D"></path><path d="{{wmO}}" fill="#16181D"></path></svg></a>
+<nav class="navlinks" aria-label="Sections" style="display: flex; gap: 22px; margin-left: auto; font-size: 15px">
+<a href="#object" style="text-decoration: none; color: #5F636C">the object</a>
+<a href="#colours" style="text-decoration: none; color: #5F636C">colours</a>
+<a href="#born" style="text-decoration: none; color: #5F636C">born</a>
+<a href="#ai" style="text-decoration: none; color: #5F636C">your ai</a>
+<a href="#os" style="text-decoration: none; color: #5F636C">SoulOS</a>
+<a href="#privacy" style="text-decoration: none; color: #5F636C">privacy</a>
+<a href="#faq" style="text-decoration: none; color: #5F636C">faq</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 8px; margin-left: 24px">
+<div role="group" aria-label="Language" class="mono" style="display: inline-flex; border: 1px solid rgba(22,24,29,.26); border-radius: 999px; padding: 2px">
+<button type="button" aria-pressed="true" style="border: 0; border-radius: 999px; background: #16181D; color: #FAF8F3; font: 500 11px/1 'Martian Mono',monospace; padding: 10px 11px; cursor: pointer">EN</button>
+<button type="button" aria-pressed="false" lang="ro" style="border: 0; border-radius: 999px; background: transparent; color: #5F636C; font: 500 11px/1 'Martian Mono',monospace; padding: 10px 11px; cursor: pointer">RO</button>
+</div>
+<a class="btn" href="#reserve" style="min-height: 42px; padding: 0 18px; font-size: 15px; background: #16181D; color: #FAF8F3">waitlist</a>
+</div>
+</div>
+</header>
+
+<main>
+<!-- section: hero -->
+<section id="top" aria-labelledby="hero-title" style="position: relative; padding: clamp(96px,11vw,150px) clamp(16px,4vw,48px) 56px">
+<div style="max-width: 1180px; margin: 0 auto; position: relative">
+<svg viewBox="2.96 61.82 489.04 144.35" role="img" aria-label="SOUL" style="display: block; width: 100%; height: auto; overflow: visible"><path d="{{wmSUL}}" fill="#16181D"></path></svg>
+<div class="float" style="position: absolute; left: 38.29%; top: 50%; width: 45%; transform: translate(-50%,-48%); z-index: 2">
+<div style="position: relative; filter: drop-shadow(0 40px 50px rgba(22,24,29,.28)) drop-shadow(0 8px 14px rgba(22,24,29,.14))">
+<img src="/_blob/c517eb04b5c9d9989a2f5f6dd2b844cb" alt="Concept render of SOUL in silver aluminium, seen from the front: a soft pebble whose face is one round black glass, with two live eyes looking at you." style="display: block; width: 100%; height: auto">
+<div style="position: absolute; left: 15.65%; top: 16.94%; width: 68.7%; height: 59.85%">
+<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%; overflow: visible"><g class="blink"><path d="{{hero.lw}}" fill="{{hero.white}}"></path><path d="{{hero.lp}}" fill="{{hero.L}}"></path></g><g class="blink"><path d="{{hero.rw}}" fill="{{hero.white}}"></path><path d="{{hero.rp}}" fill="{{hero.R}}"></path></g></svg>
+</div>
+</div>
+</div>
+<p class="mono" style="position: absolute; right: 0; bottom: -64px; display: inline-flex; align-items: center; gap: 10px; font-size: 11.5px; letter-spacing: .06em; color: #5F636C"><span class="pulse" style="width: 8px; height: 8px; border-radius: 50%; background: #FF5A1F; box-shadow: 0 0 0 4px rgba(255,90,31,.25)"></span>psst. move your cursor.</p>
+</div>
+<div style="max-width: 1180px; margin: clamp(150px,13vw,190px) auto 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px,100%), 1fr)); gap: 24px 56px; align-items: end">
+<h1 id="hero-title" style="font-size: clamp(38px,4.6vw,68px); font-weight: 740; letter-spacing: -.045em; line-height: .92">your ai has a brain.<br><span style="color: #5F636C">give it a soul.</span></h1>
+<div style="display: flex; flex-direction: column; gap: 18px; align-items: flex-start">
+<p class="lead" style="color: #5F636C">A palm-sized aluminium stone with two living eyes. It blinks, it follows you, it dozes off when you leave. And it talks with the AI you already have.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center">
+<a class="btn" href="#reserve" style="background: #16181D; color: #FAF8F3">join the waitlist <span aria-hidden="true">→</span></a>
+<span class="mono" style="display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px; color: #5F636C">from <b style="font: 700 24px/1 'Bricolage Grotesque',sans-serif; letter-spacing: -.03em; color: #16181D">€249</b></span>
+</div>
+</div>
+</div>
+</section>
+
+<!-- section: marquee -->
+<div aria-label="Short facts" style="border-top: 1px solid rgba(22,24,29,.12); border-bottom: 1px solid rgba(22,24,29,.12); overflow: hidden">
+<div class="marq" style="display: flex; width: max-content">
+<sc-for list="{{marqTwice}}" as="m" hint-placeholder-count="14">
+<span class="mono" style="display: inline-flex; align-items: center; gap: 22px; padding: 17px 22px 17px 0; font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap">{{m}}<span style="width: 6px; height: 6px; border-radius: 50%; background: {{accent}}"></span></span>
+</sc-for>
+</div>
+</div>
+
+<!-- section: alive -->
+<section style="padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto">
+<div style="display: flex; flex-direction: column; gap: 18px; max-width: 920px">
+<p class="eb" style="color: #5F636C">alive, offline</p>
+<h2 class="h2">it looks <span style="display: inline-block; width: .86em; height: .86em; vertical-align: -.06em; border-radius: 50%; background: #000; box-shadow: 0 0 0 .04em #CBCDCF; overflow: hidden"><svg viewBox="0 0 100 100" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink2"><path d="{{inl.lw}}" fill="{{inl.white}}"></path><path d="{{inl.lp}}" fill="{{inl.L}}"></path></g><g class="blink2"><path d="{{inl.rw}}" fill="{{inl.white}}"></path><path d="{{inl.rp}}" fill="{{inl.R}}"></path></g></svg></span> back.</h2>
+<p class="lead" style="color: #5F636C">No app to open, no account, no internet needed. Everything you see on the glass runs on the stone itself, and keeps running if the Wi-Fi never comes back.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px,100%), 1fr)); gap: 24px; margin-top: 72px">
+<article style="display: flex; flex-direction: column; gap: 10px; padding: 28px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(22,24,29,.05), 0 24px 60px -28px rgba(22,24,29,.35)">
+<div style="position: relative; width: min(58%,200px); margin: 4px auto 12px"><img src="/_blob/2ef4fa4e1da46bbf962f69e488152475" alt="" style="display: block; width: 100%; height: auto"><div style="position: absolute; left: 23.06%; top: 17.33%; width: 63.9%; height: 58.85%; transform: rotate(-2.7deg)"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{still.lw}}" fill="{{still.white}}"></path><path d="{{still.lp}}" fill="{{still.L}}"></path></g><g class="blink"><path d="{{still.rw}}" fill="{{still.white}}"></path><path d="{{still.rp}}" fill="{{still.R}}"></path></g></svg></div></div>
+<h3 style="font-size: 28px; font-weight: 700; letter-spacing: -.035em; line-height: .95">it blinks.</h3>
+<p style="color: #5F636C; font-size: 17px; line-height: 1.5">At random, never on a timer. Sometimes twice, when it's curious.</p>
+</article>
+<article style="display: flex; flex-direction: column; gap: 10px; padding: 28px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(22,24,29,.05), 0 24px 60px -28px rgba(22,24,29,.35)">
+<div style="position: relative; width: min(58%,200px); margin: 4px auto 12px"><img src="/_blob/2ac905d7c6865a6c000003298af33a81" alt="" style="display: block; width: 100%; height: auto"><div style="position: absolute; left: 23.06%; top: 17.33%; width: 63.9%; height: 58.85%; transform: rotate(-2.7deg)"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink2"><path d="{{hero.lw}}" fill="{{hero.white}}"></path><path d="{{hero.lp}}" fill="{{hero.L}}"></path></g><g class="blink2"><path d="{{hero.rw}}" fill="{{hero.white}}"></path><path d="{{hero.rp}}" fill="{{hero.R}}"></path></g></svg></div></div>
+<h3 style="font-size: 28px; font-weight: 700; letter-spacing: -.035em; line-height: .95">it follows you.</h3>
+<p style="color: #5F636C; font-size: 17px; line-height: 1.5">Your cursor, here. Your finger, on the desk. It always knows where you went.</p>
+</article>
+<article style="display: flex; flex-direction: column; gap: 10px; padding: 28px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(22,24,29,.05), 0 24px 60px -28px rgba(22,24,29,.35)">
+<div style="position: relative; width: min(58%,200px); margin: 4px auto 12px"><img src="/_blob/66e255c0c820a5edfc5edbf1ce7f951d" alt="" style="display: block; width: 100%; height: auto"><div style="position: absolute; left: 23.06%; top: 17.33%; width: 63.9%; height: 58.85%; transform: rotate(-2.7deg)"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><path d="{{happy.lw}}" fill="{{happy.white}}"></path><path d="{{happy.rw}}" fill="{{happy.white}}"></path></svg></div></div>
+<h3 style="font-size: 28px; font-weight: 700; letter-spacing: -.035em; line-height: .95">it has moods.</h3>
+<p style="color: #5F636C; font-size: 17px; line-height: 1.5">Happy, sleepy, suspicious, <i>șmecher</i>. Tap it and see what you get.</p>
+</article>
+</div>
+</div>
+</section>
+
+<!-- section: the-object -->
+<section id="object" style="background: #F1EDE4; padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px,100%), 1fr)); gap: clamp(32px,6vw,96px); align-items: center">
+<figure style="position: relative; border-radius: 32px; overflow: hidden; background: #EEE7DE; max-width: 520px; width: 100%; justify-self: center">
+<span class="mono" style="position: absolute; left: 16px; top: 16px; z-index: 3; padding: 8px 12px; border-radius: 999px; background: rgba(250,248,243,.86); font-size: 11px; letter-spacing: .05em">concept render</span>
+<img src="/_blob/478d8cd96bc64c370610ccfb2ff3e215" alt="Concept render of SOUL from the side: a thin aluminium pebble, 31.5 mm deep, its black glass face tilted slightly up, a speaker slot in the side seam." style="display: block; width: 100%; height: auto">
+<svg viewBox="0 0 900 1160" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%"><path d="M760 140 V1050 M745 140 H775 M745 1050 H775" stroke="#16181D" stroke-width="1.6" fill="none"></path><text x="782" y="600" fill="#16181D" style="font: 500 22px 'Martian Mono',monospace">101 mm</text><path d="M270 1105 H630 M270 1092 V1118 M630 1092 V1118" stroke="#16181D" stroke-width="1.6" fill="none"></path><text x="390" y="1080" fill="#16181D" style="font: 500 22px 'Martian Mono',monospace">31.5 mm</text></svg>
+</figure>
+<div style="display: flex; flex-direction: column; gap: 20px">
+<p class="eb" style="color: #5F636C">the object · MĂRGĂRITAR</p>
+<h2 class="h2">a stone you<br>want to hold.</h2>
+<p class="lead" style="color: #5F636C">Its shape is called MĂRGĂRITAR: a pebble with soft shoulders at the crown, cut from aluminium and finished like a river stone. One round black glass on the front. No logo, no buttons, no holes.</p>
+<dl style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; margin-top: 12px; border-top: 1px solid rgba(22,24,29,.12)">
+<div style="padding: 16px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><dt class="eb" style="color: #5F636C; font-size: 11px">size M</dt><dd style="font-size: 23px; font-weight: 620; letter-spacing: -.02em; margin-top: 4px">90 × 101 × 31.5 mm</dd></div>
+<div style="padding: 16px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><dt class="eb" style="color: #5F636C; font-size: 11px">glass</dt><dd style="font-size: 23px; font-weight: 620; letter-spacing: -.02em; margin-top: 4px">2.8″ round, black</dd></div>
+<div style="padding: 16px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><dt class="eb" style="color: #5F636C; font-size: 11px">body</dt><dd style="font-size: 23px; font-weight: 620; letter-spacing: -.02em; margin-top: 4px">aluminium 6061</dd></div>
+<div style="padding: 16px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><dt class="eb" style="color: #5F636C; font-size: 11px">finish</dt><dd style="font-size: 23px; font-weight: 620; letter-spacing: -.02em; margin-top: 4px">bead-blasted, anodised</dd></div>
+</dl>
+</div>
+</div>
+</section>
+
+<!-- section: product-configurator -->
+<section id="colours" style="background: {{col.tint}}; padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px); transition: background .5s">
+<div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px,100%), 1fr)); gap: clamp(28px,5vw,80px); align-items: center">
+<div style="position: relative; border-radius: 32px; background: rgba(255,255,255,.55); padding: 40px; display: flex; justify-content: center">
+<span class="mono" style="position: absolute; left: 16px; top: 16px; padding: 8px 12px; border-radius: 999px; background: rgba(250,248,243,.86); font-size: 11px; letter-spacing: .05em">concept render</span>
+<div style="position: relative; width: min(100%,420px)"><img src="{{col.src}}" alt="Concept render of SOUL in {{col.name}} aluminium, front view, with live eyes." style="display: block; width: 100%; height: auto"><div style="position: absolute; left: 23.06%; top: 17.33%; width: 63.9%; height: 58.85%; transform: rotate(-2.7deg)"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{hero.lw}}" fill="{{hero.white}}"></path><path d="{{hero.lp}}" fill="{{hero.L}}"></path></g><g class="blink"><path d="{{hero.rw}}" fill="{{hero.white}}"></path><path d="{{hero.rp}}" fill="{{hero.R}}"></path></g></svg></div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 22px">
+<p class="eb" style="color: #5F636C">five aluminiums</p>
+<h2 class="h2" style="font-size: clamp(38px,5vw,72px)">you pick the body.<br>the eyes pick themselves.</h2>
+<fieldset style="border: 0; padding: 0; margin: 8px 0 0">
+<legend class="eb" style="color: #5F636C; margin-bottom: 14px">Colour</legend>
+<div style="display: flex; flex-wrap: wrap; gap: 14px">
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
+<button type="button" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" aria-label="{{c.name}}" style="width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer; background: {{c.hex}}; box-shadow: inset 0 -6px 12px rgba(0,0,0,.18), 0 0 0 3px {{c.gap}}, 0 0 0 5px {{c.ring}}"></button>
+</sc-for>
+</div>
+</fieldset>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; border-top: 1px solid rgba(22,24,29,.14); padding-top: 18px"><b style="font-size: 30px; letter-spacing: -.03em">{{col.name}}</b><span class="mono" style="font-size: 13px; color: #5F636C">from <b style="font: 700 22px 'Bricolage Grotesque',sans-serif; color: #16181D">€249</b></span></div>
+<p style="font-size: 18px; color: #5F636C">{{col.d}}</p>
+<div><a class="btn" href="#reserve" style="background: #16181D; color: #FAF8F3">waitlist in {{col.name}} <span aria-hidden="true">→</span></a></div>
+<p style="font-size: 14px; color: #5F636C">Every colour costs the same. Bead-blasted, anodised aluminium 6061 with a black glass face.</p>
+</div>
+</div>
+<figure style="max-width: 1240px; margin: clamp(56px,7vw,96px) auto 0">
+<div style="position: relative; border-radius: 32px; overflow: hidden"><img src="/_blob/0a39688a777d3bd435bf1ecc89c1a98e" alt="Concept render of five SOULs in a row, in Graphite, Ember, Silver, Midnight and Champagne aluminium, each with its own pair of live eyes." style="display: block; width: 100%; height: auto">
+<sc-for list="{{family}}" as="g" hint-placeholder-count="5">
+<div style="position: absolute; left: {{g.l}}%; top: {{g.t}}%; width: {{g.w}}%; height: {{g.h}}%"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{g.e.lw}}" fill="{{g.e.white}}"></path><path d="{{g.e.lp}}" fill="{{g.e.L}}"></path></g><g class="blink"><path d="{{g.e.rw}}" fill="{{g.e.white}}"></path><path d="{{g.e.rp}}" fill="{{g.e.R}}"></path></g></svg></div>
+</sc-for>
+</div>
+<figcaption style="margin-top: 16px; font-size: 16px; color: #5F636C">Graphite, Ember, Silver, Midnight, Champagne. Five bodies, five different pairs of eyes. Tap any glass.</figcaption>
+</figure>
+</section>
+
+<!-- section: born-ritual -->
+<section id="born" style="background: #060607; color: #F6F3EC; padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto">
+<div style="display: flex; flex-direction: column; gap: 18px; max-width: 920px">
+<p class="eb" style="color: #9EA1A8">born, not made</p>
+<h2 class="h2">born with one of <span style="color: #FFF0C8">120</span> eyes.</h2>
+<p class="lead" style="color: #A4A7AE">At first power-on, each SOUL is born from its chip's unique ID. The eyes it gets are the eyes it keeps. Nobody picks them. Not even us.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px,100%), 1fr)); gap: 48px 72px; align-items: center; margin-top: 64px">
+<div style="justify-self: center; width: min(100%,400px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #16171a, #000 62%); box-shadow: 0 0 0 12px #CBCDCF, 0 0 0 13px rgba(255,255,255,.25), 0 50px 120px -30px rgba(255,79,154,.35)">
+<svg viewBox="0 0 100 100" role="img" aria-label="Fairy Dust eyes, design 103 of 120" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{born.lw}}" fill="{{born.white}}"></path><path d="{{born.lp}}" fill="{{born.L}}"></path></g><g class="blink"><path d="{{born.rw}}" fill="{{born.white}}"></path><path d="{{born.rp}}" fill="{{born.R}}"></path></g></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 18px">
+<p class="mono" style="font-size: 13px; color: #9EA1A8">#103 / 120</p>
+<p style="font-size: clamp(44px,5vw,68px); font-weight: 720; letter-spacing: -.045em; line-height: .92">Fairy Dust</p>
+<div class="mono" style="display: inline-flex; align-self: flex-start; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 999px; border: 1px solid #B57BFF; font-size: 12px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #B57BFF"></span><span>Epic</span><span style="color: #9EA1A8">1 in 171</span></div>
+<dl class="mono" style="display: grid; grid-template-columns: 110px 1fr; gap: 10px 16px; font-size: 13px; border-top: 1px solid rgba(255,255,255,.14); padding-top: 18px">
+<dt style="color: #9EA1A8">name</dt><dd>Luma</dd>
+<dt style="color: #9EA1A8">chip id</dt><dd>34:85:18:6A:C2:9F</dd>
+<dt style="color: #9EA1A8">born</dt><dd>–</dd>
+</dl>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<a class="btn" href="Product.dc.html" style="background: #FFF0C8; color: #16181D">birth yours <span aria-hidden="true">↻</span></a>
+<a class="btn" href="Product.dc.html" style="background: transparent; color: #F6F3EC; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3)">look up a chip</a>
+</div>
+<p style="font-size: 14px; color: #A4A7AE; max-width: 52ch">A sample birth. Type any chip ID to see exactly what that chip would be born as: the same math runs on the real SOUL.</p>
+</div>
+</div>
+<div role="table" aria-label="Odds of each rarity at birth" style="margin-top: 72px; font-size: 15px">
+<p class="eb" style="color: #9EA1A8; padding-bottom: 14px">Odds of each rarity at birth</p>
+<div role="row" class="mono" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 12px 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #9EA1A8"><span role="columnheader">rarity</span><span role="columnheader">chance</span><span role="columnheader">designs</span><span role="columnheader">one exact pair</span></div>
+<sc-for list="{{rar}}" as="r" hint-placeholder-count="6">
+<div role="row" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,.12); align-items: center"><span role="cell" style="display: inline-flex; align-items: center; gap: 10px; font-weight: 620"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{r.c}}; flex: none"></span>{{r.n}}</span><span role="cell" class="mono">{{r.p}}</span><span role="cell" class="mono">{{r.k}}</span><span role="cell" class="mono" style="color: #A4A7AE">1 in {{r.x}}</span></div>
+</sc-for>
+</div>
+<p style="margin-top: 18px; font-size: 14px; color: #A4A7AE; max-width: 70ch">These are the real odds from the birth code. Inside a rarity, every design is equally likely. Rarity changes only the eyes: every SOUL does exactly the same things.</p>
+</div>
+</section>
+
+<!-- section: your-ai -->
+<section id="ai" style="padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto">
+<div style="display: flex; flex-direction: column; gap: 18px; max-width: 920px">
+<p class="eb" style="color: #5F636C">your ai, embodied</p>
+<h2 class="h2">bring your own ai.<br>it gets a body.</h2>
+<p class="lead" style="color: #5F636C">SOUL connects to the AI you already use, on your own account. We never sell AI and never include it. Or keep it offline: it's still alive.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px,100%), 1fr)); gap: 24px; margin-top: 64px">
+<article style="display: flex; flex-direction: column; gap: 14px; padding: 30px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(22,24,29,.05), 0 24px 60px -28px rgba(22,24,29,.35)">
+<span class="mono" style="align-self: flex-start; padding: 8px 13px; border-radius: 999px; border: 1px solid rgba(22,24,29,.26); font-size: 11.5px">your account</span>
+<h3 style="font-size: 34px; font-weight: 720; letter-spacing: -.04em; line-height: 1">Your Claude.</h3>
+<p style="color: #5F636C; font-size: 17px; line-height: 1.5">Connect your own Anthropic account or API key and talk to it by holding the glass.</p>
+<ul style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(22,24,29,.12); padding-top: 14px; font-size: 15.5px"><li>own account or API key</li><li>add SOUL as a connector in the Claude app: ask Claude to put a plan, a reminder or a note on it</li></ul>
+</article>
+<article style="display: flex; flex-direction: column; gap: 14px; padding: 30px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(22,24,29,.05), 0 24px 60px -28px rgba(22,24,29,.35)">
+<span class="mono" style="align-self: flex-start; padding: 8px 13px; border-radius: 999px; border: 1px solid rgba(22,24,29,.26); font-size: 11.5px">your key, now</span>
+<h3 style="font-size: 34px; font-weight: 720; letter-spacing: -.04em; line-height: 1">Your ChatGPT.</h3>
+<p style="color: #5F636C; font-size: 17px; line-height: 1.5">Paste your own OpenAI API key and it works. You pay OpenAI directly, not us.</p>
+<ul style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(22,24,29,.12); padding-top: 14px; font-size: 15.5px"><li>own API key: works now</li><li>“Sign in with ChatGPT”: pending OpenAI approval</li></ul>
+</article>
+<article style="display: flex; flex-direction: column; gap: 14px; padding: 30px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(22,24,29,.05), 0 24px 60px -28px rgba(22,24,29,.35)">
+<span class="mono" style="align-self: flex-start; padding: 8px 13px; border-radius: 999px; border: 1px solid rgba(22,24,29,.26); font-size: 11.5px">no account</span>
+<h3 style="font-size: 34px; font-weight: 720; letter-spacing: -.04em; line-height: 1">Offline.</h3>
+<p style="color: #5F636C; font-size: 17px; line-height: 1.5">No AI, no sign-up, ever. The eyes, the moods, notes, reminders, alarms and focus all live on the stone.</p>
+<ul style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(22,24,29,.12); padding-top: 14px; font-size: 15.5px"><li>nothing leaves the device</li><li>type on its round keyboard</li></ul>
+</article>
+</div>
+<div style="margin-top: 24px; padding: clamp(28px,4vw,48px); border-radius: 28px; background: #16181D; color: #F6F3EC; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px,100%), 1fr)); gap: 24px 48px; align-items: center">
+<div style="display: flex; gap: 20px; align-items: flex-start">
+<svg viewBox="0 0 48 48" aria-hidden="true" style="width: 48px; height: 48px; flex: none"><circle cx="24" cy="24" r="22" fill="#0B0B0C" stroke="#CBCDCF" stroke-width="2"></circle><ellipse cx="17" cy="24" rx="4.5" ry="6.5" fill="#FFF0C8"></ellipse><ellipse cx="31" cy="24" rx="4.5" ry="6.5" fill="#FFF0C8"></ellipse></svg>
+<h3 style="font-size: clamp(26px,2.6vw,36px); font-weight: 700; letter-spacing: -.035em; line-height: 1">SOUL Memory lives on the device.</h3>
+</div>
+<div style="display: flex; flex-direction: column; gap: 16px; align-items: flex-start">
+<p style="color: #C9CBD0; font-size: 17px; line-height: 1.5">What it remembers about you stays in the stone, in plain words you can read and delete. When you talk, it goes along to whichever AI you connected, so you can switch AIs without starting over.</p>
+<span class="mono" style="padding: 8px 13px; border-radius: 999px; border: 1px solid rgba(255,240,200,.5); color: #FFF0C8; font-size: 11.5px">switch AIs, keep the soul</span>
+</div>
+</div>
+<p style="margin-top: 18px; font-size: 13px; color: #5F636C; max-width: 90ch">SOUL is in development and these connections are being built. Claude is a trademark of Anthropic; ChatGPT is a trademark of OpenAI. SOUL is independent and not affiliated with or endorsed by either.</p>
+</div>
+</section>
+
+<!-- section: hold-demo -->
+<section style="background: #F1EDE4; padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px,100%), 1fr)); gap: clamp(32px,5vw,80px); align-items: center">
+<figure style="position: relative; border-radius: 32px; overflow: hidden">
+<span class="mono" style="position: absolute; left: 16px; top: 16px; z-index: 3; padding: 8px 12px; border-radius: 999px; background: rgba(250,248,243,.86); font-size: 11px; letter-spacing: .05em">concept render</span>
+<img src="/_blob/2e3457e6ce100cf724cbaf06d2222a93" alt="Concept render of SOUL in silver resting on an open hand. It covers the palm like a big smooth stone, and its eyes look up at you." style="display: block; width: 100%; height: auto">
+<div style="position: absolute; left: 34.93%; top: 34.76%; width: 30.98%; height: 27.04%; border-radius: 50%; box-shadow: {{glow}}; transition: box-shadow .35s"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{hand.lw}}" fill="{{hand.white}}"></path><path d="{{hand.lp}}" fill="{{hand.L}}"></path></g><g class="blink"><path d="{{hand.rw}}" fill="{{hand.white}}"></path><path d="{{hand.rp}}" fill="{{hand.R}}"></path></g></svg></div>
+<span class="mono" style="position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 8px 12px; border-radius: 999px; background: rgba(250,248,243,.86); font-size: 11px; letter-spacing: .05em; white-space: nowrap">press and hold the glass</span>
+</figure>
+<div style="display: flex; flex-direction: column; gap: 20px">
+<p class="eb" style="color: #5F636C">hold the glass · scripted demo</p>
+<h2 class="h2" style="font-size: clamp(38px,5vw,72px)">hold the glass.<br>it listens.</h2>
+<div role="group" aria-label="Which AI" style="display: inline-flex; align-self: flex-start; padding: 4px; border-radius: 999px; background: #FFFFFF; box-shadow: inset 0 0 0 1px rgba(22,24,29,.12); gap: 2px">
+<sc-for list="{{provs}}" as="p" hint-placeholder-count="3">
+<button type="button" onClick="{{p.pick}}" aria-pressed="{{p.pressed}}" style="min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer; font: 600 15px/1 'Bricolage Grotesque',sans-serif; background: {{p.bg}}; color: {{p.fg}}">{{p.label}}</button>
+</sc-for>
+</div>
+<div aria-live="polite" style="min-height: 168px; padding: 22px; border-radius: 24px; background: #0B0B0C; color: #F6F3EC; display: flex; flex-direction: column; gap: 12px; justify-content: flex-end">
+<sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><p style="color: #A4A7AE; font-size: 16px">Hold the glass (or the button) and SOUL listens. Let go and it answers.</p></sc-if>
+<sc-if value="{{showYou}}" hint-placeholder-val="{{ false }}"><p style="align-self: flex-end; max-width: 85%; padding: 12px 16px; border-radius: 18px 18px 4px 18px; background: #2A2C33; font-size: 16px">{{youText}}</p></sc-if>
+<sc-if value="{{showAi}}" hint-placeholder-val="{{ false }}"><p style="align-self: flex-start; max-width: 85%; padding: 12px 16px; border-radius: 18px 18px 18px 4px; background: #FFF0C8; color: #16181D; font-size: 16px; display: flex; flex-direction: column; gap: 6px">{{aiText}}<small class="mono" style="font-size: 10.5px; color: #5F636C">{{via}}</small></p></sc-if>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center">
+<button type="button" onMouseDown="{{down}}" onMouseUp="{{up}}" onMouseLeave="{{up}}" onTouchStart="{{down}}" onTouchEnd="{{up}}" onKeyDown="{{keyDown}}" onKeyUp="{{keyUp}}" class="btn" style="background: {{holdBg}}; color: {{holdFg}}; min-height: 58px; padding: 0 30px; user-select: none">{{holdLabel}}</button>
+<span class="mono" style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #5F636C"><span style="width: 9px; height: 9px; border-radius: 50%; background: {{micDot}}"></span>{{micText}}</span>
+</div>
+<p style="font-size: 14px; color: #5F636C; max-width: 54ch">A scripted demo, not a live AI. On the real SOUL the microphone is on only while your finger is on the glass. Space or Enter also works.</p>
+</div>
+</div>
+</section>
+
+<!-- section: soulos -->
+<section id="os" style="padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px,100%), 1fr)); gap: 40px 72px; align-items: end">
+<div style="display: flex; flex-direction: column; gap: 18px">
+<p class="eb" style="color: #5F636C">SoulOS</p>
+<h2 class="h2">a whole little os.<br>on a circle.</h2>
+<p class="lead" style="color: #5F636C">Glass panels that float over its face, a round keyboard, notes, reminders, alarms, maps and little apps. It roams with your phone's hotspot. And when it rests, it's just eyes on pure black.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px,100%), 1fr)); gap: 16px">
+<figure style="position: relative; border-radius: 28px; overflow: hidden"><span class="mono" style="position: absolute; left: 12px; top: 12px; padding: 7px 11px; border-radius: 999px; background: rgba(250,248,243,.86); font-size: 10.5px">concept render</span><img src="/_blob/627c8202d101e81d39e8f2db7d0271e3" alt="Concept render of SOUL on a wooden desk with the SoulOS keyboard on its round screen: the word Hello typed above a round QWERTY keyboard." style="display: block; width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 5"></figure>
+<div style="border-radius: 28px; background: #000; color: #F6F3EC; padding: 22px; display: flex; flex-direction: column; gap: 14px; justify-content: space-between">
+<p class="eb" style="color: #9EA1A8">standby</p>
+<div style="width: 70%; aspect-ratio: 1; align-self: center"><svg viewBox="0 0 100 100" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink2"><path d="{{stand.lw}}" fill="{{stand.white}}"></path><path d="{{stand.lp}}" fill="{{stand.L}}"></path></g><g class="blink2"><path d="{{stand.rw}}" fill="{{stand.white}}"></path><path d="{{stand.rp}}" fill="{{stand.R}}"></path></g></svg></div>
+<p style="font-size: 14px; color: #A4A7AE">No clock, no glow, no notifications staring at you. In standby, SOUL shows only its eyes on pure black.</p>
+</div>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px,100%), 1fr)); gap: 16px; margin-top: 56px">
+<sc-for list="{{os}}" as="o" hint-placeholder-count="6">
+<figure style="display: flex; flex-direction: column; gap: 12px"><img src="{{o.src}}" alt="{{o.alt}}" style="display: block; width: 100%; height: auto; border-radius: 22px"><figcaption style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 17px; letter-spacing: -.02em">{{o.t}}</b><span style="font-size: 14px; color: #5F636C; line-height: 1.4">{{o.d}}</span></figcaption></figure>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; margin-top: 40px">
+<a class="btn" href="https://claude.ai/artifact/WZtQ7JpCjpj6M3sfgJugHC" style="background: transparent; color: #16181D; box-shadow: inset 0 0 0 1.5px rgba(22,24,29,.26)">try SoulOS <span aria-hidden="true">→</span></a>
+<p style="font-size: 14px; color: #5F636C">It runs right here in your browser: the same interface as on the stone.</p>
+</div>
+</div>
+</section>
+
+<!-- section: ou-egg -->
+<section style="background: #060607; color: #F6F3EC; padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px,100%), 1fr)); gap: clamp(32px,6vw,96px); align-items: center">
+<figure style="position: relative; border-radius: 32px; overflow: hidden; max-width: 480px; width: 100%; justify-self: center; box-shadow: 0 60px 140px -40px rgba(255,170,90,.35)">
+<span class="mono" style="position: absolute; left: 16px; top: 16px; z-index: 3; padding: 8px 12px; border-radius: 999px; background: rgba(20,20,22,.7); color: #F6F3EC; font-size: 11px">concept render</span>
+<img src="/_blob/c09f72633f037f488e27d789a8249c66" alt="Concept render at night: SOUL resting in its open OU egg in the dark, sleepy eyes, lit only by the warm glow of the egg." style="display: block; width: 100%; height: auto">
+<div style="position: absolute; left: 35.27%; top: 36.4%; width: 29.19%; height: 25.34%"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><path d="M20 52 Q31 61 42 52 M58 52 Q69 61 80 52" stroke="#FFF0C8" stroke-width="5" stroke-linecap="round" fill="none"></path></svg></div>
+<span class="mono" style="position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 8px 12px; border-radius: 999px; background: rgba(20,20,22,.7); color: #F6F3EC; font-size: 11px; white-space: nowrap">tap to wake it. it won't love that.</span>
+</figure>
+<div style="display: flex; flex-direction: column; gap: 22px">
+<p class="eb" style="color: #9EA1A8">OU · its charging egg</p>
+<h2 class="h2">at night,<br>it sleeps in its egg.</h2>
+<ul style="display: flex; flex-direction: column; border-top: 1px solid rgba(255,255,255,.14)">
+<li style="display: flex; flex-direction: column; gap: 4px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,.14)"><b style="font-size: 20px; letter-spacing: -.02em">charges from the bottom</b><span style="color: #A4A7AE">Gold contacts in its foot. Set it in OU and it charges. No cable on the stone.</span></li>
+<li style="display: flex; flex-direction: column; gap: 4px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,.14)"><b style="font-size: 20px; letter-spacing: -.02em">a night-light that never stares</b><span style="color: #A4A7AE">The warm glow comes from the egg, not from the screen.</span></li>
+<li style="display: flex; flex-direction: column; gap: 4px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,.14)"><b style="font-size: 20px; letter-spacing: -.02em">eyes closed, mic off</b><span style="color: #A4A7AE">Asleep in OU it doesn't listen. It only hears you while your finger is on the glass.</span></li>
+</ul>
+</div>
+</div>
+</section>
+
+<!-- section: privacy -->
+<section id="privacy" style="padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto">
+<div style="display: flex; flex-direction: column; gap: 18px; max-width: 920px">
+<p class="eb" style="color: #5F636C">privacy · in writing</p>
+<h2 class="h2">promises, not settings.</h2>
+</div>
+<ul style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px,100%), 1fr)); gap: 0 48px; margin-top: 56px; border-top: 1px solid rgba(22,24,29,.12)">
+<li style="display: grid; grid-template-columns: 40px 1fr; gap: 6px 16px; padding: 28px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width: 28px; height: 28px; grid-row: span 2" fill="none" stroke="#16181D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3l2-3h8l2 3h3v11H3z"></path><circle cx="12" cy="13" r="3.5"></circle><path d="M3 3l18 18"></path></svg><h3 style="font-size: 22px; font-weight: 680; letter-spacing: -.025em; line-height: 1.1">no camera. at all.</h3><p style="color: #5F636C">There is no camera in SOUL. The eyes are only for looking back.</p></li>
+<li style="display: grid; grid-template-columns: 40px 1fr; gap: 6px 16px; padding: 28px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width: 28px; height: 28px; grid-row: span 2" fill="none" stroke="#16181D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg><h3 style="font-size: 22px; font-weight: 680; letter-spacing: -.025em; line-height: 1.1">it listens only while you hold the glass.</h3><p style="color: #5F636C">No wake word, no always-on microphone. Lift your finger and it stops.</p></li>
+<li style="display: grid; grid-template-columns: 40px 1fr; gap: 6px 16px; padding: 28px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width: 28px; height: 28px; grid-row: span 2" fill="none" stroke="#16181D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 11h7M9 15h7"></path></svg><h3 style="font-size: 22px; font-weight: 680; letter-spacing: -.025em; line-height: 1.1">memory you can read.</h3><p style="color: #5F636C">SOUL Memory lives on the device, in plain words, one tap from gone.</p></li>
+<li style="display: grid; grid-template-columns: 40px 1fr; gap: 6px 16px; padding: 28px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width: 28px; height: 28px; grid-row: span 2" fill="none" stroke="#16181D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="12" r="3"></circle><path d="M9 12h6"></path></svg><h3 style="font-size: 22px; font-weight: 680; letter-spacing: -.025em; line-height: 1.1">only to the AI you chose.</h3><p style="color: #5F636C">Your words go to the AI you connected, on your account. Offline, nothing leaves the stone. No ads, and we never sell your data.</p></li>
+<li style="display: grid; grid-template-columns: 40px 1fr; gap: 6px 16px; padding: 28px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width: 28px; height: 28px; grid-row: span 2" fill="none" stroke="#16181D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"></path><path d="M9 10.5h.01M15 10.5h.01"></path></svg><h3 style="font-size: 22px; font-weight: 680; letter-spacing: -.025em; line-height: 1.1">it always says it's an AI.</h3><p style="color: #5F636C">No pretending to be a person, no streaks, no guilt trips, no sulking for attention.</p></li>
+<li style="display: grid; grid-template-columns: 40px 1fr; gap: 6px 16px; padding: 28px 0; border-bottom: 1px solid rgba(22,24,29,.12)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width: 28px; height: 28px; grid-row: span 2" fill="none" stroke="#16181D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v8"></path><path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path></svg><h3 style="font-size: 22px; font-weight: 680; letter-spacing: -.025em; line-height: 1.1">it never becomes a brick.</h3><p style="color: #5F636C">Its personality runs on the device. If we ever disappear, we publish the firmware. 16+, not a toy.</p></li>
+</ul>
+</div>
+</section>
+
+<!-- section: specs-and-box -->
+<section style="background: #F1EDE4; padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto">
+<div style="display: flex; flex-direction: column; gap: 18px; max-width: 920px">
+<p class="eb" style="color: #5F636C">size M · specifications</p>
+<h2 class="h2">the boring bits.</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px,100%), 1fr)); gap: 40px 64px; margin-top: 56px; align-items: start">
+<dl style="display: flex; flex-direction: column; border-top: 1px solid rgba(22,24,29,.14)">
+<sc-for list="{{specs}}" as="s" hint-placeholder-count="12">
+<div style="display: grid; grid-template-columns: 130px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(22,24,29,.14)"><dt class="eb" style="color: #5F636C; font-size: 11px; padding-top: 4px">{{s.k}}</dt><dd style="font-size: 17px">{{s.v}}</dd></div>
+</sc-for>
+</dl>
+<aside style="display: flex; flex-direction: column; gap: 16px; padding: 32px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(22,24,29,.05), 0 24px 60px -28px rgba(22,24,29,.35)">
+<p class="mono" style="align-self: flex-start; padding: 7px 12px; border-radius: 999px; background: #FFF0C8; font-size: 11px">planned</p>
+<h3 style="font-size: 30px; font-weight: 700; letter-spacing: -.035em">what's in the box</h3>
+<ol style="display: flex; flex-direction: column; gap: 14px">
+<li style="display: flex; gap: 14px; align-items: flex-start"><span class="mono" style="font-size: 12px; color: #5F636C; padding-top: 4px">01</span><div style="display: flex; flex-direction: column; gap: 2px"><b style="font-size: 18px">SOUL, size M</b><span style="color: #5F636C">in the colour you choose, with the eyes it chooses</span></div></li>
+<li style="display: flex; gap: 14px; align-items: flex-start"><span class="mono" style="font-size: 12px; color: #5F636C; padding-top: 4px">02</span><div style="display: flex; flex-direction: column; gap: 2px"><b style="font-size: 18px">OU, its charging egg</b><span style="color: #5F636C">where it charges and sleeps</span></div></li>
+</ol>
+<p style="font-size: 14px; color: #5F636C; border-top: 1px solid rgba(22,24,29,.12); padding-top: 14px">The final list, battery life and accessories will be published before reservations open.</p>
+</aside>
+</div>
+<p style="margin-top: 28px; font-size: 13px; color: #5F636C">All product images are concept renders, not photos. Specifications describe the design in development and may change before production.</p>
+</div>
+</section>
+
+<!-- section: faq -->
+<section id="faq" style="padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 40px 72px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 18px; flex: 1 1 300px">
+<p class="eb" style="color: #5F636C">questions</p>
+<h2 class="h2">good questions.</h2>
+</div>
+<div style="display: flex; flex-direction: column; border-top: 1px solid rgba(22,24,29,.14); flex: 999 1 560px; min-width: 0">
+<sc-for list="{{faq}}" as="q" hint-placeholder-count="10">
+<details style="border-bottom: 1px solid rgba(22,24,29,.14)"><summary style="display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 0; font-size: 20px; font-weight: 620; letter-spacing: -.02em">{{q.q}}<span class="plus" aria-hidden="true" style="font: 400 26px/1 'Martian Mono',monospace; transition: transform .25s">+</span></summary><p style="padding: 0 0 22px; color: #5F636C; font-size: 17px; line-height: 1.55; max-width: 72ch">{{q.a}}</p></details>
+</sc-for>
+</div>
+</div>
+</section>
+
+<!-- section: waitlist  (Shopify: {% form 'customer' %} posts form_type=customer, contact[email], contact[tags]) -->
+<section id="reserve" style="background: #16181D; color: #F6F3EC; padding: clamp(80px,9vw,128px) clamp(16px,4vw,48px)">
+<div style="max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px,100%), 1fr)); gap: 48px 80px; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 20px">
+<div style="position: relative; width: 200px"><img src="{{col.src}}" alt="SOUL in the colour you picked, its eyes watching you fill in the form." style="display: block; width: 100%; height: auto"><div style="position: absolute; left: 23.06%; top: 17.33%; width: 63.9%; height: 58.85%; transform: rotate(-2.7deg)"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="display: block; width: 100%; height: 100%"><g class="blink"><path d="{{hero.lw}}" fill="{{hero.white}}"></path><path d="{{hero.lp}}" fill="{{hero.L}}"></path></g><g class="blink"><path d="{{hero.rw}}" fill="{{hero.white}}"></path><path d="{{hero.rp}}" fill="{{hero.R}}"></path></g></svg></div></div>
+<p class="eb" style="color: #9EA1A8">waitlist · from €249</p>
+<h2 class="h2" style="font-size: clamp(40px,5.4vw,76px)">be there when it opens its eyes.</h2>
+<p class="lead" style="color: #C9CBD0">Leave your email. We'll write when reservations open, before anyone else. No payment, no pre-order.</p>
+</div>
+<form method="post" action="#reserve" accept-charset="UTF-8" style="display: flex; flex-direction: column; gap: 18px; padding: clamp(24px,3vw,36px); border-radius: 28px; background: #1F2127; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08)">
+<input type="hidden" name="form_type" value="customer">
+<input type="hidden" name="utf8" value="✓">
+<input type="hidden" name="contact[tags]" value="{{tags}}">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px,100%), 1fr)); gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 8px"><label for="wl-email" class="eb" style="color: #A4A7AE">email</label><input id="wl-email" type="email" name="contact[email]" autocomplete="email" required placeholder="you@example.com" style="min-height: 52px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.22); background: #16181D; color: #F6F3EC; font: 400 17px 'Bricolage Grotesque',sans-serif"></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><label for="wl-lang" class="eb" style="color: #A4A7AE">emails in</label><select id="wl-lang" name="contact[note][language]" style="min-height: 52px; padding: 0 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.22); background: #16181D; color: #F6F3EC; font: 400 17px 'Bricolage Grotesque',sans-serif"><option value="en">English</option><option value="ro">Română</option></select></div>
+</div>
+<fieldset style="border: 0; padding: 0; margin: 0">
+<legend class="eb" style="color: #A4A7AE; margin-bottom: 12px">favourite colour</legend>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
+<button type="button" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" aria-label="{{c.name}}" style="width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; background: {{c.hex}}; box-shadow: 0 0 0 3px #1F2127, 0 0 0 5px {{c.ringD}}"></button>
+</sc-for>
+<span style="margin-left: 6px; font-size: 16px">{{col.name}}</span>
+</div>
+</fieldset>
+<label for="wl-consent" style="display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: #C9CBD0; line-height: 1.45"><input id="wl-consent" type="checkbox" name="contact[accepts_marketing]" value="true" required style="width: 22px; height: 22px; margin: 0; accent-color: #FFF0C8; flex: none"><span>I agree to receive emails about SOUL from ARTEMIS DIGITAL S.R.L. and can unsubscribe at any time. Read the <a href="#legal" style="color: #FFF0C8">Privacy Policy</a>.</span></label>
+<button type="submit" class="btn" style="background: #FFF0C8; color: #16181D; min-height: 58px; font-size: 17px">join the waitlist <span aria-hidden="true">→</span></button>
+<p style="font-size: 13px; color: #A4A7AE">Nothing is charged here. One email when reservations open, and the odd update before.</p>
+</form>
+</div>
+</section>
+</main>
+
+<!-- section: footer -->
+<footer id="legal" style="background: #F1EDE4; padding: 72px clamp(16px,4vw,48px) 40px">
+<div style="max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; align-items: center">
+<a href="#top" aria-label="SOUL, back to top"><svg viewBox="2.96 61.82 489.04 144.35" aria-hidden="true" style="height: 40px; width: auto; display: block"><path d="{{wmSUL}}" fill="#16181D"></path><path d="{{wmO}}" fill="#16181D"></path></svg></a>
+<nav aria-label="Legal" style="display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 15px">
+<a href="#legal">Privacy Policy</a><a href="#legal">Terms</a><a href="#legal">Cookies</a><a href="https://claude.ai/artifact/WZtQ7JpCjpj6M3sfgJugHC">Try SoulOS</a><a href="https://anpc.ro/ce-este-sal/">Consumer disputes (ANPC · SAL)</a><a href="https://ec.europa.eu/consumers/odr">EU online dispute resolution</a>
+</nav>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px,100%), 1fr)); gap: 32px 64px; font-size: 14px; color: #5F636C; line-height: 1.6">
+<div style="display: flex; flex-direction: column; gap: 8px"><h4 class="eb" style="color: #16181D">Company</h4><p>ARTEMIS DIGITAL S.R.L. · Bucharest, Romania<br>Address: [street, number, Bucharest]<br>Tax ID (CUI): [RO00000000] · Trade Register No.: [J40/0000/2026]<br>Contact: [hello@your-domain]</p></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><h4 class="eb" style="color: #16181D">Product status</h4><p>SOUL is a product in development. It is not CE-certified yet and is not offered for sale. Legal pages (privacy, terms, cookies, GPSR manufacturer details) are placeholders and will be published before reservations open.</p></div>
+</div>
+<p style="font-size: 13px; color: #5F636C">Claude is a trademark of Anthropic. ChatGPT is a trademark of OpenAI. SOUL is independent and not affiliated with or endorsed by Anthropic or OpenAI.</p>
+<div class="mono" style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 12px; color: #5F636C; border-top: 1px solid rgba(22,24,29,.14); padding-top: 20px"><span>© 2026 ARTEMIS DIGITAL S.R.L. Hold the glass.</span><span>Designed in Romania.</span></div>
+</div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#D2622C","options":["#D2622C","#2440FF","#FF5A1F","#16181D"]},"$preview":{"width":1440,"height":15200}}'>
+var RAR=[["Common",0.5,"#C9C4B8",48],["Uncommon",0.25,"#5CFFB0",30],["Rare",0.15,"#3FA9FF",20],["Epic",0.07,"#B57BFF",12],["Legendary",0.025,"#FFC23A",7],["Mythic",0.005,"#FF4F9A",3]];
+function mix32(x){x>>>=0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return (x^(x>>>16))>>>0;}
+function rollChip(D,hex){hex=String(hex).replace(/[^0-9a-fA-F]/g,"").padStart(16,"0").slice(-16);var hi=parseInt(hex.slice(0,8),16),lo=parseInt(hex.slice(8),16);var h=mix32((lo>>>0)^mix32((hi>>>0)^0x534f554c));var u=mix32(h)/4294967296,acc=0,t=5;for(var i=0;i<6;i++){acc+=RAR[i][1];if(u<acc){t=i;break;}}var pool=D.filter(function(d){return d[2]===t;});return pool[Math.floor((mix32(h^0x9e3779b9)/4294967296)*pool.length)];}
+function petName(chip){var N=["Mira","Luma","Nova","Kai","Juno","Tomi","Nara","Ivo","Sia","Pip","Ada","Luca","Eli","Ema","Bobo","Zia","Dor","Ilinca","Toma","Vali"],s=String(chip).toLowerCase(),h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return N[h%N.length];}
+function f(n){return Math.round(n*100)/100;}
+function ell(cx,cy,rx,ry){return "M"+f(cx-rx)+" "+f(cy)+"a"+f(rx)+" "+f(ry)+" 0 1 0 "+f(2*rx)+" 0a"+f(rx)+" "+f(ry)+" 0 1 0 "+f(-2*rx)+" 0Z";}
+function ellR(cx,cy,rx,ry){return "M"+f(cx-rx)+" "+f(cy)+"a"+f(rx)+" "+f(ry)+" 0 1 1 "+f(2*rx)+" 0a"+f(rx)+" "+f(ry)+" 0 1 1 "+f(-2*rx)+" 0Z";}
+function poly(p){return "M"+p.map(function(q){return f(q[0])+" "+f(q[1]);}).join("L")+"Z";}
+function whiteP(t,cx,cy,rx,ry){
+ if(t==="almond")return "M"+f(cx-rx)+" "+f(cy)+"Q"+f(cx)+" "+f(cy-ry*2)+" "+f(cx+rx)+" "+f(cy)+"Q"+f(cx)+" "+f(cy+ry*2)+" "+f(cx-rx)+" "+f(cy)+"Z";
+ if(t==="drop")return "M"+f(cx)+" "+f(cy-ry*1.25)+"C"+f(cx+rx*1.05)+" "+f(cy-ry*.25)+" "+f(cx+rx)+" "+f(cy+ry)+" "+f(cx)+" "+f(cy+ry)+"C"+f(cx-rx)+" "+f(cy+ry)+" "+f(cx-rx*1.05)+" "+f(cy-ry*.25)+" "+f(cx)+" "+f(cy-ry*1.25)+"Z";
+ if(t==="squircle"){var x=cx-rx,y=cy-ry,w=2*rx,h=2*ry,r=Math.min(rx,ry)*.6;return "M"+f(x+r)+" "+f(y)+"H"+f(x+w-r)+"Q"+f(x+w)+" "+f(y)+" "+f(x+w)+" "+f(y+r)+"V"+f(y+h-r)+"Q"+f(x+w)+" "+f(y+h)+" "+f(x+w-r)+" "+f(y+h)+"H"+f(x+r)+"Q"+f(x)+" "+f(y+h)+" "+f(x)+" "+f(y+h-r)+"V"+f(y+r)+"Q"+f(x)+" "+f(y)+" "+f(x+r)+" "+f(y)+"Z";}
+ if(t==="crescent")return "M"+f(cx-rx)+" "+f(cy+ry*.35)+"A"+f(rx)+" "+f(ry*1.1)+" 0 0 1 "+f(cx+rx)+" "+f(cy+ry*.35)+"A"+f(rx*.8)+" "+f(ry*.62)+" 0 0 0 "+f(cx-rx)+" "+f(cy+ry*.35)+"Z";
+ return ell(cx,cy,rx,ry);
+}
+function pupilP(t,px,py,a,b){
+ if(t==="slit")return ell(px,py,a*.32,b);
+ if(t==="ring")return ell(px,py,a,b)+ellR(px,py,a*.55,b*.55);
+ if(t==="spiral")return ell(px,py,a,b)+ellR(px,py,a*.66,b*.66)+ell(px,py,a*.32,b*.32);
+ if(t==="double")return ell(px-a*.48,py,a*.42,a*.42)+ell(px+a*.48,py,a*.42,a*.42);
+ if(t==="crescent")return "M"+f(px)+" "+f(py-b)+"A"+f(a)+" "+f(b)+" 0 1 0 "+f(px)+" "+f(py+b)+"A"+f(a*.55)+" "+f(b)+" 0 1 1 "+f(px)+" "+f(py-b)+"Z";
+ if(t==="diamond")return poly([[px,py-b],[px+a*.75,py],[px,py+b],[px-a*.75,py]]);
+ if(t==="heart")return "M"+f(px)+" "+f(py+b*.9)+"C"+f(px-a*1.6)+" "+f(py-b*.1)+" "+f(px-a*.7)+" "+f(py-b*1.2)+" "+f(px)+" "+f(py-b*.35)+"C"+f(px+a*.7)+" "+f(py-b*1.2)+" "+f(px+a*1.6)+" "+f(py-b*.1)+" "+f(px)+" "+f(py+b*.9)+"Z";
+ if(t==="plus"){var w=Math.min(a,b)*.36,e=Math.min(a,b)*1.05;return poly([[px-w,py-e],[px+w,py-e],[px+w,py-w],[px+e,py-w],[px+e,py+w],[px+w,py+w],[px+w,py+e],[px-w,py+e],[px-w,py+w],[px-e,py+w],[px-e,py-w],[px-w,py-w]]);}
+ if(t==="star"){var o=Math.max(a,b)*1.15,pts=[];for(var i=0;i<10;i++){var r=i%2?o*.45:o,an=-Math.PI/2+i*Math.PI/5;pts.push([px+Math.cos(an)*r,py+Math.sin(an)*r]);}return poly(pts);}
+ return ell(px,py,a,b);
+}
+var PDEF={round:[.5,.56],pebble:[.44,.46],slit:[.5,.62]};
+function eyes(d,lx,ly){
+ var t=d[3],rx=d[4]*100,ry=d[5]*100,sp=d[6]*100,cy=50+d[7]*100,pd=PDEF[d[9]]||[.42,.42],a=(d[12]||pd[0])*rx,b=(d[13]||pd[1])*ry,dx=(lx||0)*rx*.34,dy=(ly||0)*ry*.3,o={white:d[8],L:d[10],R:d[11]};
+ o.lw=whiteP(t,50-sp,cy,rx,ry);o.rw=whiteP(t,50+sp,cy,rx,ry);
+ if(t==="crescent"){dy-=ry*.05;}
+ o.lp=pupilP(d[9],50-sp+dx,cy+dy,a,b);o.rp=pupilP(d[9],50+sp+dx,cy+dy,a,b);
+ return o;
+}
+var DES={orig:["#001","Original",0,"egg",0.163,0.2,0.19,0.005,"#FFF0C8","round","#2440FF","#FF5A1F",0,0],cat:["#049","Cat Café",1,"almond",0.185,0.15,0.205,0.01,"#F0FF2E","slit","#111111","#111111",0.5,0.62],star:["#079","Starstruck",2,"egg",0.163,0.2,0.19,0.005,"#FFF0C8","star","#FFB800","#FFB800",0.42,0.42],fairy:["#103","Fairy Dust",3,"drop",0.165,0.195,0.19,0.01,"#FFB3E6","round","#6A2BFF","#2440FF",0,0],alu:["#111","Brushed Alu",4,"egg",0.163,0.2,0.19,0.005,"#D8DCE2","round","#111111","#2440FF",0,0]};
+var COLS=[{k:"silver",name:"Silver",hex:"#CBCDCF",tint:"#ECEDEE",src:"/_blob/2ac905d7c6865a6c000003298af33a81",d:"The classic. Cool and bright, like a river stone in daylight."},{k:"graphite",name:"Graphite",hex:"#55575B",tint:"#E5E4E2",src:"/_blob/2ef4fa4e1da46bbf962f69e488152475",d:"Dark and quiet. The cream eyes look warmest against it."},{k:"midnight",name:"Midnight",hex:"#26324C",tint:"#E2E5EC",src:"/_blob/99e24b79d0e7fabd93c7e6fe6ef5ac8f",d:"A deep blue that reads almost black in the evening."},{k:"ember",name:"Ember",hex:"#D2622C",tint:"#F5E3D8",src:"/_blob/66e255c0c820a5edfc5edbf1ce7f951d",d:"Warm orange, the colour of a coal that's still glowing."},{k:"champagne",name:"Champagne",hex:"#D8C3A2",tint:"#F3ECE1",src:"/_blob/cb9adb001fa3326a4f6db37e77129f96",d:"Soft gold. At home on a wooden desk."}];
+var FAM=[[0.15108,0.49004,117.63,"orig"],[0.31614,0.4937,119.36,"cat"],[0.50151,0.50236,121.31,"star"],[0.68943,0.49376,118.72,"fairy"],[0.85907,0.48349,115.39,"alu"]];
+var MARQ=["no camera","listens only while you hold the glass","your own Claude or ChatGPT","alive offline","born with one of 120 eyes","memory lives on the device","designed in Romania"];
+var SC=[{you:"remind me to call mum on sunday at eleven.",ai:"done. sunday at 11:00: call mum. I'll remind you at 10:45 too."},{you:"what did I want to get Ana for her birthday?",ai:"the blue notebook from the shop near your office. her birthday is on the 14th.",mem:true},{you:"wake me at seven. gently.",ai:"alarm at 7:00. I'll wake up first, then wake you, slowly."}];
+var OS=[{src:"/_blob/3a411b645495e720fe480722977ce598",t:"a real keyboard",d:"Round QWERTY with suggestions, accents and undo.",alt:"SoulOS keyboard on the round screen: Hello typed above a round QWERTY keyboard."},{src:"/_blob/f48118a99a71573fd0d635392cc9fe12",t:"write to your AI",d:"“Remind me at 5 to call the bank” becomes a real reminder.",alt:"SoulOS after a message to Claude: Done. I'll ping you at 5:00 PM. Reminder set."},{src:"/_blob/df74a222f77fcb7f01d3c0bc205ad30a",t:"ai modes",d:"Your Claude, your ChatGPT or no AI at all.",alt:"SoulOS AI mode picker."},{src:"/_blob/7bec1b1d0c22e40ccf2287a4ede80a28",t:"alarms on a dial",d:"Turn the rim to the hour. It wakes up first, then wakes you.",alt:"SoulOS alarm set by turning a dial on the rim, here at 7."},{src:"/_blob/cdcedae2b24ed76fef31c7250833f33e",t:"the orbit",d:"Your apps sit on the rim like a smile. Spin them with a finger.",alt:"The SoulOS Orbit: app names ride the lower rim like a smile."},{src:"/_blob/d246d82f94bc44b29a574d18058e1193",t:"today",d:"Swipe up and it tells you one thing at a time.",alt:"SoulOS Today: the weather, one thing at a time."}];
+var SPECS=[["display","round 2.8″, 480 × 480, under black glass"],["size","≈ 90 × 101 × 31.5 mm"],["body","aluminium 6061, bead-blasted and anodised"],["colours","Silver, Graphite, Midnight, Ember, Champagne"],["eyes","one of 120 designs, decided at birth"],["brain","ESP32-S3, Bluetooth LE and Wi-Fi"],["ai","your Claude, your ChatGPT, or offline"],["voice","hold the glass to talk; speaker in the side seam"],["camera","none"],["charging","in OU, its egg, through contacts in its foot"],["price","from €249 incl. VAT"],["status","pre-launch · not CE-certified yet"]];
+var FAQ=[["Can I buy it now?","Not yet. SOUL has Bluetooth and Wi-Fi, so it must pass CE testing (the EU Radio Equipment Directive) at an accredited lab before anyone can sell it. It isn't CE-certified yet. Until then there is only a waitlist: no payment, no pre-orders, no deposits."],["Do I need a subscription?","Not to us. SOUL is alive offline, with no account. For AI, you connect your own Claude or ChatGPT, on your own account or API key, and pay them directly. We never sell or include AI."],["Which AI does it work with?","Claude: your own Anthropic account or API key, plus a connector for the Claude app. ChatGPT: your own OpenAI API key works now; “Sign in with ChatGPT” is pending OpenAI's approval. Or no AI at all. SOUL is in development, and these connections are being built."],["What is SOUL Memory?","The things SOUL remembers about you: names, plans, preferences. It lives on the device, in plain words you can read and delete. When you talk, it goes along to whichever AI you connected, so switching AIs doesn't mean starting over."],["Does it listen all the time? Does it have a camera?","No and no. It listens only while your finger is on the glass. There is no wake word and no camera."],["Can I choose its eyes?","No, and that's the fun. You choose the colour of the body. The eyes are decided once, at first power-on, from the chip's unique ID: one of 120 designs, some much rarer than others. The odds are published above."],["Does it work away from home?","Yes. Offline it's always alive. For AI it needs Wi-Fi, and it can roam on your phone's hotspot."],["How long does the battery last?","We'll publish measured battery life before we ask anyone to pay. It charges in OU, its egg."],["Is it a toy?","No. SOUL is made for adults and teens 16 and over. It contains small parts and a lithium battery."],["Who makes it?","ARTEMIS DIGITAL S.R.L., in Bucharest, Romania. Designed in Romania. We'll name our manufacturing partners before we ask anyone to pay."]];
+var WM_SUL="M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z M408.8 200V68H437.6V175.2H490V200Z";
+var WM_O="M120.02 134A70.18 70.18 0 1 1 260.38 134A70.18 70.18 0 1 1 120.02 134ZM157.34 120.78A14.04 23.86 0 1 0 179.94 125.01ZM200.46 125.01A14.04 23.86 0 1 0 223.06 120.78Z";
+class Component extends DCLogic {
+  renderVals() {
+    var s = this.state || {}, self = this;
+    var lx = s.lx || 0, ly = s.ly || 0, ci = s.col || 0, prov = s.prov || "claude", hold = !!s.hold, said = !!s.said, step = s.step || 0;
+    var col = COLS[ci], sc = SC[step % SC.length], off = prov === "offline";
+    var happy = { white: "#FFF0C8", lw: whiteP("crescent", 31, 52, 16.3, 20), rw: whiteP("crescent", 69, 52, 16.3, 20) };
+    var down = function () { if (self.state && self.state.hold) return; var st = self.state || {}; self.setState({ hold: true, step: st.said ? (st.step || 0) + 1 : (st.step || 0), said: false }); };
+    var up = function () { if (!(self.state && self.state.hold)) return; self.setState({ hold: false, said: true }); };
+    var labels = { claude: "Claude", chatgpt: "ChatGPT", offline: "offline" };
+    var vias = { claude: "via your Claude", chatgpt: "via your ChatGPT", offline: "offline · on the device" };
+    return {
+      accent: this.props.accent ?? "#D2622C",
+      wmSUL: WM_SUL, wmO: WM_O,
+      hero: eyes(DES.orig, lx, ly), inl: eyes(DES.orig, lx, ly), still: eyes(DES.orig, 0, 0), happy: happy,
+      born: eyes(DES.fairy, lx, ly), stand: eyes(DES.orig, lx * .5, ly * .5),
+      hand: hold ? eyes(DES.orig, 0, -1) : eyes(DES.orig, lx, ly),
+      glow: hold ? "0 0 0 2px rgba(255,240,200,.85), 0 0 0 9px rgba(255,240,200,.18), 0 0 60px 6px rgba(255,240,200,.35)" : "none",
+      marqTwice: MARQ.concat(MARQ),
+      col: col,
+      cols: COLS.map(function (c, i) { return { name: c.name, hex: c.hex, pressed: String(i === ci), gap: col.tint, ring: i === ci ? "#16181D" : "transparent", ringD: i === ci ? "#FFF0C8" : "transparent", pick: function () { self.setState({ col: i }); } }; }),
+      tags: "waitlist,colour-" + col.k + ",lang-en",
+      family: FAM.map(function (g) { var r = g[2]; return { l: f((g[0] - r / 2000) * 100), t: f((g[1] - r / 1125) * 100), w: f(r / 20), h: f(r / 11.25), e: eyes(DES[g[3]], lx, ly) }; }),
+      rar: RAR.map(function (r) { return { n: r[0], c: r[2], k: r[3], p: (r[1] * 100) + "%", x: Math.round(r[3] / r[1]) }; }),
+      provs: ["claude", "chatgpt", "offline"].map(function (k) { return { label: labels[k], pressed: String(k === prov), bg: k === prov ? "#16181D" : "transparent", fg: k === prov ? "#FAF8F3" : "#5F636C", pick: function () { self.setState({ prov: k, said: false, hold: false }); } }; }),
+      idle: !hold && !said, showYou: hold || said, showAi: said && !hold,
+      youText: off ? "…" : sc.you, aiText: off ? "offline, I can't understand speech: voice needs the AI you connect. type it on my keyboard instead. reminders, alarms and notes work without any AI." : sc.ai,
+      via: vias[prov] + (!off && sc.mem ? " · SOUL Memory" : ""),
+      holdLabel: hold ? "listening… let go to send" : "hold to talk", holdBg: hold ? "#FF5A1F" : "#16181D", holdFg: "#FAF8F3",
+      micDot: hold ? "#FF5A1F" : "#B9B6AE", micText: hold ? "listening" : "mic off",
+      down: down, up: up,
+      keyDown: function (e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); down(); } },
+      keyUp: function (e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); up(); } },
+      onMove: function (e) { var x = e.clientX, y = e.clientY; if (self._r) return; self._r = requestAnimationFrame(function () { self._r = 0; var w = window.innerWidth || 1440, h = window.innerHeight || 900, a = x / w * 2 - 1, b = y / h * 2 - 1, m = Math.sqrt(a * a + b * b); if (m > 1) { a /= m; b /= m; } self.setState({ lx: a, ly: b }); }); },
+      os: OS, specs: SPECS.map(function (r) { return { k: r[0], v: r[1] }; }), faq: FAQ.map(function (r) { return { q: r[0], a: r[1] }; })
+    };
+  }
+}
+</script>
+</body>
+</html>
