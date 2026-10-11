@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SOUL</title>
+<title>SOUL · a palm-sized AI companion with living eyes</title>
 <meta name="description" content="SOUL is a palm-sized aluminium stone with a round black glass face and two living eyes. Born with one of 120 eye designs. Connect your own Claude or ChatGPT, or keep it offline. No camera. It listens only while you hold the glass. From €249. Pre-launch: join the waitlist.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="SOUL · your ai has a brain. give it a soul.">
@@ -24,9 +24,11 @@
 window.SOUL_CONFIG = {
   WAITLIST_ENDPOINT: "",            // "" = demo mode (sign-ups stay in this browser). Shopify: the theme posts the native customer form instead.
   CURRENCY: "EUR",
-  PRICES: { from: 249 },            // SOUL size M, aluminium, "from" price incl. VAT
+  PRICES: { from: 249 },            // SOUL size M, aluminium, "from" price. ARTEMIS DIGITAL is not VAT-registered (confirm before launch): no "incl. VAT" text.
   SHIP: { en: "after CE testing", ro: "după testele CE" },
-  CONTACT_EMAIL: "hello@soul.example"
+  CONTACT_EMAIL: "office@krea.ro",
+  // Legea 365/2002 art. 5: fill these from the ONRC certificate before any public URL goes live (no "RO" prefix on the CUI unless VAT-registered).
+  COMPANY: { address: "", cui: "", reg: "" }
 };
 document.documentElement.classList.add("js");
 </script>
@@ -42,7 +44,7 @@ document.documentElement.classList.add("js");
   --shadow:0 1px 2px rgba(22,24,29,.05),0 24px 60px -28px rgba(22,24,29,.35);
   --f-display:"Bricolage Grotesque",ui-rounded,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --f-mono:"Martian Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  --gut:clamp(16px,4vw,48px);--nav:62px;--ease:cubic-bezier(.2,.7,.2,1);
+  --gut:clamp(16px,4vw,48px);--nav:62px;--ann:34px;--ease:cubic-bezier(.2,.7,.2,1);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0D0D0F;--paper-2:#151518;--card:#1A1A1E;--ink:#F6F3EC;--ink-2:#A4A7AE;--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.28);--ember-ink:#FF8A57;--focus:#8FA0FF;--shadow:0 1px 2px rgba(0,0,0,.5),0 24px 60px -28px rgba(0,0,0,.8);color-scheme:dark}}
@@ -93,7 +95,7 @@ button,input,select{font:inherit;color:inherit}
 :root:not([data-theme="light"]) .ann{background:#1d1e22;color:#F6F3EC}
 
 /* nav */
-.nav{position:sticky;top:0;z-index:50;padding-top:env(safe-area-inset-top,0px);background:color-mix(in srgb,var(--paper) 80%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(16px);backdrop-filter:saturate(1.4) blur(16px);border-bottom:1px solid transparent;transition:border-color .3s}
+.nav{position:sticky;top:0;z-index:50;padding-top:env(safe-area-inset-top,0px);background:color-mix(in srgb,var(--paper) 96%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(16px);backdrop-filter:saturate(1.4) blur(16px);border-bottom:1px solid transparent;transition:border-color .3s}
 .nav.scrolled{border-bottom-color:var(--line)}
 .nav .wrap{display:flex;align-items:center;gap:12px;height:var(--nav)}
 .brand{display:inline-flex;align-items:center;text-decoration:none;padding-block:8px;flex:none}
@@ -124,9 +126,9 @@ button,input,select{font:inherit;color:inherit}
 /* hero: the device is the O; scroll wakes it and parts the letters */
 .hero{position:relative;--p:0}
 .hero-pin{height:185svh;position:relative}
-.hero-stick{position:sticky;top:var(--nav);height:calc(100svh - var(--nav));overflow:clip;display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr)}
+.hero-stick{position:sticky;top:var(--nav);height:calc(100svh - var(--nav) - var(--ann));overflow:clip;display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr)}
 .stage-box{position:relative;display:grid;grid-template-columns:minmax(0,1fr);align-items:center;min-height:0;min-width:0}
-.stage{--W:min(1180px,calc(100vw - 2 * var(--gut)),calc((100svh - var(--nav) - 300px) * 1.75));--ox:.5;position:relative;width:var(--W);margin-left:calc(50vw - var(--ox) * var(--W));justify-self:start}
+.stage{--W:min(1180px,calc(100vw - 2 * var(--gut)),calc((100svh - var(--nav) - var(--ann) - 300px) * 1.75));--ox:.5;position:relative;width:var(--W);margin-left:calc(50vw - var(--ox) * var(--W));justify-self:start}
 .wm{display:block;width:100%;height:auto;overflow:visible}
 .wm path{fill:var(--ink)}
 .dev{position:absolute;left:calc(38.29% + var(--dx,0%));top:50%;width:45%;transform:translate(-50%,-48%) translateY(var(--dy,0px)) rotate(var(--rot,0deg)) scale(var(--sc,1));z-index:2;will-change:transform}
@@ -144,14 +146,17 @@ button,input,select{font:inherit;color:inherit}
 .cta{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center}
 .price-chip{display:inline-flex;align-items:baseline;gap:6px;font:500 .76rem/1 var(--f-mono);color:var(--ink-2)}
 .price-chip b{font:700 1.5rem/1 var(--f-display);letter-spacing:-.03em;color:var(--ink)}
-.say{position:absolute;inset:auto 0 clamp(24px,6vh,64px);display:grid;justify-items:center;text-align:center;gap:10px;pointer-events:none;opacity:clamp(0,calc((var(--p) - .45) * 3.2),1);transform:translateY(calc((1 - var(--p)) * 30px))}
+.say{position:absolute;inset:auto 0 clamp(18px,4vh,48px);z-index:3;display:grid;justify-items:center;text-align:center;gap:10px;pointer-events:none;opacity:clamp(0,calc((var(--p) - .45) * 3.2),1);transform:translateY(calc((1 - var(--p)) * 30px))}
 .say p{font-size:clamp(1.8rem,4.4vw,3.8rem);font-weight:740;letter-spacing:-.045em;line-height:.95}
 .say small{font:500 .72rem/1.3 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
-@media (max-width:860px){.hero-copy{grid-template-columns:minmax(0,1fr);gap:14px}.hero .lead{display:none}}
+.hero .pos{display:none;font:500 .74rem/1.4 var(--f-mono);letter-spacing:.04em;color:var(--ink-2)}
+@media (max-width:860px){.hero-copy{grid-template-columns:minmax(0,1fr);gap:12px}.hero .lead{display:none}.hero .pos{display:block}}
 @media (max-width:720px){
   .hero-pin{height:150svh}
-  .stage{--W:134vw;--ox:.3829}
-  .dev{width:52%}
+  .stage{--W:min(134vw,calc((100svh - var(--nav) - var(--ann) - 330px) * 2.2));--ox:.3829}
+  .dev{width:62%}
+  .hero-copy{padding-bottom:14px}
+  .hero h1{font-size:clamp(2.1rem,9.6vw,2.6rem)}
   .hint{left:var(--gut);right:auto;bottom:6px}
 }
 .no-pin .hero-pin{height:auto}
@@ -249,6 +254,7 @@ button,input,select{font:inherit;color:inherit}
 .odds th{font:500 .68rem/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--night-2)}
 .odds td.num{font-family:var(--f-mono);font-size:.86rem}
 .odds .bar{display:block;height:8px;border-radius:99px;background:var(--c);min-width:3px}
+@media (max-width:560px){.odds table{min-width:0}.odds th:last-child,.odds td:last-child{display:none}.odds th,.odds td{padding:12px 6px}.odds th{font-size:.6rem;letter-spacing:.04em}.odds td.num{font-size:.8rem;white-space:nowrap}.odds .rar{padding:6px 9px;font-size:.62rem}}
 .odds-note{margin-top:14px;font-size:.88rem;color:var(--night-2);max-width:80ch}
 .grid-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:16px;margin-top:clamp(56px,8vw,104px);margin-bottom:22px}
 .filters{display:flex;flex-wrap:wrap;gap:6px}
@@ -500,7 +506,8 @@ select.input option{background:#121214;color:#F6F3EC}
       <div class="wrap hero-copy">
         <h1 id="hero-title" data-i18n="hero.h1">your ai has a brain.<br><em>give it a soul.</em></h1>
         <div class="hero-side">
-          <p class="lead" data-i18n="hero.lead">A palm-sized aluminium stone with two living eyes. It blinks, it follows you, it dozes off when you leave. And it talks with the AI you already have.</p>
+          <p class="lead" data-i18n="hero.lead">A palm-sized aluminium stone with two living eyes. It blinks, it follows your finger on the glass, it dozes off when it's left alone. And it talks with the AI you already have.</p>
+          <p class="pos" data-i18n="hero.pos">your own AI · no camera · memory on the device</p>
           <div class="cta">
             <a class="btn" href="#reserve" data-react="happy"><span data-i18n="hero.cta">join the waitlist</span><span class="arr" aria-hidden="true">→</span></a>
             <span class="price-chip" data-react="smirk"><span data-i18n="price.from">from</span> <b data-price="from">€249</b></span>
@@ -537,8 +544,8 @@ select.input option{background:#121214;color:#F6F3EC}
       </article>
       <article class="tcard rv">
         <div class="shot" data-glass="col" data-col="silver" data-design="original" data-role="follow"><img src="media/v3/col-silver-520.webp" width="520" height="625" loading="lazy" decoding="async" alt="" aria-hidden="true"></div>
-        <h3 data-i18n="alive.c2t">it follows you.</h3>
-        <p data-i18n="alive.c2p">Your cursor, here. Your finger, on the desk. It always knows where you went.</p>
+        <h3 data-i18n="alive.c2t">it follows your finger.</h3>
+        <p data-i18n="alive.c2p">It follows your finger on the glass (and your cursor here), and dozes off when it's left alone.</p>
       </article>
       <article class="tcard rv">
         <div class="shot" data-glass="col" data-col="ember" data-design="coral-snorkel" data-role="moods"><img src="media/v3/col-ember-520.webp" width="520" height="625" loading="lazy" decoding="async" alt="" aria-hidden="true"></div>
@@ -568,7 +575,7 @@ select.input option{background:#121214;color:#F6F3EC}
     <div class="stack">
       <p class="eyebrow rv" data-i18n="obj.eyebrow">the object · MĂRGĂRITAR</p>
       <h2 class="h-l rv" id="obj-title" data-i18n="obj.h2">a stone you<br>want to hold.</h2>
-      <p class="lead rv" data-i18n="obj.lead">Its shape is called MĂRGĂRITAR: a pebble with soft shoulders at the crown, cut from aluminium and finished like a river stone. One round black glass on the front. No logo, no buttons, no holes.</p>
+      <p class="lead rv" data-i18n="obj.lead">Its shape is called MĂRGĂRITAR: a pebble with soft shoulders at the crown, cut from aluminium and finished like a river stone. One round black glass. Nothing else on the front: no logo, no buttons.</p>
       <dl class="facts rv">
         <div><dt data-i18n="obj.k1">size M</dt><dd>90 × 101 × 31.5 mm</dd></div>
         <div><dt data-i18n="obj.k2">glass</dt><dd data-i18n="obj.v2">2.8″ round, black</dd></div>
@@ -674,16 +681,16 @@ select.input option{background:#121214;color:#F6F3EC}
     </div>
     <div class="prov">
       <article class="pcard rv">
-        <div class="k"><span class="st" style="--c:#D97757" data-i18n="ai.c.k">your account</span></div>
+        <div class="k"><span class="st" style="--c:#D97757" data-i18n="ai.c.k">your API key</span></div>
         <h3 data-i18n="ai.c.t">Your Claude.</h3>
-        <p data-i18n="ai.c.p">Connect your own Anthropic account or API key and talk to it by holding the glass.</p>
-        <ul><li data-i18n="ai.c.l1">own account or API key</li><li data-i18n="ai.c.l2">add SOUL as a connector in the Claude app: ask Claude to put a plan, a reminder or a note on it</li></ul>
+        <p data-i18n="ai.c.p">Use your own Anthropic API key and talk to it by holding the glass.</p>
+        <ul><li data-i18n="ai.c.l1">your own Anthropic API key (from the Anthropic Console)</li><li data-i18n="ai.c.l2">add SOUL as a custom connector in the Claude app: ask Claude to put a plan, a reminder or a note on it</li></ul>
       </article>
       <article class="pcard rv">
-        <div class="k"><span class="st" style="--c:#10A37F" data-i18n="ai.g.k">your key, now</span></div>
+        <div class="k"><span class="st" style="--c:#10A37F" data-i18n="ai.g.k">your key · in development</span></div>
         <h3 data-i18n="ai.g.t">Your ChatGPT.</h3>
-        <p data-i18n="ai.g.p">Paste your own OpenAI API key and it works. You pay OpenAI directly, not us.</p>
-        <ul><li data-i18n="ai.g.l1">own API key: works now</li><li data-i18n="ai.g.l2">“Sign in with ChatGPT”: pending OpenAI approval</li></ul>
+        <p data-i18n="ai.g.p">Works with your own OpenAI API key (in development). You pay OpenAI directly, not us.</p>
+        <ul><li data-i18n="ai.g.l1">own OpenAI API key: in development</li><li data-i18n="ai.g.l2">“Sign in with ChatGPT”: pending OpenAI approval</li></ul>
       </article>
       <article class="pcard rv">
         <div class="k"><span class="st" style="--c:#9EA1A8" data-i18n="ai.o.k">no account</span></div>
@@ -824,7 +831,7 @@ select.input option{background:#121214;color:#F6F3EC}
         <div><dt data-i18n="sp.k8">voice</dt><dd data-i18n="sp.v8">hold the glass to talk; speaker in the side seam</dd></div>
         <div><dt data-i18n="sp.k9">camera</dt><dd data-i18n="sp.v9">none</dd></div>
         <div><dt data-i18n="sp.k10">charging</dt><dd data-i18n="sp.v10">in OU, its egg, through contacts in its foot</dd></div>
-        <div><dt data-i18n="sp.k11">price</dt><dd><span data-i18n="price.from">from</span> <span data-price="from">€249</span> <span data-i18n="sp.vat">incl. VAT</span></dd></div>
+        <div><dt data-i18n="sp.k11">price</dt><dd><span data-i18n="price.from">from</span> <span data-price="from">€249</span></dd></div>
         <div><dt data-i18n="sp.k12">status</dt><dd data-i18n="sp.v12">pre-launch · not CE-certified yet</dd></div>
       </dl>
       <aside class="box rv" aria-labelledby="box-title">
@@ -851,7 +858,7 @@ select.input option{background:#121214;color:#F6F3EC}
     <div class="faq" id="faq-list">
       <details id="faq-ce"><summary data-i18n="q1">Can I buy it now?</summary><div class="a" data-i18n="a1">Not yet. SOUL has Bluetooth and Wi-Fi, so it must pass CE testing (the EU Radio Equipment Directive) at an accredited lab before anyone can sell it. It isn't CE-certified yet. Until then there is only a waitlist: no payment, no pre-orders, no deposits.</div></details>
       <details><summary data-i18n="q2">Do I need a subscription?</summary><div class="a" data-i18n="a2">Not to us. SOUL is alive offline, with no account. For AI, you connect your own Claude or ChatGPT, on your own account or API key, and pay them directly. We never sell or include AI.</div></details>
-      <details><summary data-i18n="q3">Which AI does it work with?</summary><div class="a" data-i18n="a3">Claude: your own Anthropic account or API key, plus a connector for the Claude app. ChatGPT: your own OpenAI API key works now; “Sign in with ChatGPT” is pending OpenAI's approval. Or no AI at all. SOUL is in development, and these connections are being built.</div></details>
+      <details><summary data-i18n="q3">Which AI does it work with?</summary><div class="a" data-i18n="a3">Claude: your own Anthropic API key, plus SOUL as a custom connector in the Claude app. ChatGPT: your own OpenAI API key (in development); “Sign in with ChatGPT” is pending OpenAI's approval. Or no AI at all. SOUL is in development, and these connections are being built.</div></details>
       <details><summary data-i18n="q4">What is SOUL Memory?</summary><div class="a" data-i18n="a4">The things SOUL remembers about you: names, plans, preferences. It lives on the device, in plain words you can read and delete. When you talk, it goes along to whichever AI you connected, so switching AIs doesn't mean starting over.</div></details>
       <details><summary data-i18n="q5">Does it listen all the time? Does it have a camera?</summary><div class="a" data-i18n="a5">No and no. It listens only while your finger is on the glass. There is no wake word and no camera.</div></details>
       <details><summary data-i18n="q6">Can I choose its eyes?</summary><div class="a" data-i18n="a6">No, and that's the fun. You choose the colour of the body. The eyes are decided once, at first power-on, from the chip's unique ID: one of 120 designs, some much rarer than others. The odds are published above.</div></details>
@@ -901,7 +908,7 @@ select.input option{background:#121214;color:#F6F3EC}
           <div class="swatches" id="wl-sw"></div>
         </fieldset>
         <div class="hp" aria-hidden="true"><label for="wl-web">Website</label><input id="wl-web" name="website" type="text" tabindex="-1" autocomplete="off"></div>
-        <label class="consent" for="wl-consent"><input id="wl-consent" name="contact[accepts_marketing]" value="true" type="checkbox" required><span data-i18n="res.consent">I agree to receive emails about SOUL from ARTEMIS DIGITAL S.R.L. and can unsubscribe at any time. Read the <a href="#legal">Privacy Policy</a>.</span></label>
+        <label class="consent" for="wl-consent"><input id="wl-consent" name="contact[accepts_marketing]" value="true" type="checkbox" required><span data-i18n="res.consent">I agree to receive emails about SOUL from ARTEMIS DIGITAL S.R.L. and can unsubscribe at any time. Read the <a href="legal.html#privacy">Privacy Notice</a>.</span></label>
         <p class="form-msg" id="wl-msg" role="alert"></p>
         <button class="btn btn-cream" type="submit" id="wl-submit"><span data-i18n="res.submit">join the waitlist</span><span class="arr" aria-hidden="true">→</span></button>
         <p class="form-fine" data-i18n="res.fine">Nothing is charged here. One email when reservations open, and the odd update before.</p>
@@ -923,22 +930,23 @@ select.input option{background:#121214;color:#F6F3EC}
     <div class="foot-top">
       <a class="brand" href="#top" aria-label="SOUL"><svg viewBox="2.96 61.82 489.04 144.35" aria-hidden="true" focusable="false"><path class="wm-ink" d="M59.4 202.8Q45.8 202.8 35.5 199.7Q25.2 196.6 18.2 190.7Q11.2 184.8 7.9 176.3Q4.6 167.8 5 157.2L32 151.4Q32 161.4 35.8 167.4Q39.6 173.4 46.2 176.2Q52.8 179 60.6 179Q67.6 179 72.9 177.2Q78.2 175.4 81.2 172.2Q84.2 169 84.2 164.6Q84.2 159 80.2 155.6Q76.2 152.2 69.5 149.9Q62.8 147.6 54.6 145.6Q46 143.2 37.5 140.4Q29 137.6 22 133.3Q15 129 10.7 122.1Q6.4 115.2 6.4 104.8Q6.4 92.4 12.8 83.6Q19.2 74.8 30.4 70Q41.6 65.2 56.4 65.2Q71.8 65.2 83.7 70.4Q95.6 75.6 102 85.5Q108.4 95.4 107.2 110L80.6 114.4Q81 108.2 79.4 103.4Q77.8 98.6 74.6 95.2Q71.4 91.8 66.6 90.1Q61.8 88.4 55.4 88.4Q48.6 88.4 43.9 90.2Q39.2 92 36.8 95.3Q34.4 98.6 34.4 103Q34.4 108 38 111.2Q41.6 114.4 48.1 116.6Q54.6 118.8 63 121Q71.6 123.2 80.2 126Q88.8 128.8 96.2 133.4Q103.6 138 108 145.2Q112.4 152.4 112.4 163.6Q112.4 176.4 105.6 185.2Q98.8 194 86.9 198.4Q75 202.8 59.4 202.8Z M326.6 202.8Q315.6 202.8 306.8 200.3Q298 197.8 291.5 193.1Q285 188.4 280.7 181.7Q276.4 175 274.3 166.6Q272.2 158.2 272.2 148.4V68H301V146.8Q301 157.2 304.1 163.9Q307.2 170.6 312.9 173.8Q318.6 177 326.6 177Q334.8 177 340.5 173.8Q346.2 170.6 349.2 163.9Q352.2 157.2 352.2 146.8V68H381.2V148.4Q381.2 174.4 367.2 188.6Q353.2 202.8 326.6 202.8Z M408.8 200V68H437.6V175.2H490V200Z"/><circle cx="190.2" cy="134" r="70.18" fill="#CBCDCF"/><circle cx="190.2" cy="134" r="64.21" fill="#0B0B0C"/><path fill="#FFF0C8" d="M180.82 125.78A12.84 21.83 0 1 1 160.14 121.91ZM220.26 121.91A12.84 21.83 0 1 1 199.58 125.78Z"/></svg></a>
       <nav class="foot-links" aria-label="Legal">
-        <a href="#legal" data-i18n="f.privacy">Privacy Policy</a>
-        <a href="#legal" data-i18n="f.terms">Terms</a>
-        <a href="#legal" data-i18n="f.cookies">Cookies</a>
+        <a href="legal.html#privacy" data-i18n="f.privacy">Privacy Notice</a>
+        <a href="legal.html#terms" data-i18n="f.terms">Terms</a>
+        <a href="legal.html#cookies" data-i18n="f.cookies">Cookies</a>
+        <a href="legal.html#withdrawal" data-i18n="f.withdraw">Withdrawal &amp; returns</a>
+        <a href="legal.html#warranty" data-i18n="f.warranty">Warranty</a>
         <a href="os.html" data-i18n="f.os">Try SoulOS</a>
         <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener" data-i18n="f.anpc">Consumer disputes (ANPC · SAL)</a>
-        <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener" data-i18n="f.odr">EU online dispute resolution</a>
       </nav>
     </div>
     <div class="legal">
       <div>
         <h4 data-i18n="f.company">Company</h4>
-        <p>ARTEMIS DIGITAL S.R.L. · <span data-i18n="f.city">Bucharest, Romania</span><br><span data-i18n="f.addr">Address:</span> <span class="ph">[street, number, Bucharest]</span><br><span data-i18n="f.cui">Tax ID (CUI):</span> <span class="ph">[RO00000000]</span> · <span data-i18n="f.reg">Trade Register No.:</span> <span class="ph">[J40/0000/2026]</span><br><span data-i18n="f.contact">Contact:</span> <span class="email" data-cfg="email">hello@soul.example</span></p>
+        <p>ARTEMIS DIGITAL S.R.L. · <span data-i18n="f.city">Bucharest, Romania</span><br><span data-co="address" hidden><span data-i18n="f.addr">Address:</span> <span data-cfg="address"></span><br></span><span data-co="cui" hidden><span data-i18n="f.cui">Tax ID (CUI):</span> <span data-cfg="cui"></span> · </span><span data-co="reg" hidden><span data-i18n="f.reg">Trade Register No.:</span> <span data-cfg="reg"></span><br></span><span data-co="pending" data-i18n="f.coPending">Registered office, tax ID (CUI) and Trade Register No. are listed here before the waitlist opens to the public.</span><br><span data-i18n="f.contact">Contact:</span> <a class="email" data-cfg="email" href="mailto:office@krea.ro">office@krea.ro</a></p>
       </div>
       <div>
         <h4 data-i18n="f.status">Product status</h4>
-        <p data-i18n="f.statusp">SOUL is a product in development. It is not CE-certified yet and is not offered for sale. Legal pages (privacy, terms, cookies, GPSR manufacturer details) are placeholders and will be published before reservations open.</p>
+        <p data-i18n="f.statusp">SOUL is a product in development. It is not CE-certified yet and is not offered for sale. The privacy notice applies now. Terms of sale, withdrawal, warranty and GPSR manufacturer details apply only once sales open and will be completed before then.</p>
       </div>
     </div>
     <p class="tm" data-i18n="f.tm">Claude is a trademark of Anthropic. ChatGPT is a trademark of OpenAI. SOUL is independent and not affiliated with or endorsed by Anthropic or OpenAI.</p>

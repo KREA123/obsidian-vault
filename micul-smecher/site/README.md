@@ -1,139 +1,49 @@
-# Pagina de lansare / precomandă SOUL
+# Landing SOUL v3
 
-Pagina de lansare pentru SOUL („Micul Șmecher”). Totul e într-un singur fișier, `index.html` (~120 KB, cu CSS și JS inline), plus folderul `media/`. `preview.html` e o prezentare scurtă, în română, a ce s-a construit (pentru telefon).
+Pagina publică pentru SOUL. Se publică doar ce e în lista de mai jos. Folderul `screenshots/` și subfolderul `v2/` nu se publică.
 
 ```
 site/
-├── index.html            # pagina completă, EN implicit + comutator RO/EN
-├── preview.html          # prezentare pe o pagină, în română, pentru fondator
-├── media/
-│   ├── *.mp4             # clipuri din simulatorul firmware-ului (copiate din ../media)
-│   ├── posters/*.jpg     # primul cadru al fiecărui clip (se vede înainte să pornească video-ul)
-│   └── render-*.jpg      # randări web (hero, lineup, bag, desk, night, inside), fiecare + varianta -sm pentru telefon
-└── screenshots/          # capturi Playwright 390×844 și 1440×900 (doar pentru verificare; nu se publică)
+├── index.html        # landing v3 (EN implicit, comutator RO), CSS inline
+├── app.js            # logica paginii + dicționarul RO
+├── legal.html        # nota de confidențialitate, cookie-uri, termeni, retragere, garanție (EN + RO)
+├── os.html           # demo SoulOS (îl întreține alt flux; nu-l edita de aici)
+├── eyes/             # motorul de ochi (eyes.js) + cele 120 de modele (designs.js)
+├── fonts/            # Bricolage Grotesque + Martian Mono, găzduite local
+├── media/v3, media/v2, media/soul-m-hero.jpg
+└── favicon.*, icon-*.png, apple-touch-icon.png, site.webmanifest
 ```
 
-## Ce face pagina
+## Ce e adevărat pe pagină
 
-- **Hero cu ochi vii** pe `<canvas>`. Este portul în JS al `firmware/lib/Suflet/src/Face.cpp`: elipse crem #FFF0C8 (0,12 × 0,19 din diametru, centre la ±0,19), pleoapa înclinată 0,16 rad, highlight și halo. Ochii clipesc (la 2,2–6 s, uneori de două ori), urmăresc cursorul sau degetul cu un arc elastic, se uită singuri în jur și respiră (±2 % la 4 s). O atingere face „boop” (^ ^, obraji roșii, inimioare, turtire), două atingeri îi fac să râdă (> <). După 15 s fără activitate SOUL-ul ațipește, apoi adoarme (arce închise și z z), iar orice mișcare îl trezește. Cu `prefers-reduced-motion` totul rămâne static.
-- **Pietrele din pagină sunt toate vii**: cele trei din secțiunea 3-în-1 (viu / ascultă / Claude), demo-ul interactiv „Works with Claude” (ții apăsat 1,2 s ca să aprobi, atingi de două ori ca să refuzi; de la tastatură, Space ține, Esc refuză), certificatul de naștere (butonul „Hatch another” naște un suflet nou, cu raritățile din firmware) și piatra de la formular, care doarme până începi să scrii.
-- Clipurile rulează doar când sunt vizibile pe ecran (IntersectionObserver).
-- Alegerea limbii se păstrează în `localStorage`. Pagina se poate deschide direct în română cu `index.html#ro`.
+- Prelansare: doar listă de așteptare. Nu se plătește nimic, nu există precomandă, avans sau ediție „Founders”.
+- Preț: **de la 249 €**. ARTEMIS DIGITAL S.R.L. e înregistrată ca neplătitoare de TVA, deci pagina nu scrie „cu TVA”. Dacă firma devine plătitoare de TVA, adaugă textul înapoi și prefixul RO la CUI.
+- Fără certificare CE încă. Pagina nu pretinde CE.
+- AI: owner-ul își aduce propriul AI. Claude: propria cheie API Anthropic + SOUL adăugat ca conector personalizat în aplicația Claude. ChatGPT: propria cheie API OpenAI (în dezvoltare); „Sign in with ChatGPT” așteaptă aprobarea OpenAI. Sau offline.
 
-## Cum schimbi prețurile, datele și endpoint-ul
-
-Toate aceste valori sunt într-un singur obiect, `window.SOUL_CONFIG`, chiar la începutul lui `index.html`:
+## Configurare (`window.SOUL_CONFIG`, la începutul lui `index.html`)
 
 ```js
 window.SOUL_CONFIG = {
-  WAITLIST_ENDPOINT: "",          // URL-ul la care formularul trimite JSON (gol = mod demo)
+  WAITLIST_ENDPOINT: "",   // "" = mod demo: înscrierile rămân în browser
   CURRENCY: "EUR",
-  PRICES: { founders: 119, voiceDeposit: 10, voiceExpected: 149 },
-  FOUNDERS_RANGE: "001–300",
-  VOICE_AI_MONTHS: 6,
-  SHIP: { founders: { en: "spring 2027", ro: "primăvara 2027" },
-          voice:    { en: "autumn 2027", ro: "toamna 2027" } },
-  CONTACT_EMAIL: "hello@soul.example"
+  PRICES: { from: 249 },
+  SHIP: { en: "after CE testing", ro: "după testele CE" },
+  CONTACT_EMAIL: "office@krea.ro",
+  COMPANY: { address: "", cui: "", reg: "" }   // din certificatul ONRC
 };
 ```
 
-Valorile se completează automat peste tot, inclusiv în FAQ și în ambele limbi: `data-price="founders"` afișează prețul, iar `data-cfg="shipFounders"` afișează data.
-Formatul prețului: în EN „€119”, în RO „119 €”.
+Cât timp `COMPANY` e gol, subsolul spune că datele firmei apar înainte de deschiderea publică.
 
-**Datele de livrare (`SHIP`) sunt provizorii.** Pune-le pe cele reale înainte de lansare.
+## Înainte de orice URL public (checklist)
 
-## Cum schimbi textele
+- [ ] `COMPANY.address`, `COMPANY.cui`, `COMPANY.reg` completate din ONRC (Legea 365/2002 art. 5). Fără „RO” la CUI dacă firma nu e plătitoare de TVA.
+- [ ] Nota de confidențialitate din `legal.html` citită și confirmată (perioada de păstrare de 24 de luni, Shopify ca persoană împuternicită).
+- [ ] Domeniul ales, apoi: `og:image` cu URL absolut, `<link rel="canonical">`, `/ro/` ca URL separat cu `hreflang`, `sitemap.xml`.
+- [ ] Lista de așteptare reală: în Shopify (tema din `store/`), formularul nativ de client. Pe site-ul static, `WAITLIST_ENDPOINT` către un serviciu care respectă nota de confidențialitate.
+- [ ] Termenii de vânzare, retragerea, garanția și datele GPSR se completează înainte să se deschidă rezervările.
 
-- **Engleza** stă direct în HTML. Fiecare text traductibil are un atribut `data-i18n="cheie"`. Pentru atribute precum `aria-label` și `alt` se folosește `data-i18n-attr="aria-label:cheie"`.
-- **Româna** stă în obiectul `const RO = { ... }` din scriptul de la finalul paginii, cu aceleași chei.
-- Textele generate din JS (terminalul din demo-ul Claude, erorile formularului, certificatul) sunt în `const DYN = { en: {...}, ro: {...} }`.
-- Dacă adaugi un text nou: pune `data-i18n="cheie.noua"` în HTML și `"cheie.noua": "…"` în `RO`. Când o cheie lipsește din RO, pagina afișează textul în engleză.
+## Tema Shopify
 
-## Formularul (waitlist)
-
-Trimite prin `POST` un JSON `{email, edition, consent, lang, ts, source}` la `WAITLIST_ENDPOINT`, cu `Content-Type: application/json`.
-
-- **Endpoint gol (acum):** înscrierea se salvează doar în browserul vizitatorului (`localStorage`, cheia `soul-waitlist`) și apare mesajul de mulțumire. **În acest mod nu primești niciun email.** E bun doar pentru demo.
-- Variante reale (endpoint-ul trebuie să accepte CORS și JSON):
-  - **Formspree / Getform / Basin**: creezi un formular, primești un URL `https://formspree.io/f/xxxx` și îl pui în `WAITLIST_ENDPOINT`.
-  - **Brevo / Mailchimp / Klaviyo**: printr-o funcție serverless mică (Netlify Function sau Cloudflare Worker) care primește JSON-ul și îl adaugă în listă. Cheia API nu se pune niciodată în pagină.
-  - **Google Apps Script** (Web App) care scrie într-un Google Sheet: gratuit, dar cu grijă la GDPR, adică datele trebuie să rămână în UE sau să ai temei legal.
-- Formularul are un câmp-capcană ascuns (`website`) contra boților, validare de email și bifă de consimțământ obligatorie.
-- Recomandat: double opt-in (email de confirmare) din serviciul folosit.
-
-## Randările și varianta de rezervă
-
-Imaginile `media/render-*.jpg` sunt generate din `../renders/*.png` (Blender) și din modelul CAD, cu:
-
-```bash
-python3 ../renders/src/export_web.py              # decupează + comprimă (JPEG progresiv, < 400 KB, 2 lățimi)
-python3 ../renders/src/export_web.py --cad-hires  # re-randează și vederea explodată CAD la 1500 px (OpenSCAD, ~45 s)
-```
-
-Unde apar în pagină:
-
-| Imagine | Secțiune | Ce arată |
-|---|---|---|
-| `render-hero` (4:3) | Design | Moneda albă, 3/4 |
-| `render-bag` (4:5) | Design | Picătura pe mânerul unei genți |
-| `render-lineup` (2:1) | Design | Cele 4 forme: nor, monedă, cabochon, picătură |
-| `render-inside` (4:5) | Design → „Inside” | Vedere explodată CAD, moneda 1,43″ varianta Founders (fără baterie) |
-| `render-desk` (16:9) | Works with Claude | Moneda pe suport lângă laptop |
-| `render-night` (16:9) | Charter | Moneda noaptea, lampă de veghe |
-
-Fiecare `<img>` are `srcset` (varianta `-sm` pentru telefon), `alt` și legendă în EN/RO (cheile `design.cap*`, `design.alt*`, `in.*`, `claude.cap`, `claude.alt`, `charter.cap`, `charter.alt` din obiectul `RO`).
-Dacă `render-hero` sau `render-lineup` lipsesc, handler-ul `onerror` le ascunde și afișează siluete SVG inline (monedă, picătură, cabochon, nor, la scară, cu dimensiunile din CAD).
-
-Fiecare randare are eticheta „Concept render” / „Randare de concept”, iar vederea explodată are eticheta „CAD”. Păstrează-le până există fotografii ale unui prototip real.
-
-## Testare locală
-
-```bash
-cd micul-smecher/site
-python3 -m http.server 8000     # apoi deschide http://localhost:8000
-```
-
-(Deschis direct ca `file://`, pagina funcționează, dar unele browsere blochează clipurile.)
-
-## Publicare (deploy)
-
-1. **GitHub Pages**: pui conținutul folderului `site/` într-un repo (sau în `/docs`), apoi Settings → Pages → Deploy from branch. Poți adăuga un domeniu propriu (fișier `CNAME`). Gratuit, HTTPS inclus.
-2. **Netlify**: tragi folderul `site/` în app.netlify.com/drop, sau conectezi repo-ul cu publish directory `site`. Primești HTTPS, domeniu propriu, Netlify Forms sau Functions pentru waitlist. Cea mai simplă variantă.
-3. **Shopify** (dacă magazinul e pe Shopify):
-   - *Varianta simplă*: găzduiești pagina pe Netlify sau GitHub Pages (de exemplu `soul.example` sau `launch.soul.example`) și din Shopify faci link sau redirect spre ea.
-   - *Varianta în temă*: Online Store → Themes → Edit code → creezi template-ul `page.soul.liquid` (sau o secțiune „Custom Liquid”) și lipești conținutul din `<style>`, `<body>` și `<script>`. Clipurile și PNG-urile le urci în Content → Files și schimbi căile `media/...` cu URL-urile Shopify CDN. Pagina de conținut simplă din editorul Shopify elimină scripturile, deci ai nevoie de template.
-   - Precomanda cu plată se face apoi prin produse Shopify (avans de 10 € ca produs separat) și aplicații de pre-order. Nu se face prin formularul acesta.
-
-Pagina se poate previzualiza și ca artifact pe claude.ai: are tokenuri de culoare, temă întunecată, lățime de telefon și fonturi Google.
-
-## Checklist înainte de lansare
-
-**Legal și firmă**
-- [ ] Footer: denumirea reală (acum `ARTEMIS DIGITAL S.R.L. [placeholder]`), adresă, CUI, Nr. Reg. Com. și email de contact (`CONTACT_EMAIL`). Toate câmpurile marcate cu portocaliu sunt placeholdere.
-- [ ] **GPSR** (Reg. UE 2023/988): numele și adresa poștală și electronică a producătorului, identificatorul produsului (tip, model, lot sau serie; acum `[SL-143]`/`[SL-175]` sunt inventate), avertismente („Nu este jucărie”, 16+, baterie litiu la Voice Edition), instrucțiuni în română.
-- [ ] Politica de confidențialitate, Termenii de vânzare și Cookies: acum sunt linkuri `#privacy`, `#terms`, `#cookies`. Trebuie pagini reale (GDPR: operator, scop, temei, durată, drepturi, transferuri).
-- [ ] Linkul ANPC SAL e deja pus. Adaugă și pictogramele ANPC dacă vinzi efectiv.
-- [ ] Când începi să încasezi bani: butonul de retragere (obligatoriu din 19.06.2026, Directiva 2023/2673), dreptul de retragere de 14 zile, garanția legală de 2 ani, data estimată de livrare și dreptul de anulare cu rambursare dacă întârzii (vezi `../research/03-compliance-2026-09-24.md`). Nu încasa plata integrală înainte de DVT.
-- [ ] Disclaimer-ul despre Claude/Anthropic rămâne în footer. Nu folosi logo-ul Anthropic sau Claude.
-
-**Prețuri și promisiuni**
-- [ ] `PRICES`, `SHIP` și `FOUNDERS_RANGE` în `SOUL_CONFIG`, apoi verifică textul „Prices include VAT”.
-- [ ] Tot ce promite pagina trebuie să fie adevărat la lansare: servere în UE, memorie care poate fi citită și ștearsă, publicarea firmware-ului dacă firma dispare, baterie înlocuibilă, fără cameră, 6 luni de AI vocal incluse. Șterge ce nu poți garanta.
-- [ ] „Voice Edition · in development” rămâne până funcția e gata.
-
-**Tehnic**
-- [ ] `WAITLIST_ENDPOINT` setat și testat cap-coadă (înscriere → apare în listă → email de confirmare).
-- [ ] Domeniu, HTTPS, imaginea `og:image` (acum `media/posters/idle.jpg`; ideal o imagine 1200×630 cu URL absolut).
-- [ ] Dacă adaugi analytics: banner de consimțământ pentru cookie-uri.
-- [ ] Test pe iPhone (Safari) și Android (Chrome): atingere, dublă atingere, ținut apăsat în demo, clipuri, comutator RO/EN, formular.
-- [ ] Rulează din nou capturile Playwright și verifică să nu apară scroll orizontal și erori în consolă.
-
-## v2 (octombrie 2026): „șmecher”
-
-- **Hero:** SOUL-ul (cut-out din `trailer/assets/soul_front`) e litera O din wordmark-ul uriaș; la scroll se rotește și crește, literele se depărtează.
-- **Ochii noi (v2, aprobați)** vin din `eyes/eyes.js` + `eyes/designs.js` (copiate din `../eyes/`; recopiază-le când colecția se schimbă). Fiecare randare are un `<canvas>` pus exact pe sticla neagră: poziția sticlei e în constanta `GLASS` din script (generată de `media/v2/glass-map.json`). Ochii urmăresc cursorul/degetul și reacționează la atingere, hover și scroll.
-- **Randări fără ochii vechi:** `media/v2/*.webp` (hand, desk, family, night: ochii vechi șterși și sticla refăcută; front și col-* sunt cut-out-uri transparente).
-- **Născut cu unul din 120 de ochi:** rola „naște-l pe al tău” folosește `SoulEyes.rollRandom` (aceleași șanse ca firmware-ul), tabel de rarități și grila colecției.
-- Formularul trimite acum `{email, colour, edition: "soul-m", consent, lang, ts, source: "landing-v2"}`. Prețul e în `SOUL_CONFIG.PRICES.from`, livrarea în `SOUL_CONFIG.SHIP`.
-- Sunetele sunt oprite implicit (butonul „sound” din meniu).
-- Versiunea veche a paginii (cu ochii vechi și clipurile mp4) e în istoricul git.
+Tema din `store/theme` se generează din `index.html` + `app.js`: `cd store/theme-src && node extract_ro.js && python3 build_theme.py`. Verificare: `npx --yes @shopify/theme-check-node` (0 erori).

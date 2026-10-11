@@ -101,7 +101,8 @@
       "fallback_info": "Used only while no product is selected above.",
       "tag": "Waitlist customer tag",
       "soulos": "SoulOS web demo link (footer)",
-      "cookies": "Cookies page"
+      "cookies": "Cookies page",
+      "warranty": "Warranty page (2-year legal guarantee)"
     },
     "company": {
       "name": "Company (legal)",

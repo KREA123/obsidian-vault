@@ -4,6 +4,7 @@
     "fallback_price": 249,
     "waitlist_tag": "waitlist",
     "company_name": "ARTEMIS DIGITAL S.R.L.",
+    "contact_email": "office@krea.ro",
     "share_description": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied."
   },
   "presets": {
@@ -12,6 +13,7 @@
       "fallback_price": 249,
       "waitlist_tag": "waitlist",
       "company_name": "ARTEMIS DIGITAL S.R.L.",
+      "contact_email": "office@krea.ro",
       "share_description": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied."
     }
   }

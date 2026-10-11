@@ -50,7 +50,6 @@
       <p class="pdp-price" data-pdp-price>
         {%- if product.price_varies -%}<span>{{ 'soul.price_from' | t }}</span> {%- endif -%}
         <b>{{ current.price | money_without_trailing_zeros }}</b>
-        <small>{{ 'soul.sp_vat' | t }}</small>
       </p>
       {%- if settings.prelaunch -%}<p class="pdp-note">{{ 'soul.ann_html' | t }}</p>{%- endif -%}
 

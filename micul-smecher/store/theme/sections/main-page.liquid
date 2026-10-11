@@ -12,7 +12,7 @@
     <div class="legal page-company">
       <div>
         <h2 class="h-m">{{ 'soul.f_company' | t }}</h2>
-        <p>{{ settings.company_name | escape }} · {{ 'soul.f_city' | t }}<br>{{ 'soul.f_addr' | t }} {% render 'soul-field', value: settings.company_address, ph: '[street, number, Bucharest]' %}<br>{{ 'soul.f_cui' | t }} {% render 'soul-field', value: settings.company_cui, ph: '[RO00000000]' %} · {{ 'soul.f_reg' | t }} {% render 'soul-field', value: settings.company_reg, ph: '[J40/0000/2026]' %}<br>{{ 'soul.f_contact' | t }} {% render 'soul-field', value: settings.contact_email, ph: '[email]' %}</p>
+        <p>{{ settings.company_name | escape }} · {{ 'soul.f_city' | t }}<br>{%- render 'soul-company' -%}</p>
       </div>
     </div>
     {%- endif -%}

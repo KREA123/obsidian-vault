@@ -92,7 +92,7 @@ EN_RAW["res.eyebrow"] = "waitlist · from {{ price }}"
 RO_SRC = dict(RO_SRC)
 RO_SRC["res.eyebrow"] = "listă de așteptare · de la {{ price }}"
 for d in (EN_RAW, RO_SRC):
-    d["res.consent"] = d["res.consent"].replace('href="#legal"', 'href="{{ privacy_url }}"')
+    d["res.consent"] = d["res.consent"].replace('href="legal.html#privacy"', 'href="{{ privacy_url }}"')
 
 # pass 2: rewrite the DOM with Liquid
 SPECIAL_ARGS = {"res.eyebrow": ": price: soul_price", "res.consent": ": privacy_url: privacy_url"}
@@ -262,19 +262,18 @@ links_new = """<nav class="foot-links" aria-label="Legal">
         {%- if shop.terms_of_service -%}<a href="{{ shop.terms_of_service.url }}" data-i18n="f.terms">{{ 'soul.f_terms' | t }}</a>{%- endif -%}
         {%- if settings.cookies_page != blank -%}<a href="{{ settings.cookies_page.url }}" data-i18n="f.cookies">{{ 'soul.f_cookies' | t }}</a>{%- endif -%}
         {%- if shop.refund_policy -%}<a href="{{ shop.refund_policy.url }}">{{ 'soul.shop.refund' | t }}</a>{%- endif -%}
+        {%- if settings.warranty_page != blank -%}<a href="{{ settings.warranty_page.url }}">{{ 'soul.shop.warranty' | t }}</a>{%- endif -%}
         {%- if shop.shipping_policy -%}<a href="{{ shop.shipping_policy.url }}">{{ 'soul.shop.shipping' | t }}</a>{%- endif -%}
         {%- if shop.contact_information -%}<a href="{{ shop.contact_information.url }}">{{ 'soul.shop.contact' | t }}</a>{%- endif -%}
         {%- for link in section.settings.menu.links -%}<a href="{{ link.url }}">{{ link.title | escape }}</a>{%- endfor -%}
         {%- if settings.soulos_url != blank -%}<a href="{{ settings.soulos_url }}" target="_blank" rel="noopener" data-i18n="f.os">{{ 'soul.f_os' | t }}</a>{%- endif -%}
         <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener" data-i18n="f.anpc">{{ 'soul.f_anpc' | t }}</a>
-        <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener" data-i18n="f.odr">{{ 'soul.f_odr' | t }}</a>
       </nav>"""
 t = t.replace(links, links_new)
-t = t.replace('<span class="ph">[street, number, Bucharest]</span>', "{% render 'soul-field', value: settings.company_address, ph: '[street, number, Bucharest]' %}")
-t = t.replace('<span class="ph">[RO00000000]</span>', "{% render 'soul-field', value: settings.company_cui, ph: '[RO00000000]' %}")
-t = t.replace('<span class="ph">[J40/0000/2026]</span>', "{% render 'soul-field', value: settings.company_reg, ph: '[J40/0000/2026]' %}")
-t = t.replace('<span class="email" data-cfg="email">hello@soul.example</span>',
-              "{%- if settings.contact_email != blank -%}<a class=\"email\" href=\"mailto:{{ settings.contact_email }}\">{{ settings.contact_email }}</a>{%- else -%}<span class=\"ph\">[email]</span>{%- endif -%}")
+# company identity (Legea 365/2002 art. 5): real values come from theme settings; until all are set, a plain "listed before opening" line
+co_old = re.search(r'<span data-co="address" hidden>.*?</a></p>', t, re.S)
+assert co_old, "footer company block"
+t = t.replace(co_old.group(0), "{%- render 'soul-company' -%}</p>")
 t = t.replace("ARTEMIS DIGITAL S.R.L. · ", "{{ settings.company_name | escape }} · ", 1)
 assert "#legal\"" not in t.replace('id="legal"', ""), "stray #legal"
 # markets / currency switcher
@@ -327,7 +326,7 @@ snippet = """{%- comment -%}
   Export: Admin > Customers > filter "Tagged with: waitlist" > Export.
 {%- endcomment -%}
 {%- liquid
-  assign privacy_url = shop.privacy_policy.url | default: '#legal'
+  assign privacy_url = shop.privacy_policy.url | default: '/policies/privacy-policy'
 -%}
 {%- form 'customer', id: 'waitlist', class: 'form', novalidate: 'novalidate', data-native: 'true' -%}
   {%- if form.posted_successfully? -%}
@@ -355,7 +354,12 @@ w("snippets/soul-price.liquid", """{%- comment -%} "from" price of SOUL, formatt
     echo cents | money_without_trailing_zeros
   endif
 -%}""")
-w("snippets/soul-field.liquid", """{%- if value != blank -%}{{ value | escape }}{%- else -%}<span class="ph">{{ ph }}</span>{%- endif -%}""")
+w("snippets/soul-company.liquid", """{%- comment -%}Company identity lines for the footer and the legal page. Fill them in Theme settings > Company (legal).{%- endcomment -%}
+{%- if settings.company_address != blank -%}{{ 'soul.f_addr' | t }} {{ settings.company_address | escape }}<br>{%- endif -%}
+{%- if settings.company_cui != blank -%}{{ 'soul.f_cui' | t }} {{ settings.company_cui | escape }} · {% endif -%}
+{%- if settings.company_reg != blank -%}{{ 'soul.f_reg' | t }} {{ settings.company_reg | escape }}<br>{%- endif -%}
+{%- if settings.company_address == blank or settings.company_cui == blank or settings.company_reg == blank -%}{{ 'soul.f_copending' | t }}<br>{%- endif -%}
+{{ 'soul.f_contact' | t }} {% if settings.contact_email != blank -%}<a class="email" href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>{%- else -%}<a class="email" href="{{ routes.root_url }}">{{ shop.name }}</a>{%- endif -%}""")
 w("snippets/meta-tags.liquid", """{%- liquid
   assign og_title = page_title | default: shop.name
   assign og_desc = page_description | default: shop.description | default: settings.share_description
@@ -452,7 +456,6 @@ main_product = """{%- liquid
       <p class="pdp-price" data-pdp-price>
         {%- if product.price_varies -%}<span>{{ 'soul.price_from' | t }}</span> {%- endif -%}
         <b>{{ current.price | money_without_trailing_zeros }}</b>
-        <small>{{ 'soul.sp_vat' | t }}</small>
       </p>
       {%- if settings.prelaunch -%}<p class="pdp-note">{{ 'soul.ann_html' | t }}</p>{%- endif -%}
 
@@ -549,7 +552,7 @@ simple("main-page", "Page", "Pagină", """<section class="sec page-sec{% if sect
     <div class="legal page-company">
       <div>
         <h2 class="h-m">{{ 'soul.f_company' | t }}</h2>
-        <p>{{ settings.company_name | escape }} · {{ 'soul.f_city' | t }}<br>{{ 'soul.f_addr' | t }} {% render 'soul-field', value: settings.company_address, ph: '[street, number, Bucharest]' %}<br>{{ 'soul.f_cui' | t }} {% render 'soul-field', value: settings.company_cui, ph: '[RO00000000]' %} · {{ 'soul.f_reg' | t }} {% render 'soul-field', value: settings.company_reg, ph: '[J40/0000/2026]' %}<br>{{ 'soul.f_contact' | t }} {% render 'soul-field', value: settings.contact_email, ph: '[email]' %}</p>
+        <p>{{ settings.company_name | escape }} · {{ 'soul.f_city' | t }}<br>{%- render 'soul-company' -%}</p>
       </div>
     </div>
     {%- endif -%}
@@ -746,20 +749,21 @@ settings_schema = [
          "info": L("settings_schema.store.fallback_info", "Used only while no product is selected above.", "Folosit doar cât timp nu e ales un produs mai sus.")},
         {"type": "text", "id": "waitlist_tag", "default": "waitlist", "label": L("settings_schema.store.tag", "Waitlist customer tag", "Eticheta clienților din listă")},
         {"type": "url", "id": "soulos_url", "label": L("settings_schema.store.soulos", "SoulOS web demo link (footer)", "Link demo SoulOS (subsol)")},
-        {"type": "page", "id": "cookies_page", "label": L("settings_schema.store.cookies", "Cookies page", "Pagina despre cookie-uri")}]},
+        {"type": "page", "id": "cookies_page", "label": L("settings_schema.store.cookies", "Cookies page", "Pagina despre cookie-uri")},
+        {"type": "page", "id": "warranty_page", "label": L("settings_schema.store.warranty", "Warranty page (2-year legal guarantee)", "Pagina despre garanție (garanția legală de 2 ani)")}]},
     {"name": L("settings_schema.company.name", "Company (legal)", "Firma (date legale)"), "settings": [
         {"type": "text", "id": "company_name", "default": "ARTEMIS DIGITAL S.R.L.", "label": L("settings_schema.company.cname", "Company name", "Denumire firmă")},
         {"type": "text", "id": "company_address", "label": L("settings_schema.company.address", "Registered address", "Sediu social")},
         {"type": "text", "id": "company_cui", "label": L("settings_schema.company.cui", "Tax ID (CUI)", "CUI")},
         {"type": "text", "id": "company_reg", "label": L("settings_schema.company.reg", "Trade Register No.", "Nr. Reg. Com.")},
-        {"type": "text", "id": "contact_email", "label": L("settings_schema.company.email", "Contact email", "Email de contact")}]},
+        {"type": "text", "id": "contact_email", "default": "office@krea.ro", "label": L("settings_schema.company.email", "Contact email", "Email de contact")}]},
     {"name": L("settings_schema.brand.name", "Brand and sharing", "Brand și distribuire"), "settings": [
         {"type": "image_picker", "id": "favicon", "label": L("settings_schema.brand.favicon", "Favicon (square, 512 px)", "Favicon (pătrat, 512 px)")},
         {"type": "image_picker", "id": "share_image", "label": L("settings_schema.brand.share", "Social share image (1200×630)", "Imagine pentru distribuire (1200×630)")},
         {"type": "text", "id": "share_description", "default": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied.", "label": L("settings_schema.brand.desc", "Fallback share description", "Descriere de rezervă pentru distribuire")}]}
 ]
 jw("config/settings_schema.json", settings_schema)
-defaults = {"prelaunch": True, "fallback_price": 249, "waitlist_tag": "waitlist", "company_name": "ARTEMIS DIGITAL S.R.L.",
+defaults = {"prelaunch": True, "fallback_price": 249, "waitlist_tag": "waitlist", "company_name": "ARTEMIS DIGITAL S.R.L.", "contact_email": "office@krea.ro",
             "share_description": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied."}
 jw("config/settings_data.json", {"current": dict(defaults), "presets": {"Default": dict(defaults)}})
 

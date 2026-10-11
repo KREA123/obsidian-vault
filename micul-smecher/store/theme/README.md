@@ -50,7 +50,7 @@ Ia pașii în ordine. Fiecare pas spune unde dai click în Shopify Admin.
      - **SOUL product**: îl alegi după pasul 5.
      - **Fallback price**: 249.
      - **Waitlist tag**: `waitlist`.
-   - **Company (legal)**: denumirea firmei, sediul, CUI, Nr. Reg. Com. și emailul de contact. Până le completezi, pe site apar paranteze drepte, ca să se vadă ce lipsește.
+   - **Company (legal)**: denumirea firmei, sediul, CUI, Nr. Reg. Com. și emailul de contact (implicit `office@krea.ro`). Până le completezi pe toate trei, subsolul spune că datele firmei apar înainte de deschiderea publică. Legea 365/2002 art. 5 le cere înainte ca magazinul să fie public. Fără prefixul RO la CUI cât timp firma e neplătitoare de TVA.
    - **Brand and sharing**:
      - **Favicon**: logo-ul pătrat din `brand/SOUL-Brand-Package/Favicon`.
      - **Social share image**: o imagine de 1200×630, de exemplu randarea hero.
@@ -95,6 +95,9 @@ Ia pașii în ordine. Fiecare pas spune unde dai click în Shopify Admin.
 Apoi:
 
 1. **Settings → Policies**: completezi **Privacy policy**, **Terms of service**, **Refund policy**, **Shipping policy** și **Contact information**. Shopify are un buton pentru șabloane, dar textele trebuie verificate de un avocat. Linkurile din subsol și din formularul de listă apar singure când politicile există.
+   - Textul pentru **Privacy policy** (nota GDPR art. 13 pentru lista de așteptare: operator, scop, temei, păstrare, Shopify ca persoană împuternicită, drepturi, ANSPDCP), pentru retragere (14 zile, OUG 34/2014) și pentru garanția legală de 2 ani (OUG 140/2021) e gata în `site/legal.html`, în engleză și română. Îl copiezi în Privacy policy și Refund policy.
+   - Garanția: creezi o pagină **Garanție** cu textul din `site/legal.html#warranty` și o alegi în **Theme settings → SOUL store → Warranty page**. Apare în subsol.
+   - Linkul spre platforma ODR a UE nu mai există în subsol: platforma s-a închis pe 20 iulie 2025. Rămâne ANPC · SAL.
 2. **Customize → Theme settings → SOUL store → Cookies page**: alege pagina „Cookie-uri”.
 3. **Online Store → Navigation**:
    - Fă un meniu „Footer” cu paginile de mai sus.

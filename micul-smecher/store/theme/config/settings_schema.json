@@ -44,6 +44,11 @@
         "type": "page",
         "id": "cookies_page",
         "label": "t:settings_schema.store.cookies"
+      },
+      {
+        "type": "page",
+        "id": "warranty_page",
+        "label": "t:settings_schema.store.warranty"
       }
     ]
   },
@@ -74,6 +79,7 @@
       {
         "type": "text",
         "id": "contact_email",
+        "default": "office@krea.ro",
         "label": "t:settings_schema.company.email"
       }
     ]

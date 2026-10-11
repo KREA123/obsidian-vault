@@ -25,19 +25,20 @@ const RO = {
   "hero.hint": "psst. mișcă mouse-ul.",
   "hero.sayK": "SOUL · mărimea M · MĂRGĂRITAR", "hero.say": "cât palma. din aluminiu. viu.",
   "hero.h1": "AI-ul tău are creier.<br><em>dă-i un suflet.</em>",
-  "hero.lead": "O piatră de aluminiu cât palma, cu doi ochi vii. Clipește, te urmărește cu privirea, ațipește când pleci. Și vorbește cu AI-ul pe care îl ai deja.",
+  "hero.lead": "O piatră de aluminiu cât palma, cu doi ochi vii. Clipește, îți urmărește degetul pe sticlă, ațipește când e lăsată în pace. Și vorbește cu AI-ul pe care îl ai deja.",
+  "hero.pos": "AI-ul tău · fără cameră · memoria stă pe dispozitiv",
   "hero.cta": "intră pe listă", "price.from": "de la",
   "marq.label": "SOUL, pe scurt",
   "m1": "fără cameră", "m2": "ascultă doar cât ții sticla", "m3": "Claude-ul sau ChatGPT-ul tău", "m4": "viu și offline", "m5": "se naște cu unul din 120 de ochi", "m6": "memoria stă pe dispozitiv", "m7": "proiectat în România",
   "alive.eyebrow": "viu, offline", "alive.h1": "se uită", "alive.h2": "înapoi.",
   "alive.lead": "Fără aplicație, fără cont, fără internet. Tot ce vezi pe sticlă rulează pe piatră și merge mai departe chiar dacă Wi-Fi-ul nu mai revine niciodată.",
   "alive.c1t": "clipește.", "alive.c1p": "La întâmplare, niciodată după ceas. Uneori de două ori, când e curios.",
-  "alive.c2t": "te urmărește.", "alive.c2p": "Mouse-ul tău, aici. Degetul tău, pe birou. Știe mereu unde ai plecat.",
+  "alive.c2t": "îți urmărește degetul.", "alive.c2p": "Îți urmărește degetul pe sticlă (și mouse-ul, aici) și ațipește când e lăsată în pace.",
   "alive.c3t": "are toane.", "alive.c3p": "Vesel, somnoros, bănuitor, <i>șmecher</i>. Atinge-l și vezi ce-ți iese.",
   "fig.render": "randare de concept",
   "obj.alt": "Randare de concept: SOUL din profil, o pietricică subțire de aluminiu, adâncă de 31,5 mm, cu fața de sticlă neagră ușor înclinată în sus și fanta difuzorului în cusătura laterală.",
   "obj.eyebrow": "obiectul · MĂRGĂRITAR", "obj.h2": "o piatră pe care<br>vrei s-o ții în mână.",
-  "obj.lead": "Forma lui se numește MĂRGĂRITAR: o pietricică cu umeri moi la creștet, din aluminiu, finisată ca o piatră de râu. O singură sticlă neagră rotundă pe față. Fără logo, fără butoane, fără găuri.",
+  "obj.lead": "Forma lui se numește MĂRGĂRITAR: o pietricică cu umeri moi la creștet, din aluminiu, finisată ca o piatră de râu. O singură sticlă neagră rotundă. Nimic altceva pe față: fără logo, fără butoane.",
   "obj.k1": "mărimea M", "obj.k2": "sticla", "obj.v2": "2,8″ rotundă, neagră", "obj.k3": "corp", "obj.v3": "aluminiu 6061", "obj.k4": "finisaj", "obj.v4": "sablat, anodizat",
   "col.eyebrow": "cinci aluminiuri", "col.h2": "tu alegi corpul.<br>ochii se aleg singuri.", "col.legend": "Culoare",
   "col.same": "Toate culorile costă la fel. Aluminiu 6061 sablat și anodizat, cu fața din sticlă neagră.",
@@ -53,10 +54,10 @@ const RO = {
   "born.gridT": "colecția", "born.filter": "Filtrează după raritate",
   "ai.eyebrow": "AI-ul tău, întrupat", "ai.h2": "adu-ți propriul AI.<br>primește un corp.",
   "ai.lead": "SOUL se conectează la AI-ul pe care îl folosești deja, pe contul tău. Nu vindem AI și nu îl includem. Sau îl ții offline: tot viu e.",
-  "ai.c.k": "contul tău", "ai.c.t": "Claude-ul tău.", "ai.c.p": "Conectezi propriul cont Anthropic sau propria cheie API și vorbești cu el ținând sticla.",
-  "ai.c.l1": "cont propriu sau cheie API", "ai.c.l2": "adaugi SOUL ca conector în aplicația Claude: îi ceri lui Claude să-i pună un plan, un memento sau o notiță",
-  "ai.g.k": "cheia ta, de acum", "ai.g.t": "ChatGPT-ul tău.", "ai.g.p": "Pui propria cheie API OpenAI și merge. Plătești direct la OpenAI, nu nouă.",
-  "ai.g.l1": "cheie API proprie: merge de acum", "ai.g.l2": "„Sign in with ChatGPT”: în așteptarea aprobării OpenAI",
+  "ai.c.k": "cheia ta API", "ai.c.t": "Claude-ul tău.", "ai.c.p": "Folosești propria cheie API Anthropic și vorbești cu el ținând sticla.",
+  "ai.c.l1": "propria cheie API Anthropic (din Anthropic Console)", "ai.c.l2": "adaugi SOUL ca conector personalizat în aplicația Claude: îi ceri lui Claude să-i pună un plan, un memento sau o notiță",
+  "ai.g.k": "cheia ta · în dezvoltare", "ai.g.t": "ChatGPT-ul tău.", "ai.g.p": "Merge cu propria cheie API OpenAI (în dezvoltare). Plătești direct la OpenAI, nu nouă.",
+  "ai.g.l1": "cheie API OpenAI proprie: în dezvoltare", "ai.g.l2": "„Sign in with ChatGPT”: în așteptarea aprobării OpenAI",
   "ai.o.k": "fără cont", "ai.o.t": "Offline.", "ai.o.p": "Fără AI, fără înregistrare, niciodată. Ochii, toanele, notițele, mementourile, alarmele și focusul trăiesc pe piatră.",
   "ai.o.l1": "nimic nu pleacă de pe dispozitiv", "ai.o.l2": "scrii pe tastatura lui rotundă",
   "ai.m.t": "SOUL Memory stă pe dispozitiv.", "ai.m.p": "Ce ține minte despre tine rămâne în piatră, în cuvinte simple pe care le poți citi și șterge. Când vorbești, merge cu tine la AI-ul pe care l-ai conectat, așa că poți schimba AI-ul fără s-o iei de la capăt.",
@@ -101,14 +102,14 @@ const RO = {
   "sp.k5": "ochi", "sp.v5": "unul din 120 de modele, decis la naștere", "sp.k6": "creier", "sp.v6": "ESP32-S3, Bluetooth LE și Wi-Fi",
   "sp.k7": "AI", "sp.v7": "Claude-ul tău, ChatGPT-ul tău sau offline", "sp.k8": "voce", "sp.v8": "ții sticla ca să vorbești; difuzor în cusătura laterală",
   "sp.k9": "cameră", "sp.v9": "niciuna", "sp.k10": "încărcare", "sp.v10": "în OU, oul lui, prin contactele din picior",
-  "sp.k11": "preț", "sp.vat": "cu TVA", "sp.k12": "stadiu", "sp.v12": "prelansare · încă fără certificare CE",
+  "sp.k11": "preț", "sp.k12": "stadiu", "sp.v12": "prelansare · încă fără certificare CE",
   "box.k": "planificat", "box.t": "ce e în cutie", "box.1": "SOUL, mărimea M", "box.1p": "în culoarea aleasă de tine, cu ochii aleși de el", "box.2": "OU, oul lui de încărcare", "box.2p": "unde se încarcă și doarme",
   "box.note": "Lista finală, autonomia bateriei și accesoriile le publicăm înainte să se deschidă rezervările.",
   "sp.note": "Toate imaginile produsului sunt randări de concept, nu fotografii. Specificațiile descriu designul aflat în dezvoltare și se pot schimba înainte de producție.",
   "faq.eyebrow": "întrebări", "faq.h2": "întrebări bune.",
   "q1": "Îl pot cumpăra acum?", "a1": "Încă nu. SOUL are Bluetooth și Wi-Fi, deci trebuie să treacă testele CE (Directiva UE privind echipamentele radio) într-un laborator acreditat înainte să-l poată vinde cineva. Încă nu are certificare CE. Până atunci există doar o listă de așteptare: fără plată, fără precomenzi, fără avansuri.",
   "q2": "Am nevoie de abonament?", "a2": "Nu la noi. SOUL e viu offline, fără cont. Pentru AI îți conectezi propriul Claude sau ChatGPT, pe contul sau cheia ta API, și îi plătești direct pe ei. Nu vindem și nu includem AI.",
-  "q3": "Cu ce AI merge?", "a3": "Claude: propriul cont Anthropic sau propria cheie API, plus un conector pentru aplicația Claude. ChatGPT: propria cheie API OpenAI merge de acum; „Sign in with ChatGPT” așteaptă aprobarea OpenAI. Sau deloc AI. SOUL e în dezvoltare, iar aceste conexiuni sunt în lucru.",
+  "q3": "Cu ce AI merge?", "a3": "Claude: propria cheie API Anthropic, plus SOUL adăugat ca conector personalizat în aplicația Claude. ChatGPT: propria cheie API OpenAI (în dezvoltare); „Sign in with ChatGPT” așteaptă aprobarea OpenAI. Sau deloc AI. SOUL e în dezvoltare, iar aceste conexiuni sunt în lucru.",
   "q4": "Ce e SOUL Memory?", "a4": "Lucrurile pe care SOUL le ține minte despre tine: nume, planuri, preferințe. Stau pe dispozitiv, în cuvinte simple pe care le poți citi și șterge. Când vorbești, merg cu tine la AI-ul conectat, așa că schimbarea AI-ului nu înseamnă s-o iei de la capăt.",
   "q5": "Ascultă tot timpul? Are cameră?", "a5": "Nu și nu. Ascultă doar cât timp ții degetul pe sticlă. Nu are cuvânt de trezire și nu are cameră.",
   "q6": "Pot să-i aleg ochii?", "a6": "Nu, și tocmai asta e distracția. Tu alegi culoarea corpului. Ochii se decid o singură dată, la prima pornire, din ID-ul unic al cipului: unul din 120 de modele, unele mult mai rare decât altele. Șansele sunt publicate mai sus.",
@@ -120,13 +121,13 @@ const RO = {
   "res.eyebrow": "listă de așteptare · de la 249 €", "res.h2": "fii acolo când deschide ochii.",
   "res.lead": "Lasă-ne emailul. Îți scriem când se deschid rezervările, înaintea tuturor. Fără plată, fără precomandă.",
   "res.email": "email", "res.lang": "emailuri în", "res.colour": "culoarea preferată",
-  "res.consent": "Sunt de acord să primesc emailuri despre SOUL de la ARTEMIS DIGITAL S.R.L. și mă pot dezabona oricând. Citește <a href=\"#legal\">Politica de confidențialitate</a>.",
+  "res.consent": "Sunt de acord să primesc emailuri despre SOUL de la ARTEMIS DIGITAL S.R.L. și mă pot dezabona oricând. Citește <a href=\"legal.html#privacy\">Nota de informare privind datele</a>.",
   "res.submit": "intră pe listă", "res.fine": "Aici nu se plătește nimic. Un email când se deschid rezervările și câte o noutate până atunci.",
   "res.th": "ești pe listă.", "res.tp": "Tocmai ți-a zâmbit. Îți scriem înaintea tuturor.", "res.tc": "culoare", "res.tl": "limbă",
   "res.demo": "Mod de previzualizare: pagina asta încă nu trimite emailul nicăieri. Versiunea de magazin o va face.",
-  "f.privacy": "Politica de confidențialitate", "f.terms": "Termeni", "f.cookies": "Cookie-uri", "f.os": "Încearcă SoulOS", "f.anpc": "Litigii consumatori (ANPC · SAL)", "f.odr": "Soluționarea online a litigiilor (UE)",
-  "f.company": "Companie", "f.city": "București, România", "f.addr": "Adresă:", "f.cui": "CUI:", "f.reg": "Nr. Reg. Com.:", "f.contact": "Contact:",
-  "f.status": "Stadiul produsului", "f.statusp": "SOUL e un produs în dezvoltare. Încă nu are certificare CE și nu e oferit spre vânzare. Paginile legale (confidențialitate, termeni, cookie-uri, datele producătorului conform GPSR) sunt provizorii și vor fi publicate înainte să se deschidă rezervările.",
+  "f.privacy": "Nota de confidențialitate", "f.terms": "Termeni", "f.cookies": "Cookie-uri", "f.withdraw": "Retragere și retur", "f.warranty": "Garanție", "f.os": "Încearcă SoulOS", "f.anpc": "Litigii consumatori (ANPC · SAL)",
+  "f.company": "Companie", "f.city": "București, România", "f.addr": "Adresă:", "f.cui": "CUI:", "f.reg": "Nr. Reg. Com.:", "f.contact": "Contact:", "f.coPending": "Sediul social, CUI și Nr. Reg. Com. apar aici înainte ca lista de așteptare să se deschidă publicului.",
+  "f.status": "Stadiul produsului", "f.statusp": "SOUL e un produs în dezvoltare. Încă nu are certificare CE și nu e oferit spre vânzare. Nota de confidențialitate se aplică de acum. Termenii de vânzare, retragerea, garanția și datele producătorului conform GPSR se aplică doar când începe vânzarea și vor fi completate înainte.",
   "f.tm": "Claude este o marcă comercială a Anthropic. ChatGPT este o marcă comercială a OpenAI. SOUL este independent și nu este afiliat cu Anthropic sau OpenAI și nici susținut de acestea.",
   "f.made": "© 2026 ARTEMIS DIGITAL S.R.L. Ține sticla.", "f.ro": "Proiectat în România."
 };
@@ -200,7 +201,10 @@ let COUNT = 120;
 function fillConfig() {
   const P = CFG.PRICES || {};
   $$("[data-price]").forEach(el => { const v = P[el.dataset.price]; if (v != null) el.textContent = money(v); });
-  $$("[data-cfg='email']").forEach(el => { if (CFG.CONTACT_EMAIL) el.textContent = CFG.CONTACT_EMAIL; });
+  $$("[data-cfg='email']").forEach(el => { if (CFG.CONTACT_EMAIL) { el.textContent = CFG.CONTACT_EMAIL; if (el.tagName === "A") el.href = "mailto:" + CFG.CONTACT_EMAIL; } });
+  const CO = CFG.COMPANY || {}; let coAll = true;
+  ["address", "cui", "reg"].forEach(k => { const v = (CO[k] || "").trim(); if (!v) coAll = false; $$(`[data-cfg='${k}']`).forEach(el => { el.textContent = v; }); $$(`[data-co='${k}']`).forEach(el => { el.hidden = !v; }); });
+  $$("[data-co='pending']").forEach(el => { el.hidden = coAll; });
   $$("[data-count]").forEach(el => { el.textContent = COUNT; });
 }
 const langHooks = [];
@@ -342,8 +346,29 @@ const heroSec = $(".hero"), pin = $(".hero-pin"), dev = $("#hero-dev"), wS = $("
 const PIN = !RM && innerHeight >= 520;
 if (!PIN) document.documentElement.classList.add("no-pin");
 let lastY = scrollY, lastT = performance.now(), surprisedAt = 0, greeted = false;
+const annEl = $(".ann"), rootSt = document.documentElement.style;
+let annSet = -1;
+function syncAnn() { // the hero fills the first screen below the announcement bar, whatever its height
+  const v = annEl ? Math.max(0, Math.round(annEl.getBoundingClientRect().bottom)) : 0;
+  if (v !== annSet) { annSet = v; rootSt.setProperty("--ann", v + "px"); }
+}
+syncAnn();
+if (annEl && "ResizeObserver" in window) new ResizeObserver(() => { annSet = -1; syncAnn(); endFit = null; if (typeof onScroll === "function") onScroll(); }).observe(annEl);
+/* end pose of the pinned hero: the stone grows and rises, but always ends above "palm-sized. aluminium. alive." */
+const stageEl = $("#stage"), sayEl = $(".say");
+let endFit = null;
+function fitEnd() {
+  if (!dev || !stageEl || !sayEl) return;
+  const mobile = innerWidth <= 720, H = dev.offsetHeight;
+  if (!H) return;
+  const c = stageEl.offsetTop + dev.offsetTop + .02 * H;           // centre of the untransformed stone, in stage-box px
+  const top = 6, bot = sayEl.offsetTop - (mobile ? 14 : 18);       // room between the top of the stage and the kicker
+  const sc = clamp((bot - top) / (H * 1.03), .85, mobile ? 1.12 : 1.2);
+  endFit = { sc, dy: (top + bot) / 2 - c };
+}
 function onScroll() {
   const y = scrollY;
+  syncAnn();
   nav.classList.toggle("scrolled", y > 40);
   if (PIN && pin) {
     const r = pin.getBoundingClientRect(), span = Math.max(1, pin.offsetHeight - (innerHeight - nav.offsetHeight));
@@ -351,9 +376,11 @@ function onScroll() {
     const e = p * p * (3 - 2 * p);
     heroSec.style.setProperty("--p", p.toFixed(4));
     const mobile = innerWidth <= 720;
-    dev.style.setProperty("--sc", (1 + e * (mobile ? .12 : .2)).toFixed(4));
+    if (!endFit) fitEnd();
+    const ef = endFit || { sc: mobile ? 1.12 : 1.2, dy: mobile ? -30 : -46 };
+    dev.style.setProperty("--sc", (1 + e * (ef.sc - 1)).toFixed(4));
     dev.style.setProperty("--dx", mobile ? "0%" : (e * 11.71).toFixed(3) + "%");
-    dev.style.setProperty("--dy", (-e * (mobile ? 30 : 46)).toFixed(1) + "px");
+    dev.style.setProperty("--dy", (e * ef.dy).toFixed(1) + "px");
     dev.style.setProperty("--rot", (Math.sin(e * Math.PI) * -5).toFixed(3) + "deg");
     wS.setAttribute("transform", `translate(${(-70 * e).toFixed(2)} 0)`);
     wU.setAttribute("transform", `translate(${(60 * e).toFixed(2)} 0)`);
@@ -369,7 +396,7 @@ function onScroll() {
 }
 let ticking = false;
 addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; onScroll(); }); } }, { passive: true });
-addEventListener("resize", onScroll, { passive: true });
+addEventListener("resize", () => { endFit = null; onScroll(); }, { passive: true });
 onScroll();
 
 let lastMood = 0;

@@ -1,0 +1,6 @@
+{%- comment -%}Company identity lines for the footer and the legal page. Fill them in Theme settings > Company (legal).{%- endcomment -%}
+{%- if settings.company_address != blank -%}{{ 'soul.f_addr' | t }} {{ settings.company_address | escape }}<br>{%- endif -%}
+{%- if settings.company_cui != blank -%}{{ 'soul.f_cui' | t }} {{ settings.company_cui | escape }} · {% endif -%}
+{%- if settings.company_reg != blank -%}{{ 'soul.f_reg' | t }} {{ settings.company_reg | escape }}<br>{%- endif -%}
+{%- if settings.company_address == blank or settings.company_cui == blank or settings.company_reg == blank -%}{{ 'soul.f_copending' | t }}<br>{%- endif -%}
+{{ 'soul.f_contact' | t }} {% if settings.contact_email != blank -%}<a class="email" href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>{%- else -%}<a class="email" href="{{ routes.root_url }}">{{ shop.name }}</a>{%- endif -%}

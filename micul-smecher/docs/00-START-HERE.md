@@ -102,7 +102,7 @@ SOUL is a personal AI object you keep on your desk and hold in your hand. The pi
 | `firmware/` | PlatformIO project: `src/` (board), `lib/Suflet/src/` (engine + SoulOS modules), `sim/`, `test/`, `tools/` (fonts, word lists, media export) |
 | `ai/` | Python `suflet_ai`: companion, actions, providers (rules / Claude / ChatGPT), keystore, MCP server, FastAPI server, tests |
 | `os/` | `index.html` (SoulOS prototype), `SPEC.md`, `ARCHITECTURE.md`, `research/01–04`, `lang-mockups/`, `screenshots/` |
-| `site/` | `index.html` (landing), `preview.html`, `os.html`, `media/`, `README.md` (config, waitlist, deploy, launch checklist) |
+| `site/` | `index.html` (landing v3), `legal.html`, `os.html`, `media/`, `README.md` (config, waitlist, deploy, launch checklist) |
 | `media/` | Simulator clips (idle, boop, purr, dizzy, sleep, missed_you, rare, ai_talk, claude_buddy, night) + SoulOS keyboard/time-picker frames |
 | `research/` | 01 market · 02 hardware · 03 compliance · 04 AI companions · 05 brand/product dev/funding · 06 design v2 · 07 amulet language · 08 CMF · **09 final design (HOPA)** · **10 aluminium case** · 11 competitors · **12 bigger screen** · `design-max/` (CMF, creatures, dock, icons, trends, render brief) |
 | `investors/` | `DECK.md`, `INVESTORS.md`, `FINANTARE-ROMANIA.md`, **`poc-1.1/`** (official PR BI PoC 1.1 annexes: business plan template, ETF grid, scientific report model, TRL levels) |

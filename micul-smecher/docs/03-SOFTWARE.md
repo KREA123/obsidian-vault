@@ -247,7 +247,7 @@ The UX spec is `os/SPEC.md`. The architecture and the 0.1 → 1.0 roadmap are in
 ## 4. Landing page: `site/`
 
 - `site/index.html`: EN by default, RO toggle (`#ro`). Live canvas eyes, the "Works with Claude" demo, the birth certificate, v6 renders (`media/soul-*.jpg`), simulator clips (`media/*.mp4`) and the waitlist.
-- `site/preview.html`: a short RO overview for the founder.
+- `docs/archive/site-preview-v1.html`: the old v1 founder overview (archived, not deployed; it describes the retired Founders/deposit offer).
 - `site/os.html`: the SoulOS prototype.
 - Live preview artifact: https://claude.ai/artifact/BUAPPdP1W5xnCvSVcsQXoX
 

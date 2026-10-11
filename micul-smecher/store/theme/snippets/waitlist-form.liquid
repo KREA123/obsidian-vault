@@ -5,7 +5,7 @@
   Export: Admin > Customers > filter "Tagged with: waitlist" > Export.
 {%- endcomment -%}
 {%- liquid
-  assign privacy_url = shop.privacy_policy.url | default: '#legal'
+  assign privacy_url = shop.privacy_policy.url | default: '/policies/privacy-policy'
 -%}
 {%- form 'customer', id: 'waitlist', class: 'form', novalidate: 'novalidate', data-native: 'true' -%}
   {%- if form.posted_successfully? -%}
