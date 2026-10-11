@@ -1,0 +1,18 @@
+{%- comment -%} Maps a colour option value (EN or RO, any case) to the theme's colour key. {%- endcomment -%}
+{%- liquid
+  assign h = value | handleize
+  case h
+    when 'silver', 'argint', 'argintiu'
+      echo 'silver'
+    when 'graphite', 'grafit'
+      echo 'graphite'
+    when 'midnight', 'albastru-noapte', 'miez-de-noapte'
+      echo 'midnight'
+    when 'ember', 'jar'
+      echo 'ember'
+    when 'champagne', 'sampanie', 'șampanie'
+      echo 'champagne'
+    else
+      echo h
+  endcase
+-%}

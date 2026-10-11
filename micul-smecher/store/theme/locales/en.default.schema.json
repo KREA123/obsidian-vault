@@ -1,0 +1,121 @@
+{
+  "sections": {
+    "hero": {
+      "name": "Hero"
+    },
+    "marquee": {
+      "name": "Facts strip"
+    },
+    "alive": {
+      "name": "It looks back"
+    },
+    "the_object": {
+      "name": "The object"
+    },
+    "product_configurator": {
+      "name": "Colours"
+    },
+    "born_ritual": {
+      "name": "Born with"
+    },
+    "your_ai": {
+      "name": "Your AI + demo"
+    },
+    "soulos": {
+      "demo_url": "SoulOS web demo link",
+      "demo_info": "Leave empty to hide the button.",
+      "name": "SoulOS"
+    },
+    "ou_egg": {
+      "name": "OU charging egg"
+    },
+    "privacy": {
+      "name": "Privacy promises"
+    },
+    "specs_and_box": {
+      "name": "Specs and box"
+    },
+    "faq": {
+      "name": "FAQ"
+    },
+    "announcement_bar": {
+      "text": "Text after launch",
+      "info": "While pre-launch mode is on, the CE notice is always shown.",
+      "name": "Pre-launch bar"
+    },
+    "header": {
+      "name": "Header"
+    },
+    "footer": {
+      "menu": "Extra links menu",
+      "name": "Footer"
+    },
+    "sticky_cta": {
+      "name": "Mobile bottom bar"
+    },
+    "waitlist": {
+      "name": "Waitlist"
+    },
+    "main_product": {
+      "name": "Product: SOUL"
+    },
+    "main_page": {
+      "eyebrow": "Small label above the title",
+      "image": "Image",
+      "narrow": "Legal layout (narrow text)",
+      "company": "Show company details",
+      "name": "Page"
+    },
+    "main_404": {
+      "name": "404"
+    },
+    "main_search": {
+      "name": "Search results"
+    },
+    "main_collection": {
+      "name": "Collection"
+    },
+    "main_list_collections": {
+      "name": "Collections list"
+    },
+    "main_blog": {
+      "name": "Blog"
+    },
+    "main_article": {
+      "name": "Article"
+    },
+    "main_cart": {
+      "name": "Cart"
+    },
+    "cart_drawer": {
+      "name": "Cart drawer"
+    }
+  },
+  "settings_schema": {
+    "store": {
+      "name": "SOUL store",
+      "prelaunch": "Pre-launch mode (waitlist only)",
+      "prelaunch_info": "On: no add-to-cart, no cart drawer, the product page shows the waitlist. Turn off only after CE certification.",
+      "product": "SOUL product (for prices)",
+      "fallback_price": "Fallback 'from' price (store currency)",
+      "fallback_info": "Used only while no product is selected above.",
+      "tag": "Waitlist customer tag",
+      "soulos": "SoulOS web demo link (footer)",
+      "cookies": "Cookies page"
+    },
+    "company": {
+      "name": "Company (legal)",
+      "cname": "Company name",
+      "address": "Registered address",
+      "cui": "Tax ID (CUI)",
+      "reg": "Trade Register No.",
+      "email": "Contact email"
+    },
+    "brand": {
+      "name": "Brand and sharing",
+      "favicon": "Favicon (square, 512 px)",
+      "share": "Social share image (1200×630)",
+      "desc": "Fallback share description"
+    }
+  }
+}

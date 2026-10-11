@@ -1,0 +1,57 @@
+{
+  "sections": {
+    "main-page": {
+      "type": "main-page",
+      "settings": {
+        "eyebrow": "SOUL",
+        "narrow": false,
+        "company": false
+      }
+    },
+    "alive": {
+      "type": "alive",
+      "settings": {}
+    },
+    "the-object": {
+      "type": "the-object",
+      "settings": {}
+    },
+    "born-ritual": {
+      "type": "born-ritual",
+      "settings": {}
+    },
+    "your-ai": {
+      "type": "your-ai",
+      "settings": {}
+    },
+    "soulos": {
+      "type": "soulos",
+      "settings": {
+        "demo_url": ""
+      }
+    },
+    "ou-egg": {
+      "type": "ou-egg",
+      "settings": {}
+    },
+    "privacy": {
+      "type": "privacy",
+      "settings": {}
+    },
+    "waitlist": {
+      "type": "waitlist",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main-page",
+    "alive",
+    "the-object",
+    "born-ritual",
+    "your-ai",
+    "soulos",
+    "ou-egg",
+    "privacy",
+    "waitlist"
+  ]
+}

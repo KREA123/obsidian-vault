@@ -1,0 +1,35 @@
+<section class="sec band" id="alive" aria-labelledby="alive-title">
+  <div class="wrap">
+    <p class="eyebrow rv" data-i18n="alive.eyebrow">{{ 'soul.alive_eyebrow' | t }}</p>
+    <h2 class="h-xl rv" id="alive-title" style="margin-top:18px"><span data-i18n="alive.h1">{{ 'soul.alive_h1' | t }}</span> <span class="inl"><canvas data-inline aria-hidden="true"></canvas></span> <span data-i18n="alive.h2">{{ 'soul.alive_h2' | t }}</span></h2>
+    <p class="lead rv" style="margin-top:26px" data-i18n="alive.lead">{{ 'soul.alive_lead' | t }}</p>
+    <div class="trio">
+      <article class="tcard rv">
+        <div class="shot" data-glass="col" data-col="graphite" data-design="mint-condition" data-role="blink"><img src="{{ 'col-graphite-520.webp' | asset_url }}" width="520" height="625" loading="lazy" decoding="async" alt="" aria-hidden="true"></div>
+        <h3 data-i18n="alive.c1t">{{ 'soul.alive_c1t' | t }}</h3>
+        <p data-i18n="alive.c1p">{{ 'soul.alive_c1p' | t }}</p>
+      </article>
+      <article class="tcard rv">
+        <div class="shot" data-glass="col" data-col="silver" data-design="original" data-role="follow"><img src="{{ 'col-silver-520.webp' | asset_url }}" width="520" height="625" loading="lazy" decoding="async" alt="" aria-hidden="true"></div>
+        <h3 data-i18n="alive.c2t">{{ 'soul.alive_c2t' | t }}</h3>
+        <p data-i18n="alive.c2p">{{ 'soul.alive_c2p' | t }}</p>
+      </article>
+      <article class="tcard rv">
+        <div class="shot" data-glass="col" data-col="ember" data-design="coral-snorkel" data-role="moods"><img src="{{ 'col-ember-520.webp' | asset_url }}" width="520" height="625" loading="lazy" decoding="async" alt="" aria-hidden="true"></div>
+        <h3 data-i18n="alive.c3t">{{ 'soul.alive_c3t' | t }}</h3>
+        <p data-i18n="alive.c3p">{{ 'soul.alive_c3p_html' | t }}</p>
+      </article>
+    </div>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.alive.name",
+  "tag": "div",
+  "presets": [
+    {
+      "name": "t:sections.alive.name"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,15 @@
+{
+  "sections": {
+    "main-page": {
+      "type": "main-page",
+      "settings": {
+        "eyebrow": "",
+        "narrow": false,
+        "company": false
+      }
+    }
+  },
+  "order": [
+    "main-page"
+  ]
+}

@@ -1,0 +1,19 @@
+<section class="sec page-sec"><div class="wrap">
+  <div class="head"><h1 class="h-l">{{ 'soul.shop.collections' | t }}</h1></div>
+  <ul class="list-grid">
+    {%- for c in collections -%}
+    <li><a href="{{ c.url }}">{%- if c.featured_image -%}{{ c.featured_image | image_url: width: 600 | image_tag: widths: '300, 600', sizes: '280px', loading: 'lazy' }}{%- endif -%}<b>{{ c.title | escape }}</b></a></li>
+    {%- endfor -%}
+  </ul>
+</div></section>
+{% schema %}
+{
+  "name": "t:sections.main_list_collections.name",
+  "tag": "div",
+  "enabled_on": {
+    "templates": [
+      "list-collections"
+    ]
+  }
+}
+{% endschema %}

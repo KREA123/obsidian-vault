@@ -1,0 +1,20 @@
+{
+  "type": "footer",
+  "name": "Footer group",
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "settings": {
+        "menu": ""
+      }
+    },
+    "sticky-cta": {
+      "type": "sticky-cta",
+      "settings": {}
+    }
+  },
+  "order": [
+    "footer",
+    "sticky-cta"
+  ]
+}

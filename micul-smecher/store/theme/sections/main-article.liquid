@@ -1,0 +1,16 @@
+<article class="sec page-sec page-legal"><div class="wrap">
+  <div class="head"><p class="eyebrow">{{ article.published_at | time_tag: format: 'date' }}</p><h1 class="h-l">{{ article.title | escape }}</h1></div>
+  {%- if article.image -%}<figure class="frame page-img">{{ article.image | image_url: width: 1600 | image_tag: widths: '600, 900, 1200, 1600', sizes: '(max-width:1240px) calc(100vw - 32px), 1144px' }}</figure>{%- endif -%}
+  <div class="rte prose">{{ article.content }}</div>
+</div></article>
+{% schema %}
+{
+  "name": "t:sections.main_article.name",
+  "tag": "div",
+  "enabled_on": {
+    "templates": [
+      "article"
+    ]
+  }
+}
+{% endschema %}

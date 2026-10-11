@@ -1,0 +1,15 @@
+{
+  "sections": {
+    "main-page": {
+      "type": "main-page",
+      "settings": {
+        "eyebrow": "ARTEMIS DIGITAL S.R.L.",
+        "narrow": true,
+        "company": true
+      }
+    }
+  },
+  "order": [
+    "main-page"
+  ]
+}

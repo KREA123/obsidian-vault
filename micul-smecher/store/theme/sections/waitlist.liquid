@@ -1,0 +1,29 @@
+<section class="sec reserve" id="reserve" aria-labelledby="res-title">
+  <div class="wrap res-grid">
+    <div class="res-dev">
+      <div class="shot" data-glass="col" data-col="silver" data-design="original" data-role="reserve">
+        <img id="res-img" src="{{ 'col-silver-520.webp' | asset_url }}" srcset="{{ 'col-silver-520.webp' | asset_url }} 520w, {{ 'col-silver-900.webp' | asset_url }} 900w" sizes="(max-width:860px) 58vw, 400px" width="520" height="625" loading="lazy" decoding="async" alt="{{ 'soul.res_alt' | t }}" data-i18n-attr="alt:res.alt">
+      </div>
+    </div>
+    <div>
+      <div class="head" style="margin-bottom:24px">
+        {%- capture soul_price -%}{%- render 'soul-price' -%}{%- endcapture -%}
+        <p class="eyebrow" data-i18n="res.eyebrow">{{ 'soul.res_eyebrow' | t: price: soul_price }}</p>
+        <h2 class="h-l" id="res-title" data-i18n="res.h2">{{ 'soul.res_h2' | t }}</h2>
+        <p class="lead" data-i18n="res.lead">{{ 'soul.res_lead' | t }}</p>
+      </div>
+      {%- render 'waitlist-form', show_colours: true, colour: 'silver' -%}
+    </div>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.waitlist.name",
+  "tag": "div",
+  "presets": [
+    {
+      "name": "t:sections.waitlist.name"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,133 @@
+{%- liquid
+  assign current = product.selected_or_first_available_variant
+  assign colour_index = nil
+  for option in product.options_with_values
+    assign on = option.name | downcase
+    if on == 'colour' or on == 'color' or on == 'culoare' or on == 'culoarea'
+      assign colour_index = forloop.index0
+    endif
+  endfor
+  assign colour = 'silver'
+  if colour_index != nil
+    capture colour
+      render 'colour-key', value: current.options[colour_index]
+    endcapture
+  endif
+  assign known = 'silver,graphite,midnight,ember,champagne' | split: ','
+  unless known contains colour
+    assign colour = 'silver'
+  endunless
+  assign prelaunch = settings.prelaunch
+  if current.available == false
+    assign prelaunch = true
+  endif
+-%}
+<section class="sec pdp" id="product" aria-labelledby="pdp-title" data-section="{{ section.id }}">
+  <div class="wrap pdp-grid">
+    <div class="pdp-media">
+      <div class="cfg-stage" id="cfg-stage" style="--tint:{%- render 'colour-hex', key: colour -%}">
+        <span class="tag" data-i18n="fig.render">{{ 'soul.fig_render' | t }}</span>
+        <span class="floor" aria-hidden="true"></span>
+        <div class="shot" data-glass="col" data-col="{{ colour }}" data-design="original" data-role="cfg" id="cfg-shot">
+          {%- capture s1 -%}col-{{ colour }}-520.webp{%- endcapture -%}
+          {%- capture s2 -%}col-{{ colour }}-900.webp{%- endcapture -%}
+          <img id="cfg-img" src="{{ s2 | asset_url }}" srcset="{{ s1 | asset_url }} 520w, {{ s2 | asset_url }} 900w" sizes="(max-width:860px) 74vw, 440px" width="900" height="1081" fetchpriority="high" decoding="async" alt="{{ product.title | escape }} · {{ current.title | escape }}">
+        </div>
+      </div>
+      {%- if product.media.size > 0 -%}
+      <ul class="pdp-thumbs" aria-label="{{ 'soul.shop.gallery' | t }}">
+        {%- for media in product.media -%}
+          {%- if media.media_type == 'image' -%}
+          <li>{{ media.preview_image | image_url: width: 1200 | image_tag: widths: '360, 600, 900, 1200', sizes: '(max-width:860px) 45vw, 260px', loading: 'lazy', alt: media.alt }}</li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+      {%- endif -%}
+    </div>
+    <div class="pdp-info">
+      <p class="eyebrow">{{ 'soul.hero_sayk' | t }}</p>
+      <h1 class="h-l" id="pdp-title">{{ product.title | escape }}</h1>
+      <p class="pdp-price" data-pdp-price>
+        {%- if product.price_varies -%}<span>{{ 'soul.price_from' | t }}</span> {%- endif -%}
+        <b>{{ current.price | money_without_trailing_zeros }}</b>
+        <small>{{ 'soul.sp_vat' | t }}</small>
+      </p>
+      {%- if settings.prelaunch -%}<p class="pdp-note">{{ 'soul.ann_html' | t }}</p>{%- endif -%}
+
+      {%- unless product.has_only_default_variant -%}
+      <div class="pdp-options" data-options>
+        {%- for option in product.options_with_values -%}
+        <fieldset class="field">
+          <legend>{{ option.name | escape }}: <b data-opt-label="{{ forloop.index0 }}">{{ option.selected_value | escape }}</b></legend>
+          <div class="swatches">
+          {%- assign oi = forloop.index0 -%}
+          {%- for value in option.values -%}
+            {%- if oi == colour_index -%}
+              {%- capture key -%}{%- render 'colour-key', value: value -%}{%- endcapture -%}
+              {%- capture hex -%}{%- render 'colour-hex', key: key -%}{%- endcapture -%}
+              {%- if value.swatch.color -%}{%- assign hex = value.swatch.color -%}{%- endif -%}
+              <input class="sw" type="radio" name="opt-{{ oi }}" value="{{ key }}" data-index="{{ oi }}" data-value="{{ value | escape }}" style="--c:{{ hex | default: '#CBCDCF' }}" aria-label="{{ value | escape }}"{% if option.selected_value == value %} checked{% endif %}>
+            {%- else -%}
+              <label class="pill-opt"><input type="radio" name="opt-{{ oi }}" value="{{ value | escape }}" data-index="{{ oi }}" data-value="{{ value | escape }}"{% if option.selected_value == value %} checked{% endif %}><span>{{ value | escape }}</span></label>
+            {%- endif -%}
+          {%- endfor -%}
+          </div>
+        </fieldset>
+        {%- endfor -%}
+      </div>
+      {%- endunless -%}
+
+      {%- if prelaunch -%}
+      <div class="reserve pdp-wl" id="reserve">
+        <h2 class="h-m" data-i18n="res.h2">{{ 'soul.res_h2' | t }}</h2>
+        <p class="lead" data-i18n="res.lead">{{ 'soul.res_lead' | t }}</p>
+        {%- render 'waitlist-form', show_colours: false, colour: colour -%}
+      </div>
+      {%- else -%}
+      {%- form 'product', product, id: 'pdp-form', class: 'pdp-form', novalidate: 'novalidate', data-type: 'add-to-cart-form' -%}
+        <input type="hidden" name="id" value="{{ current.id }}" data-variant-id>
+        <button class="btn" type="submit" name="add" data-add{% unless current.available %} disabled{% endunless %}>
+          <span data-add-label>{%- if current.available -%}{{ 'soul.shop.add' | t }}{%- else -%}{{ 'soul.shop.sold_out' | t }}{%- endif -%}</span><span class="arr" aria-hidden="true">→</span>
+        </button>
+        <p class="form-msg" role="alert" data-add-error></p>
+      {%- endform -%}
+      {%- endif -%}
+
+      {%- if product.description != blank -%}
+      <div class="pdp-desc rte">{{ product.description }}</div>
+      {%- endif -%}
+      <dl class="facts">
+        <div><dt data-i18n="obj.k1">{{ 'soul.obj_k1' | t }}</dt><dd>90 × 101 × 31.5 mm</dd></div>
+        <div><dt data-i18n="obj.k2">{{ 'soul.obj_k2' | t }}</dt><dd data-i18n="obj.v2">{{ 'soul.obj_v2' | t }}</dd></div>
+        <div><dt data-i18n="obj.k3">{{ 'soul.obj_k3' | t }}</dt><dd data-i18n="obj.v3">{{ 'soul.obj_v3' | t }}</dd></div>
+        <div><dt data-i18n="obj.k4">{{ 'soul.obj_k4' | t }}</dt><dd data-i18n="obj.v4">{{ 'soul.obj_v4' | t }}</dd></div>
+      </dl>
+    </div>
+  </div>
+  <script type="application/json" data-product-json>
+    {
+      "colourIndex": {% if colour_index != nil %}{{ colour_index }}{% else %}null{% endif %},
+      "prelaunch": {% if settings.prelaunch %}true{% else %}false{% endif %},
+      "variants": [
+        {%- for v in product.variants -%}
+        {%- capture vk -%}{%- if colour_index != nil -%}{%- render 'colour-key', value: v.options[colour_index] -%}{%- endif -%}{%- endcapture -%}
+        {"id": {{ v.id }}, "options": {{ v.options | json }}, "available": {{ v.available | json }}, "price": {{ v.price | money_without_trailing_zeros | json }}, "colour": {{ vk | json }}}{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      ],
+      "labels": {"add": {{ 'soul.shop.add' | t | json }}, "soldOut": {{ 'soul.shop.sold_out' | t | json }}}
+    }
+  </script>
+  {{ product | structured_data | default: '' }}
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_product.name",
+  "tag": "div",
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  }
+}
+{% endschema %}

@@ -1,0 +1,53 @@
+<section class="sec band" id="os" aria-labelledby="os-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="os.eyebrow">{{ 'soul.os_eyebrow' | t }}</p>
+      <h2 class="h-l rv" id="os-title" data-i18n="os.h2">{{ 'soul.os_h2_html' | t }}</h2>
+      <p class="lead rv" data-i18n="os.lead">{{ 'soul.os_lead' | t }}</p>
+    </div>
+    <div class="os-top">
+      <figure class="frame rv">
+        <span class="tag" data-i18n="fig.render" style="position:absolute;left:16px;top:16px;z-index:2">{{ 'soul.fig_render' | t }}</span>
+        <img src="{{ 'typing.webp' | asset_url }}" srcset="{{ 'typing-sm.webp' | asset_url }} 800w, {{ 'typing.webp' | asset_url }} 1600w" sizes="(max-width:860px) calc(100vw - 32px), 700px" width="1600" height="900" loading="lazy" decoding="async" style="display:block;width:100%;height:100%;object-fit:cover" alt="{{ 'soul.os_alt0' | t }}" data-i18n-attr="alt:os.alt0">
+      </figure>
+      <div class="standby rv">
+        <p class="eyebrow" data-i18n="os.sbK">{{ 'soul.os_sbk' | t }}</p>
+        <canvas id="standby-cv" aria-hidden="true"></canvas>
+        <p data-i18n="os.sb">{{ 'soul.os_sb' | t }}</p>
+      </div>
+    </div>
+    <div class="os-row" tabindex="0" role="region" aria-label="{{ 'soul.os_row' | t }}" data-i18n-attr="aria-label:os.row">
+      <figure><img src="{{ 'os-keyboard.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a1' | t }}" data-i18n-attr="alt:os.a1"><figcaption><b data-i18n="os.c1t">{{ 'soul.os_c1t' | t }}</b><span data-i18n="os.c1">{{ 'soul.os_c1' | t }}</span></figcaption></figure>
+      <figure><img src="{{ 'os-claude.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a2' | t }}" data-i18n-attr="alt:os.a2"><figcaption><b data-i18n="os.c2t">{{ 'soul.os_c2t' | t }}</b><span data-i18n="os.c2">{{ 'soul.os_c2' | t }}</span></figcaption></figure>
+      <figure><img src="{{ 'os-modes.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a3' | t }}" data-i18n-attr="alt:os.a3"><figcaption><b data-i18n="os.c3t">{{ 'soul.os_c3t' | t }}</b><span data-i18n="os.c3">{{ 'soul.os_c3' | t }}</span></figcaption></figure>
+      <figure><img src="{{ 'os-alarm.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a4' | t }}" data-i18n-attr="alt:os.a4"><figcaption><b data-i18n="os.c4t">{{ 'soul.os_c4t' | t }}</b><span data-i18n="os.c4">{{ 'soul.os_c4' | t }}</span></figcaption></figure>
+      <figure><img src="{{ 'os-launcher.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a5' | t }}" data-i18n-attr="alt:os.a5"><figcaption><b data-i18n="os.c5t">{{ 'soul.os_c5t' | t }}</b><span data-i18n="os.c5">{{ 'soul.os_c5' | t }}</span></figcaption></figure>
+      <figure><img src="{{ 'os-today.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a6' | t }}" data-i18n-attr="alt:os.a6"><figcaption><b data-i18n="os.c6t">{{ 'soul.os_c6t' | t }}</b><span data-i18n="os.c6">{{ 'soul.os_c6' | t }}</span></figcaption></figure>
+    </div>
+    {%- if section.settings.demo_url != blank -%}
+    <div class="os-cta">
+      <a class="btn" href="{{ section.settings.demo_url }}" target="_blank" rel="noopener"><span data-i18n="os.cta">{{ 'soul.os_cta' | t }}</span><span class="arr" aria-hidden="true">→</span></a>
+      <p data-i18n="os.ctap">{{ 'soul.os_ctap' | t }}</p>
+    </div>
+    {%- endif -%}
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.soulos.name",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "url",
+      "id": "demo_url",
+      "label": "t:sections.soulos.demo_url",
+      "info": "t:sections.soulos.demo_info"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.soulos.name"
+    }
+  ]
+}
+{% endschema %}

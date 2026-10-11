@@ -1,0 +1,75 @@
+<section class="sec" id="ai" aria-labelledby="ai-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="ai.eyebrow">{{ 'soul.ai_eyebrow' | t }}</p>
+      <h2 class="h-l rv" id="ai-title" data-i18n="ai.h2">{{ 'soul.ai_h2_html' | t }}</h2>
+      <p class="lead rv" data-i18n="ai.lead">{{ 'soul.ai_lead' | t }}</p>
+    </div>
+    <div class="prov">
+      <article class="pcard rv">
+        <div class="k"><span class="st" style="--c:#D97757" data-i18n="ai.c.k">{{ 'soul.ai_c_k' | t }}</span></div>
+        <h3 data-i18n="ai.c.t">{{ 'soul.ai_c_t' | t }}</h3>
+        <p data-i18n="ai.c.p">{{ 'soul.ai_c_p' | t }}</p>
+        <ul><li data-i18n="ai.c.l1">{{ 'soul.ai_c_l1' | t }}</li><li data-i18n="ai.c.l2">{{ 'soul.ai_c_l2' | t }}</li></ul>
+      </article>
+      <article class="pcard rv">
+        <div class="k"><span class="st" style="--c:#10A37F" data-i18n="ai.g.k">{{ 'soul.ai_g_k' | t }}</span></div>
+        <h3 data-i18n="ai.g.t">{{ 'soul.ai_g_t' | t }}</h3>
+        <p data-i18n="ai.g.p">{{ 'soul.ai_g_p' | t }}</p>
+        <ul><li data-i18n="ai.g.l1">{{ 'soul.ai_g_l1' | t }}</li><li data-i18n="ai.g.l2">{{ 'soul.ai_g_l2' | t }}</li></ul>
+      </article>
+      <article class="pcard rv">
+        <div class="k"><span class="st" style="--c:#9EA1A8" data-i18n="ai.o.k">{{ 'soul.ai_o_k' | t }}</span></div>
+        <h3 data-i18n="ai.o.t">{{ 'soul.ai_o_t' | t }}</h3>
+        <p data-i18n="ai.o.p">{{ 'soul.ai_o_p' | t }}</p>
+        <ul><li data-i18n="ai.o.l1">{{ 'soul.ai_o_l1' | t }}</li><li data-i18n="ai.o.l2">{{ 'soul.ai_o_l2' | t }}</li></ul>
+      </article>
+    </div>
+    <div class="mem rv">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#0B0B0C" stroke="#CBCDCF" stroke-width="2"/><ellipse cx="17" cy="22" rx="4" ry="7" fill="#FFF0C8"/><ellipse cx="31" cy="22" rx="4" ry="7" fill="#FFF0C8"/></svg>
+      <div>
+        <h3 data-i18n="ai.m.t">{{ 'soul.ai_m_t' | t }}</h3>
+        <p data-i18n="ai.m.p">{{ 'soul.ai_m_p' | t }}</p>
+      </div>
+      <span class="pill" data-i18n="ai.m.k">{{ 'soul.ai_m_k' | t }}</span>
+    </div>
+    <p class="ai-note" data-i18n="ai.note">{{ 'soul.ai_note' | t }}</p>
+
+    <!-- hold-demo -->
+    <div class="demo" id="hold">
+      <figure class="frame rv">
+        <span class="tag" data-i18n="fig.render">{{ 'soul.fig_render' | t }}</span>
+        <div class="shot" data-glass="hand" data-design="original" data-role="hand" id="hand-shot">
+          <img src="{{ 'hand.webp' | asset_url }}" srcset="{{ 'hand-sm.webp' | asset_url }} 760w, {{ 'hand.webp' | asset_url }} 1400w" sizes="(max-width:860px) calc(100vw - 32px), 620px" width="1400" height="1200" loading="lazy" decoding="async" alt="{{ 'soul.hold_alt' | t }}" data-i18n-attr="alt:hold.alt">
+        </div>
+        <span class="tag hold-hint" data-i18n="hold.hint">{{ 'soul.hold_hint' | t }}</span>
+      </figure>
+      <div class="stack">
+        <p class="eyebrow" data-i18n="hold.eyebrow">{{ 'soul.hold_eyebrow' | t }}</p>
+        <h2 class="h-l" style="font-size:clamp(2.2rem,5vw,4.2rem)" data-i18n="hold.h2">{{ 'soul.hold_h2_html' | t }}</h2>
+        <div class="seg" role="group" aria-label="{{ 'soul.hold_which' | t }}" data-i18n-attr="aria-label:hold.which" id="prov-seg">
+          <button type="button" data-prov="claude" aria-pressed="true">Claude</button>
+          <button type="button" data-prov="chatgpt" aria-pressed="false">ChatGPT</button>
+          <button type="button" data-prov="offline" aria-pressed="false" data-i18n="hold.off">{{ 'soul.hold_off' | t }}</button>
+        </div>
+        <div class="term" id="term" aria-live="polite"><p class="bub idle" data-i18n="hold.idle">{{ 'soul.hold_idle' | t }}</p></div>
+        <div class="cta">
+          <button type="button" class="btn holdbtn" id="hold-btn" aria-describedby="hold-note"><span class="fill" aria-hidden="true"></span><span data-i18n="hold.btn">{{ 'soul.hold_btn' | t }}</span></button>
+          <span class="mic" id="mic"><i aria-hidden="true"></i><span data-i18n="hold.micOff">{{ 'soul.hold_micoff' | t }}</span></span>
+        </div>
+        <p class="demo-note" id="hold-note" data-i18n="hold.note">{{ 'soul.hold_note' | t }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.your_ai.name",
+  "tag": "div",
+  "presets": [
+    {
+      "name": "t:sections.your_ai.name"
+    }
+  ]
+}
+{% endschema %}

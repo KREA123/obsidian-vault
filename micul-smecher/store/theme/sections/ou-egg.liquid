@@ -1,0 +1,32 @@
+<section class="sec night" id="night" aria-labelledby="night-title">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap split">
+    <figure class="frame rv">
+      <span class="tag" data-i18n="fig.render">{{ 'soul.fig_render' | t }}</span>
+      <div class="shot" data-glass="night" data-design="original" data-role="night">
+        <img src="{{ 'night.webp' | asset_url }}" srcset="{{ 'night-sm.webp' | asset_url }} 560w, {{ 'night.webp' | asset_url }} 960w" sizes="(max-width:860px) calc(100vw - 32px), 500px" width="960" height="1200" loading="lazy" decoding="async" alt="{{ 'soul.night_alt' | t }}" data-i18n-attr="alt:night.alt">
+      </div>
+      <span class="tag hold-hint" data-i18n="night.hint">{{ 'soul.night_hint' | t }}</span>
+    </figure>
+    <div class="stack">
+      <p class="eyebrow" data-i18n="night.eyebrow">{{ 'soul.night_eyebrow' | t }}</p>
+      <h2 class="h-l" id="night-title" data-i18n="night.h2">{{ 'soul.night_h2_html' | t }}</h2>
+      <ul class="layers">
+        <li><b data-i18n="night.l1t">{{ 'soul.night_l1t' | t }}</b><span data-i18n="night.l1">{{ 'soul.night_l1' | t }}</span></li>
+        <li><b data-i18n="night.l2t">{{ 'soul.night_l2t' | t }}</b><span data-i18n="night.l2">{{ 'soul.night_l2' | t }}</span></li>
+        <li><b data-i18n="night.l3t">{{ 'soul.night_l3t' | t }}</b><span data-i18n="night.l3">{{ 'soul.night_l3' | t }}</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.ou_egg.name",
+  "tag": "div",
+  "presets": [
+    {
+      "name": "t:sections.ou_egg.name"
+    }
+  ]
+}
+{% endschema %}

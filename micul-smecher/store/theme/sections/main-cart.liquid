@@ -1,0 +1,38 @@
+<section class="sec page-sec"><div class="wrap">
+  <div class="head"><h1 class="h-l">{{ 'soul.shop.cart' | t }}</h1></div>
+  {%- if settings.prelaunch -%}
+    <p class="lead">{{ 'soul.shop.cart_prelaunch' | t }}</p>
+    <div class="cta"><a class="btn" href="{{ routes.root_url }}#reserve">{{ 'soul.hero_cta' | t }}</a></div>
+  {%- elsif cart.item_count == 0 -%}
+    <p class="lead">{{ 'soul.shop.cart_empty' | t }}</p>
+  {%- else -%}
+    <form action="{{ routes.cart_url }}" method="post" class="cart-form">
+      <ul class="cart-lines">
+        {%- for item in cart.items -%}
+        <li>
+          {%- if item.image -%}{{ item.image | image_url: width: 240 | image_tag: widths: '120, 240', sizes: '96px', loading: 'lazy', alt: item.title }}{%- endif -%}
+          <div><a href="{{ item.url }}"><b>{{ item.product.title | escape }}</b></a>{%- unless item.product.has_only_default_variant -%}<small>{{ item.variant.title | escape }}</small>{%- endunless -%}</div>
+          <label class="sr" for="qty-{{ forloop.index }}">{{ 'soul.shop.qty' | t }}</label>
+          <input class="input qty" id="qty-{{ forloop.index }}" type="number" name="updates[]" value="{{ item.quantity }}" min="0">
+          <span class="money">{{ item.final_line_price | money }}</span>
+          <a href="{{ item.url_to_remove }}" class="rm">{{ 'soul.shop.remove' | t }}</a>
+        </li>
+        {%- endfor -%}
+      </ul>
+      <p class="cart-total">{{ 'soul.shop.subtotal' | t }} <b>{{ cart.total_price | money_with_currency }}</b></p>
+      <p class="cap">{{ 'soul.shop.taxes' | t }}</p>
+      <div class="cta"><button class="btn btn-ghost" type="submit" name="update">{{ 'soul.shop.update' | t }}</button><button class="btn" type="submit" name="checkout">{{ 'soul.shop.checkout' | t }}</button></div>
+    </form>
+  {%- endif -%}
+</div></section>
+{% schema %}
+{
+  "name": "t:sections.main_cart.name",
+  "tag": "div",
+  "enabled_on": {
+    "templates": [
+      "cart"
+    ]
+  }
+}
+{% endschema %}

@@ -1,0 +1,30 @@
+{%- liquid
+  assign home = ''
+  unless template.name == 'index'
+    assign home = routes.root_url
+  endunless
+-%}
+{%- if settings.prelaunch -%}
+<div class="ann" role="note"><span data-i18n="ann">{{ 'soul.ann_html' | t }}</span> <a href="{{ home }}#faq-ce" data-i18n="ann.why">{{ 'soul.ann_why' | t }}</a></div>
+{%- elsif section.settings.text != blank -%}
+<div class="ann" role="note"><span>{{ section.settings.text }}</span></div>
+{%- endif -%}
+{% schema %}
+{
+  "name": "t:sections.announcement_bar.name",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "text",
+      "label": "t:sections.announcement_bar.text",
+      "info": "t:sections.announcement_bar.info"
+    }
+  ],
+  "enabled_on": {
+    "groups": [
+      "header"
+    ]
+  }
+}
+{% endschema %}

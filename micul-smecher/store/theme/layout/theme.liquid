@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="canonical" href="{{ canonical_url }}">
+  <title>{{ page_title }}{% if current_tags %} · {{ current_tags | join: ', ' }}{% endif %}{% if current_page != 1 %} · {{ current_page }}{% endif %}{% unless page_title contains shop.name %} · {{ shop.name }}{% endunless %}</title>
+  {%- if page_description -%}<meta name="description" content="{{ page_description | escape }}">{%- endif -%}
+  {% render 'meta-tags' %}
+  <meta name="theme-color" content="#FAF8F3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0D0D0F" media="(prefers-color-scheme: dark)">
+  {%- if settings.favicon != blank -%}
+  <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 64, height: 64 }}">
+  <link rel="apple-touch-icon" href="{{ settings.favicon | image_url: width: 180, height: 180 }}">
+  {%- else -%}
+  <link rel="icon" type="image/svg+xml" href="{{ 'favicon.svg' | asset_url }}">
+  {%- endif -%}
+  {{ 'bricolage.woff2' | asset_url | preload_tag: as: 'font', type: 'font/woff2', crossorigin: 'anonymous' }}
+  {%- if template.name == 'index' -%}
+  {{ 'front-1200.avif' | asset_url | preload_tag: as: 'image', type: 'image/avif', fetchpriority: 'high', media: '(min-width: 721px)' }}
+  {{ 'front-700.avif' | asset_url | preload_tag: as: 'image', type: 'image/avif', fetchpriority: 'high', media: '(max-width: 720px)' }}
+  {%- endif -%}
+  <style>
+    @font-face{font-family:"Bricolage Grotesque";src:url({{ 'bricolage.woff2' | asset_url }}) format("woff2");font-weight:200 800;font-display:swap}
+    @font-face{font-family:"Martian Mono";src:url({{ 'martian.woff2' | asset_url }}) format("woff2");font-weight:400 500;font-display:swap}
+  </style>
+  {{ 'soul.css' | asset_url | stylesheet_tag }}
+  <script>
+    window.SOUL_CONFIG = {
+      shopify: true,
+      ASSET_BASE: {{ 'col-silver-520.webp' | asset_url | split: 'col-silver-520.webp' | first | json }},
+      PRICES: {},
+      CURRENCY: {{ cart.currency.iso_code | json }},
+      CONTACT_EMAIL: {{ settings.contact_email | default: '' | json }},
+      prelaunch: {{ settings.prelaunch | json }},
+      routes: { root: {{ routes.root_url | json }}, cart: {{ routes.cart_url | json }}, cartAdd: {{ routes.cart_add_url | json }} }
+    };
+    document.documentElement.classList.add("js");
+  </script>
+  {{ content_for_header }}
+</head>
+<body class="tpl-{{ template.name }}">
+  <a class="skip" href="#main" data-i18n="skip">{{ 'soul.skip' | t }}</a>
+  {% sections 'header-group' %}
+  <main id="main">
+    {{ content_for_layout }}
+  </main>
+  {% sections 'footer-group' %}
+  {%- unless settings.prelaunch -%}
+    {% section 'cart-drawer' %}
+  {%- endunless -%}
+  <script src="{{ 'eyes.js' | asset_url }}" defer></script>
+  <script src="{{ 'designs.js' | asset_url }}" defer></script>
+  <script src="{{ 'soul-app.js' | asset_url }}" defer></script>
+  {%- if template.name == 'product' -%}<script src="{{ 'soul-product.js' | asset_url }}" defer></script>{%- endif -%}
+  {%- unless settings.prelaunch -%}<script src="{{ 'soul-cart.js' | asset_url }}" defer></script>{%- endunless -%}
+</body>
+</html>

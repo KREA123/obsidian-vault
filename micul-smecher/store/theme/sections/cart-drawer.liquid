@@ -1,0 +1,28 @@
+<div class="drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
+  <div class="drawer-bg" data-cart-close></div>
+  <div class="drawer-panel">
+    <div class="drawer-head"><h2 class="h-m" id="drawer-title">{{ 'soul.shop.cart' | t }}</h2><button class="btn btn-ghost btn-sm" type="button" data-cart-close>{{ 'soul.shop.close' | t }}</button></div>
+    {%- if cart.item_count == 0 -%}
+      <p class="lead">{{ 'soul.shop.cart_empty' | t }}</p>
+    {%- else -%}
+      <ul class="cart-lines">
+        {%- for item in cart.items -%}
+        <li>
+          {%- if item.image -%}{{ item.image | image_url: width: 240 | image_tag: widths: '120, 240', sizes: '96px', loading: 'lazy', alt: item.title }}{%- endif -%}
+          <div><b>{{ item.product.title | escape }}</b>{%- unless item.product.has_only_default_variant -%}<small>{{ item.variant.title | escape }}</small>{%- endunless -%}<small>× {{ item.quantity }}</small></div>
+          <span class="money">{{ item.final_line_price | money }}</span>
+          <a href="{{ item.url_to_remove }}" class="rm">{{ 'soul.shop.remove' | t }}</a>
+        </li>
+        {%- endfor -%}
+      </ul>
+      <p class="cart-total">{{ 'soul.shop.subtotal' | t }} <b>{{ cart.total_price | money_with_currency }}</b></p>
+      <form action="{{ routes.cart_url }}" method="post"><button class="btn" type="submit" name="checkout">{{ 'soul.shop.checkout' | t }}</button></form>
+    {%- endif -%}
+  </div>
+</div>
+{% schema %}
+{
+  "name": "t:sections.cart_drawer.name",
+  "tag": "div"
+}
+{% endschema %}

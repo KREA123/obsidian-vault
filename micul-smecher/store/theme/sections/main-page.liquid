@@ -1,0 +1,50 @@
+<section class="sec page-sec{% if section.settings.narrow %} page-legal{% endif %}">
+  <div class="wrap">
+    <div class="head">
+      {%- if section.settings.eyebrow != blank -%}<p class="eyebrow">{{ section.settings.eyebrow | escape }}</p>{%- endif -%}
+      <h1 class="h-l">{{ page.title | escape }}</h1>
+    </div>
+    {%- if section.settings.image != blank -%}
+      <figure class="frame page-img">{{ section.settings.image | image_url: width: 1600 | image_tag: widths: '600, 900, 1200, 1600', sizes: '(max-width:1240px) calc(100vw - 32px), 1144px', loading: 'lazy' }}</figure>
+    {%- endif -%}
+    <div class="rte prose">{{ page.content }}</div>
+    {%- if section.settings.company -%}
+    <div class="legal page-company">
+      <div>
+        <h2 class="h-m">{{ 'soul.f_company' | t }}</h2>
+        <p>{{ settings.company_name | escape }} · {{ 'soul.f_city' | t }}<br>{{ 'soul.f_addr' | t }} {% render 'soul-field', value: settings.company_address, ph: '[street, number, Bucharest]' %}<br>{{ 'soul.f_cui' | t }} {% render 'soul-field', value: settings.company_cui, ph: '[RO00000000]' %} · {{ 'soul.f_reg' | t }} {% render 'soul-field', value: settings.company_reg, ph: '[J40/0000/2026]' %}<br>{{ 'soul.f_contact' | t }} {% render 'soul-field', value: settings.contact_email, ph: '[email]' %}</p>
+      </div>
+    </div>
+    {%- endif -%}
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.main_page.name",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.main_page.eyebrow"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.main_page.image"
+    },
+    {
+      "type": "checkbox",
+      "id": "narrow",
+      "default": false,
+      "label": "t:sections.main_page.narrow"
+    },
+    {
+      "type": "checkbox",
+      "id": "company",
+      "default": false,
+      "label": "t:sections.main_page.company"
+    }
+  ]
+}
+{% endschema %}

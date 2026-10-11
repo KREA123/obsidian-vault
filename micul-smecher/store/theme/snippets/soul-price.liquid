@@ -1,0 +1,9 @@
+{%- comment -%} "from" price of SOUL, formatted by Shopify (follows the visitor's market currency: EUR, RON). {%- endcomment -%}
+{%- liquid
+  if settings.soul_product != blank
+    echo settings.soul_product.price_min | money_without_trailing_zeros
+  else
+    assign cents = settings.fallback_price | times: 100
+    echo cents | money_without_trailing_zeros
+  endif
+-%}

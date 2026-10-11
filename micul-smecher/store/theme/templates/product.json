@@ -1,0 +1,31 @@
+{
+  "sections": {
+    "main-product": {
+      "type": "main-product",
+      "settings": {}
+    },
+    "born-ritual": {
+      "type": "born-ritual",
+      "settings": {}
+    },
+    "your-ai": {
+      "type": "your-ai",
+      "settings": {}
+    },
+    "specs-and-box": {
+      "type": "specs-and-box",
+      "settings": {}
+    },
+    "faq": {
+      "type": "faq",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main-product",
+    "born-ritual",
+    "your-ai",
+    "specs-and-box",
+    "faq"
+  ]
+}

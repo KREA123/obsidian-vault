@@ -1,0 +1,73 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "settings": {}
+    },
+    "marquee": {
+      "type": "marquee",
+      "settings": {}
+    },
+    "alive": {
+      "type": "alive",
+      "settings": {}
+    },
+    "the-object": {
+      "type": "the-object",
+      "settings": {}
+    },
+    "product-configurator": {
+      "type": "product-configurator",
+      "settings": {}
+    },
+    "born-ritual": {
+      "type": "born-ritual",
+      "settings": {}
+    },
+    "your-ai": {
+      "type": "your-ai",
+      "settings": {}
+    },
+    "soulos": {
+      "type": "soulos",
+      "settings": {
+        "demo_url": ""
+      }
+    },
+    "ou-egg": {
+      "type": "ou-egg",
+      "settings": {}
+    },
+    "privacy": {
+      "type": "privacy",
+      "settings": {}
+    },
+    "specs-and-box": {
+      "type": "specs-and-box",
+      "settings": {}
+    },
+    "faq": {
+      "type": "faq",
+      "settings": {}
+    },
+    "waitlist": {
+      "type": "waitlist",
+      "settings": {}
+    }
+  },
+  "order": [
+    "hero",
+    "marquee",
+    "alive",
+    "the-object",
+    "product-configurator",
+    "born-ritual",
+    "your-ai",
+    "soulos",
+    "ou-egg",
+    "privacy",
+    "specs-and-box",
+    "faq",
+    "waitlist"
+  ]
+}

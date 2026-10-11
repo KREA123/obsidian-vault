@@ -1,0 +1,31 @@
+<section class="sec page-sec"><div class="wrap">
+  <div class="head"><h1 class="h-l">{{ 'soul.shop.search' | t }}</h1></div>
+  <form class="chipform" action="{{ routes.search_url }}" method="get" role="search">
+    <label class="sr" for="q">{{ 'soul.shop.search' | t }}</label>
+    <input class="input" id="q" type="search" name="q" value="{{ search.terms | escape }}">
+    <button class="btn btn-sm" type="submit">{{ 'soul.shop.search' | t }}</button>
+  </form>
+  {%- if search.performed -%}
+    {%- paginate search.results by 24 -%}
+    <ul class="list-grid">
+      {%- for item in search.results -%}
+      <li><a href="{{ item.url }}">{%- if item.featured_image -%}{{ item.featured_image | image_url: width: 600 | image_tag: widths: '300, 600', sizes: '280px', loading: 'lazy' }}{%- endif -%}<b>{{ item.title | escape }}</b></a></li>
+      {%- else -%}
+      <li>{{ 'soul.shop.no_results' | t }}</li>
+      {%- endfor -%}
+    </ul>
+    {{ paginate | default_pagination }}
+    {%- endpaginate -%}
+  {%- endif -%}
+</div></section>
+{% schema %}
+{
+  "name": "t:sections.main_search.name",
+  "tag": "div",
+  "enabled_on": {
+    "templates": [
+      "search"
+    ]
+  }
+}
+{% endschema %}

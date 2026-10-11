@@ -1,0 +1,24 @@
+<section class="sec page-sec"><div class="wrap">
+  <div class="head"><h1 class="h-l">{{ collection.title | escape }}</h1>{%- if collection.description != blank -%}<div class="lead rte">{{ collection.description }}</div>{%- endif -%}</div>
+  {%- paginate collection.products by 24 -%}
+    <ul class="list-grid">
+      {%- for p in collection.products -%}
+      <li><a href="{{ p.url }}">{%- if p.featured_image -%}{{ p.featured_image | image_url: width: 600 | image_tag: widths: '300, 600', sizes: '280px', loading: 'lazy' }}{%- endif -%}<b>{{ p.title | escape }}</b><span>{{ 'soul.price_from' | t }} {{ p.price_min | money_without_trailing_zeros }}</span></a></li>
+      {%- else -%}
+      <li>{{ 'soul.shop.empty' | t }}</li>
+      {%- endfor -%}
+    </ul>
+    {{ paginate | default_pagination }}
+  {%- endpaginate -%}
+</div></section>
+{% schema %}
+{
+  "name": "t:sections.main_collection.name",
+  "tag": "div",
+  "enabled_on": {
+    "templates": [
+      "collection"
+    ]
+  }
+}
+{% endschema %}

@@ -1,0 +1,52 @@
+{%- liquid
+  assign home = ''
+  unless template.name == 'index'
+    assign home = routes.root_url
+  endunless
+  assign res_href = home | append: '#reserve'
+  if template.name == 'product'
+    assign res_href = '#reserve'
+  endif
+-%}
+<section class="sec band" id="colours" aria-labelledby="col-title">
+  <div class="wrap">
+    <div class="cfg">
+      <div class="cfg-stage rv" id="cfg-stage">
+        <span class="tag" data-i18n="fig.render">{{ 'soul.fig_render' | t }}</span>
+        <span class="floor" aria-hidden="true"></span>
+        <div class="shot" data-glass="col" data-col="silver" data-design="original" data-role="cfg" id="cfg-shot">
+          <img id="cfg-img" src="{{ 'col-silver-900.webp' | asset_url }}" srcset="{{ 'col-silver-520.webp' | asset_url }} 520w, {{ 'col-silver-900.webp' | asset_url }} 900w" sizes="(max-width:860px) 74vw, 440px" width="900" height="1081" loading="lazy" decoding="async" alt="Concept render of SOUL in Silver aluminium, front view, with live eyes.">
+        </div>
+      </div>
+      <div class="cfg-panel">
+        <p class="eyebrow rv" data-i18n="col.eyebrow">{{ 'soul.col_eyebrow' | t }}</p>
+        <h2 class="h-l rv" id="col-title" data-i18n="col.h2">{{ 'soul.col_h2_html' | t }}</h2>
+        <fieldset class="field" style="gap:0">
+          <legend class="sr" data-i18n="col.legend">{{ 'soul.col_legend' | t }}</legend>
+          <div class="swatches" id="cfg-sw"></div>
+        </fieldset>
+        <div class="cfg-name" aria-live="polite"><b id="cfg-name">Silver</b><span><span data-i18n="price.from">{{ 'soul.price_from' | t }}</span> <span data-price="from">{%- render 'soul-price' -%}</span></span></div>
+        <p class="cfg-desc" id="cfg-desc"></p>
+        <div class="cta"><a class="btn" href="{{ res_href }}" id="cfg-cta"><span id="cfg-cta-t">waitlist in Silver</span><span class="arr" aria-hidden="true">→</span></a></div>
+        <p class="cap" data-i18n="col.same">{{ 'soul.col_same' | t }}</p>
+      </div>
+    </div>
+    <figure class="family rv">
+      <div class="shot" data-glass="family" data-design="bucharest-night,tangerine-dream,original,mint-condition,bubblegum-bus" data-role="family">
+        <img src="{{ 'family.webp' | asset_url }}" srcset="{{ 'family-sm.webp' | asset_url }} 900w, {{ 'family.webp' | asset_url }} 1800w" sizes="(max-width:1240px) calc(100vw - 32px), 1144px" width="1800" height="1012" loading="lazy" decoding="async" alt="{{ 'soul.col_alt' | t }}" data-i18n-attr="alt:col.alt">
+      </div>
+    </figure>
+    <p class="cap" data-i18n="col.fam">{{ 'soul.col_fam' | t }}</p>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.product_configurator.name",
+  "tag": "div",
+  "presets": [
+    {
+      "name": "t:sections.product_configurator.name"
+    }
+  ]
+}
+{% endschema %}

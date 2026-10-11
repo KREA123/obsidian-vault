@@ -1,0 +1,102 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "SOUL",
+    "theme_version": "3.0.0",
+    "theme_author": "ARTEMIS DIGITAL S.R.L.",
+    "theme_documentation_url": "https://help.shopify.com/manual/online-store/themes",
+    "theme_support_url": "https://help.shopify.com/"
+  },
+  {
+    "name": "t:settings_schema.store.name",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "prelaunch",
+        "default": true,
+        "label": "t:settings_schema.store.prelaunch",
+        "info": "t:settings_schema.store.prelaunch_info"
+      },
+      {
+        "type": "product",
+        "id": "soul_product",
+        "label": "t:settings_schema.store.product"
+      },
+      {
+        "type": "number",
+        "id": "fallback_price",
+        "default": 249,
+        "label": "t:settings_schema.store.fallback_price",
+        "info": "t:settings_schema.store.fallback_info"
+      },
+      {
+        "type": "text",
+        "id": "waitlist_tag",
+        "default": "waitlist",
+        "label": "t:settings_schema.store.tag"
+      },
+      {
+        "type": "url",
+        "id": "soulos_url",
+        "label": "t:settings_schema.store.soulos"
+      },
+      {
+        "type": "page",
+        "id": "cookies_page",
+        "label": "t:settings_schema.store.cookies"
+      }
+    ]
+  },
+  {
+    "name": "t:settings_schema.company.name",
+    "settings": [
+      {
+        "type": "text",
+        "id": "company_name",
+        "default": "ARTEMIS DIGITAL S.R.L.",
+        "label": "t:settings_schema.company.cname"
+      },
+      {
+        "type": "text",
+        "id": "company_address",
+        "label": "t:settings_schema.company.address"
+      },
+      {
+        "type": "text",
+        "id": "company_cui",
+        "label": "t:settings_schema.company.cui"
+      },
+      {
+        "type": "text",
+        "id": "company_reg",
+        "label": "t:settings_schema.company.reg"
+      },
+      {
+        "type": "text",
+        "id": "contact_email",
+        "label": "t:settings_schema.company.email"
+      }
+    ]
+  },
+  {
+    "name": "t:settings_schema.brand.name",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "favicon",
+        "label": "t:settings_schema.brand.favicon"
+      },
+      {
+        "type": "image_picker",
+        "id": "share_image",
+        "label": "t:settings_schema.brand.share"
+      },
+      {
+        "type": "text",
+        "id": "share_description",
+        "default": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied.",
+        "label": "t:settings_schema.brand.desc"
+      }
+    ]
+  }
+]

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ 'soul.shop.gift_card' | t }} · {{ shop.name | escape }}</title>
+  {{ 'soul.css' | asset_url | stylesheet_tag }}
+  {{ content_for_header }}
+</head>
+<body>
+  <main class="sec page-sec"><div class="wrap">
+    <h1 class="h-l">{{ 'soul.shop.gift_card' | t }}</h1>
+    <p class="lead">{{ gift_card.balance | money }}</p>
+    <p class="mono">{{ gift_card.code | format_code }}</p>
+    {%- if gift_card.expires_on -%}<p class="cap">{{ gift_card.expires_on | date: '%d.%m.%Y' }}</p>{%- endif -%}
+  </div></main>
+</body>
+</html>

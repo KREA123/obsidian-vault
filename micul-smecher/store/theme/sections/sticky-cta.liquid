@@ -1,0 +1,27 @@
+{%- liquid
+  assign home = ''
+  unless template.name == 'index'
+    assign home = routes.root_url
+  endunless
+  assign res_href = home | append: '#reserve'
+  if template.name == 'product'
+    assign res_href = '#reserve'
+  endif
+-%}
+{%- if settings.prelaunch -%}
+<div class="dock" id="dock" aria-hidden="true">
+  <span><span data-i18n="price.from">{{ 'soul.price_from' | t }}</span><b data-price="from">{%- render 'soul-price' -%}</b></span>
+  <a class="btn" href="{{ res_href }}" tabindex="-1"><span data-i18n="hero.cta">{{ 'soul.hero_cta' | t }}</span></a>
+</div>
+{%- endif -%}
+{% schema %}
+{
+  "name": "t:sections.sticky_cta.name",
+  "tag": "div",
+  "enabled_on": {
+    "groups": [
+      "footer"
+    ]
+  }
+}
+{% endschema %}

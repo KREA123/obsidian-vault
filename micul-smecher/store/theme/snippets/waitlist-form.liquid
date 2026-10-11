@@ -1,0 +1,46 @@
+{%- comment -%}
+  SOUL waitlist = Shopify customer form. Creates a customer with email marketing consent and tags:
+  waitlist, colour-<silver|graphite|midnight|ember|champagne>, lang-<en|ro>.
+  Params: show_colours (bool), colour (default colour key).
+  Export: Admin > Customers > filter "Tagged with: waitlist" > Export.
+{%- endcomment -%}
+{%- liquid
+  assign privacy_url = shop.privacy_policy.url | default: '#legal'
+-%}
+{%- form 'customer', id: 'waitlist', class: 'form', novalidate: 'novalidate', data-native: 'true' -%}
+  {%- if form.posted_successfully? -%}
+        <div class="thanks" id="wl-thanks" tabindex="-1">
+        <h3 data-i18n="res.th">{{ 'soul.res_th' | t }}</h3>
+        <p data-i18n="res.tp">{{ 'soul.res_tp' | t }}</p>
+          <p class="form-fine">{{ 'soul.res_sent' | t }}</p>
+        </div>
+  {%- else -%}
+
+        <input type="hidden" name="contact[tags]" id="wl-tags" value="{{ settings.waitlist_tag | default: 'waitlist' }},colour-{{ colour | default: 'silver' }},lang-{{ request.locale.iso_code }}">
+        <div class="row2">
+          <div class="field">
+            <label for="wl-email" data-i18n="res.email">{{ 'soul.res_email' | t }}</label>
+            <input class="input" id="wl-email" name="contact[email]" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com" aria-describedby="wl-msg">
+          </div>
+          <div class="field">
+            <label for="wl-lang" data-i18n="res.lang">{{ 'soul.res_lang' | t }}</label>
+            <select class="input" id="wl-lang">
+              <option value="en"{% if request.locale.iso_code == 'en' %} selected{% endif %}>English</option>
+              <option value="ro"{% if request.locale.iso_code == 'ro' %} selected{% endif %}>Română</option>
+            </select>
+          </div>
+        </div>
+        {%- if show_colours -%}
+        <fieldset class="field">
+          <legend data-i18n="res.colour">{{ 'soul.res_colour' | t }}</legend>
+          <div class="swatches" id="wl-sw"></div>
+        </fieldset>
+        {%- endif -%}
+        <div class="hp" aria-hidden="true"><label for="wl-web">Website</label><input id="wl-web" type="text" tabindex="-1" autocomplete="off"></div>
+        <label class="consent" for="wl-consent"><input id="wl-consent" name="contact[accepts_marketing]" value="true" type="checkbox" required><span data-i18n="res.consent">{{ 'soul.res_consent_html' | t: privacy_url: privacy_url }}</span></label>
+        <p class="form-msg" id="wl-msg" role="alert">{%- if form.errors -%}{{ form.errors | default_errors }}{%- endif -%}</p>
+        <button class="btn btn-cream" type="submit" id="wl-submit"><span data-i18n="res.submit">{{ 'soul.res_submit' | t }}</span><span class="arr" aria-hidden="true">→</span></button>
+        <p class="form-fine" data-i18n="res.fine">{{ 'soul.res_fine' | t }}</p>
+      
+  {%- endif -%}
+{%- endform -%}

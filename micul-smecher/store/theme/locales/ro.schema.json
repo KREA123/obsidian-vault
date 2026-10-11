@@ -1,0 +1,121 @@
+{
+  "sections": {
+    "hero": {
+      "name": "Hero"
+    },
+    "marquee": {
+      "name": "Bandă de fapte"
+    },
+    "alive": {
+      "name": "Se uită înapoi"
+    },
+    "the_object": {
+      "name": "Obiectul"
+    },
+    "product_configurator": {
+      "name": "Culori"
+    },
+    "born_ritual": {
+      "name": "Născut cu"
+    },
+    "your_ai": {
+      "name": "AI-ul tău + demo"
+    },
+    "soulos": {
+      "demo_url": "Link demo SoulOS",
+      "demo_info": "Lasă gol ca să ascunzi butonul.",
+      "name": "SoulOS"
+    },
+    "ou_egg": {
+      "name": "Oul de încărcare OU"
+    },
+    "privacy": {
+      "name": "Promisiuni intimitate"
+    },
+    "specs_and_box": {
+      "name": "Specificații și cutie"
+    },
+    "faq": {
+      "name": "Întrebări"
+    },
+    "announcement_bar": {
+      "text": "Text după lansare",
+      "info": "Cât timp modul prelansare e activ, se afișează mereu nota despre CE.",
+      "name": "Bară prelansare"
+    },
+    "header": {
+      "name": "Antet"
+    },
+    "footer": {
+      "menu": "Meniu cu linkuri în plus",
+      "name": "Subsol"
+    },
+    "sticky_cta": {
+      "name": "Bară mobilă jos"
+    },
+    "waitlist": {
+      "name": "Listă de așteptare"
+    },
+    "main_product": {
+      "name": "Produs: SOUL"
+    },
+    "main_page": {
+      "eyebrow": "Etichetă mică deasupra titlului",
+      "image": "Imagine",
+      "narrow": "Aspect legal (text îngust)",
+      "company": "Arată datele firmei",
+      "name": "Pagină"
+    },
+    "main_404": {
+      "name": "404"
+    },
+    "main_search": {
+      "name": "Rezultate căutare"
+    },
+    "main_collection": {
+      "name": "Colecție"
+    },
+    "main_list_collections": {
+      "name": "Listă colecții"
+    },
+    "main_blog": {
+      "name": "Blog"
+    },
+    "main_article": {
+      "name": "Articol"
+    },
+    "main_cart": {
+      "name": "Coș"
+    },
+    "cart_drawer": {
+      "name": "Sertar coș"
+    }
+  },
+  "settings_schema": {
+    "store": {
+      "name": "Magazin SOUL",
+      "prelaunch": "Mod prelansare (doar listă de așteptare)",
+      "prelaunch_info": "Pornit: fără adăugare în coș, fără sertar de coș, pagina produsului arată lista de așteptare. Oprește-l doar după certificarea CE.",
+      "product": "Produsul SOUL (pentru prețuri)",
+      "fallback_price": "Preț „de la” de rezervă (moneda magazinului)",
+      "fallback_info": "Folosit doar cât timp nu e ales un produs mai sus.",
+      "tag": "Eticheta clienților din listă",
+      "soulos": "Link demo SoulOS (subsol)",
+      "cookies": "Pagina despre cookie-uri"
+    },
+    "company": {
+      "name": "Firma (date legale)",
+      "cname": "Denumire firmă",
+      "address": "Sediu social",
+      "cui": "CUI",
+      "reg": "Nr. Reg. Com.",
+      "email": "Email de contact"
+    },
+    "brand": {
+      "name": "Brand și distribuire",
+      "favicon": "Favicon (pătrat, 512 px)",
+      "share": "Imagine pentru distribuire (1200×630)",
+      "desc": "Descriere de rezervă pentru distribuire"
+    }
+  }
+}

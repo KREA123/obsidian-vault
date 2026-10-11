@@ -1,0 +1,61 @@
+<section class="sec born" id="born" aria-labelledby="born-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="born.eyebrow">{{ 'soul.born_eyebrow' | t }}</p>
+      <h2 class="h-l rv" id="born-title"><span data-i18n="born.h1">{{ 'soul.born_h1' | t }}</span> <span class="count" data-count>120</span> <span data-i18n="born.h2">{{ 'soul.born_h2' | t }}</span></h2>
+      <p class="lead rv" data-i18n="born.lead">{{ 'soul.born_lead' | t }}</p>
+    </div>
+    <div class="roll">
+      <div class="roll-stage">
+        <canvas id="roll-cv" role="img" aria-label="{{ 'soul.born_cvaria' | t }}" data-i18n-attr="aria-label:born.cvaria"></canvas>
+        <canvas class="burst" id="burst" aria-hidden="true"></canvas>
+      </div>
+      <div class="cert">
+        <div aria-live="polite" aria-atomic="true" style="display:grid;gap:14px">
+          <p class="rc-num" id="rc-num">#001 / 120</p>
+          <p class="rc-name" id="rc-name">Original</p>
+          <div class="rc-meta"><span class="rar" id="rc-rar" style="--c:#C9C4B8">Common</span><span class="pill" id="rc-odds" style="color:var(--cream);border-color:rgba(255,240,200,.35)">1 in 96</span></div>
+          <dl class="rc-dl">
+            <dt data-i18n="born.name">{{ 'soul.born_name' | t }}</dt><dd id="rc-pet">Mira</dd>
+            <dt data-i18n="born.chip">{{ 'soul.born_chip' | t }}</dt><dd class="mono" id="rc-chip">34:85:18:6A:C2:9F</dd>
+            <dt data-i18n="born.date">{{ 'soul.born_date' | t }}</dt><dd class="mono" id="rc-date">–</dd>
+          </dl>
+        </div>
+        <div class="roll-actions">
+          <button class="btn btn-cream" type="button" id="roll-btn"><span data-i18n="born.roll">{{ 'soul.born_roll' | t }}</span><span class="arr" aria-hidden="true">↻</span></button>
+          <button class="btn btn-ghost btn-sm" type="button" id="share-btn"><span data-i18n="born.share">{{ 'soul.born_share' | t }}</span></button>
+        </div>
+        <form class="chipform" id="chipform" novalidate>
+          <label class="sr" for="chip-in" data-i18n="born.chipL">{{ 'soul.born_chipl' | t }}</label>
+          <input class="input" id="chip-in" name="chip" inputmode="text" autocomplete="off" spellcheck="false" maxlength="17" placeholder="34:85:18:6A:C2:9F" aria-describedby="chip-help">
+          <button class="btn btn-ghost btn-sm" type="submit" data-i18n="born.chipGo">{{ 'soul.born_chipgo' | t }}</button>
+        </form>
+        <p class="born-note" id="chip-help" data-i18n="born.sample">{{ 'soul.born_sample' | t }}</p>
+      </div>
+    </div>
+    <div class="odds rv">
+      <table>
+        <caption class="sr" data-i18n="born.oddsCap">{{ 'soul.born_oddscap' | t }}</caption>
+        <thead><tr><th scope="col" data-i18n="born.th1">{{ 'soul.born_th1' | t }}</th><th scope="col" data-i18n="born.th2">{{ 'soul.born_th2' | t }}</th><th scope="col" data-i18n="born.th3">{{ 'soul.born_th3' | t }}</th><th scope="col" data-i18n="born.th4">{{ 'soul.born_th4' | t }}</th><th style="width:34%" aria-hidden="true"></th></tr></thead>
+        <tbody id="odds-body"></tbody>
+      </table>
+      <p class="odds-note" data-i18n="born.oddsNote">{{ 'soul.born_oddsnote' | t }}</p>
+    </div>
+    <div class="grid-head">
+      <h3 class="h-m" data-i18n="born.gridT">{{ 'soul.born_gridt' | t }}</h3>
+      <div class="filters" id="filters" role="group" aria-label="{{ 'soul.born_filter' | t }}" data-i18n-attr="aria-label:born.filter"></div>
+    </div>
+    <div class="egrid" id="egrid"></div>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.born_ritual.name",
+  "tag": "div",
+  "presets": [
+    {
+      "name": "t:sections.born_ritual.name"
+    }
+  ]
+}
+{% endschema %}

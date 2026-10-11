@@ -1,0 +1,25 @@
+{
+  "sections": {
+    "main-page": {
+      "type": "main-page",
+      "settings": {
+        "eyebrow": "SOUL",
+        "narrow": true,
+        "company": false
+      }
+    },
+    "faq": {
+      "type": "faq",
+      "settings": {}
+    },
+    "waitlist": {
+      "type": "waitlist",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main-page",
+    "faq",
+    "waitlist"
+  ]
+}

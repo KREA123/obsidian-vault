@@ -1,0 +1,18 @@
+{
+  "current": {
+    "prelaunch": true,
+    "fallback_price": 249,
+    "waitlist_tag": "waitlist",
+    "company_name": "ARTEMIS DIGITAL S.R.L.",
+    "share_description": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied."
+  },
+  "presets": {
+    "Default": {
+      "prelaunch": true,
+      "fallback_price": 249,
+      "waitlist_tag": "waitlist",
+      "company_name": "ARTEMIS DIGITAL S.R.L.",
+      "share_description": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied."
+    }
+  }
+}

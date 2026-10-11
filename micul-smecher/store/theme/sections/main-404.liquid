@@ -1,0 +1,15 @@
+<section class="sec page-sec"><div class="wrap"><div class="head">
+  <p class="eyebrow">404</p><h1 class="h-l">{{ 'soul.shop.nf_title' | t }}</h1><p class="lead">{{ 'soul.shop.nf_text' | t }}</p>
+  <div class="cta"><a class="btn" href="{{ routes.root_url }}">{{ 'soul.shop.home' | t }}</a></div>
+</div></div></section>
+{% schema %}
+{
+  "name": "t:sections.main_404.name",
+  "tag": "div",
+  "enabled_on": {
+    "templates": [
+      "404"
+    ]
+  }
+}
+{% endschema %}

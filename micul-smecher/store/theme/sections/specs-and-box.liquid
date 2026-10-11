@@ -1,0 +1,45 @@
+<section class="sec band" id="specs" aria-labelledby="sp-title">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow rv" data-i18n="sp.eyebrow">{{ 'soul.sp_eyebrow' | t }}</p>
+      <h2 class="h-l rv" id="sp-title" data-i18n="sp.h2">{{ 'soul.sp_h2' | t }}</h2>
+    </div>
+    <div class="sb">
+      <dl class="specs">
+        <div><dt data-i18n="sp.k1">{{ 'soul.sp_k1' | t }}</dt><dd data-i18n="sp.v1">{{ 'soul.sp_v1' | t }}</dd></div>
+        <div><dt data-i18n="sp.k2">{{ 'soul.sp_k2' | t }}</dt><dd>≈ 90 × 101 × 31.5 mm</dd></div>
+        <div><dt data-i18n="sp.k3">{{ 'soul.sp_k3' | t }}</dt><dd data-i18n="sp.v3">{{ 'soul.sp_v3' | t }}</dd></div>
+        <div><dt data-i18n="sp.k4">{{ 'soul.sp_k4' | t }}</dt><dd data-i18n="sp.v4">{{ 'soul.sp_v4' | t }}</dd></div>
+        <div><dt data-i18n="sp.k5">{{ 'soul.sp_k5' | t }}</dt><dd data-i18n="sp.v5">{{ 'soul.sp_v5' | t }}</dd></div>
+        <div><dt data-i18n="sp.k6">{{ 'soul.sp_k6' | t }}</dt><dd data-i18n="sp.v6">{{ 'soul.sp_v6' | t }}</dd></div>
+        <div><dt data-i18n="sp.k7">{{ 'soul.sp_k7' | t }}</dt><dd data-i18n="sp.v7">{{ 'soul.sp_v7' | t }}</dd></div>
+        <div><dt data-i18n="sp.k8">{{ 'soul.sp_k8' | t }}</dt><dd data-i18n="sp.v8">{{ 'soul.sp_v8' | t }}</dd></div>
+        <div><dt data-i18n="sp.k9">{{ 'soul.sp_k9' | t }}</dt><dd data-i18n="sp.v9">{{ 'soul.sp_v9' | t }}</dd></div>
+        <div><dt data-i18n="sp.k10">{{ 'soul.sp_k10' | t }}</dt><dd data-i18n="sp.v10">{{ 'soul.sp_v10' | t }}</dd></div>
+        <div><dt data-i18n="sp.k11">{{ 'soul.sp_k11' | t }}</dt><dd><span data-i18n="price.from">{{ 'soul.price_from' | t }}</span> <span data-price="from">{%- render 'soul-price' -%}</span> <span data-i18n="sp.vat">{{ 'soul.sp_vat' | t }}</span></dd></div>
+        <div><dt data-i18n="sp.k12">{{ 'soul.sp_k12' | t }}</dt><dd data-i18n="sp.v12">{{ 'soul.sp_v12' | t }}</dd></div>
+      </dl>
+      <aside class="box rv" aria-labelledby="box-title">
+        <p class="eyebrow" data-i18n="box.k">{{ 'soul.box_k' | t }}</p>
+        <h3 id="box-title" data-i18n="box.t">{{ 'soul.box_t' | t }}</h3>
+        <ol>
+          <li><div><b data-i18n="box.1">{{ 'soul.box_1' | t }}</b><span data-i18n="box.1p">{{ 'soul.box_1p' | t }}</span></div></li>
+          <li><div><b data-i18n="box.2">{{ 'soul.box_2' | t }}</b><span data-i18n="box.2p">{{ 'soul.box_2p' | t }}</span></div></li>
+        </ol>
+        <p class="note" style="margin:0" data-i18n="box.note">{{ 'soul.box_note' | t }}</p>
+      </aside>
+    </div>
+    <p class="note" data-i18n="sp.note">{{ 'soul.sp_note' | t }}</p>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "t:sections.specs_and_box.name",
+  "tag": "div",
+  "presets": [
+    {
+      "name": "t:sections.specs_and_box.name"
+    }
+  ]
+}
+{% endschema %}
