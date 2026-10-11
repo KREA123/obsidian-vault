@@ -45,7 +45,8 @@ const tapAt = async (x, y) => { const [a, b] = await pt(x, y); await page.mouse.
 const drag = async (x0, y0, x1, y1, steps = 10) => { const [a, b] = await pt(x0, y0); await page.mouse.move(a, b); await page.mouse.down();
   for (let i = 1; i <= steps; i++) { const [c, d] = await pt(x0 + (x1 - x0) * i / steps, y0 + (y1 - y0) * i / steps); await page.mouse.move(c, d); await sleep(16); } await page.mouse.up(); };
 const card = sel => `#cards .card:last-child ${sel}`;
-const tapEl = async sel => { const b = await page.locator(sel).first().boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await sleep(40); await page.mouse.up(); };
+const tapEl = async sel => { await page.evaluate(s => { try { window.__soul && __soul.reveal && __soul.reveal(s); } catch (e) {} }, sel);   /* Alive: a list is a wheel; bring the row into focus first */
+  const b = await page.locator(sel).first().boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await sleep(40); await page.mouse.up(); };
 const view = () => ev(() => __soul.S.view);
 const settle = (ms = 900) => sleep(ms);
 const quiet = () => ev(() => { __soul.S.pill = null; document.getElementById("pill").classList.remove("show"); });

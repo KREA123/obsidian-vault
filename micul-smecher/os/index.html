@@ -457,10 +457,10 @@ kbd{font:500 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width
 .sname{position:absolute;top:132px;left:0;right:0;text-align:center;font:560 54px/1 var(--v);cursor:pointer;letter-spacing:-.02em}
 .sname i{font:400 13px/1 var(--r);letter-spacing:.14em;color:var(--faint);margin-left:10px;vertical-align:14px;font-style:normal}
 .sborn{position:absolute;top:200px;left:70px;right:70px;text-align:center;font:400 13px/1.7 var(--r);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-.smood{position:absolute;top:252px;left:50%;transform:translateX(-50%);min-height:52px;display:flex;align-items:center;gap:10px;white-space:nowrap;cursor:pointer;font:420 25px/1 var(--v)}
+.smood{position:absolute;top:244px;left:50%;transform:translateX(-50%);min-height:52px;display:flex;align-items:center;gap:10px;white-space:nowrap;cursor:pointer;font:420 25px/1 var(--v)}
 .smood i{width:10px;height:10px;border-radius:50%;box-shadow:0 0 10px currentColor}
-.smet{position:absolute;top:322px;left:96px;right:96px;display:flex;flex-direction:column;gap:12px}
-.smet div{display:grid;grid-template-columns:112px 1fr;align-items:center;gap:12px;font:400 12px/1 var(--r);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.smet{position:absolute;top:310px;left:112px;right:112px;display:flex;flex-direction:column;gap:10px}
+.smet div{display:grid;grid-template-columns:100px 1fr;align-items:center;gap:12px;font:400 12px/1 var(--r);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .smet span{height:2px;background:var(--hair);position:relative}
 .smet span i{display:block;height:2px;transition:width .8s var(--spring)}
 
@@ -629,7 +629,7 @@ html{overscroll-behavior-x:none}
 .gcard{padding:22px 24px;border-radius:var(--g-r-card)}
 .sheet{padding:24px 22px 20px;border-radius:36px}
 /* keyboard: glass keycaps on the aura, the field a glass capsule */
-.kf{left:76px;right:76px;top:50px;height:76px;padding:0 18px 8px;border-radius:26px}
+.kf{left:76px;right:76px;top:60px;height:66px;padding:0 18px 8px;border-radius:26px}
 .kk{border-radius:var(--g-r-key);height:44px;color:var(--g-ink)}
 .kk::after{display:none}
 .kk.fn{color:var(--g-dim)}
@@ -807,6 +807,115 @@ html{overscroll-behavior-x:none}
 .look-pal{display:flex;gap:6px;justify-content:center}
 .look-pal i{width:30px;height:12px;border-radius:6px}
 @media (prefers-reduced-motion: reduce){.screen.ui #cards .card :is(.set,.list,.gl,.orb .ringbg){animation:none!important}.orb .ringbg{translate:none}#speech{transition:none}}
+/* ================= SoulOS Alive · round-native pass (os/DESIGN-ALIVE.md §2, §4, §9) =================
+   One eye slot on every app screen (k 0.30, centre y 118 device px). Content lives inside the safe circle under the eyes
+   (y 158–410 on the 466 web grid, r ≤ 212). Lists are wheels: one big focused row at the centre, one row above and one
+   below, smaller and faded. Type floor: 18 device px for rim tags, 20 for anything secondary, 24+ for body. Every target
+   is ≥ 44 device px. The eyes are drawn over the content (the map included). */
+#face{z-index:2;pointer-events:none}
+#cards{z-index:1}
+/* type floor */
+.rim text{font:600 19px/1 var(--v);letter-spacing:.03em;text-transform:none}
+.rim .mono{font:500 18px/1 var(--r);letter-spacing:.1em;text-transform:uppercase}
+.screen.big .rim text{font-size:21px}
+.t3{font-size:22px;color:var(--ink2)}
+.list .tm{font:600 21px/1 var(--v);letter-spacing:0;width:auto;min-width:58px}
+.list .st{font:500 20px/1.15 var(--v);letter-spacing:0;text-transform:none;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.list .tx{font-size:24px}
+.dtag{font:500 18px/1.2 var(--r);letter-spacing:.08em}
+.ainfo small{font:500 20px/1.15 var(--v);letter-spacing:0;text-transform:none;color:var(--ink2)}
+.brar{font:500 18px/1 var(--r);letter-spacing:.08em}
+.msub{font:500 20px/1.3 var(--v);letter-spacing:0;text-transform:none;color:var(--ink2)}
+.wg-h{font:600 20px/1 var(--v);letter-spacing:.02em;text-transform:none;color:var(--ink2)}
+.wg-h small{font:500 20px/1 var(--v);color:var(--ink2)}
+.wg-sub{font-size:22px}
+.wxh small{font:600 20px/1 var(--v);letter-spacing:0;color:var(--ink2)}
+.seg2 span{font:600 20px/1 var(--v);letter-spacing:0;text-transform:none}
+.tlaps div{font:500 20px/1 var(--v);letter-spacing:0}
+.sborn{font:500 20px/1.35 var(--v);letter-spacing:0;text-transform:none}
+.smet div{font:600 20px/1 var(--v);letter-spacing:0;text-transform:none;color:var(--ink2)}
+.gbest{font:600 20px/1 var(--v);letter-spacing:0;text-transform:none}
+.mt{font:600 20px/1 var(--v);letter-spacing:0;color:var(--ink2)}
+.ccv{font:600 20px/1 var(--v);letter-spacing:0;text-transform:none}
+.ccst{font:500 20px/1 var(--v);letter-spacing:0;text-transform:none;color:var(--ink2)}
+.chg-c small{font:600 20px/1 var(--v);letter-spacing:0;text-transform:none}
+.sname i{font:600 20px/1 var(--v);letter-spacing:0}
+.gtile small{font-size:20px}
+.kk.fn{font:600 20px/1 var(--v)}
+/* targets */
+.tog{width:78px;height:50px;padding:0 7px;flex:none}
+.tog i{width:36px;height:36px}
+.tog.on i{transform:translateX(28px)}
+.seg2{height:52px;top:148px;left:96px;right:96px}
+.card[data-v="timer"] .tdig{top:212px;font-size:78px}.card[data-v="timer"] .tdig small{font-size:40px}
+.card[data-v="timer"] .tlaps{top:298px;left:130px;right:130px}.card[data-v="timer"] .tpre{top:296px}
+.card[data-v="timer"] .tbtns{top:352px}.card[data-v="timer"] .wxc{top:298px!important}
+.seg2 span{height:46px}
+.tpre span{min-width:52px;height:52px}
+.look-sw span{width:48px;height:52px;background:none!important;box-shadow:none!important;border-radius:0;outline:none!important;display:grid;place-items:center}
+.chip.btn{min-height:52px}
+/* the wheel: a list that turns like the dial */
+.wheel{position:absolute!important;inset:0!important;width:auto!important;height:466px!important;padding:0!important;margin:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;display:block!important;animation:none!important;pointer-events:none;gap:0!important}
+.wheel>*{position:absolute!important;left:0;top:0;margin:0!important;pointer-events:auto;box-sizing:border-box;transform-origin:50% 50%;
+  transition:transform .34s var(--alive-spring),opacity .2s ease,width .2s ease;will-change:transform,opacity}
+.wheel>.wh-off{opacity:0!important;pointer-events:none!important;visibility:hidden}
+.wheel>.wh-n{opacity:.5}
+.set.wheel>div{height:auto!important;min-height:74px;padding:10px 24px;border-radius:var(--r-row);background:var(--peb);box-shadow:var(--spec)}
+.set.wheel>div::before{display:none!important}
+.set.wheel>div span{font-size:27px}
+.set.wheel>div b{font:600 22px/1.1 var(--v);letter-spacing:0;text-transform:none}
+.set.two.wheel>div{flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.set.two.wheel>.sel{background:var(--e1)}
+.wheel>.wh-f{box-shadow:var(--spec),inset 0 0 0 3px var(--e1)}
+.set.two.wheel>.sel.wh-f{box-shadow:var(--spec-hi),inset 0 0 0 3px var(--on1)}
+.list.wheel>li{min-height:74px;padding:10px 22px}
+.list.wheel .tx{font-size:26px}
+#cc .ccv{top:128px;padding:6px 10px}#cc .cct{top:180px}#cc .ccst{top:376px}
+.wxmain{top:160px}.wxc{top:268px}.wxh{top:302px}
+.smet{top:306px;left:100px;right:100px}.smet div{grid-template-columns:112px 1fr}
+.wscr{pointer-events:none}
+.wscr .tr{fill:none;stroke:var(--peb2);stroke-width:8;stroke-linecap:round}
+.wscr .th{fill:none;stroke:var(--e1);stroke-width:8;stroke-linecap:round;transition:d .25s}
+/* rim labels that would touch content are dropped (roundFit) */
+.rim.rfhide,.dots.rfhide{display:none!important}
+/* the dial: pebbles on pure black, a dotted e1 orbit, chunky filled glyphs */
+.orb .ringbg circle{fill:none;stroke:var(--e1);stroke-width:3;stroke-dasharray:0 14;stroke-linecap:round;opacity:.55}
+.orb .ow .pb{fill:#000;stroke:var(--c,var(--e1));stroke-width:4}
+.orb .ow.f .pb{fill:var(--c,var(--e1));stroke:none}
+.orb .opv{left:150px;right:150px;top:262px;height:56px}
+.orb .opv small{font:600 22px/1.1 var(--v);letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orb.saying .opv,.orb.saying .nm{opacity:0!important;animation:none!important;transition:opacity .15s}
+.screen.dial-say #speech{left:133px;right:133px}
+.screen.dial-say #speech span{max-width:196px;font-size:19px;line-height:1.12;padding:6px 12px;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+#speech span{font-size:20px}
+/* the eyelids: opening an app closes the eyes over the whole glass; the app is behind them when they open */
+#lids{position:absolute;inset:0;z-index:8;pointer-events:none;border-radius:50%;overflow:hidden}
+#lids i{position:absolute;left:-30%;width:160%;height:62%;background:#000;border-radius:50%;transform:translateY(-101%)}
+#lids i.lo{top:auto;bottom:0;transform:translateY(101%)}
+#lids i.up{top:0}
+/* Claude asks: two big answers */
+.ask2{position:absolute;top:322px;left:0;right:0;display:flex;justify-content:center;gap:16px}
+.ask2 .chip.btn{min-width:132px;min-height:66px;font-size:26px}
+.ask2 .chip.btn.deny{background:var(--peb2);color:var(--ink);box-shadow:var(--spec),inset 0 0 0 4px var(--amber)}
+.askhint{position:absolute;top:398px;left:110px;right:110px;text-align:center;font:600 22px/1.1 var(--v);color:var(--ink2)}
+/* an answer sits on a round pebble */
+.ansdisc{position:absolute;left:63px;top:152px;width:340px;min-height:230px;border-radius:50% 50% 46% 46% / 44% 44% 56% 56%;background:var(--peb);box-shadow:var(--spec);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px 40px;text-align:center}
+.ansdisc .chip{font-size:21px;min-height:36px!important;white-space:normal}
+.ansdisc.mint{box-shadow:var(--spec),inset 0 0 0 4px var(--mint)}
+.ansdisc.amber{box-shadow:var(--spec),inset 0 0 0 4px var(--amber)}
+.chipnote{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:18px;font:600 20px/1 var(--v);background:var(--peb2);color:var(--ink);box-shadow:inset 0 0 0 3px var(--amber)}
+.chipnote.mint{box-shadow:inset 0 0 0 3px var(--mint)}
+/* maps: the eyes sit on a black disc over the map */
+.eyedisc{position:absolute;left:173px;top:62px;width:120px;height:104px;border-radius:50%;background:#000;pointer-events:none}
+.list li.addrow{justify-content:center;font:680 24px/1 var(--v);color:var(--e1);box-shadow:var(--spec),inset 0 0 0 3px var(--e1);cursor:pointer}
+.tool{font:500 18px/1 var(--r);letter-spacing:.04em;color:var(--ice)}
+.drel{font:600 20px/1 var(--v);letter-spacing:0;text-transform:none}
+.dlab{font:600 20px/1 var(--v);letter-spacing:.02em;text-transform:none}
+.wd{width:48px;height:48px;margin:-24px 0 0 -24px;font:600 19px/1 var(--v);letter-spacing:0}
+.aerr{font:600 20px/1.3 var(--v)}
+.kk{box-shadow:var(--spec),inset 0 0 0 1.5px #000}
+.ansdisc .t1{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:7;overflow:hidden;max-width:100%}
+@media (prefers-reduced-motion: reduce){.wheel>*{transition:none!important}#lids{display:none}}
 </style>
 
 <header class="top">
@@ -834,6 +943,7 @@ html{overscroll-behavior-x:none}
           <div id="cc" role="dialog" aria-label="Control"></div>
           <div class="pill" id="pill" aria-live="polite"></div>
           <div id="speech" aria-hidden="true"><span></span></div>
+          <div id="lids" aria-hidden="true"><i class="up"></i><i class="lo"></i></div>
           <div id="fx" aria-hidden="true"></div>
           <div id="finger" aria-hidden="true"></div>
           <div id="dimmer" aria-hidden="true"></div>
@@ -2032,7 +2142,7 @@ ro: {
   holdAsk: "Ține apăsat<br>și întreabă", lastQ: "Ultima întrebare",
   holdNote: "Ține apăsat și dictează", toPhone: "pe telefon ✓", sending: "se trimite…",
   focusTap: "Atinge = start", focusRun: "Atinge = pauză", focusPaused: "Pauză · atinge = continuă", focusDone: "Gata! Bravo.",
-  cAsk: "Claude cere voie", cHint: "Ține = da · 2× = nu", cWorking: "Claude lucrează", cProj: "proiect „site” · 3 aprobări azi", cCalm: "Nicio cerere. Stau cu ochii pe el.",
+  cAsk: "Claude cere voie", cHint: "Ține = da · 2× = nu", cAllow: "Permite", cDeny: "Refuză", notConn: "Demo · AI neconectat", cWorking: "Claude lucrează", cProj: "proiect „site” · 3 aprobări azi", cCalm: "Nicio cerere. Stau cu ochii pe el.",
   diaryT: "Jurnal · azi",
   trHint: "Ține apăsat și vorbește",
   musT: "Muzică · telefon", song: "Perfect fără tine", artist: "Vama Veche",
@@ -2128,7 +2238,7 @@ en: {
   holdAsk: "Hold<br>and ask", lastQ: "Last question",
   holdNote: "Hold and dictate", toPhone: "on phone ✓", sending: "sending…",
   focusTap: "Tap = start", focusRun: "Tap = pause", focusPaused: "Paused · tap = resume", focusDone: "Done! Well done.",
-  cAsk: "Claude asks", cHint: "Hold = yes · 2× = no", cWorking: "Claude is working", cProj: "project “site” · 3 approvals today", cCalm: "No requests. I'm keeping an eye on it.",
+  cAsk: "Claude asks", cHint: "Hold = yes · 2× = no", cAllow: "Allow", cDeny: "Deny", notConn: "Demo · AI not connected", cWorking: "Claude is working", cProj: "project “site” · 3 approvals today", cCalm: "No requests. I'm keeping an eye on it.",
   diaryT: "Diary · today",
   trHint: "Hold and speak",
   musT: "Music · phone", song: "Slow Sunday", artist: "Luma Park",
@@ -2348,7 +2458,7 @@ const rarityOf = k => EYES.RARITIES.find(r => r.key === k) || EYES.RARITIES[0];
 const RX = { boop: ["happy", 1.3], happy: ["happy", 1.6], laugh: ["laugh"], love: ["love", 2.2], dizzy: ["dizzy", 2.2], star: ["excited", 2.2], wake: ["surprised", 0.8],
   wakeup: ["wake"], intro: ["hello"], nope: ["confused", 1.4], shy: ["shy", 1.6], deny: ["suspicious", 1.5], error: ["sad", 2.6], notify: ["surprised", 0.9] };
 /* OS states → held moods */
-const MOOD_OF = { idle: "neutral", sleep: "sleepy", listen: "listening", think: "thinking", speak: "neutral", focus: "neutral", busy: "working", wait: "surprised", error: "confused", charge: "charging", low: "hungry" };
+const MOOD_OF = { idle: "neutral", sleep: "sleepy", listen: "listening", think: "thinking", speak: "neutral", focus: "neutral", busy: "working", wait: "surprised", error: "sad", charge: "charging", low: "hungry" };
 class Soul {
   constructor(cv, design) {
     this.cv = cv; this.ctx = cv.getContext("2d"); this.S = 0; this.t = 0;
@@ -2372,7 +2482,7 @@ class Soul {
   flash(col, d = 1.4) { this.flashCol = col; this.flashUntil = this.t + d; }
   update(dt) {
     const t = (this.t += dt), rig = this.rig;
-    const mood = MOOD_OF[this.st] || (EYES.MOODS[this.st] ? this.st : "neutral");
+    const mood = (this.st === "speak" && this.speakMood) || MOOD_OF[this.st] || (EYES.MOODS[this.st] ? this.st : "neutral");
     if (rig.reaction) rig.reaction.back = mood;                 // a reaction plays once, then lands on the state's mood
     else if (rig.mood !== mood) rig.setExpression(mood);
     const lk = this.look && t < this.look.until ? this.look : null;
@@ -2421,14 +2531,15 @@ const RING = ["home", "talk", "weather", "reminders", "alarms", "notes", "focus"
 const OVERLAY = ["today", "voice", "msg", "memory", "about", "aimode", "mysoul", "look", "dial", "alarmsum", "ring", "birth", "bname", "bai", "bhold"];
 const PARENT = { memory: "settings", about: "settings", aimode: "settings", mysoul: "settings", look: "mysoul", alarmsum: "alarms" };
 const LAYOUT = {
-  home: { k: 1, cy: 0 }, talk: { k: 0.62, cy: -0.11 }, today: { k: 0.25, cy: -0.35 },
-  focus: { k: 0.28, cy: -0.34 }, card: { k: 0.3, cy: -0.33 },
-  listen: { k: 0.7, cy: -0.1 }, answer: { k: 0.42, cy: -0.26 }, about: { k: 0.34, cy: -0.3 },
-  kb: { k: 0.2, cy: -0.414 }, kbdict: { k: 0.46, cy: 0.04 }, dial: { k: 0.19, cy: -0.268 }, alarmsum: { k: 0.17, cy: -0.3 }, ring: { k: 0.44, cy: -0.2 },
-  birth: { k: 0.8, cy: -0.07 }, bname: { k: 0.3, cy: -0.31 }, bai: { k: 0.22, cy: -0.36 }, bhold: { k: 0.62, cy: -0.12 }, mysoul: { k: 0.5, cy: -0.18 }, aimode: { k: 0.22, cy: -0.36 },
-  sleep: { k: 0.74, cy: -0.07 }, chg: { k: 0.5, cy: -0.15 }, game: { k: 0.4, cy: 0 }, apps: { k: 0.44, cy: -0.07 }, cc: { k: 0.2, cy: -0.33 },
+  /* Alive: ONE eye slot for every app screen (k 0.30, centre y 118 device px = 114.6 on the 466 grid); never below k 0.24 */
+  home: { k: 1, cy: 0 }, talk: { k: 0.62, cy: -0.11 }, today: { k: 0.3, cy: -0.254 },
+  focus: { k: 0.3, cy: -0.254 }, card: { k: 0.3, cy: -0.254 },
+  listen: { k: 0.7, cy: -0.1 }, answer: { k: 0.3, cy: -0.254 }, about: { k: 0.3, cy: -0.254 },
+  kb: { k: 0.24, cy: -0.43 }, kbdict: { k: 0.46, cy: 0.04 }, dial: { k: 0.3, cy: -0.254 }, alarmsum: { k: 0.3, cy: -0.254 }, ring: { k: 0.44, cy: -0.2 },
+  birth: { k: 0.8, cy: -0.07 }, bname: { k: 0.3, cy: -0.254 }, bai: { k: 0.3, cy: -0.254 }, bhold: { k: 0.62, cy: -0.12 }, mysoul: { k: 0.42, cy: -0.21 }, aimode: { k: 0.3, cy: -0.254 },
+  sleep: { k: 0.74, cy: -0.07 }, chg: { k: 0.5, cy: -0.15 }, game: { k: 0.4, cy: 0 }, apps: { k: 0.44, cy: -0.07 }, cc: { k: 0.3, cy: -0.254 },
   /* SoulOS Alive: waking glides the eyes up and shrinks them (the OS rises under them); Look shows them big */
-  peek: { k: 0.52, cy: -0.17 }, look: { k: 0.42, cy: -0.255 }
+  peek: { k: 0.52, cy: -0.17 }, look: { k: 0.42, cy: -0.255 }, think: { k: 0.6, cy: -0.05 }
 };
 const S = {
   view: "home", ret: "home", ai: "claude", bright: 1, sleeping: false,
@@ -2519,7 +2630,7 @@ const GP = {
 };
 GP.part = GP.weather; GP.star = GP.games;
 /* one glyph: size in 466-space px; the stroke stays 2 px whatever the size (2.5 px when it is held up large) */
-const lg = (k, s = 24, w = s >= 60 ? 2.5 : 2, st = "") => `<svg class="lg" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${(w * 24 / s).toFixed(3)}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${st ? ` style="${st}"` : ""}>${GP[k] || ""}</svg>`;
+const lg = (k, s = 24, w = Math.max(2.6, s * 4 / 24), st = "") => `<svg class="lg" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${(w * 24 / s).toFixed(3)}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${st ? ` style="${st}"` : ""}>${GP[k] || ""}</svg>`;
 /* rim words: #rT runs clockwise over the top (text outside the path), #rB runs left→right through 6 o'clock (text inside) */
 const arcPath = (r, span, top) => { const a0 = (top ? -90 - span / 2 : 90 + span / 2) * Math.PI / 180, a1 = (top ? -90 + span / 2 : 90 - span / 2) * Math.PI / 180;
   return `M${(233 + r * Math.cos(a0)).toFixed(2)} ${(233 + r * Math.sin(a0)).toFixed(2)}A${r} ${r} 0 1 ${top ? 1 : 0} ${(233 + r * Math.cos(a1)).toFixed(2)} ${(233 + r * Math.sin(a1)).toFixed(2)}`; };
@@ -2532,7 +2643,7 @@ function capD(rm, hw, a0, a1) {
 }
 /* how wide a rim label is, in degrees of half-span at radius r (mono caps ≈ 11.4 px a letter, the voice ≈ 13.5) */
 function rimSpan(inner, cls, r) {
-  const t = String(inner).replace(/<[^>]*>/g, "").replace(/&[a-z#0-9]+;/g, "x"), w = t.length * (/say/.test(cls) ? 13.2 : 11.4);
+  const t = String(inner).replace(/<[^>]*>/g, "").replace(/&[a-z#0-9]+;/g, "x"), w = t.length * (/say/.test(cls) ? 13.2 : 11);
   return clamp((w / 2 + 22) / r * 180 / Math.PI, 12, 80);
 }
 const toneOf = cls => (/amber|mint|ice/.exec(cls) || [""])[0];
@@ -2575,7 +2686,7 @@ function cardHTML(v) {
     case "games": return gamesHTML();
     case "talk": {
       const qa = S.lastQA, off = S.ai === "none";
-      return lbl(L.talk) + `<div class="c" style="top:258px;gap:8px"><div class="dtag" style="color:${off ? "var(--amber)" : "var(--ice)"}">${esc(L.aiModes[S.ai])} · ${esc(L.aiTag[S.ai])}</div>
+      return lbl(L.talk) + `<div class="c" style="top:258px;gap:8px"><div class="dtag" style="color:${off ? "var(--amber)" : "var(--ice)"}">${esc(L.aiModes[S.ai])}</div>
         ${off ? `<div class="t2" style="font-size:28px">${L.talkOff}</div>` : qa ? `<div class="t2" style="font-size:26px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${qo(esc(qa))}</div>` : `<div class="t2" style="font-size:28px">${L.talkHint}</div>`}
         ${wordBtn("type-ai", unpen(off ? L.typeOff : L.typeBtn(aiName())), off ? "" : "", ' data-o="talk"', "pen")}</div>`;
     }
@@ -2590,8 +2701,8 @@ function cardHTML(v) {
       S.notePage = Math.min(S.notePage, pages - 1);
       const list = all.slice(S.notePage * 2, S.notePage * 2 + 2);
       return lbl(`${L.notes} · ${all.length}`) + addBtn("note-add") +
-        `<div class="c" style="top:172px"><div class="t3" style="font-size:21px">${L.holdNote}${pages > 1 ? ` · ${S.notePage + 1}/${pages} ↑` : ""}</div></div>
-      <ul class="list" style="top:212px">${list.map(n => `<li class="col nrow ${n.fresh ? "new" : ""}" data-act="note-edit" data-k="${n.key}"><span class="tx" style="font-size:26px">${esc(noteText(n))}</span><span class="st ${n.sync ? "ok" : ""}">${n.sync ? L.toPhone : L.sending}</span></li>`).join("")}</ul>`;
+        `<div class="c" style="top:160px"><div class="t3" style="font-size:21px">${L.holdNote}${pages > 1 ? ` · ${S.notePage + 1}/${pages} ↑` : ""}</div></div>
+      <ul class="list" data-nowheel style="top:206px">${list.map(n => `<li class="col nrow ${n.fresh ? "new" : ""}" data-act="note-edit" data-k="${n.key}"><span class="tx" style="font-size:26px">${esc(noteText(n))}</span><span class="st ${n.sync ? "ok" : ""}">${n.sync ? L.toPhone : L.sending}</span></li>`).join("")}</ul>`;
     }
     case "alarms": {
       const list = S.alarms.slice().sort((a, b) => a.h * 60 + a.m - b.h * 60 - b.m).slice(0, 3);
@@ -2603,12 +2714,13 @@ function cardHTML(v) {
       const F = S.focus, frac = F.left / F.total, C = 2 * Math.PI * 222;
       const sub = F.done ? L.focusDone : F.run ? L.focusRun : F.left < F.total ? L.focusPaused : L.focusTap;
       return lbl(L.focus, F.done ? "mint" : "") + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true">${glassRing(214, 15)}
-        <circle data-live="fring" cx="233" cy="233" r="222" fill="none" stroke="${F.done ? "#C9F2E4" : "#FFF0C8"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px ${F.done ? "rgba(201,242,228,.7)" : "rgba(255,240,200,.5)"})"/></svg>
+        <circle data-live="fring" cx="233" cy="233" r="222" fill="none" stroke="${F.done ? "var(--mint)" : "var(--e1)"}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 233 233)"/></svg>
         <div class="c" style="top:184px;gap:16px"><div class="fdig" data-live="fdig" style="${F.done ? "color:var(--mint)" : ""}">${mmss(F.left)}</div><div class="t3">${sub}</div></div>`;
     }
     case "claude": {
       const P = S.claude.pending;
-      if (P) return lbl(L.cAsk, "amber") + `<div class="c gl sheet amber" style="top:112px;left:76px;right:76px;gap:12px"><span style="color:var(--amber)">${lg("claude", 50)}</span><div class="t3" style="font-size:20px">site · Bash</div><div class="cmd">${esc(P.cmd)}</div></div>` + rimBot(esc(L.cHint), "say amber");
+      if (P) return lbl(L.cAsk, "amber") + `<div class="c gl sheet amber" style="top:154px;left:84px;right:84px;gap:8px;padding:16px 20px 18px"><div class="t3" style="font-size:20px">site · Bash</div><div class="cmd">${esc(P.cmd)}</div></div>
+        <div class="ask2">${wordBtn("c-allow", L.cAllow, "ok", ' aria-label="' + esc(L.cAllow) + '"', "check")}${wordBtn("c-deny", L.cDeny, "deny", ' aria-label="' + esc(L.cDeny) + '"')}</div><div class="askhint">${esc(L.cHint)}</div>`;
       return lbl("Claude") + `<div class="c" style="top:136px;gap:10px"><span style="color:var(--dim)">${lg("claude", 40)}</span><div class="t1">${L.cWorking}</div><div class="t3" style="font-size:20px">${L.cProj}</div>
         ${wordBtn("type-ai", unpen(S.ai === "none" ? L.typeOff : L.typeBtn(aiName())), "", ' data-o="claude" style="margin-top:4px"', "pen")}</div>`;
     }
@@ -2623,7 +2735,7 @@ function cardHTML(v) {
     }
     case "music": {
       const M = S.music;
-      return lbl(L.musT) + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><path d="${arcD(140, 40, 214)}" fill="none" stroke="rgba(255,240,200,.12)" stroke-width="4" stroke-linecap="round"/><path data-live="mbar" d="${arcD(140, 140 - 100 * Math.max(0.005, M.pos), 214)}" fill="none" stroke="#FFF0C8" stroke-width="4" stroke-linecap="round"/></svg>
+      return lbl(L.musT) + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><path d="${arcD(140, 40, 214)}" fill="none" stroke="var(--peb2)" stroke-width="8" stroke-linecap="round"/><path data-live="mbar" d="${arcD(140, 140 - 100 * Math.max(0.005, M.pos), 214)}" fill="none" stroke="var(--e1)" stroke-width="8" stroke-linecap="round"/></svg>
       <div class="c" style="top:150px;gap:6px"><div class="t1" style="font-size:32px">${L.song}</div><div class="t3">${L.artist}</div>
       <div class="ctrls" style="margin-top:18px"><span class="cb" data-act="prev" role="button" aria-label="prev">${lg("prev", 30)}</span><span class="cb big" data-act="play" role="button" aria-label="play">${lg(M.play ? "pause" : "play", 32)}</span><span class="cb" data-act="next" role="button" aria-label="next">${lg("next", 30)}</span></div>
       <div class="mt" style="margin-top:22px"><span data-live="mt">${mmss(M.pos * 214)}</span><span>3:34</span></div></div>`;
@@ -2652,21 +2764,23 @@ function cardHTML(v) {
     }
     case "memory": return SoulMem.view(L);   /* SOUL Memory: the real facts (search, tap = forget, hold = forget all) */
     case "about":
-      return `<div class="c gl gcard" style="top:110px;gap:12px;left:74px;right:74px"><span style="color:var(--dim)">${lg("about", 34)}</span><div class="t1">${L.aboutT}</div><div class="t3" style="font-size:21px;color:rgba(255,240,200,.75)">${L.aboutB}</div></div>`;
+      return `<div class="c gl gcard" style="top:152px;gap:10px;left:74px;right:74px"><span style="color:var(--dim)">${lg("about", 34)}</span><div class="t1">${L.aboutT}</div><div class="t3" style="font-size:21px;color:rgba(255,240,200,.75)">${L.aboutB}</div></div>`;
     case "msg":
-      return lbl(`${L.msgT} · ${L.msgFrom}`) + `<div class="c gl gcard" style="top:118px;gap:14px;left:74px;right:74px"><div class="t1">${L.msgBody}</div>
+      return lbl(`${L.msgT} · ${L.msgFrom}`) + `<div class="c gl gcard" style="top:156px;gap:12px;left:80px;right:80px;padding:18px 20px"><div class="t1" style="font-size:30px">${L.msgBody}</div>
         <div class="chips" style="flex-direction:column;align-items:center;gap:0">${wordBtn("reply", L.reply1, "", ' data-r="1"')}${wordBtn("reply", L.reply2, "", ' data-r="2"')}</div></div>`;
     case "voice": {
       const V = S.voice; if (!V) return "";
       if (V.phase === "listen") return lbl(L.listen, "ice") + `<div class="c" style="top:318px"><div class="t2" data-live="heard" style="color:#fff;font-size:26px">${esc(V.shown)}<span class="caret"></span></div></div>` + (V.sim && V.kind !== "tr" ? rimBot(esc(V.micErr || !SRC ? L.simMic : L.demoMic), "") : "");
       if (V.phase === "think") return lbl(L.thinking(V.kind === "tr" ? "SOUL" : S.ai === "none" ? "SOUL" : aiName()), "amber") + `<div class="c" style="top:316px;gap:14px"><div class="t3" style="font-size:23px;max-width:300px">${qo(esc(V.p.q.length > 70 ? V.p.q.slice(0, 68) + "…" : V.p.q))}</div></div>` + rimBot(esc(V.src || ""), "amber");
-      const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips || [], a = String(V.p.a || ""), fs = a.length > 150 ? 20 : a.length > 90 ? 23 : a.length > 44 ? 27 : 31;
+      const chips = V.kind === "tr" ? [["", L.replay]] : V.p.chips || [], a = String(V.p.a || ""), fs = a.length > 150 ? 20 : a.length > 90 ? 22 : a.length > 44 ? 26 : 30;
       if (V.kind === "tr") return `<div class="c fade-in" style="top:196px;gap:14px"><div class="t3" style="font-size:21px">${esc(V.p.q)}</div><div class="t1" style="font-size:30px">${esc(a)}</div>
         <div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div></div>`;
-      return `<div class="c gl gcard fade-in" style="top:150px;gap:10px;left:62px;right:62px"><div class="dtag" style="${V.err ? "" : "color:var(--ice)"}">${esc(V.src || "")}</div>
+      const okd = chips.some(c => c[0] === "ok");
+      return `<div class="ansdisc fade-in ${V.err ? "amber" : okd ? "mint" : ""}"><div class="t3" style="font-size:20px;${V.err || V.note ? "color:var(--amber)" : "color:var(--ice)"}" ${V.note ? `title="${esc(V.note)}"` : ""}>${esc(V.note ? L.notConn : V.src || "")}</div>
         ${V.err && V.err !== a ? `<div class="aerr" role="alert">${esc(V.err)}</div>` : ""}
         <div class="t1" data-live="say" style="font-size:${fs}px">${esc(a)}</div>
-        ${chips.length ? `<div class="chips">${chips.map(c => `<span class="chip ${c[0]}">${esc(c[1])}</span>`).join("")}</div>` : ""}${V.p.tool ? `<div class="tool">→ ${esc(V.p.tool)}</div>` : ""}</div>`;
+        ${chips.length ? `<div class="chips" style="gap:4px 14px">${chips.map(c => `<span class="chip ${c[0]}" style="min-height:40px">${esc(c[1])}</span>`).join("")}</div>` : ""}
+        ${V.note ? `<span class="sr" role="status">${esc(V.src || "")} · ${esc(V.note)}</span>` : ""}</div>`;
     }
   }
   return "";
@@ -2675,7 +2789,7 @@ function cardHTML(v) {
 /* ---------------------------------------------------------------- navigation (spring-driven cards) */
 let curCard = null, NAV = null;
 function layoutFor(v) {
-  if (v === "voice") { const V = S.voice; return V && V.phase === "answer" ? LAYOUT.answer : LAYOUT.listen; }
+  if (v === "voice") { const V = S.voice; return V && V.phase === "answer" ? LAYOUT.answer : V && V.phase === "think" ? LAYOUT.think : LAYOUT.listen; }
   if (v === "games" && S.game.run) return LAYOUT.game;
   { const l = window.SoulApps && SoulApps.layout(v); if (l) return l; }
   if (["home", "talk", "today", "focus", "dial", "alarmsum", "ring", "apps", "birth", "bname", "bai", "bhold", "mysoul", "aimode", "look"].includes(v)) return LAYOUT[v];
@@ -2701,7 +2815,9 @@ function applyFaceState() {
   uiSync();
   if (S.sleeping) { soul.st = "sleep"; return; }
   if (BOOT.on) { soul.st = BOOT.step === "bhold" && BOOT.holding ? "listen" : "idle"; return; }
-  if (v === "voice" && V) soul.st = V.phase === "listen" ? "listen" : V.phase === "think" ? "think" : V.speaking ? "speak" : "idle";
+  soul.speakMood = null;
+  if (v === "voice" && V) { const won = V.phase === "answer" && V.face && !V.err && EYES.MOODS.happy;   /* Alive: a success keeps a happy face while it talks and after */
+    soul.st = V.phase === "listen" ? "listen" : V.phase === "think" ? "think" : V.speaking ? "speak" : won ? "happy" : "idle"; if (won) soul.speakMood = "happy"; }
   else if (S.chgShow) { soul.st = "charge"; soul.levelExt = S.batt.lvl / 100; }
   else if (pend && ["claude", "home", "today"].includes(v)) soul.st = "wait";                 // Claude needs you: wide eyes, looking at you
   else if (v === "focus" && S.focus.run) soul.st = "focus";
@@ -2726,7 +2842,7 @@ function renderDots(nav) {
   if (hide) { screen.classList.remove("navhint"); return; }
   const nm = k => esc(appName(RING[(i + k + n) % n]));
   dotsEl.innerHTML = `<svg class="rim" viewBox="0 0 466 466">${rimTxt("rO", nm(-1), "", 50)}${rimTxt("rO", nm(0), "say cream", 0)}${rimTxt("rO", nm(1), "", -50)}</svg><i class="otick"></i>`;
-  screen.classList.add("navhint");
+  screen.classList.add("navhint"); dotsEl.classList.remove("rfhide"); dotsFit();
   after(1500, () => { dotsEl.classList.add("hide"); screen.classList.remove("navhint"); }, "navhint");
 }
 const ENTER = { left: { x: 300, o: 0 }, right: { x: -300, o: 0 }, up: { y: 210, o: 0 }, down: { y: -170, o: 0 }, fade: { s: 0.84, o: 0 }, zoom: { s: 0.12, o: 0 }, none: {} };
@@ -2749,15 +2865,21 @@ function go(v, dir = "fade", opt = {}) {
   const el = document.createElement("div");
   el.className = "card"; el.dataset.v = v;
   el.innerHTML = cardHTML(v);
+  /* Alive: opening an app (and closing one) is a blink of the whole glass: two flat lids close in 80 ms, the screen
+     changes behind them, they open in 170 ms on the eyes' out-back curve (eyes.js Rig.closed) */
+  const lid = !RM && !BOOT.on && !!curCard && (dir === "zoom" || (["apps", "home"].includes(v) && !["apps", "home"].includes(prev)));
+  if (lid) { dir = "none"; opt = Object.assign({}, opt, { exit: "lid" }); }
   if (opt.origin) el.style.transformOrigin = `${opt.origin[0].toFixed(1)}px ${opt.origin[1].toFixed(1)}px`;
   cards.appendChild(el);
   setSt(el, Object.assign({ x: 0, y: 0, s: 1, o: 1 }, RM ? {} : (ENTER[dir] || ENTER.fade)));
+  roundFit(el);
   spring(el, { x: 0, y: 0, s: 1, o: 1 }, dir === "zoom" ? { k: 480, c: 37 } : { k: 560, c: 40 });   // ≈ 200 ms to settle, a hint of overshoot
   if (curCard) {
     const old = curCard; old.classList.add("leaving");
     const ex = opt.exit || (v === "home" && dir === "down" && !["today", "apps"].includes(prev) ? "shrink" : dir);
     if (ex === "zoom" && opt.origin) old.style.transformOrigin = el.style.transformOrigin;
     if (RM) old.remove();
+    else if (ex === "lid") { el.style.visibility = "hidden"; lidWipe(() => { el.style.visibility = ""; old.remove(); }); }
     else spring(old, EXIT[ex] || EXIT.fade, { v: opt.vOut, k: 520, c: 42, done: () => old.remove() });
   }
   curCard = el;
@@ -2773,7 +2895,21 @@ function go(v, dir = "fade", opt = {}) {
   sfx(dir === "zoom" || v === "apps" ? "open" : v === "home" && prev !== "home" ? "close" : "swish");
   applyFaceState(); renderDots(true); syncPanel();
 }
-function refresh() { if (curCard) { curCard.innerHTML = cardHTML(S.view); curCard._lics = curCard._lnl = curCard._lkey = null; } applyFaceState(); renderDots(); }
+const LIDS = $("#lids");
+function lidWipe(mid) {
+  const [up, lo] = LIDS.children; let t0 = performance.now(), last = t0, done = false;
+  const ob = t => { const c = 1.8, c3 = c + 1; return 1 + c3 * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+  cancelAnimationFrame(LIDS._raf); if (LIDS._mid) { const m = LIDS._mid; LIDS._mid = null; m(); }
+  LIDS._mid = mid;
+  const f = now => { if (LIDS._freeze) { t0 += now - last; last = now; LIDS._raf = requestAnimationFrame(f); return; } last = now;   /* _freeze: a test hook for the still */
+    const e = (now - t0) / (LIDS._slow || 1), c = e < 80 ? (e / 80) * (e / 80) : e < 120 ? 1 : e < 290 ? 1 - ob((e - 120) / 170) : 0;
+    if (!done && e >= 80) { done = true; const m = LIDS._mid; LIDS._mid = null; if (m) m(); }
+    up.style.transform = `translateY(${(-101 + 101 * c).toFixed(1)}%)`; lo.style.transform = `translateY(${(101 - 101 * c).toFixed(1)}%)`;
+    LIDS.dataset.c = c.toFixed(2);
+    if (e < 290) LIDS._raf = requestAnimationFrame(f); else { up.style.transform = lo.style.transform = ""; LIDS.dataset.c = "0"; } };
+  LIDS._raf = requestAnimationFrame(f);
+}
+function refresh() { if (curCard) { curCard.innerHTML = cardHTML(S.view); curCard._lics = curCard._lnl = curCard._lkey = null; roundFit(curCard); } applyFaceState(); renderDots(); }
 function back() { const r = S.ret && S.ret !== S.view ? S.ret : "home"; go(RING.includes(r) || r === "today" ? r : "home", "down"); }
 function parentOf(v) { if (v === "dial") return S.edit && S.edit.kind === "rem" ? "reminders" : S.edit && S.edit.fromSum ? "alarmsum" : "alarms"; return PARENT[v] || (RING.includes(S.ret) ? S.ret : "home"); }
 
@@ -2881,7 +3017,7 @@ function heard(V, text) {
 /* a reply is ready: run its actions, then say it */
 function answer() {
   const V = S.voice; if (!V) return;
-  V.phase = "answer"; V.speaking = !V.err; refresh();
+  V.phase = "answer"; V.speaking = !V.err; refresh(); if (V.face && !RM) soul.react(V.face);
   const talk = RM ? 400 : clamp(String(V.p.a || "").length * 42, 900, 3200);
   after(talk, () => { if (S.voice === V) { V.speaking = false; applyFaceState(); if (V.face) soul.react(V.face); } }, "voice");
   if (V.kind === "ask" || V.kind === "typed") S.lastQA = V.p.q;
@@ -3088,7 +3224,7 @@ function aiAsk(text, origin, o = {}) {
   const L = T();
   cancel("voice"); cancel("answer"); aiAbort(); micStop();
   addDiary("aiT");
-  const V = S.voice = { kind: o.kind || "typed", p: { q: text, a: "", chips: [], tool: "" }, phase: "think", shown: text, speaking: false, src: brainLabel() };
+  const V = S.voice = { kind: o.kind || "typed", p: { q: text, a: "", chips: [], tool: "" }, phase: "think", shown: text, speaking: false, src: brainLabel(), t0: performance.now() };
   if (S.view !== "voice") go("voice", "fade"); else refresh();
   if (origin) S.ret = origin;
   hap("light");
@@ -3112,7 +3248,7 @@ function finish(V, r) {
   if (r.rejected) chips.push(["warn", L.rejected(r.rejected)]);
   if (window.SoulMem) SoulMem.finished(r);   /* SOUL Memory: keep / forget what the AI asked, "Remembered … · undo" */
   V.p = Object.assign(V.p, { a: r.say, chips, actions: r.actions || [], tool: r.tool || (r.actions || []).map(a => a.type).join(" · "), fx: r.fx });
-  V.src = r.src || V.src; V.err = r.err || null;
+  V.src = r.src || V.src; V.err = r.err || null; V.note = r.note || null;
   V.face = r.err ? null : (r.actions && r.actions.length) ? "approve" : r.face || "happy";
   if (r.actions && r.actions.length) { sfx("chime"); hap("double"); }
   answer();
@@ -3121,8 +3257,12 @@ function finish(V, r) {
 function fail(V, e, text) {
   if (S.voice !== V) return;
   const L = T(), code = e && e.code || "upstream", msg = (L.errs[code] || L.errs.upstream);
-  soul.react("error"); sfx("miss"); hap("double");
   const demo = cannedFor(text), loc = demo || localAct(text);
+  /* Alive: a demo / on-device fallback that still does what was asked is a success: the eyes keep thinking (≥ 650 ms),
+     then approve; "not connected" rides along as a chip. Sad is only for a failure that did nothing. */
+  if (loc && loc.actions && loc.actions.length) { const wait = RM ? 0 : Math.max(0, 900 - (performance.now() - (V.t0 || 0)));
+    after(wait, () => finish(V, Object.assign(loc, { src: demo ? L.srcDemo : L.srcLocal, note: msg })), "voice"); return; }
+  soul.react("error"); sfx("miss"); hap("double");
   if (loc) finish(V, Object.assign(loc, { src: demo ? L.srcDemo : L.srcLocal, err: msg }));
   else finish(V, { say: msg, actions: [], err: msg, src: V.src });
 }
@@ -3432,7 +3572,7 @@ function kbRender() {
       h += `<div class="ks ${cls}" style="left:${x}px;width:${w}px"><span>${sg.t === "w" ? mark(sg.label) : esc(sg.label)}</span></div>`;
     });
     if (K.text.trim() && !(K.undoChip && performance.now() < K.undoChip)) h += `<i class="ksep" style="left:153px"></i><i class="ksep" style="left:312px"></i>`;
-    h += `<div class="kbk">` + K.keys.map((k, i) => `<div class="kk ${k.cls}" data-i="${i}" style="left:${k.x0 + 2}px;top:${k.y0 + 3}px;width:${k.x1 - k.x0 - 4}px">${k.label}</div>`).join("") + `</div>`;
+    h += `<div class="kbk">` + K.keys.map((k, i) => `<div class="kk ${k.cls}" data-i="${i}" style="left:${k.x0}px;top:${k.y0 + 3}px;width:${k.x1 - k.x0}px">${k.label}</div>`).join("") + `</div>`;
   }
   h += `<div id="kov"></div>`;
   kbEl.innerHTML = h;
@@ -3598,10 +3738,10 @@ function dialHTML() {
   const H = E.mode === "h", f1 = n => n.toFixed(1);
   let g = `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true">${glassRing(DR, 23)}`;
   if (H) {
-    g += `<path d="M28 233 A${DR} ${DR} 0 0 1 438 233" fill="none" stroke="rgba(255,240,200,.4)" stroke-width="3"/><path d="M438 233 A${DR} ${DR} 0 0 1 28 233" fill="none" stroke="rgba(159,198,255,.45)" stroke-width="3"/>`;
+    g += `<path d="M28 233 A${DR} ${DR} 0 0 1 438 233" fill="none" stroke="var(--e1)" stroke-width="8" stroke-linecap="round" opacity=".5"/><path d="M438 233 A${DR} ${DR} 0 0 1 28 233" fill="none" stroke="var(--e2)" stroke-width="8" stroke-linecap="round" opacity=".5"/>`;
   } else if (E.m > 0) {
     const [x, y] = dpos(-90 + 6 * E.m, DR);
-    g += `<path d="M233 28 A${DR} ${DR} 0 ${E.m > 30 ? 1 : 0} 1 ${f1(x)} ${f1(y)}" fill="none" stroke="#FFF0C8" stroke-width="3" style="filter:drop-shadow(0 0 5px rgba(255,240,200,.6))"/>`;
+    g += `<path d="M233 28 A${DR} ${DR} 0 ${E.m > 30 ? 1 : 0} 1 ${f1(x)} ${f1(y)}" fill="none" stroke="var(--e1)" stroke-width="8" stroke-linecap="round"/>`;
   }
   const N = H ? 24 : 60;
   for (let i = 0; i < N; i++) {
@@ -3609,9 +3749,9 @@ function dialHTML() {
     const [a, b] = dpos(deg, major ? 223 : 225), [c, d] = dpos(deg, 231);
     g += `<line x1="${f1(a)}" y1="${f1(b)}" x2="${f1(c)}" y2="${f1(d)}" stroke="rgba(255,240,200,${major ? .6 : .25})" stroke-width="${major ? 3 : 2}"/>`;
   }
-  (H ? [0, 6, 12, 18] : [0, 15, 30, 45]).forEach(v => { const [x, y] = dpos(H ? 90 + 15 * v : -90 + 6 * v, DR); g += `<text x="${f1(x)}" y="${f1(y + 8)}" text-anchor="middle" font-family="Martian Mono,monospace" font-size="15" letter-spacing="1" fill="rgba(255,240,200,.6)">${H ? v : pad2(v)}</text>`; });
+  (H ? [0, 6, 12, 18] : [0, 15, 30, 45]).forEach(v => { const [x, y] = dpos(H ? 90 + 15 * v : -90 + 6 * v, DR); g += `<text x="${f1(x)}" y="${f1(y + 8)}" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="20" font-weight="600" fill="var(--ink2)">${H ? v : pad2(v)}</text>`; });
   const [kx, ky] = dpos(H ? 90 + 15 * E.h : -90 + 6 * E.m, DR);
-  g += `<circle cx="${f1(kx)}" cy="${f1(ky)}" r="27" fill="rgba(24,20,30,.9)" stroke="#FFF0C8" stroke-width="2.5" style="filter:drop-shadow(0 0 8px rgba(255,240,200,.6))"/><text x="${f1(kx)}" y="${f1(ky + 8.5)}" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="25" font-weight="600" fill="#FFF0C8">${pad2(H ? E.h : E.m)}</text></svg>`;
+  g += `<circle cx="${f1(kx)}" cy="${f1(ky)}" r="27" fill="var(--e1)" stroke="#000" stroke-width="3"/><text x="${f1(kx)}" y="${f1(ky + 8.5)}" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="25" font-weight="700" fill="var(--on1)">${pad2(H ? E.h : E.m)}</text></svg>`;
   if (E.kind === "rem") E.day = remDay(E);
   const nf = E.kind === "rem" ? (() => { const t = new Date(); t.setDate(t.getDate() + (E.day || 0)); t.setHours(E.h, E.m, 0, 0); return t; })() : nextFire(E);
   const [rh, rm] = nf && nf > Date.now() ? relParts(nf) : [0, 0];
@@ -3771,7 +3911,7 @@ function bootHTML(v) {
       return lbl(L.bNameT) + `<div class="c" style="top:150px;gap:14px"><div class="t1">${esc(L.bNameQ)}</div>
         <div class="chips">${L.kbChips.name.map(c => wordBtn("boot-name", c[1], "", ` data-n="${esc(c[1])}"`)).join("")}</div>${wordBtn("boot-type", L.bTypeName, "ice", "", "pen")}</div>` + rimBot(esc(L.bSkip), "");
     case "bai":
-      return lbl(L.bAiT) + `<div class="c" style="top:118px;gap:2px"><div class="t2" style="font-size:24px">${esc(L.bAiQ)}</div></div>
+      return lbl(L.bAiT) + `<div class="c" style="top:150px;gap:2px"><div class="t2" style="font-size:24px">${esc(L.bAiQ)}</div></div>
         <div class="set two" style="top:182px">${["claude", "api", "chatgpt", "none"].map(m => `<div data-act="boot-ai" data-m="${m}" role="button" class="${S.ai === m ? "sel" : ""}"><span>${esc(L.aiModes[m])}</span><b class="${m === "none" ? "dim" : ""}" style="${m === "claude" && BRAIN.sample ? "color:var(--mint)" : ""}">${esc(aiTagNow(m))}</b></div>`).join("")}</div>`;
     case "bhold":
       return lbl(L.bHoldT, BOOT.learned ? "mint" : BOOT.holding ? "ice" : "") + `<div class="c" style="top:300px;gap:8px">
@@ -3800,10 +3940,10 @@ function askKey(kind, then) {
 /* Settings › My SOUL: this unit's eyes, rolled at birth from its chip id */
 function mySoulHTML() {
   const L = T(), R = BIRTH.roll, d = R.design, rar = rarityOf(R.rarity);
-  return lbl(L.mySoul) + `<div class="c" style="top:226px;gap:8px"><div class="t1" style="font-size:36px">${esc(d.name)}</div>
+  return lbl(L.mySoul) + `<div class="c" style="top:196px;gap:8px"><div class="t1" style="font-size:34px">${esc(d.name)}</div>
     <div class="brar" style="color:${rar.color}">${esc(rar.name)} · ${esc(d.num || "#" + d.n)} / ${DESIGNS.length}</div>
-    <div class="msub">${esc(L.oneIn(Math.round(1 / R.odds)))} · ${esc(L.chipW)} ${esc(chipFmt(BIRTH.chip))}</div>
-    <div class="chips">${wordBtn("look", L.lookBtn, "", "", "soul")}${wordBtn("rebirth", L.rebirth, "", "", "reset")}</div></div>`;
+    <div class="msub">${esc(L.oneIn(Math.round(1 / R.odds)))}</div>
+    <div class="chips" style="gap:10px 12px;margin-top:4px">${wordBtn("look", L.lookBtn)}${wordBtn("rebirth", L.rebirth)}</div></div>` + rimBot(`${esc(L.chipW)} ${esc(chipFmt(BIRTH.chip))}`, "");
 }
 function rebirth() {
   const L = T(); if (window.ALIVE) ALIVE.clearPreview(); birthFrom(newChip());
@@ -3839,6 +3979,7 @@ function holdEnd() {
 let lastTap = 0;
 function tap(target) {
   if (S.sleeping) { lastTap = 0; wake(); return; }
+  { const wr = wheelRow(target); if (wr && !wr.classList.contains("wh-f")) wheelTo(wr.parentElement, [...wr.parentElement.children].indexOf(wr)); }   // Alive: a tap on a neighbour turns the wheel there (and acts)
   // buttons act on every tap: a fast second tap on a control is never swallowed as a double-tap
   const actEl = target && target.closest && target.closest("[data-act]");
   if (actEl) { lastTap = 0; if (!S.kb && !BOOT.on) soul.rig.blink(1); act(actEl.dataset.act, actEl); return; }   // Alive: the eyes blink on every tap
@@ -3874,6 +4015,8 @@ function act(a, el) {
   if (!/^(cc-|snd|game-start|open)/.test(a)) { sfx("tap"); hap("light"); }
   if (window.SoulApps && SoulApps.act(a, el)) return;   /* SoulOS apps */
   switch (a) {
+    case "c-allow": claudeDecide(true); return;
+    case "c-deny": claudeDecide(false); return;
     case "rem": {
       const r = S.rems.find(x => x.key === el.dataset.k); if (!r) return;
       r.done = !r.done; if (r.done) soul.react("happy"); refresh(); break;
@@ -4008,6 +4151,7 @@ function dragKind(p, dx, dy) {
   const v = S.view, ax = p.axis;
   if (S.cc) return ax === "y" ? "ccclose" : null;
   if (p.pill) return null;
+  if (ax === "y" && wheelOf(p.target)) return "wheel";
   if (v === "apps") return "pan";
   if (["voice", "ring", "dial"].includes(v) || (v === "games" && S.game.run)) return null;
   if (ax === "y" && dy > 0 && (v === "home" || p.p0.y < 62) && v !== "today") return "cc";
@@ -4024,6 +4168,7 @@ function dragMove(p, dx, dy) {
   switch (p.drag) {
     case "pan": if (p.axis === "x") lnDrag(dx); break;
     case "stack": stackDrag(dy); break;
+    case "wheel": { const ul = wheelOf(p.target); if (!ul) break; if (p.w0 == null) p.w0 = ul._f; const t = clamp(p.w0 + Math.round(-dy / 56), 0, ul.children.length - 1); if (t !== ul._f) wheelTo(ul, t); break; }
     case "cc": ccDrag(-466 + dy * 1.45); break;
     case "ccclose": ccDrag(dy < 0 ? dy * 1.25 : rubber(dy, 40)); break;
     case "face": {
@@ -4047,6 +4192,7 @@ function dragEnd(p, dx, dy, vx, vy, cancelled) {
   switch (p.drag) {
     case "pan": if (ax === "y") { LN.drag = null; if (!cancelled && (dy > 90 || vy > 600)) go("home", "down"); else if (!cancelled && (dy < -90 || vy < -600)) lnNudge("up"); } else lnRelease(cancelled ? 0 : vx); break;
     case "stack": stackRelease(cancelled ? 0 : dy, cancelled ? 0 : vy); break;
+    case "wheel": { const ul = wheelOf(p.target); if (!ul || cancelled) break; if (!ul._f && dy - (p.w0 || 0) * 56 > 100) swipe("down");   /* pulled past the first row = back */ else if (Math.abs(vy) > 700 && Math.abs(dy) < 90) wheelTo(ul, ul._f + (vy < 0 ? 1 : -1)); break; }
     case "cc": if (!cancelled && (ccY() > -300 || vy > 500)) ccOpen(vy); else ccClose(false, vy); break;
     case "ccclose": if (!cancelled && (dy < -80 || vy < -500)) ccClose(false, vy); else ccOpen(vy); break;
     case "face": soul.layDirect = false; applyFaceState();
@@ -4137,6 +4283,7 @@ screen.addEventListener("wheel", e => {
   if (S.sleeping) { wake(); return; }
   if (S.kb || S.cc) return;
   if (S.view === "apps") { if (Math.abs(dy) < 4 || now - wheelT < 70) return; wheelT = now; LN.after = null; LN.tgt = (LN.tgt != null ? LN.tgt : Math.round(LN.rot)) + Math.sign(dy); return; }
+  { const wl = curCard && !["home", "today", "apps"].includes(S.view) && curCard.querySelector(".wheel"); if (wl) { if (Math.abs(dy) < 4 || now - wheelT < 140) return; wheelT = now; wheelTo(wl, wl._f + Math.sign(dy)); return; } }
   if (now - wheelT < 380 || Math.abs(dy) < 4) return;
   wheelT = now;
   if (S.view === "home") { if (dy > 0) go("apps", "none"); else go("today", "up"); return; }
@@ -4500,9 +4647,17 @@ const orbWrap = u => { const n = ORB.length; u = ((u % n) + n) % n; return u >= 
    it grows, fills with colour, its name rides the arc above it, and the eyes look down at it. Tap it (or the middle). */
 const DIAL = { R: 170, STEP: 28, W: 52, H: 58, GROW: 0.5, FADE0: 132, FADE1: 158 };
 /* the stone's outline (90:101, a soft square that is fuller at the shoulders), as a unit path centred on 0,0 */
-const PEB_D = (() => { const pts = []; for (let i = 0; i < 48; i++) { const t = i / 48 * TAU, c = Math.cos(t), s = Math.sin(t), n = 3.1;
-  let x = Math.sign(c) * Math.pow(Math.abs(c), 2 / n) * 0.5, y = Math.sign(s) * Math.pow(Math.abs(s), 2 / n) * 0.5; x *= 1 - 0.07 * (y + 0.5) * (y > 0 ? 1 : 0.3); pts.push(x.toFixed(4) + " " + y.toFixed(4)); }
-  return "M" + pts.join("L") + "Z"; })();
+/* the MĂRGĂRITAR's real front silhouette (renders/v9/src/marg_geo.py: half-width per height, flat sitting base, the
+   widest point above the middle = the shoulders), unit box, y down; smoothed with Catmull-Rom, the base kept straight */
+const STONE = [[0.301, 0.5], [0.306, 0.497], [0.321, 0.488], [0.343, 0.474], [0.368, 0.454], [0.39, 0.428], [0.405, 0.398], [0.417, 0.363], [0.427, 0.324], [0.439, 0.281], [0.452, 0.234], [0.465, 0.185], [0.478, 0.134], [0.488, 0.081], [0.496, 0.027],
+  [0.5, -0.027], [0.498, -0.081], [0.49, -0.134], [0.479, -0.185], [0.466, -0.234], [0.45, -0.281], [0.428, -0.324], [0.397, -0.363], [0.353, -0.398], [0.297, -0.428], [0.229, -0.454], [0.16, -0.474], [0.103, -0.488], [0.051, -0.497], [0, -0.5]];
+const stonePath = (w = 1, h = 1, ox = 0, oy = 0) => {
+  const P = STONE.concat(STONE.slice(0, -1).reverse().map(([x, y]) => [-x, y])).map(([x, y]) => [ox + x * w, oy + y * h]), f = v => v.toFixed(2);
+  let d = `M${f(P[0][0])} ${f(P[0][1])}`;
+  for (let i = 0; i < P.length - 1; i++) { const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
+    d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`; }
+  return d + "Z"; };
+const PEB_D = stonePath();
 const pebPath = (w, h) => `<path class="pb" d="${PEB_D}" transform="scale(${w} ${h})"/>`;
 const DIAL_COL = [["var(--e1)", "var(--on1)"], ["var(--e2)", "var(--on2)"], ["var(--b1)", "var(--onb)"]];
 function launcherHTML() {
@@ -4510,7 +4665,7 @@ function launcherHTML() {
   return `<div class="orb"><svg viewBox="0 0 466 466"><defs><path id="rN" d="${arcPath(120, 230, 0)}"/></defs>
     <g class="ringbg"><circle cx="233" cy="233" r="${DIAL.R}"/></g>
     ${ORB.map((v, i) => { const c = DIAL_COL[i % 3]; return `<g class="ow" data-act="open" data-app="${v}" role="button" aria-label="${esc(appName(v))}" style="opacity:0;--c:${c[0]};--oc:${c[1]}">
-      <circle class="hitc" r="${DIAL.H / 2 + 4}"/>${pebPath(DIAL.W, DIAL.H)}<g class="ic" transform="translate(-12 -12)">${lg(v === "home" ? "home" : v, 24, 2.4)}</g></g>`; }).join("")}
+      <circle class="hitc" r="${DIAL.H / 2 + 4}"/>${pebPath(DIAL.W, DIAL.H)}<g class="ic" transform="translate(-12 -12)">${lg(v === "home" ? "home" : v, 24, 4)}</g></g>`; }).join("")}
     <text class="nm"><textPath href="#rN" startOffset="50%" text-anchor="middle" data-live="nm">${esc(appName(LN.near))}</textPath></text></svg>
     <div class="opv" data-act="open" data-app="${LN.near}" role="button" data-live="opv">${orbPreview(LN.near)}</div></div>` +
     rimTop(`<tspan data-live="clock">${hhmm()}</tspan> · ${esc(L.apps)}${LOOK.on() ? " · " + esc(L.lookPrev) : ""}`, "", "clock");
@@ -4541,7 +4696,7 @@ function orbFact(v) {
   return [appName(v), ""];
 }
 function orbPreview(v) {
-  const [big, small, tone] = orbFact(v), s = String(big) === appName(v) ? small : small ? `${big} · ${small}` : big;
+  const [big, small, tone] = orbFact(v), s = String(big) === appName(v) || !String(big).trim() || big === "—" ? small || big : big;   /* Alive: one short line */
   return `<small style="${tone === "amber" ? "color:var(--amber)" : ""}">${esc(s)}</small>`;
 }
 function lnIcon(v) { const el = curCard && curCard.querySelector(`.ow[data-app="${v}"]`); if (el && !el._pos) launcherFrame(0, true); return el; }
@@ -4613,7 +4768,7 @@ const TD = { s: 0, v: 0, tgt: 0, drag: null };
 const WG = ["weather", "reminders", "focus", "claude", "battery", "notifs"], WAPP = { weather: "weather", reminders: "reminders", focus: "focus", claude: "claude", battery: "cc" };
 function miniRing(frac, col, sz = 66, inner = "") {
   const C = 2 * Math.PI * 28;
-  return `<svg viewBox="0 0 66 66" width="${sz}" height="${sz}" style="flex:none" aria-hidden="true"><circle cx="33" cy="33" r="28" fill="none" stroke="rgba(255,240,200,.14)" stroke-width="2"/><circle cx="33" cy="33" r="28" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - clamp(frac, 0, 1))).toFixed(1)}" transform="rotate(-90 33 33)" style="filter:drop-shadow(0 0 4px ${col})"/>${inner}</svg>`;
+  return `<svg viewBox="0 0 66 66" width="${sz}" height="${sz}" style="flex:none" aria-hidden="true"><circle cx="33" cy="33" r="28" fill="none" stroke="var(--peb2)" stroke-width="7"/><circle cx="33" cy="33" r="28" fill="none" stroke="${col === "#FFF0C8" ? "var(--e1)" : col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - clamp(frac, 0, 1))).toFixed(1)}" transform="rotate(-90 33 33)"/>${inner}</svg>`;
 }
 /* Today says one thing at a time: a rim-font label, a big number or phrase, one line under it. No cards. */
 function widgetHTML(k) {
@@ -4649,8 +4804,8 @@ function stackFrame(dt) {
   if (!TD.drag) { if (RM) TD.s = TD.tgt; else { TD.v += (200 * (TD.tgt - TD.s) - 25 * TD.v) * dt; TD.s += TD.v * dt; } }
   curCard.querySelectorAll(".wg").forEach((el, i) => {
     const d = i - TD.s, ad = Math.abs(d);
-    const s = 1 - 0.16 * Math.min(1.6, ad), o = d < 0 ? clamp(1 + d * 1.8, 0, 1) : clamp(1 - d * 0.8, 0, 1);
-    el.style.transform = `translate3d(0,${(174 + d * 176).toFixed(1)}px,0) scale(${s.toFixed(3)})`;
+    const s = 1 - 0.16 * Math.min(1.6, ad), o = d < 0 ? clamp(1 + d * 1.8, 0, 1) : clamp(1 - d * 1.25, 0, 1);   /* Alive: the next card waits off the glass */
+    el.style.transform = `translate3d(0,${(176 + d * 176).toFixed(1)}px,0) scale(${s.toFixed(3)})`;
     el.style.opacity = o.toFixed(3); el.style.zIndex = String(20 - Math.round(ad * 2)); el.style.pointerEvents = ad < 0.5 ? "" : "none";
   });
   const on = clamp(Math.round(TD.s), 0, n - 1);
@@ -4679,7 +4834,7 @@ function weatherHTML() {
     <div class="wxmain">${wxIcon(W.ic, 84)}<span class="wxt">${W.t}°</span></div>
     <div class="wxc">${esc(W.c)} · ↑${W.hi}° ↓${W.lo}°</div>
     <div class="wxh">${W.h.map(h => `<div><small>${h[0]}</small>${wxIcon(h[2], 30)}<b>${h[1]}°</b></div>`).join("")}</div>
-    <svg class="rim" viewBox="0 0 466 466" aria-hidden="true">${L.wx.days.map((d, i) => `<path d="${arcD(90 + (1 - i) * 6 - 1.6, 90 + (1 - i) * 6 + 1.6, 216)}" fill="none" stroke="${i === S.wx.day ? "#FFF0C8" : "rgba(255,240,200,.25)"}" stroke-width="4" stroke-linecap="round"/>`).join("")}</svg></div>`;
+    <svg class="rim" viewBox="0 0 466 466" aria-hidden="true">${L.wx.days.map((d, i) => `<path d="${arcD(90 + (1 - i) * 6 - 1.6, 90 + (1 - i) * 6 + 1.6, 216)}" fill="none" stroke="${i === S.wx.day ? "var(--e1)" : "var(--peb2)"}" stroke-width="8" stroke-linecap="round"/>`).join("")}</svg></div>`;
 }
 
 /* ================================================================ Timer: stopwatch + countdown */
@@ -4691,12 +4846,12 @@ function timerHTML() {
   const seg = `<div class="seg2"><span data-act="tm-mode" data-m="sw" class="${M.mode === "sw" ? "on" : ""}">${esc(L.swT)}</span><span data-act="tm-mode" data-m="cd" class="${M.mode === "cd" ? "on" : ""}">${esc(L.cdT)}</span></div>`;
   if (M.mode === "sw") {
     const t = swNow(), [a, b] = fmtSW(t), n = sw.laps.length;
-    const laps = sw.laps.slice(-2).map((x, i, arr) => { const k = n - arr.length + i, prev = k ? sw.laps[k - 1] : 0, [la, lb] = fmtSW(x - prev); return `<div><span>${esc(L.lapN(k + 1))}</span><span>${la}${lb}</span></div>`; }).reverse().join("");
+    const laps = sw.laps.slice(-1).map((x, i, arr) => { const k = n - arr.length + i, prev = k ? sw.laps[k - 1] : 0, [la, lb] = fmtSW(x - prev); return `<div><span>${esc(L.lapN(k + 1))}</span><span>${la}${lb}</span></div>`; }).reverse().join("");
     return lbl(L.timer) + seg + `<div class="tdig" data-live="swd">${a}<small>${b}</small></div><div class="tlaps">${laps}</div>
       <div class="tbtns"><span class="tb ${!sw.run && !t ? "dis" : ""}" data-act="sw-lap" role="button" aria-label="lap">${sw.run || !t ? TG.flag : TG.reset}</span><span class="tb ${sw.run ? "stop" : "go"}" data-act="sw-go" role="button" aria-label="start">${sw.run ? TG.pause : TG.play}</span></div>`;
   }
   const C = 2 * Math.PI * 222, frac = cd.left / cd.total;
-  return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(255,240,200,.1)" stroke-width="6"/><circle data-live="cdr" cx="233" cy="233" r="222" fill="none" stroke="${cd.done ? "#C9F2E4" : "#FFF0C8"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - frac)).toFixed(1)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px ${cd.done ? "rgba(201,242,228,.7)" : "rgba(255,240,200,.5)"})"/></svg>` + lbl(L.timer, cd.done ? "mint" : "") + seg +
+  return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="var(--peb2)" stroke-width="8"/><circle data-live="cdr" cx="233" cy="233" r="222" fill="none" stroke="${cd.done ? "var(--mint)" : "var(--e1)"}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - frac)).toFixed(1)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px ${cd.done ? "rgba(201,242,228,.7)" : "rgba(255,240,200,.5)"})"/></svg>` + lbl(L.timer, cd.done ? "mint" : "") + seg +
     `<div class="tdig" data-live="cdd" style="${cd.done ? "color:var(--mint)" : ""}">${mmss(cd.left)}</div>` +
     (cd.done ? `<div class="wxc" style="top:282px;color:var(--mint)">${esc(L.cdDone)}</div>` : cd.run ? "" : `<div class="tpre">${[1, 3, 5, 10].map(m => `<span data-act="cd-pre" data-m="${m}" class="${cd.total === m * 60 ? "on" : ""}">${m}′</span>`).join("")}</div>`) +
     `<div class="tbtns"><span class="tb" data-act="cd-reset" role="button" aria-label="reset">${TG.reset}</span><span class="tb ${cd.run ? "stop" : "go"}" data-act="cd-go" role="button" aria-label="start">${cd.run ? TG.pause : TG.play}</span></div>`;
@@ -4725,8 +4880,8 @@ const soulName = () => S.soul.name || "Soul";
 function soulHTML() {
   const L = T(), m = S.soul.mood, days = Math.max(1, Math.floor((Date.now() - new Date(2026, 8, 24).getTime()) / 864e5) + 1);
   const bars = [[clamp(S.batt.lvl / 100, 0.1, 1), "#C9F2E4"], [clamp(0.55 + S.soul.boops * 0.06 + S.game.best * 0.012, 0, 1), "#FFD76B"], [clamp(0.45 + S.phraseIdx * 0.08 + S.nh.length * 0.04, 0, 1), "#9FC6FF"]];
-  return lbl(L.soul) + `<div class="sname" data-act="soul-name" role="button">${esc(soulName())}<i>${esc(L.edit)}</i></div>
-    <div class="sborn">${esc(L.born)}<br>${esc(L.together(days))}</div>
+  return lbl(L.soul) + `<div class="sname" data-act="soul-name" role="button" style="top:152px;font-size:48px;left:96px;right:96px">${esc(soulName())}<i>${esc(L.edit)}</i></div>
+    <div class="sborn" style="top:210px">${esc(L.together(days))}</div>
     <div class="smood" data-act="soul-mood" role="button"><i style="background:${MOODC[m]};color:${MOODC[m]}"></i>${esc(L.moodL)} <b style="color:${MOODC[m]};font-weight:600;box-shadow:inset 0 -2px 0 ${MOODC[m]}66">${esc(L.moods[m])}</b></div>
     <div class="smet">${L.meters.map((t, i) => `<div><b style="font-weight:500">${esc(t)}</b><span><i style="width:${Math.round(bars[i][0] * 100)}%;background:${bars[i][1]};box-shadow:0 0 6px ${bars[i][1]}"></i></span></div>`).join("")}</div>`;
 }
@@ -4736,7 +4891,7 @@ const STAR = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="rgba(255,215,107
 const GAME_T = 25;
 function gamesHTML() {
   const L = T(), G = S.game, C = 2 * Math.PI * 222;
-  if (G.run) return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="rgba(159,198,255,.14)" stroke-width="8"/><circle data-live="gring" cx="233" cy="233" r="222" fill="none" stroke="#9FC6FF" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - G.left / GAME_T)).toFixed(1)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px rgba(159,198,255,.6))"/></svg><div class="gscore" data-live="gs">${G.score}</div><div class="gfield"></div>`;
+  if (G.run) return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="222" fill="none" stroke="var(--peb2)" stroke-width="8"/><circle data-live="gring" cx="233" cy="233" r="222" fill="none" stroke="var(--e2)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - G.left / GAME_T)).toFixed(1)}" transform="rotate(-90 233 233)" style="filter:drop-shadow(0 0 6px rgba(159,198,255,.6))"/></svg><div class="gscore" data-live="gs">${G.score}</div><div class="gfield"></div>`;
   if (G.over) return `${lbl(L.gOver)}<div class="gover">${G.score}<span style="font-size:44px;color:#FFD76B"> ★</span></div>
     <div class="c" style="top:280px;gap:10px"><div class="t3" style="${G.newBest ? "color:var(--mint)" : ""}">${esc(G.newBest ? L.newBest : L.best(G.best))}</div>${wordBtn("game-start", L.again.replace(/^\S+\s/, ""))}</div>`;
   return `${lbl(L.games)}<div class="gtile" data-act="game-start" role="button">${STAR}<b>${esc(L.g1)}</b><small>${esc(L.g1d)}</small><em>${esc(L.play.replace(/^\S+\s/, ""))}</em></div><div class="gbest">${esc(G.best ? L.best(G.best) : L.noBest)}</div>`;
@@ -4795,8 +4950,8 @@ function ccHTML() {
   const bv = (S.bright - 0.15) / 0.85, vv = S.vol, [b0, b1] = CCA.b, [v0, v1] = CCA.v;
   const kn = (a, col) => { const r = a * Math.PI / 180; return `<circle class="knob" cx="${(233 + 214 * Math.cos(r)).toFixed(1)}" cy="${(233 + 214 * Math.sin(r)).toFixed(1)}" r="9" fill="${col}"/>`; };
   return `<svg class="rim" viewBox="0 0 466 466">
-      <path class="arcw" d="${arcD(b0, b1, 214)}" stroke="rgba(255,240,200,.14)" style="stroke-width:3"/><path class="arcw" data-live="ccbf" d="${arcD(b0, b0 + (b1 - b0) * Math.max(0.01, bv), 214)}" stroke="#FFF0C8" style="stroke-width:6;filter:drop-shadow(0 0 5px rgba(255,240,200,.6))"/><g data-live="ccbk">${kn(b0 + (b1 - b0) * bv, "#FFF0C8")}</g>
-      <path class="arcw" d="${arcD(v1, v0, 214)}" stroke="rgba(159,198,255,.16)" style="stroke-width:3"/><path class="arcw" data-live="ccvf" d="${arcD(v0 - (v0 - v1) * Math.max(0.01, vv), v0, 214)}" stroke="#9FC6FF" style="stroke-width:6;filter:drop-shadow(0 0 5px rgba(159,198,255,.6))"/><g data-live="ccvk">${kn(v0 - (v0 - v1) * vv, "#9FC6FF")}</g>
+      <path class="arcw" d="${arcD(b0, b1, 214)}" stroke="var(--peb2)" style="stroke-width:8"/><path class="arcw" data-live="ccbf" d="${arcD(b0, b0 + (b1 - b0) * Math.max(0.01, bv), 214)}" stroke="var(--e1)" style="stroke-width:8"/><g data-live="ccbk">${kn(b0 + (b1 - b0) * bv, "var(--e1)")}</g>
+      <path class="arcw" d="${arcD(v1, v0, 214)}" stroke="var(--peb2)" style="stroke-width:8"/><path class="arcw" data-live="ccvf" d="${arcD(v0 - (v0 - v1) * Math.max(0.01, vv), v0, 214)}" stroke="var(--e2)" style="stroke-width:8"/><g data-live="ccvk">${kn(v0 - (v0 - v1) * vv, "var(--e2)")}</g>
       <path class="hit" data-slider="bright" role="slider" aria-label="${esc(L.ccBright)}" aria-valuenow="${Math.round(S.bright * 100)}" d="${arcD(b0 - 6, b1 + 6, 205)}" style="stroke-width:64"/>
       <path class="hit" data-slider="vol" role="slider" aria-label="${esc(L.ccVol)}" aria-valuenow="${Math.round(S.vol * 100)}" d="${arcD(v1 - 6, v0 + 6, 205)}" style="stroke-width:64"/>
       ${rimTxt("rT", `${hhmm()} · ${Math.round(B.lvl)}%${B.chg ? " · " + esc(L.chg) : ""}`, "")}
@@ -4844,19 +4999,19 @@ function ccSlide(p) {
 const SR = { el: $("#sring"), bat: $("#sr-bat"), batg: $("#sr-batg"), cl: $("#sr-cl"), lvl: -1, chg: null, op: -1, a1: 146 };
 function statusFrame(t) {
   const v = S.view, hide = !!S.kb || S.chgShow || BOOT.on || v === "mysoul" || S.cc || ["focus", "dial", "ring", "voice", "alarmsum"].includes(v) || (v === "timer" && S.tm.mode === "cd") || (v === "games" && S.game.run);
-  const op = hide || v === "apps" || v === "today" || S.sleeping ? 0 : v === "home" ? (screen.classList.contains("peek") ? 1 : 0) : 0.4;
+  const want = S.batt.lvl < 20 || S.batt.chg;   /* Alive: no stray hairlines; the rim shows the battery only when it matters */
+  const op = !want || hide || v === "apps" || v === "today" || S.sleeping ? 0 : v === "home" ? (screen.classList.contains("peek") ? 1 : 0) : 1;
   if (SR.op !== op) { SR.op = op; SR.el.style.opacity = op; }
   if (!op) return;
   const B = S.batt, lv = Math.round(B.lvl);
   if (lv !== SR.lvl || B.chg !== SR.chg) {
     SR.lvl = lv; SR.chg = B.chg; SR.a1 = 146 + 68 * lv / 100;
-    SR.bat.setAttribute("d", arcD(146, SR.a1)); SR.bat.setAttribute("stroke", B.chg ? "#C9F2E4" : lv < 20 ? "#FFB347" : "rgba(255,240,200,.4)");
-    SR.bat.style.filter = B.chg ? "drop-shadow(0 0 5px rgba(201,242,228,.8))" : "";
+    SR.bat.setAttribute("d", arcD(146, SR.a1)); SR.bat.setAttribute("stroke", B.chg ? "var(--mint)" : "var(--amber)"); SR.bat.setAttribute("stroke-width", "9");
+    SR.bat.style.filter = "";
   }
   if (B.chg && !RM) { const u = (t * 0.5) % 1, c = 146 + (SR.a1 - 146) * u; SR.batg.setAttribute("d", arcD(Math.max(146, c - 5), Math.min(SR.a1, c + 5))); SR.batg.setAttribute("stroke", "#fff"); SR.batg.style.opacity = "0.85"; }
   else SR.batg.style.opacity = "0";
-  if (S.claude.pending || S.ai === "none" || S.sleeping) SR.cl.style.opacity = "0";           // pending = the face's full amber ring
-  else { const c = RM ? 0 : 24 * Math.sin(t * 0.8); SR.cl.setAttribute("d", arcD(c - 8, c + 8)); SR.cl.setAttribute("stroke", "#FFB347"); SR.cl.style.opacity = "0.5"; }
+  SR.cl.style.opacity = "0";   /* Alive: Claude's state is said by the eyes (working scan, amber ring when it needs you) */
 }
 const chgEl = $("#chg"), aodEl = $("#aod");
 function plug(on) {
@@ -5060,6 +5215,87 @@ function frame(ts) {
   requestAnimationFrame(frame);
 }
 
+/* ---------------------------------------------------------------- Alive · round-native: wheels and the rim's manners (os/DESIGN-ALIVE.md §4)
+   A list is a wheel, like the dial: the focused row sits big at the centre of the space under the eyes, one row above
+   and one below are smaller and faded, the rest wait off the glass. Swipe / crown / tilt turn it; a tap on a neighbour
+   turns it there and acts. Rim words that would cross content are dropped (the content wins). */
+const WH = {}, WHEEL = { R: 212, MAXW: 336, GAP: 10, SN: 0.9 };
+const rowSig = r => { const d = r.dataset || {}, c = r.querySelector && r.querySelector("[data-v],[data-id],[data-i]"); const e = c ? c.dataset : {};
+  return [d.act, d.k, d.i, d.m, d.id, d.app, e.v, e.id, e.i].filter(x => x != null).join("|"); };
+function wheelize(card) {
+  if (!card) return;
+  card.querySelectorAll("ul.list, div.set").forEach((ul, j) => {
+    if (ul.hasAttribute("data-nowheel")) return;
+    const rows = [...ul.children]; if (!rows.length) return;
+    ul.classList.add("wheel"); ul._key = card.dataset.v + ":" + j; ul._wy = +(ul.dataset.wy || 0) || 290;
+    const W = WH[ul._key]; let f = -1;
+    if (W && W.sig) f = rows.findIndex(r => rowSig(r) === W.sig);
+    if (f < 0 && W) f = W.i;
+    if (f < 0 || f == null) { const s = rows.findIndex(r => r.classList.contains("sel") || r.classList.contains("new")); f = s >= 0 ? s : Math.min(1, rows.length - 1); }
+    ul._f = clamp(f, 0, rows.length - 1);
+    if (rows.length > 3) { const sv = document.createElementNS("http://www.w3.org/2000/svg", "svg"); sv.setAttribute("class", "rim wscr"); sv.setAttribute("viewBox", "0 0 466 466"); sv.setAttribute("aria-hidden", "true");
+      sv.innerHTML = `<path class="tr" d="${arcD(-26, 26, 216)}"/><path class="th" d=""/>`; card.appendChild(sv); ul._scr = sv; }
+    wheelPlace(ul, true);
+  });
+}
+function wheelPlace(ul, instant) {
+  const rows = [...ul.children], f = ul._f, Y = ul._wy, n = rows.length;
+  WH[ul._key] = { i: f, sig: rowSig(rows[f]) };
+  const widthAt = (yc, h, s) => { const dy = Math.max(Math.abs(yc - h * s / 2 - 233), Math.abs(yc + h * s / 2 - 233)); return Math.min(WHEEL.MAXW, (2 * Math.sqrt(Math.max(0, WHEEL.R * WHEEL.R - dy * dy)) - 8) / s); };
+  if (instant) rows.forEach(r => { r.style.transition = "none"; });
+  const S1 = WHEEL.SN, place = () => { const h = rows.map(r => r.offsetHeight), pos = new Array(n); pos[f] = Y;
+    for (let i = f + 1; i < n; i++) pos[i] = pos[i - 1] + (i - 1 === f ? h[f] / 2 : h[i - 1] * S1 / 2) + WHEEL.GAP + h[i] * S1 / 2;
+    for (let i = f - 1; i >= 0; i--) pos[i] = pos[i + 1] - (i + 1 === f ? h[f] / 2 : h[i + 1] * S1 / 2) - WHEEL.GAP - h[i] * S1 / 2;
+    return [h, pos]; };
+  rows.forEach(r => { r.style.width = WHEEL.MAXW + "px"; });
+  let [h, pos] = place();
+  rows.forEach((r, i) => { const d = i - f; if (Math.abs(d) <= 1) r.style.width = widthAt(pos[i], h[i], d ? S1 : 1).toFixed(1) + "px"; });
+  [h, pos] = place();
+  rows.forEach((r, i) => {
+    const d = i - f, s = d ? S1 : 1, vis = Math.abs(d) <= 1, w = r.offsetWidth;
+    r.style.transform = `translate(${(233 - w / 2).toFixed(1)}px,${(pos[i] - h[i] / 2).toFixed(1)}px) scale(${s})`;
+    r.classList.toggle("wh-f", d === 0); r.classList.toggle("wh-n", Math.abs(d) === 1); r.classList.toggle("wh-off", !vis);
+    r.setAttribute("aria-hidden", vis ? "false" : "true");
+  });
+  if (ul._scr) { const th = ul._scr.querySelector(".th"), a = -22 + 44 * (n > 1 ? f / (n - 1) : 0); th.setAttribute("d", arcD(a - 4, a + 4, 216)); }
+  if (instant) { void ul.offsetWidth; rows.forEach(r => { r.style.transition = ""; }); }
+}
+function wheelOf(el) { return el && el.closest && el.closest(".wheel"); }
+function wheelTo(ul, i, quiet) {
+  const n = ul.children.length, t = clamp(i, 0, n - 1); if (t === ul._f) return false;
+  ul._f = t; wheelPlace(ul); if (!quiet) { sfx("tick"); hap("light"); }
+  const r = ul.children[t].getBoundingClientRect(), b = screen.getBoundingClientRect();
+  soul.lookAt(0, clamp(((r.top + r.height / 2 - b.top) / b.height * 466 - 233) / 150, -1, 1), 0.5);
+  return true;
+}
+function wheelRow(el) { const ul = wheelOf(el); if (!ul) return null; let r = el; while (r && r.parentElement !== ul) r = r.parentElement; return r; }
+/* tests and the tour: bring the row holding `sel` into focus (no animation) */
+function reveal(sel) { const el = curCard && curCard.querySelector(sel), r = el && wheelRow(el); if (!r) return false; const ul = r.parentElement; ul._f = [...ul.children].indexOf(r); wheelPlace(ul, true); return true; }
+/* rim words never cross content: a bottom-rim hint or the "where am I" names that would touch a word or a control are dropped */
+function contentBoxes(card) {
+  const out = []; if (!card) return out;
+  card.querySelectorAll("[data-act], .t1, .t2, .t3, .tx, .tm, .st, b, small, .fdig, .tdig, .wxt, .wxc, .gl, .ansdisc, .cmd").forEach(el => {
+    if (el.closest(".rim") || el.closest(".wh-off")) return; const r = el.getBoundingClientRect(); if (r.width > 1 && r.height > 1) out.push(r); });
+  return out;
+}
+function rimClear(svg, boxes) {
+  const ts = [...svg.querySelectorAll("text")]; if (!ts.length) return true;
+  for (const t of ts) { const N = t.getNumberOfChars ? t.getNumberOfChars() : 0, ctm = t.getScreenCTM(); if (!ctm) continue;
+    for (let i = 0; i < N; i++) { let b; try { b = t.getExtentOfChar(i); } catch (e) { continue; }
+      const p = new DOMPoint(b.x, b.y).matrixTransform(ctm), q = new DOMPoint(b.x + b.width, b.y + b.height).matrixTransform(ctm);
+      const a = { l: Math.min(p.x, q.x) + 1, r: Math.max(p.x, q.x) - 1, t: Math.min(p.y, q.y) + 1, b: Math.max(p.y, q.y) - 1 };
+      if (boxes.some(c => a.l < c.right && c.left < a.r && a.t < c.bottom && c.top < a.b)) return false; } }
+  return true;
+}
+function roundFit(card) {
+  card = card || curCard; if (!card || card.dataset.v === "home" || card.dataset.v === "apps") return;
+  wheelize(card);
+  const boxes = contentBoxes(card);
+  card.querySelectorAll("svg.rim:not(.wscr)").forEach(svg => { if (svg.querySelector('textPath[href="#rT"],textPath[href="#rP"]') || svg.closest(".pill")) return; svg.classList.toggle("rfhide", !rimClear(svg, boxes)); });
+}
+function dotsFit() { if (dotsEl.classList.contains("hide") || !curCard) return; const tr = curCard.style.transform, op = curCard.style.opacity; curCard.style.transform = "none";   /* measured where the card lands */
+  const ok = rimClear(dotsEl.querySelector("svg") || dotsEl, contentBoxes(curCard)); curCard.style.transform = tr; curCard.style.opacity = op; dotsEl.classList.toggle("rfhide", !ok); if (!ok) screen.classList.remove("navhint"); }
+
 /* ================================================================ SoulOS Alive (os/DESIGN-ALIVE.md)
    The eyes are the OS. This block owns: the born palette (eye design + body colour → the OS's colours), Settings › My SOUL ›
    Look (preview other births and the five bodies), the eyes' speech (short lines from the firmware's Lines.cpp), the IMU
@@ -5113,9 +5349,10 @@ const ALIVE = window.ALIVE = (() => {
     const pool = LINES[topic], ro = LANG === "ro";
     let line = topic; if (pool) { const c = pool.filter(l => l[0] !== lastLine); line = (c[Math.floor(Math.random() * c.length)] || pool[0])[ro ? 1 : 0]; }
     lastLine = pool ? line : lastLine; spT.textContent = line; sp.classList.add("on"); ALIVE.said = line;
+    const dial = S.view === "apps"; screen.classList.toggle("dial-say", dial); const orb = curCard && curCard.querySelector(".orb"); if (orb) orb.classList.toggle("saying", dial);
     cancel("say"); after(ms, hide, "say"); return true;
   }
-  function hide() { cancel("say"); sp.classList.remove("on"); }
+  function hide() { cancel("say"); sp.classList.remove("on"); const orb = curCard && curCard.querySelector(".orb.saying"); if (orb) orb.classList.remove("saying"); }
   function greet() { const now = performance.now(); if (now - greetT < 20000) return; greetT = now; const h = new Date().getHours();
     say(isNight() ? "night" : h >= 5 && h < 11 ? "morning" : "hello", 3000); }
   function onGo(v, prev) {
@@ -5123,7 +5360,7 @@ const ALIVE = window.ALIVE = (() => {
     cancel("sayidle"); if (v === "apps") after(11000, () => { if (S.view === "apps" && !LN.drag && performance.now() - S.lastAct > 9000) say("bored", 3200); }, "sayidle");
   }
   function frame() {
-    const y = Math.round(233 + soul.layS.cy * 466 + 0.25 * 466 * soul.layS.k + 12);
+    const y = Math.round(233 + soul.layS.cy * 466 + 0.25 * 466 * soul.layS.k + (S.view === "apps" ? 4 : 12));
     if (y !== sy) { sy = y; sp.style.setProperty("--sy", y + "px"); }
   }
   function lookHTML() {
@@ -5132,7 +5369,7 @@ const ALIVE = window.ALIVE = (() => {
       <div class="look-row"><span class="cb" data-act="look-prev" role="button" aria-label="${esc(L.lookPrevB)}">${lg("prev", 24)}</span><div class="look-name">${esc(d.name)}</div><span class="cb" data-act="look-next" role="button" aria-label="${esc(L.lookNextB)}">${lg("next", 24)}</span></div>
       <div class="brar" style="color:${rar.color}">${esc(rar.name)} · ${esc(d.num || "#" + d.n)} · ${esc(mine ? L.lookMine : L.lookPrev)}</div>
       <div class="look-pal" aria-hidden="true"><i style="background:var(--e1)"></i><i style="background:var(--e2)"></i><i style="background:var(--b1)"></i></div>
-      <div class="look-sw" role="radiogroup" aria-label="${esc(L.lookBody)}">${BODIES.map(b => `<span data-act="look-body" data-b="${b.id}" role="radio" aria-checked="${b.id === LOOK.body}" aria-label="${b.n}" class="${b.id === LOOK.body ? "on" : ""}" style="background:${b.hex}"></span>`).join("")}</div>
+      <div class="look-sw" role="radiogroup" aria-label="${esc(L.lookBody)}">${BODIES.map(b => `<span data-act="look-body" data-b="${b.id}" role="radio" aria-checked="${b.id === LOOK.body}" aria-label="${b.n}" class="${b.id === LOOK.body ? "on" : ""}"><svg viewBox="0 0 48 52" width="48" height="52" aria-hidden="true"><path d="${stonePath(40, 44, 24, 27)}" fill="${b.hex}" stroke="${b.id === LOOK.body ? "var(--ink)" : "none"}" stroke-width="3"/></svg></span>`).join("")}</div>
       <div class="msub">${esc(P.body.n)} · ${esc(L.lookBody)}</div>
       ${mine ? "" : wordBtn("look-reset", L.lookReset(BIRTH.roll.design.name), "ok")}</div>`;
   }
@@ -5179,7 +5416,7 @@ setInterval(() => { const c = curCard && curCard.querySelector('[data-live="cloc
 setInterval(checkAlarms, 1000);
 window.__soul = { S, go, peek, uiSync, PEEK_MS, APP_IDLE_MS, kbOpen, kbRender, setAi, ringAlarm, parseTime, candidates, cancel,
   LN, TD, ORB, setBright, openApp, lnIcon, lnSpinTo, CCA, ccOpen, ccClose, plug, goSleep, wake, gameStart, gameCatch, tourRun, tourStop, showPill, stackGo, act, setSound, AU, ANIMS, get TOUR() { return TOUR; },
-  ALIVE, LOOK, BODIES, bornPalette, DIAL, isNight, MOT, PAR, applyFaceState,
+  ALIVE, LOOK, BODIES, bornPalette, DIAL, isNight, MOT, PAR, applyFaceState, reveal, wheelTo, WH, roundFit,
   soul, BOOT, BIRTH, BRAIN, bootStart, bootDone, parseReply, validAction, sayPartial, aiAsk, setKey, claudeArrive, rebirth, setBig, brainRules };   /* test hook (Playwright) */
 </script>
 <script>
@@ -5384,9 +5621,9 @@ Remember only what is worth keeping (people and pets, birthdays, preferences, on
   function view(L) {
     const q = S.memQ || "", rows = list(q), n = facts.length;
     const top = lbl((ro() ? "MEMORIE · " : "MEMORY · ") + n);
-    const search = `<div class="chips" style="position:absolute;top:104px;left:0;right:0;justify-content:center"><span class="chip" data-act="memsearch">${esc(q ? "“" + q + "” ×" : (ro() ? "Caută" : "Search"))}</span></div>`;
+    const search = `<div class="chips" style="position:absolute;top:148px;left:0;right:0;justify-content:center"><span class="chip" data-act="memsearch">${esc(q ? "“" + q + "” ×" : (ro() ? "Caută" : "Search"))}</span></div>`;
     if (!rows.length) return top + search + `<div class="c" style="top:200px"><div class="t2">${esc(q ? (ro() ? "Nimic cu „" + q + "”" : "Nothing with “" + q + "”") : L.memEmpty)}</div><div class="t3 dim">${esc(ro() ? "Spune „ține minte că…”" : "Say “remember that…”")}</div></div>`;
-    return top + search + `<ul class="list" style="top:150px">${rows.slice(0, 4).map(f => `<li style="min-height:54px" data-act="memdel" data-id="${f.id}"><span class="tx" style="font-size:21px">${esc(f.text)}</span></li>`).join("")}</ul>` +
+    return top + search + `<ul class="list" data-wy="312" style="top:150px">${rows.slice(0, 12).map(f => `<li style="min-height:54px" data-act="memdel" data-id="${f.id}"><span class="tx" style="font-size:21px">${esc(f.text)}</span></li>`).join("")}</ul>` +
       rimBot(esc(ro() ? "atinge = uită · ține = uită tot · export: /me" : "tap = forget · hold = forget all · export: /me"), "amber");
   }
   function act(a, el) {
@@ -5627,12 +5864,12 @@ window.SoulApps = (() => {
   const hhmmAt = sec => { const d = new Date(Date.now() + sec * 1000); return hhmm(d); };
   function mapsHTML() {
     const L = A(), m = M(); data();
-    if (!m.fix && !m.preview) return lbl(L.maps) + `<div class="c" style="top:126px;gap:12px"><span style="color:var(--dim)">${lg("maps", 40)}</span><div class="t2">${L.mWhere}</div><div class="t3" style="font-size:20px">${L.mNoGps}</div>
-      <div class="chips" style="flex-direction:column;gap:10px;margin-top:8px">${wordBtn("m-share", L.mShare, "ok")}${wordBtn("m-wifi", L.mWifi, "")}</div></div>` + rimBot(esc(L.mDemoNote), "");
-    let html = `<canvas class="mapcv" width="932" height="932" style="position:absolute;inset:0;width:466px;height:466px;border-radius:50%"></canvas>`;
+    if (!m.fix && !m.preview) return lbl(L.maps) + `<div class="c" style="top:154px;gap:10px"><div class="t2">${L.mWhere}</div><div class="t3" style="font-size:20px">${L.mNoGps}</div>
+      <div class="chips" style="flex-direction:column;gap:10px;margin-top:4px">${wordBtn("m-share", L.mShare, "ok")}${wordBtn("m-wifi", L.mWifi, "")}</div></div>` + rimBot(esc(L.mDemoNote), "");
+    let html = `<canvas class="mapcv" width="932" height="932" style="position:absolute;inset:0;width:466px;height:466px;border-radius:50%"></canvas><div class="eyedisc" aria-hidden="true"></div>`;
     if (m.send) {
       const [la, lo] = ROUTE.dest, url = `https://www.google.com/maps/dir/?api=1&destination=${la},${lo}&travelmode=${m.mode === "car" ? "driving" : m.mode === "bike" ? "bicycling" : "walking"}`;
-      return html + `<div class="c gl sheet" style="top:96px;left:86px;right:86px;gap:14px"><div class="t2">${L.mOnPhone}</div><a class="chip btn ok" href="${esc(url)}" target="_blank" rel="noopener" data-live="glink">${esc(L.mOpenG)}</a><div class="t3" style="font-size:18px;word-break:break-all">${esc(url.slice(8, 60))}…</div>
+      return html + `<div class="c gl sheet" style="top:156px;left:86px;right:86px;gap:12px"><div class="t2">${L.mOnPhone}</div><a class="chip btn ok" href="${esc(url)}" target="_blank" rel="noopener" data-live="glink">${esc(L.mOpenG)}</a><div class="t3" style="font-size:20px">google.com/maps</div>
         ${wordBtn("m-close", T().done || "Done", "")}</div>` + rimTop(esc(L.mSent), "mint");
     }
     if (m.nav) {
@@ -5641,19 +5878,19 @@ window.SoulApps = (() => {
       const ang = turnAngle(Math.min(m.step, last)), t = ang * Math.PI / 180, ex = 30 + Math.sin(t) * 18, ey = 26 - Math.cos(t) * 18;
       const arrow = `<svg viewBox="0 0 60 60" width="64" height="64" style="flex:none"><path d="M30 54 L30 26 L${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="var(--cream)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
         <path transform="translate(${ex.toFixed(1)} ${ey.toFixed(1)}) rotate(${ang.toFixed(0)})" d="M0 -9 L8 4 L-8 4 Z" fill="var(--cream)"/></svg>`;
-      html += `<div class="gl gcard ${arrived ? "mint" : ""}" data-act="m-next" role="button" style="left:118px;right:118px;top:92px;display:flex;align-items:center;gap:12px;padding:16px 18px">` +
+      html += `<div class="gl gcard ${arrived ? "mint" : ""}" data-act="m-next" role="button" style="left:96px;right:96px;top:160px;display:flex;align-items:center;gap:12px;padding:14px 18px">` +
         (arrived ? `<div class="t2" style="color:var(--mint);flex:1;text-align:center">${L.mThere}</div>` :
-          `${arrow}<div style="text-align:left;min-width:0"><div class="t1" style="font-size:32px">${fmtD(toTurn)}</div><div class="t3" style="font-size:18px">${esc(L.turns[st.turn] || "")}</div><div class="t3" style="font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(st.street || "")}</div></div>`) + `</div>` +
-        `<div class="chips" style="position:absolute;top:352px;left:0;right:0">${wordBtn("m-phone", L.mPhone, "")}${wordBtn("m-end", L.mEnd, "warn")}</div>` + rimBot(esc(L.mEta(hhmmAt(eta), fmtD(left))), "") + rimTop(esc(L.mTapTurn), "");
+          `${arrow}<div style="text-align:left;min-width:0"><div class="t1" style="font-size:32px">${fmtD(toTurn)}</div><div class="t3" style="font-size:20px">${esc(L.turns[st.turn] || "")}</div><div class="t3" style="font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(st.street || "")}</div></div>`) + `</div>` +
+        `<div class="chips" style="position:absolute;top:326px;left:0;right:0">${wordBtn("m-phone", L.mPhone, "")}${wordBtn("m-end", L.mEnd, "warn")}</div>` + rimBot(esc(L.mEta(hhmmAt(eta), fmtD(left))), "") + rimTop(esc(L.mTapTurn), "");
       return html;
     }
     if (m.preview) {
-      return html + `<div class="gl gcard" style="left:96px;right:96px;top:70px;text-align:center;padding:12px 16px"><div class="t2" style="font-size:24px">${esc(ROUTE.to)}</div><div class="t3" style="font-size:17px">${(ROUTE.dist / 1000).toFixed(1)} km · ${Math.round(ROUTE.dur / 60)} min · ${hhmmAt(ROUTE.dur)}</div></div>` +
-        `<div class="chips" style="position:absolute;top:332px;left:0;right:0">${wordBtn("m-start", L.mStart, "ok")}</div><div class="chips" style="position:absolute;top:388px;left:0;right:0">${wordBtn("m-phone", L.mPhone, "")}${wordBtn("m-mode", L.mModes[m.mode], "")}</div>`;
+      return html + `<div class="gl gcard" style="left:92px;right:92px;top:158px;text-align:center;padding:12px 16px"><div class="t2" style="font-size:24px">${esc(ROUTE.to)}</div><div class="t3" style="font-size:20px">${(ROUTE.dist / 1000).toFixed(1)} km · ${Math.round(ROUTE.dur / 60)} min · ${hhmmAt(ROUTE.dur)}</div></div>` +
+        `<div class="chips" style="position:absolute;top:266px;left:0;right:0">${wordBtn("m-start", L.mStart, "ok")}</div><div class="chips" style="position:absolute;top:330px;left:0;right:0">${wordBtn("m-phone", L.mPhone, "")}${wordBtn("m-mode", L.mModes[m.mode], "")}</div>`;
     }
     return html + `<span class="cb" data-act="m-minus" role="button" aria-label="zoom out" style="position:absolute;left:14px;top:203px;font:600 30px/1 var(--v)">−</span><span class="cb" data-act="m-plus" role="button" aria-label="zoom in" style="position:absolute;right:14px;top:203px;font:600 30px/1 var(--v)">+</span>
-      <span class="cb" data-act="m-center" role="button" aria-label="centre" style="position:absolute;left:66px;top:322px;color:var(--ice)">${lg("ring", 22)}</span>
-      <div class="chips" style="position:absolute;top:384px;left:0;right:0">${wordBtn("m-to", L.mTo, "")}</div>` +
+      <span class="cb" data-act="m-center" role="button" aria-label="centre" style="position:absolute;left:74px;top:282px;color:var(--ice)">${lg("ring", 22)}</span>
+      <div class="chips" style="position:absolute;top:322px;left:0;right:0">${wordBtn("m-to", L.mTo, "")}</div>` +
       rimTop(esc(`${m.fix.src === "wifi" ? "Wi-Fi" : LANG === "ro" ? "telefon" : "phone"} · ~${Math.round(m.fix.acc)} m · z${m.z}`), "") + rimBot(esc(L.mDemoNote), "");
   }
   function mapFrame() {
@@ -5698,12 +5935,12 @@ window.SoulApps = (() => {
     const L = A(), ev = agenda();
     if (SA.cal.sel >= 0 && ev[SA.cal.sel]) {
       const e = ev[SA.cal.sel];
-      return lbl(L.agenda) + `<div class="c gl gcard" data-act="cal-back" role="button" style="top:120px;left:74px;right:74px;gap:8px"><div class="t3" style="font-size:18px">${esc(dayW(e.s))} ${e.a ? L.cAllDay : hhmm(e.s) + "–" + hhmm(e.e)}</div><div class="t2">${esc(e.t)}</div>${e.l ? `<div class="t3" style="font-size:18px">${esc(e.l)}</div>` : ""}</div>` + rimBot(esc(L.cTap), "");
+      return lbl(L.agenda) + `<div class="c gl gcard" data-act="cal-back" role="button" style="top:156px;left:80px;right:80px;gap:8px"><div class="t3" style="font-size:20px">${esc(dayW(e.s))} ${e.a ? L.cAllDay : hhmm(e.s) + "–" + hhmm(e.e)}</div><div class="t2">${esc(e.t)}</div>${e.l ? `<div class="t3" style="font-size:20px">${esc(e.l)}</div>` : ""}</div>` + rimBot(esc(L.cTap), "");
     }
     if (!ev.length) return lbl(L.agenda) + `<div class="c gl gcard" style="top:190px;left:90px;right:90px"><div class="t2">${L.cNone}</div></div>`;
     const today = new Date().toDateString();
-    return lbl(`${L.agenda} · ${dayW(new Date())}`) + `<ul class="list" style="top:120px">${ev.slice(0, 4).map((e, i) =>
-      `<li data-act="cal-open" data-i="${i}" class="col"><span class="tx" style="font-size:22px"><b style="font:500 18px/1 var(--r);color:${!e.a && e.s - Date.now() < 3600e3 && e.s > Date.now() ? "var(--amber)" : "var(--dim)"};margin-right:10px">${e.a ? L.cAllDay : hhmm(e.s)}</b>${esc(e.t)}</span><span class="st">${e.s.toDateString() === today ? "" : esc(dayW(e.s)) + " · "}${esc(e.l || "")}</span></li>`).join("")}</ul>`;
+    return lbl(`${L.agenda} · ${dayW(new Date())}`) + `<ul class="list" style="top:120px">${ev.slice(0, 6).map((e, i) =>
+      `<li data-act="cal-open" data-i="${i}" class="col"><span class="tx" style="font-size:22px"><b style="font:600 21px/1 var(--v);color:${!e.a && e.s - Date.now() < 3600e3 && e.s > Date.now() ? "var(--amber)" : "var(--dim)"};margin-right:10px">${e.a ? L.cAllDay : hhmm(e.s)}</b>${esc(e.t)}</span><span class="st">${e.s.toDateString() === today ? "" : esc(dayW(e.s)) + " · "}${esc(e.l || "")}</span></li>`).join("")}</ul>`;
   }
   const todayKey = () => new Date().toDateString();
   function habits() { if (!SA.habits) { try { SA.habits = JSON.parse(localStorage.getItem("soulos-habits") || "null"); } catch (e) {} if (!Array.isArray(SA.habits)) SA.habits = A().hInit.map(n => ({ name: n, days: [] })); } return SA.habits; }
@@ -5711,10 +5948,9 @@ window.SoulApps = (() => {
   function streak(h) { let n = 0; const d = new Date(); if (!h.days.includes(d.toDateString())) d.setDate(d.getDate() - 1); while (h.days.includes(d.toDateString())) { n++; d.setDate(d.getDate() - 1); } return n; }
   function habitsHTML() {
     const L = A(), H = habits(), done = H.filter(h => h.days.includes(todayKey())).length;
-    return lbl(L.hTitle(done, H.length), done === H.length && done ? "mint" : "") + `<ul class="list" style="top:112px">${H.slice(0, 4).map((h, i) => {
+    return lbl(L.hTitle(done, H.length), done === H.length && done ? "mint" : "") + `<ul class="list" style="top:112px">${H.map((h, i) => {
       const on = h.days.includes(todayKey()), s = streak(h), dots = Array.from({ length: 7 }, (_, k) => { const d = new Date(); d.setDate(d.getDate() - 6 + k); return `<i style="display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:${h.days.includes(d.toDateString()) ? "var(--mint)" : "rgba(255,240,200,.22)"}"></i>`; }).join("");
-      return `<li data-act="hab" data-i="${i}" class="${on ? "done" : ""} col" style="min-height:62px"><span class="tx" style="font-size:22px;display:flex;gap:10px;align-items:center;-webkit-line-clamp:1"><span class="ck" style="width:24px;height:24px;color:${on ? "var(--mint)" : "var(--faint)"}">${lg(on ? "check" : "ring", 24)}</span>${esc(h.name)}</span><span class="st ${s >= 3 ? "ok" : ""}">${dots}${s ? " " + esc(L.hDays(s)) : ""}</span></li>`; }).join("")}</ul>` +
-      (H.length < 6 ? `<div class="chips" style="position:absolute;top:${Math.min(352, 124 + Math.min(4, H.length) * 70)}px;left:0;right:0">${wordBtn("hab-new", L.hNew, "")}</div>` : "") + rimBot(esc(L.hHint), "");
+      return `<li data-act="hab" data-i="${i}" class="${on ? "done" : ""} col" style="min-height:62px"><span class="tx" style="font-size:22px;display:flex;gap:10px;align-items:center;-webkit-line-clamp:1"><span class="ck" style="width:24px;height:24px;color:${on ? "var(--mint)" : "var(--faint)"}">${lg(on ? "check" : "ring", 24)}</span>${esc(h.name)}</span><span class="st ${s >= 3 ? "ok" : ""}">${dots}${s ? " " + esc(L.hDays(s)) : ""}</span></li>`; }).join("")}${H.length < 6 ? `<li data-act="hab-new" class="addrow" role="button">${esc(L.hNew)}</li>` : ""}</ul>` + rimBot(esc(L.hHint), "");
   }
   const CITIES = [["Auckland", "Pacific/Auckland"], ["Berlin", "Europe/Berlin"], ["Bucharest", "Europe/Bucharest"], ["Chicago", "America/Chicago"], ["Chișinău", "Europe/Chisinau"],
     ["Dubai", "Asia/Dubai"], ["Hong Kong", "Asia/Hong_Kong"], ["Lisbon", "Europe/Lisbon"], ["London", "Europe/London"], ["Los Angeles", "America/Los_Angeles"], ["Mumbai", "Asia/Kolkata"],
@@ -5725,8 +5961,7 @@ window.SoulApps = (() => {
     const off = tz => { const d = new Date(), u = new Date(d.toLocaleString("en-US", { timeZone: "UTC" })), t = new Date(d.toLocaleString("en-US", { timeZone: tz })); return (t - u) / 36e5; };
     const myOff = off(Intl.DateTimeFormat().resolvedOptions().timeZone);
     return lbl(`${L.wcTitle} · ${hhmm()}`) + `<ul class="list" style="top:118px">${SA.clocks.map((tz, i) => { const c = CITIES.find(x => x[1] === tz) || [tz, tz], p = zoneParts(tz), d = `${p.year}${p.month}${p.day}`, dh = off(tz) - myOff;
-      return `<li data-act="wc" data-i="${i}"><span class="tx" style="font-size:24px">${esc(c[0])}<br><small style="font:400 13px/1 var(--r);letter-spacing:.08em;color:var(--faint)">${dh >= 0 ? "+" : "−"}${Math.abs(dh)} h${d > hereD ? " · " + L.tomorrow : d < hereD ? " · " + L.yesterday : ""}</small></span><b style="font:560 30px/1 var(--v);color:${+p.hour >= 7 && +p.hour < 21 ? "var(--cream)" : "var(--ice)"}">${p.hour}:${p.minute}</b></li>`; }).join("")}</ul>` +
-      (SA.clocks.length < 4 ? `<div class="chips" style="position:absolute;top:${130 + SA.clocks.length * 66}px;left:0;right:0">${wordBtn("wc-add", L.wcAdd, "")}</div>` : "") + rimBot(esc(L.wcHint), "");
+      return `<li data-act="wc" data-i="${i}"><span class="tx" style="font-size:24px">${esc(c[0])}<br><small style="font:600 20px/1.1 var(--v);color:var(--ink2)">${dh >= 0 ? "+" : "−"}${Math.abs(dh)} h${d > hereD ? " · " + L.tomorrow : d < hereD ? " · " + L.yesterday : ""}</small></span><b style="font:560 30px/1 var(--v);color:${+p.hour >= 7 && +p.hour < 21 ? "var(--cream)" : "var(--ice)"}">${p.hour}:${p.minute}</b></li>`; }).join("")}${SA.clocks.length < 4 ? `<li data-act="wc-add" class="addrow" role="button">${esc(L.wcAdd)}</li>` : ""}</ul>` + rimBot(esc(L.wcHint), "");
   }
   const UNITS = [[["m", 1, 0], ["km", 1000, 0], ["cm", 0.01, 0], ["mm", 0.001, 0], ["mi", 1609.344, 0], ["ft", 0.3048, 0], ["in", 0.0254, 0], ["yd", 0.9144, 0]],
     [["kg", 1, 0], ["g", 0.001, 0], ["lb", 0.45359237, 0], ["oz", 0.028349523125, 0], ["st", 6.35029318, 0]],
@@ -5742,29 +5977,29 @@ window.SoulApps = (() => {
   const fmtN = v => !isFinite(v) ? "—" : Math.abs(v) >= 1e9 || (v && Math.abs(v) < 1e-4) ? v.toPrecision(3) : (+v.toFixed(Math.abs(v) >= 1000 ? 0 : Math.abs(v) >= 100 ? 1 : Math.abs(v) >= 1 ? 2 : 4)).toLocaleString("en-US").replace(/,/g, " ");
   function convertHTML() {
     const L = A(), C = SA.conv, U = UNITS[C.q], r = convert(C.q, C.from, C.to, C.v);
-    return `<div class="chips" style="position:absolute;top:84px;left:0;right:0">${wordBtn("cv-q", L.qty[C.q] + " ›", "")}</div>
-      <div class="gl" data-act="cv-val" role="button" style="left:70px;right:70px;top:150px;height:66px;display:flex;align-items:center;justify-content:flex-end;padding:0 18px;gap:12px"><b style="font:560 36px/1 var(--v)" data-live="cvv">${esc(fmtN(C.v))}</b><span class="chip btn" data-act="cv-from" style="min-height:42px;padding:0 14px">${esc(U[C.from][0])}</span></div>
-      <span class="cb" data-act="cv-swap" role="button" aria-label="swap" style="position:absolute;left:203px;top:222px">${lg("swap", 26)}</span>
-      <div class="gl mint" style="left:70px;right:70px;top:290px;height:66px;display:flex;align-items:center;justify-content:flex-end;padding:0 18px;gap:12px"><b style="font:560 36px/1 var(--v);color:var(--mint)" data-live="cvr">${esc(fmtN(r))}</b><span class="chip btn ok" data-act="cv-to" style="min-height:42px;padding:0 14px">${esc(U[C.to][0])}</span></div>
-      <div class="c" style="top:372px"><div class="t3" style="font-size:16px">${esc(C.q === 5 ? L.ecb(APPDATA ? APPDATA.rates.date : "") : `1 ${U[C.from][0]} = ${fmtN(convert(C.q, C.from, C.to, 1))} ${U[C.to][0]}`)}</div></div>` + rimBot(esc(L.cvHint), "");
+    return `<div class="chips" style="position:absolute;top:150px;left:0;right:0">${wordBtn("cv-q", L.qty[C.q] + " ›", "")}</div>
+      <div class="gl" data-act="cv-val" role="button" style="left:76px;right:76px;top:212px;height:62px;display:flex;align-items:center;justify-content:flex-end;padding:0 16px;gap:12px"><b style="font:560 34px/1 var(--v)" data-live="cvv">${esc(fmtN(C.v))}</b><span class="chip btn" data-act="cv-from" style="min-height:46px;min-width:52px;padding:0 14px">${esc(U[C.from][0])}</span></div>
+      <span class="cb" data-act="cv-swap" role="button" aria-label="swap" style="position:absolute;left:96px;top:271px;width:52px;height:52px;z-index:2">${lg("swap", 24)}</span>
+      <div class="gl mint" style="left:84px;right:84px;top:300px;height:62px;display:flex;align-items:center;justify-content:flex-end;padding:0 16px;gap:12px"><b style="font:560 34px/1 var(--v);color:var(--mint)" data-live="cvr">${esc(fmtN(r))}</b><span class="chip btn ok" data-act="cv-to" style="min-height:46px;min-width:52px;padding:0 14px">${esc(U[C.to][0])}</span></div>
+      <div class="c" style="top:372px;left:110px;right:110px"><div class="t3" style="font-size:20px">${esc(C.q === 5 ? L.ecb(APPDATA ? APPDATA.rates.date : "") : `1 ${U[C.from][0]} = ${fmtN(convert(C.q, C.from, C.to, 1))} ${U[C.to][0]}`)}</div></div>` + rimBot(esc(L.cvHint), "");
   }
   function findHTML() {
     const L = A(), ring = SA.find === 1 && performance.now() - SA.findT < 60000;
-    return lbl(L.fpTitle) + `<div class="c" style="top:150px;gap:6px"><div class="t2" style="${ring ? "color:var(--amber)" : ""}">${ring ? L.fpRing : L.fpTap}</div><div class="t3" style="font-size:18px">${ring ? L.fpRingSub : L.fpSub}</div></div>
-      <span class="cb big gl amber" data-act="fp-ring" role="button" aria-label="ring" style="position:absolute;left:177px;top:262px;width:112px;height:112px;color:var(--amber)">${lg("findphone", 44)}</span>` +
-      (ring ? `<div class="chips" style="position:absolute;top:392px;left:0;right:0">${wordBtn("fp-found", L.fpFound, "ok")}</div>` : "");
+    return lbl(L.fpTitle) + `<div class="c" style="top:154px;gap:6px"><div class="t2" style="${ring ? "color:var(--amber)" : ""}">${ring ? L.fpRing : L.fpTap}</div><div class="t3" style="font-size:20px">${ring ? L.fpRingSub : L.fpSub}</div></div>
+      <span class="cb big gl amber" data-act="fp-ring" role="button" aria-label="ring" style="position:absolute;left:181px;top:246px;width:104px;height:104px;color:var(--amber)">${lg("findphone", 44)}</span>` +
+      (ring ? `<div class="chips" style="position:absolute;top:356px;left:0;right:0">${wordBtn("fp-found", L.fpFound, "ok")}</div>` : "");
   }
   function deviceHTML() {
     const L = A(), B = S.batt; let kb = 0; try { kb = Math.round(JSON.stringify(localStorage).length / 1024); } catch (e) {}
     const C = 2 * Math.PI * 214;
-    return lbl(L.dvTitle) + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="214" fill="none" stroke="rgba(255,240,200,.12)" stroke-width="10"/><circle cx="233" cy="233" r="214" fill="none" stroke="${B.chg ? "#C9F2E4" : B.lvl < 20 ? "#FFB347" : "#FFF0C8"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - B.lvl / 100)).toFixed(1)}" transform="rotate(-90 233 233)"/></svg>
-      <div class="c" style="top:112px;gap:2px"><div class="t1">${Math.round(B.lvl)}%</div><div class="t3" style="font-size:18px">${B.chg ? L.dvChg : L.dvBatt}</div></div>
-      <div class="c gl gcard" style="top:212px;left:84px;right:84px;gap:6px"><div class="t3" style="font-size:18px;color:var(--g-ink)">${esc(L.dvCounts(S.notes.length, S.alarms.length, S.rems.filter(r => !r.done).length))}</div><div class="t3" style="font-size:17px">${esc(L.dvStore(kb))}</div><div class="t3" style="font-size:17px">SoulOS 1.7 · web</div></div>`;
+    return lbl(L.dvTitle) + `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle cx="233" cy="233" r="214" fill="none" stroke="var(--peb2)" stroke-width="10"/><circle cx="233" cy="233" r="214" fill="none" stroke="${B.chg ? "var(--mint)" : B.lvl < 20 ? "var(--amber)" : "var(--e1)"}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - B.lvl / 100)).toFixed(1)}" transform="rotate(-90 233 233)"/></svg>
+      <div class="c" style="top:150px;gap:2px"><div class="t1">${Math.round(B.lvl)}%</div><div class="t3" style="font-size:20px">${B.chg ? L.dvChg : L.dvBatt}</div></div>
+      <div class="c gl gcard" style="top:236px;left:92px;right:92px;gap:6px;padding:16px 18px"><div class="t3" style="font-size:20px;color:var(--ink)">${esc(L.dvCounts(S.notes.length, S.alarms.length, S.rems.filter(r => !r.done).length))}</div><div class="t3" style="font-size:20px">${esc(L.dvStore(kb))}</div><div class="t3" style="font-size:20px">SoulOS 1.7 · web</div></div>`;
   }
   function appsSetHTML() {
     const L = A(), n = ORDER.length, pages = Math.ceil(n / 4), p = SA.setPage % pages;
-    return lbl(L.asTitle(p + 1, pages)) + `<ul class="list" style="top:118px;left:70px;right:70px">${ORDER.slice(p * 4, p * 4 + 4).map((v, k) => { const i = p * 4 + k, on = !SA.hidden.includes(v);
-      return `<li style="min-height:56px;gap:10px">${i ? `<span class="cb" data-act="as-up" data-v="${v}" role="button" aria-label="up" style="width:40px;height:40px;flex:none">${lg("send", 18)}</span>` : `<span style="width:40px;flex:none"></span>`}<span style="color:var(--dim);flex:none">${lg(v === "cc" ? "cc" : v, 20)}</span><span class="tx" style="font-size:21px">${esc(appName(v))}</span><span class="tog ${on ? "on" : ""}" data-act="as-tog" data-v="${v}" role="switch" aria-checked="${on}"><i></i></span></li>`; }).join("")}</ul>` + rimBot(esc(L.asHint), "");
+    return lbl(`${STR[LANG].appsset} · ${n}`) + `<ul class="list" style="top:118px;left:70px;right:70px">${ORDER.map((v, i) => { const on = !SA.hidden.includes(v);
+      return `<li data-act="as-tog" data-v="${v}" role="switch" aria-checked="${on}" aria-label="${esc(appName(v))}" style="min-height:64px;gap:10px;padding:6px 12px">${i ? `<span class="cb" data-act="as-up" data-v="${v}" role="button" aria-label="up" style="width:52px;height:52px;flex:none">${lg("send", 22)}</span>` : `<span style="width:52px;flex:none"></span>`}<span class="tx" style="font-size:23px">${esc(appName(v))}</span><span class="tog ${on ? "on" : ""}" aria-hidden="true"><i></i></span></li>`; }).join("")}</ul>`;
   }
 
   /* ======================================================== breathe */
@@ -5776,14 +6011,14 @@ window.SoulApps = (() => {
     const L = A(), B = SA.br;
     if (!B.on) return lbl(L.breathe) + `<div class="chips" style="position:absolute;top:322px;left:0;right:0">${wordBtn("br-pat", L.bPats[B.pat], "")}${wordBtn("br-min", B.min + " min", "")}</div>` + rimBot(esc(L.bTap), "");
     const b = breathAt(B.t);
-    return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle data-live="brr" cx="233" cy="225" r="${(150 + 60 * b.size).toFixed(1)}" fill="none" stroke="${b.ph >= 2 ? "#C9F2E4" : "#9FC6FF"}" stroke-width="3" opacity="${(0.35 + 0.3 * b.size).toFixed(2)}" style="filter:drop-shadow(0 0 10px currentColor)"/></svg>` +
+    return `<svg class="ring" viewBox="0 0 466 466" aria-hidden="true"><circle data-live="brr" cx="233" cy="225" r="${(150 + 60 * b.size).toFixed(1)}" fill="none" stroke="${b.ph >= 2 ? "var(--e2)" : "var(--e1)"}" stroke-width="8" opacity="${(0.35 + 0.3 * b.size).toFixed(2)}"/></svg>` +
       rimBot(`<tspan data-live="brw">${esc(L.bPhases[b.ph] + " · " + b.left)}</tspan>`, "say") + rimTop(`<tspan data-live="brt">${mmss(B.min * 60 - B.t)}</tspan>`, "");
   }
 
   /* ======================================================== games */
   function gamesMenuHTML() {
     const L = A(), best = k => { try { return +localStorage.getItem("soulos-best-" + k) || 0; } catch (e) { return 0; } };
-    const row = (act, n, d, b) => `<li data-act="${act}" class="col" style="min-height:62px"><span class="tx" style="font-size:22px;display:flex;justify-content:space-between;width:100%"><span>${esc(n)}</span><b style="font:500 18px/1 var(--r);color:var(--mint)">${b || "–"}</b></span><span class="st">${esc(d)}</span></li>`;
+    const row = (act, n, d, b) => `<li data-act="${act}" class="col" style="min-height:62px"><span class="tx" style="font-size:22px;display:flex;justify-content:space-between;width:100%"><span>${esc(n)}</span><b style="font:600 21px/1 var(--v);color:var(--mint)">${b || "–"}</b></span><span class="st">${esc(d)}</span></li>`;
     return lbl(L.gMenu) + `<ul class="list" style="top:112px">${row("game-start", L.gStar, L.gStarD, S.game.best)}${row("g-tilt", L.gTilt, L.gTiltD, best("tilt"))}${row("g-rhy", L.gRhy, L.gRhyD, best("rhy"))}${row("g-mem", L.gMem, L.gMemD, best("mem"))}</ul>`;
   }
   function gStart(kind) {
@@ -5968,9 +6203,8 @@ window.SoulApps = (() => {
   }
   function layout(v) {
     if (v === "breathe") { const s = SA.br.on ? breathAt(SA.br.t).size : 0.35; return { k: 0.42 + 0.3 * s, cy: -0.04 }; }
-    if (v === "games" && SA.game) { if (SA.game.over) return { k: 0.22, cy: -0.36 }; if (SA.game.kind === "mem") return { k: 0.5, cy: 0 }; if (SA.game.kind === "rhy") return { k: 0.34, cy: 0 }; return { k: 0.12, cy: -0.42 }; }
-    if (v === "maps") return { k: 0.14, cy: -0.41 };
-    if (VIEWS.has(v) || v === "games") return { k: 0.2, cy: -0.36 };
+    if (v === "games" && SA.game) { if (SA.game.over) return LAYOUT.card; if (SA.game.kind === "mem") return { k: 0.5, cy: 0 }; if (SA.game.kind === "rhy") return { k: 0.34, cy: 0 }; return { k: 0.24, cy: -0.4 }; }
+    if (VIEWS.has(v) || v === "games" || v === "maps") return LAYOUT.card;   /* Alive: the one eye slot (on the map, over a black disc) */
     return null;
   }
   function faceMoment() { const v = S.view; return v === "breathe" || (v === "games" && SA.game && !SA.game.over && (SA.game.kind === "mem" || SA.game.kind === "rhy")); }
@@ -5981,7 +6215,7 @@ window.SoulApps = (() => {
     if (S.view === "breathe" && SA.br.on && curCard) {
       SA.br.t += dt; const b = breathAt(SA.br.t), L = A();
       soul.lay = Object.assign({ cx: 0 }, layout("breathe"));
-      const r = curCard.querySelector('[data-live="brr"]'); if (r) { r.setAttribute("r", (150 + 60 * b.size).toFixed(1)); r.setAttribute("opacity", (0.35 + 0.3 * b.size).toFixed(2)); r.setAttribute("stroke", b.ph >= 2 ? "#C9F2E4" : "#9FC6FF"); }
+      const r = curCard.querySelector('[data-live="brr"]'); if (r) { r.setAttribute("r", (150 + 60 * b.size).toFixed(1)); r.setAttribute("opacity", (0.35 + 0.3 * b.size).toFixed(2)); r.setAttribute("stroke", b.ph >= 2 ? "var(--e2)" : "var(--e1)"); }
       const w = curCard.querySelector('[data-live="brw"]'); if (w) w.textContent = L.bPhases[b.ph] + " · " + b.left;
       const t = curCard.querySelector('[data-live="brt"]'); if (t) t.textContent = mmss(SA.br.min * 60 - SA.br.t);
       if (SA.br.t >= SA.br.min * 60) { SA.br.on = false; soul.react("love", 1.6); showPill({ kind: "mint", text: L.bDone, dur: 2400 }); refresh(); applyFaceState(); }

@@ -49,7 +49,8 @@ async function run(W, H, tag, dpr) {
   const pt = (x, y) => [B.x + x / 466 * B.w, B.y + y / 466 * B.w];
   const recenter = async () => { await page.evaluate(() => document.getElementById("pebble").scrollIntoView({ block: "center" })); await sleep(120); B = await box(); };
   const tap = async (x, y, hold = 40) => { const [a, b] = pt(x, y); await page.mouse.move(a, b); await page.mouse.down(); await sleep(hold); await page.mouse.up(); };
-  const tapEl = async sel => { const b = await page.locator(sel).first().boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await sleep(40); await page.mouse.up(); };
+  const tapEl = async sel => { await page.evaluate(s => { try { window.__soul && __soul.reveal && __soul.reveal(s); } catch (e) {} }, sel);   /* Alive: a list is a wheel; bring the row into focus first */
+  const b = await page.locator(sel).first().boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await sleep(40); await page.mouse.up(); };
   const shot = async name => { await page.locator("#pebble").screenshot({ path: OUT + name.replace(/^soulos-/, "soulos3-") + "-" + tag + ".png" }); };
   const keyAt = async ch => page.evaluate(c => { const k = __soul.S.kb.keys.find(k => k.ch && k.ch.toLowerCase() === c); return k ? [k.cx, k.y0 + 26] : null; }, ch);
   const keyId = async id => page.evaluate(i => { const k = __soul.S.kb.keys.find(k => k.id === i); return [k.cx, k.y0 + 26]; }, id);
@@ -495,7 +496,8 @@ async function v4() {
   const pt = (x, y) => [B.x + x / 466 * B.w, B.y + y / 466 * B.w];
   const tap = async (x, y, hold = 40) => { const [a, b] = pt(x, y); await page.mouse.move(a, b); await page.mouse.down(); await sleep(hold); await page.mouse.up(); };
   const press = async (x, y) => { const [a, b] = pt(x, y); await page.mouse.move(a, b); await page.mouse.down(); };
-  const tapEl = async sel => { const b = await page.locator(sel).first().boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await sleep(40); await page.mouse.up(); };
+  const tapEl = async sel => { await page.evaluate(s => { try { window.__soul && __soul.reveal && __soul.reveal(s); } catch (e) {} }, sel);   /* Alive: a list is a wheel; bring the row into focus first */
+  const b = await page.locator(sel).first().boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await sleep(40); await page.mouse.up(); };
   const card = s => `#cards .card:last-child ${s}`;
   const settle = () => sleep(450);
 
@@ -547,7 +549,7 @@ async function v4() {
   const c1 = await ev(() => ({ calls: window.__calls.length, last: window.__calls[window.__calls.length - 1], txt: document.querySelector("#cards .card:last-child").textContent, al: __soul.S.alarms.some(a => a.h === 6 && a.m === 45 && a.on), src: __soul.S.voice && __soul.S.voice.src }));
   ok(c1.calls === 1 && c1.last.modelTier === "quick" && c1.last.cache === false && /alarm\.set/.test(c1.last.input[0].content) && /6:45/.test(c1.last.input[c1.last.input.length - 1].content), "v4 one sample() call: rules + device state first, the question last, quick tier, no cache");
   ok(c1.al && /Alarm set for 6:45/.test(c1.txt) && /✓ Alarm 6:45 AM/.test(c1.txt) && c1.src === "Claude · live", `v4 Claude's reply is shown and its alarm.set ran (${c1.src})`);
-  ok(await ev(() => ["speak", "idle"].includes(__soul.soul.st)), "v4 eyes talk while the answer is said");
+  ok(await ev(() => ["speak", "idle", "happy"].includes(__soul.soul.st)), "v4 eyes talk while the answer is said (Alive: then a happy face, it did what was asked)");
   await shot("claude-answer");
   await sleep(2600);
   ok((await ev(() => window.__ex.slice(-6))).includes("approve"), `v4 an answer that acted ends on approve (${(await ev(() => window.__ex.slice(-6))).join(",")})`);
@@ -769,9 +771,9 @@ async function glass() {
   ok((await st()).aura < 0.02, `glass the voice states on the face keep the background black (aura ${(await st()).aura})`);
   // an app (SoulOS Alive): still pure black (no aura), the words sit on one flat opaque pebble (no gradient, no blur); idle → back to the eyes
   await ev(() => __soul.go("settings", "left")); await sleep(700);
-  const g = await ev(() => { const el = document.querySelector("#cards .card:last-child .set"), cs = getComputedStyle(el); return { bg: cs.backgroundImage, col: cs.backgroundColor, bf: cs.backdropFilter || "none", f: cs.filter, r: parseFloat(cs.borderTopLeftRadius) }; });
+  const g = await ev(() => { const el = document.querySelector("#cards .card:last-child .set > .wh-f"), cs = getComputedStyle(el); return { bg: cs.backgroundImage, col: cs.backgroundColor, bf: cs.backdropFilter || "none", f: cs.filter, r: parseFloat(cs.borderTopLeftRadius) }; });
   const s4 = await st();
-  ok(s4.ui && s4.aura < 0.02 && g.bg === "none" && /^rgb\(/.test(g.col) && g.bf === "none" && g.f === "none" && g.r >= 20, `alive Settings is a flat opaque pebble on pure black (aura ${s4.aura}, fill ${g.col}, image ${g.bg}, radius ${g.r})`);
+  ok(s4.ui && s4.aura < 0.02 && g.bg === "none" && /^rgb\(/.test(g.col) && g.bf === "none" && g.f === "none" && g.r >= 20, `alive Settings: the focused row of its wheel is a flat opaque pebble on pure black (aura ${s4.aura}, fill ${g.col}, image ${g.bg}, radius ${g.r})`);
   const tone = async () => ev(() => document.getElementById("screen").dataset.tone || "");
   await ev(() => { __soul.S.claude.pending = { cmd: "npm test" }; __soul.go("claude", "left"); }); await sleep(600);
   const sheet = await ev(() => !!document.querySelector("#cards .card:last-child .gl.sheet.amber"));
