@@ -610,15 +610,15 @@ async function v4() {
   ok(await ev(() => __soul.soul.expression === "working"), "v4 Claude app: eyes do the reading scan (working)");
   await ev(() => __soul.go("home", "down")); await settle();
 
-  // ---------- errors are said by the eyes first (confused), then a short line
+  // ---------- errors are said by the eyes first (sad, SoulOS Alive), then a short line
   await ev(() => { window.__sampleFail = { code: "rate_limited", message: "x" }; __soul.aiAsk("tell me a joke", "home"); }); await sleep(1100);
-  ok(await ev(() => __soul.soul.expression === "confused" && /Too many questions/.test(document.querySelector("#cards .card:last-child").textContent)), "v4 rate limit → confused + short text");
+  ok(await ev(() => __soul.soul.expression === "sad" && /Too many questions/.test(document.querySelector("#cards .card:last-child").textContent)), "v4 rate limit → sad eyes (SoulOS Alive) + short text");
   await shot("error-rate");
   await ev(() => { window.__sampleFail = { code: "not_granted", message: "x" }; __soul.aiAsk("remind me at 9:15 to stretch", "home"); }); await sleep(1100);
   ok(await ev(() => /wasn.t allowed/.test(document.querySelector("#cards .card:last-child").textContent) && __soul.S.rems.some(r => r.time === "09:15")), "v4 not allowed → says so, and the device rules still set the reminder");
   await ev(() => { window.__sampleFail = null; __soul.S.voice = null; }); await ctx.setOffline(true);
   await ev(() => __soul.aiAsk("hello", "home")); await sleep(1000);
-  ok(await ev(() => /offline/i.test(document.querySelector("#cards .card:last-child").textContent) && __soul.soul.expression === "confused"), "v4 offline → confused + “You're offline.”");
+  ok(await ev(() => /offline/i.test(document.querySelector("#cards .card:last-child").textContent) && __soul.soul.expression === "sad"), "v4 offline → sad + “You're offline.”");
   await ctx.setOffline(false); await ev(() => { __soul.S.voice = null; __soul.go("home", "down"); }); await settle();
 
   // ---------- mode switching + your own key (api.anthropic.com faked with page.route)
@@ -637,7 +637,7 @@ async function v4() {
   await tapEl(card('[data-act="aim"][data-m="api"]')); await sleep(400);
   ok(await ev(() => __soul.S.ai === "api" && __soul.S.kb && __soul.S.kb.mask), "v4 pick “Your API key” with no key → the round keyboard asks for it (masked)");
   await page.keyboard.type("hello"); await page.keyboard.press("Enter"); await sleep(300);
-  ok(await ev(() => !__soul.BRAIN.keys.anthropic && /look like a key/.test(document.getElementById("pill").textContent) && __soul.soul.expression === "confused"), "v4 a non-key is refused (confused)");
+  ok(await ev(() => !__soul.BRAIN.keys.anthropic && /look like a key/.test(document.getElementById("pill").textContent) && __soul.soul.expression === "sad"), "v4 a non-key is refused (sad)");
   await tapEl(card('[data-act="aim"][data-m="api"]')); await sleep(400);
   const fake = "sk-ant-api03-TESTKEYTESTKEYTESTKEY0123456789";
   await ev(k => { const dt = new DataTransfer(); dt.setData("text/plain", k); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true })); }, fake); await sleep(150);
@@ -650,7 +650,7 @@ async function v4() {
   ok(await ev(() => __soul.S.tm.cd.run && __soul.S.tm.cd.total === 600 && /Claude · your API key/.test(document.querySelector("#cards .card:last-child").textContent)), "v4 your key: reply parsed (thinking block skipped), timer 10 min started");
   await shot("api-answer");
   status = 401; await ev(() => __soul.aiAsk("hello", "home")); await sleep(1300);
-  ok(await ev(() => /API key was rejected/.test(document.querySelector("#cards .card:last-child").textContent) && __soul.soul.expression === "confused"), "v4 a bad key (401) → confused + “That API key was rejected.”");
+  ok(await ev(() => /API key was rejected/.test(document.querySelector("#cards .card:last-child").textContent) && __soul.soul.expression === "sad"), "v4 a bad key (401) → sad + “That API key was rejected.”");
   await shot("api-badkey");
   // ChatGPT with its own key
   let oa = null;
@@ -713,7 +713,7 @@ async function v4() {
   p2.on("pageerror", e => errs.push("pageerror(390): " + e.message));
   await p2.goto(FILE, { waitUntil: "load" }); await sleep(900);
   await p2.evaluate(() => { __soul.cancel("msg"); __soul.cancel("claude"); __soul.setAi("claude"); __soul.aiAsk("what's the meaning of life?", "home"); }); await sleep(1500);
-  ok(await p2.evaluate(() => /isn.t connected in this view/.test(document.querySelector("#cards .card:last-child").textContent) && __soul.soul.expression === "confused"), "v4 no capability (outside claude.ai) → confused + “Claude isn't connected in this view”");
+  ok(await p2.evaluate(() => /isn.t connected in this view/.test(document.querySelector("#cards .card:last-child").textContent) && __soul.soul.expression === "sad"), "v4 no capability (outside claude.ai) → sad + “Claude isn't connected in this view”");
   await p2.locator("#pebble").screenshot({ path: OUT + "soulos4-nocap-390.png" });
   ok(await p2.evaluate(() => /isn.t connected/.test(document.getElementById("aiStatus").textContent)), "v4 panel status explains where Claude works");
   const hs = await p2.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
@@ -767,16 +767,16 @@ async function glass() {
   // listening / thinking / answering on the face: black
   await ev(() => __soul.go("voice", "fade")); await sleep(700);
   ok((await st()).aura < 0.02, `glass the voice states on the face keep the background black (aura ${(await st()).aura})`);
-  // an app: the aura rises, glass panels carry the words; idle → back to the eyes
+  // an app (SoulOS Alive): still pure black (no aura), the words sit on one flat opaque pebble (no gradient, no blur); idle → back to the eyes
   await ev(() => __soul.go("settings", "left")); await sleep(700);
-  const g = await ev(() => { const el = document.querySelector("#cards .card:last-child .set"), cs = getComputedStyle(el); return { bg: cs.backgroundImage, sh: cs.boxShadow, r: parseFloat(cs.borderTopLeftRadius) }; });
+  const g = await ev(() => { const el = document.querySelector("#cards .card:last-child .set"), cs = getComputedStyle(el); return { bg: cs.backgroundImage, col: cs.backgroundColor, bf: cs.backdropFilter || "none", f: cs.filter, r: parseFloat(cs.borderTopLeftRadius) }; });
   const s4 = await st();
-  ok(s4.ui && s4.aura > 0.9 && /gradient/.test(g.bg) && /inset/.test(g.sh) && g.r >= 20, `glass Settings is a frosted sheet over the aura (fill ${g.bg.slice(0, 40)}…, radius ${g.r})`);
+  ok(s4.ui && s4.aura < 0.02 && g.bg === "none" && /^rgb\(/.test(g.col) && g.bf === "none" && g.f === "none" && g.r >= 20, `alive Settings is a flat opaque pebble on pure black (aura ${s4.aura}, fill ${g.col}, image ${g.bg}, radius ${g.r})`);
   const tone = async () => ev(() => document.getElementById("screen").dataset.tone || "");
   await ev(() => { __soul.S.claude.pending = { cmd: "npm test" }; __soul.go("claude", "left"); }); await sleep(600);
   const sheet = await ev(() => !!document.querySelector("#cards .card:last-child .gl.sheet.amber"));
   const sC = await st();
-  ok(sheet && sC.aura < 0.02, `glass Claude's ask over the eyes: a glass sheet with an amber glow on black, no aura (aura ${sC.aura}, tone ${await tone()})`);
+  ok(sheet && sC.aura < 0.02, `alive Claude's ask over the eyes: a pebble sheet with a thick amber edge on black, no aura (aura ${sC.aura}, tone ${await tone()})`);
   await ev(() => { __soul.S.claude.pending = null; __soul.go("alarms", "left"); }); await sleep(500);
   await ev(() => { __soul.S.lastAct = performance.now() - __soul.APP_IDLE_MS - 500; }); await sleep(900);
   const s5 = await st();
