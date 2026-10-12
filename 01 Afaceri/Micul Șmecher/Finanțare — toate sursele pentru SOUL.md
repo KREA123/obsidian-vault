@@ -7,7 +7,7 @@ actualizat: 2026-10-12
 # Finanțare — toate sursele pentru SOUL
 
 > Harta tuturor banilor de cercetare și inovare AI pe care îi poate lua **ARTEMIS DIGITAL S.R.L.** pentru SOUL, între oct. 2026 și dec. 2027. Hub: [[Micul Șmecher]] · harta proiectului: [[SOUL — Harta memoriei]] · pași: [[De continuat — SOUL]].
-> Dosare separate: [[Finanțare — PR BI PoC 1.1 pentru SOUL]] · [[Finanțare — Start-Up Nation 2026 pentru SOUL]] (Start-Up Nation nu e repetat aici).
+> Dosare separate: [[Finanțare — PR BI PoC 1.1 pentru SOUL]] · [[Finanțare — expertul științific pentru PoC 1.1]] · [[Finanțare — Start-Up Nation 2026 pentru SOUL]] (Start-Up Nation nu e repetat aici).
 > **[neverificat]** = cifra sau data vine dintr-o singură căutare și nu a fost confirmată pe o a doua sursă oficială.
 
 **Răspuns scurt:** acum, la 12.10.2026, nu e deschis niciun apel cu bani mulți pentru noi. Banii reali vin în 2027: **PoC 1.1** (cel mai sigur), **PR BI 1.2**, **Eurostars** (4 mar. 2027), **EIC Pre-Accelerator** (18 nov. 2027) și **UEFISCDI PTE** (sept. 2027). Săptămâna asta facem doar lucruri mici și gratuite: credite AI și voce, hubul EDIH, partenerul universitar.
@@ -17,12 +17,18 @@ actualizat: 2026-10-12
 | # | Program | Cât | Termen | De ce se potrivește SOUL | Efort |
 |---|---|---|---|---|---|
 | 1 | **PR BI 1.1 Proof of Concept** (verificat) | €50k–200k, până la 100%, de minimis | Nestabilit. Ghidul final nu e publicat. Regula: 30 zile pregătire + 90 zile depunere, deci se închide cel mai devreme ~**feb. 2027** | TRL 3 → 5, micro-IMM din București, fără vechime minimă. Atenție: nu scriem că TRL 5 e deja atins | Dosar deja pregătit |
-| 2 | **PR BI 1.2 Produse/procese noi** (verificat) | Buget apel €46M. Plafonul de €300k/proiect e **[neverificat]** | Calendarul ADR BI spune dec. 2026. Nu există încă nici consultare, deci realist **T1–T2 2027** | Industrializarea SOUL: prototip → produs. Doar micro/IMM din București-Ilfov | Mare |
+| 2 | **PR BI 1.2 Produse/procese noi** (verificat) | Media ~€1M grant/proiect, 36 luni (prezentare ADR BI); buget apel €46M; plafon oficial nepublicat. Ajutor de stat GBER, **nu de minimis**; cofinanțare probabil 20–55% [dedus] | Calendarul ADR BI spune dec. 2026. Nu există încă ghid, consultare sau criterii, deci realist **T2–T3 2027** [estimare] | Pasul de după PoC: TRL 5 → 7/8 (pilot, pre-CE, IP). Doar micro/IMM din București-Ilfov, singur sau cu 1–2 universități/institute | Mare |
 | 3 | **Eurostars-3 Call 12** (confirmat) | Stabilit național de UEFISCDI (rata și plafonul RO nepublicate) | Se deschide 17.12.2026, **termen 4.03.2027** | Cercetare comună pe edge-AI, voce pe dispozitiv, memorie privată | Mare. Trebuie un partener străin |
 | 4 | **EIC Pre-Accelerator 2027** (verificat) | €500k–1M = 70% din cost. **30% cofinanțare proprie** | Template 5.05.2027, **termen 18.11.2027** | Pentru start-up-uri din țări „widening” (România da), singur, fără vechime. TRL 4 → 6 | Mediu-mare. Risc: dacă trecem de TRL 5 până atunci, e prea târziu |
 | 5 | **UEFISCDI PTE 2027** [neverificat] | Max. 1,5 mil. lei (ediția 2026) | Probabil lansare iunie, termen **sept. 2027** | Firma conduce + o universitate. TRL 4–5 → 6, exact stadiul SOUL | Mediu-mare. Cere venituri și un angajat în 2026 |
 
 **Bonus rapid (credite, nu bani):** Claude for Startups (verificat: oferta de $1.000 și Claude Team e suspendată, „over capacity”, dar Startup Stack și office hours rămân) și ElevenLabs Startup Grant (verificat: 33M caractere, 12 luni, peste $5.500 valoare).
+
+**PR BI 1.2 pe scurt (verificat 12.10.2026):**
+- **Ce e:** „Sprijin pentru dezvoltarea de produse/procese noi” — cercetare-dezvoltare și inovare la un IMM din București-Ilfov, până la TRL 8. Nu finanțează linie de producție sau marketing.
+- **Cât:** media ~€1M grant pe proiect, 36 de luni (prezentare ADR BI, nu ghid). Ajutor de stat GBER art. 25 + 28, deci **cofinanțare proprie probabil 20–55%** [dedus].
+- **Când:** calendarul oficial spune ghid oct. 2026 și depunere dec. 2026. Azi nu există nimic publicat; realist T2–T3 2027 [estimare].
+- **Cu PoC:** da, se pot lua amândouă dacă 1.2 rămâne GBER (nu consumă plafonul de minimis). Activități și facturi separate.
 
 ## 2. Calendar oct. 2026 → dec. 2027
 
@@ -37,7 +43,7 @@ actualizat: 2026-10-12
 | 17 dec. 2026 | Eurostars Call 12 se deschide | Consorțiul cu partenerul străin trebuie să fie gata |
 | dec. 2026 – feb. 2027 | **PoC 1.1** (fereastra reală) | Cererea în MySMIS2021 |
 | 4 mar. 2027 | **Eurostars** | Propunerea comună |
-| T1–T2 2027 | **PR BI 1.2** (și poate 9.1 STEP) | Cerere + plan de afaceri |
+| T2–T3 2027 [estimare] | **PR BI 1.2** (și poate 9.1 STEP) | Cerere + plan de afaceri |
 | mai 2027 | EIC Pre-Accelerator: apare template-ul | Începem scrierea |
 | mai–sept. 2027 | How to Web Spotlight, Slush 100, 28DIGITAL VIP [neverificat] | Pitch-uri scurte, video de 1 minut |
 | iun.–sept. 2027 | **UEFISCDI PTE** [neverificat] | Cerere cu UPB sau ICI |
@@ -67,8 +73,8 @@ Nu merg acum: Pathfinder Open (3 țări, închis), EIC Transition (cere un proie
 ### România
 | Program | Sumă | Termen | Partener | Potrivire | Link |
 |---|---|---|---|---|---|
-| **PR BI 1.1 PoC** (verificat) | €50–200k, 100% | ~dec. 2026–feb. 2027 | Nu (expert științific extern) | 5 | [ADR BI](https://regiobucuresti-ilfov.ro/apeluri) |
-| **PR BI 1.2 produse noi** (verificat) | apel €46M; plafon [neverificat] | realist T1–T2 2027 | Opțional universitate | 4 | [calendar](https://regiobucuresti-ilfov.ro/calendar-apeluri) |
+| **PR BI 1.1 PoC** (verificat) | €50–200k, 100% | ~dec. 2026–feb. 2027 | Nu (expert științific: [[Finanțare — expertul științific pentru PoC 1.1]]) | 5 | [ADR BI](https://regiobucuresti-ilfov.ro/apeluri) |
+| **PR BI 1.2 produse noi** (verificat) | media ~€1M/proiect; apel €46M; plafon nepublicat; GBER art. 25 + 28 | oficial dec. 2026, realist T2–T3 2027 | Opțional 1–2 universități/institute; cere ≥ 1 publicație ISI | 4 | [calendar](https://regiobucuresti-ilfov.ro/calendar-apeluri) |
 | PR BI 9.1 STEP (verificat) | apel €60M; plafon necunoscut | realist T1–T2 2027 | Nu e clar | 2–3 | [calendar](https://regiobucuresti-ilfov.ro/calendar-apeluri) |
 | UEFISCDI PTE 2027 [neverificat] | max. 1,5 mil. lei | ~sept. 2027 | Da, universitate | 4 | [anunț 2026](https://oportunitati-ue.gov.ro/en/apel/proiect-de-transfer-la-operatorul-economic-pte-2026/) |
 | UEFISCDI PED 2027 [neverificat] | max. 750k lei | ~sept. 2027 | Da, universitatea conduce | 3 | [pachet 2026](https://uefiscdi.gov.ro/resource-832362-Pachet_informatii_PED2026.pdf) |
@@ -134,7 +140,7 @@ Kickstarter **nu acceptă România** (verificat): ar trebui o firmă în SUA, Po
 - **Evidența de minimis** — un tabel cu tot ce primim (granturi, servicii EDIH gratuite), verificat în RegAS înainte de fiecare cerere.
 
 ## 5. Reguli de combinare
-- **De minimis: max. €300.000 pe 3 ani**, pe tot grupul de firme al lui Andu. PoC (până la €200k) + PR BI 1.2 (dacă e tot de minimis) **pot depăși plafonul** — trebuie ales.
+- **De minimis: max. €300.000 pe 3 ani**, pe tot grupul de firme al lui Andu. PoC 1.1 e de minimis (până la €200k). **PR BI 1.2 e planificat ca ajutor de stat GBER (art. 25 + 28), nu de minimis**, deci nu consumă plafonul: **PoC + 1.2 se pot lua amândouă**, pe activități și facturi diferite (PoC = TRL 3 → 5, 1.2 = TRL 5 → 7/8). Criteriile PoC aprobate (Decizia CM 54) spun explicit că după TRL 5 se poate continua din alte surse. De confirmat în ghidul 1.2, nepublicat: o eventuală parte de minimis, condiții de vechime sau profit [neverificat]. Riscul: apeluri similare din alte regiuni au cerut un an fiscal cu profit din exploatare, deci ARTEMIS ar trebui să închidă 2026 pe profit.
 - **Aceleași costuri nu se finanțează de două ori.** Fiecare proiect are pachetul lui de lucru și facturile lui.
 - **PoC 1.1: un singur proiect** per întreprindere unică.
 - **Nicio cheltuială înainte de depunere** pentru proiectul respectiv (efectul stimulativ).
@@ -142,7 +148,7 @@ Kickstarter **nu acceptă România** (verificat): ar trebui o firmă în SUA, Po
 - Banii dați direct de UE (EIC) nu sunt ajutor de stat. Partea națională Eurostars (UEFISCDI) urmează regulile naționale de ajutor de stat [neverificat]. Toate se declară în fiecare cerere.
 
 ## 6. Ce face Andu și ce pregătește Claude
-**Andu:** semnează tot; își face conturile (MySMIS2021, EU Login, UEFISCDI, Claude Console, ElevenLabs etc.); vorbește cu universitatea, cu UEFISCDI și cu ARIES; alege între PoC și 1.2 pentru plafonul de minimis; ține parolele doar la el. **Nu dă niciodată parole sau coduri lui Claude.**
+**Andu:** semnează tot; își face conturile (MySMIS2021, EU Login, UEFISCDI, Claude Console, ElevenLabs etc.); vorbește cu universitatea, cu UEFISCDI și cu ARIES; depune la PoC acum și la 1.2 după (nu trebuie ales între ele, dacă 1.2 rămâne GBER); ține parolele doar la el. **Nu dă niciodată parole sau coduri lui Claude.**
 
 **Claude:** scrie ciornele de cereri, planurile de cercetare, bugetele și pachetele de lucru; face pitch deck-ul și scenariul video de 60 s; caută parteneri; verifică ghidurile finale când apar; ține calendarul acesta la zi.
 

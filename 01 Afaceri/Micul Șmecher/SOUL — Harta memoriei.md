@@ -132,6 +132,7 @@ actualizat: 2026-10-03
 
 ## Investitori și finanțare
 - [[Finanțare — toate sursele pentru SOUL]] — **toate programele de bani (UE, România, credite AI, acceleratoare, investitori), top 5 și calendarul oct. 2026 → dec. 2027** (2026-10-12)
+- [[Finanțare — expertul științific pentru PoC 1.1]] — **cine semnează Anexa 16: cerințele (Decizia CM 54), lista scurtă UPB, costul, coordonatorul tehnic, emailul gata de trimis** (2026-10-12)
 - [[Finanțare — Start-Up Nation 2026 pentru SOUL]] — **Start-Up Nation sesiunea 2: nu se potrivește pentru SOUL/ARTEMIS; eligibilitate, buget teoretic, conflictul cu PoC 1.1** (2026-10-12)
 - [[micul-smecher/investors/DECK|SOUL: pitch deck content (v1, 2026-09-25)]] — `investors/DECK.md`
 - [[micul-smecher/investors/FINANTARE-ROMANIA|Finanțare nerambursabilă și publică pentru SOUL — prin ARTEMIS DIGITAL S.R.L.]] — `investors/FINANTARE-ROMANIA.md`
