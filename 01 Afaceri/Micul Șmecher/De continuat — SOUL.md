@@ -1,7 +1,7 @@
 ---
 tip: listă de lucru
 afacere: Micul Șmecher
-actualizat: 2026-10-03
+actualizat: 2026-10-12
 ---
 
 # De continuat — SOUL (pașii următori)
@@ -30,6 +30,7 @@ actualizat: 2026-10-03
   - **PoC 1.1** (ADR BI, ~dec. 2026–feb. 2027, data exactă nestabilită): urmărești ghidul final pe regiobucuresti-ilfov.ro/apeluri și găsești expertul științific pentru Anexa 16 (UPB, ICI, IMT).
   - **Eurostars Call 12** (deschis 17.12.2026, **termen 4.03.2027**): găsești un partener străin (prin Enterprise Europe Network) și întrebi UEFISCDI de rata și plafonul pentru România.
   - **Trimite emailul către primii 3 experți din [[Finanțare — expertul științific pentru PoC 1.1]]** (Tudose, Radovici, Cucu — textul e gata în notă; completezi numele și telefonul).
+  - **Oferte de preț PoC 1.1** (2 surse pe FIECARE linie de buget): salvezi ca PDF, cu data și URL, paginile de preț deja găsite. Faci ofertele instant CNC/PCB (Weerg, Hubs, JLCPCB, PCBWay) fără comandă. Trimiți emailurile de cerere de ofertă (laboratoare EMC, panouri, audit etc.). **Nu comanzi, nu semnezi, nu plătești nimic înainte de depunere.** Totul e în [[Finanțare — oferte de preț pentru PoC 1.1]].
   - **PR BI 1.2 produse noi** (realist T2–T3 2027): adaugi la ONRC coduri CAEN pentru electronice/software/cercetare (cu contabilul). Nu trebuie ales între PoC și 1.2: 1.2 e planificat GBER, nu de minimis, deci le putem lua pe amândouă [de confirmat în ghidul 1.2].
   - Săptămâna asta, rapid: aplici la Claude for Startups și ElevenLabs Startup Grants (cu email de firmă, SOUL pentru adulți/vârstnici, nu copii).
   - **Start-Up Nation 2026** (2026-10-12): nu se aplică pentru SOUL (s-au deschis doar cursurile; banii doar pentru firme noi de absolvenți sub 30 de ani; ar strica PoC 1.1). Tu doar confirmi că decizia din 25.09 rămâne — detalii în [[Finanțare — Start-Up Nation 2026 pentru SOUL]].
