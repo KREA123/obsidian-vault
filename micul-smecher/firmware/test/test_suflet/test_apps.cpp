@@ -88,6 +88,20 @@ struct Dev {
   void run(float s) {
     for (int i = 0; i < (int)(s * 30 + 0.5f); ++i) step();
   }
+  // SoulOS Alive: lists are wheels. A row is brought into focus (what a swipe / the crown does), then tapped where
+  // the focused row sits (y 290); a control by its id: revealed if it is in a wheel, then tapped at its centre.
+  void tapRow(int row) {
+    os.wheelFocusRow(row);
+    run(0.05f);
+    tap(233, 290);
+  }
+  void tapItem(int id) {
+    os.wheelReveal(id);
+    run(0.05f);
+    float x = 233, y = 290;
+    os.controlCenter(id, x, y);
+    tap(x, y);
+  }
   void tap(float x, float y) {
     fx = g.s(x);
     fy = g.s(y);
@@ -564,10 +578,10 @@ static void test_apps_launcher_order_hide_and_two_gestures() {
   // Settings › Apps: hide Talk, move Maps first; it survives a restart
   d.os.go(View::AppsSettings);
   d.run(0.3f);
-  d.tap(262, 150);  // row 0 (Talk): hide
+  d.tapItem(400);  // row 0 (Talk): hide (the whole row is its toggle)
   TEST_ASSERT_EQUAL_INT((int)AppId::Count - 1, d.os.visibleApps());
-  d.tap(104, 278);  // row 2 (Maps): up
-  d.tap(104, 214);  // row 1 now Maps: up again
+  d.tapItem(502);  // row 2 (Maps): its ↑
+  d.tapItem(501);  // row 1 now Maps: up again
   TEST_ASSERT_EQUAL_INT((int)AppId::Maps, (int)d.os.apps().order[0]);
   const std::string blob = d.os.saveApps();
   Dev e;
@@ -577,9 +591,7 @@ static void test_apps_launcher_order_hide_and_two_gestures() {
   // Settings can never be hidden
   e.os.go(View::AppsSettings);
   e.run(0.2f);
-  e.os.apps().setPage = 5;
-  e.run(0.1f);
-  e.tap(262, 150);  // the last page's first row is Settings
+  e.tapItem(400 + (int)AppId::Count - 1);  // the wheel's last row is Settings
   TEST_ASSERT_TRUE(!(e.os.apps().hidden >> (int)AppId::Settings & 1u));
 }
 
@@ -659,7 +671,7 @@ static void test_apps_maps_where_view_route_and_walk() {
   d.run(0.3f);
   TEST_ASSERT_TRUE(d.os.apps().preview);
   d.os.render(d.cv);
-  d.tap(233, 358);  // Start
+  d.tap(233, 326);  // Start
   TEST_ASSERT_TRUE(d.os.apps().navOn);
   TEST_ASSERT_EQUAL_INT(1, d.os.apps().nav.step());
   d.os.render(d.cv);
@@ -728,7 +740,7 @@ static void test_apps_weather_calendar_and_their_honest_states() {
   d.os.render(d.cv);
   d.os.appData(Fetch::Agenda, 200, kFixAgenda);
   d.os.render(d.cv);
-  d.tap(233, 164);  // the first event: its card
+  d.tapRow(0);  // the first event: its card
   TEST_ASSERT_EQUAL_INT(0, d.os.apps().calSel);
   d.os.render(d.cv);
   // not paired: no requests, a "pair first" card instead of a dead end
@@ -745,7 +757,7 @@ static void test_apps_focus_breathe_habits_stopwatch_clock_convert_find() {
   d.run(0.3f);
   d.os.openApp(AppId::Focus);
   d.run(0.2f);
-  d.tap(233, 340);
+  d.tap(233, 326);
   TEST_ASSERT_EQUAL_INT((int)apps::Pomodoro::Phase::Focus, (int)d.os.apps().pomo.phase());
   d.run(16.0f);
   TEST_ASSERT_EQUAL_INT((int)View::Focus, (int)d.os.view());  // a running focus keeps its screen
@@ -759,26 +771,26 @@ static void test_apps_focus_breathe_habits_stopwatch_clock_convert_find() {
   TEST_ASSERT_TRUE(d.os.faceInputs(d.brain).layout.k > k0 + 0.1f);  // the eyes grow on the in-breath
   d.os.openApp(AppId::Habits);
   d.run(0.3f);
-  d.tap(233, 160);
+  d.tapRow(0);
   TEST_ASSERT_TRUE(d.os.apps().habits[0].doneOn(d.clock / 86400));
   d.os.openApp(AppId::Stopwatch);
   d.run(0.2f);
-  d.tap(316, 352);
+  d.tap(296, 352);
   d.run(2.0f);
   TEST_ASSERT_TRUE(d.os.apps().sw.acc > 1.5);
-  d.tap(150, 352);  // lap
+  d.tap(170, 352);  // lap
   TEST_ASSERT_EQUAL_INT(1, (int)d.os.apps().sw.laps.size());
   d.os.openApp(AppId::WorldClock);
   d.run(0.2f);
   d.os.render(d.cv);
   d.os.openApp(AppId::Convert);
   d.run(0.2f);
-  d.tap(233, 110);  // length -> weight
+  d.tap(233, 174);  // length -> weight
   TEST_ASSERT_EQUAL_INT(1, d.os.apps().q);
   d.os.render(d.cv);
   d.os.openApp(AppId::FindPhone);
   d.run(0.2f);
-  d.tap(233, 318);
+  d.tap(233, 300);
   TEST_ASSERT_TRUE(d.asked(Fetch::FindPhone));
   d.os.appData(Fetch::FindPhone, 200, "{\"ringing\":true,\"reach\":\"page\"}");
   TEST_ASSERT_EQUAL_INT(2, d.os.apps().findState);
@@ -790,14 +802,14 @@ static void test_apps_games_play_on_the_device() {
   d.run(0.3f);
   d.os.openApp(AppId::Games);
   d.run(0.3f);
-  d.tap(233, 246);  // Rhythm
+  d.tapRow(1);  // Rhythm (the games are a wheel)
   TEST_ASSERT_EQUAL_INT(1, d.os.apps().game);
   TEST_ASSERT_TRUE(d.os.faceMoment());
   d.run(3.0f);
   d.os.render(d.cv);
   d.swipe(233, 200, 233, 380);  // back to the games
   TEST_ASSERT_EQUAL_INT(-1, d.os.apps().game);
-  d.tap(233, 322);  // Eye memory
+  d.tapRow(2);  // Eye memory
   TEST_ASSERT_EQUAL_INT(2, d.os.apps().game);
   const games::EyeMemory& m = d.os.apps().memory;
   int guard = 0;
@@ -814,9 +826,9 @@ static void test_apps_games_play_on_the_device() {
   TEST_ASSERT_EQUAL_INT((int)games::EyeMemory::Phase::Over, (int)m.phase());
   TEST_ASSERT_EQUAL_INT(1, d.os.apps().best[2]);
   d.os.render(d.cv);
-  d.tap(306, 330);  // Games
+  d.tap(304, 336);  // Games
   TEST_ASSERT_EQUAL_INT(-1, d.os.apps().game);
-  d.tap(233, 170);  // Tilt ball
+  d.tapRow(0);  // Tilt ball
   TEST_ASSERT_EQUAL_INT(0, d.os.apps().game);
   d.run(1.0f);
   d.os.render(d.cv);
@@ -837,7 +849,7 @@ static void test_apps_quick_replies_on_a_card() {
   d.run(0.3f);
   TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());
   d.os.render(d.cv);
-  d.tap(233, 392);  // "On my way"
+  d.tap(290, 306);  // "On my way"
   CloudOut o;
   bool sent = false;
   while (d.os.popCloudOut(o))

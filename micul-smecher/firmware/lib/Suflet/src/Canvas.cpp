@@ -3,6 +3,8 @@
 
 namespace suflet {
 
+TextProbe* Canvas::probe = nullptr;
+
 static constexpr float kTau = 6.28318531f;
 
 float Canvas::sdEllipse(float px, float py, float cx, float cy, float rx, float ry) {
@@ -251,6 +253,10 @@ int Canvas::drawText(const Font& f, float x, int y, const char* s, Rgb c, float 
     const int gx = ((pen16 + 8) >> 4) + g->x, gy = y + g->y;
     pen16 += g->adv16;
     if (!g->w || !g->h) continue;
+    if (probe) {
+      const float q[8] = {(float)gx, (float)gy, (float)(gx + g->w), (float)gy, (float)(gx + g->w), (float)(gy + g->h), (float)gx, (float)(gy + g->h)};
+      probe->glyph(f, q, alpha, false);
+    }
     const Rect box = clip(Rect{gx, gy, gx + g->w, gy + g->h});
     if (box.empty()) continue;
     touched.add(box);
@@ -314,14 +320,19 @@ void Canvas::drawTextArc(const Font& f, float cx, float cy, float r, float a, co
     // screen = O + R * (glyph - gc); inverse: glyph = gc + R^T (screen - O).
     // The box is the rotated bitmap's bounding box (+1 px for the filter).
     float bx0 = 1e9f, by0 = 1e9f, bx1 = -1e9f, by1 = -1e9f;
+    float quad[8];
     for (int k = 0; k < 4; ++k) {
       const float vx = (k & 1 ? g->x + g->w : g->x) - gcx, vy = (k & 2 ? g->y + g->h : g->y) - gcy;
       const float sx = ox + cr * vx - sr * vy, sy = oy + sr * vx + cr * vy;
+      static const int kOrder[4] = {0, 1, 3, 2};  // corners k = 0, 1, 3, 2 go round the glyph
+      quad[2 * kOrder[k]] = sx;
+      quad[2 * kOrder[k] + 1] = sy;
       if (sx < bx0) bx0 = sx;
       if (sx > bx1) bx1 = sx;
       if (sy < by0) by0 = sy;
       if (sy > by1) by1 = sy;
     }
+    if (probe) probe->glyph(f, quad, alpha, true);
     Rect box = clip(Rect{(int)floorf(bx0) - 1, (int)floorf(by0) - 1, (int)ceilf(bx1) + 1, (int)ceilf(by1) + 1});
     if (box.empty()) continue;
     bool any = false;

@@ -1432,6 +1432,7 @@ void runVoiceTests();
 void runAppsTests();
 void runPerfTests();
 void runAliveTests();
+void runAuditTests();  // test_audit.cpp: the round audit of every screen
 
 int main(int, char**) {
   UNITY_BEGIN();
@@ -1512,5 +1513,6 @@ int main(int, char**) {
   runAppsTests();
   runPerfTests();
   runAliveTests();
+  runAuditTests();
   return UNITY_END();
 }

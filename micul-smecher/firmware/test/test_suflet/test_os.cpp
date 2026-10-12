@@ -68,6 +68,20 @@ struct Dev {
   void run(float s) {
     for (int i = 0; i < (int)(s * 30 + 0.5f); ++i) step();
   }
+  // SoulOS Alive: lists are wheels. A row is brought into focus (what a swipe / the crown does), then tapped where
+  // the focused row sits (y 290); a control by its id: revealed if it is in a wheel, then tapped at its centre.
+  void tapRow(int row) {
+    os.wheelFocusRow(row);
+    run(0.05f);
+    tap(233, 290);
+  }
+  void tapItem(int id) {
+    os.wheelReveal(id);
+    run(0.05f);
+    float x = 233, y = 290;
+    os.controlCenter(id, x, y);
+    tap(x, y);
+  }
   void tap(float x, float y) {  // design px
     fx = g.s(x);
     fy = g.s(y);
@@ -174,6 +188,7 @@ static void test_os_swipe_opens_the_orbit_and_back_is_one_level() {
   TEST_ASSERT_TRUE(abs(d.os.launcherIndex() - landed) <= 1);
   d.os.go(View::AiMode);
   d.run(0.3f);
+  d.os.wheelFocusRow(0);        // (a list is a wheel: down from its first row is back, from any other it turns)
   d.swipe(233, 200, 233, 380);  // swipe down = back: up one level
   TEST_ASSERT_EQUAL_INT((int)View::Settings, (int)d.os.view());
   d.os.button(true);
@@ -188,7 +203,7 @@ static void test_os_alarm_in_three_touches() {
   Dev d(true);
   d.os.go(View::Alarms);
   d.run(0.3f);
-  d.tap(233, 376);  // + New: the Rim-Dial
+  d.tapRow(0);  // + New (the wheel's last row; no alarms yet: the only one): the Rim-Dial
   TEST_ASSERT_EQUAL_INT((int)View::Dial, (int)d.os.view());
   // drag the hour from 7 (first alarm) to 6 on the rim, let go
   const float a0 = TimePicker::hourAngle(7), a1 = TimePicker::hourAngle(6);
@@ -206,9 +221,10 @@ static void test_os_alarm_in_three_touches() {
   TEST_ASSERT_EQUAL_INT(1, d.alarms.count());
   TEST_ASSERT_EQUAL_INT(6, d.alarms.at(0).hour);
   TEST_ASSERT_TRUE(d.hasCmd(OsCmd::SaveAlarms));
-  d.tap(233, 168);  // tap the row: off
+  d.tapRow(0);  // tap the row: off
   TEST_ASSERT_FALSE(d.alarms.at(0).enabled);
-  d.hold(233, 168, 1.4f);  // hold the row: deleted
+  d.os.wheelFocusRow(0);
+  d.hold(233, 290, 1.4f);  // hold the row: deleted
   TEST_ASSERT_EQUAL_INT(0, d.alarms.count());
 }
 
@@ -426,7 +442,7 @@ static void test_os_cloud_pairing_shows_the_code_then_greets_the_owner() {
   d.render = true;
   d.os.go(View::AiMode);
   d.run(0.3f);
-  d.tap(233, 150);  // SOUL Cloud
+  d.tapItem(100);  // SOUL Cloud (Your AI's first row)
   TEST_ASSERT_EQUAL_INT((int)AiMode::Cloud, (int)d.os.aiMode());
   TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());
   d.run(0.4f);
@@ -445,7 +461,7 @@ static void test_os_cloud_pairing_shows_the_code_then_greets_the_owner() {
   NetInfo n = cloudNet(true);
   n.cloudHost = "soul.example";
   d.os.setNet(n);
-  d.tap(233, 136);
+  d.tapItem(100);
   TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());
   d.run(0.5f);
   int qr = 0;
@@ -533,7 +549,7 @@ static void test_os_cloud_pair_confirm_needs_a_touch_on_soul() {
   TEST_ASSERT_FALSE(d.os.popCloudOut(o));  // nothing by itself
   d.run(5.0f);
   TEST_ASSERT_FALSE(d.os.popCloudOut(o));
-  d.tap(160, 372);  // "Yes, pair"
+  d.tap(164, 330);  // "Yes, pair"
   TEST_ASSERT_TRUE(d.os.popCloudOut(o));
   TEST_ASSERT_EQUAL_INT(CloudOut::PairOk, o.kind);
   TEST_ASSERT_EQUAL_STRING("p_1", o.pid.c_str());
@@ -552,7 +568,7 @@ static void test_os_cloud_pair_confirm_needs_a_touch_on_soul() {
   m.confirmName = "Mallory";
   e.os.setNet(m);
   e.run(0.4f);
-  e.tap(306, 372);  // "No"
+  e.tap(302, 330);  // "No"
   TEST_ASSERT_TRUE(e.os.popCloudOut(o));
   TEST_ASSERT_EQUAL_INT(CloudOut::PairNo, o.kind);
 }
@@ -580,7 +596,7 @@ static void test_os_cloud_night_alarm_private_card_and_pause() {
   TEST_ASSERT_EQUAL_INT((int)View::Answer, (int)d.os.view());  // it waits for an answer
   d.tap(233, 250);  // a tap elsewhere does not accept it
   TEST_ASSERT_EQUAL_INT(0, d.alarms.count());
-  d.tap(160, 392);  // Accept
+  d.tap(164, 356);  // Accept
   TEST_ASSERT_EQUAL_INT(1, d.alarms.count());
   CloudOut o;
   TEST_ASSERT_TRUE(d.os.popCloudOut(o));
@@ -608,10 +624,7 @@ static void test_os_cloud_night_alarm_private_card_and_pause() {
   // pause connectors: a switch in Settings (a touch), sent up
   d.os.go(View::Settings);
   d.run(0.3f);
-  d.swipe(233, 380, 233, 160);  // page 2
-  d.swipe(233, 380, 233, 160);  // page 3: night, Claude & ChatGPT on me, Start over
-  d.run(0.3f);
-  d.tap(233, 234);
+  d.tapItem(100 + 9);  // the "Claude & ChatGPT on me" row
   TEST_ASSERT_TRUE(d.os.popCloudOut(o));
   TEST_ASSERT_EQUAL_INT(CloudOut::Connectors, o.kind);
   TEST_ASSERT_TRUE(o.paused);
@@ -649,7 +662,7 @@ static void test_os_cloud_items_made_on_soul_and_ask_my_claude_go_up() {
   d.os.setNet(cloudNet(true));
   d.os.go(View::Notes);
   d.run(0.3f);
-  d.tap(233, 360);  // + New
+  d.tapRow(0);  // + New (no notes yet: the wheel's only row)
   d.type("milk");
   CloudOut o;
   TEST_ASSERT_TRUE(d.os.popCloudOut(o));
@@ -659,7 +672,7 @@ static void test_os_cloud_items_made_on_soul_and_ask_my_claude_go_up() {
 
   d.os.go(View::Claude);
   d.run(0.3f);
-  d.tap(233, 396);  // Ask my Claude
+  d.tap(233, 318);  // Write to Claude (Ask my Claude)
   TEST_ASSERT_EQUAL_INT((int)View::Keyboard, (int)d.os.view());
   d.type("plan my day");
   TEST_ASSERT_TRUE(d.os.popCloudOut(o));
@@ -669,7 +682,7 @@ static void test_os_cloud_items_made_on_soul_and_ask_my_claude_go_up() {
 
   // unpaired: the same word opens the pairing screen instead
   d.os.setNet(cloudNet(false));
-  d.tap(233, 396);
+  d.tap(233, 318);
   TEST_ASSERT_EQUAL_INT((int)View::Pair, (int)d.os.view());
   d.os.back();
   TEST_ASSERT_EQUAL_INT((int)View::Claude, (int)d.os.view());
@@ -748,7 +761,7 @@ static void test_os_bridge_is_picked_in_settings_and_shows_the_code() {
   d.os.setNet(n);
   d.os.go(View::AiMode);
   d.run(0.3f);
-  d.tap(233, 126 + 3 * 52);  // "My Claude on my computer"
+  d.tapItem(103);  // "My Claude on my computer"
   TEST_ASSERT_EQUAL_INT((int)AiMode::Bridge, (int)d.os.aiMode());
   TEST_ASSERT_EQUAL_INT((int)View::Bridge, (int)d.os.view());
   bool lan = false;
@@ -775,7 +788,7 @@ static void test_os_bridge_is_picked_in_settings_and_shows_the_code() {
   n.bridgeCode.clear();
   d.os.setNet(n);
   d.run(0.5f);
-  d.tap(306, 392);  // Forget
+  d.tap(302, 376);  // Forget
   bool forgot = false;
   while (d.os.popCmd(c)) forgot = forgot || c == OsCmd::BridgeForget;
   TEST_ASSERT_TRUE(forgot);
@@ -784,7 +797,7 @@ static void test_os_bridge_is_picked_in_settings_and_shows_the_code() {
   TEST_ASSERT_TRUE(cloudForgot);
   d.os.back();
   TEST_ASSERT_EQUAL_INT((int)View::AiMode, (int)d.os.view());
-  d.tap(233, 126 + 4 * 52);  // back to No AI: the account hears it too
+  d.tapItem(104);  // back to No AI: the account hears it too
   bool none = false;
   while (d.os.popCloudOut(o)) none = none || (o.kind == CloudOut::Brain && o.text == "none");
   TEST_ASSERT_TRUE(none);

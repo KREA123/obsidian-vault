@@ -19,8 +19,8 @@ namespace suflet {
 using namespace eyes;
 
 namespace {
-const Rgb kCream = Rgb::hex(0xFFF0C8), kAmber = Rgb::hex(0xFFB347), kMint = Rgb::hex(0xC9F2E4);
-constexpr float kDim = 0.62f, kFaint = 0.42f;
+const Rgb kCream = Rgb::hex(0xFBF4E3), kAmber = Rgb::hex(0xFFB347), kMint = Rgb::hex(0xC9F2E4);
+constexpr float kDim = 0.82f, kFaint = 0.66f;  // SoulOS Alive: ink2 / ink3 (what you must read is >= 80 %)
 constexpr int kKbMemSearch = 40;  // a keyboard context of its own (Os.cpp's KbCtx stop below 20)
 enum : int { IdMemSearch = 60, IdMemBackup, IdMemWipe, IdMemForget, IdMemRow = 100 };
 constexpr int kPerPage = 3;
@@ -200,22 +200,35 @@ void Os::buildMemoryItems(std::vector<Item>& out) const {
     out.push_back(it);
   };
   if (memSel_ >= 0) {
-    if (mem_->find(memSel_)) add(IdMemForget, 233, 396, 160, 54, R ? "Uită" : "Forget", kAmber, 1, true);
+    if (mem_->find(memSel_)) add(IdMemForget, 233, 384, 150, 52, R ? "Uită" : "Forget", kAmber, 0, true);
     return;
   }
+  // the list is a wheel (buildMemoryWheel): Search, the facts, Backup, Forget all
+}
+
+bool Os::buildMemoryWheel(std::vector<WheelRow>& out) const {
+  if (view_ != View::Memory || !mem_ || memSel_ >= 0) return false;
+  const bool R = ro();
+  const Rgb dim = kCream.scaled(0.74f);
+  auto row = [&](int id, const std::string& title, const std::string& value, Rgb vc) -> WheelRow& {
+    WheelRow r;
+    r.id = id;
+    r.title = title;
+    r.value = value;
+    r.valueC = vc;
+    out.push_back(r);
+    return out.back();
+  };
+  row(IdMemSearch, memFilter_.empty() ? (R ? "Caută" : "Search") : (R ? "Toate" : "All"), memFilter_.empty() ? "\xE2\x80\xBA" : memFilter_, pal_.e1);
   const std::vector<int> rows = mem_->list(memFilter_);
-  const int n = (int)rows.size();
-  const int pages = n > kPerPage ? (n + kPerPage - 1) / kPerPage : 1;
-  const int p = page_ % pages;
-  const Font& f = set_.largeText ? fonts::text() : fonts::small();
-  for (int i = p * kPerPage; i < n && i < p * kPerPage + kPerPage; ++i)
-    add(IdMemRow + i, 233, 160 + (i - p * kPerPage) * 58, 330, 54,
-        cutTo(f, mem_->at((size_t)rows[(size_t)i]).text, g_.s(296)), kCream, 0, false);
-  add(IdMemSearch, 160, 344, 130, 48, memFilter_.empty() ? (R ? "Caută" : "Search") : (R ? "Toate" : "All"), kCream, 0, true);
-  add(IdMemBackup, 306, 344, 150, 48,
-      std::string(R ? "Backup: " : "Backup: ") + (mem_->backup ? (R ? "da" : "on") : (R ? "nu" : "off")),
-      mem_->backup ? kMint : kCream, 0, true, mem_->backup ? 1.0f : kDim);
-  if (mem_->size()) add(IdMemWipe, 233, 398, 230, 40, R ? "Uită tot (ține)" : "Forget all (hold)", kAmber, 0, true, kDim);
+  for (int i = 0; i < (int)rows.size(); ++i) {
+    const Fact& f = mem_->at((size_t)rows[(size_t)i]);
+    WheelRow& r = row(IdMemRow + i, f.text, "", dim);
+    r.sub = std::string(kindLabel(f.kind, R)) + " \xC2\xB7 " + srcLabel(f.src, R);
+  }
+  row(IdMemBackup, "Backup", mem_->backup ? (R ? "pornit" : "on") : (R ? "oprit" : "off"), mem_->backup ? kMint : dim);
+  if (mem_->size()) row(IdMemWipe, R ? "Uită tot" : "Forget all", R ? "ține" : "hold", kAmber);
+  return true;
 }
 
 void Os::memoryActivate(int id) {
@@ -283,17 +296,16 @@ void Os::memoryHoldDone(int id) {
 void Os::drawMemory(Canvas& cv) {
   const bool R = ro();
   const size_t n = mem_ ? mem_->size() : 0;
-  rimTop(cv, (R ? "MEMORIE \xC2\xB7 " : "MEMORY \xC2\xB7 ") + std::to_string(n), kCream, kDim);
+  rimTop(cv, (R ? "Memorie \xC2\xB7 " : "Memory \xC2\xB7 ") + std::to_string(n), kCream);
   if (!mem_) return;
   buildMemoryItems(items_);
   if (memSel_ >= 0) {
     const Fact* f = mem_->find(memSel_);
     if (!f) return;
-    std::string lines[5];
-    const int k = wrapLines(fonts::text(), f->text, g_.s(300), lines, 5);
-    const float y0 = 132, y1 = 160 + k * 34 + 64;
-    glassPanel(cv, 66, y0, 400, y1, 30, gs());
-    for (int i = 0; i < k; ++i) textAt(cv, fonts::text(), 233, 162 + i * 34, lines[i], kCream);
+    std::string lines[4];
+    const int k = wrapLines(fonts::body(), f->text, g_.s(270), lines, f->mmdd ? 3 : 4);
+    pebRect(cv, 84, 152, 382, 190 + k * 32 + (f->mmdd ? 58 : 32), 30, pal_.peb, pal_.e1, 3);
+    for (int i = 0; i < k; ++i) textAt(cv, fonts::body(), 233, 182 + i * 32, lines[i], kCream);
     std::string meta = std::string(kindLabel(f->kind, R)) + " \xC2\xB7 " + srcLabel(f->src, R);
     if (f->created) {
       const time_t t = (time_t)f->created;
@@ -303,29 +315,21 @@ void Os::drawMemory(Canvas& cv) {
       snprintf(b, sizeof b, " \xC2\xB7 %d.%02d.%d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
       meta += b;
     }
-    textAt(cv, fonts::small(), 233, 162 + k * 34 + 8, meta, kCream, kFaint);
-    if (f->mmdd) textAt(cv, fonts::small(), 233, 162 + k * 34 + 36, dayMonthText(f->mmdd, R), kMint, kDim);
+    textAt(cv, fonts::caption(), 233, 182 + k * 32 + 4, cutTo(fonts::caption(), meta, g_.s(270)), kCream, kDim);
+    if (f->mmdd) textAt(cv, fonts::caption(), 233, 182 + k * 32 + 30, dayMonthText(f->mmdd, R), kMint);
     drawItems(cv, items_);
     rimBottom(cv, R ? "ține Uită ca să uit" : "hold Forget to forget", kCream, kFaint);
     return;
   }
   const std::vector<int> rows = mem_->list(memFilter_);
-  if (rows.empty()) {
-    textAt(cv, fonts::small(), 233, 196, memFilter_.empty() ? (R ? "Încă nu țin minte nimic." : "I remember nothing yet.")
-                                                            : (R ? "Nimic cu „" : "Nothing with “") + memFilter_ + (R ? "”" : "”"),
-           kCream, kDim);
-    if (memFilter_.empty())
-      textAt(cv, fonts::small(), 233, 232, R ? "Spune „ține minte că…”" : "Say “remember that…”", kCream, kFaint);
+  if (rows.empty() && wheel_.focused() == 0) {
+    textAt(cv, fonts::body(), 233, 188, memFilter_.empty() ? (R ? "Încă nu țin minte nimic." : "I remember nothing. Yet.")
+                                                            : (R ? "Nimic cu „" : "Nothing with “") + memFilter_ + "\xE2\x80\x9D",
+           kCream);
   }
-  for (const Item& it : items_)
-    if (it.id >= IdMemRow) glassPanel(cv, 68, it.y - 26, 398, it.y + 26, 22, holdItem_ == it.id ? gs().pressed() : gs());
-  drawItems(cv, items_);
-  if (!memFilter_.empty())
-    rimBottom(cv, (R ? "căutare: " : "search: ") + memFilter_, kCream, kFaint);
-  else if (rows.size() > (size_t)kPerPage)
-    rimBottom(cv, R ? "glisează în sus: mai multe \xC2\xB7 ține = uită" : "swipe up: more \xC2\xB7 hold = forget", kCream, kFaint);
-  else
-    rimBottom(cv, R ? "export: contul tău SOUL › /me" : "export: your SOUL account › /me", kCream, kFaint);
+  drawWheel(cv);
+  if (rows.empty() && memFilter_.empty() && wheel_.focused() == 0)
+    textAt(cv, fonts::caption(), 233, 224, R ? "Spune „ține minte că…”" : "Say \xE2\x80\x9Cremember that\xE2\x80\xA6\xE2\x80\x9D", kCream, kDim);
 }
 
 }  // namespace suflet

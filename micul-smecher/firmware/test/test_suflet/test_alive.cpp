@@ -590,21 +590,24 @@ static void test_alive_os_look_previews_births_and_keeps_the_body() {
   d.run(0.5f);
   const uint32_t e1 = hex(d.os.palette().e1);
   TEST_ASSERT_FALSE(d.os.previewing());
-  d.tap(363, 292, 0.6f);  // › : the next birth
+  TEST_ASSERT_FALSE(d.os.lookOpen());
+  d.tap(172, 326, 0.6f);  // My SOUL's card: Look
+  TEST_ASSERT_TRUE(d.os.lookOpen());
+  d.tap(363, 214, 0.6f);  // › : the next birth
   TEST_ASSERT_TRUE(d.os.previewing());
   TEST_ASSERT_EQUAL_INT(6, d.os.shownDesign());
   TEST_ASSERT_EQUAL_INT(6, d.os.face().design());  // swapped during a blink
   TEST_ASSERT_EQUAL_HEX32(hex(bornPaletteFor(6, Body::Silver).e1), hex(d.os.palette().e1));
-  d.tap(103, 292, 0.6f);  // ‹ : back to its own
+  d.tap(103, 214, 0.6f);  // ‹ : back to its own
   TEST_ASSERT_FALSE(d.os.previewing());
   TEST_ASSERT_EQUAL_HEX32(e1, hex(d.os.palette().e1));
-  d.tap(103, 292, 0.6f);  // ‹ again, then "Back to {name}"
+  d.tap(103, 214, 0.6f);  // ‹ again, then "Back to {name}"
   TEST_ASSERT_TRUE(d.os.previewing());
-  d.tap(233, 352, 0.6f);
+  d.tap(233, 284, 0.6f);
   TEST_ASSERT_FALSE(d.os.previewing());
   TEST_ASSERT_EQUAL_INT(5, d.os.face().design());
   // the body: the fourth swatch is Ember; it is the palette's b1 and survives a restart
-  d.tap(233 + 52, 388, 0.3f);
+  d.tap(233 + 52, 342, 0.3f);
   TEST_ASSERT_EQUAL_INT((int)Body::Ember, (int)d.os.body());
   TEST_ASSERT_EQUAL_HEX32(0xD2622C, hex(d.os.palette().b1));
   uint8_t buf[64];
@@ -677,7 +680,7 @@ static void test_alive_flat_surfaces_and_the_fast_round_rect() {
   d.os.go(View::Settings);
   d.run(0.8f);
   const BornPalette& P = d.os.palette();
-  TEST_ASSERT_EQUAL_HEX16(P.peb.to565(), d.fb[(int)d.g.s(330) * 480 + (int)d.g.s(120)]);  // inside the rows' pebble
+  TEST_ASSERT_EQUAL_HEX16(P.peb.to565(), d.fb[(int)d.g.s(316) * 480 + (int)d.g.s(120)]);  // inside the focused row's pebble
   TEST_ASSERT_EQUAL_UINT16(0, d.fb[240 * 480 + 12]);                                       // pure black beside it
 }
 

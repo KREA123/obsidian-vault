@@ -342,6 +342,7 @@ class Os {
   void lookStep(int dir);           // Look: preview the next / previous birth (the eyes swap during a blink)
   void lookReset();                 // back to its own birth
   bool previewing() const { return lookDesign_ >= 0; }
+  bool lookOpen() const { return view_ == View::MySoul && page_ == 1; }  // My SOUL › Look (the births, the bodies)
   int shownDesign() const { return lookDesign_ >= 0 ? lookDesign_ : birth_.design; }
   bool reducedMotion() const { return set_.reduceMotion != 0; }
   const alive::Dial& dial() const { return dial_; }
@@ -368,6 +369,23 @@ class Os {
   GlassTone glassTone() const;
   int appCount() const { return visibleApps(); }
   View appView(int i) const;
+
+  // ---- round-native screens (OsScreens.cpp, DESIGN-ALIVE.md §4) ------------------------------------------
+  // Lists are wheels: one big focused row under the eyes, the rows above / below smaller and faded.
+  bool wheelView() const;                       // the current screen is a wheel
+  const alive::Wheel& wheel() const { return wheel_; }
+  int wheelRowOf(int id) const;                 // the wheel row holding control `id` (-1 if none)
+  bool wheelReveal(int id);                     // bring the row holding control `id` into focus (tests, the tour)
+  bool wheelFocusRow(int row);                  // bring row `row` into focus (what a swipe does); it is then at y 290
+  void wheelTurn(int d);                        // the crown / a swipe: d rows on
+  // The round audit (test_audit.cpp): every control on the glass now, panel px; radius = its corner radius
+  struct Control {
+    Rect r;
+    float radius = 0;
+    int id = -1;
+  };
+  void controls(std::vector<Control>& out) const;
+  bool controlCenter(int id, float& x, float& y) const;  // design px (what a finger taps), after wheelReveal
 
   // persistence (the device stores these blobs in NVS)
   size_t saveSettings(uint8_t* buf, size_t cap) const;
@@ -459,21 +477,64 @@ class Os {
   void glassPill(Canvas& cv, float cx, float cy, float w, float h, Rgb c, bool pressed = false);
   void glassToggle(Canvas& cv, float cx, float cy, bool on);
   GlassStyle gs(float alpha = 1) const { return GlassStyle::plain(alpha * fade_); }
-  // what the games' cached glass arena depends on (OsAppsDraw.cpp arenaLayer): the aura and the fade
-  uint64_t arenaKey(int game) const {
-    const GlassLayer& gl = glass();
-    return (uint64_t)game | (uint64_t)(gl.offsetX() + 32) << 2 | (uint64_t)(gl.offsetY() + 32) << 8 |
-           (uint64_t)(int)(gl.level() * 16) << 14 | (uint64_t)gl.on() << 19 | (uint64_t)(int)(fade_ * 64) << 20 |
-           (uint64_t)(gl.ready() ? 1 : 0) << 27 | (uint64_t)gl.rebuilds << 28;
-  }
   GlassStyle gsAccent(Rgb c, float glowA = 0.42f, float tintA = 0.12f) const { return GlassStyle::accent(c, glowA, tintA, fade_); }
   bool idleReturns() const;  // this screen goes back to the eyes when left alone
   void glassUpdate(float dt, const Brain& brain);
   void rimBottom(Canvas& cv, const std::string& s, Rgb c, float alpha = 1);
+  bool rimBottomFits(const std::string& s) const;
   int wrapLines(const Font& f, const std::string& s, float maxW, std::string* lines, int maxLines) const;
   void textAt(Canvas& cv, const Font& f, float x, float y, const std::string& s, Rgb c, float alpha = 1,
               Align a = Align::Center);
   FaceLayoutT layoutFor(View v) const;
+
+  // round-native screens (OsScreens.cpp): wheels, pills, toggles, rings
+  struct WheelRow {
+    int id = -1;          // the control (activate(id) on a tap; holdItem_ on a hold)
+    int id2 = -1;         // a second control in the row (Settings › Apps: the ↑ disc on the left)
+    std::string title, sub, tag, value;  // tag: a time on the left; value: words on the right
+    Rgb valueC;
+    uint8_t kind = 0;     // RowPlain, RowToggle, RowCheck, RowNew, RowSel
+    bool on = false;      // a toggle / a check
+    bool strike = false;  // done (a struck-through reminder)
+    float dim = 1;        // a switched-off alarm: its words fainter
+    int glyph = -1;       // an app glyph on the left (AppId)
+    uint8_t dots = 0;     // habits: the last 7 days (bit 6 = today)
+    bool bigTag = false;  // the tag is the row's title (an alarm's time)
+  };
+  enum : uint8_t { RowPlain, RowToggle, RowCheck, RowNew, RowSel };
+  enum class PillStyle : uint8_t { Primary, Mint, Amber, Outline, Ghost };
+  alive::Wheel wheel_;
+  View wheelFor_ = View::Count;
+  int wheelMem_[(int)View::Count] = {};  // the row each list was left on (-1 = never opened: aliveBegin)
+  bool wheelDragged_ = false;
+  int wheelGrab_ = 0;
+  float wheelShownPos_ = -1;
+  mutable std::vector<WheelRow> rows_;  // scratch
+  int wheelCount() const;
+  float wheelY() const;
+  int wheelDefault() const;
+  void buildWheel(std::vector<WheelRow>& out) const;
+  bool buildCoreWheel(std::vector<WheelRow>& out) const;    // OsDraw.cpp
+  bool buildAppsWheel(std::vector<WheelRow>& out) const;    // OsAppsDraw.cpp
+  bool buildMemoryWheel(std::vector<WheelRow>& out) const;  // OsMemory.cpp
+  void wheelItems(std::vector<Item>& out) const;
+  void wheelSync();
+  void wheelUpdate(float dt);
+  bool wheelTouch(const TouchEv& e);
+  bool wheelTap(float x, float y);
+  void drawWheel(Canvas& cv);
+  void drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& p, bool focus);
+  void invalidateWheel();
+  // flat pieces in design px (scaled here): a pebble surface, a pill, a toggle, a ring on the rim
+  void pebRect(Canvas& cv, float x0, float y0, float x1, float y1, float r, Rgb fill, Rgb edge, float edgeW, float alpha = 1);
+  void pill(Canvas& cv, float cx, float cy, float w, float h, const std::string& label, PillStyle st, const Font& f,
+            float alpha = 1, bool pressed = false);
+  PillStyle pillOf(const Item& it) const;
+  void toggleAt(Canvas& cv, float cx, float cy, bool on, float alpha = 1);
+  void rimRing(Canvas& cv, float r, float a0, float a1, Rgb c, float alpha = 1, float w = 8);
+  void checkMark(Canvas& cv, float cx, float cy, float size, Rgb c, float alpha = 1);
+  void plusMark(Canvas& cv, float cx, float cy, float size, Rgb c, float alpha = 1);
+  int wrapShaped(const Font& f, const std::string& s, const float* widths, std::string* lines, int maxLines) const;
 
   // SoulOS Alive (OsAlive.cpp)
   BornPalette pal_;
@@ -527,6 +588,7 @@ class Os {
   bool speechRect(Rect& r) const;
   void drawLook(Canvas& cv);
   bool lookTap(float x, float y);
+  void lookControls(std::vector<Control>& out) const;
   void dialTouch(const TouchEv& e);
   void dialTap(float x, float y);
   void invalidateDial();
@@ -698,7 +760,6 @@ class Os {
   void drawFindPhone(Canvas& cv);
   void drawDevice(Canvas& cv);
   void drawAppsSettings(Canvas& cv);
-  bool drawQuickReplies(Canvas& cv, float y);
   void drawArrow(Canvas& cv, float cx, float cy, float size, float deg, Rgb c, float alpha);
   void mapsOpen();
   void mapsAskView(bool force);

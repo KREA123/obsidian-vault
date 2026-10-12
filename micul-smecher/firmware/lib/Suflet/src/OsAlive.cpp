@@ -55,6 +55,7 @@ void Os::applyPalette() {
 
 void Os::aliveBegin() {
   if (set_.reduceMotion > 1) set_.reduceMotion = 0;
+  for (int& m : wheelMem_) m = -1;
   applyPalette();
   dial_.reset(appCount(), orbit_, false);
   lastDialFocus_ = -1;
@@ -101,9 +102,10 @@ bool Os::appScreen(View v) const {
     case View::Ringing:
     case View::MySoul:    // Look: the eyes are big, they are what you look at
     case View::Breathe:
-    case View::Games:
     case View::Control:   // pulled down over the eyes, its own layout
       return false;
+    case View::Answer: return !thinking_;  // thinking is a face moment
+    case View::Games: return apps_.game < 0;  // the menu (a wheel); a game is the eyes' own
     default: return true;
   }
 }
@@ -447,9 +449,25 @@ void Os::dialTouch(const TouchEv& e) {
 
 // ---------------------------------------------------------------- Look ---
 
-static constexpr float kLookPrevX = 103, kLookNextX = 363, kLookY = 292, kSwatchY = 388;
+static constexpr float kLookPrevX = 103, kLookNextX = 363, kLookY = 214, kSwatchY = 342, kLookBackY = 284;
 
 static float swatchX(int i) { return 233 + (i - 2) * 52.0f; }
+
+void Os::lookControls(std::vector<Control>& out) const {  // the round audit: Look's targets, panel px
+  const float k = g_.k();
+  auto add = [&](float cx, float cy, float w, float h, float r, int id) {
+    Control c;
+    c.r = Rect{(int)lroundf((cx - w * 0.5f) * k), (int)lroundf((cy - h * 0.5f) * k), (int)lroundf((cx + w * 0.5f) * k),
+               (int)lroundf((cy + h * 0.5f) * k)};
+    c.radius = r * k;
+    c.id = id;
+    out.push_back(c);
+  };
+  add(kLookPrevX, kLookY, 60, 52, 26, 3000);
+  add(kLookNextX, kLookY, 60, 52, 26, 3001);
+  for (int i = 0; i < (int)Body::Count; ++i) add(swatchX(i), kSwatchY, 50, 52, 20, 3010 + i);
+  if (previewing()) add(233, kLookBackY, 260, 48, 24, 3002);
+}
 
 bool Os::lookTap(float x, float y) {
   const float px = x / g_.k(), py = y / g_.k();
@@ -472,7 +490,7 @@ bool Os::lookTap(float x, float y) {
         setBody((Body)i);
         return true;
       }
-  if (previewing() && fabsf(py - 352) <= 24 && fabsf(px - 233) <= 130) {  // Back to {name}
+  if (previewing() && fabsf(py - kLookBackY) <= 24 && fabsf(px - 233) <= 130) {  // Back to {name}
     react(alive::Event::Tap);
     lookReset();
     return true;
@@ -483,9 +501,7 @@ bool Os::lookTap(float x, float y) {
 void Os::drawLook(Canvas& cv) {
   const bool R = ro();
   const Design& d = kDesigns[shownDesign()];
-  rimTop(cv, birth_.chip, kInk, 0.7f);
-  buildItems(items_);
-  drawItems(cv, items_);  // the name (tap: rename)
+  rimTop(cv, R ? "Privire" : "Look", kInk, 0.9f);
   // ‹ the birth ›
   const Font& nf = fonts::caption();
   for (int side = -1; side <= 1; side += 2) {  // chunky chevrons, 4 px round strokes like the glyphs
@@ -496,16 +512,17 @@ void Os::drawLook(Canvas& cv) {
   textAt(cv, fonts::body(), 233, kLookY, d.name, kInk);
   char b[96];
   snprintf(b, sizeof b, "%s · #%03d · %s", kRarityName[(int)d.rarity], d.num,
-           previewing() ? (R ? "previzualizare" : "preview") : (R ? "al tău" : "yours"));
-  textAt(cv, nf, 233, 322, b, Rgb::hex(kRarityColor[(int)d.rarity]));
+           previewing() ? (R ? "PREVIZUALIZARE" : "PREVIEW") : (R ? "AL TĂU" : "YOURS"));
+  for (char* c = b; *c; ++c)
+    if (*c >= 'a' && *c <= 'z') *c = (char)(*c - 32);
+  textAt(cv, fonts::tag(), 233, 248, b, Rgb::hex(kRarityColor[(int)d.rarity]));
   if (previewing()) {  // Back to {its own birth}
     const std::string back = std::string(R ? "Înapoi la " : "Back to ") + kDesigns[birth_.design].name;
     const float tw = (float)Canvas::measureText(nf, back.c_str()) / g_.k();
-    cv.roundRect(g_.s(233 - tw * 0.5f - 18), g_.s(352 - 22), g_.s(233 + tw * 0.5f + 18), g_.s(352 + 22), g_.s(22), pal_.e1, fade_);
-    textAt(cv, nf, 233, 352, back, pal_.on1);
+    pill(cv, 233, kLookBackY, fminf(tw + 44, 300), 48, back, PillStyle::Mint, nf);
   } else {  // the three palette colours it was born with
     const Rgb chips[3] = {pal_.e1, pal_.e2, pal_.b1};
-    for (int i = 0; i < 3; ++i) cv.ellipse(g_.s(233 + (i - 1) * 30.0f), g_.s(352), g_.s(10), g_.s(10), chips[i], fade_);
+    for (int i = 0; i < 3; ++i) cv.roundRect(g_.s(233 + (i - 1) * 34.0f - 14), g_.s(kLookBackY - 5), g_.s(233 + (i - 1) * 34.0f + 14), g_.s(kLookBackY + 5), g_.s(5), chips[i], fade_);
   }
   // the five bodies, drawn as the stone
   for (int i = 0; i < (int)Body::Count; ++i) {

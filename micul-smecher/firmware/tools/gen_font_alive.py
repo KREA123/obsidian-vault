@@ -7,7 +7,7 @@ Bricolage Grotesque for every word, Martian Mono only for <= 2-word tags at 18 p
 tools/fonts/OFL-BricolageGrotesque.txt, OFL-MartianMono.txt; copied from brand/SOUL-Brand-Package/Fonts). The
 variable fonts are set to each instance's axes (weight, optical size = the pixel size like the web's
 font-optical-sizing: auto, width 100) by FreeType through Pillow, then rasterised exactly like tools/gen_font.py
-(4-bit coverage, advances in 1/16 px, the same FULL charset: ASCII + ă â î ș ț + the tray letters + typography).
+(4-bit coverage, advances in 1/16 px, the FULL charset: ASCII + ă â î ș ț + the tray letters + typography, + ↑ ↓ →).
 Nothing smaller than the 18 px type floor. Nunito (FontData.h) stays for the screens not yet moved to Alive.
 """
 import os
@@ -24,13 +24,16 @@ OUT = os.path.join(ROOT, "lib", "Suflet", "src", "FontAliveData.h")
 BRIC = "BricolageGrotesque-VF.ttf"   # axes: opsz 12-96, wght 200-800, wdth 75-100
 MONO = "MartianMono-VF.ttf"          # axes: wght 100-800, wdth 75-112
 
+# + the arrows the screens use (the day's high / low ↑ ↓, a direction →): both faces have them, Nunito has not
+ALIVE = G.FULL + "\u2191\u2193\u2192"
+
 # name, file, px, weight, charset, what for
 SIZES = [
-    ("kFontTag", MONO, 18, 500, G.FULL, "<= 2-word tags: an AI's name, a rarity"),
-    ("kFontSmall2", BRIC, 22, 600, G.FULL, "secondary lines, the dial's fact, speech, rim titles"),
-    ("kFontBody", BRIC, 27, 500, G.FULL, "rows, body text"),
-    ("kFontName", BRIC, 30, 700, G.FULL, "the dial's curved app name, titles"),
-    ("kFontTitle", BRIC, 36, 700, G.FULL, "big titles, the callout"),
+    ("kFontTag", MONO, 18, 500, ALIVE, "<= 2-word tags: an AI's name, a rarity"),
+    ("kFontSmall2", BRIC, 22, 600, ALIVE, "secondary lines, the dial's fact, speech, rim titles"),
+    ("kFontBody", BRIC, 27, 500, ALIVE, "rows, body text"),
+    ("kFontName", BRIC, 30, 700, ALIVE, "the dial's curved app name, titles"),
+    ("kFontTitle", BRIC, 36, 700, ALIVE, "big titles, the callout"),
 ]
 
 

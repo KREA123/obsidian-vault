@@ -35,6 +35,9 @@ enum : int {
   IdReject,
   IdHotspot,      // Wi-Fi: "Add my phone's hotspot" (the how-to page)
   IdHotspotType,  // ... "Type its name on SOUL"
+  IdLook,         // My SOUL: Look (the births, the bodies)
+  IdAllow,        // Claude asks: Allow / Deny (68 px buttons)
+  IdDeny,
   IdRow = 100,
 };
 
@@ -100,6 +103,9 @@ FaceLayoutT Os::layoutFor(View v) const {
       if (thinking_ || voiceWait_) return slot(alive::kThink);
       break;
     case View::MySoul: return FaceLayoutT{0.40f, 0, -0.2f};  // Look: the eyes big at the top
+    case View::Answer:
+      if (thinking_) return slot(alive::kThink);  // thinking is a face moment: the eyes squint, big
+      break;
     default:
       if (appScreen(v)) return slot(alive::kCard);
       break;
@@ -143,6 +149,7 @@ void Os::go(View v) {
   invalidate();
   aliveGo(from, v);  // the blink, the lid wipe, the dial opening (OsAlive.cpp)
   appOpened(v);  // an app asks SOUL Cloud for what it shows (weather, the agenda, where SOUL is...)
+  wheelSync();   // a list: its wheel, on the row it was left on
 }
 
 void Os::home() {
@@ -178,8 +185,15 @@ void Os::back() {
       }
       go(View::Settings);
       return;
-    case View::AiMode:
     case View::MySoul:
+      if (page_ == 1) {  // Look -> the card
+        page_ = 0;
+        invalidate();
+        return;
+      }
+      go(View::Settings);
+      return;
+    case View::AiMode:
     case View::About: go(View::Settings); return;
     case View::Bridge: go(View::AiMode); return;
     case View::Memory:  // SOUL Memory: a fact -> the list -> Settings
@@ -463,6 +477,7 @@ void Os::touch(const TouchEv& e) {
       dy0_ = dy_ = y;
       downT_ = t_;
       if (view_ == View::Launcher) dialTouch(e);
+      wheelTouch(e);
       lookUntil_ = t_ + 2.2f;  // every touch: the eyes glance at the finger
       lookX_ = (x / g_.w - 0.5f) * 2.4f;
       lookY_ = (y / g_.h - 0.5f) * 2.4f;
@@ -471,6 +486,7 @@ void Os::touch(const TouchEv& e) {
       if (!down_) break;
       dx_ = x;
       dy_ = y;
+      if (wheelTouch(e)) break;  // a vertical drag turns a list's wheel
       lookUntil_ = t_ + 2.2f;
       lookX_ = (x / g_.w - 0.5f) * 2.4f;
       lookY_ = (y / g_.h - 0.5f) * 2.4f;
@@ -484,12 +500,13 @@ void Os::touch(const TouchEv& e) {
       break;
     }
     case Ev::HoldStart:
-      if (!down_ || stroking_) break;
+      if (!down_ || stroking_ || wheelDragged_) break;
       holding_ = true;
       onHoldStart(x, y);
       break;
     case Ev::TouchUp: {
       if (!down_) break;
+      if (wheelTouch(e)) break;  // the wheel was turned: no tap, no swipe
       down_ = false;
       const float dur = t_ - downT_;
       const float ddx = x - dx0_, ddy = y - dy0_, dist = hypotf(ddx, ddy);
@@ -633,6 +650,11 @@ void Os::onHoldEnd() {
 }
 
 void Os::onSwipe(int dir) {
+  if (wheelView() && (dir == 2 || dir == 3)) {  // a list: up = the next row; down = the one before, or back from the first
+    if (dir == 3 && wheel_.focused() == 0) back();
+    else wheelTurn(dir == 2 ? 1 : -1);
+    return;
+  }
   if (appsSwipe(dir)) return;
   switch (view_) {
     case View::Boot:
@@ -685,7 +707,13 @@ void Os::onDoubleTap(float x, float y) {
 }
 
 void Os::onTap(float x, float y) {
-  if (claude_.prompt && claudeHoldView(view_) && view_ != View::Talk) return;  // on a Claude request a single tap does nothing
+  if (claude_.prompt && claudeHoldView(view_) && view_ != View::Talk) {  // on a Claude request a single tap does nothing...
+    if (view_ == View::Claude) {  // ... but Allow and Deny on Claude's own screen
+      const int id = hitItem(x, y);
+      if (id == IdAllow || id == IdDeny) activate(id);
+    }
+    return;
+  }
   if (toastLeft_ > 0 && y < g_.s(70)) {
     if (memoryToastTap()) return;  // "Remembered: … · tap to undo"
     toastLeft_ = 0;
@@ -700,7 +728,10 @@ void Os::onTap(float x, float y) {
       return;
     case View::Launcher: dialTap(x, y); return;
     case View::MySoul:
-      if (lookTap(x, y)) return;
+      if (page_ == 1) {
+        if (lookTap(x, y)) return;
+        return;
+      }
       break;
     case View::Answer:
       if (thinking_) return;
@@ -727,6 +758,7 @@ void Os::onTap(float x, float y) {
       break;
     default: break;
   }
+  if (wheelTap(x, y)) return;  // a list's row (a neighbour turns the wheel there and acts)
   const int id = hitItem(x, y);
   if (id >= 0) activate(id);
 }
@@ -917,6 +949,12 @@ void Os::activate(int id) {
       }
       return;
     case View::Claude:
+      if ((id == IdAllow || id == IdDeny) && claude_.prompt) {  // Claude asks: a touch on Allow / Deny
+        pushCmd(id == IdAllow ? OsCmd::ClaudeApprove : OsCmd::ClaudeDeny);
+        react(id == IdAllow ? alive::Event::Success : alive::Event::Cancel);
+        toast(id == IdAllow ? tr("Allowed", "Permis") : tr("Denied", "Refuzat"), id == IdAllow ? kMint : kAmber, 1.6f);
+        return;
+      }
       if (id == IdInbox) {
         if (!net_.paired) {
           pairReturn_ = View::Claude;
@@ -977,7 +1015,13 @@ void Os::activate(int id) {
       }
       return;
     case View::MySoul:
-      if (id == IdName) openKeyboard(KbName, set_.name);
+      if (id == IdName || id == IdType) {
+        openKeyboard(KbName, set_.name);
+      } else if (id == IdLook) {  // Look: the other births, the body colour
+        page_ = 1;
+        face_.rig().blink(1);
+        invalidate();
+      }
       return;
     default: appsActivate(id); return;
   }
@@ -1698,6 +1742,7 @@ void Os::update(float dt, Brain& brain) {
   brainEvents_.clear();
   glassUpdate(dt, brain);
   aliveUpdate(dt);  // lids, speech, the dial (OsAlive.cpp)
+  wheelUpdate(dt);  // a list's wheel: its spring, the tilt (OsScreens.cpp)
   face_.update(dt, faceInputs(brain));
 }
 

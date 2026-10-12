@@ -5,6 +5,7 @@
 //   .pio/build/sim/program <out_dir> [scenario|all] [chip-id hex] [466|480]
 //   .pio/build/sim/program <out_dir> keys ["key string"]   drive the IMU by hand (keysMode)
 //   .pio/build/sim/program <out_dir> alive        SoulOS Alive stills (aliveMode)
+//   .pio/build/sim/program <out_dir> screens      SoulOS Alive: every screen (sim_screens.cpp, sim/alive_states.h)
 //
 // Each scenario writes <out_dir>/<name>.rgb (raw RGB888 frames) + <name>.json
 // (frame count, fps, marked stills). tools/frames_to_media.py turns them
@@ -859,6 +860,36 @@ std::vector<Scenario> scenarios() {
          }
          s.run(2.0f);
        }},
+      {"bench_wheel", "Bench: the lists' wheels (Settings, Alarms, World clock, Habits): drags, swipes, a tap on a neighbour", true,
+       [](Sim& s) {
+         s.run(0.5f);
+         s.os.go(View::Settings);
+         s.run(0.6f);
+         for (int i = 0; i < 3; ++i) {  // a slow drag up two rows, a swipe back down
+           s.finger = true;
+           for (int k = 0; k <= 20; ++k) {
+             s.fx = P(233);
+             s.fy = P(360 - 6.0f * k);
+             s.step(true);
+           }
+           s.finger = false;
+           s.run(0.6f);
+           s.swipe(233, 220, 233, 300, 0.6f);
+         }
+         s.os.wheelTurn(4);
+         s.run(0.6f);
+         s.tap(233, s.os.wheel().place(s.os.wheel().focused() + 1).y, 0.8f);  // a neighbour: it turns there and acts
+         s.os.go(View::Home);
+         s.run(0.4f);
+         for (AppId a : {AppId::Alarms, AppId::WorldClock, AppId::Habits}) {
+           s.os.openApp(a);
+           s.run(0.6f);
+           s.swipe(233, 330, 233, 250, 0.6f);
+           s.swipe(233, 250, 233, 330, 0.6f);
+           s.os.go(View::Home);
+           s.run(0.5f);
+         }
+       }},
       // 1.8 perf pass (firmware/PERF.md, tools/perf_bench.py): one design (SIM_DESIGN=<index>), notifications,
       // the aura's drift/tilt repaint
       {"bench_eyes", "Bench: standby on one design (SIM_DESIGN), 4 s", true, [](Sim& s) { s.run(4.0f); }},
@@ -1499,8 +1530,9 @@ static int aliveMode(const std::string& dir) {
     still(s, "settings-eye-slot");
     s.os.go(View::MySoul);
     s.run(1.0f, false);
+    s.tap(172, 326, 0.8f);  // My SOUL's card: Look
     still(s, "look");
-    s.tap(363, 292, 0.8f);  // › : preview the next birth
+    s.tap(363, 214, 0.8f);  // › : preview the next birth
     still(s, "look-preview");
     s.os.lookReset();
     s.os.go(View::Home);
@@ -1554,6 +1586,7 @@ static int aliveMode(const std::string& dir) {
 
 int appsMode(const std::string& dir, const std::string& which, int px);  // sim_apps.cpp
 int microBench(const std::string& which);                                // sim_bench.cpp
+int screensMode(const std::string& dir);                                 // sim_screens.cpp
 
 int main(int argc, char** argv) {
   setvbuf(stdout, nullptr, _IOLBF, 0);  // cloud mode is driven line by line through a pipe
@@ -1588,6 +1621,7 @@ int main(int argc, char** argv) {
   if (which == "bench_json" || which == "bench_memory" || which == "bench_wifi" || which == "bench_boot")
     return microBench(which);  // sim_bench.cpp: the non-frame work (callgrind: --toggle-collect='suflet_bench_*')
   if (which == "alive") return aliveMode(dir);  // SoulOS Alive stills (see aliveMode)
+  if (which == "screens") return screensMode(dir);  // SoulOS Alive: every screen (sim_screens.cpp)
   if (which == "lan") return lanMode(dir, argc > 3 ? atoi(argv[3]) : 0);  // SOUL Bridge on the LAN (see lanMode)
   if (which == "keys") {  // drive it by hand (see keysMode)
     Recorder rec;

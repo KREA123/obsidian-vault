@@ -9,6 +9,8 @@
 //               pebble and open it), the opening spread, each pebble's place / scale / fade, where the eyes look.
 //   Reactions   the eye-reaction table (§6): event -> expression, hold, blinks, gaze.
 //   Speech      when SOUL says one of its offline lines (Lines.h) under the eyes, and the bubble's rise.
+//   Wheel       every list (§4): one big focused row, the neighbours at 0.9 and half strength, rows as wide as the
+//               circle allows; turned on the eyes' spring by a drag, a swipe, the crown, a lean.
 //
 // Units: the dial works in the web's 466 px design grid (DisplayGeometry scales it to the 480 px glass); the
 // lids in panel pixels. Nothing here allocates or draws.
@@ -284,6 +286,104 @@ class Dial {
   float rot_ = 0, vr_ = 0, dragRot_ = 0, open_ = 1, ov_ = 0, lastTilt_ = -10;
   int tgt_ = 0, after_ = -1;
   bool hasTgt_ = false, dragging_ = false;
+};
+
+// ---- the wheel (§4: every list) ---------------------------------------------------------------------------
+// One big focused row in the middle of the space under the eyes, the row above and the row below at 0.9 scale
+// and half strength, the rest off the glass. Each row is as wide as the circle allows at its height (r 212), so
+// nothing is cut. Turned by a swipe or a drag (one row per 56 px), the crown, the device's tilt; a tap on a
+// neighbour turns it there (and acts). Rows move on the eyes' spring. Design px of the 466 grid.
+class Wheel {
+ public:
+  static constexpr float kY = 290, kH = 74, kGap = 10, kSn = 0.9f, kR = 212, kMaxW = 336, kDragPx = 56;
+  static constexpr float kSpringK = 260, kSpringC = 25;  // ≈ the web's cubic-bezier(.34,1.56,.64,1) in 0.34 s
+  static constexpr float kTiltG = 0.3f, kTiltEvery = 0.45f;
+  void reset(int n, int focus) {
+    n_ = n > 0 ? n : 0;
+    f_ = clampi(focus, 0, n_ - 1);
+    pos_ = (float)f_;
+    v_ = 0;
+  }
+  // the count changed under it (a row added or removed): keep the focus where it can be
+  void resize(int n) {
+    if (n == n_) return;
+    n_ = n > 0 ? n : 0;
+    f_ = clampi(f_, 0, n_ - 1);
+    if (pos_ > n_ - 1) pos_ = (float)(n_ > 0 ? n_ - 1 : 0);
+  }
+  int count() const { return n_; }
+  int focused() const { return f_; }
+  float pos() const { return pos_; }
+  bool moving() const { return fabsf(pos_ - f_) > 0.002f || fabsf(v_) > 0.02f; }
+  // turn to row i (clamped); false if it is already there
+  bool turnTo(int i, bool reducedMotion) {
+    const int t = clampi(i, 0, n_ - 1);
+    if (t == f_) return false;
+    f_ = t;
+    if (reducedMotion) pos_ = (float)f_, v_ = 0;
+    return true;
+  }
+  bool turn(int d, bool reducedMotion) { return turnTo(f_ + d, reducedMotion); }
+  // the forward / back lean (g): past ~17° it steps one row every 0.45 s; true when it stepped
+  bool tilt(float gy, float now, bool reducedMotion) {
+    if (fabsf(gy) < kTiltG || now - lastTilt_ < kTiltEvery) return false;
+    lastTilt_ = now;
+    return turn(gy > 0 ? 1 : -1, reducedMotion);
+  }
+  // advance the rows' spring; true while they move
+  bool update(float dt) {
+    if (!moving()) {
+      pos_ = (float)f_;
+      v_ = 0;
+      return false;
+    }
+    float h = dt;
+    while (h > 0) {
+      const float s = h > 1.0f / 120 ? 1.0f / 120 : h;
+      v_ += (kSpringK * ((float)f_ - pos_) - kSpringC * v_) * s;
+      pos_ += v_ * s;
+      h -= s;
+    }
+    if (!moving()) pos_ = (float)f_, v_ = 0;
+    return true;
+  }
+  // where row i is (centre y, its box height and width, scale and opacity); y0 = the focused row's centre
+  struct Place {
+    float y, h, w, scale, alpha;
+    bool visible;
+  };
+  static float step() { return kH * 0.5f + kGap + kH * kSn * 0.5f; }
+  Place place(int i, float y0 = kY) const { return placeAt((float)i - pos_, y0); }
+  static Place placeAt(float d, float y0 = kY) {
+    const float ad = fabsf(d), s = d < 0 ? -1.0f : 1.0f;
+    Place p;
+    p.scale = 1 - (1 - kSn) * (ad < 1 ? ad : 1);
+    p.alpha = ad <= 1 ? 1 - 0.5f * ad : 0.5f * clampf((1.6f - ad) / 0.6f, 0, 1);
+    p.y = ad <= 1 ? y0 + d * step() : y0 + s * (step() + (ad - 1) * (kH * kSn + kGap));
+    p.h = kH * p.scale;
+    // the chord of the circle (r 212) at the row's far edge, 8 px in
+    const float dy = fmaxf(fabsf(p.y - p.h * 0.5f - 233), fabsf(p.y + p.h * 0.5f - 233));
+    const float chord = dy < kR ? 2 * sqrtf(kR * kR - dy * dy) - 8 : 0;
+    p.w = fminf(kMaxW * p.scale, chord);
+    p.visible = p.alpha > 0.02f && p.w > 40;
+    return p;
+  }
+  // the row under a touch (design px): the focused one or a visible neighbour, -1 if none
+  int hit(float x, float y, float y0 = kY) const {
+    for (int i = f_ - 1; i <= f_ + 1; ++i) {
+      if (i < 0 || i >= n_) continue;
+      const Place p = place(i, y0);
+      if (!p.visible || p.alpha < 0.3f) continue;
+      if (fabsf(x - 233) <= p.w * 0.5f && fabsf(y - p.y) <= p.h * 0.5f + kGap * 0.5f) return i;
+    }
+    return -1;
+  }
+
+ private:
+  static int clampi(int v, int a, int b) { return v < a ? a : (v > b ? b : v); }
+  static float clampf(float v, float a, float b) { return v < a ? a : (v > b ? b : v); }
+  int n_ = 0, f_ = 0;
+  float pos_ = 0, v_ = 0, lastTilt_ = -10;
 };
 
 // ---- the eye reactions (§6) ------------------------------------------------------------------------------

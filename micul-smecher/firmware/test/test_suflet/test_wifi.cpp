@@ -384,6 +384,20 @@ struct Dev {
   void run(float s) {
     for (int i = 0; i < (int)(s * 30 + 0.5f); ++i) step();
   }
+  // SoulOS Alive: lists are wheels. A row is brought into focus (what a swipe / the crown does), then tapped where
+  // the focused row sits (y 290); a control by its id: revealed if it is in a wheel, then tapped at its centre.
+  void tapRow(int row) {
+    os.wheelFocusRow(row);
+    run(0.05f);
+    tap(233, 290);
+  }
+  void tapItem(int id) {
+    os.wheelReveal(id);
+    run(0.05f);
+    float x = 233, y = 290;
+    os.controlCenter(id, x, y);
+    tap(x, y);
+  }
   void tap(float x, float y) {
     fx = g.s(x);
     fy = g.s(y);
@@ -508,9 +522,9 @@ static void test_os_adds_the_phone_hotspot_typed_on_soul() {
   Dev d(false);
   d.os.go(View::Wifi);
   d.run(0.4f);
-  d.tap(233, 270);  // "Add my phone's hotspot": the how-to
+  d.tap(233, 300);  // "Add my phone's hotspot": the how-to
   d.run(0.3f);
-  d.tap(233, 336);  // "Type it on SOUL"
+  d.tap(156, 352);  // "Type it" (on SOUL)
   TEST_ASSERT_EQUAL_INT((int)View::Keyboard, (int)d.os.view());
   d.type("anaphone");  // typed exactly: no auto-capital on a network name
   TEST_ASSERT_EQUAL_INT((int)View::Keyboard, (int)d.os.view());  // now the password
@@ -553,7 +567,7 @@ static void test_os_wifi_screens_render_every_state() {
     d.os.render(cv);
     d.os.takeDirty();
   }
-  d.tap(233, 270);
+  d.tap(233, 300);
   d.os.render(cv);  // the hotspot how-to
   d.os.back();
   TEST_ASSERT_EQUAL_INT((int)View::Wifi, (int)d.os.view());  // back = the Wi-Fi page first

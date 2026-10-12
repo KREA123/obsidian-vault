@@ -674,7 +674,7 @@ void Os::gamesInvalidate() {
   mix((uint64_t)(A.game + 1));
   mixf(fade_);
   mix(ro());
-  mix(arenaKey(A.game < 0 ? 0 : A.game));
+  mix(palGen_);  // the arena is drawn in the born palette
   mix(A.newBest);
   mix((uint64_t)A.best[A.game < 0 ? 0 : A.game]);
   bool partial = false;
@@ -1603,7 +1603,7 @@ bool Os::appsLayout(View v, FaceLayoutT& l) const {
         l = {0.22f, 0, -0.36f};  // the score card has the middle
       else if (A.game == 2) l = {0.5f, 0, 0};
       else if (A.game == 1) l = {0.34f, 0, 0};
-      else if (A.game == 0) l = {0.12f, 0, -0.42f};
+      else if (A.game == 0) l = {0.2f, 0, 0};  // tilt ball: small, in the middle of the arena (the ball rolls past them)
       else l = {0.24f, 0, -0.36f};
       return true;
     default: return false;

@@ -1,10 +1,9 @@
-// SoulOS on the device: what each screen shows. Design language "Glass"
-// (os/DESIGN-GLASS.md, SoulOS 5): standby is the eyes alone on true black;
-// a screen shows the aura behind the eyes and its words on frosted glass
-// (Glass.h): titles in a glass capsule on the rim, actions as glass pills,
-// rows as glass slabs, sheets for lists. One light at a time (cream info,
-// ice listening, amber needs you, mint done). Layout in design pixels of the
-// 466 px disc, scaled by DisplayGeometry to the 480 px panel.
+// SoulOS on the device: what each screen shows. Design language "SoulOS Alive" (os/DESIGN-ALIVE.md, 1.9):
+// standby is the eyes alone on pure black; every app screen has the eyes in one slot at the top and its content
+// in the safe circle under them, round-native: flat pebbles in the born palette, pills, lists as wheels
+// (OsScreens.cpp), titles in a capsule on the rim, the brand faces (Bricolage Grotesque, Martian Mono tags).
+// State colours keep their meaning (mint done, amber Claude / needs you, ice listening). Layout in design pixels
+// of the 466 px disc, scaled by DisplayGeometry to the 480 px panel.
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,9 +16,9 @@ namespace suflet {
 
 using namespace eyes;
 
-static const Rgb kCream = Rgb::hex(0xFFF0C8), kAmber = Rgb::hex(0xFFB347), kMint = Rgb::hex(0xC9F2E4),
+static const Rgb kCream = Rgb::hex(0xFBF4E3), kAmber = Rgb::hex(0xFFB347), kMint = Rgb::hex(0xC9F2E4),
                  kIce = Rgb::hex(0x9FC6FF);
-static const float kDim = 0.62f, kFaint = 0.42f;
+static const float kDim = 0.82f, kFaint = 0.66f;  // SoulOS Alive: ink2 / ink3 (what you must read is >= 80 %)
 
 enum : int {
   IdNext = 1,
@@ -40,6 +39,9 @@ enum : int {
   IdReject,
   IdHotspot,
   IdHotspotType,
+  IdLook,         // My SOUL: Look (the births, the bodies)
+  IdAllow,        // Claude asks: Allow / Deny (68 px buttons)
+  IdDeny,
   IdRow = 100,
 };
 
@@ -49,9 +51,9 @@ static const char* const kNames[] = {"Pixel", "Miso", "Luna", "Bobo", "Nori", "K
 static const Font& fontOf(int i, bool large) {
   if (large) ++i;
   switch (i) {
-    case 0: return fonts::small();
-    case 1: return fonts::text();
-    default: return fonts::large();
+    case 0: return fonts::caption();
+    case 1: return fonts::body();
+    default: return fonts::title();
   }
 }
 
@@ -69,6 +71,13 @@ static std::string ellipsize(const Font& f, const std::string& s, float maxW) {
     p = q;
   }
   return out + "\xE2\x80\xA6";
+}
+
+static std::string upperAscii(const std::string& s) {  // Martian Mono tags: RARE · #098 / 120
+  std::string o = s;
+  for (char& c : o)
+    if (c >= 'a' && c <= 'z') c = (char)(c - 32);
+  return o;
 }
 
 static std::string daysText(uint8_t d, bool ro) {
@@ -107,154 +116,111 @@ void Os::buildItems(std::vector<Item>& out) const {
   switch (view_) {
     case View::Boot:
       if (bootStep_ == BootStep::Name) {
-        add(-1, 233, 150, 0, 0, R ? "Cum mă cheamă?" : "What's my name?", kCream, 1, false);
+        add(-1, 233, 170, 0, 0, R ? "Cum mă cheamă?" : "What's my name?", kCream, 1, false);
         for (int i = 0; i < 3; ++i) {
           const int k = (int)(((birth_.seed >> (i * 5)) + (uint32_t)i * 5u) % 16u);
-          add(IdRow + i, 233, 212 + i * 54, 220, 52, kNames[k], kCream, 2, true);
+          add(IdRow + i, 233, 226 + i * 56, 220, 50, kNames[k], kCream, 1, true);
         }
-        add(IdType, 233, 382, 220, 46, R ? "Scrie un nume" : "Type a name", kCream, 0, true, kDim);
+        add(IdType, 233, 394, 230, 48, R ? "Scrie un nume" : "Type a name", kCream, 0, true, kDim);
       } else if (bootStep_ == BootStep::Brain) {
-        add(-1, 233, 138, 0, 0, R ? "Cine mă ajută să gândesc?" : "Who helps me think?", kCream, 1, false);
+        add(-1, 233, 146, 0, 0, R ? "Cine mă ajută să gândesc?" : "Who helps me think?", kCream, 1, false);
         static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::None};
         const char* labels[] = {R ? "Conectează Claude" : "Connect Claude", R ? "Claude · cheia ta" : "Claude · your key",
                                 R ? "ChatGPT · cheia ta" : "ChatGPT · your key", R ? "Fără AI" : "No AI"};
         for (int i = 0; i < 4; ++i) {
           const bool sel = aiMode() == kModes[i];
-          add(IdRow + i, 233, 186 + i * 46, 300, 44, labels[i], sel ? kMint : kCream, 1, sel, sel ? 1 : kDim);
+          add(IdRow + i, 233, 186 + i * 50, 290, 46, labels[i], sel ? kMint : kCream, 0, true, sel ? 1 : kDim);
         }
-        add(IdNext, 233, 420, 160, 50, R ? "Mai departe ›" : "Next ›", kCream, 1, true);
+        add(IdNext, 233, 412, 150, 48, R ? "Mai departe ›" : "Next ›", kCream, 0, true);
       }
       break;
     case View::Launcher: break;  // SoulOS Alive: the dial's pebbles take the taps (Os::dialTap)
     case View::Talk:
-      add(IdType, 233, 410, 180, 54, R ? "Scrie" : "Type", kCream, 1, true);
+      if (!listening_) add(IdType, 233, 350, 240, 52, aiMode() == AiMode::None ? (R ? "Scrie" : "Type") : (R ? "Scrie-i lui " : "Write to ") + std::string(aiMode() == AiMode::ChatGpt ? "ChatGPT" : aiMode() == AiMode::Cloud || aiMode() == AiMode::Claude || aiMode() == AiMode::Bridge ? "Claude" : "SOUL"), kCream, 0, true);
       break;
-    case View::Alarms: {
-      const int n = alarms_ ? alarms_->count() : 0;
-      const int pages = n > 3 ? (n + 2) / 3 : 1;
-      const int p = page_ % pages;
-      for (int i = p * 3; i < n && i < p * 3 + 3; ++i) {
-        const Alarm& a = alarms_->at(i);
-        char b[16];
-        snprintf(b, sizeof b, "%02u:%02u", a.hour, a.minute);
-        add(IdRow + i, 233, 168 + (i - p * 3) * 66, 330, 62, b, kCream, 2, false, a.enabled ? 1 : kFaint);
-      }
-      add(IdNew, 233, 376, 180, 50, R ? "+ Nouă" : "+ New", kCream, 1, true);
-      break;
-    }
+    case View::Alarms:
+    case View::Notes:
+    case View::Settings:
+    case View::AiMode: break;  // wheels (OsScreens.cpp): every row, "+ New" and "Forget keys" too
     case View::Ringing:
-      add(IdSnooze, 150, 400, 150, 60, R ? "Amână" : "Snooze", kAmber, 1, true);
-      add(IdStop, 316, 400, 150, 60, R ? "Oprește" : "Stop", kCream, 1, true);
+      if (timerRinging_) {
+        add(IdStop, 233, 376, 150, 56, R ? "Oprește" : "Stop", kMint, 1, true);
+      } else {
+        add(IdSnooze, 162, 376, 132, 56, R ? "Amână 5" : "Snooze 5", kCream, 1, true);
+        add(IdStop, 306, 376, 124, 56, R ? "Oprește" : "Stop", kMint, 1, true);
+      }
       break;
     case View::Timer:
       if (timerRun_) {
-        add(IdPause, 160, 378, 150, 56, timerPaused_ ? (R ? "Pornește" : "Resume") : (R ? "Pauză" : "Pause"), kCream, 1, true);
-        add(IdStop, 306, 378, 150, 56, R ? "Oprește" : "Stop", kAmber, 1, true);
+        add(IdPause, 164, 334, 128, 52, timerPaused_ ? (R ? "Pornește" : "Resume") : (R ? "Pauză" : "Pause"), kCream, 0, true, kDim);
+        add(IdStop, 302, 334, 128, 52, R ? "Oprește" : "Stop", kAmber, 0, true);
       } else {
         static const char* const kP[] = {"1", "3", "5", "10", "25"};
-        static const float kX[] = {150, 233, 316, 190, 276}, kY[] = {200, 200, 200, 268, 268};
-        for (int i = 0; i < 5; ++i) add(IdRow + i, kX[i], kY[i], 76, 64, kP[i], kCream, 2, true);
+        for (int i = 0; i < 5; ++i) add(IdRow + i, 233 + (i - 2) * 66.0f, 300, 58, 58, kP[i], kCream, 1, false);
       }
       break;
-    case View::Notes: {
-      const int n = (int)notes_.size();
-      const int pages = n > 3 ? (n + 2) / 3 : 1;
-      const int p = page_ % pages;
-      for (int i = p * 3; i < n && i < p * 3 + 3; ++i)
-        add(IdRow + i, 233, 172 + (i - p * 3) * 58, 330, 54, ellipsize(fontOf(1, set_.largeText), notes_[i].text, g_.s(300)), kCream, 1, false);
-      add(IdNew, 233, 360, 180, 50, R ? "+ Nouă" : "+ New", kCream, 1, true);
-      break;
-    }
     case View::NoteView:
-      add(IdType, 160, 404, 140, 56, R ? "Editează" : "Edit", kCream, 1, true);
-      add(IdDelete, 306, 404, 140, 56, R ? "Șterge" : "Delete", kAmber, 1, true);
+      add(IdType, 164, 352, 128, 52, R ? "Editează" : "Edit", kCream, 0, true);
+      add(IdDelete, 302, 352, 128, 52, R ? "Șterge" : "Delete", kAmber, 0, true);
       break;
-    case View::Settings: {
-      static const int kRows = 14;
-      const int pages = (kRows + 3) / 4;
-      const int p = page_ % pages;
-      static const char* const kBr[2][4] = {{"Auto", "Low", "Mid", "High"}, {"Auto", "Mică", "Medie", "Mare"}};
-      for (int i = p * 4; i < kRows && i < p * 4 + 4; ++i) {
-        std::string v;
-        switch (i) {
-          case 0: v = kBr[R][set_.bright % 4]; break;
-          case 1:
-            v = aiMode() == AiMode::Cloud ? "SOUL Cloud" : aiMode() == AiMode::Claude ? "Claude" : aiMode() == AiMode::ChatGpt ? "ChatGPT"
-                : aiMode() == AiMode::Bridge ? (R ? "Claude (calculator)" : "Claude (computer)") : (R ? "Fără AI" : "No AI");
-            break;
-          case 2: v = net_.connected ? net_.ssid : net_.configured ? (R ? "Neconectat" : "Not connected") : (R ? "Nesetat" : "Not set"); break;
-          case 3: v = R ? "Română" : "English"; break;
-          case 4: v = std::string(set_.name) + " ›"; break;
-          case 5: v = set_.largeText ? (R ? "Mare" : "Large") : (R ? "Normal" : "Normal"); break;
-          case 6: v = R ? "Sunt un AI ›" : "I'm an AI ›"; break;
-          case 7: v = set_.debug ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;
-          case 8: v = set_.nightOff ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;
-          case 9:
-            v = !net_.paired ? (R ? "Nelegat" : "Not paired") : net_.connectorsPaused ? (R ? "Pe pauză" : "Paused") : (R ? "Pornite" : "On");
-            break;
-          case 11: v = (mem_ ? std::to_string(mem_->size()) : std::string("0")) + (R ? " lucruri ›" : " things ›"); break;  // SOUL Memory
-          case 12: v = std::to_string(visibleApps()) + (R ? " pe orbită ›" : " on the orbit ›"); break;  // Settings › Apps
-          case 13: v = set_.reduceMotion ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;  // Alive: reduce motion
-          default: v = R ? "Ține apăsat" : "Hold"; break;
-        }
-        add(IdRow + i, 233, 172 + (i - p * 4) * 62, 330, 60, ellipsize(fontOf(1, set_.largeText), v, g_.s(280)), kCream, 1, false);
-      }
-      break;
-    }
-    case View::AiMode: {
-      static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::Bridge, AiMode::None};
-      const char* labels[] = {R ? "Conectează Claude" : "Connect Claude", R ? "Claude · cheia ta" : "Claude · your key",
-                              R ? "ChatGPT · cheia ta" : "ChatGPT · your key",
-                              R ? "Claude-ul de pe calculator" : "My Claude on my computer", R ? "Fără AI" : "No AI"};
-      for (int i = 0; i < 5; ++i) {
-        const bool sel = aiMode() == kModes[i];
-        add(IdRow + i, 233, 126 + i * 52, 330, 50, labels[i], sel ? kMint : kCream, 1, sel);
-      }
-      if (net_.keyClaude || net_.keyOpenai) add(IdForget, 233, 394, 200, 36, R ? "Uită cheile" : "Forget keys", kAmber, 0, true, kDim);
-      break;
-    }
     case View::Bridge:
-      add(IdNew, 160, 392, 150, 50, R ? "Cod nou" : "New code", kCream, 1, true);
-      if (net_.bridgePaired || net_.bridgeOnline) add(IdForget, 306, 392, 150, 50, R ? "Uită" : "Forget", kAmber, 1, true);
+      add(IdNew, 166, 376, 128, 52, R ? "Cod nou" : "New code", kCream, 0, true);
+      if (net_.bridgePaired || net_.bridgeOnline) add(IdForget, 302, 376, 120, 52, R ? "Uită" : "Forget", kAmber, 0, true);
       break;
     case View::Wifi:
       if (net_.portal) {
-        add(IdStopSetup, 233, 404, 200, 50, R ? "Gata" : "Done", kCream, 1, true);
+        add(IdStopSetup, 233, 406, 130, 48, R ? "Gata" : "Done", kCream, 0, true);
       } else if (page_ == 1) {  // the phone's hotspot: how-to, then type it here or use the phone page
-        add(IdHotspotType, 233, 336, 280, 52, R ? "Scrie-l pe SOUL" : "Type it on SOUL", kCream, 1, true);
-        add(IdSetup, 233, 396, 260, 46, R ? "sau din telefon" : "or from the phone", kCream, 0, true, kDim);
+        add(IdHotspotType, 156, 352, 120, 50, R ? "Scrie-l" : "Type it", kCream, 0, true);
+        add(IdSetup, 312, 352, 150, 50, R ? "Din telefon" : "From phone", kCream, 0, true, kDim);
       } else {
-        add(IdHotspot, 233, 270, 300, 54, R ? "Adaugă hotspotul telefonului" : "Add my phone's hotspot", kAmber, 1, true);
-        add(IdSetup, 233, 330, 260, 50, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
+        add(IdHotspot, 233, 300, 300, 50, R ? "Adaugă hotspotul telefonului" : "Add my phone's hotspot", kAmber, 0, true);
+        add(IdSetup, 233, 354, 260, 50, R ? "Configurează din telefon" : "Set up from a phone", kCream, 0, true);
         if (net_.configured)
-          add(IdForget, 233, 392, 220, 46, R ? "Uită Wi-Fi (ține)" : "Forget Wi-Fi (hold)", kAmber, 0, true, kDim);
+          add(IdForget, 233, 406, 186, 48, R ? "Uită Wi-Fi (ține)" : "Forget Wi-Fi (hold)", kAmber, 0, true, kDim);
       }
       break;
-    case View::MySoul:  // Look (OsAlive.cpp): the name on top, the births and the bodies under it
-      add(IdName, 233, 250, 300, 48, set_.name, kCream, 2, false);
+    case View::MySoul:
+      if (page_ == 1) break;  // Look (OsAlive.cpp: lookTap)
+      add(IdName, 233, 214, 260, 46, set_.name, kCream, 2, false);
+      add(IdLook, 172, 326, 110, 52, R ? "Privire" : "Look", kCream, 0, true);
+      add(IdType, 300, 326, 128, 52, R ? "Redenumește" : "Rename", kCream, 0, true, kDim);
       break;
     case View::Claude:
-      if (net_.relay && !claude_.passkey && !claude_.prompt)
-        add(IdInbox, 233, 396, 260, 52, R ? "Întreabă-l pe Claude ›" : "Ask my Claude ›", kCream, 1, true);
+      if (claude_.prompt && !claude_.passkey) {  // Claude asks: two big buttons, 68 px
+        add(IdAllow, 164, 322, 132, 66, R ? "Da" : "Allow", kMint, 1, true);
+        add(IdDeny, 302, 322, 132, 66, R ? "Nu" : "Deny", kAmber, 1, true);
+      } else if (net_.relay && !claude_.passkey) {
+        add(IdInbox, 233, 318, 250, 52, R ? "Scrie-i lui Claude" : "Write to Claude", kCream, 0, true);
+      }
       break;
     case View::Pair:
       if (!net_.confirmPid.empty() && !net_.paired) {  // "Pair with Ana?" answered by a touch only
-        add(IdAccept, 160, 372, 150, 60, R ? "Da, leagă" : "Yes, pair", kMint, 1, true);
-        add(IdReject, 306, 372, 150, 60, R ? "Nu" : "No", kAmber, 1, true);
+        add(IdAccept, 164, 330, 128, 54, R ? "Da, leagă" : "Yes, pair", kMint, 0, true);
+        add(IdReject, 302, 330, 120, 54, R ? "Nu" : "No", kAmber, 0, true);
       } else if (!net_.configured || (!net_.connected && !net_.connecting)) {
-        add(IdSetup, 233, 330, 260, 56, R ? "Configurează din telefon" : "Set up from a phone", kCream, 1, true);
+        add(IdSetup, 233, 330, 260, 52, R ? "Configurează din telefon" : "Set up from a phone", kCream, 0, true);
       }
       break;
     case View::Memory: buildMemoryItems(out); break;  // OsMemory.cpp
     case View::Answer:
       if (acceptMode_) {
-        add(IdAccept, 160, 392, 150, 58, R ? "Acceptă" : "Accept", kMint, 1, true);
-        add(IdReject, 306, 392, 150, 58, R ? "Nu" : "No", kAmber, 1, true);
+        add(IdAccept, 164, 356, 128, 52, R ? "Acceptă" : "Accept", kMint, 0, true);
+        add(IdReject, 302, 356, 120, 52, R ? "Nu" : "No", kAmber, 0, true);
       } else {
         buildAppsItems(out);  // quick replies on a card from an app / your AI
       }
       break;
     default: buildAppsItems(out); break;
+  }
+  wheelItems(out);  // a list: its rows (OsScreens.cpp)
+  // a pill is as big as its words (+ 22 px a side) and never under 48 px (44 on the glass): its hit box = what is drawn
+  for (Item& it : out) {
+    if (!it.underline) continue;
+    const Font& f = fontOf(it.font, set_.largeText);
+    const float tw = (float)Canvas::measureText(f, it.label.c_str()) / g_.k();
+    it.w = fmaxf(it.w, fminf(tw + 44, 330));
+    it.h = fmaxf(it.h, 48);
   }
 }
 
@@ -277,6 +243,9 @@ void Os::textAt(Canvas& cv, const Font& f, float x, float y, const std::string& 
 }
 
 static constexpr float kHalfPi = 1.5707963f;
+// the rim's words (titles, hints, the banner) ride r 205: the capsule spans 189-221 (DESIGN-ALIVE.md §2 zones),
+// so no glyph reaches past r 228 on the glass
+static constexpr float kRimR = 205;
 
 // a glass capsule on the rim, as wide as the words + 15 px each side
 static void rimCapsule(Canvas& cv, const DisplayGeometry& g, const std::string& s, float r, bool top, const GlassStyle& st) {
@@ -288,17 +257,40 @@ static void rimCapsule(Canvas& cv, const DisplayGeometry& g, const std::string& 
 void Os::rimTop(Canvas& cv, const std::string& s, Rgb c, float alpha) {
   if (toastLeft_ > 0 && !toast_.empty()) return;  // the notification capsule has the rim
   if (s.empty()) return;
-  rimCapsule(cv, g_, s, g_.s(212), true, gs(alpha));
-  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(212), -kHalfPi, s.c_str(), c, alpha * fade_, false, 1.0f);
+  alpha = fmaxf(alpha, 0.84f);  // SoulOS Alive: what you must read is >= 80 %
+  rimCapsule(cv, g_, s, g_.s(kRimR), true, gs(alpha));
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(kRimR), -kHalfPi, s.c_str(), c, alpha * fade_, false, 1.0f);
+}
+
+// Rim manners (DESIGN-ALIVE.md §4): a bottom-rim hint is drawn only if none of its glyphs would touch a control
+// of the screen; otherwise it is dropped (the content wins)
+bool Os::rimBottomFits(const std::string& s) const {
+  const float r = kRimR, half = Canvas::arcTextSpan(fonts::caption(), g_.s(r), s.c_str(), 1.0f) * 0.5f + 0.06f;
+  const float inner = r - 16;  // the glyphs' inner edge (design px)
+  buildItems(items_);
+  for (const Item& it : items_) {
+    if (it.id < 0 || it.w <= 0) continue;
+    const float x0 = it.x - it.w * 0.5f, x1 = it.x + it.w * 0.5f, y1 = it.y + it.h * 0.5f;
+    // the arc's band under the item's box: its corners are inside the band's inner circle, or it clears
+    for (float x : {x0, x1, it.x}) {
+      const float dx = x - 233, dy = y1 - 233;
+      if (dy <= 0) continue;
+      const float ang = atan2f(dx, dy);  // 0 = straight down
+      if (fabsf(ang) <= half && hypotf(dx, dy) >= inner - 4) return false;
+    }
+  }
+  return true;
 }
 
 void Os::rimBottom(Canvas& cv, const std::string& s, Rgb c, float alpha) {
-  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(210), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
+  alpha = fmaxf(alpha, 0.7f);  // a secondary hint, 22 px
+  if (!rimBottomFits(s)) return;
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(kRimR), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
 }
 
 void Os::rimBottomCap(Canvas& cv, const std::string& s, Rgb c, float alpha, bool glow) {
-  rimCapsule(cv, g_, s, g_.s(208), false, glow ? gsAccent(c, 0.4f, 0.1f) : gs(alpha));
-  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(208), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
+  rimCapsule(cv, g_, s, g_.s(kRimR), false, glow ? gsAccent(c, 0.4f, 0.1f) : gs(alpha));
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(kRimR), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
 }
 
 void Os::glassPanel(Canvas& cv, float x0, float y0, float x1, float y1, float r, const GlassStyle& st) {
@@ -359,16 +351,17 @@ int Os::wrapLines(const Font& f, const std::string& text, float maxW, std::strin
 
 void Os::drawItems(Canvas& cv, const std::vector<Item>& items) {
   for (const Item& it : items) {
+    if (it.font > 2) continue;  // a wheel row's hit box: drawWheel draws the row
     const Font& f = fontOf(it.font, set_.largeText);
-    if (it.underline) {  // an action: a glass pill (no more underlines)
-      const float tw = (float)Canvas::measureText(f, it.label.c_str()) / g_.k();
-      const float h = it.font >= 2 ? 56.0f : 48.0f, w = fmaxf(tw + 44.0f, h);
-      glassPill(cv, it.x, it.y, w, h, it.color, holdItem_ == it.id && it.id >= 0);
+    const bool held = holdItem_ == it.id && it.id >= 0;
+    if (it.underline) {  // an action: a pill (SoulOS Alive: flat, filled e1 / mint, amber-edged, outlined)
+      pill(cv, it.x, it.y, it.w, it.h, it.label, pillOf(it), f, 1, held);
+    } else {
+      textAt(cv, f, it.x, it.y, it.label, it.color, it.alpha);
     }
-    textAt(cv, f, it.x, it.y, it.label, it.color, it.alpha);
-    if (holdItem_ == it.id && it.id >= 0) {  // hold progress under the word
+    if (held) {  // hold progress under it
       const float w = g_.s(it.w) * 0.8f * (holdItemT_ > 1 ? 1 : holdItemT_);
-      const float y = g_.s(it.y) + (f.ascent - f.descent) * 0.5f + 9;
+      const float y = g_.s(it.y + it.h * 0.5f) + 5;
       cv.roundRect(g_.s(it.x) - w * 0.5f, y, g_.s(it.x) + w * 0.5f, y + 3.0f, 1.5f, kAmber, 0.9f);
     }
   }
@@ -438,7 +431,7 @@ void Os::drawToast(Canvas& cv) {
   const Rgb fill = tone ? toastColor_ : pal_.e1;
   const Rgb ink = toastColor_ == kAmber ? Rgb::hex(0x2A1700) : toastColor_ == kMint ? Rgb::hex(0x06231B)
                   : toastColor_ == kIce ? Rgb::hex(0x071A33) : pal_.on1;
-  const float r = g_.s(212), span = Canvas::arcTextSpan(fonts::caption(), r, s.c_str(), 1.0f) + g_.s(36) / r;
+  const float r = g_.s(kRimR), span = Canvas::arcTextSpan(fonts::caption(), r, s.c_str(), 1.0f) + g_.s(36) / r;
   glass().flatArc(cv, g_.cx(), g_.cy(), r, g_.s(19), -kHalfPi - span * 0.5f, -kHalfPi + span * 0.5f, fill, 1.0f);
   cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), r, -kHalfPi, s.c_str(), ink, 1.0f, false, 1.0f);
 }
@@ -449,8 +442,8 @@ void Os::drawPerf(Canvas& cv) {
   snprintf(b, sizeof b, "draw %.1f  push %.1f  heap %u K  ps %u K", perf.renderMs, perf.pushMs, (unsigned)perf.heapKb,
            (unsigned)perf.psramKb);
   cv.fillRect(g_.rect(110, 404, 356, 452), pal::kBlack);
-  cv.drawText(fonts::small(), g_.cx(), (int)g_.s(424), a, kIce, 0.9f, Align::Center);
-  cv.drawText(fonts::small(), g_.cx(), (int)g_.s(446), b, kIce, 0.7f, Align::Center);
+  cv.drawText(fonts::caption(), g_.cx(), (int)g_.s(424), a, kIce, 0.9f, Align::Center);
+  cv.drawText(fonts::caption(), g_.cx(), (int)g_.s(446), b, kIce, 0.7f, Align::Center);
 }
 
 static std::string clockText(uint32_t now) {
@@ -471,15 +464,15 @@ void Os::drawBoot(Canvas& cv) {
       const float a = viewT_ < 1.0f ? 0 : (viewT_ - 1.0f) / 0.5f;
       const float al = a > 1 ? 1 : a;
       if (al > 0) {
-        textAt(cv, fonts::large(), 233, 338, d.name, kCream, al);
+        textAt(cv, fonts::title(), 233, 330, d.name, kCream, al);
         char b[64];
         snprintf(b, sizeof b, "%s · #%03d / %d", kRarityName[(int)d.rarity], d.num, kDesignCount);
-        textAt(cv, fonts::small(), 233, 374, b, Rgb::hex(kRarityColor[(int)d.rarity]), al);
+        textAt(cv, fonts::tag(), 233, 366, upperAscii(b), Rgb::hex(kRarityColor[(int)d.rarity]), al);
         int cnt = 0;
         for (int i = 0; i < kDesignCount; ++i)
           if (kDesigns[i].rarity == d.rarity) ++cnt;
         snprintf(b, sizeof b, R ? "1 din %d" : "1 in %d", (int)lround(cnt / kRarityRate[(int)d.rarity]));
-        textAt(cv, fonts::small(), 233, 400, b, kCream, al * kFaint);
+        textAt(cv, fonts::caption(), 233, 394, b, kCream, al * kDim);
         rimBottom(cv, R ? "atinge ca să ne cunoaștem" : "tap to meet me", kCream, kDim * al);
       }
       return;
@@ -487,28 +480,31 @@ void Os::drawBoot(Canvas& cv) {
     case BootStep::Name:
     case BootStep::Brain:
       buildItems(items_);
-      if (bootStep_ == BootStep::Brain) glassPanel(cv, 66, 160, 400, 346, 30, gs());
       drawItems(cv, items_);
       if (bootStep_ == BootStep::Brain) {
+        std::string line;
+        Rgb c = kCream;
         if (aiMode() != AiMode::None) {
           const bool needs = needsSetup();
           if (needs && net_.portal) {
-            textAt(cv, fonts::small(), 233, 370, (R ? "Pe telefon: Wi-Fi " : "On your phone: Wi-Fi ") + net_.apName + " · " + net_.apPass, kAmber);
-            textAt(cv, fonts::small(), 233, 394, (R ? "apoi deschide " : "then open ") + net_.portalUrl.substr(7), kAmber, kDim);
+            line = (R ? "Pe telefon: Wi-Fi " : "On your phone: Wi-Fi ") + net_.apName + " · " + net_.apPass;
+            c = kAmber;
           } else if (!needs) {
-            textAt(cv, fonts::small(), 233, 380, R ? "Gata de vorbă" : "Ready to talk", kMint);
+            line = R ? "Gata de vorbă" : "Ready to talk";
+            c = kMint;
           }
         } else {
-          textAt(cv, fonts::small(), 233, 380, R ? "Ore, alarme, minutare: pe device" : "Times, alarms, timers: on the device", kCream, kDim);
+          line = R ? "Ore, alarme, minutare: pe device" : "Times, alarms, timers: on the device";
         }
-        rimTop(cv, R ? "2 / 3" : "2 / 3", kCream, kFaint);
+        if (!line.empty()) textAt(cv, fonts::caption(), 233, 370, ellipsize(fonts::caption(), line, g_.s(330)), c, kDim);
+        rimTop(cv, "2 / 3", kCream, kFaint);
       } else {
         rimTop(cv, "1 / 3", kCream, kFaint);
       }
       return;
     case BootStep::Hold:
-      textAt(cv, fonts::large(), 233, 352, R ? "Ține degetul pe sticlă" : "Hold the glass", listening_ ? kIce : kCream);
-      textAt(cv, fonts::small(), 233, 390, R ? "așa îmi vorbești" : "that's how you talk to me", kCream, kDim);
+      textAt(cv, fonts::title(), 233, 346, R ? "Ține degetul pe sticlă" : "Hold the glass", listening_ ? kIce : kCream);
+      textAt(cv, fonts::caption(), 233, 384, R ? "așa îmi vorbești" : "that's how you talk to me", kCream, kDim);
       rimTop(cv, "3 / 3", kCream, kFaint);
       rimBottom(cv, R ? "butonul: sari peste" : "button: skip", kCream, kFaint);
       return;
@@ -522,7 +518,7 @@ void Os::drawHome(Canvas& cv) {
     char b[12];
     snprintf(b, sizeof b, "%06lu", (unsigned long)claude_.passkey);
     glassPanel(cv, 128, 362, 338, 422, 30, gsAccent(kAmber, 0.4f, 0.08f));
-    textAt(cv, fonts::large(), 233, 392, b, kAmber);
+    textAt(cv, fonts::title(), 233, 392, b, kAmber);
     rimBottom(cv, R ? "codul pentru Claude Desktop" : "pairing code for Claude Desktop", kCream, kDim);
     return;
   }
@@ -547,124 +543,131 @@ void Os::drawHome(Canvas& cv) {
 
 void Os::drawToday(Canvas& cv) { drawTodayStack(cv); }  // the stack of glass cards (OsAppsDraw.cpp)
 
+// Talk (a face moment): the AI's name as a tag, what to do, one button. Hold the glass = listen: an ice ring.
 void Os::drawTalk(Canvas& cv) {
   const bool R = ro();
-  const char* src = aiMode() == AiMode::None ? (R ? "Fără AI · pe device" : "No AI · on the device")
-                    : aiMode() == AiMode::Cloud ? "SOUL Cloud"
-                    : aiMode() == AiMode::Claude ? (R ? "Claude · cheia ta" : "Claude · your key")
-                                                 : (R ? "ChatGPT · cheia ta" : "ChatGPT · your key");
-  rimTop(cv, src, kCream, kDim);
+  const char* who = aiMode() == AiMode::None ? (R ? "FĂRĂ AI" : "NO AI")
+                    : aiMode() == AiMode::Cloud ? (R ? "CLAUDE-UL TĂU" : "YOUR CLAUDE")
+                    : aiMode() == AiMode::Claude ? (R ? "CLAUDE · CHEIA TA" : "CLAUDE · YOUR KEY")
+                    : aiMode() == AiMode::Bridge ? (R ? "CLAUDE · CALCULATOR" : "CLAUDE · COMPUTER")
+                                                 : (R ? "CHATGPT · CHEIA TA" : "CHATGPT · YOUR KEY");
+  if (listening_) {
+    rimRing(cv, 216, 0, 2 * 3.14159265f, kIce, 0.85f, 8);
+    if (voice_) rimTop(cv, R ? "Ascult…" : "Listening…", kIce, 1);
+  }
+  textAt(cv, fonts::tag(), 233, 262, who, kIce);
   std::string hint;
   if (listening_) hint = voice_ ? (R ? "Ascult…" : "Listening…") : (R ? "Dă drumul și scrie" : "Let go, then type");
-  else if (aiMode() != AiMode::None && !net_.connected) hint = R ? "Nu am Wi-Fi: înțeleg doar ore și minutare" : "No Wi-Fi: I only get times and timers";
-  else if (aiMode() == AiMode::None) hint = R ? "Fără AI: ore, alarme, minutare" : "No AI: times, alarms and timers";
-  else hint = voice_ ? (R ? "Ține sticla și întreabă" : "Hold the glass and ask") : (R ? "Ține sticla sau scrie" : "Hold the glass, or type");
-  textAt(cv, fonts::small(), 233, 364, hint, listening_ ? kIce : kCream, listening_ ? 1 : kDim);
+  else if (aiMode() != AiMode::None && !net_.connected) hint = R ? "Fără Wi-Fi: doar ore și minutare" : "No Wi-Fi: times and timers only";
+  else if (aiMode() == AiMode::None) hint = R ? "Ore, alarme, minutare" : "Times, alarms and timers";
+  else hint = voice_ ? (R ? "Ține sticla și întreabă" : "Hold the glass and ask") : (R ? "Ține sticla, sau scrie" : "Hold, or type");
+  const Font& hf = Canvas::measureText(fonts::body(), hint.c_str()) <= g_.s(330) ? fonts::body() : fonts::caption();
+  textAt(cv, hf, 233, 296, ellipsize(hf, hint, g_.s(340)), listening_ ? kIce : kCream);
   buildItems(items_);
   drawItems(cv, items_);
 }
 
+// the answer. Thinking is a face moment (the eyes squint, an amber arc, the question); the answer sits on a round
+// pebble under the eyes (mint edge when something was done, amber when it failed); a message (a card from SOUL
+// Cloud, your AI or an app) is a card with its quick replies.
 void Os::drawAnswer(Canvas& cv) {
   const bool R = ro();
   if (thinking_) {
-    const char* who = aiMode() == AiMode::Claude || aiMode() == AiMode::Bridge ? "Claude" : aiMode() == AiMode::ChatGpt ? "ChatGPT" : "SOUL";
+    const char* who = aiMode() == AiMode::Claude || aiMode() == AiMode::Bridge || aiMode() == AiMode::Cloud ? "Claude"
+                      : aiMode() == AiMode::ChatGpt ? "ChatGPT" : "SOUL";
+    const float a0 = 3.14159265f * 0.62f;  // the amber arc on the left rim (still: the eyes squint, they are the motion)
+    rimRing(cv, 216, a0, a0 + 0.62f, kAmber, 0.9f, 8);
     if (aiMode() == AiMode::Bridge && net_.askState != 2)  // on its way to the computer, Claude Code has not taken it yet
-      rimTop(cv, R ? "trimit calculatorului tău…" : "sending to your computer…", kAmber, 0.9f);
+      rimTop(cv, R ? "trimit calculatorului…" : "sending to your computer…", kAmber, 1);
     else
-      rimTop(cv, std::string(who) + (R ? " se gândește…" : " is thinking…"), kAmber, 0.9f);
-    std::string lines[3];
-    const int n = wrapLines(fonts::small(), reply_.say, g_.s(320), lines, 3);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 250 + i * 28, lines[i], kCream, kDim);
+      rimTop(cv, std::string(who) + (R ? " se gândește…" : " is thinking…"), kAmber, 1);
+    std::string lines[2];
+    const int n = wrapLines(fonts::caption(), "\xE2\x80\x9C" + reply_.say + "\xE2\x80\x9D", g_.s(300), lines, 2);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 310 + i * 26, lines[i], kCream, kDim);
+    textAt(cv, fonts::caption(), 233, 384, who, kAmber);
     return;
   }
-  rimTop(cv, answerSrc_, kCream, kFaint);
-  const bool card = !cardTitle_.empty();
-  const bool big = !card && reply_.say.size() <= 120;
-  const Font& f = big ? fontOf(1, set_.largeText) : fonts::small();
-  const float lh = big ? 32.0f : 27.0f;
-  std::string lines[7];
-  const int n = reply_.say.empty() ? 0 : wrapLines(f, reply_.say, g_.s(big ? 320 : 330), lines, big ? 4 : card ? 7 : 6);
-  float y = 236;
-  if (card) y = 232;  // a card pushed by SOUL Cloud / your Claude: a title, then the text as written
-  if (lastErr_ != AiErr::None) {  // what went wrong, in one line that says what to do
-    std::string el[3];
-    y += wrapLines(fonts::text(), aiErrText(lastErr_, R), g_.s(320), el, 3) * 32 + 4;
-  }
-  {  // the glass card behind it all: from the title (or the first line) to the last chip
-    float h = n * lh + 6 + (acceptMode_ || cardHidden_ ? 30.0f : chips_.size() * 27.0f) + (reply_.rejected > 0 ? 27.0f : 0.0f);
-    const float top = (card ? 196.0f : 236.0f) - 30, bot = fminf(y + h + 2, 410);
-    glassPanel(cv, 60, top, 406, bot, 30, lastErr_ != AiErr::None ? gsAccent(kAmber, 0.25f, 0.05f) : gs());
-    if (card) textAt(cv, fonts::text(), 233, 196, ellipsize(fonts::text(), cardTitle_, g_.s(320)), kMint);
-    if (lastErr_ != AiErr::None) {
-      std::string el[3];
-      const int m = wrapLines(fonts::text(), aiErrText(lastErr_, R), g_.s(320), el, 3);
-      for (int i = 0; i < m; ++i) textAt(cv, fonts::text(), 233, (card ? 232 : 236) + i * 32, el[i], kAmber);
-    }
-  }
-  for (int i = 0; i < n; ++i, y += lh) textAt(cv, f, 233, y, lines[i], kCream, lastErr_ != AiErr::None ? kDim : 1.0f);
-  y += 6;
-  if (acceptMode_) {  // "Claude wants to set 03:00": armed only after Accept
+  const bool card = !cardTitle_.empty() || acceptMode_;
+  const bool err = lastErr_ != AiErr::None, done = !reply_.actions.empty() || !chips_.empty();
+  if (card) {  // the message: a card, its title, its words, the replies under them
+    rimTop(cv, answerSrc_, kCream, kFaint);
     buildItems(items_);
-    drawItems(cv, items_);
-    rimBottom(cv, R ? "nu sună până nu accepți" : "it won't ring unless you accept", kCream, kFaint);
-    return;
-  }
-  if (cardHidden_) {
-    textAt(cv, fonts::small(), 233, y + 8, R ? "Privat · atinge ca să vezi" : "Private · tap to show", kCream, kDim);
-    rimBottom(cv, R ? "atinge ca să vezi" : "tap to show", kCream, kFaint);
-    return;
-  }
-  for (const std::string& c : chips_) {  // a drawn tick (Nunito has no ✓) + the chip text
-    const Font& f = fonts::small();
-    const float tw = (float)Canvas::measureText(f, c.c_str()), tick = 18;
-    const float x0 = g_.cx() - (tw + tick + 8) * 0.5f, cyp = g_.s(y);
-    static Path p;
-    if (p.reserve(256)) {
-      p.clear();
-      const float pts[6] = {x0, cyp, x0 + tick * 0.38f, cyp + tick * 0.36f, x0 + tick, cyp - tick * 0.42f};
-      p.stroke(pts, 3, 3.2f);
-      face_.raster().fill(cv, p, kMint, fade_);
+    bool replies = false;
+    for (const Item& it : items_) replies |= it.underline;
+    const float top = 152, bot = replies ? 392 : 380;
+    pebRect(cv, 84, top, 382, bot, 30, pal_.peb, pal_.pebe, 0);
+    std::string tl[2];
+    const int nt = cardTitle_.empty() ? 0 : wrapLines(fonts::name(), cardTitle_, g_.s(270), tl, 2);
+    float y = 184;
+    for (int i = 0; i < nt; ++i, y += 32) textAt(cv, fonts::name(), 233, y, tl[i], kCream);
+    if (nt) y += 4;
+    if (cardHidden_) {
+      textAt(cv, fonts::caption(), 233, y + 6, R ? "Privat · atinge ca să vezi" : "Private · tap to show", kCream, kDim);
+    } else {
+      std::string bl[7];
+      const int maxL = replies ? (nt > 1 ? 1 : 2) : (nt ? 6 : 7);
+      const int nb = reply_.say.empty() ? 0 : wrapLines(fonts::caption(), reply_.say, g_.s(262), bl, maxL);
+      for (int i = 0; i < nb; ++i, y += 26) textAt(cv, fonts::caption(), 233, y, bl[i], kCream, kDim);
     }
-    cv.drawText(f, x0 + tick + 8, (int)lroundf(cyp + (f.ascent - f.descent) * 0.5f), c.c_str(), kMint, fade_, Align::Left);
-    y += 27;
+    drawItems(cv, items_);
+    if (acceptMode_) rimBottom(cv, R ? "nu sună până nu accepți" : "it won't ring unless you accept", kCream, kFaint);
+    return;
+  }
+  // the round pebble (350 x 236 on the glass) under the eyes
+  const float cx = 233, cy = 268, rx = 172, ry = 112;
+  const Rgb edge = err && !done ? kAmber : done ? kMint : pal_.pebe;
+  cv.ellipse(g_.s(cx), g_.s(cy), g_.s(rx), g_.s(ry), edge, fade_);
+  cv.ellipse(g_.s(cx), g_.s(cy), g_.s(rx - 4), g_.s(ry - 4), pal_.peb, fade_);
+  // the source on top: ice; an on-device fallback says so in amber (a note, not a sad face)
+  std::string src = answerSrc_;
+  Rgb srcC = kIce;
+  if (err && done) {
+    src = R ? "Făcut pe SOUL · AI offline" : "Done on SOUL · AI offline";
+    srcC = kAmber;
+  } else if (err) {
+    src = aiErrText(lastErr_, R);
+    srcC = kAmber;
+  }
+  if (!src.empty()) textAt(cv, fonts::caption(), cx, 186, ellipsize(fonts::caption(), src, g_.s(230)), srcC);
+  const bool big = reply_.say.size() <= 64 && chips_.size() <= 2;
+  const Font& f = big ? fonts::name() : fonts::caption();
+  const float lh = big ? 33.0f : 26.0f;
+  const int extra = (int)chips_.size() + (reply_.rejected > 0 ? 1 : 0);
+  const int maxLines = big ? 3 : (extra ? 6 - extra : 6);
+  // each line as wide as the pebble at its height
+  float widths[7];
+  const float y0 = 218 + (big ? 6 : 0);
+  for (int i = 0; i < 7; ++i) {
+    const float yy = y0 + i * lh, dy = fmaxf(fabsf(yy - lh * 0.5f - cy), fabsf(yy + lh * 0.5f - cy)) / ry;
+    widths[i] = g_.s(dy < 1 ? 2 * rx * sqrtf(1 - dy * dy) - 44 : 0);
+  }
+  std::string lines[7];
+  const int n = reply_.say.empty() ? 0 : wrapShaped(f, reply_.say, widths, lines, maxLines > 1 ? maxLines : 1);
+  float y = y0;
+  for (int i = 0; i < n; ++i, y += lh) textAt(cv, f, cx, y, lines[i], kCream, err && !done ? kDim : 1.0f);
+  y += 2;
+  for (const std::string& c : chips_) {  // ✓ what was done, in mint
+    const Font& cf = fonts::caption();
+    const std::string t = ellipsize(cf, c, g_.s(230));
+    const float tw = (float)Canvas::measureText(cf, t.c_str()) / g_.k();
+    checkMark(cv, cx - tw * 0.5f - 12, y, 13, kMint);
+    textAt(cv, cf, cx + 9, y, t, kMint);
+    y += 26;
   }
   if (reply_.rejected > 0) {
     char b[48];
     snprintf(b, sizeof b, R ? "%d acțiuni ignorate" : "%d action%s ignored", reply_.rejected, (!R && reply_.rejected > 1) ? "s" : "");
-    textAt(cv, fonts::small(), 233, y, b, kCream, kFaint);
+    textAt(cv, fonts::caption(), cx, y, b, kCream, kFaint);
   }
-  if (!drawQuickReplies(cv, y))  // a card from an app / your AI: one-tap answers (OsAppsDraw.cpp)
-    rimBottom(cv, R ? "atinge ca să închizi" : "tap to close", kCream, kFaint);
+  rimBottom(cv, R ? "atinge ca să închizi" : "tap to close", kCream, kFaint);
 }
 
 void Os::drawAlarms(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, R ? "ALARME" : "ALARMS", kCream, kDim);
-  buildItems(items_);
   const int n = alarms_ ? alarms_->count() : 0;
-  if (!n) textAt(cv, fonts::small(), 233, 250, R ? "Nicio alarmă încă" : "No alarms yet", kCream, kDim);
-  for (const Item& it : items_) {
-    if (it.id < IdRow) continue;
-    const Alarm& a = alarms_->at(it.id - IdRow);
-    // a glass slab: the time on the left of centre, a glass toggle on the right, days + label under
-    glassPanel(cv, 68, it.y - 30, 398, it.y + 30, 22, holdItem_ == it.id ? gs().pressed() : gs());
-    textAt(cv, fonts::large(), 190, it.y - 8, it.label, kCream, it.alpha);
-    glassToggle(cv, 330, it.y - 8, a.enabled);
-    std::string sub = daysText(a.days, R);
-    if (a.label[0]) sub += std::string(" · ") + a.label;
-    textAt(cv, fonts::small(), 233, it.y + 20, ellipsize(fonts::small(), sub, g_.s(300)), kCream, kFaint);
-    if (holdItem_ == it.id) {
-      const float w = g_.s(260) * (holdItemT_ > 1 ? 1 : holdItemT_);
-      cv.roundRect(g_.cx() - w / 2, g_.s(it.y + 34), g_.cx() + w / 2, g_.s(it.y + 34) + 3, 1.5f, kAmber, 0.9f);
-    }
-  }
-  for (const Item& it : items_)
-    if (it.id == IdNew) {
-      std::vector<Item> one(1, it);
-      drawItems(cv, one);
-    }
-  if (n > 3) rimBottom(cv, R ? "glisează în sus: mai multe · ține = șterge" : "swipe up: more · hold = delete", kCream, kFaint);
-  else if (n) rimBottom(cv, R ? "atinge = pornit/oprit · ține = șterge" : "tap = on/off · hold = delete", kCream, kFaint);
+  rimTop(cv, n ? (R ? "Alarme · " : "Alarms · ") + std::to_string(n) : std::string(R ? "Alarme" : "Alarms"), kCream);
+  if (!n && wheel_.focused() == 0) textAt(cv, fonts::caption(), 233, 200, R ? "Nicio alarmă încă" : "No alarms yet", kCream, kDim);
+  drawWheel(cv);
 }
 
 void Os::drawRinging(Canvas& cv) {
@@ -672,182 +675,124 @@ void Os::drawRinging(Canvas& cv) {
   std::string label;
   if (timerRinging_) label = timerFocus_ ? (R ? "Focus gata" : "Focus done") : (R ? "Minutar gata" : "Timer done");
   else if (ringingAlarm_ >= 0 && alarms_ && ringingAlarm_ < alarms_->count()) label = alarms_->at(ringingAlarm_).label;
-  glass().band(cv, g_.cx(), g_.cy(), g_.s(212), g_.s(14), gsAccent(timerRinging_ ? kMint : kAmber, 0.3f, 0.06f));
-  textAt(cv, fonts::digits(), 233, 300, clockText(now_), kCream);
-  textAt(cv, fonts::text(), 233, 348, label, timerRinging_ ? kMint : kAmber);
+  const Rgb c = timerRinging_ ? kMint : kAmber;
+  rimRing(cv, 218, 0, 2 * 3.14159265f, c, 0.8f, 8);  // (the eyes and the tone are what pulse)
+  rimTop(cv, timerRinging_ ? (R ? "Minutar" : "Timer") : (R ? "Alarmă" : "Alarm"), c, 1);
+  textAt(cv, fonts::digits(), 233, 254, clockText(now_), kCream);
+  if (!label.empty()) textAt(cv, fonts::body(), 233, 318, ellipsize(fonts::body(), label, g_.s(300)), kCream);
   buildItems(items_);
-  if (timerRinging_) {
-    for (const Item& it : items_)
-      if (it.id == IdStop) {
-        Item c = it;
-        c.x = 233;
-        std::vector<Item> one(1, c);
-        drawItems(cv, one);
-      }
-  } else {
-    drawItems(cv, items_);
-  }
+  drawItems(cv, items_);
 }
 
 void Os::drawTimer(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, timerFocus_ && timerRun_ ? "FOCUS" : (R ? "MINUTAR" : "TIMER"), kCream, kDim);
   buildItems(items_);
   if (timerRun_) {
     const int s = timerLeft();
     char b[16];
     snprintf(b, sizeof b, "%d:%02d", s / 60, s % 60);
-    textAt(cv, fonts::digits(), 233, 262, b, timerPaused_ ? kAmber : kCream);
-    // progress on the rim: a cream arc on a glass track, from the top, clockwise
-    glass().band(cv, g_.cx(), g_.cy(), g_.s(216), g_.s(13), gs());
+    textAt(cv, fonts::digits(), 233, 236, b, timerPaused_ ? kAmber : kCream);
+    // the countdown on the rim: an 8 px e1 ring on a peb2 track, from the top, clockwise
+    rimRing(cv, 216, 0, 2 * 3.14159265f, pal_.peb2, 1, 8);
     const float frac = timerTotal_ > 0 ? timerLeft_ / timerTotal_ : 0;
-    if (frac > 0.002f) {
-      const float a0 = -1.5707963f;
-      face_.raster().ring(cv, g_.cx(), g_.cy(), g_.s(216), g_.s(6), kCream, 0.9f * fade_, a0, a0 + 6.2831853f * frac);
-    }
-  } else {
-    textAt(cv, fonts::small(), 233, 316, R ? "minute · 25 = focus" : "minutes · 25 = focus", kCream, kFaint);
+    if (frac > 0.002f) rimRing(cv, 216, -1.5707963f, -1.5707963f + 6.2831853f * frac, timerPaused_ ? kAmber : pal_.e1, 1, 8);
+    rimTop(cv, timerFocus_ ? "Focus" : (R ? "Minutar" : "Timer"), kCream);
+    drawItems(cv, items_);
+    return;
   }
-  drawItems(cv, items_);
+  rimTop(cv, R ? "Minutar" : "Timer", kCream);
+  textAt(cv, fonts::digits(), 233, 222, "0:00", kCream, 0.4f);
+  for (const Item& it : items_) {  // the presets: 58 px discs, minutes in them (25 = focus, in e1)
+    if (it.id < IdRow) continue;
+    const bool focus = it.id - IdRow == 4;
+    cv.ellipse(g_.s(it.x), g_.s(it.y), g_.s(29), g_.s(29), focus ? pal_.e1 : pal_.peb2, fade_);
+    if (!focus) cv.ring(g_.s(it.x), g_.s(it.y), g_.s(27.5f), g_.s(3), pal_.pebe, fade_);
+    textAt(cv, fonts::body(), it.x, it.y, it.label, focus ? pal_.on1 : kCream);
+  }
+  textAt(cv, fonts::caption(), 233, 356, R ? "minute · 25 = focus" : "minutes · 25 = focus", kCream, kDim);
 }
 
 void Os::drawNotes(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, R ? "NOTIȚE" : "NOTES", kCream, kDim);
-  if (notes_.empty()) textAt(cv, fonts::small(), 233, 236, R ? "Nicio notiță încă" : "No notes yet", kCream, kDim);
-  buildItems(items_);
-  for (const Item& it : items_)
-    if (it.id >= IdRow) glassPanel(cv, 68, it.y - 26, 398, it.y + 26, 22, holdItem_ == it.id ? gs().pressed() : gs());
-  drawItems(cv, items_);
-  if (notes_.size() > 3) rimBottom(cv, R ? "glisează în sus: mai vechi" : "swipe up: older", kCream, kFaint);
-  else if (!notes_.empty()) rimBottom(cv, R ? "ține = șterge" : "hold = delete", kCream, kFaint);
+  rimTop(cv, (R ? "Notițe · " : "Notes · ") + std::to_string(notes_.size()), kCream);
+  if (wheel_.focused() == 0)
+    textAt(cv, fonts::caption(), 233, 200,
+           notes_.empty() ? (R ? "Nicio notiță încă" : "No notes yet")
+                          : voice_ ? (R ? "Ține apăsat și dictează" : "Hold and dictate") : (R ? "Ține un rând = șterge" : "Hold a row = delete"),
+           kCream, kDim);
+  drawWheel(cv);
 }
 
 void Os::drawNoteView(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, R ? "NOTIȚĂ" : "NOTE", kCream, kDim);
+  rimTop(cv, R ? "Notiță" : "Note", kCream);
   if (noteSel_ < 0 || noteSel_ >= (int)notes_.size()) return;
-  std::string lines[7];
-  const int n = wrapLines(fonts::small(), notes_[noteSel_].text, g_.s(310), lines, 7);
-  glassPanel(cv, 66, 124, 400, 150 + (n - 1) * 28 + 28, 30, gs());
-  for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 150 + i * 28, lines[i], kCream);
+  std::string lines[4];
+  const int n = wrapLines(fonts::body(), notes_[noteSel_].text, g_.s(270), lines, 4);
+  pebRect(cv, 84, 152, 382, 176 + n * 32 + 8, 28, pal_.peb, pal_.pebe, 0);
+  for (int i = 0; i < n; ++i) textAt(cv, fonts::body(), 233, 180 + i * 32, lines[i], kCream);
   buildItems(items_);
   drawItems(cv, items_);
   rimBottom(cv, R ? "ține Șterge ca să ștergi" : "hold Delete to delete", kCream, kFaint);
 }
 
+// Claude: pairing (the code), Claude asks (the command + Allow / Deny), working / connected
 void Os::drawClaude(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, "CLAUDE", kCream, kDim);
   if (claude_.passkey) {
+    rimTop(cv, "Claude", kCream);
     char b[12];
     snprintf(b, sizeof b, "%06lu", (unsigned long)claude_.passkey);
-    glassPanel(cv, 70, 150, 396, 300, 34, gsAccent(kAmber, 0.4f, 0.06f));
-    textAt(cv, fonts::small(), 233, 180, R ? "Codul de pe ecran, în Claude:" : "Type this code in Claude:", kCream, kDim);
-    textAt(cv, fonts::digits(), 233, 260, b, kAmber);
+    textAt(cv, fonts::caption(), 233, 186, R ? "Codul ăsta, în Claude:" : "Type this code in Claude:", kCream, kDim);
+    textAt(cv, fonts::digits(), 233, 262, b, kAmber);
     return;
   }
-  if (claude_.prompt) {
-    std::string lines[3];
-    const int n = wrapLines(fonts::small(), claude_.hint, g_.s(300), lines, 3);
-    glassPanel(cv, 70, 136, 396, 256 + n * 26 + 8, 36, gsAccent(kAmber, 0.5f, 0.07f));
-    textAt(cv, fonts::small(), 233, 168, R ? "Claude cere voie" : "Claude asks", kAmber);
-    textAt(cv, fonts::large(), 233, 214, ellipsize(fonts::large(), claude_.tool, g_.s(300)), kCream);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 256 + i * 26, lines[i], kCream, kDim);
-    rimBottomCap(cv, R ? "ține = da · 2× = nu" : "hold = yes · 2× = no", kAmber, 1, true);
-    return;
-  }
-  if (!claude_.linked) {
-    glassPanel(cv, 70, 148, 396, 312, 32, gs());
-    textAt(cv, fonts::text(), 233, 176, R ? "Neconectat" : "Not connected", kCream);
-    textAt(cv, fonts::small(), 233, 222, "Claude Desktop › Developer ›", kCream, kDim);
-    textAt(cv, fonts::small(), 233, 248, R ? "Hardware Buddy… › Conectează" : "Open Hardware Buddy… › Connect", kCream, kDim);
-    textAt(cv, fonts::small(), 233, 290, claude_.bleName, kAmber);
-    rimBottom(cv, R ? "aprobi cu degetul pe sticlă" : "approve with a finger on the glass", kCream, kFaint);
+  if (claude_.prompt) {  // Claude asks: an amber ring, the command on an amber-edged pebble, Allow / Deny
+    rimRing(cv, 218, 0, 2 * 3.14159265f, kAmber, 0.8f, 8);
+    rimTop(cv, R ? "Claude cere voie" : "Claude asks", kAmber, 1);
+    pebRect(cv, 92, 160, 374, 256, 26, pal_.peb, kAmber, 4);
+    textAt(cv, fonts::caption(), 233, 186, ellipsize(fonts::caption(), claude_.tool.empty() ? std::string("Claude") : claude_.tool, g_.s(250)), kCream, kDim);
+    std::string lines[2];
+    const int n = wrapLines(fonts::body(), claude_.hint.empty() ? claude_.tool : claude_.hint, g_.s(250), lines, 2);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::body(), 233, (n == 1 ? 222 : 214) + i * 28, lines[i], kCream);
     buildItems(items_);
     drawItems(cv, items_);
+    for (const Item& it : items_)  // ✓ on Allow
+      if (it.id == IdAllow) {
+        const float tw = (float)Canvas::measureText(fonts::body(), it.label.c_str()) / g_.k();
+        checkMark(cv, it.x - tw * 0.5f - 14, it.y, 15, Rgb::hex(0x06231B));
+      }
+    textAt(cv, fonts::caption(), 233, 384, R ? "Ține = da · 2× = nu" : "Hold = yes · 2× = no", kCream);
     return;
   }
-  glassPanel(cv, 70, 148, 396, 324, 32, gs());
-  textAt(cv, fonts::text(), 233, 176, claude_.busy ? (R ? "Claude lucrează" : "Claude is working") : (R ? "Conectat" : "Connected"), claude_.busy ? kAmber : kMint);
-  if (!claude_.msg.empty()) {
-    std::string lines[2];
-    const int n = wrapLines(fonts::small(), claude_.msg, g_.s(320), lines, 2);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 220 + i * 26, lines[i], kCream, kDim);
+  rimTop(cv, "Claude", kCream);
+  // >_ : the Claude glyph, in e1
+  drawGlyph(cv, AppId::Claude, 233, 176, 30, pal_.e1, 1, g_.s(4));
+  if (!claude_.linked) {
+    textAt(cv, fonts::name(), 233, 218, R ? "Neconectat" : "Not connected", kCream);
+    textAt(cv, fonts::caption(), 233, 252, R ? "Claude Desktop › Developer ›" : "Claude Desktop › Developer ›", kCream, kDim);
+    textAt(cv, fonts::caption(), 233, 276, R ? "Hardware Buddy › Conectează" : "Hardware Buddy › Connect", kCream, kDim);
+    if (!claude_.bleName.empty() && !net_.relay) textAt(cv, fonts::caption(), 233, 310, claude_.bleName, kAmber);
+  } else {
+    textAt(cv, fonts::name(), 233, 218, claude_.busy ? (R ? "Claude lucrează" : "Claude is working") : (R ? "Conectat" : "Connected"),
+           claude_.busy ? kAmber : kCream);
+    char b[64];
+    snprintf(b, sizeof b, R ? "%lu aprobate · %lu refuzate" : "%lu approved · %lu denied", (unsigned long)claude_.approvals,
+             (unsigned long)claude_.denials);
+    textAt(cv, fonts::caption(), 233, 254, claude_.msg.empty() ? std::string(b) : ellipsize(fonts::caption(), claude_.msg, g_.s(320)), kCream, kDim);
   }
-  char b[64];
-  snprintf(b, sizeof b, R ? "%lu aprobate · %lu refuzate" : "%lu approved · %lu denied", (unsigned long)claude_.approvals,
-           (unsigned long)claude_.denials);
-  textAt(cv, fonts::small(), 233, 300, b, kCream, kFaint);
   buildItems(items_);
   drawItems(cv, items_);
 }
 
 void Os::drawSettings(Canvas& cv) {
-  const bool R = ro();
-  rimTop(cv, R ? "SETĂRI" : "SETTINGS", kCream, kDim);
-  static const char* const kLabels[2][14] = {
-      {"Brightness", "AI", "Wi-Fi", "Language", "My SOUL", "Text size", "About", "Debug overlay", "Screen off at night",
-       "Claude & ChatGPT on me", "Start over", "Memory", "Apps", "Reduce motion"},
-      {"Luminozitate", "AI", "Wi-Fi", "Limba", "SOUL-ul meu", "Mărimea textului", "Despre", "Depanare", "Ecran stins noaptea",
-       "Claude & ChatGPT pe mine", "De la capăt", "Memorie", "Aplicații", "Mai puțină mișcare"}};
-  buildItems(items_);
-  float top = 1e9f, bot = -1e9f;
-  for (const Item& it : items_)
-    if (it.id >= IdRow) {
-      top = fminf(top, it.y - 36);
-      bot = fmaxf(bot, it.y + 30);
-    }
-  if (bot > top) glassPanel(cv, 70, top, 396, bot, 30, gs());
-  for (const Item& it : items_) {
-    if (it.id < IdRow) continue;
-    if (it.y - 36 > top + 1)  // a hairline between rows
-      cv.roundRect(g_.s(96), g_.s(it.y - 36), g_.s(370), g_.s(it.y - 36) + 1.0f, 0.5f, pal::kWhite, 0.1f * fade_);
-    if (holdItem_ == it.id) glassPanel(cv, 80, it.y - 34, 386, it.y + 28, 22, gs().pressed());
-    textAt(cv, fonts::small(), 233, it.y - 18, kLabels[R][it.id - IdRow], kCream, kFaint);
-  }
-  // values a little lower than the item centre
-  std::vector<Item> vals = items_;
-  for (Item& it : vals) it.y += 10;
-  drawItems(cv, vals);
-  rimBottom(cv, R ? "glisează în sus: mai multe" : "swipe up: more", kCream, kFaint);
+  rimTop(cv, ro() ? "Setări" : "Settings", kCream);
+  drawWheel(cv);
 }
 
 void Os::drawAiMode(Canvas& cv) {
-  const bool R = ro();
-  rimTop(cv, "AI", kCream, kDim);
-  buildItems(items_);
-  glassPanel(cv, 66, 98, 400, 360, 30, gs());
-  for (const Item& it : items_)
-    if (it.id >= IdRow && it.id < IdRow + 5 && it.underline) glassPanel(cv, 78, it.y - 25, 388, it.y + 25, 20, gsAccent(kMint, 0.0f, 0.16f));
-  for (Item it : items_) {
-    if (it.id >= IdRow && it.id < IdRow + 5) it.underline = false;  // the lens marks the choice
-    std::vector<Item> one(1, it);
-    if (it.id >= IdRow && it.id < IdRow + 5) {
-      one[0].y -= 8;
-      std::string st;
-      switch (it.id - IdRow) {
-        case 0:
-          st = !net_.relay ? (R ? "adresa se pune din telefon" : "set its address from a phone")
-               : net_.cloudUpdate ? (R ? "actualizează SOUL" : "update SOUL")
-               : net_.cloudRefused ? (R ? "SOUL nu e acceptat" : "this SOUL was refused")
-               : net_.paired ? (net_.owner.empty() ? std::string(R ? "legat de cont" : "paired") : (R ? "legat · " : "paired · ") + net_.owner)
-               : (R ? "atinge ca să-l legi" : "tap to pair it");
-          break;
-        case 1: st = net_.keyClaude ? net_.maskClaude : (R ? "are nevoie de o cheie" : "needs a key"); break;
-        case 2: st = net_.keyOpenai ? net_.maskOpenai : (R ? "are nevoie de o cheie" : "needs a key"); break;
-        case 3:
-          st = net_.bridgeOnline ? (R ? "conectat · " : "connected · ") + (net_.bridgeName.empty() ? std::string("PC") : net_.bridgeName)
-               : net_.bridgePaired ? (R ? "calculatorul e oprit" : "the computer is off")
-                                   : (R ? "Claude Code-ul tău (Pro/Max)" : "your own Claude Code (Pro/Max)");
-          break;
-        default: st = R ? "ore și minutare pe device" : "times and timers on the device"; break;
-      }
-      textAt(cv, fonts::small(), 233, it.y + 16, st, kCream, kFaint);
-    }
-    drawItems(cv, one);
-  }
-  rimBottom(cv, R ? "ține un rând = scrii cheia" : "hold a row = type the key", kCream, kFaint);
+  rimTop(cv, ro() ? "AI-ul tău" : "Your AI", kCream);
+  drawWheel(cv);
 }
 
 // "My Claude on my computer" (SOUL Bridge, docs/08 §4): the code to type in `soul-bridge pair`, then the
@@ -855,70 +800,67 @@ void Os::drawAiMode(Canvas& cv) {
 // the 6-digit code of SOUL's own server on this Wi-Fi.
 void Os::drawBridge(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, R ? "CLAUDE DE PE CALCULATOR" : "MY CLAUDE ON MY COMPUTER", kCream, kDim);
+  rimTop(cv, R ? "Claude de pe calculator" : "Claude on my computer", kCream);
   if (net_.bridgeOnline) {
-    textAt(cv, fonts::large(), 233, 186, R ? "Conectat" : "Connected", kMint);
-    textAt(cv, fonts::text(), 233, 230, net_.bridgeName.empty() ? std::string("PC") : net_.bridgeName, kCream);
+    textAt(cv, fonts::title(), 233, 190, R ? "Conectat" : "Connected", kMint);
+    textAt(cv, fonts::body(), 233, 232, net_.bridgeName.empty() ? std::string("PC") : net_.bridgeName, kCream);
     std::string l[3];
-    const int n = wrapLines(fonts::small(), R ? "Întreabă-mă orice: îți răspunde Claude Code-ul tău, de pe calculator."
-                                              : "Ask me anything: your own Claude Code answers, on your computer.",
-                            g_.s(320), l, 3);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 274 + i * 27, l[i], kCream, kDim);
+    const int n = wrapLines(fonts::caption(), R ? "Întreabă-mă orice: îți răspunde Claude Code-ul tău, de pe calculator."
+                                                : "Ask me anything: your own Claude Code answers, on your computer.",
+                            g_.s(300), l, 3);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 270 + i * 26, l[i], kCream, kDim);
   } else if (!net_.connected) {
-    textAt(cv, fonts::text(), 233, 200, R ? "Întâi Wi-Fi-ul" : "Wi-Fi first", kCream);
+    textAt(cv, fonts::body(), 233, 220, R ? "Întâi Wi-Fi-ul" : "Wi-Fi first", kCream);
   } else if (net_.bridgeCode.empty()) {
-    const float pulse = 0.55f + 0.35f * sinf(t_ * 3.0f);
-    textAt(cv, fonts::text(), 233, 200, R ? "Fac un cod…" : "Making a code…", kCream, pulse);
+    const float pulse = 0.6f + 0.35f * sinf(t_ * 3.0f);
+    textAt(cv, fonts::body(), 233, 220, R ? "Fac un cod…" : "Making a code…", kCream, pulse);
   } else {
     const bool cloud = net_.bridgeCode.size() == 8;
-    textAt(cv, fonts::small(), 233, 132, R ? "Pe calculator, în terminal:" : "On your computer, in a terminal:", kCream, kDim);
-    textAt(cv, fonts::small(), 233, 160, "soul-bridge pair", kCream);
-    textAt(cv, fonts::large(), 233, 206, cloud ? net_.bridgeCode.substr(0, 4) + "-" + net_.bridgeCode.substr(4) : net_.bridgeCode, kAmber);
+    textAt(cv, fonts::caption(), 233, 168, R ? "Pe calculator, în terminal:" : "On your computer, in a terminal:", kCream, kDim);
+    textAt(cv, fonts::tag(), 233, 196, "soul-bridge pair", pal_.e1);
+    textAt(cv, fonts::title(), 233, 236, cloud ? net_.bridgeCode.substr(0, 4) + "-" + net_.bridgeCode.substr(4) : net_.bridgeCode, kAmber);
     std::string tail;
     if (cloud && !net_.cloudHost.empty()) tail = "--cloud " + net_.cloudHost;
     else if (!cloud && !net_.ip.empty()) tail = R ? "(sau --soul " + net_.ip + ")" : "(or --soul " + net_.ip + ")";
-    if (!tail.empty()) textAt(cv, fonts::small(), 233, 248, ellipsize(fonts::small(), tail, g_.s(330)), kCream);
+    if (!tail.empty()) textAt(cv, fonts::caption(), 233, 272, ellipsize(fonts::caption(), tail, g_.s(320)), kCream);
     std::string l[2];
-    const int n = wrapLines(fonts::small(), net_.bridgePaired ? (R ? "Un calculator e legat, dar oprit: deschide Start SOUL."
-                                                                    : "A computer is paired but off: open Start SOUL.")
-                                                               : (R ? "Apoi: soul-bridge setup și Start SOUL."
-                                                                    : "Then: soul-bridge setup, and Start SOUL."),
-                            g_.s(330), l, 2);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 290 + i * 26, l[i], kCream, kDim);
+    const int n = wrapLines(fonts::caption(), net_.bridgePaired ? (R ? "Un calculator e legat, dar oprit: deschide Start SOUL."
+                                                                      : "A computer is paired but off: open Start SOUL.")
+                                                                 : (R ? "Apoi: soul-bridge setup și Start SOUL."
+                                                                      : "Then: soul-bridge setup, and Start SOUL."),
+                            g_.s(300), l, 2);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 302 + i * 24, l[i], kCream, kDim);
   }
   buildItems(items_);
   drawItems(cv, items_);
-  rimBottom(cv, R ? "Claude Code-ul tău, conectat de tine" : "your own Claude Code, signed in by you", kCream, kFaint);
 }
 
 void Os::drawWifi(Canvas& cv) {
   const bool R = ro();
-  if (net_.portal || page_ != 1) rimTop(cv, "WI-FI", kCream, kDim);
   if (net_.portal) {
+    rimTop(cv, "Wi-Fi", kCream);
     // the phone camera joins SOUL's own Wi-Fi from this QR (iOS 11+, Android 10+)
-    textAt(cv, fonts::small(), 233, 124, R ? "Scanează cu camera telefonului" : "Scan with your phone's camera", kCream, kDim);
-    if (!net_.apPass.empty()) drawQr(cv, "WIFI:T:WPA;S:" + net_.apName + ";P:" + net_.apPass + ";;", 233, 214, 150);
-    textAt(cv, fonts::text(), 233, 306, net_.apName + (net_.apPass.empty() ? std::string() : "  \u00B7  " + net_.apPass), kAmber);
-    textAt(cv, fonts::small(), 233, 338, (R ? "apoi deschide " : "then open ") + net_.portalUrl.substr(7), kCream, kDim);
-    textAt(cv, fonts::small(), 233, 364, (R ? "S-a închis? Deschide " : "Page closed? Open ") + net_.portalUrl.substr(7), kCream, kFaint);
+    textAt(cv, fonts::caption(), 233, 166, R ? "Scanează cu camera telefonului" : "Scan with your phone's camera", kCream, kDim);
+    if (!net_.apPass.empty()) drawQr(cv, "WIFI:T:WPA;S:" + net_.apName + ";P:" + net_.apPass + ";;", 233, 254, 128);
+    textAt(cv, fonts::body(), 233, 338, ellipsize(fonts::body(), net_.apName + (net_.apPass.empty() ? std::string() : "  ·  " + net_.apPass), g_.s(330)), kAmber);
+    textAt(cv, fonts::caption(), 233, 368, (R ? "apoi deschide " : "then open ") + net_.portalUrl.substr(7), kCream, kDim);
   } else if (page_ == 1) {
     // the phone's hotspot (docs/09 §1): what to switch on, per phone
-    rimTop(cv, R ? "HOTSPOT" : "PHONE HOTSPOT", kAmber, kDim);
-    glassPanel(cv, 56, 108, 410, 300, 30, gs());
+    rimTop(cv, R ? "Hotspotul telefonului" : "Phone hotspot", kAmber, 1);
     const char* body[2] = {
-        R ? "iPhone: Hotspot personal › Permite altora + Maximizează compatibilitatea. Ține ecranul deschis până mă conectez."
-          : "iPhone: Personal Hotspot › Allow Others to Join + Maximize Compatibility. Keep it open until I join.",
+        R ? "iPhone: Hotspot personal › Permite altora + Maximizează compatibilitatea. Ține ecranul deschis."
+          : "iPhone: Personal Hotspot › Allow Others to Join + Maximize Compatibility. Keep it open.",
         R ? "Android: Hotspot › nume, parolă, 2,4 GHz." : "Android: Hotspot › name, password, 2.4 GHz."};
-    float y = 138;
+    float y = 172;
     for (int k = 0; k < 2; ++k) {
-      std::string lines[5];
-      const int n = wrapLines(fonts::small(), body[k], g_.s(320), lines, 5);
-      for (int i = 0; i < n; ++i, y += 25) textAt(cv, fonts::small(), 233, y, lines[i], kCream, k ? kDim : 1.0f);
-      y += 10;
+      std::string lines[4];
+      const int n = wrapLines(fonts::caption(), body[k], g_.s(k ? 300 : 320), lines, k ? 2 : 4);
+      for (int i = 0; i < n; ++i, y += 25) textAt(cv, fonts::caption(), 233, y, lines[i], kCream, k ? kDim : 1.0f);
+      y += 8;
     }
   } else {
+    rimTop(cv, "Wi-Fi", kCream);
     // where SOUL is: online / looking for a network / a login page / no internet, and what it knows
-    glassPanel(cv, 70, 128, 396, 236, 30, gs());
     std::string st;
     Rgb c = kCream;
     if (net_.captive) {
@@ -940,36 +882,69 @@ void Os::drawWifi(Canvas& cv) {
     } else {
       st = R ? "Caut o rețea cunoscută…" : "Looking for a known network…";
     }
-    textAt(cv, fonts::text(), 233, 158, st, c);
+    textAt(cv, fonts::body(), 233, 176, ellipsize(fonts::body(), st, g_.s(320)), c);
     std::string sub;
     if (net_.captive) sub = R ? "Folosește hotspotul telefonului" : "Use your phone's hotspot";
     else if (net_.wifiFail == 2 && !net_.failSsid.empty()) sub = net_.failSsid;
     else if (net_.linkUp || net_.connected) sub = net_.ssid + (net_.ip.empty() ? std::string() : "  ·  " + net_.ip);
     else if (!net_.savedList.empty()) sub = (R ? "Știu: " : "I know: ") + net_.savedList;
-    if (!sub.empty()) textAt(cv, fonts::small(), 233, 196, ellipsize(fonts::small(), sub, g_.s(300)), kCream, kDim);
+    if (!sub.empty()) textAt(cv, fonts::caption(), 233, 208, ellipsize(fonts::caption(), sub, g_.s(320)), kCream, kDim);
     if (askQ_.size()) {
       char b[48];
       snprintf(b, sizeof b, R ? "%d întrebări așteaptă internetul" : "%d questions wait for the internet", askQ_.size());
-      textAt(cv, fonts::small(), 233, 224, askQ_.size() == 1 ? (R ? "1 întrebare așteaptă internetul" : "1 question waits for the internet") : std::string(b), kAmber, kDim);
+      textAt(cv, fonts::caption(), 233, 238, askQ_.size() == 1 ? (R ? "1 întrebare așteaptă internetul" : "1 question waits for the internet") : std::string(b), kAmber, kDim);
     }
   }
   buildItems(items_);
   drawItems(cv, items_);
 }
 
-void Os::drawMySoul(Canvas& cv) { drawLook(cv); }  // SoulOS Alive: My SOUL is Look (OsAlive.cpp)
+// My SOUL: the card of this SOUL's birth (the name, the rarity, how rare, the days together), Look and Rename;
+// Look (page 1, OsAlive.cpp) previews the other births and picks the body colour
+void Os::drawMySoul(Canvas& cv) {
+  if (page_ == 1) {
+    drawLook(cv);
+    return;
+  }
+  const bool R = ro();
+  const Design& d = kDesigns[birth_.design];
+  rimTop(cv, R ? "SOUL-ul meu" : "My SOUL", kCream);
+  buildItems(items_);
+  drawItems(cv, items_);
+  char b[96];
+  snprintf(b, sizeof b, "%s · #%03d / %d", kRarityName[(int)d.rarity], d.num, kDesignCount);
+  textAt(cv, fonts::tag(), 233, 248, upperAscii(b), Rgb::hex(kRarityColor[(int)d.rarity]));
+  int cnt = 0;
+  for (int i = 0; i < kDesignCount; ++i)
+    if (kDesigns[i].rarity == d.rarity) ++cnt;
+  std::string line = std::string(d.name) + " · " + (R ? "1 din " : "1 in ") + std::to_string((int)lround(cnt / kRarityRate[(int)d.rarity]));
+  if (set_.born && now_ > set_.born) {
+    const int days = (int)((now_ - set_.born) / 86400) + 1;
+    line += R ? " · " + std::to_string(days) + (days == 1 ? " zi" : " zile") : " · " + std::to_string(days) + (days == 1 ? " day" : " days");
+  }
+  textAt(cv, fonts::caption(), 233, 278, ellipsize(fonts::caption(), line, g_.s(320)), kCream, kDim);
+  rimBottom(cv, "chip " + birth_.chip, kCream, kFaint);
+}
 
 void Os::drawAbout(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, R ? "DESPRE" : "ABOUT", kCream, kDim);
-  glassPanel(cv, 70, 126, 396, 352, 32, gs());
-  textAt(cv, fonts::large(), 233, 160, R ? "Sunt un AI." : "I'm an AI.", kCream);
+  pebRect(cv, 78, 152, 388, 372, 30, pal_.peb, pal_.pebe, 0);
+  {  // ✦ a four-point star
+    Path& p = scratchPath();
+    if (p.reserve(256)) {
+      p.clear();
+      const float x = g_.s(233), y = g_.s(180), r = g_.s(11), k = r * 0.28f;
+      const float st[] = {x, y - r, x + k, y - k, x + r, y, x + k, y + k, x, y + r, x - k, y + k, x - r, y, x - k, y - k};
+      p.polygon(st, 8);
+      face_.raster().fill(cv, p, pal_.e1, fade_);
+    }
+  }
+  textAt(cv, fonts::name(), 233, 216, R ? "Sunt un AI." : "I'm an AI.", kCream);
   const char* body = R ? "SOUL e o mașină. Nu are sentimente adevărate și nu e un om. Ce scrii merge doar la AI-ul ales de tine."
                        : "SOUL is a machine. It has no real feelings and it is not a person. What you type goes only to the AI you chose.";
   std::string lines[5];
-  const int n = wrapLines(fonts::small(), body, g_.s(320), lines, 5);
-  for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 210 + i * 27, lines[i], kCream, kDim);
-  rimBottom(cv, "SoulOS 1.7 · " + std::string(viewName(view_)), kCream, kFaint);
+  const int n = wrapLines(fonts::caption(), body, g_.s(270), lines, 5);
+  for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 250 + i * 25, lines[i], kCream, kDim);
 }
 
 
@@ -994,90 +969,219 @@ void Os::drawQr(Canvas& cv, const std::string& text, float cx, float cy, float m
 
 void Os::drawPair(Canvas& cv) {
   const bool R = ro();
-  rimTop(cv, "SOUL CLOUD", kCream, kDim);
+  rimTop(cv, "SOUL Cloud", kCream);
   std::string id = "soul-";  // the device id, as the account page knows it
   for (char c : birth_.chip)
     if (c != ':') id += (char)(c >= 'A' && c <= 'F' ? c - 'A' + 'a' : c);
   if (net_.cloudUpdate) {
-    textAt(cv, fonts::large(), 233, 196, R ? "Actualizează SOUL" : "Update SOUL", kAmber);
+    textAt(cv, fonts::title(), 233, 196, R ? "Actualizează SOUL" : "Update SOUL", kAmber);
     std::string l[3];
-    const int n = wrapLines(fonts::small(), R ? "SOUL Cloud cere o versiune nouă. Cheia ta și „Fără AI” merg în continuare."
-                                              : "SOUL Cloud needs a newer SOUL. Your own key and No AI still work.",
-                            g_.s(320), l, 3);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 240 + i * 27, l[i], kCream, kDim);
+    const int n = wrapLines(fonts::caption(), R ? "SOUL Cloud cere o versiune nouă. Cheia ta și „Fără AI” merg în continuare."
+                                                : "SOUL Cloud needs a newer SOUL. Your own key and No AI still work.",
+                            g_.s(300), l, 3);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 240 + i * 26, l[i], kCream, kDim);
     return;
   }
   if (!net_.confirmPid.empty() && !net_.paired) {  // §6.3: "Pair with {name} ({hint})?"
-    textAt(cv, fonts::text(), 233, 180, R ? "Mă leg de contul lui" : "Pair with", kCream, kDim);
-    textAt(cv, fonts::large(), 233, 226, ellipsize(fonts::large(), net_.confirmName + "?", g_.s(330)), kMint);
-    textAt(cv, fonts::small(), 233, 272, net_.confirmHint, kCream, kDim);
+    textAt(cv, fonts::body(), 233, 182, R ? "Mă leg de contul lui" : "Pair with", kCream, kDim);
+    textAt(cv, fonts::title(), 233, 222, ellipsize(fonts::title(), net_.confirmName + "?", g_.s(320)), kMint);
+    textAt(cv, fonts::caption(), 233, 260, ellipsize(fonts::caption(), net_.confirmHint, g_.s(320)), kCream, kDim);
     buildItems(items_);
     drawItems(cv, items_);
     rimBottom(cv, R ? "doar dacă tu ai scanat codul" : "only if you scanned the code", kCream, kFaint);
     return;
   }
-  if (net_.cloudProblem == 2 || net_.cloudProblem == 3) {
-    textAt(cv, fonts::text(), 233, 196,
-           net_.cloudProblem == 2 ? (R ? "SOUL nu e înregistrat" : "This SOUL is not registered")
-                                  : (R ? "SOUL e al altui cont" : "This SOUL belongs to another account"),
-           kAmber);
-    textAt(cv, fonts::small(), 233, 236, R ? "Scrie-ne cu codul acesta:" : "Write to us with this id:", kCream, kDim);
-    textAt(cv, fonts::small(), 233, 264, id, kCream);
-    return;
-  }
-  if (net_.cloudRefused) {
-    textAt(cv, fonts::text(), 233, 196, R ? "SOUL Cloud nu mă acceptă" : "SOUL Cloud won't take me", kAmber);
-    textAt(cv, fonts::small(), 233, 236, R ? "Scrie-ne cu codul acesta:" : "Write to us with this id:", kCream, kDim);
-    textAt(cv, fonts::small(), 233, 264, id, kCream);
+  if (net_.cloudProblem == 2 || net_.cloudProblem == 3 || net_.cloudRefused) {
+    const std::string what = net_.cloudProblem == 2 ? (R ? "SOUL nu e înregistrat" : "This SOUL is not registered")
+                             : net_.cloudProblem == 3 ? (R ? "SOUL e al altui cont" : "This SOUL belongs to another account")
+                                                      : (R ? "SOUL Cloud nu mă acceptă" : "SOUL Cloud won't take me");
+    std::string l[2];
+    const int n = wrapLines(fonts::body(), what, g_.s(300), l, 2);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::body(), 233, 186 + i * 32, l[i], kAmber);
+    textAt(cv, fonts::caption(), 233, 254, R ? "Scrie-ne cu codul acesta:" : "Write to us with this id:", kCream, kDim);
+    textAt(cv, fonts::caption(), 233, 282, id, kCream);
     return;
   }
   if (net_.paired && !net_.cloudHost.empty() && pairDoneT_ <= 0) {
     // "Connect Claude": the phone page where the owner pastes the key of their Claude account
-    textAt(cv, fonts::text(), 233, 150, R ? "Conectează Claude" : "Connect Claude", kMint);
-    textAt(cv, fonts::small(), 233, 186, R ? "Scanează cu telefonul" : "Scan with your phone", kCream, kDim);
-    drawQr(cv, "https://" + net_.cloudHost + "/pair/brain?d=" + id, 233, 300, 150);
+    textAt(cv, fonts::body(), 233, 168, R ? "Conectează Claude" : "Connect Claude", kMint);
+    textAt(cv, fonts::caption(), 233, 198, R ? "Scanează cu telefonul" : "Scan with your phone", kCream, kDim);
+    drawQr(cv, "https://" + net_.cloudHost + "/pair/brain?d=" + id, 233, 296, 140);
     rimBottom(cv, net_.owner.empty() ? net_.cloudHost : (R ? "legat de " : "paired with ") + net_.owner, kCream, kFaint);
     return;
   }
   if (net_.paired) {
-    textAt(cv, fonts::large(), 233, 192, R ? "Legat de cont" : "Paired", kMint);
-    if (!net_.owner.empty()) textAt(cv, fonts::text(), 233, 234, net_.owner, kCream);
+    textAt(cv, fonts::title(), 233, 190, R ? "Legat de cont" : "Paired", kMint);
+    if (!net_.owner.empty()) textAt(cv, fonts::body(), 233, 230, net_.owner, kCream);
     std::string l[3];
-    const int n = wrapLines(fonts::small(), R ? "Claude-ul tău poate pune acum notițe, mementouri și alarme pe mine."
-                                              : "Your Claude can now put notes, reminders and alarms on me.",
-                            g_.s(320), l, 3);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::small(), 233, 280 + i * 27, l[i], kCream, kDim);
+    const int n = wrapLines(fonts::caption(), R ? "Claude-ul tău poate pune acum notițe, mementouri și alarme pe mine."
+                                                : "Your Claude can now put notes, reminders and alarms on me.",
+                            g_.s(300), l, 3);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 272 + i * 26, l[i], kCream, kDim);
     rimBottom(cv, R ? "dezlegi din pagina contului" : "unpair from your account page", kCream, kFaint);
     return;
   }
   if (!net_.configured || !net_.connected) {
-    textAt(cv, fonts::text(), 233, 200, R ? "Întâi Wi-Fi-ul" : "Wi-Fi first", kCream);
-    textAt(cv, fonts::small(), 233, 240, net_.connecting ? (R ? "mă conectez…" : "connecting…") : (R ? "apoi apare codul aici" : "then the code shows up here"),
+    textAt(cv, fonts::body(), 233, 214, R ? "Întâi Wi-Fi-ul" : "Wi-Fi first", kCream);
+    textAt(cv, fonts::caption(), 233, 248, net_.connecting ? (R ? "mă conectez…" : "connecting…") : (R ? "apoi apare codul aici" : "then the code shows up here"),
            kCream, kDim);
     buildItems(items_);
     drawItems(cv, items_);
     return;
   }
   if (net_.pairCode.size() != 8) {
-    const float pulse = 0.55f + 0.35f * sinf(t_ * 3.0f);
-    textAt(cv, fonts::text(), 233, 200, net_.cloudOnline ? (R ? "Aștept codul…" : "Getting a code…") : (R ? "Mă conectez la SOUL Cloud…" : "Reaching SOUL Cloud…"),
+    const float pulse = 0.6f + 0.35f * sinf(t_ * 3.0f);
+    textAt(cv, fonts::body(), 233, 214, net_.cloudOnline ? (R ? "Aștept codul…" : "Getting a code…") : (R ? "Ajung la SOUL Cloud…" : "Reaching SOUL Cloud…"),
            kCream, pulse);
-    textAt(cv, fonts::small(), 233, 244, id, kCream, kFaint);
+    textAt(cv, fonts::caption(), 233, 252, id, kCream, kFaint);
     return;
   }
-  textAt(cv, fonts::small(), 233, 146, R ? "Codul tău de legare" : "Your pairing code", kCream, kDim);
-  textAt(cv, fonts::large(), 233, 200, net_.pairCode.substr(0, 4) + "-" + net_.pairCode.substr(4), kAmber);
+  textAt(cv, fonts::caption(), 233, 166, R ? "Codul tău de legare" : "Your pairing code", kCream, kDim);
+  textAt(cv, fonts::title(), 233, 204, net_.pairCode.substr(0, 4) + "-" + net_.pairCode.substr(4), kAmber);
   if (net_.trialLeft > 0) {  // a factory unit answers a few questions before it is paired
     char b[64];
     snprintf(b, sizeof b, R ? "%d răspunsuri gratuite până atunci" : "%d free answers until then", net_.trialLeft);
-    textAt(cv, fonts::small(), 233, 240, b, kCream, kFaint);
+    textAt(cv, fonts::caption(), 233, 238, b, kCream, kFaint);
   }
-  if (!net_.pairUrl.empty()) drawQr(cv, net_.pairUrl, 233, 330, 136);
+  if (!net_.pairUrl.empty()) drawQr(cv, net_.pairUrl, 233, 322, 118);
   std::string host = net_.pairUrl.size() > 8 ? net_.pairUrl.substr(8) : std::string();
   host = host.substr(0, host.find('/'));
   rimBottom(cv, host.empty() ? (R ? "scanează sau scrie codul în cont" : "scan, or type the code in your account")
                              : (R ? "scanează sau: " : "scan, or: ") + host + "/pair",
             kCream, kFaint);
+}
+
+// ------------------------------------------------------------- the wheels ---
+
+bool Os::buildCoreWheel(std::vector<WheelRow>& out) const {
+  const bool R = ro();
+  auto row = [&](int id, const std::string& title) -> WheelRow& {
+    WheelRow r;
+    r.id = id;
+    r.title = title;
+    r.valueC = pal_.e1;
+    out.push_back(r);
+    return out.back();
+  };
+  auto addNew = [&](int id, const char* en, const char* ro_) {
+    WheelRow& r = row(id, R ? ro_ : en);
+    r.kind = RowNew;
+  };
+  switch (view_) {
+    case View::Settings: {
+      static const char* const kLabels[2][14] = {
+          {"Brightness", "AI", "Wi-Fi", "Language", "My SOUL", "Text size", "About", "Debug overlay", "Screen off at night",
+           "Claude & ChatGPT on me", "Start over", "Memory", "Apps", "Reduce motion"},
+          {"Luminozitate", "AI", "Wi-Fi", "Limba", "SOUL-ul meu", "Mărimea textului", "Despre", "Depanare", "Ecran stins noaptea",
+           "Claude & ChatGPT pe mine", "De la capăt", "Memorie", "Aplicații", "Mai puțină mișcare"}};
+      static const int kOrder[14] = {4, 1, 2, 11, 12, 0, 5, 3, 13, 8, 9, 6, 7, 10};
+      static const char* const kBr[2][4] = {{"Auto", "Low", "Mid", "High"}, {"Auto", "Mică", "Medie", "Mare"}};
+      const Rgb state = kCream.scaled(0.74f);
+      for (int k : kOrder) {
+        std::string v;
+        Rgb c = state;
+        switch (k) {
+          case 0: v = kBr[R][set_.bright % 4]; break;
+          case 1:
+            v = (aiMode() == AiMode::Cloud ? "SOUL Cloud" : aiMode() == AiMode::Claude ? "Claude" : aiMode() == AiMode::ChatGpt ? "ChatGPT"
+                 : aiMode() == AiMode::Bridge ? (R ? "Calculator" : "Computer") : (R ? "Fără" : "None")) + std::string(" \xE2\x80\xBA");
+            c = aiMode() == AiMode::None ? state : kAmber;
+            break;
+          case 2:
+            v = (net_.connected ? net_.ssid : net_.configured ? (R ? "Neconectat" : "Not connected") : (R ? "Nesetat" : "Not set")) + " \xE2\x80\xBA";
+            c = pal_.e1;
+            break;
+          case 3: v = R ? "Română" : "English"; break;
+          case 4: v = std::string(set_.name) + " \xE2\x80\xBA"; c = pal_.e2; break;
+          case 5: v = set_.largeText ? (R ? "mare" : "large") : (R ? "normal" : "normal"); break;
+          case 6: v = "\xE2\x80\xBA"; c = pal_.e1; break;
+          case 7: v = set_.debug ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;
+          case 8: v = set_.nightOff ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;
+          case 9:
+            v = !net_.paired ? (R ? "Nelegat" : "Not paired") : net_.connectorsPaused ? (R ? "Pe pauză" : "Paused") : (R ? "Pornite" : "On");
+            break;
+          case 10: v = R ? "ține" : "hold"; c = kAmber; break;
+          case 11: v = std::to_string(mem_ ? mem_->size() : 0) + " \xE2\x80\xBA"; c = pal_.e1; break;  // SOUL Memory
+          case 12: v = std::to_string(visibleApps()) + " \xE2\x80\xBA"; c = pal_.e1; break;  // Settings › Apps
+          default: v = set_.reduceMotion ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;  // 13: reduce motion
+        }
+        WheelRow& r = row(IdRow + k, kLabels[R][k]);
+        r.value = v;
+        r.valueC = c;
+      }
+      return true;
+    }
+    case View::AiMode: {
+      static const AiMode kModes[] = {AiMode::Cloud, AiMode::Claude, AiMode::ChatGpt, AiMode::Bridge, AiMode::None};
+      const char* labels[] = {R ? "Claude-ul tău" : "Your Claude", R ? "Claude · cheia ta" : "Claude · your key",
+                              R ? "ChatGPT · cheia ta" : "ChatGPT · your key", R ? "Claude de pe calculator" : "Claude on my computer",
+                              R ? "Fără AI" : "No AI"};
+      for (int i = 0; i < 5; ++i) {
+        std::string st;
+        switch (i) {
+          case 0:
+            st = !net_.relay ? (R ? "adresa se pune din telefon" : "set its address from a phone")
+                 : net_.cloudUpdate ? (R ? "actualizează SOUL" : "update SOUL")
+                 : net_.cloudRefused ? (R ? "SOUL nu e acceptat" : "this SOUL was refused")
+                 : net_.paired ? (net_.owner.empty() ? std::string(R ? "prin SOUL Cloud" : "via SOUL Cloud") : (R ? "legat · " : "paired · ") + net_.owner)
+                 : (R ? "atinge ca să-l legi" : "tap to pair it");
+            break;
+          case 1: st = net_.keyClaude ? net_.maskClaude : (R ? "are nevoie de o cheie" : "needs a key"); break;
+          case 2: st = net_.keyOpenai ? net_.maskOpenai : (R ? "are nevoie de o cheie" : "needs a key"); break;
+          case 3:
+            st = net_.bridgeOnline ? (R ? "conectat · " : "connected · ") + (net_.bridgeName.empty() ? std::string("PC") : net_.bridgeName)
+                 : net_.bridgePaired ? (R ? "calculatorul e oprit" : "the computer is off")
+                                     : (R ? "Claude Code-ul tău" : "your own Claude Code");
+            break;
+          default: st = R ? "ore și minutare pe device" : "times and timers on the device"; break;
+        }
+        WheelRow& r = row(IdRow + i, labels[i]);
+        r.sub = st;
+        if (aiMode() == kModes[i]) r.kind = RowSel;
+      }
+      if (net_.keyClaude || net_.keyOpenai) {
+        WheelRow& r = row(IdForget, R ? "Uită cheile" : "Forget keys");
+        r.value = R ? "ține" : "tap";
+        r.valueC = kAmber;
+      }
+      return true;
+    }
+    case View::Alarms: {
+      const int n = alarms_ ? alarms_->count() : 0;
+      for (int i = 0; i < n; ++i) {
+        const Alarm& a = alarms_->at(i);
+        char b[16];
+        snprintf(b, sizeof b, "%02u:%02u", a.hour, a.minute);
+        WheelRow& r = row(IdRow + i, "");
+        r.tag = b;
+        r.bigTag = true;
+        r.kind = RowToggle;
+        r.on = a.enabled;
+        r.dim = a.enabled ? 1.0f : 0.55f;
+        r.sub = daysText(a.days, R) + (a.label[0] ? std::string(" · ") + a.label : std::string());
+      }
+      addNew(IdNew, "+ New", "+ Nouă");
+      return true;
+    }
+    case View::Notes: {
+      for (int i = 0; i < (int)notes_.size(); ++i) {
+        WheelRow& r = row(IdRow + i, notes_[(size_t)i].text);
+        const uint32_t t = notes_[(size_t)i].t;
+        if (t && now_) {
+          char b[32];
+          const bool today = t / 86400 == now_ / 86400;
+          static const char* const en[] = {"Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"};
+          static const char* const rr[] = {"Jo", "Vi", "Sâ", "Du", "Lu", "Ma", "Mi"};
+          snprintf(b, sizeof b, "%s %02u:%02u", today ? (R ? "azi" : "today") : (R ? rr : en)[(t / 86400) % 7], (unsigned)(t % 86400 / 3600),
+                   (unsigned)(t % 3600 / 60));
+          r.sub = b;
+        }
+      }
+      addNew(IdNew, "+ New", "+ Nouă");
+      return true;
+    }
+    default: return false;
+  }
 }
 
 }  // namespace suflet

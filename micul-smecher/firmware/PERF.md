@@ -1,8 +1,42 @@
-# SOUL firmware performance: 1.7.0 → 1.8.0 → 1.9 (SoulOS Alive core)
+# SOUL firmware performance: 1.7.0 → 1.8.0 → 1.9 (SoulOS Alive core + screens)
 
 *Measured 2026-10-04 on the PC (the simulator runs the device's own `lib/Suflet`). Nothing here has run on a
 board yet: the ESP32-S3 milliseconds and milliamps are estimates from instruction counts and datasheet
 currents. [`BRINGUP.md`](BRINGUP.md) §5 measures them on the 2.8C; write the real numbers there.*
+
+## 1.9: SoulOS Alive screens (2026-10-12)
+
+*The round-native screens of SoulOS Alive (`os/DESIGN-ALIVE.md` §4) on top of the core: every list is a wheel
+(`alive::Wheel`, `OsScreens.cpp`), Today one widget at a time, the answer on a round pebble, Claude's ask with two
+68 px buttons, flat pills / toggles / 8 px rim rings everywhere, the brand faces on every screen. Before =
+`perf/1.9-alive-core.json`, after = `perf/1.9-alive-screens.json` (same method; still estimates until BRINGUP §5).*
+
+| Scenario | core M instr | screens M instr | Δ | est. frame ms core → screens | est. fps |
+|---|---:|---:|---:|---:|---:|
+| Launcher orbit: swipe, open Alarms (the wheel's "+ New"), set one | 4.24 | 2.70 | −36 % | 15.1 → 9.6 | 30 |
+| Glass screen open, idle (Settings: now a wheel) | 1.83 | 1.80 | −1 % | 5.7 → 5.7 | 30 |
+| Screens opened and closed every second | 2.97 | 2.99 | +1 % | 11.5 → 11.6 | 30 |
+| Talk: keyboard, thinking (a face moment), the answer pebble | 3.08 | 3.86 | +25 % | 12.4 → 14.3 | 30 |
+| Claude asks (the amber ring, Allow / Deny) | 4.93 | 5.02 | +2 % | 17.4 → 17.6 | 30 |
+| Maps (pills, the step card under the eyes) | 4.37 | 4.73 | +8 % | 15.1 → 15.9 | 30 |
+| Games (flat arena layer, tilt ball + rhythm) | 3.65 | 2.37 | −35 % | 14.3 → 11.5 | 30 |
+| The lists' wheels: Settings, Alarms, World clock, Habits turned by drags, swipes, a neighbour (`bench_wheel`, new) | | 3.36 | | → 13.4 | 30 |
+
+Every other scenario is unchanged (±4 %). Every scenario stays at its asked fps (est.); the heaviest is still Claude's
+ask at 17.6 ms of the 20.8 ms a 30 fps frame may take.
+
+- **The wheel**: rows move on the eyes' spring (K 260, c 25: ≈ 0.34 s, ≤ 5 % overshoot); while it moves, the damage
+  is the wheel's band only (design y 128–452: every place a row can be within ±1.6 rows of the focus) plus the scroll
+  arc; at rest nothing repaints. A short rim arc (the scroll arc, the rim dials) is a stroked polygon over its own box
+  (`Os::rimRing`): drawn with `Raster::ring` it cost 2.2 M instructions a frame on the turning wheel (5.56 → 3.36 M).
+- **Exactness**: `perf_bench.py --verify`: the frames that differ from a full redraw are exactly 1.8's known ones (the
+  find-phone and map pulses); the wheels, the answer pebble, the thinking arc and the ringing ring are exact.
+- **Memory** (`lcd28`): `.data` + `.bss` = 97,644 B (`xtensa-esp-elf-size -A`: 42,308 + 55,336); flash 2,514,471 →
+  2,558,323 B (+43 KB: the screens' code and the ↑ ↓ → glyphs added to the five Alive atlases, 112.9 KB in all).
+- **The round audit** (`test/test_suflet/test_audit.cpp`): 58 screens drawn by the real `Os`, every glyph (via
+  `Canvas::probe`, one pointer test per glyph, never set on the device) and every control checked against r 228, the
+  18 px type floor (20 px under 80 % opacity), 44 px targets, rim words vs content, the eyes' pixels vs words and
+  controls: 0 failures.
 
 ## 1.9: SoulOS Alive core (2026-10-12)
 

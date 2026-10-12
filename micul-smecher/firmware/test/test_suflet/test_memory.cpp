@@ -88,6 +88,20 @@ struct Dev {
   void run(float s) {
     for (int i = 0; i < (int)(s * 30 + 0.5f); ++i) step();
   }
+  // SoulOS Alive: lists are wheels. A row is brought into focus (what a swipe / the crown does), then tapped where
+  // the focused row sits (y 290); a control by its id: revealed if it is in a wheel, then tapped at its centre.
+  void tapRow(int row) {
+    os.wheelFocusRow(row);
+    run(0.05f);
+    tap(233, 290);
+  }
+  void tapItem(int id) {
+    os.wheelReveal(id);
+    run(0.05f);
+    float x = 233, y = 290;
+    os.controlCenter(id, x, y);
+    tap(x, y);
+  }
   void tap(float x, float y) {
     fx = g.s(x);
     fy = g.s(y);
@@ -489,17 +503,7 @@ static void test_memory_settings_screen_lists_searches_forgets_and_backs_up() {
   d.mem.remember("Mihai is my brother", FactKind::Person, FactSrc::Rule, kNow + 1, 4, "Mihai");
   d.os.go(View::Settings);
   d.run(0.3f);
-  for (int i = 0; i < 2; ++i) {  // Memory is the last row (page 3)
-    d.fx = d.g.s(233);
-    d.finger = true;
-    for (int k = 0; k <= 6; ++k) {
-      d.fy = d.g.s(380 - 230.0f * k / 6);
-      d.step();
-    }
-    d.finger = false;
-    d.run(0.4f);
-  }
-  d.tap(233, 172 + 3 * 62);
+  d.tapItem(100 + 11);  // the Memory row of the Settings wheel
   TEST_ASSERT_EQUAL_INT((int)View::Memory, (int)d.os.view());
   TEST_ASSERT_EQUAL_STRING("memory", viewName(View::Memory));
   // it draws inside the disc
@@ -530,25 +534,25 @@ static void test_memory_settings_screen_lists_searches_forgets_and_backs_up() {
   d.os.go(View::Memory);
   d.run(0.3f);
   // newest first: tap the first row -> the fact; hold Forget -> gone
-  d.tap(233, 160);
+  d.tapItem(100);  // (the wheel's second row: after Search)
   d.os.render(cv);
-  d.hold(233, 396, 1.4f);
+  d.hold(233, 384, 1.4f);
   TEST_ASSERT_EQUAL_INT(3, (int)d.mem.size());
   TEST_ASSERT_NULL(d.mem.find(4));
   TEST_ASSERT_EQUAL_INT((int)View::Memory, (int)d.os.view());
   // search on the round keyboard
-  d.tap(160, 344);
+  d.tapItem(60);  // Search
   TEST_ASSERT_EQUAL_INT((int)View::Keyboard, (int)d.os.view());
   // backup needs a paired account; once on, an export goes to the cloud
   d.os.go(View::Memory);
   d.run(0.3f);
-  d.tap(306, 344);
+  d.tapItem(61);  // Backup
   TEST_ASSERT_FALSE(d.mem.backup);
   NetInfo n;
   n.configured = n.connected = true;
   n.relay = n.paired = true;
   d.os.setNet(n);
-  d.tap(306, 344);
+  d.tapItem(61);
   TEST_ASSERT_TRUE(d.mem.backup);
   d.run(0.2f);
   CloudOut co;
@@ -556,14 +560,16 @@ static void test_memory_settings_screen_lists_searches_forgets_and_backs_up() {
   while (d.os.popCloudOut(co))
     if (co.kind == CloudOut::MemoryBackup && !co.paused && has(co.text, "My sister is Ana")) sent = true;
   TEST_ASSERT_TRUE(sent);
-  d.tap(306, 344);  // off: the cloud copy is deleted
+  d.tapItem(61);  // off: the cloud copy is deleted
   d.run(0.2f);
   sent = false;
   while (d.os.popCloudOut(co))
     if (co.kind == CloudOut::MemoryBackup && co.paused) sent = true;
   TEST_ASSERT_TRUE(sent);
   // hold "Forget all": wiped
-  d.hold(233, 398, 1.4f);
+  d.os.wheelReveal(62);
+  d.run(0.05f);
+  d.hold(233, 290, 1.4f);
   TEST_ASSERT_EQUAL_INT(0, (int)d.mem.size());
 }
 

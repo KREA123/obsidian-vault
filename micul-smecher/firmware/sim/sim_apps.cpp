@@ -217,6 +217,12 @@ struct AppSim {
     finger = false;
     run(gap);
   }
+  // a list's row (SoulOS Alive: lists are wheels): turned into focus, then tapped where the focused row sits
+  void tapRow(int row, float gap = 0.6f) {
+    os.wheelFocusRow(row);
+    run(0.05f);
+    tap(233, 290, gap);
+  }
   void swipe(float x0, float y0, float x1, float y1, float gap = 0.6f) {
     finger = true;
     for (int i = 0; i <= 6; ++i) {
@@ -280,12 +286,12 @@ void allApps(AppSim& s) {
   s.run(9.0f);
   s.os.openApp(AppId::Maps);
   s.run(1.6f);
-  s.tap(40, 233, 1.2f);  // "-" on the left rim: one level out
+  s.tap(50, 233, 1.2f);  // "-" on the left rim: one level out
   s.snap("maps-here");
   s.os.appData(Fetch::RoutePlan, 200, kFixRoute);
   s.run(1.2f);
   s.snap("maps-route-preview");
-  s.tap(233, 358, 0.8f);  // Start
+  s.tap(233, 326, 0.8f);  // Start
   {
     const maps::RouteData& r = s.os.apps().route;
     const int i = r.steps[1].idx;
@@ -311,7 +317,7 @@ void allApps(AppSim& s) {
   s.os.openApp(AppId::Calendar);
   s.run(1.4f);
   s.snap("calendar");
-  s.tap(233, 164, 0.7f);
+  s.tapRow(0, 0.7f);
   s.snap("calendar-event");
   s.os.openApp(AppId::Music);
   s.run(0.6f);
@@ -321,18 +327,18 @@ void allApps(AppSim& s) {
   s.os.openApp(AppId::Games);
   s.run(0.8f);
   s.snap("games");
-  s.tap(233, 170, 0.3f);  // tilt ball, the device tipped right and toward you
+  s.tapRow(0, 0.3f);  // tilt ball, the device tipped right and toward you
   s.roll = -0.25f;
   s.pitch = 0.35f;
   s.run(1.4f);
   s.snap("game-tilt-ball");
   s.roll = s.pitch = 0;
   s.swipe(233, 40, 233, 300, 0.3f);
-  s.tap(233, 246, 0.2f);  // rhythm
+  s.tapRow(1, 0.2f);  // rhythm
   s.run(2.25f);
   s.snap("game-rhythm");
   s.swipe(233, 40, 233, 300, 0.3f);
-  s.tap(233, 322, 0.2f);  // eye memory
+  s.tapRow(2, 0.2f);  // eye memory
   s.run(0.85f);
   s.snap("game-eye-memory");
   {
@@ -346,7 +352,7 @@ void allApps(AppSim& s) {
   s.snap("game-over");
   s.os.openApp(AppId::Focus);
   s.run(0.4f);
-  s.tap(233, 340, 0.4f);
+  s.tap(233, 326, 0.4f);
   s.run(3.0f);
   s.snap("focus-pomodoro");
   s.os.apps().pomo.stop();
@@ -359,14 +365,14 @@ void allApps(AppSim& s) {
   s.os.apps().breathing = false;
   s.os.openApp(AppId::Habits);
   s.run(0.5f);
-  s.tap(233, 160, 0.5f);
-  s.tap(233, 236, 0.8f);
+  s.tapRow(0, 0.5f);
+  s.tapRow(1, 0.8f);
   s.snap("habits");
   s.os.openApp(AppId::Stopwatch);
   s.run(0.4f);
-  s.tap(316, 352, 0.2f);
+  s.tap(296, 352, 0.2f);
   s.run(1.6f);
-  s.tap(150, 352, 0.2f);
+  s.tap(170, 352, 0.2f);
   s.run(1.2f);
   s.snap("stopwatch");
   s.os.apps().sw.reset();
@@ -385,7 +391,7 @@ void allApps(AppSim& s) {
   s.snap("convert-currency");
   s.os.openApp(AppId::FindPhone);
   s.run(0.4f);
-  s.tap(233, 318, 1.4f);
+  s.tap(233, 300, 1.4f);
   s.snap("find-my-phone");
   s.os.openApp(AppId::Device);
   s.run(0.8f);
@@ -430,14 +436,14 @@ void benchMaps(AppSim& s) {
   }
   s.os.appData(Fetch::RoutePlan, 200, kFixRoute);
   s.run(0.5f);
-  s.tap(233, 358, 0.2f);
+  s.tap(233, 326, 0.2f);
   s.run(4.0f);  // walking: the step card, the eyes, the pulse of "you"
 }
 
 void benchGames(AppSim& s) {
   s.os.openApp(AppId::Games);
   s.run(0.6f);
-  s.tap(233, 170, 0.1f);
+  s.tapRow(0, 0.1f);
   s.composeMs = 0;
   s.composed = 0;
   for (int i = 0; i < 150; ++i) {
@@ -446,7 +452,7 @@ void benchGames(AppSim& s) {
     s.step();
   }
   s.swipe(233, 40, 233, 300, 0.1f);
-  s.tap(233, 246, 0.1f);
+  s.tapRow(1, 0.1f);
   s.run(5.0f);
 }
 
