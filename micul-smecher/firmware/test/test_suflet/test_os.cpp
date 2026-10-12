@@ -163,8 +163,15 @@ static void test_os_swipe_opens_the_orbit_and_back_is_one_level() {
   d.run(0.5f);
   d.swipe(330, 240, 150, 240);
   TEST_ASSERT_EQUAL_INT((int)View::Launcher, (int)d.os.view());
-  d.swipe(330, 330, 150, 330);  // spin: the next app
-  TEST_ASSERT_EQUAL_INT(1, d.os.launcherIndex());
+  // SoulOS Alive: the dial follows the finger and a fling coasts on to a detent (round(rot + v / 3.2))
+  d.swipe(330, 330, 150, 330);  // 180 px in 0.2 s: two pebbles under the finger + the coast
+  d.run(1.0f);
+  TEST_ASSERT_FALSE(d.os.dial().settling());
+  const int landed = d.os.launcherIndex();
+  TEST_ASSERT_TRUE(landed >= 3 && landed <= 6);
+  d.swipe(233, 330, 200, 330);  // a short slow drag: one pebble or none, never a jump
+  d.run(1.0f);
+  TEST_ASSERT_TRUE(abs(d.os.launcherIndex() - landed) <= 1);
   d.os.go(View::AiMode);
   d.run(0.3f);
   d.swipe(233, 200, 233, 380);  // swipe down = back: up one level
@@ -241,7 +248,8 @@ static void test_os_errors_say_what_to_do_and_local_rules_still_act() {
   TEST_ASSERT_EQUAL_INT((int)AiErr::BadKey, (int)d.os.lastError());
   TEST_ASSERT_EQUAL_INT(600, d.os.timerLeft());  // the on-device rules still started it
   FaceInputs fi = d.os.faceInputs(d.brain);
-  TEST_ASSERT_EQUAL_INT((int)FaceState::Error, (int)fi.state);  // the eyes: confused
+  // SoulOS Alive §6: the on-device fallback did it (the timer runs): that is a success, not a sad face
+  TEST_ASSERT_TRUE((int)FaceState::Error != (int)fi.state);
   // offline: no request at all
   Dev off(true, AiMode::Claude, false);
   off.os.ask("wake me at 7");
@@ -254,6 +262,10 @@ static void test_os_errors_say_what_to_do_and_local_rules_still_act() {
   slow.run(46);
   TEST_ASSERT_FALSE(slow.os.thinking());
   TEST_ASSERT_EQUAL_INT((int)AiErr::Timeout, (int)slow.os.lastError());
+  // ... and that failure did nothing: sad (held while the answer shows)
+  TEST_ASSERT_EQUAL_INT((int)FaceState::Error, (int)slow.os.faceInputs(slow.brain).state);
+  slow.run(0.5f);
+  TEST_ASSERT_EQUAL_INT(eyes::X_sad, slow.os.face().rig().mood());
 }
 
 static void test_os_no_ai_mode_keeps_working_on_the_device() {
@@ -352,6 +364,8 @@ static void test_frame_pipeline_equals_a_full_redraw() {
     rc.clearClip();
     d.os.render(rc);
     d.os.face().render(rc);
+    RectList lids;
+    d.os.renderOverlay(rc, RectList(), lids);  // SoulOS Alive: the lid wipe over the eyes
     int diff = 0;
     for (size_t i = 0; i < ref.size(); ++i)
       if (ref[i] != d.fb[i]) ++diff;
@@ -816,8 +830,9 @@ static void test_os_glass_screens_go_back_to_the_eyes_when_left_alone() {
   d.render = true;
   d.os.go(View::Settings);
   d.run(1.0f);
-  TEST_ASSERT_TRUE(d.os.uiOn() && d.os.auraOn() && glass().on());
-  TEST_ASSERT_EQUAL_UINT16(glass().auraAt(20, 240), d.fb[240 * 480 + 20]);  // the aura is behind the screen
+  // SoulOS Alive: a screen is flat pebbles on pure black (the frosted aura is retired, DESIGN-ALIVE.md §7)
+  TEST_ASSERT_TRUE(d.os.uiOn() && d.os.auraOn() && !glass().on() && glass().flat());
+  TEST_ASSERT_EQUAL_UINT16(0, d.fb[240 * 480 + 20]);
   d.run(Os::kAppIdleS + 1.0f);
   TEST_ASSERT_EQUAL_INT((int)View::Home, (int)d.os.view());
   d.run(0.6f);
@@ -894,7 +909,8 @@ static void test_os_glass_never_behind_the_eyes() {
   d.run(0.1f);
   TEST_ASSERT_FALSE(glass().on());
   d.run(0.6f);
-  TEST_ASSERT_TRUE(glass().on());
+  TEST_ASSERT_FALSE(glass().on());  // SoulOS Alive: never an aura, on any screen
+  TEST_ASSERT_EQUAL_UINT16(0, d.fb[240 * 480 + 20]);
 }
 
 void runOsTests() {

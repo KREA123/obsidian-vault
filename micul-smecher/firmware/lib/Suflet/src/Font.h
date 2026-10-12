@@ -41,6 +41,12 @@ const Font& small();   // 22 px SemiBold: labels, suggestions, numerals
 const Font& text();    // 26 px SemiBold: keys, the text field
 const Font& large();   // 36 px Bold: callout, variant tray
 const Font& digits();  // 88 px Bold, 0-9 and ':' only: time picker
+// SoulOS Alive (os/DESIGN-ALIVE.md; tools/gen_font_alive.py, FontAliveData.h): the brand faces
+const Font& tag();      // 18 px Martian Mono 500: <= 2-word tags (an AI's name, a rarity)
+const Font& caption();  // 22 px Bricolage Grotesque 600: secondary lines, the dial's fact, speech, rim titles
+const Font& body();     // 27 px Bricolage Grotesque 500: rows, body
+const Font& name();     // 30 px Bricolage Grotesque 700: the dial's curved app name, titles
+const Font& title();    // 36 px Bricolage Grotesque 700: big titles
 }  // namespace fonts
 
 enum class Align : uint8_t { Left, Center, Right };

@@ -1,8 +1,59 @@
-# SOUL firmware performance: 1.7.0 → 1.8.0
+# SOUL firmware performance: 1.7.0 → 1.8.0 → 1.9 (SoulOS Alive core)
 
 *Measured 2026-10-04 on the PC (the simulator runs the device's own `lib/Suflet`). Nothing here has run on a
 board yet: the ESP32-S3 milliseconds and milliamps are estimates from instruction counts and datasheet
 currents. [`BRINGUP.md`](BRINGUP.md) §5 measures them on the 2.8C; write the real numbers there.*
+
+## 1.9: SoulOS Alive core (2026-10-12)
+
+*The core of the approved "SoulOS Alive" design (`os/DESIGN-ALIVE.md`) on the device: the born palette, the eye slot,
+the lid wipe, the home dial of MĂRGĂRITAR pebbles, breathing + speech, the reactions; the frosted glass retired
+(`GlassLayer` flat mode). Same method as below (`tools/perf_bench.py`, callgrind, the 2.3 ns calibration). Before =
+1.8.0 re-measured on this PC the same day (identical to the 1.8 column below); after = `perf/1.9-alive-core.json`.
+Still estimates until BRINGUP §5 runs on a board.*
+
+| Scenario | before M instr | after M instr | Δ | before px copied | after px copied | est. frame ms before → after | est. fps before → after |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Standby: the eyes alone, nobody touches it (Lollipop, spiral pupils) | 3.56 | 3.56 | +0 % | 56,951 | 56,836 | 11.5 → 11.5 | 24 → 24 |
+| Home: boop, laugh, look at the finger | 2.01 | 1.75 | -13 % | 44,683 | 32,495 | 7.4 → 6.3 | 30 → 30 |
+| All 31 expressions / reactions | 3.45 | 3.45 | -0 % | 61,510 | 61,516 | 11.4 → 11.4 | 30 → 30 |
+| IMU motion: level keeping, spin (dizzy), marble pupils, nod | 4.75 | 4.77 | +0 % | 91,318 | 91,527 | 15.6 → 15.6 | 30 → 30 |
+| Notifications: a capsule on standby every 1.5 s | 3.64 | 3.01 | -17 % | 71,520 | 80,430 | 12.2 → 11.1 | 30 → 30 |
+| Launcher orbit: swipe, open Alarms, set one | 3.12 | 4.24 | +36 % | 74,097 | 109,144 | 11.1 → 15.1 | 30 → 30 |
+| Keyboard typing (35 glass caps) | 3.24 | 1.76 | -46 % | 66,552 | 51,465 | 11.1 → 7.1 | 30 → 30 |
+| Glass screen open, idle (Settings, aura on) | 2.21 | 1.83 | -17 % | 31,583 | 12,807 | 7.3 → 5.7 | 30 → 30 |
+| Glass screen, device tilted (aura drift / tilt repaints) | 2.62 | 1.84 | -30 % | 52,837 | 13,503 | 9.1 → 5.8 | 30 → 30 |
+| Screens opened and closed every second (aura fades on/off) | 4.47 | 2.97 | -34 % | 121,302 | 92,357 | 16.1 → 11.5 | 30 → 30 |
+| Talk: keyboard, thinking, the answer | 4.92 | 3.08 | -37 % | 117,487 | 107,799 | 17.0 → 12.4 | 30 → 30 |
+| Claude asks: shocked, wide eyes, rim rings | 5.46 | 4.93 | -10 % | 130,669 | 126,914 | 18.8 → 17.4 | 30 → 30 |
+| Maps: pan, rim zoom, route preview, walking | 4.86 | 4.37 | -10 % | 109,556 | 101,788 | 16.6 → 15.1 | 30 → 30 |
+| Games: tilt ball + rhythm | 5.02 | 3.65 | -27 % | 162,026 | 123,419 | 19.0 → 14.3 | 30 → 30 |
+| SoulOS Alive: the home dial (drag, fling, tilt) + apps opened / closed through the lid wipe (`bench_alive`, new) | | 3.40 | | | 104,563 | → 13.0 | → 30 |
+
+- **Budget**: every scenario stays at its asked fps (est.); the heaviest is Claude's ask at 17.4 ms of the 20.8 ms a
+  30 fps frame may take (frame + 1 ms loop ≤ 1/1.6 of the period). The flat surfaces made most screens cheaper (no
+  frosted LUT shading: typing −46 %, screens −17…−37 %). The **launcher** scenario is +36 % (11.1 → 15.1 ms): it is now
+  a different walk (the dial spreads, a tap on the Alarms pebble spins the dial five pebbles and opens it through the
+  lids) and every frame of a turning dial moves ~11 pebbles.
+- **How the dial stays cheap**: each pebble (stone + its 4 px glyph) is a cached sprite (premultiplied colour +
+  coverage, per app, size in 1/32 steps, focus; ≤ 40 in an LRU, built once with the rasterizer) blitted where it
+  moved; damage = each pebble's old and new box (any sub-pixel change repaints it, so incremental = full redraw).
+  Before the sprites: `bench_alive` 5.2 M instr / frame; after: 3.4 M.
+- **Rim capsules / banners**: one polygon through the scanline rasterizer (`GlassLayer::flatArc`), not a per-pixel
+  arc distance (`Canvas::arc` with an `atan2` per pixel cost 15–21 M instr / frame on Claude's ask and the games
+  in the first cut).
+- **`Canvas::roundRect`** (every flat surface): the run surely inside is a plain store, only the edge pixels evaluate
+  the distance; pixel-identical to the distance-field fill it replaced (tested on 300 random boxes / clips / alphas).
+- **The lid wipe** (290 ms, ~9 frames): closing (80 ms) touches only the lids (span fills over the old screen, which
+  stays), the opening frames repaint the new screen between the lids only (rows the lids cover are a black fill).
+- **Exactness**: `perf_bench.py --verify`: the only frames that differ from a full redraw are 1.8's known ones (the
+  time picker's day/night tint, the timer arc, the find-phone / focus / map pulses); the new dial, slot, speech and
+  lid frames are all exact (tested: `test_alive_frame_pipeline_dial_and_lids_equal_a_full_redraw`). The 80 ms of
+  closing lids keep the old screen on purpose (excluded from the check).
+- **Memory** (`lcd28`): static RAM 113,172 → 114,092 B (+0.9 KB: the dial / lid / speech state; every new scratch
+  buffer is on the heap, PSRAM). The frosted aura's ~2 MB of PSRAM (aura + frost + two back buffers + ¼-res planes)
+  is no longer allocated (`GlassLayer::begin` in flat mode). Flash 2,394,603 → 2,514,471 B (+117 KB: the Bricolage
+  Grotesque + Martian Mono atlases, 111 KB, `tools/gen_font_alive.py`).
 
 ## Headline
 

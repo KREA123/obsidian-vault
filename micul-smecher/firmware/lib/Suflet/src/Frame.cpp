@@ -63,6 +63,12 @@ Rect FrameComposer::compose(Os& os, bool fullRedraw) {
   os.face().renderRings(cv, &repair, ringRefresh);
   RectList changed = repair;
   changed.add(eyes);
+  // SoulOS Alive: the lid wipe goes over everything, the eyes too (290 ms; two flat black lids)
+  if (os.lidsActive()) {
+    RectList lids;
+    os.renderOverlay(cv, changed, lids);
+    changed.add(lids);
+  }
   prevEyes_ = eyes;
   st_.repairList = repair;
   st_.eyesList = eyes;

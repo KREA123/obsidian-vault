@@ -136,6 +136,19 @@ Rgb GlassLayer::toneColor(GlassTone t) {
 }
 
 bool GlassLayer::begin(int w, int h, bool buildNow) {
+  if (flat_) {  // Alive: nothing to build, and the memory of an earlier frosted begin() goes back
+    free(aura_);
+    free(frost_);
+    free(backA_);
+    free(backF_);
+    free(lo_);
+    aura_ = frost_ = backA_ = backF_ = nullptr;
+    lo_ = nullptr;
+    built_ = building_ = on_ = false;
+    w_ = w;
+    h_ = h;
+    return true;
+  }
   if (aura_ && w == w_ && h == h_) return true;
   built_ = false;
   free(aura_);
@@ -176,6 +189,7 @@ bool GlassLayer::begin(int w, int h, bool buildNow) {
 }
 
 bool GlassLayer::setOn(bool on) {
+  if (flat_) on = false;  // Alive: pure black behind everything
   if (on == on_) return false;
   on_ = on;
   return true;
@@ -576,8 +590,61 @@ void GlassLayer::shade(Canvas& cv, float bx0, float by0, float bx1, float by1, S
   const_cast<GlassLayer*>(this)->panelPixels += shaded;
 }
 
+void GlassLayer::flatArc(Canvas& cv, float cx, float cy, float rm, float hw, float a0, float a1, Rgb c, float alpha) const {
+  if (a1 <= a0 || hw <= 0 || alpha <= 0.004f) return;
+  if (!ras_) {
+    cv.arc(cx, cy, rm, a0, a1, 2 * hw, c, alpha);
+    return;
+  }
+  static Path* path = new (std::nothrow) Path();  // on the heap (its 4 KB contour buffer: PSRAM on the device)
+  if (!path || !path->reserve(256)) return;
+  Path& p = *path;
+  p.clear();
+  const float ro = rm + hw, ri = rm - hw;
+  const int n = 2 + (int)((a1 - a0) * ro / 6.0f), nc = 8;  // a point every ~6 px along the outer edge
+  auto at = [&](float a, float r) { p.lineTo(cx + cosf(a) * r, cy + sinf(a) * r); };
+  for (int i = 0; i <= n; ++i) at(a0 + (a1 - a0) * i / n, ro);
+  const float ex = cx + cosf(a1) * rm, ey = cy + sinf(a1) * rm;  // the round cap at a1: a half circle
+  for (int i = 1; i < nc; ++i) {
+    const float t = a1 + 3.14159265f * i / nc;
+    p.lineTo(ex + cosf(t) * hw, ey + sinf(t) * hw);
+  }
+  for (int i = n; i >= 0; --i) at(a0 + (a1 - a0) * i / n, ri);
+  const float sx = cx + cosf(a0) * rm, sy = cy + sinf(a0) * rm;  // ... and at a0
+  for (int i = 1; i < nc; ++i) {
+    const float t = a0 + 3.14159265f + 3.14159265f * i / nc;
+    p.lineTo(sx + cosf(t) * hw, sy + sinf(t) * hw);
+  }
+  p.close();
+  ras_->fill(cv, p, c, alpha);
+}
+
+Rgb GlassLayer::flatFill(const GlassStyle& s) const {
+  Rgb fill = s.fillTop > 0.2f ? peb2_ : peb_;  // pressed: the second surface
+  if (s.tintA > 0) fill = Rgb::lerp(fill, s.tint, fminf(1.0f, s.tintA * 1.6f));
+  return fill;
+}
+
+void GlassLayer::flatPanel(Canvas& cv, float x0, float y0, float x1, float y1, float r, const GlassStyle& s) const {
+  const Rgb fill = flatFill(s);
+  const float a = s.alpha;
+  if (s.glowA > 0 && x1 - x0 > 8 && y1 - y0 > 8) {  // an accent: one 3 px edge in its colour
+    cv.roundRect(x0, y0, x1, y1, r, s.glow, a);
+    cv.roundRect(x0 + 3, y0 + 3, x1 - 3, y1 - 3, r > 3 ? r - 3 : 0, fill, a);
+  } else {
+    cv.roundRect(x0, y0, x1, y1, r, fill, a);
+  }
+  // the only nod to the real glass: a 2 px specular highlight along the top edge
+  const float rr = fminf(r, fminf((x1 - x0) * 0.5f, (y1 - y0) * 0.5f));
+  if (x1 - x0 > 2 * rr + 8) cv.roundRect(x0 + rr, y0 + 1, x1 - rr, y0 + 3, 1, pal::kWhite, 0.075f * a);
+}
+
 void GlassLayer::panel(Canvas& cv, float x0, float y0, float x1, float y1, float r, const GlassStyle& s) const {
   if (x1 <= x0 || y1 <= y0) return;
+  if (flat_) {
+    flatPanel(cv, x0, y0, x1, y1, r, s);
+    return;
+  }
   const float cx = (x0 + x1) * 0.5f, cy = (y0 + y1) * 0.5f, hw = (x1 - x0) * 0.5f, hh = (y1 - y0) * 0.5f;
   const float rr = r > hw ? hw : (r > hh ? hh : r);
   auto sdf = [=](float px, float py) {  // the rounded box, inlined (this runs per pixel)
@@ -616,6 +683,11 @@ void GlassLayer::panel(Canvas& cv, float x0, float y0, float x1, float y1, float
 void GlassLayer::capsuleArc(Canvas& cv, float cx, float cy, float rm, float hw, float a0, float a1,
                             const GlassStyle& s) const {
   if (a1 <= a0) return;
+  if (flat_) {  // Alive: a flat arc, a 3 px edge (pebe, or the accent's colour)
+    flatArc(cv, cx, cy, rm, hw, a0, a1, s.glowA > 0 ? s.glow : pebe_, s.alpha);
+    flatArc(cv, cx, cy, rm, hw - 3, a0, a1, flatFill(s), s.alpha);
+    return;
+  }
   const float e0x = cosf(a0), e0y = sinf(a0), e1x = cosf(a1), e1y = sinf(a1);
   const float p0x = cx + e0x * rm, p0y = cy + e0y * rm, p1x = cx + e1x * rm, p1y = cy + e1y * rm;
   float bx0 = 1e9f, by0 = 1e9f, bx1 = -1e9f, by1 = -1e9f;
@@ -648,6 +720,10 @@ void GlassLayer::capsuleArc(Canvas& cv, float cx, float cy, float rm, float hw, 
 }
 
 void GlassLayer::band(Canvas& cv, float cx, float cy, float rm, float hw, const GlassStyle& s) const {
+  if (flat_) {
+    cv.ring(cx, cy, rm, 2 * hw, flatFill(s), s.alpha);
+    return;
+  }
   // the annulus in four quadrant strips, so the empty middle is never visited
   const float ro = rm + hw, ri = rm - hw, inner = ri * 0.70710678f - 14;  // the square inside the hole
   auto sdf = [=](float px, float py) {

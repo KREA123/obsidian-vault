@@ -4,7 +4,7 @@
 //
 //   listening -> listening + ice rim      thinking -> thinking + amber comet
 //   Claude working -> working (reading)   Claude needs you -> shocked, then
-//   wide surprised eyes + amber rim       done -> approve      error -> confused
+//   wide surprised eyes + amber rim       done -> approve      error -> sad
 //   low battery -> hungry                 asleep -> sleepy, lids shut
 //
 // The OS only adds a layout (scale k and offset of the face, on a spring) so
@@ -92,7 +92,8 @@ class SoulFace {
   eyes::EyeRig& rig() { return rig_; }
   float layoutK() const { return lay_[0]; }
   bool hetero = true;
-  float dim = 1;  // eyes alpha (sleep dimming on panels with a black level)
+  float dim = 1;
+  bool reducedMotion = false;  // SoulOS Alive: the layouts snap (blinks still happen: they are information)  // eyes alpha (sleep dimming on panels with a black level)
 
  private:
   int moodFor(const FaceInputs& in) const;

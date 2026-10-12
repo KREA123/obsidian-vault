@@ -190,8 +190,10 @@ struct AppSim {
       os.render(rc);
       os.face().renderEyes(rc);
       os.face().renderRings(rc, nullptr, false);
+      RectList lidsDrawn;
+      os.renderOverlay(rc, RectList(), lidsDrawn);  // SoulOS Alive: the lid wipe over everything
       int n = 0;
-      for (size_t i = 0; i < ref.size(); ++i) n += ref[i] != fb[i];
+      for (size_t i = 0; i < ref.size() && !os.lidsClosing(); ++i) n += ref[i] != fb[i];  // closing: old screen kept
       if (n) {
         Rect bad;
         for (int y = 0; y < H; ++y)

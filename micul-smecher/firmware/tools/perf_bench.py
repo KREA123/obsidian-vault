@@ -51,6 +51,7 @@ FRAMES = [
     ("claude", "Claude asks: shocked, wide eyes, rim rings", 30),
     ("bench_maps", "Maps: pan, rim zoom, route preview, walking", 30),
     ("bench_games", "Games: tilt ball + rhythm", 30),
+    ("bench_alive", "SoulOS Alive: the home dial (drag, fling, tilt) + apps opened / closed through the lid wipe", 30),
 ]
 MICROS = [
     ("bench_json", "Cloud JSON: the recorded SOUL Cloud session (33 frames) + a Claude answer", "session"),

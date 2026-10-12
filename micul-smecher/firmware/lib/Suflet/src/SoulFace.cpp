@@ -50,7 +50,7 @@ static void reactionExpr(Reaction r, int& expr, float& hold) {
     case Reaction::Laugh: expr = X_laugh; break;
     case Reaction::Shy: expr = X_shy, hold = 1.6f; break;
     case Reaction::Purr: expr = X_happy, hold = 2.2f; break;
-    case Reaction::Dizzy: expr = X_startled; break;
+    case Reaction::Dizzy: expr = X_dizzy, hold = 2.2f; break;  // Alive §6: shake = dizzy 2.2 s (spiral pupils)
     case Reaction::Scared: expr = X_shocked; break;
     case Reaction::Confused: expr = X_confused, hold = 2.0f; break;
     case Reaction::Yawn: expr = X_sleepy, hold = 2.0f; break;
@@ -74,7 +74,7 @@ int SoulFace::moodFor(const FaceInputs& in) const {
   switch (in.state) {
     case FaceState::Listen: return X_listening;
     case FaceState::Think: return X_thinking;
-    case FaceState::Error: return X_confused;
+    case FaceState::Error: return X_sad;  // Alive §6: a failure that did nothing is sad (held)
     case FaceState::Busy: return X_working;
     case FaceState::Wait: return X_surprised;
     case FaceState::Low: return X_hungry;
@@ -120,7 +120,7 @@ void SoulFace::update(float dt, const FaceInputs& in) {
       rig_.react(X_shocked);
       waitT_ = 0;
     }
-    if (in.state == FaceState::Error && lastState_ != FaceState::Error) rig_.react(X_confused, 2.6f);
+    if (in.state == FaceState::Error && lastState_ != FaceState::Error) rig_.react(X_sad, 2.6f);
     lastState_ = in.state;
   }
   const int mood = moodFor(in);
@@ -150,12 +150,17 @@ void SoulFace::update(float dt, const FaceInputs& in) {
     }
   }
   rig_.update(dt);
-  // layout springs (the web OS: k 560, damping ~0.85 critical: lands in ~200 ms)
+  // layout springs (SoulOS Alive: K 260, ζ 0.78, the web's Soul.update: settles in ~0.35 s); reduced motion snaps
   layT_[0] = in.layout.k;
   layT_[1] = in.layout.cx;
   layT_[2] = in.layout.cy;
-  const float K = 560, C = 2 * sqrtf(K) * 0.85f;
+  const float K = 260, C = 2 * sqrtf(K) * 0.78f;
   for (int i = 0; i < 3; ++i) {
+    if (reducedMotion) {
+      lay_[i] = layT_[i];
+      layV_[i] = 0;
+      continue;
+    }
     float h = dt;
     while (h > 0) {
       const float s = h > 1.0f / 240 ? 1.0f / 240 : h;

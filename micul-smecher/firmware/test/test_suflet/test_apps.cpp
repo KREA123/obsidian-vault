@@ -554,7 +554,8 @@ static void test_apps_launcher_order_hide_and_two_gestures() {
   d.run(0.4f);
   d.swipe(330, 240, 150, 240);  // the orbit
   TEST_ASSERT_EQUAL_INT((int)View::Launcher, (int)d.os.view());
-  d.tap(328, 398);  // the right neighbour opens at once: two gestures from the eyes
+  d.tap(328, 398);  // the right neighbour: the dial spins there and opens it (two gestures from the eyes)
+  d.run(1.0f);
   TEST_ASSERT_EQUAL_INT((int)View::Today, (int)d.os.view());
   d.os.go(View::Home);
   d.run(0.3f);

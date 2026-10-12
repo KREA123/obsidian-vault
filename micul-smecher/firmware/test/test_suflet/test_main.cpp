@@ -1431,6 +1431,7 @@ void runMemoryTests();
 void runVoiceTests();
 void runAppsTests();
 void runPerfTests();
+void runAliveTests();
 
 int main(int, char**) {
   UNITY_BEGIN();
@@ -1510,5 +1511,6 @@ int main(int, char**) {
   runVoiceTests();
   runAppsTests();
   runPerfTests();
+  runAliveTests();
   return UNITY_END();
 }

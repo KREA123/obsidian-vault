@@ -4,6 +4,7 @@
 //
 //   .pio/build/sim/program <out_dir> [scenario|all] [chip-id hex] [466|480]
 //   .pio/build/sim/program <out_dir> keys ["key string"]   drive the IMU by hand (keysMode)
+//   .pio/build/sim/program <out_dir> alive        SoulOS Alive stills (aliveMode)
 //
 // Each scenario writes <out_dir>/<name>.rgb (raw RGB888 frames) + <name>.json
 // (frame count, fps, marked stills). tools/frames_to_media.py turns them
@@ -302,9 +303,11 @@ struct Sim {
       os.render(rc);
       os.face().renderEyes(rc);
       os.face().renderRings(rc, nullptr, false);
+      RectList lidsDrawn;
+      os.renderOverlay(rc, RectList(), lidsDrawn);  // SoulOS Alive: the lid wipe over everything
       Rect bad;
       int n = 0;
-      for (int y = 0; y < H; ++y)
+      for (int y = 0; y < H && !os.lidsClosing(); ++y)  // (closing lids: the old screen is kept on purpose)
         for (int x = 0; x < W; ++x)
           if (ref[(size_t)y * W + x] != fb[(size_t)y * W + x]) {
             ++n;
@@ -469,9 +472,14 @@ std::vector<Scenario> scenarios() {
          s.run(0.8f);
          s.swipe(330, 240, 150, 240);
          s.mark();  // launcher: Talk
-         s.swipe(330, 330, 150, 330);
-         s.mark();  // Alarms
-         s.tap(233, 336, 0.6f);
+         // SoulOS Alive: a tap on the Alarms pebble spins the dial there and opens it (the lids blink)
+         for (int i = 0; i < s.os.appCount(); ++i)
+           if (s.os.appAt(i) == AppId::Alarms) {
+             const alive::Dial::Pebble pb = s.os.dial().place(i);
+             s.tap(pb.x, pb.y, 0.3f);
+           }
+         s.mark();  // the dial turning to Alarms
+         s.run(1.0f);
          s.mark();  // alarms list
          s.tap(233, 376, 0.8f);  // + New: the Rim-Dial
          s.mark();
@@ -822,6 +830,34 @@ std::vector<Scenario> scenarios() {
            s.os.go(View::Home);
            s.run(1.0f);
          }
+       }},
+      // 1.9 SoulOS Alive (firmware/PERF.md): the home dial turned by drags, flings and the tilt; apps opened and
+      // closed through the lid wipe; speech on the dial
+      {"bench_alive", "Bench: the home dial (drag, fling, tilt) and apps opened / closed through the lid wipe", true,
+       [](Sim& s) {
+         s.run(0.5f);
+         s.swipe(330, 240, 150, 240);  // the face -> the dial (the pebbles spread)
+         s.run(0.6f);
+         for (int i = 0; i < 3; ++i) {  // slow drags and flings
+           s.finger = true;
+           for (int k = 0; k <= 20; ++k) {
+             s.fx = P(300 - 6.0f * k);
+             s.fy = P(330);
+             s.step(true);
+           }
+           s.finger = false;
+           s.run(0.9f);
+           s.swipe(150, 330, 330, 330, 1.0f);
+         }
+         s.move(0.45f, 0, 0, 0.4f, 1.6f);  // lean it: the dial steps with the tilt
+         s.move(0, 0, 0, 0.4f, 0.5f);
+         for (int i = 0; i < 3; ++i) {  // open the focused app (lids), close it (lids), back on the dial
+           s.tap(233, 330, 1.0f);
+           s.os.back();
+           s.run(0.8f);
+           if (s.os.view() != View::Launcher) s.swipe(330, 240, 150, 240, 0.6f);
+         }
+         s.run(2.0f);
        }},
       // 1.8 perf pass (firmware/PERF.md, tools/perf_bench.py): one design (SIM_DESIGN=<index>), notifications,
       // the aura's drift/tilt repaint
@@ -1387,6 +1423,135 @@ int lanMode(const std::string& dir, int port) {
 }
 }  // namespace
 
+// SoulOS Alive stills (os/DESIGN-ALIVE.md): standby -> wake -> the home dial on three births x bodies -> the
+// lid wipe frame by frame -> the eye slot, Look, reactions. <dir>/NN-name.ppm; then
+//   python3 tools/app_shots.py <dir> sim/shots/alive --title ... (PNGs + a contact sheet)
+static int aliveMode(const std::string& dir) {
+  int n = 0;
+  auto still = [&](Sim& s, const char* name) {
+    char fn[512];
+    snprintf(fn, sizeof fn, "%s/%02d-%s.ppm", dir.c_str(), ++n, name);
+    FILE* f = fopen(fn, "wb");
+    if (!f) return;
+    fprintf(f, "P6\n%d %d\n255\n", W, H);
+    for (int i = 0; i < W * H; ++i) {
+      const Rgb c = Rgb::from565(s.fb[(size_t)i]);
+      fputc(c.r, f);
+      fputc(c.g, f);
+      fputc(c.b, f);
+    }
+    fclose(f);
+    printf("  %s  view %s, lids %.2f\n", fn, viewName(s.os.view()), s.os.lidCover());
+  };
+  auto frames = [&](Sim& s, int k) {
+    for (int i = 0; i < k; ++i) s.step(false);
+  };
+  {
+    Sim s(true);  // this SOUL: Lollipop (the sim's chip id), Silver
+    s.run(1.5f, false);
+    still(s, "standby");
+    s.fx = P(233);  // a touch on the face: the eyes glide up and shrink, the clock rises, a line appears
+    s.fy = P(300);
+    s.finger = true;
+    frames(s, 2);
+    s.finger = false;
+    frames(s, 1);
+    still(s, "wake-1");
+    frames(s, 3);
+    still(s, "wake-2");
+    frames(s, 12);
+    still(s, "wake-3");
+    s.swipe(330, 240, 150, 240, 0.0f);  // the home dial: the pebbles spread from the bottom
+    frames(s, 2);
+    still(s, "dial-opening");
+    s.run(1.2f, false);
+    still(s, "home-dial");
+    s.finger = true;  // a drag: the eyes look at the incoming pebble
+    for (int k = 0; k <= 8; ++k) {
+      s.fx = P(300 - 5.0f * k);
+      s.fy = P(330);
+      s.step(false);
+    }
+    still(s, "dial-turning");
+    s.finger = false;
+    s.run(12.5f, false);  // left alone 11 s: bored
+    still(s, "dial-speech");
+    s.run(0.4f, false);  // (before the dial's 15 s idle return)
+    // open the focused app: the lids close (80 ms), it is behind them, they open (170 ms)
+    s.tap(233, 330, 0.0f);
+    still(s, "open-lids-0");
+    for (int k = 1; k <= 8; ++k) {
+      frames(s, 1);
+      char b[32];
+      snprintf(b, sizeof b, "open-lids-%d", k);
+      still(s, b);
+    }
+    s.run(1.0f, false);
+    still(s, "app-eye-slot");
+    s.os.back();  // closing it: the same blink, the other way
+    frames(s, 2);
+    still(s, "close-lids-2");
+    frames(s, 3);
+    still(s, "close-lids-5");
+    s.run(1.0f, false);
+    s.os.go(View::Settings);
+    s.run(1.2f, false);
+    still(s, "settings-eye-slot");
+    s.os.go(View::MySoul);
+    s.run(1.0f, false);
+    still(s, "look");
+    s.tap(363, 292, 0.8f);  // › : preview the next birth
+    still(s, "look-preview");
+    s.os.lookReset();
+    s.os.go(View::Home);
+    s.run(1.0f, false);
+    s.os.toast("Ana: home for dinner at 6?", Rgb::hex(0xFFF0C8), 3.0f);
+    s.run(0.35f, false);
+    still(s, "notification-surprised");
+    s.run(3.0f, false);
+    s.os.go(View::Talk);
+    s.run(0.3f, false);
+    s.aiServer = [](const AiJob&) { return std::make_pair(-1, std::string()); };
+    s.os.ask("what's the weather?");
+    s.run(2.2f, false);
+    still(s, "failure-sad");
+    s.os.back();
+    s.run(1.0f, false);
+    s.os.motion(Ev::Shake);  // the Brain's dizzy: spiral pupils
+    s.run(0.9f, false);
+    still(s, "shake-dizzy");
+    s.run(3.0f, false);
+  }
+  {
+    Sim s(true);  // at night, at rest: sleepy
+    s.clock = 1790359080u - 18 * 3600 - 38 * 60 + 90 * 60;  // 01:30
+    s.run(3.0f, false);
+    still(s, "night-sleepy");
+  }
+  // three births x three bodies on the home dial (the web's 25-27 shots)
+  struct Birth {
+    int design;
+    Body body;
+    const char* name;
+  };
+  const Birth births[] = {{12, Body::Midnight, "dial-sunday-toast-midnight"},
+                          {57, Body::Ember, "dial-sugar-cube-ember"},
+                          {101, Body::Champagne, "dial-disco-ball-champagne"}};
+  for (const Birth& b : births) {
+    char d[8];
+    snprintf(d, sizeof d, "%d", b.design);
+    setenv("SIM_DESIGN", d, 1);
+    Sim s(true);
+    s.os.setBody(b.body);
+    s.run(0.6f, false);
+    s.swipe(330, 240, 150, 240, 0.0f);
+    s.run(4.0f, false);  // after the hello: the focused pebble's name on the arc and its fact
+    still(s, b.name);
+  }
+  unsetenv("SIM_DESIGN");
+  return 0;
+}
+
 int appsMode(const std::string& dir, const std::string& which, int px);  // sim_apps.cpp
 int microBench(const std::string& which);                                // sim_bench.cpp
 
@@ -1422,6 +1587,7 @@ int main(int argc, char** argv) {
     return appsMode(dir, which, argc > 4 ? atoi(argv[4]) : 480);
   if (which == "bench_json" || which == "bench_memory" || which == "bench_wifi" || which == "bench_boot")
     return microBench(which);  // sim_bench.cpp: the non-frame work (callgrind: --toggle-collect='suflet_bench_*')
+  if (which == "alive") return aliveMode(dir);  // SoulOS Alive stills (see aliveMode)
   if (which == "lan") return lanMode(dir, argc > 3 ? atoi(argv[3]) : 0);  // SOUL Bridge on the LAN (see lanMode)
   if (which == "keys") {  // drive it by hand (see keysMode)
     Recorder rec;

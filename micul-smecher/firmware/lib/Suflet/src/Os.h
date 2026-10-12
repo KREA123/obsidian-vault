@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "AiProtocol.h"
+#include "Alive.h"
 #include "Alarms.h"
 #include "CloudLink.h"
 #include "Brain.h"
@@ -35,6 +36,7 @@
 #include "Keyboard.h"
 #include "Memory.h"
 #include "OsApps.h"
+#include "Palette.h"
 #include "SoulFace.h"
 #include "TimePicker.h"
 #include "WifiRoam.h"
@@ -125,6 +127,10 @@ struct OsSettings {  // persisted as a versioned blob
   uint8_t largeText = 0;
   uint8_t debug = 0;      // fps / CPU overlay
   uint8_t nightOff = 1;   // at night, asleep for long: screen off (deep sleep if docked)
+  // SoulOS Alive (1.9): two bytes that were padding before `born`, so the blob keeps its size and version
+  // (an older blob reads them as 0 / garbage: loadSettings() resets anything out of range)
+  uint8_t body = 0;          // the aluminium body colour (Body): the palette's b1
+  uint8_t reduceMotion = 0;  // no lids, no breathing, no speech rise; layouts and the dial snap
   uint32_t born = 0;      // local epoch of the first boot with a clock
 };
 
@@ -327,6 +333,27 @@ class Os {
   void restartBoot();
   void toast(const std::string& text, Rgb color, float seconds = 2.4f);
   int launcherIndex() const { return orbit_; }
+
+  // ---- SoulOS Alive (os/DESIGN-ALIVE.md; Alive.h, OsAlive.cpp) ------------------------------------------
+  // the born palette: the eye design shown (its own birth, or one previewed in Look) + the body colour
+  const BornPalette& palette() const { return pal_; }
+  void setBody(Body b);
+  Body body() const { return (Body)set_.body; }
+  void lookStep(int dir);           // Look: preview the next / previous birth (the eyes swap during a blink)
+  void lookReset();                 // back to its own birth
+  bool previewing() const { return lookDesign_ >= 0; }
+  int shownDesign() const { return lookDesign_ >= 0 ? lookDesign_ : birth_.design; }
+  bool reducedMotion() const { return set_.reduceMotion != 0; }
+  const alive::Dial& dial() const { return dial_; }
+  bool lidsActive() const { return lids_.active() && lidsShown_; }
+  float lidCover() const { return lidsActive() ? lids_.cover() : 0.0f; }
+  bool lidsClosing() const { return lidsActive() && lids_.closing(); }  // the old screen is still behind them
+  // after the eyes (Frame.cpp): the lids over everything, inside `where`; adds what it painted to `painted`
+  void renderOverlay(Canvas& cv, const RectList& where, RectList& painted);
+  // an app screen: the eyes sit in the one slot above it, on a black disc (and opening / closing it is a blink)
+  bool appScreen(View v) const;
+  const char* speechLine() const { return speech_.line(); }
+  void react(alive::Event e);       // the eye-reaction table (§6), also for the device and the simulator
   // SoulOS 5 · Glass: standby is the eyes alone; a touch on the face "peeks"
   // (the clock capsule for kPeekS), a screen left alone for kAppIdleS goes
   // back to the eyes. uiOn() = the aura and the glass are showing.
@@ -403,7 +430,7 @@ class Os {
   void drawItems(Canvas& cv, const std::vector<Item>& items);
   void drawBoot(Canvas& cv);
   void drawHome(Canvas& cv);
-  void drawLauncher(Canvas& cv);
+  void renderContent(Canvas& cv);  // render() without the lid wipe
   void drawToday(Canvas& cv);
   void drawTalk(Canvas& cv);
   void drawAnswer(Canvas& cv);
@@ -448,6 +475,62 @@ class Os {
               Align a = Align::Center);
   FaceLayoutT layoutFor(View v) const;
 
+  // SoulOS Alive (OsAlive.cpp)
+  BornPalette pal_;
+  int lookDesign_ = -1;     // a birth previewed in Look (-1: its own)
+  alive::LidWipe lids_;
+  bool lidsShown_ = false;  // this wipe draws lids (not with reduced motion)
+  View wipeFrom_ = View::Home;
+  alive::Dial dial_;
+  alive::Speech speech_;
+  Rect speechDrawn_;        // where the bubble was last drawn (damage)
+  float dialIdleT_ = 0;
+  bool dialBored_ = false;
+  bool dialGrab_ = false;   // a horizontal drag turns the dial
+  float dragVx_ = 0, lastMoveX_ = 0, lastMoveT_ = 0;
+  int boops_ = 0;
+  int lastDialFocus_ = -1;
+  struct PebShown {  // what each dial pebble looked like when last drawn (its damage)
+    Rect r;
+    float qx = 0, qy = 0, qs = 0;  // place and scale: any change at all is a repaint (anti-aliasing)
+    uint8_t a = 0;
+    bool f = false;
+  };
+  PebShown peb_[(int)AppId::Count];
+  bool speechWas_ = false;
+  Rect speechLast_;
+  // the dial's pebbles (stone + glyph) cached as sprites: colour (premultiplied on black) + coverage, per app,
+  // size (1/32 steps) and focus; built once, blitted every frame they move (DESIGN-ALIVE.md §8)
+  struct PebSprite {
+    uint32_t key = 0, used = 0;
+    int w = 0, h = 0;
+    std::vector<uint16_t> col;
+    std::vector<uint8_t> a;
+  };
+  std::vector<PebSprite> sprites_;
+  uint32_t spriteTick_ = 0, palGen_ = 1;
+  const PebSprite& pebbleSprite(int i, float scale, bool focus);
+  void drawDialPebble(Canvas& cv, int i, float x, float y, float scale, bool focus, float alpha);
+  bool lastDialMoving_ = false;
+  float lastDialOpen_ = -1;
+  float nightCheckT_ = 0;
+  void applyPalette();
+  void aliveBegin();
+  void aliveUpdate(float dt);
+  void aliveGo(View from, View to);  // go(): the blink, the lids, the dial opening, speech
+  void say(LineTopic t, float secs);
+  void drawDial(Canvas& cv);
+  void drawPebble(Canvas& cv, float cx, float cy, float w, float h, Rgb edge, Rgb fill, float alpha);
+  void drawSlotDisc(Canvas& cv);
+  void drawSpeech(Canvas& cv);
+  static Path& scratchPath();  // shared by drawGlyph, the pebbles and the speech tail (never at the same time)
+  bool speechRect(Rect& r) const;
+  void drawLook(Canvas& cv);
+  bool lookTap(float x, float y);
+  void dialTouch(const TouchEv& e);
+  void dialTap(float x, float y);
+  void invalidateDial();
+
   Alarms* alarms_;
   DisplayGeometry g_;
   BirthInfo birth_;
@@ -478,7 +561,6 @@ class Os {
 
   // launcher
   int orbit_ = 0;
-  float orbitDrag_ = 0;
 
   // pages
   int page_ = 0, noteSel_ = -1;
@@ -598,7 +680,7 @@ class Os {
   std::string appName(AppId a) const;
   std::string appFact(AppId a) const;
   View viewOf(AppId a) const;
-  void drawGlyph(Canvas& cv, AppId a, float cx, float cy, float size, Rgb c, float alpha);
+  void drawGlyph(Canvas& cv, AppId a, float cx, float cy, float size, Rgb c, float alpha, float stroke = 0);  // stroke: panel px (0 = ~2 px)
   void drawSky(Canvas& cv, apps::Sky s, float cx, float cy, float size, float alpha);
   void drawControl(Canvas& cv);
   void drawTodayStack(Canvas& cv);

@@ -110,8 +110,8 @@ If the upload does not start: hold **BOOT**, tap **RESET**, release BOOT, upload
 after, and how each number is measured (`python3 tools/perf_bench.py`: callgrind tables, per-frame hashes, and
 `--verify`: every incremental frame vs a full redraw); BRINGUP §5 measures it on the board (`F`, `p`, `m`).
 
-Build size (2026-10-03, 1.4.1): `lcd28` flash ~2.14 MB (33 % of the 6.25 MB app slot), static RAM 84 KB (26 %);
-the Glass buffers take ~2 MB of PSRAM at boot (`Glass.h`).
+Build size (2026-10-12, 1.9 SoulOS Alive core): `lcd28` flash 2.51 MB (38 % of the 6.25 MB app slot), static RAM
+114 KB (35 %). The frosted Glass buffers (~2 MB of PSRAM in 1.4–1.8) are no longer allocated: Alive is flat.
 PSRAM holds our persistent canvas and the panel's two frame buffers (3 × 460,800 B ≈ 1.4 MB of 8 MB).
 
 **How it runs** (`src/main.cpp`)
@@ -304,6 +304,21 @@ batched writes (`src/memory_store.*`); *Settings › Memory* and the undo toast 
 backup to SOUL Cloud (off by default). Offline voice commands: `VoiceCommands.*` + `OsVoice.cpp` (39 English commands,
 55 phrases) on Espressif ESP-SR MultiNet7, `src/voice_sr.*`, build `pio run -e lcd28_voice` and flash `srmodels.bin`
 at `0xcb0000` once (the `model` partition). Offline personality lines: `Lines.*` (222). Serial: `Y` memory, `V` voice.
+
+## SoulOS Alive (1.9 core)
+
+The design the founder approved on 2026-10-11 ([`../os/DESIGN-ALIVE.md`](../os/DESIGN-ALIVE.md); the web prototype is
+`os/index.html`). The core is on the device; the per-screen layouts (wheels for lists, the answer pebble, rim
+manners) are the next step. `lib/Suflet/src/Palette.*` (the born palette: e1 / e2 from the eye design the unit was
+born with, b1 from the aluminium body, ported from the web's `bornPalette()` and checked against it for all
+120 designs × 5 bodies: `tools/gen_palette_fixture.js`), `Alive.*` (the lid wipe's timing and geometry, the home
+dial's maths, the eye-reaction table, speech timing, the layouts), `OsAlive.cpp` (the eye slot + its black disc, the
+lids over the eyes, the dial with cached pebble sprites, speech bubbles from `Lines.*`, Look = *Settings › My SOUL*:
+preview the other births, pick the body), `StoneData.h` (the MĂRGĂRITAR outline from
+`renders/v9/src/marg_geo.py`, `tools/gen_stone.py`), `FontAliveData.h` (Bricolage Grotesque + Martian Mono atlases,
+OFL, `tools/gen_font_alive.py`). The glass layer runs flat (`GlassLayer::setFlat`): pure black, one fill per surface.
+Settings has *Reduce motion* (no lids, no breathing, the springs snap; blinks stay). Tests: `test_alive.cpp`.
+Simulator: `.pio/build/sim/program /tmp/out alive` + `tools/app_shots.py /tmp/out sim/shots/alive`, `bench_alive`.
 
 ## SoulOS apps (firmware 1.7, English)
 

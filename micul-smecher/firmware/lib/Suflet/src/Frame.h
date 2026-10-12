@@ -7,6 +7,7 @@
 //      under each one's clip, clear it and redraw the UI layer there
 //   2. draw the eyes (and the rim rings) on top, wherever they are now
 //   3. changed = repair + where the eyes are now -> pushed to the panel
+//   (+ SoulOS Alive's lid wipe, drawn over the eyes for 290 ms when an app opens or closes)
 // Pixels outside `repair` never held last frame's eyes, so they are already
 // correct: the result is identical to a full redraw (unit-tested), at a
 // fraction of the cost (the eyes cover ~30 % of the glass).

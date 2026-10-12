@@ -125,12 +125,7 @@ void Os::buildItems(std::vector<Item>& out) const {
         add(IdNext, 233, 420, 160, 50, R ? "Mai departe ›" : "Next ›", kCream, 1, true);
       }
       break;
-    case View::Launcher: {
-      add(IdCenter, 233, 336, 300, 72, appName(appAt(orbit_)), kCream, 2, false);
-      add(IdRow, 138, 398, 120, 60, "‹ " + appName(appAt(orbit_ - 1)), kCream, 0, false, kDim);
-      add(IdRow + 1, 328, 398, 120, 60, appName(appAt(orbit_ + 1)) + " ›", kCream, 0, false, kDim);
-      break;
-    }
+    case View::Launcher: break;  // SoulOS Alive: the dial's pebbles take the taps (Os::dialTap)
     case View::Talk:
       add(IdType, 233, 410, 180, 54, R ? "Scrie" : "Type", kCream, 1, true);
       break;
@@ -175,7 +170,7 @@ void Os::buildItems(std::vector<Item>& out) const {
       add(IdDelete, 306, 404, 140, 56, R ? "Șterge" : "Delete", kAmber, 1, true);
       break;
     case View::Settings: {
-      static const int kRows = 13;
+      static const int kRows = 14;
       const int pages = (kRows + 3) / 4;
       const int p = page_ % pages;
       static const char* const kBr[2][4] = {{"Auto", "Low", "Mid", "High"}, {"Auto", "Mică", "Medie", "Mare"}};
@@ -199,6 +194,7 @@ void Os::buildItems(std::vector<Item>& out) const {
             break;
           case 11: v = (mem_ ? std::to_string(mem_->size()) : std::string("0")) + (R ? " lucruri ›" : " things ›"); break;  // SOUL Memory
           case 12: v = std::to_string(visibleApps()) + (R ? " pe orbită ›" : " on the orbit ›"); break;  // Settings › Apps
+          case 13: v = set_.reduceMotion ? (R ? "Pornit" : "On") : (R ? "Oprit" : "Off"); break;  // Alive: reduce motion
           default: v = R ? "Ține apăsat" : "Hold"; break;
         }
         add(IdRow + i, 233, 172 + (i - p * 4) * 62, 330, 60, ellipsize(fontOf(1, set_.largeText), v, g_.s(280)), kCream, 1, false);
@@ -234,8 +230,8 @@ void Os::buildItems(std::vector<Item>& out) const {
           add(IdForget, 233, 392, 220, 46, R ? "Uită Wi-Fi (ține)" : "Forget Wi-Fi (hold)", kAmber, 0, true, kDim);
       }
       break;
-    case View::MySoul:
-      add(IdName, 233, 312, 300, 56, set_.name, kCream, 2, false);
+    case View::MySoul:  // Look (OsAlive.cpp): the name on top, the births and the bodies under it
+      add(IdName, 233, 250, 300, 48, set_.name, kCream, 2, false);
       break;
     case View::Claude:
       if (net_.relay && !claude_.passkey && !claude_.prompt)
@@ -284,7 +280,7 @@ static constexpr float kHalfPi = 1.5707963f;
 
 // a glass capsule on the rim, as wide as the words + 15 px each side
 static void rimCapsule(Canvas& cv, const DisplayGeometry& g, const std::string& s, float r, bool top, const GlassStyle& st) {
-  const float span = Canvas::arcTextSpan(fonts::small(), r, s.c_str(), 1.0f) + g.s(30) / r;
+  const float span = Canvas::arcTextSpan(fonts::caption(), r, s.c_str(), 1.0f) + g.s(30) / r;
   const float a = top ? -kHalfPi : kHalfPi;
   glass().capsuleArc(cv, g.cx(), g.cy(), r, g.s(16), a - span * 0.5f, a + span * 0.5f, st);
 }
@@ -293,16 +289,16 @@ void Os::rimTop(Canvas& cv, const std::string& s, Rgb c, float alpha) {
   if (toastLeft_ > 0 && !toast_.empty()) return;  // the notification capsule has the rim
   if (s.empty()) return;
   rimCapsule(cv, g_, s, g_.s(212), true, gs(alpha));
-  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(212), -kHalfPi, s.c_str(), c, alpha * fade_, false, 1.0f);
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(212), -kHalfPi, s.c_str(), c, alpha * fade_, false, 1.0f);
 }
 
 void Os::rimBottom(Canvas& cv, const std::string& s, Rgb c, float alpha) {
-  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(210), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(210), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
 }
 
 void Os::rimBottomCap(Canvas& cv, const std::string& s, Rgb c, float alpha, bool glow) {
   rimCapsule(cv, g_, s, g_.s(208), false, glow ? gsAccent(c, 0.4f, 0.1f) : gs(alpha));
-  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(208), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(208), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
 }
 
 void Os::glassPanel(Canvas& cv, float x0, float y0, float x1, float y1, float r, const GlassStyle& st) {
@@ -379,13 +375,34 @@ void Os::drawItems(Canvas& cv, const std::vector<Item>& items) {
 }
 
 void Os::render(Canvas& cv) {
-  glass().background(cv);  // under the clip only: the aura while a screen is open, else true black
+  if (lidsActive()) {  // SoulOS Alive: the lid wipe (the lids themselves are drawn over the eyes: renderOverlay)
+    if (lids_.closing()) {  // the old screen stays; only the eyes' last place is repaired (black under them)
+      glass().background(cv);
+      return;
+    }
+    int y0, y1;  // opening: the new screen only between the lids, black where they cover every pixel
+    alive::LidWipe::openBand((float)g_.w, (float)g_.h, lids_.cover(), y0, y1);
+    const Rect keep = cv.clipRect();
+    if (keep.y0 < y0) cv.fillRect(Rect{keep.x0, keep.y0, keep.x1, y0 < keep.y1 ? y0 : keep.y1}, pal::kBlack);
+    if (keep.y1 > y1) cv.fillRect(Rect{keep.x0, y1 > keep.y0 ? y1 : keep.y0, keep.x1, keep.y1}, pal::kBlack);
+    const Rect mid{keep.x0, keep.y0 > y0 ? keep.y0 : y0, keep.x1, keep.y1 < y1 ? keep.y1 : y1};
+    if (mid.empty()) return;
+    cv.setClip(mid);
+    renderContent(cv);
+    cv.setClip(keep);
+    return;
+  }
+  renderContent(cv);
+}
+
+void Os::renderContent(Canvas& cv) {
+  glass().background(cv);  // under the clip only: pure black (SoulOS Alive; the frosted aura is retired)
   switch (view_) {
     case View::Keyboard: kb_.render(cv); break;
     case View::Dial: tp_.render(cv); break;
     case View::Boot: drawBoot(cv); break;
     case View::Home: drawHome(cv); break;
-    case View::Launcher: drawLauncher(cv); break;
+    case View::Launcher: drawDial(cv); break;  // SoulOS Alive: the home dial (OsAlive.cpp)
     case View::Today: drawTodayStack(cv); break;
     case View::Talk: drawTalk(cv); break;
     case View::Answer: drawAnswer(cv); break;
@@ -405,6 +422,8 @@ void Os::render(Canvas& cv) {
     case View::Memory: drawMemory(cv); break;  // OsMemory.cpp
     default: appsDraw(cv); break;              // OsAppsDraw.cpp
   }
+  drawSlotDisc(cv);  // an app screen: the eyes' black disc over the content (the eyes go on top)
+  drawSpeech(cv);    // the face and the dial: a line under the eyes
   if (view_ != View::Keyboard && view_ != View::Dial) drawToast(cv);
   if (set_.debug) drawPerf(cv);
   drawnView_ = view_;
@@ -413,10 +432,15 @@ void Os::render(Canvas& cv) {
 void Os::drawToast(Canvas& cv) {
   if (toastLeft_ <= 0 || toast_.empty()) return;
   // a glass capsule along the top rim (the title steps aside while it shows)
-  const std::string s = ellipsize(fonts::small(), toast_, g_.s(330));
+  // SoulOS Alive: a solid banner on the top rim, e1 (or amber / mint / ice), with dark words
+  const std::string s = ellipsize(fonts::caption(), toast_, g_.s(330));
   const bool tone = toastColor_ == kAmber || toastColor_ == kMint || toastColor_ == kIce;
-  rimCapsule(cv, g_, s, g_.s(212), true, tone ? GlassStyle::accent(toastColor_, 0.45f, 0.1f) : GlassStyle::plain());
-  cv.drawTextArc(fonts::small(), g_.cx(), g_.cy(), g_.s(212), -kHalfPi, s.c_str(), toastColor_, 1.0f, false, 1.0f);
+  const Rgb fill = tone ? toastColor_ : pal_.e1;
+  const Rgb ink = toastColor_ == kAmber ? Rgb::hex(0x2A1700) : toastColor_ == kMint ? Rgb::hex(0x06231B)
+                  : toastColor_ == kIce ? Rgb::hex(0x071A33) : pal_.on1;
+  const float r = g_.s(212), span = Canvas::arcTextSpan(fonts::caption(), r, s.c_str(), 1.0f) + g_.s(36) / r;
+  glass().flatArc(cv, g_.cx(), g_.cy(), r, g_.s(19), -kHalfPi - span * 0.5f, -kHalfPi + span * 0.5f, fill, 1.0f);
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), r, -kHalfPi, s.c_str(), ink, 1.0f, false, 1.0f);
 }
 
 void Os::drawPerf(Canvas& cv) {
@@ -519,22 +543,6 @@ void Os::drawHome(Canvas& cv) {
   } else {
     rimBottom(cv, R ? "glisează: aplicații · ține: vorbește" : "swipe: apps · hold: talk", kCream, kFaint);
   }
-}
-
-void Os::drawLauncher(Canvas& cv) {
-  buildItems(items_);
-  glassPanel(cv, 88, 268, 378, 392, 44, gs());  // the lens: the chosen app, its glyph and its live fact
-  for (const Item& it : items_)
-    if (it.id == IdRow || it.id == IdRow + 1) {
-      const float tw = (float)Canvas::measureText(fonts::small(), it.label.c_str()) / g_.k();
-      glassPill(cv, it.x, it.y, tw + 34, 40, kCream);
-    }
-  drawItems(cv, items_);
-  // one live fact under the word, and the app's glyph above it
-  const std::string fact = appFact(appAt(orbit_));
-  drawGlyph(cv, appAt(orbit_), 233, 294, 24, kCream, 0.85f);
-  textAt(cv, fonts::small(), 233, 372, fact, kCream, kDim);
-  rimTop(cv, clockText(now_), kCream, kFaint);
 }
 
 void Os::drawToday(Canvas& cv) { drawTodayStack(cv); }  // the stack of glass cards (OsAppsDraw.cpp)
@@ -778,11 +786,11 @@ void Os::drawClaude(Canvas& cv) {
 void Os::drawSettings(Canvas& cv) {
   const bool R = ro();
   rimTop(cv, R ? "SETĂRI" : "SETTINGS", kCream, kDim);
-  static const char* const kLabels[2][13] = {
+  static const char* const kLabels[2][14] = {
       {"Brightness", "AI", "Wi-Fi", "Language", "My SOUL", "Text size", "About", "Debug overlay", "Screen off at night",
-       "Claude & ChatGPT on me", "Start over", "Memory", "Apps"},
+       "Claude & ChatGPT on me", "Start over", "Memory", "Apps", "Reduce motion"},
       {"Luminozitate", "AI", "Wi-Fi", "Limba", "SOUL-ul meu", "Mărimea textului", "Despre", "Depanare", "Ecran stins noaptea",
-       "Claude & ChatGPT pe mine", "De la capăt", "Memorie", "Aplicații"}};
+       "Claude & ChatGPT pe mine", "De la capăt", "Memorie", "Aplicații", "Mai puțină mișcare"}};
   buildItems(items_);
   float top = 1e9f, bot = -1e9f;
   for (const Item& it : items_)
@@ -949,32 +957,7 @@ void Os::drawWifi(Canvas& cv) {
   drawItems(cv, items_);
 }
 
-void Os::drawMySoul(Canvas& cv) {
-  const bool R = ro();
-  const Design& d = kDesigns[face_.design()];
-  rimTop(cv, birth_.chip, kCream, kFaint);
-  buildItems(items_);
-  glassPanel(cv, 80, 282, 386, 398, 34, gs());
-  drawItems(cv, items_);
-  textAt(cv, fonts::text(), 233, 348, d.name, kCream);
-  int cnt = 0;
-  for (int i = 0; i < kDesignCount; ++i)
-    if (kDesigns[i].rarity == d.rarity) ++cnt;
-  char b[80];
-  snprintf(b, sizeof b, "%s · #%03d / %d · %s %d", kRarityName[(int)d.rarity], d.num, kDesignCount, R ? "1 din" : "1 in",
-           (int)lround(cnt / kRarityRate[(int)d.rarity]));
-  textAt(cv, fonts::small(), 233, 378, b, Rgb::hex(kRarityColor[(int)d.rarity]));
-  if (set_.born) {
-    time_t bt = (time_t)set_.born;
-    struct tm tm;
-    gmtime_r(&bt, &tm);
-    static const char* const kMon[2][12] = {{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"},
-                                            {"ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"}};
-    char bb[40];
-    snprintf(bb, sizeof bb, "%s %d %s %d", R ? "născut" : "born", tm.tm_mday, kMon[R][tm.tm_mon], tm.tm_year + 1900);
-    rimBottom(cv, bb, kCream, kFaint);
-  }
-}
+void Os::drawMySoul(Canvas& cv) { drawLook(cv); }  // SoulOS Alive: My SOUL is Look (OsAlive.cpp)
 
 void Os::drawAbout(Canvas& cv) {
   const bool R = ro();

@@ -159,9 +159,65 @@ void Canvas::roundRect(float x0, float y0, float x1, float y1, float r, Rgb c, f
   const float cx = (x0 + x1) * 0.5f, cy = (y0 + y1) * 0.5f;
   const float hw = (x1 - x0) * 0.5f, hh = (y1 - y0) * 0.5f;
   const float rr = fminf(r, fminf(hw, hh));
-  fillSdf(
-      x0, y0, x1, y1, [=](float px, float py) { return sdRoundBox(px, py, cx, cy, hw, hh, rr); },
-      c, alpha, glowR, glowA);
+  if (glowR > 0 && glowA > 0) {
+    fillSdf(
+        x0, y0, x1, y1, [=](float px, float py) { return sdRoundBox(px, py, cx, cy, hw, hh, rr); },
+        c, alpha, glowR, glowA);
+    return;
+  }
+  // Alive (1.9): every surface is a flat rounded fill, so this is the hot shape. Per row only the edge pixels
+  // evaluate the distance; the run surely inside (distance <= -0.5) is a plain store. The rows' extents come
+  // from the box offset by -0.5 / +0.5 px (a rounded box offset by d is the rounded box of half sizes + d and
+  // radius + d), so the pixels are exactly fillSdf's.
+  if (alpha <= 0.004f) return;
+  Rect b{(int)floorf(x0 - 1.5f), (int)floorf(y0 - 1.5f), (int)ceilf(x1 + 1.5f), (int)ceilf(y1 + 1.5f)};
+  b = clip(b);
+  if (b.empty()) return;
+  markDirty(b);
+  // half-width at row offset dy of the rounded box (hw, hh, radius rad); < 0: the row misses it
+  auto half = [](float dy, float hw_, float hh_, float rad) -> float {
+    if (hw_ <= 0 || hh_ <= 0) return -1;
+    dy = fabsf(dy);
+    if (dy >= hh_) return -1;
+    if (rad < 0) rad = 0;
+    const float z = dy - (hh_ - rad);
+    if (z <= 0) return hw_;
+    return hw_ - rad + sqrtf(fmaxf(0.0f, rad * rad - z * z));
+  };
+  const uint16_t v = c.to565();
+  const bool opaque = alpha >= 0.999f;
+  for (int y = b.y0; y < b.y1; ++y) {
+    const float py = y + 0.5f, dy = py - cy;
+    const float ho = half(dy, hw + 0.5f, hh + 0.5f, rr + 0.5f);
+    if (ho < 0) continue;
+    // touched: pixel centres with |px - cx| < ho; solid: |px - cx| <= hi
+    int xa = (int)floorf(cx - ho - 0.5f), xb = (int)ceilf(cx + ho - 0.5f) + 1;
+    if (xa < b.x0) xa = b.x0;
+    if (xb > b.x1) xb = b.x1;
+    const float hi = half(dy, hw - 0.5f, hh - 0.5f, rr - 0.5f);
+    int sa = xb, sb = xb;
+    if (hi >= 0) {
+      sa = (int)ceilf(cx - hi - 0.5f) + 1;  // a pixel of margin each side: rounding never changes the result
+      sb = (int)floorf(cx + hi - 0.5f);
+      if (sa < xa) sa = xa;
+      if (sb > xb) sb = xb;
+      if (sb < sa) sa = sb = xb;
+    }
+    uint16_t* row = buf_ + y * w_;
+    for (int x = xa; x < xb; ++x) {
+      if (x == sa) {  // the solid run
+        if (opaque) {
+          for (; x < sb; ++x) row[x] = v;
+        } else {
+          for (; x < sb; ++x) blend(x, y, c, alpha);
+        }
+        if (x >= xb) break;
+      }
+      const float d = sdRoundBox(x + 0.5f, py, cx, cy, hw, hh, rr);
+      if (d <= -0.5f) blend(x, y, c, alpha);
+      else if (d < 0.5f) blend(x, y, c, (0.5f - d) * alpha);
+    }
+  }
 }
 
 // ------------------------------------------------------------------ text ---

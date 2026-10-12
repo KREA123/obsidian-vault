@@ -24,6 +24,8 @@
 
 namespace suflet {
 
+class Raster;
+
 enum class GlassTone : uint8_t { Default, Ice, Amber, Mint };
 
 struct GlassStyle {
@@ -115,7 +117,35 @@ class GlassLayer {
 
   static Rgb toneColor(GlassTone t);
 
+  // ---- SoulOS Alive (os/DESIGN-ALIVE.md, 1.9): flat pebbles instead of frosted glass -------------------------
+  // On: no aura and no frost buffers at all (begin() allocates nothing and frees what an earlier begin() took,
+  // ~2 MB of PSRAM), the background is pure black, a panel is one flat rounded fill in `peb` (`peb2` pressed,
+  // the tint mixed in when selected) with one 3 px edge only for an accent (amber / mint / ice) and the single
+  // 2 px specular highlight along its top edge; a rim capsule is a flat arc with a 3 px `pebe` edge; a band is a
+  // flat ring. Everything is a few spans per row: no LUTs, no blur, no per-pixel gradient.
+  void setFlat(bool on) {
+    flat_ = on;
+    if (on) on_ = false;
+  }
+  bool flat() const { return flat_; }
+  void setFlatColors(Rgb peb, Rgb peb2, Rgb pebe) {
+    peb_ = peb;
+    peb2_ = peb2;
+    pebe_ = pebe;
+  }
+  Rgb pebColor() const { return peb_; }
+  // the rasterizer flat arcs are filled with (SoulOS gives it the face's: one set of work buffers)
+  void setRaster(Raster* r) { ras_ = r; }
+  // A flat band along a circle with round caps (a rim capsule, a banner): one polygon through the scanline
+  // rasterizer (no per-pixel angle or distance), limited to the arc's own box.
+  void flatArc(Canvas& cv, float cx, float cy, float rm, float hw, float a0, float a1, Rgb c, float alpha) const;
+
  private:
+  void flatPanel(Canvas& cv, float x0, float y0, float x1, float y1, float r, const GlassStyle& s) const;
+  Rgb flatFill(const GlassStyle& s) const;
+  bool flat_ = false;
+  Raster* ras_ = nullptr;
+  Rgb peb_ = Rgb::hex(0x24221C), peb2_ = Rgb::hex(0x3B372E), pebe_ = Rgb::hex(0x666050);  // "Original" (§2)
   // `inner(py, xa, xb)` may give a span of the row known to be deep inside the shape (no edge,
   // no anti-aliasing): those pixels skip the distance function and go straight through the LUTs.
   // `rows(py, RowSpans&)` (1.8) narrows each row: `reach` = where a pixel may be touched at all (outside

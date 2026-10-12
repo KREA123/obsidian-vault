@@ -302,11 +302,16 @@ void Os::buildAppsItems(std::vector<Item>& out) const {
 
 // ---------------------------------------------------------------- glyphs ---
 
-void Os::drawGlyph(Canvas& cv, AppId a, float cx, float cy, float size, Rgb c, float alpha) {
+Path& Os::scratchPath() {  // one path for the glyphs, the dial's pebbles and the speech tail (4 KB of contour buffer)
   static Path p;
+  return p;
+}
+
+void Os::drawGlyph(Canvas& cv, AppId a, float cx, float cy, float size, Rgb c, float alpha, float stroke) {
+  Path& p = scratchPath();
   if (!p.reserve(1024)) return;
   p.clear();
-  const float s = g_.s(size) / 24.0f, ox = g_.s(cx) - 12 * s, oy = g_.s(cy) - 12 * s, w = 2.0f * fmaxf(1.0f, s * 0.9f);
+  const float s = g_.s(size) / 24.0f, ox = g_.s(cx) - 12 * s, oy = g_.s(cy) - 12 * s, w = stroke > 0 ? stroke : 2.0f * fmaxf(1.0f, s * 0.9f);
   auto L = [&](std::initializer_list<float> xy) {
     float b[32];
     int n = 0;

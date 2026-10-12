@@ -59,7 +59,10 @@ void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
   birth_ = b;
   kb_.setGeometry(g);
   tp_.setGeometry(g);
-  glass().begin(g.w, g.h, !deferGlass_);  // the aura + frosted buffers (PSRAM); without them the glass falls back to black
+  // SoulOS Alive (1.9): flat pebbles on pure black; the frosted glass and its ~2 MB of aura buffers are retired
+  glass().setFlat(true);
+  glass().setRaster(&face_.raster());
+  glass().begin(g.w, g.h, !deferGlass_);
   glass().setOn(false);
   glass().setLevel(0);
   face_.begin(g.w, g.h);
@@ -75,6 +78,7 @@ void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
     face_.react(X_wake);
   }
   appsBegin();
+  aliveBegin();  // the born palette, the dial (OsAlive.cpp)
   face_.snapLayout(layoutFor(view_));
   invalidate();
 }
@@ -83,6 +87,23 @@ void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
 
 FaceLayoutT Os::layoutFor(View v) const {
   FaceLayoutT l;
+  // SoulOS Alive (§1): face moment = big eyes; any other screen = the one slot (k 0.30, centre y 118 px)
+  auto slot = [](const alive::Slot& s) { return FaceLayoutT{s.k, s.cx, s.cy}; };
+  if (lids_.closing() && lidsShown_ && v == view_ && wipeFrom_ != v) return layoutFor(wipeFrom_);  // they blink in place
+  switch (v) {
+    case View::Home:
+      if (peekT_ > 0 && !claude_.passkey && !asleep_) return slot(alive::kPeek);  // a touch: the eyes glide up
+      return slot(alive::kStandby);
+    case View::Launcher: return slot(alive::kApps);
+    case View::Keyboard: return slot(alive::kKeyboard);
+    case View::Talk:
+      if (thinking_ || voiceWait_) return slot(alive::kThink);
+      break;
+    case View::MySoul: return FaceLayoutT{0.40f, 0, -0.2f};  // Look: the eyes big at the top
+    default:
+      if (appScreen(v)) return slot(alive::kCard);
+      break;
+  }
   if (appsLayout(v, l)) return l;
   switch (v) {
     case View::Boot:
@@ -113,12 +134,14 @@ void Os::go(View v) {
   if (v == view_) return;
   if (view_ == View::Keyboard && v != View::Keyboard) kb_.close();
   if (view_ == View::Dial && v != View::Dial) tp_.close();
+  const View from = view_;
   view_ = v;
   viewT_ = 0;
   fade_ = 0;
   page_ = 0;
   holdItem_ = -1;
   invalidate();
+  aliveGo(from, v);  // the blink, the lid wipe, the dial opening (OsAlive.cpp)
   appOpened(v);  // an app asks SOUL Cloud for what it shows (weather, the agenda, where SOUL is...)
 }
 
@@ -227,6 +250,8 @@ void Os::toast(const std::string& text, Rgb color, float seconds) {
   toastColor_ = color;
   toastLeft_ = seconds;
   invalidate();
+  // a notification arriving (not a confirmation, not "needs you"): the eyes widen and look up at the banner
+  if (!asleep_ && !(color == kMint) && !(color == kAmber)) react(alive::Event::Notify);
 }
 
 void Os::pushCmd(OsCmd c) {
@@ -333,7 +358,9 @@ void Os::setClaude(const ClaudeInfo& c) {
     claude_ = c;
     toast(tr("Claude needs you · hold = yes", "Claude te așteaptă · ține = da"), Rgb::hex(0xFFB347), 5.0f);
   }
+  const bool approved = c.approvals > claude_.approvals;
   claude_ = c;
+  if (approved) say(LineTopic::Thanks, 2.6f);  // after you approve a Claude request
   if (changed) invalidate();
 }
 
@@ -392,8 +419,13 @@ void Os::motion(Ev e) {
 void Os::touch(const TouchEv& e) {
   idleT_ = 0;
   if (e.e == Ev::TouchDown && view_ == View::Home) {  // standby: a touch shows the clock for a moment
-    if (peekT_ <= 0) invalidate();
+    const bool waking = peekT_ <= 0;
+    if (waking) invalidate();
     peekT_ = kPeekS;
+    if (waking && !claude_.prompt && !asleep_ && speech_.greetDue(t_)) {  // ... and the eyes say hello (once / 20 s)
+      speech_.greeted(t_);
+      say(alive::greetingTopic(now_ ? localclock::hour(now_) : 12), 3.0f);
+    }
   }
   // the keyboard and the dial take the raw stream
   if (view_ == View::Keyboard) {
@@ -430,6 +462,7 @@ void Os::touch(const TouchEv& e) {
       dx0_ = dx_ = x;
       dy0_ = dy_ = y;
       downT_ = t_;
+      if (view_ == View::Launcher) dialTouch(e);
       lookUntil_ = t_ + 2.2f;  // every touch: the eyes glance at the finger
       lookX_ = (x / g_.w - 0.5f) * 2.4f;
       lookY_ = (y / g_.h - 0.5f) * 2.4f;
@@ -442,10 +475,7 @@ void Os::touch(const TouchEv& e) {
       lookX_ = (x / g_.w - 0.5f) * 2.4f;
       lookY_ = (y / g_.h - 0.5f) * 2.4f;
       const float dist = hypotf(x - dx0_, y - dy0_);
-      if (view_ == View::Launcher) {
-        orbitDrag_ = (x - dx0_) / g_.s(140);
-        invalidate();
-      }
+      if (view_ == View::Launcher) dialTouch(e);  // a horizontal drag turns the dial
       // a slow, long touch that moves = petting (the Brain purrs), on the face only
       if (view_ == View::Home && !holding_ && !stroking_ && dist > g_.s(45) && t_ - downT_ > 0.45f) {
         stroking_ = true;
@@ -463,9 +493,10 @@ void Os::touch(const TouchEv& e) {
       down_ = false;
       const float dur = t_ - downT_;
       const float ddx = x - dx0_, ddy = y - dy0_, dist = hypotf(ddx, ddy);
-      if (view_ == View::Launcher && fabsf(orbitDrag_) > 0.001f) {
-        orbitDrag_ = 0;
-        invalidate();
+      if (view_ == View::Launcher && dialGrab_) {  // let go of the dial: it coasts to a detent
+        dialGrab_ = false;
+        dial_.release(dragVx_);
+        break;
       }
       if (holding_) {
         holding_ = false;
@@ -617,8 +648,8 @@ void Os::onSwipe(int dir) {
       }
       return;
     case View::Launcher:
-      if (dir == 0) orbit_ = (orbit_ + 1) % appCount();
-      else if (dir == 1) orbit_ = (orbit_ + appCount() - 1) % appCount();
+      if (dir == 0) dial_.nudge(1);
+      else if (dir == 1) dial_.nudge(-1);
       else if (dir == 3) back();
       else if (dir == 2) go(View::Today);
       invalidate();
@@ -663,7 +694,14 @@ void Os::onTap(float x, float y) {
   }
   if (appsTap(x, y)) return;  // the apps' own taps, and quick replies on a card
   switch (view_) {
-    case View::Home: brainEvents_.push_back(Ev::Tap); return;
+    case View::Home:
+      brainEvents_.push_back(Ev::Tap);
+      if (++boops_ % 3 == 0) say(LineTopic::Compliment, 2.8f);  // every 3rd boop: a compliment
+      return;
+    case View::Launcher: dialTap(x, y); return;
+    case View::MySoul:
+      if (lookTap(x, y)) return;
+      break;
     case View::Answer:
       if (thinking_) return;
       if (acceptMode_) {  // only the two buttons answer it
@@ -697,6 +735,7 @@ void Os::onTap(float x, float y) {
 
 void Os::activate(int id) {
   invalidate();
+  react(alive::Event::Tap);  // any tap on a control: the eyes blink once
   switch (view_) {
     case View::Boot:
       if (bootStep_ == BootStep::Name) {
@@ -826,6 +865,9 @@ void Os::activate(int id) {
           break;
         case IdRow + 11: memoryOpen(); return;  // SOUL Memory
         case IdRow + 12: go(View::AppsSettings); return;  // Settings › Apps: order and hide
+        case IdRow + 13:  // SoulOS Alive: no lids, no breathing, the layouts and the dial snap
+          set_.reduceMotion = !set_.reduceMotion;
+          break;
         case IdRow + 9: {  // pause connectors: a user-only switch, never from the cloud or an AI
           if (!net_.paired) {
             toast(tr("Pair with your account first", "Leagă-mă întâi de cont"), kAmber);
@@ -1263,8 +1305,11 @@ void Os::showAnswer(const AiReply& r, AiErr err, const char* src) {
   const size_t len = r.say.size() + (err != AiErr::None ? 40 : 0);
   answerFor_ = 6.5f + (len > 80 ? (len - 80) * 0.03f : 0.0f);
   if (answerFor_ > 14) answerFor_ = 14;
-  if (err != AiErr::None) {
-    face_.flash(kRose, 1.2f);  // the face goes "confused" through FaceState::Error
+  if (err != AiErr::None && !r.actions.empty()) {
+    face_.react(X_approve);  // the on-device fallback did it: success, not a sad face (§6)
+    face_.flash(kMint, 1.4f);
+  } else if (err != AiErr::None) {
+    face_.flash(kRose, 1.2f);  // the face goes sad through FaceState::Error (it did nothing)
   } else if (!r.actions.empty()) {
     face_.react(X_approve);
     face_.flash(kMint, 1.4f);
@@ -1652,6 +1697,7 @@ void Os::update(float dt, Brain& brain) {
   for (Ev e : brainEvents_) brain.event(e);
   brainEvents_.clear();
   glassUpdate(dt, brain);
+  aliveUpdate(dt);  // lids, speech, the dial (OsAlive.cpp)
   face_.update(dt, faceInputs(brain));
 }
 
@@ -1712,6 +1758,7 @@ bool Os::idleReturns() const {
 void Os::glassUpdate(float dt, const Brain& brain) {
   GlassLayer& G = glass();
   asleep_ = brain.mode() == Mode::Asleep || brain.mode() == Mode::Off;
+  if (G.flat()) return;  // SoulOS Alive: pure black behind everything, nothing to build or drift
   // the aura (never behind the eyes on a face moment); when a screen opens from the eyes it waits 0.2 s for
   // them to step back, so it never rises behind the big eyes
   const bool on = auraOn() && (auraLevel_ > 0 || viewT_ >= 0.2f);
@@ -1766,16 +1813,22 @@ FaceInputs Os::faceInputs(const Brain& b) const {
     in.look = true;
     in.lookX = 0.8f * cosf(a);
     in.lookY = 0.8f * sinf(a);
+  } else if (view_ == View::Launcher && !(down_ && !dialGrab_ && t_ < lookUntil_)) {
+    in.look = true;  // the dial: sideways at the incoming pebble while it turns, down at the focused one
+    dial_.gaze(in.lookX, in.lookY);
   } else if (t_ < lookUntil_) {
     in.look = true;
     in.lookX = lookX_;
     in.lookY = lookY_;
   }
+  // breathing idle (§3): on the face and the dial the eyes swell 1.2 % over 5.5 s
+  if (view_ == View::Home || view_ == View::Launcher) in.layout.k *= alive::breath(t_, reducedMotion());
   if (listening_) in.state = FaceState::Listen;
   // a turn handed to the owner's computer: waiting (on its way) until Claude Code has it, then thinking
   else if (thinking_ && aiMode() == AiMode::Bridge && net_.askState == 1) in.state = FaceState::Wait;
   else if (thinking_ || voiceWait_) in.state = FaceState::Think;
-  else if (view_ == View::Answer && lastErr_ != AiErr::None) in.state = FaceState::Error;
+  // sad only on a real failure: the on-device fallback did something = not a failure (§6)
+  else if (view_ == View::Answer && lastErr_ != AiErr::None && reply_.actions.empty()) in.state = FaceState::Error;
   else if (claude_.prompt) in.state = FaceState::Wait;
   else if (claude_.busy) in.state = FaceState::Busy;
   else if (power_.charging) in.state = FaceState::Charge;
@@ -1795,6 +1848,10 @@ FaceInputs Os::faceInputs(const Brain& b) const {
   in.progress = b.approveProgress();
   if (power_.charging && power_.batPct >= 0) in.level = power_.batPct / 100.0f;
   if (view_ == View::Boot && bootStep_ == BootStep::Hold && !listening_) in.state = FaceState::Idle;
+  // night (23-06 h) at rest on the face: sleepy
+  if (view_ == View::Home && in.state == FaceState::Idle && peekT_ <= 0 && !down_ && now_ &&
+      alive::isNight(localclock::hour(now_)))
+    in.state = FaceState::Sleep;
   appsFace(in);  // the apps' eyes: breathing, the games, the map's turn
   return in;
 }
@@ -1833,6 +1890,10 @@ Rect Os::takeDirty() {
 }
 
 void Os::takeDirty(RectList& out) {
+  if (lids_.closing() && lidsShown_) {  // the lids close over the old screen: it stays as it is (kept for later)
+    out.clear();
+    return;
+  }
   out = dirty_;
   if (dirtyAll_) {
     out.clear();
@@ -1856,7 +1917,10 @@ bool Os::loadSettings(const uint8_t* buf, size_t n) {
   memcpy(&s, buf, sizeof s);
   s.name[sizeof s.name - 1] = 0;
   if (s.lang > 1 || s.bright > 3 || s.ai > 3) return false;
+  if (s.body >= (uint8_t)Body::Count) s.body = 0;  // 1.9: these were padding bytes
+  if (s.reduceMotion > 1) s.reduceMotion = 0;
   set_ = s;
+  applyPalette();  // the body may differ
   return true;
 }
 
