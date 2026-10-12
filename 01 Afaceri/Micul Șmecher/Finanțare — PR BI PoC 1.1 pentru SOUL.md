@@ -2,14 +2,33 @@
 tip: finanțare
 afacere: Micul Șmecher
 program: PR BI P1/1.1/1/2026 — Proof of Concept
-actualizat: 2026-10-03
+actualizat: 2026-10-12
 ---
 
 # PR BI 1.1 „Proof of Concept” — ne încadrăm cu SOUL?
 
 > **Actualizare 2026-10-03:** placa de dovadă TRL 3 e acum **Waveshare ESP32-S3-Touch-LCD-2.8C** (SOUL M), nu 1.75; firmware-ul SoulOS 1.2.0 e gata de încărcat (`micul-smecher/firmware/release/`), iar materialele de arătat sunt randările v9, trailerul v3, site-ul v2 și Brand Package — toate în [[SOUL — Harta memoriei]]. Pașii fondatorului: [[De continuat — SOUL]].
 
-**Răspuns scurt: da, ne încadrăm pe fond, dar mai sunt câteva condiții de verificat și câteva lucruri de făcut până la depunere (~noiembrie 2026).** Grant **€50.000–200.000, până la 100%, de minimis**, prin **ARTEMIS DIGITAL S.R.L.**
+## Status apel și șanse (verificat 2026-10-12)
+
+**1) Putem depune în decembrie? Nu se știe încă.** Apelul e tot „în pregătire”. Pe site există doar ghidul din consultare (03.06.2026), fără ghid final și fără date de depunere. Calendarul ADR BI din 13.07.2026 anunța ghid final în septembrie și deschidere în noiembrie; termenul e deja ratat. Regula din draft: deschiderea vine la 30 de zile după ghidul final, apoi 90 de zile de depunere. **Data de urmărit:** dacă ghidul final apare până pe ~1 decembrie, depunem în decembrie. Altfel, cel mai probabil ianuarie–februarie 2027 (estimare). Verificăm [regiobucuresti-ilfov.ro/apeluri](https://regiobucuresti-ilfov.ro/apeluri) săptămânal.
+
+**2) Șanse: reale, dar nu „foarte mari”.** Apelul e competitiv: minimum 70 de puncte, apoi clasament până se termină 5 M€ (cam 25–40 de proiecte). Nu știm câți vor aplica. La apelul ADR BI pentru microîntreprinderi s-au cerut de 4,3 ori mai mulți bani decât erau. Azi, cu golurile actuale, șansele sunt mici. Cu dosarul complet la 90+ de puncte suntem competitivi, dar fără garanție.
+Ce ne poate scufunda:
+- expertul TRL 3 nu are toate cele 3 condiții (5 ani, 2 articole, acreditare) → respingere directă;
+- un contract sau o achiziție pentru proiect semnată înainte de depunere (efectul stimulativ);
+- schimbare de asociați sau administratori după 04.06.2026, ori plafon de minimis depășit pe firmele legate;
+- fără coordonator tehnic, scrisori și student pierdem 10–15 puncte și cădem sub linia de finanțare;
+- fereastră scurtă și cerințe noi în ghidul final → nu suntem gata la timp.
+
+**3) Ce facem:**
+1. **Andu:** ONRC, RegAS, bilanț 2025 — confirmă acționariat, IMM, datorii, de minimis (octombrie).
+2. **Fondatorul:** placa 2.8C cu SoulOS, filmare și măsurători = 2 dovezi TRL 3 (octombrie).
+3. **Andu + fondatorul:** expertul (UPB/IMT/ICI), cu cele 3 condiții verificate pe acte, și coordonatorul tehnic (până la 15 noiembrie).
+4. **Andu:** minimum 2 scrisori de intenție și câte 2 oferte pe linie de buget; nimic semnat ferm înainte de depunere (noiembrie).
+5. **Claude:** dosar complet până la 1 decembrie, verificare săptămânală a site-ului, întrebare la helpdesk@adrbi.ro despre angajarea studentului înainte de depunere, punctaj recalculat pe ghidul final.
+
+**Răspuns scurt: da, ne încadrăm pe fond, dar mai sunt câteva condiții de verificat și câteva lucruri de făcut până la depunere (cel mai devreme decembrie 2026, vezi statusul de mai sus).** Grant **€50.000–200.000, până la 100%, de minimis**, prin **ARTEMIS DIGITAL S.R.L.**
 
 Documentele oficiale primite de la Andu (Anexele 3, 10, 16, 18) sunt salvate în `micul-smecher/investors/poc-1.1/`. Ghidul Solicitantului final nu l-am primit încă; condițiile de eligibilitate de mai jos vin din ghidul în consultare. Cercetarea de fond: `micul-smecher/investors/FINANTARE-ROMANIA.md`.
 
