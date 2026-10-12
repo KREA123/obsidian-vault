@@ -17,6 +17,8 @@ Format: `YYYY-MM-DD — decizie — de ce — sursa`. Cele mai noi sus. Se adaug
 - „Nu punem la dispoziție ce nu avem în stoc.”
 
 ## Octombrie 2026
+- 2026-10-12 — **SoulOS Alive aprobat** (Andu): ochii conduc OS-ul (rămân sus pe fiecare ecran și reacționează), ecran principal = cerc de aplicații MĂRGĂRITAR, liste-rotiță rotunde, culori din ochii cu care s-a născut SOUL-ul; „sticla mată” scoasă. Se pune pe site și pe dispozitiv (firmware 1.9.0) — `micul-smecher/os/DESIGN-ALIVE.md` · [[De continuat — SOUL]]
+- 2026-10-12 — **Datele firmei pe site** (Andu, certificat ONRC): ARTEMIS DIGITAL S.R.L., CUI 53145290, J2025098748009; ANAF confirmă neplătitor de TVA → pe site fără „cu TVA”, prețul e final.
 - 2026-10-03 — **SOUL fără AI inclus plătit de noi** (Andu): omul își conectează propriul AI — ChatGPT prin „Sign in with ChatGPT” (după aprobarea OpenAI) sau conector, Claude prin conectorul din aplicația Claude (+ opțional cheia lui API), sau cheia lui API; altfel modul offline. SOUL Cloud doar transmite mesajele (nu plătim tokeni); în cod AI-ul inclus e oprit (`SOUL_BUILTIN_AI=0`), `micul-smecher/docs/07-CONNECT-AI.md` §0.2. Fapt verificat: abonamentul Claude Pro/Max nu poate fi folosit de dispozitive terțe (regula Anthropic) — [[SOUL — Harta memoriei]] · [[De continuat — SOUL]]
 
 ## Septembrie 2026
