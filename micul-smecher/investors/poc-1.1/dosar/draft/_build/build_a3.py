@@ -70,8 +70,8 @@ for p in d.sections[0].header.paragraphs:
             r.text = ''
 
 hdr = rows(B[6])
-vals = [APPLICANT, '[[A/Ct: CUI]]', TITLU + ' (acronim SOUL-PoC)', RIS3,
-        'TRL 3 — atestat prin Raportul științific (Anexa 16), dovezile D1–D8',
+vals = [APPLICANT, f'CUI {CUI} · {REGCOM}', TITLU + ' (acronim SOUL-PoC)', RIS3,
+        'TRL 3 — ' + TRL3_STATUS,
         'TRL 5 (validare în mediu relevant, L22); TRL 4 = rezultat intermediar (poarta IE2, L14)', '[[ZZ/LL/AAAA]]']
 for tr, v in zip(hdr, vals):
     set_cell(tcs(tr)[1], v)
@@ -88,10 +88,10 @@ drop(*range(29, 41))
 # ------------------------------------------------------------------ I
 drop(42, 45, 46)
 fill(48, [
-    f'Finanțarea nerambursabilă solicitată, de **{TOTAL}** (100 % din valoarea eligibilă, ajutor de minimis), este folosită exclusiv pentru a valida modelul conceptual **SOUL** de la **TRL 3** (dovadă experimentală a conceptului pe componente separate, atestată în Raportul științific) la **TRL 5** (sistem integrat validat în mediu relevant), în **24 de luni**, la sediul ARTEMIS DIGITAL S.R.L. din București.',
-    'SOUL este un **dispozitiv tangibil de interacțiune om–mașină / asistent personal AI**: un obiect de ~90 × 103 × 31 mm din aluminiu, cu afișaj rotund IPS de 2,8″ (480×480), care arată doi ochi expresivi, are o tastatură circulară și execută acțiuni utile (notițe, alarme, mementouri, liste, aprobări pentru Claude Code/Cowork) **offline** sau cu asistentul AI ales de utilizator (Claude, ChatGPT sau cheie proprie).',
+    f'Finanțarea nerambursabilă solicitată, de **{TOTAL}** (100 % din valoarea eligibilă, ajutor de minimis), este folosită exclusiv pentru a valida modelul conceptual **SOUL** de la **TRL 3** (dovadă experimentală a conceptului pe componente separate, ' + ('atestată în Raportul științific' if D8_DONE else 'de atestat în Raportul științific după măsurătorile pe placa reală — D8, în curs') + f') la **TRL 5** (sistem integrat validat în mediu relevant), în **24 de luni**, la sediul ARTEMIS DIGITAL S.R.L. din București.',
+    f'SOUL este un **dispozitiv tangibil de interacțiune om–mașină / asistent personal AI**: un obiect de {DIMS} din aluminiu anodizat (forma MĂRGĂRITAR, 5 culori), cu afișaj rotund IPS de 2,8″ (480×480) și touch, care arată doi ochi vii (fiecare unitate „se naște” cu o pereche proprie), are o tastatură circulară și execută acțiuni utile (notițe, alarme, mementouri, liste, aprobări pentru Claude Code/Cowork) **offline** sau cu **AI-ul conectat de proprietar** ({AI_OWN}). SOUL nu include și nu revinde AI.',
     'Problema adresată este europeană și tehnică: dispozitivele AI dedicate lansate în 2023–2025 au eșuat din cauza **dependenței de cloud** (Humane AI Pin a fost oprit de la distanță la 28.02.2025; Moxie s-a oprit odată cu serverul, în dec. 2024), a **latenței** (BubblePal: 10–15 s), a **interfeței** (introducerea de text pe ecrane mici și rotunde rămâne o problemă deschisă de cercetare HCI) și a **închiderii ecosistemului** (un singur furnizor, abonament obligatoriu). În paralel, Reg. (UE) 2023/1542 art. 11 impune din **18.02.2027** baterii portabile înlocuibile de utilizator, Dir. (UE) 2024/1799 introduce dreptul la reparare, iar Reg. delegat (UE) 2022/30 + EN 18031 impun securitate cibernetică echipamentelor radio (surse în Secțiunea III).',
-    'Proiectul demonstrează experimental ipoteza de cercetare: **dacă** un dispozitiv de 90 × 103 × 31 mm integrează (i) randare SDF optimizată pe ESP32-S3, (ii) o tastatură QWERTY circulară cu decodare probabilistică, (iii) o arhitectură AI hibridă local-first cu degradare controlată și (iv) o carcasă din aluminiu cu fereastră radio polimerică și baterie înlocuibilă, **atunci** sistemul atinge simultan, în mediu relevant, ≥ 30 fps, ≥ 20 cuvinte/min, latență vocală p50 ≤ 1,5 s, ≥ 90 % comenzi corecte fără internet, atenuare RF prin carcasă ≤ 6 dB și ≥ 24 h de autonomie.',
+    f'Proiectul demonstrează experimental ipoteza de cercetare: **dacă** un dispozitiv de {DIMS} integrează (i) randare SDF optimizată pe ESP32-S3, (ii) o tastatură QWERTY circulară cu decodare probabilistică, (iii) o arhitectură local-first în care AI-ul e ales și conectat de proprietar, cu degradare controlată și memorie portabilă pe dispozitiv, și (iv) o carcasă din aluminiu cu fereastră radio polimerică și baterie înlocuibilă de 1500 mAh, **atunci** sistemul atinge simultan, în mediu relevant, ≥ 30 fps, ≥ 20 cuvinte/min, latența unui tur AI p50 ≤ 1,5 s, ≥ 90 % comenzi corecte fără internet, atenuare RF prin carcasă ≤ 6 dB și ≥ 24 h de autonomie.',
     'Banii acoperă: echipa CDI (coordonator tehnic/științific, inginer embedded, student), aparatura de măsură strict necesară (osciloscop, analizor de spectru, analizor de consum, cutie ecranată RF, PC, imprimantă SLA), prototiparea în două iterații (PCB propriu rev A/B, carcase CNC din Al 6061), 15 prototipuri pre-serie, pre-testarea EMC/RF, evaluarea preliminară EN 18031, protecția IP (design și marcă UE), publicarea open-access și managementul.',
     'La final, ARTEMIS va deține un rezultat validat la TRL 5 (15 prototipuri testate de ≥ 12 utilizatori timp de 4 săptămâni), două cereri de protecție IP, un articol trimis la o revistă open-access peer-review și ≥ 2 acorduri de pilot/distribuție, adică punctul de pornire pentru certificarea CE și seria pilot (Secțiunea VI).',
 ])
@@ -117,28 +117,28 @@ fill(58, [
     '**Poarta de decizie IE2 (L14).** La luna 14 (înainte de 2/3 din durată, L16) Raportul de etapă TRL 4 compară măsurătorile P1–P8 cu pragurile O1. Decizia go/no-go condiționează angajarea cheltuielilor specifice TRL 5 (liniile 12 — lotul de 15 carcase, 13 — rev B, 14 — pre-scan). În caz de no-go se aplică procedura de eșec de cercetare (Anexa 17).',
     '**Gestiunea riscurilor.** Registrul de riscuri (R1–R12, §6.4) se revizuiește lunar; fiecare risc are un responsabil și un indicator de declanșare.',
     '**Monitorizare și raportare.** Indicatorii de etapă IE1 (L6), IE2 (L14), IE3 (L22) și indicatorii de management IE-M1..M3 (achiziții L4/L15; progres financiar ≥ 30 % la L10 și ≥ 70 % la L18; cerere IP depusă la L6) intră în Planul de monitorizare (Anexa 13). Pontaje lunare pe proiect, contabilitate analitică separată, arhivă electronică (git + dosar partajat) pentru toate datele experimentale.',
-    '**Experiență cu finanțare europeană:** ARTEMIS nu a implementat până acum proiecte cu finanțare europeană [[A: confirmă]]. Compensăm prin audit financiar (linia 26), prin consultanță pentru pregătirea dosarului (linia 24) și prin calendarul de raportare de mai sus.',
+    '**Experiență cu finanțare europeană:** ARTEMIS (înregistrată la 17.12.2025) nu a implementat până acum proiecte cu finanțare europeană [[A: confirmă]]. Compensăm prin audit financiar (linia 26), prin consultanță pentru pregătirea dosarului (linia 24) și prin calendarul de raportare de mai sus.',
 ])
 
 drop(61, 62)
 fill(63, [
     '**Problema.** Asistenții AI generativi sunt captivi în telefon și în ecranul computerului, iar dispozitivele AI dedicate încercate până acum au eșuat din motive tehnice și de arhitectură: dependență de cloud („bricking” la închiderea serverului), latență mare, interfață nepotrivită pentru text pe ecrane mici, un singur furnizor de AI și baterii nereparabile.',
-    '**Soluția.** SOUL M: afișaj rotund IPS 2,8″ 480×480 pe ESP32-S3 (framebuffer în PSRAM), touch capacitiv GT911, IMU, 2 microfoane MEMS, amplificator, PMU, baterie Li-ion 2500–3000 mAh înlocuibilă, antenă BLE/Wi-Fi care radiază printr-o fereastră polimerică din talpa unei carcase CNC din Al 6061, încărcare prin pini în capsula „OU”. Firmware-ul SoulOS randează procedural ochii (SDF anti-aliased), rulează tastatura circulară și execută un singur set de acțiuni în trei moduri: fără AI, cu Claude, cu ChatGPT.',
-    '**Tipul de inovare: inovare de produs** — un bun fizic nou (hardware + carcasă), cu firmware încorporat și un serviciu software asociat (serverul AI UE). Nu este o simplă integrare de componente: cele cinci elemente de diferențiere N1–N5 (tabelul de mai jos) cer dezvoltare experimentală și validare prin măsurători.',
-    ('table', T(['Cod', 'Element nou', 'Stadiul actual / competitori', 'Contribuția SOUL-PoC (măsurabilă)'],
-                [list(n) for n in NOVELTY], [700, 3200, 2800, 2938])),
-    '**De unde pornim (TRL 3).** Există firmware testat (61/61 teste Unity), simulator, serviciul AI (49/49 teste), prototipul web al tastaturii, analiza geometrică și CAD-ul; înainte de depunere rulăm experimentele X1–X8 pe placa de dezvoltare SOUL M (dovezile D1–D8, §4.2).',
-    '**Ce demonstrează proiectul.** TRL 4 (L14): modelul integrat funcționează în laborator la pragurile O1. TRL 5 (L22): 15 prototipuri cu PCB propriu și carcasă finală din aluminiu sunt folosite 4 săptămâni de ≥ 12 utilizatori din București-Ilfov, în locuințe și birouri reale, la pragurile O3.',
+    f'**Soluția.** SOUL M ({DIMS}, forma MĂRGĂRITAR): afișaj rotund IPS 2,8″ 480×480 cu touch pe ESP32-S3, giroscop/accelerometru, RTC, microfon și difuzor I²S opționale, baterie LiPo 1500 mAh înlocuibilă, antenă care radiază printr-o fereastră polimerică din talpa unei carcase CNC din Al 6061 anodizat, încărcare în capsula „OU”. SoulOS randează procedural ochii (SDF, 120 de designuri, 31 de expresii), rulează tastatura circulară și execută un singur set de acțiuni offline sau cu AI-ul conectat de proprietar ({AI_OWN}); memoria SOUL Memory rămâne pe dispozitiv.',
+    '**Tipul de inovare: inovare de produs** — un bun fizic nou (hardware + carcasă), cu firmware încorporat și un serviciu software asociat (SOUL Cloud, găzduit în UE, care doar transmite mesajele; fără AI inclus). Nu este o simplă integrare de componente: cele cinci elemente de diferențiere N1–N5 (tabelul din §4.3 și Raportul științific §1.5) cer dezvoltare experimentală și validare prin măsurători.',
+    ('**De unde pornim.** TRL 3 (dovezile D1–D8, §4.2).' if D8_DONE else
+     f'**De unde pornim.** Firmware {FW} ({FW_TESTS}+ teste), simulator, SOUL Cloud ({CLOUD_TESTS} de teste), SoulOS pe web, CAD; TRL 3 se atestă după măsurătorile pe placa reală 2.8C (D8, în curs; §4.2).'),
+    '**Ce demonstrează proiectul.** TRL 4 (L14): modelul integrat funcționează în laborator la pragurile O1. TRL 5 (L22): 15 prototipuri cu PCB propriu și carcasă finală din aluminiu sunt folosite 4 săptămâni de ≥ 12 utilizatori din București-Ilfov, la pragurile O3.',
 ])
+
 
 # ------------------------------------------------------------------ II
 drop(67)
 t = B[70]
-comp = [APPLICANT, '[[A/Ct: CUI]] / [[J40/…/…]]', 'Societate cu răspundere limitată (Legea 31/1990)',
-        '[[ZZ/LL/AAAA — din certificatul constatator]]', '[[Adresa completă]], București, [[sector]]',
-        'Sediul social (spațiu de birou + laborator electronic) [[A: confirmă; dacă e alt spațiu, adresa punctului de lucru din BI]]',
-        '[[Ct: cod CAEN principal + denumire]]',
-        '[[Ct: codul CAEN pentru cercetare-dezvoltare în științe naturale și inginerie, autorizat la locul de implementare]]',
+comp = [APPLICANT, f'CUI {CUI} / {REGCOM} (EUID {EUID})', 'Societate cu răspundere limitată (Legea 31/1990)',
+        DATA_INREG, SEDIU,
+        'Sediul social [[A: confirmă că spațiul e adecvat (birou + laborator electronic); sediul e un apartament, deci, dacă nu e potrivit, se închiriază un spațiu în BI, înregistrat ca punct de lucru]]',
+        CAEN_PRINCIPAL,
+        CAEN_DE_ADAUGAT,
         '[[Ct: valoare în RON]]', '[[A: Asociat 1 – X %; …]]', '[[Nume Prenume]] („Andu”), administrator',
         'Microîntreprindere [[Ct: de confirmat prin Anexa 7, inclusiv întreprinderile partenere/legate]]', '[[Ct: număr]]']
 for tr, v in zip(rows(t), comp):
@@ -146,13 +146,13 @@ for tr, v in zip(rows(t), comp):
 
 drop(73)
 fill(74, [
-    'ARTEMIS DIGITAL S.R.L. este o firmă din București care operează brandul **KREA** (servicii digitale: dezvoltare web/IT și marketing digital) și magazinul online **MundiShop** (comerț electronic) [[A: completați 2–3 fraze cu cifre: ani de activitate, clienți, echipă]]. Activitatea curentă aparține domeniului RIS3 **TIC**: dezvoltare software, integrare de servicii cloud, automatizări și analiză de date.',
-    'Din septembrie 2026 firma desfășoară o activitate proprie de cercetare-dezvoltare: **SOUL**, un dispozitiv de interacțiune om–mașină care leagă TIC (firmware embedded, AI hibrid, securitate cibernetică) de **Sisteme și Componente Inteligente** (sistem ciber-fizic cu afișaj, senzori, radio, energie). Proiectul PoC transformă această direcție într-o linie de produs proprie: trecerea de la servicii pentru clienți la un produs cu proprietate intelectuală, vândut în UE. Experiența de comerț electronic (MundiShop) și de marketing digital (KREA) este direct utilă la validarea comercială (A6) și la lansarea post-PoC.',
+    f'ARTEMIS DIGITAL S.R.L. (CUI {CUI}, înregistrată la {DATA_INREG}, sediul în București, Sector 3; {TVA}) este o firmă care operează brandul **KREA** (servicii digitale: dezvoltare web/IT și marketing digital) și magazinul online **MundiShop** (comerț electronic) [[A: completați 2–3 fraze cu cifre: clienți, echipă, cifra de afaceri 2025]]. Activitatea curentă aparține domeniului RIS3 **TIC**: dezvoltare software, integrare de servicii cloud, automatizări și analiză de date.',
+    'Activitatea de cercetare-dezvoltare **SOUL** a fost realizată de fondator (Andu), ca persoană fizică, din 24.09.2026 și este transferată firmei prin cesiunea din [[A: data cesiunii]]; ARTEMIS o continuă ca activitate proprie (CAEN 7210 adăugat la [[Ct: data înregistrării la ONRC]]). SOUL este un dispozitiv de interacțiune om–mașină care leagă TIC (firmware embedded, AI hibrid, securitate cibernetică) de **Sisteme și Componente Inteligente** (sistem ciber-fizic cu afișaj, senzori, radio, energie). Proiectul PoC transformă această direcție într-o linie de produs proprie: trecerea de la servicii pentru clienți la un produs cu proprietate intelectuală, vândut în UE. Experiența de comerț electronic (MundiShop) și de marketing digital (KREA) este direct utilă la validarea comercială (A6) și la lansarea post-PoC.',
 ])
 
 drop(77)
 fill(78, [
-    'Da. Rezultatele CD obținute până la depunere (septembrie 2026, documentate în depozitul git cu commit-uri datate) sunt cedate de autorul lor (Andu) către ARTEMIS prin contract de cesiune, cu titlu gratuit, înainte de depunere [[A: semnează cesiunea — model în dosar]]. Componentele open-source folosite (claude-desktop-buddy — MIT; fontul Nunito — OFL; xiaozhi-esp32 — MIT) sunt listate cu licențele lor.',
+    'Da. Rezultatele CD obținute până la depunere (septembrie 2026, documentate în depozitul git cu commit-uri datate) sunt cedate de autorul lor (Andu) către ARTEMIS prin contract de cesiune, cu titlu gratuit, înainte de depunere [[A: semnează cesiunea — model în dosar]]. Componentele open-source folosite (claude-desktop-buddy — MIT; fonturile Nunito și cele din SoulOS Alive — SIL OFL 1.1; valori de registre din xiaozhi-esp32 — MIT; ESP-SR — Espressif [[licență de verificat]]) sunt listate cu licențele lor. SOUL Bridge este publicat open source (MIT).',
     ('table', T(['Cod', 'Rezultat CD existent', 'Unde / dovadă'],
                 [[e[0], e[2], e[4]] for e in EVIDENCE], [700, 5938, 3000])),
 ])
@@ -182,15 +182,15 @@ fill(95, [
     '- **Hardware AI dedicat.** Plaud a livrat **peste 2 milioane** de dispozitive AI de notițe, iar abonamentele sale depășesc **100 M$ ARR**, cu ~50 % dintre cumpărători plătitori (TechCrunch, 16.06.2026: https://techcrunch.com/2026/06/16/plaud-says-its-software-business-topped-100m-in-arr-after-shipping-over-2m-ai-notetakers/). Fuzozo (China) a vândut ~300.000 de unități (https://www.stocktitan.net/news/TUYA/tuya-smart-accelerates-physical-ai-commercialization-with-strategic-fl5hn4dv397y.html). Campaniile de crowdfunding pentru dispozitive AI de birou strâng 0,3–0,8 M$ (Loona DeskMate 721.816 $: https://www.kicktraq.com/projects/keyitechnology/loona-deskmate-the-worlds-first-screen-aware-ai-co-worker/; Eiliko ~600.000 $: https://www.kicktraq.com/projects/energize-lab/eiliko/).',
     '- **Obiect AI premium, validat ca preț.** OpenAI × Jony Ive pregătesc pentru 2027 un dispozitiv din metal premium la **300–400 $** (TechCrunch, 06.08.2026: https://techcrunch.com/2026/08/06/openais-new-ai-smart-speaker-will-reportedly-sell-for-between-300-and-400/); obiectele metalice fără AI se vând la 139–599 $ (STARBOY: https://gizmodo.com/can-we-interest-you-in-a-400-ai-keychain-that-behaves-like-a-real-pet-2000732919).',
     '**Tendințe.** (1) Utilizatorii cer confidențialitate și funcționare offline după eșecurile Humane (https://www.axios.com/2025/02/18/humane-ai-pin-shut-down-hp) și Moxie (https://www.theregister.com/2024/12/16/moxie_cloud_services_lessons/). (2) Marile platforme închid ecosistemul: Meta Muse Charm e disponibil doar în SUA (https://www.heise.de/en/news/Tamagotchi-meets-AI-agent-Meta-announces-AI-gadget-Muse-Charm-11464075.html), Alexa+ nu există în română. (3) Reglementarea UE (baterii înlocuibile din 18.02.2027, dreptul la reparare, securitatea radio, AI Act art. 50) favorizează produsele proiectate de la început pentru reparabilitate și transparență.',
-    '**Dimensiunea pieței adresabile [E — estimare proprie, de rafinat în A6]:** 15,1 % × ~335 M persoane de 16–74 ani din UE ≈ **50 M** de utilizatori profesionali de AI generativ (piața totală); nișa „dispozitiv dedicat premium, BYO-AI, UE-first” la 0,1–0,5 % din aceștia ≈ **50–250 mii** de unități, adică **12–60 M€** la un preț mediu de ~250 € (piața adresabilă). Ținta SOUL în anul 5 post-proiect: **7.000 de unități/an** (≈ 3–14 % din piața adresabilă).',
+    '**Dimensiunea pieței adresabile [E — estimare proprie, de rafinat în A6]:** 15,1 % × ~335 M persoane de 16–74 ani din UE ≈ **50 M** de utilizatori profesionali de AI generativ (piața totală); nișa „dispozitiv dedicat premium, cu AI-ul proprietarului, UE-first” la 0,1–0,5 % din aceștia ≈ **50–250 mii** de unități, adică **12–60 M€** la un preț mediu de ~250 € (piața adresabilă). Ținta SOUL în anul 5 post-proiect: **7.000 de unități/an** (≈ 3–14 % din piața adresabilă).',
     'Benchmark-ul complet al celor 24 de competitori (preț, abonament, AI, tracțiune, status, cu surse) este anexat (research 11).',
 ])
 
 drop(98)
 t = B[99]
 seg = [
-    ['Segment 1 (B2C/B2B mic, UE): profesioniști care lucrează zilnic cu asistenți AI', 'dezvoltatori care folosesc Claude Code/Cowork, creatori, freelanceri; 25–45 ani; vor aprobări și notițe rapide fără telefon, cu AI-ul pe care îl plătesc deja', '[E] ~50 M utilizatori AI la muncă în UE (Eurostat); țintă An 1–5: 175 → 7.000 buc./an'],
-    ['Segment 2 (B2C premium, UE): utilizatori care vor un asistent privat, offline, fără abonament', 'cumpărători de obiecte de design și gadgeturi premium (referință: STARBOY, Moflin, Ropet), sensibili la confidențialitate', '[E] preț acceptat 250–400 €; ~30 % din vânzări'],
+    ['Segment 1 (B2C/B2B mic, UE): profesioniști care lucrează zilnic cu asistenți AI', 'dezvoltatori care folosesc Claude Code/Cowork, creatori, freelanceri; 25–45 ani; vor aprobări și notițe rapide fără telefon, cu propriul cont AI (cheie API sau conectorul din aplicația Claude)', '[E] ~50 M utilizatori AI la muncă în UE (Eurostat); țintă An 1–5: 175 → 7.000 buc./an'],
+    ['Segment 2 (B2C premium, UE): utilizatori care vor un asistent privat, offline, fără abonament', 'cumpărători de obiecte de design și gadgeturi premium (referință: STARBOY, Moflin, Ropet), sensibili la confidențialitate', '[E] preț acceptat 249–400 €; ~30 % din vânzări'],
     ['Segment 3 (B2B): echipe/firme care folosesc Claude Code și cadouri corporate', 'firme de software din UE, 10–200 de dezvoltatori; pilot cu 3–5 persoane, apoi achiziție de echipă', '[E] 20–50 de firme în An 3–5; licențiere B2B 20–60 k€/an'],
     ['Segment 4 (acces și incluziune): persoane cu nevoi de accesibilitate', 'control vocal, modul „taste mari”, contrast ridicat; parteneriate cu asociații', '[E] nișă de validare și canal instituțional; nu e inclus în proiecție'],
 ]
@@ -205,12 +205,12 @@ drop(102)
 t = B[103]
 compet = [
     ['Meta Muse Charm (agent AI purtabil)', 'SUA', 'breloc cu 2 camere, 5G, agent Muse (e-mail, rezervări, cumpărături); abonament 0/20/100 $/lună; doar SUA', 'fără camere, hold-to-talk; AI la alegere; disponibil în UE și în română; funcționează offline'],
-    ['OpenAI × Jony Ive (difuzor AI din metal, 2027)', 'SUA', 'obiect premium din metal, fără ecran, 300–400 $, doar ChatGPT', 'față expresivă + tastatură; portabil; merge cu Claude și ChatGPT; baterie înlocuibilă'],
+    ['OpenAI × Jony Ive (difuzor AI din metal, 2027)', 'SUA', 'obiect premium din metal, fără ecran, 300–400 $, doar ChatGPT', 'față expresivă + tastatură; portabil; merge cu Claude (ChatGPT cu cheie proprie — în lucru); baterie înlocuibilă'],
     ['Plaud NotePin S (recorder AI)', 'SUA / China', 'o singură funcție (notițe), 179 $ + abonament Pro 99,99 $/an', 'fără abonament obligatoriu; acțiuni multiple (alarme, liste, aprobări); offline'],
     ['Rabbit r1 (handheld AI)', 'SUA', 'ecran 2,88″, 199 $, cloud propriu; ~5 % utilizatori zilnici', 'funcții locale utile zilnic; obiect de birou premium; AI la alegere'],
-    ['Humane AI Pin (închis 28.02.2025)', 'SUA', '699 $ + 24 $/lună obligatoriu; oprit de server', 'nu depinde de serverul producătorului (offline + server publicabil/escrow)'],
-    ['Fuzozo (Robopoet/Tuya)', 'China', 'pluș cu ochi LCD, ~55 $, cloud Tuya, doar chineză', 'obiect din aluminiu, date în UE, română/engleză, acțiuni utile'],
-    ['Loona DeskMate (KEYi)', 'China', 'dock motorizat cu iPhone ca față, 219–299 $, 50+ integrări, cere iPhone', 'dispozitiv autonom, fără telefon obligatoriu, fără motoare, autonomie ≥ 24 h'],
+    ['Humane AI Pin (închis 28.02.2025)', 'SUA', '699 $ + 24 $/lună obligatoriu; oprit de server', 'nu depinde de serverul producătorului (offline complet, memoria pe dispozitiv, AI-ul proprietarului)'],
+    ['Fuzozo (Robopoet/Tuya)', 'China', 'pluș cu ochi LCD, ~55 $, cloud Tuya, doar chineză', 'obiect din aluminiu, servere în UE, engleză + română, acțiuni utile'],
+    ['Loona DeskMate (KEYi)', 'China', 'dock motorizat cu iPhone ca față, 219–299 $, 50+ integrări, cere iPhone', 'dispozitiv autonom, fără telefon obligatoriu, fără motoare, țintă de autonomie ≥ 24 h'],
     ['Vibe Desktop Buddy / clone xiaozhi-esp32', 'SUA / China', 'kituri pe M5Stick/ESP32, 110 $ + transport, ecran 1,14″, ~2 h baterie, aspect DIY', 'aceeași funcție de aprobări Claude pe un obiect premium; ecran 2,8″ cu tastatură; OS finisat; garanție UE'],
     ['Amazon Echo Spot / Alexa+', 'SUA', 'ecran rotund 2,83″, 80 $ + Alexa+ 22,99 €/lună fără Prime; nu există în română', 'fără lock-in; română; confidențialitate; portabil'],
 ]
@@ -222,20 +222,21 @@ drop(106)
 fill(107, [
     'Principalele bariere de intrare și modul de depășire:',
     '- **Conformitate radio și securitate cibernetică (RED 2014/53/UE, Reg. delegat 2022/30, EN 18031-1/-2/-3, EN 300 328, EN 301 489).** Depășire: arhitectura EN 18031 (secure boot, OTA semnat, BLE LE Secure Connections) intră în proiect (A4, linia 15), iar pre-scanul EMC/RF (linia 14) reduce riscul certificării CE din An 1 post-proiect.',
-    '- **Baterii (Reg. 2023/1542), DEEE/EPR, GPSR, RoHS.** Depășire: bateria înlocuibilă de utilizator este cerință de proiectare (P10); înregistrările ANMAP/EPR și dosarul GPSR se fac la Founders 00.',
-    '- **AI Act art. 50 și GDPR.** Depășire: informare „sunt un AI” la prima pornire, telemetrie opt-in, fără înregistrare audio brută, servere în UE.',
-    '- **Proprietate intelectuală și mărci existente** (risc de conflict „SOUL”). Depășire: căutare TMview/DesignView înainte de depunere, design UE ≤ L5, marcă UE ≤ L6, marcă figurativă/compusă ca rezervă (§6.2).',
-    '- **Capital pentru scule și stoc; concurența marilor platforme.** Depășire: producție în loturi mici (25 → 300 → 1–10 k), precomenzi, finanțări europene (PR BI 1.2, Eurostars, EIC) și poziționare pe neutralitatea de model, pe care platformele închise nu o pot oferi.',
+    '- **Baterii (Reg. 2023/1542), DEEE/EPR, GPSR, RoHS.** Depășire: bateria înlocuibilă de utilizator este cerință de proiectare (P10); înregistrările ANMAP/EPR și dosarul GPSR se fac înaintea primei serii (după proiect).',
+    '- **AI Act art. 50 și GDPR.** Depășire: informare „sunt un AI” la prima pornire, telemetrie opt-in, fără înregistrare audio brută, servere în UE, export și ștergere a datelor (deja construite în SOUL Cloud).',
+    '- **Proprietate intelectuală și mărci existente** (risc de conflict „SOUL”). Depășire: căutare TMview/DesignView înainte de depunere, design UE pentru forma MĂRGĂRITAR (publică din 24.09.2026) înainte de 24.09.2027, în afara bugetului, marcă UE ≤ L6, marcă figurativă/compusă ca rezervă (§6.2).',
+    '- **Politicile furnizorilor de AI.** Abonamentele Claude Pro/Max nu pot fi folosite de dispozitive terțe, iar „Sign in with ChatGPT” cere aprobarea OpenAI. Depășire: proprietarul își folosește cheia API sau conectorul din aplicația Claude; modul offline; nu promitem nimic ce depinde de aprobări neobținute.',
+    '- **Capital pentru scule și stoc; concurența marilor platforme.** Depășire: producție în loturi mici (10–25 → 300 → 1–10 k), vânzare abia după CE, finanțări europene (PR BI 1.2, Eurostars, EIC) și poziționare pe neutralitatea de model, pe care platformele închise nu o pot oferi.',
     '- **Brevete existente pe tastaturi circulare** (literatura C-QWERTY, COMPASS). Depășire: căutare de anteriorități prin consilierul PI (L1–L3) înainte de a fixa metoda de decodare.',
 ])
 
 drop(110)
 t = B[111]
 mk = [
-    'Preț premium, justificat de material, reparabilitate și neutralitatea de model: **349 €** pentru Founders 00 (25 de unități numerotate), apoi **279–299 €** (Batch 1) și **239–259 €** (SOUL Standard, preț net mediu). Reperele: OpenAI × Ive 300–400 $, STARBOY oțel 349 $, Loona DeskMate 299 $. Nucleul funcțional e gratuit pe viață; se plătesc opțional vocea/memoria (~4 €/lună) și accesoriile.',
-    'Vânzare directă online (magazin propriu Shopify, experiența MundiShop) — ~70 % din volum; crowdfunding Indiegogo/Gamefound pentru Batch 1 (Kickstarter nu acceptă creatori din România); retail de design/electronice premium prin distribuitori (scrisori de intenție la depunere); B2B pentru echipe care folosesc Claude Code.',
-    'Demo-ul „Claude Code cere permisiunea → SOUL aprobă” pe comunitățile de dezvoltatori (r/ClaudeAI, Show HN, Product Hunt); presă tech RO + UE; conferința/târgul din proiect (A7, linia 22); articolul open-access și preprintul (A7); seeding la 10 creatori dev/design; lista de așteptare existentă.',
-    'Până la L24: ≥ 30 de interviuri de customer discovery; ≥ 2 acorduri de pilot/distribuție semnate; ≥ 500 de înscrieri pe lista de așteptare [E]. An 1 post-proiect: 25 de unități Founders vândute + 150 Batch 1; An 2: 850 de unități; An 5: 7.000 de unități/an.',
+    f'Preț premium, justificat de material, reparabilitate și neutralitatea de model: **de la 249 €** (preț de listă pentru consumator, **cu TVA inclusă**; ≈ 206 € fără TVA 21 %), un singur produs în 5 culori, fără ediție „Founders”; prețul mediu încasat scade la 219–239 € (cu TVA) când crește vânzarea prin distribuitori [E]. Proiecția din §6.3 e calculată fără TVA. Reperele: OpenAI × Ive 300–400 $, STARBOY oțel 349 $, Loona DeskMate 299 $. Funcțiile de bază sunt gratuite pe viață; **AI-ul nu e inclus și nu e revândut**: fiecare proprietar își conectează propriul AI ({AI_OWN}) sau folosește modul offline. Se vând opțional accesorii și piese de schimb.',
+    'Vânzare directă online (magazin propriu pe Shopify — tema e gata, dar magazinul nu vinde nimic înainte de grant și de CE; azi doar listă de așteptare; experiența MundiShop) — ~70 % din volum; crowdfunding Indiegogo/Gamefound pentru Batch 1 (Kickstarter nu acceptă creatori din România); retail de design/electronice premium prin distribuitori (scrisori de intenție la depunere); B2B pentru echipe care folosesc Claude Code.',
+    'Demo-ul „Claude Code cere permisiunea → SOUL aprobă” pe comunitățile de dezvoltatori (r/ClaudeAI, Show HN, Product Hunt); trailerul și brand book-ul existente; site-ul (landing v3) și demo-ul SoulOS pe web; presă tech RO + UE; conferința/târgul din proiect (A7, linia 22); articolul open-access și preprintul (A7); seeding la 10 creatori dev/design; lista de așteptare.',
+    'Până la L24: ≥ 30 de interviuri de customer discovery; ≥ 2 acorduri de pilot/distribuție semnate; ≥ 500 de înscrieri pe lista de așteptare [E]. An 1 post-proiect: prima serie (10–25 de unități) + 150 de unități Batch 1; An 2: 850 de unități; An 5: 7.000 de unități/an [E].',
 ]
 for tr, v in zip(rows(t), mk):
     set_cell(tcs(tr)[1], v)
@@ -244,29 +245,29 @@ drop(114)
 t = B[115]
 sw = rows(t)
 set_cell(tcs(sw[1])[0], '\n'.join([
-    'S1. Dovezi TRL 3 verificabile: 61/61 teste firmware, 49/49 teste AI, simulator, prototip web, CAD (Raport științific §II).',
+    f'S1. Dovezi TRL 3 verificabile: firmware {FW} ({FW_TESTS}+ teste), SOUL Cloud ({CLOUD_TESTS} de teste), simulator, SoulOS pe web, CAD, trailer, brand book (Raport științific §II).',
     'S2. Combinație unică: față expresivă + obiect din aluminiu reparabil + AI la alegere + acțiuni utile + offline (research 11).',
-    'S3. Neutralitate de model (Claude/ChatGPT/cheie proprie) — platformele închise nu o pot copia fără să-și schimbe modelul de afaceri.',
-    'S4. Română + engleză din ziua 1; servere UE; conformitate proiectată (baterie înlocuibilă, EN 18031, AI Act).',
+    f'S3. Neutralitate de model: proprietarul își conectează propriul AI ({AI_OWN}) sau merge offline; memoria rămâne pe dispozitiv — platformele închise nu o pot copia fără să-și schimbe modelul de afaceri.',
+    'S4. Engleză + română din ziua 1; servere UE; conformitate proiectată (baterie înlocuibilă, EN 18031, AI Act, GDPR: export/ștergere).',
     'S5. Cost de dezvoltare redus: ESP32-S3 + panou 2,8″ (~40 $ placa de dezvoltare).']))
 set_cell(tcs(sw[1])[1], '\n'.join([
-    'W1. Nicio vânzare încă; nicio dovadă de piață plătitoare (doar listă de așteptare).',
+    'W1. Nicio vânzare încă; nicio dovadă de piață plătitoare (doar listă de așteptare); nimic testat încă pe placa reală.',
     'W2. Echipă mică; coordonatorul și inginerul se nominalizează înainte de depunere.',
     'W3. Ecranul IPS nu are negru real (lumina de fundal) și consumă de ~5–10× mai mult decât AMOLED.',
-    'W4. Primul proiect cu finanțare europeană al firmei.',
+    'W4. Firmă tânără (înregistrată la 17.12.2025); primul proiect cu finanțare europeană.',
     'W5. Dependență de furnizori asiatici pentru panou și module.']))
 set_cell(tcs(sw[3])[0], '\n'.join([
     'O1. Adopția AI crește rapid (32,7 % în UE; 17,8 % în RO — cea mai mare marjă).',
     'O2. Eșecurile Humane/Moxie au creat cerere pentru dispozitive care nu „mor” cu serverul.',
     'O3. Marile platforme lipsesc din UE/română (Muse doar SUA, Alexa+ fără română).',
     'O4. Reglementarea UE (baterii înlocuibile, drept la reparare) avantajează produsele proiectate astfel de la început.',
-    'O5. Ecosistemul Claude Hardware Buddy (protocol MIT) și MCP creează un public de dezvoltatori gata să cumpere.']))
+    'O5. Ecosistemul Claude (Hardware Buddy, MIT; conectori MCP pe toate planurile Claude) creează un public de dezvoltatori gata să cumpere.']))
 set_cell(tcs(sw[3])[1], '\n'.join([
     'T1. OpenAI × Ive (2027) și Meta Muse pot redefini categoria „obiect AI premium”.',
     'T2. Clone xiaozhi/ESP32 ieftine pot apărea în 2–6 săptămâni după lansare.',
     'T3. Conflict de marcă „SOUL”.',
-    'T4. Schimbarea API-urilor/prețurilor furnizorilor de AI.',
-    'T5. Eșec de cercetare pe H1/H3/H4 (RF prin aluminiu, latență) — tratat prin poarta IE2.']))
+    'T4. Schimbarea API-urilor, prețurilor sau politicilor furnizorilor de AI (ex. ce pot folosi dispozitivele terțe).',
+    'T5. Eșec de cercetare pe H1/H3/H4/H5 (RF prin aluminiu, latență, autonomie) — tratat prin poarta IE2.']))
 
 # ------------------------------------------------------------------ IV
 drop(118, 121)
@@ -278,31 +279,35 @@ for tr in rows(t)[1:]:
     else:
         set_cell(tcs(tr)[2], '☐', align='center')
 fill(125, [
-    '**Domeniul 1 — Tehnologia Informației și Comunicațiilor (TIC).** Proiectul dezvoltă și validează: firmware embedded (C++17) pentru randare SDF în timp real; tastatură circulară cu decodare probabilistică; arhitectură AI hibridă local-first (parser offline RO/EN + modele de limbaj la alegerea utilizatorului prin tool-calling, conector MCP); flux vocal în timp real (Opus/WebSocket, servere UE); securitate cibernetică conform EN 18031 (BLE LE Secure Connections, OTA semnat, secure boot). **Obiective și activități:** O1, O3; A2, A3, A5. **Rezultate:** firmware SoulOS, serviciul AI, protocoalele și datele de validare (R1, R2, R4).',
-    '**Domeniul 2 — Sisteme și Componente Inteligente.** Proiectul realizează un sistem ciber-fizic integrat: ESP32-S3, afișaj rotund IPS 480×480, touch capacitiv, IMU, microfoane MEMS, PMU, baterie înlocuibilă și antenă BLE/Wi-Fi integrată într-o carcasă CNC din aluminiu cu fereastră radio polimerică. **Obiective și activități:** O2, O3; A4, A5. **Rezultate:** PCB propriu, arhitectura electromecanică, măsurătorile RF/energie/EMC (R2, R3).',
+    '**Domeniul 1 — Tehnologia Informației și Comunicațiilor (TIC).** Proiectul dezvoltă și validează: firmware embedded (C++17) pentru randare SDF în timp real; tastatură circulară cu decodare probabilistică; arhitectură local-first (parser offline RO/EN, comenzi vocale offline EN cu ESP-SR, memorie portabilă pe dispozitiv) în care AI-ul e ales și conectat de proprietar (azi Claude, cu contul/cheia proprie, prin conectorul MCP cu OAuth 2.1; ChatGPT cu cheie proprie — în lucru); SOUL Cloud găzduit în UE (împerechere cu chei de dispozitiv, gateway WebSocket, GDPR); securitate cibernetică conform EN 18031 (BLE LE Secure Connections, OTA semnat, secure boot). **Obiective și activități:** O1, O3; A2, A3, A5. **Rezultate:** firmware SoulOS, SOUL Cloud, protocoalele și datele de validare (R1, R2, R4).',
+    '**Domeniul 2 — Sisteme și Componente Inteligente.** Proiectul realizează un sistem ciber-fizic integrat: ESP32-S3, afișaj rotund IPS 480×480, touch capacitiv, giroscop/accelerometru, RTC, microfon și difuzor I²S opționale, baterie LiPo 1500 mAh înlocuibilă și antenă BLE/Wi-Fi integrată într-o carcasă CNC din aluminiu cu fereastră radio polimerică. **Obiective și activități:** O2, O3; A4, A5. **Rezultate:** PCB propriu, arhitectura electromecanică, măsurătorile RF/energie/EMC (R2, R3).',
     '**Elemente concrete:** tehnologiile vizate (embedded, HCI, AI hibrid, RF, energie), sectoarele de aplicare (electronice de consum, instrumente pentru dezvoltatori, accesibilitate), profilul echipei (inginer embedded/electronist ≥ 5 ani, inginer firmware, student ETTI/ACS) și piața-țintă (UE, Secțiunea III). Subdomeniile RIS3 BI 2021–2027: [[Cl: citare exactă din strategia RIS3 BI (adrbi.ro), după descărcare]]. Aceeași încadrare apare în CF și în Raportul științific (§1.3).',
 ])
 
 drop(128)
 fill(129, [
-    'Rezultatul de cercetare existent constă în **modelul conceptual SOUL demonstrat pe componente separate**, în laborator și în simulare (TRL 3 conform Anexei 18: „validare analitică și/sau experimentală a funcțiilor critice”). Dovezile (detaliate în Raportul științific, §2.3):',
-    '- **D1** firmware „Suflet”/SoulOS v1: randare SDF, ochi parametrici, dispoziție, personalitate, gesturi, legătura Claude Hardware Buddy, tastatură circulară, predicție, alarme; **61/61 teste Unity** trec; build-uri pentru trei plăci, inclusiv SOUL M (`lcd28`).',
-    '- **D2** simulator pe PC care produce cadrele reale ale motorului (10 clipuri + tastatură și time-picker la 480 px).',
-    '- **D3** serviciul AI `suflet_ai` v0.2: 3 moduri, 8 acțiuni cu scheme JSON stricte, parser local RO/EN, conector MCP; **49/49 teste** trec.',
-    '- **D4–D6** prototipul web al tastaturii rotunde, analiza geometrică (pas = 0,0944·D → 6,7 mm pe Ø70), CAD parametric și randări ale corpului M. **D7** istoricul git datat.',
-    '- **D8 (în curs, înainte de depunere):** Raportul de laborator TRL 3 pe placa Waveshare ESP32-S3-Touch-LCD-2.8C (cumpărată din fonduri proprii, în afara bugetului) cu experimentele **X1–X8**: port RGB/touch, fps, precizie touch, tastare pilot, parser offline pe 200 de comenzi, latență AI, RSSI prin aluminiu, consum.',
-    '**Limitele actuale (declarate):** nimic nu rulează încă integrat pe hardware-ul final; firmware-ul a fost scris inițial pentru AMOLED CO5300 și este portat pe ST7701 (RGB) + GT911; nu există încă audio integrat, PCB propriu, carcasă metalică sau teste cu utilizatori. **De aceea este necesară continuarea până la TRL 4–5:** integrarea, validarea la pragurile O1/O3 și testarea în mediu relevant nu se pot face fără echipa, aparatura și prototiparea din proiect.',
+    ('Rezultatul de cercetare existent constă în **modelul conceptual SOUL demonstrat pe componente separate**, în laborator și în simulare (TRL 3 conform Anexei 18: „validare analitică și/sau experimentală a funcțiilor critice”). Dovezile (detaliate în Raportul științific, §2.3):' if D8_DONE else
+     'Rezultatul de cercetare existent constă în **modelul conceptual SOUL validat analitic și verificat software pe componente separate** (teste automate, simulator). **TRL 3 se atestă după D8**: Anexa 18 cere măsurători inițiale de laborator, iar simularea doar completează experimentul fizic. Dovezile (detaliate în Raportul științific, §2.3):'),
+    f'- **D1** firmware {FW} (lansat 04.10.2026, compilat fără avertismente): ochii (120 de designuri, 31 de expresii, perechea „de naștere” din ID-ul cipului), giroscop, tastatură circulară, alarme, notițe, hărți/vreme/aplicații, SOUL Memory, comenzi vocale offline EN (ESP-SR), legătura Claude Hardware Buddy; **{FW_TESTS}+ teste native** trec; build pentru placa SOUL M (`lcd28`). Reproiectarea „SoulOS Alive” e în lucru (1.9.0).',
+    '- **D2** simulator pe PC care rulează aceeași bibliotecă ca placa și produce cadrele reale (clipuri + ecranele SoulOS la 480 px), plus bancul de performanță (≈ 30 fps estimat [E]).',
+    f'- **D3** SOUL Cloud: împerechere cu chei de dispozitiv, gateway WebSocket, conector MCP cu OAuth 2.1, export/ștergere GDPR; **{CLOUD_TESTS} de teste** trec; SOUL Bridge (Claude Code pe computerul proprietarului, open source).',
+    '- **D4–D6** SoulOS pe web (tastatura rotundă la scara reală, demo public), analiza geometrică (pas = 0,0944·D → 6,7 mm pe Ø70), forma finală MĂRGĂRITAR (randări v9, planșe, STL-urile prototipului P0). **D7** istoricul git datat.',
+    '- **D8 (în curs, înainte de depunere):** Raportul de laborator TRL 3 pe placa Waveshare ESP32-S3-Touch-LCD-2.8C (comandată din fonduri proprii, în afara bugetului; încă netestată) cu experimentele **X1–X8**: bring-up, fps, precizie touch, tastare pilot, comenzi offline, latență AI, RSSI prin aluminiu, consum, plus video pe placa reală.',
+    '**Limitele actuale (declarate):** nimic nu a rulat încă pe hardware; placa de dezvoltare e comandată, iar firmware-ul a fost verificat doar prin teste pe PC și în simulator; nu există încă PCB propriu, carcasă metalică sau teste cu utilizatori. **De aceea este necesară continuarea până la TRL 4–5:** integrarea, validarea la pragurile O1/O3 și testarea în mediu relevant nu se pot face fără echipa, aparatura și prototiparea din proiect.',
 ])
 
 drop(132, 133)
 gantt_rows = [[n] + ['■' if m in rng else '' for m in range(1, 25)] for n, rng in GANTT]
 fill(134, [
     '**Arhitectura sistemului SOUL M** (specificația completă — livrabilul L1.1):',
-    '- **Mecanică:** corp ~90 × 103 × 31 mm, CNC din Al 6061 anodizat (design v6), geam frontal, talpă polimerică detașabilă care servește ca fereastră radio, închidere cu șuruburi Torx, capsula de încărcare „OU” cu pini pogo.',
-    '- **Electronică:** ESP32-S3 (WROOM-1, 8 MB PSRAM, 16 MB flash), panou rotund IPS 2,8″ 480×480 (ST7701, interfață RGB565 paralelă, framebuffer 460 KB în PSRAM, bounce-buffers), touch GT911 (I²C), IMU QMI8658, RTC PCF85063A, codec ES8311 + ES7210 cu 2 microfoane MEMS și AEC, amplificator, PMU, celulă Li-ion 2500–3000 mAh pe conector MX1.25, PCB propriu (A4).',
-    '- **Firmware SoulOS (C++17, Arduino/ESP-IDF, PlatformIO):** Canvas (randare SDF anti-aliased), Face/Brain/Personality (24 de reacții procedurale, personalitate derivată din ID-ul cipului), Gestures, Keyboard/TextField/Predictor (Round QWERTY cu decodare probabilistică, diacritice RO automate, modul „taste mari” T9 cu taste de 10,3 × 7,7 mm), TimePicker, Alarms, Shell, ClaudeLink (protocolul Claude Hardware Buddy prin BLE securizat), OTA semnat, secure boot.',
-    '- **Serviciul AI (Python, servere UE):** un singur set de acțiuni cu scheme JSON (alarme, mementouri, notițe, liste, cronometre, aprobări) executat în trei moduri — fără AI (parser local RO/EN), Claude (SDK Anthropic, tool-calling, conector MCP), ChatGPT —, cheie proprie criptată, degradare controlată la căderea rețelei; flux vocal Opus/WebSocket (xiaozhi-esp32 adaptat, MIT).',
-    '**Standarde aplicate:** EN 18031-1/-2/-3, EN 300 328, EN 301 489-1/-17, Reg. (UE) 2023/1542 art. 11, AI Act art. 50, GDPR, RoHS. **Metodologii:** protocoalele P1–P11 (Raportul științific §3.3), metodologia MacKenzie–Soukoreff pentru tastare, SUS pentru utilizabilitate.',
+    f'- **Mecanică:** corp {DIMS}, forma MĂRGĂRITAR, CNC din Al 6061 sablat și anodizat (5 culori: Silver, Graphite, Midnight, Ember, Champagne), sticlă neagră frontală, talpă polimerică detașabilă care servește ca fereastră radio, închidere cu șuruburi Torx, capsula de încărcare „OU” cu pini pogo.',
+    '- **Electronică:** ESP32-S3R8 (8 MB PSRAM, 16 MB flash; pe prototip: placa Waveshare ESP32-S3-Touch-LCD-2.8C), panou rotund IPS 2,8″ 480×480 (ST7701, interfață RGB565 paralelă, framebuffer în PSRAM, bounce-buffers), touch GT911 (I²C), giroscop/accelerometru QMI8658, RTC PCF85063A, buzzer, microfon MEMS I²S + amplificator și difuzor I²S (opționale), încărcare, celulă LiPo 1500 mAh pe conector MX1.25, PCB propriu (A4).',
+    f'- **Firmware SoulOS ({FW}; „Alive” 1.9.0 în lucru; C++17, Arduino/ESP-IDF, PlatformIO):** Canvas (randare SDF anti-aliased), ochii vii (120 de designuri, 31 de expresii, rarități; perechea „de naștere” derivată din ID-ul cipului), giroscop, Keyboard/TextField/Predictor (Round QWERTY cu decodare probabilistică, diacritice RO automate, modul „taste mari”), alarme, notițe, hărți/vreme/aplicații, SOUL Memory, comenzi vocale offline EN (ESP-SR), ClaudeLink (protocolul Claude Hardware Buddy prin BLE securizat), OTA semnat, secure boot.',
+    f'- **SOUL Cloud (Python, găzduit în UE) și SOUL Bridge:** împerechere cu chei de dispozitiv, gateway WebSocket, conector MCP cu OAuth 2.1 pentru Claude, cheie API proprie criptată, export/ștergere GDPR; un singur set de acțiuni cu scheme JSON (alarme, mementouri, notițe, liste, cronometre, aprobări) executat offline (parser local RO/EN) sau de AI-ul conectat de proprietar ({AI_OWN}), cu degradare controlată la căderea rețelei. SOUL Bridge duce Claude Code-ul proprietarului, de pe computerul lui, la SOUL (open source). SOUL nu include și nu revinde AI.',
+    '**Elementele de noutate N1–N5** (aceleași ca în Raportul științific §1.5; rezumate în §1.4):',
+    ('table', T(['Cod', 'Element nou', 'Stadiul actual / competitori', 'Contribuția SOUL-PoC (măsurabilă)'],
+                [list(n) for n in NOVELTY], [700, 3200, 2800, 2938])),
+    '**Standarde aplicate:** EN 18031-1/-2/-3, EN 300 328, EN 301 489-1/-17, Reg. (UE) 2023/1542 art. 11, AI Act art. 50, GDPR, RoHS (CE/RED nu e obținut azi; certificarea e pasul post-PoC). **Metodologii:** protocoalele P1–P11 (Raportul științific §3.3), metodologia MacKenzie–Soukoreff pentru tastare, SUS pentru utilizabilitate.',
     '**Economie circulară aplicată direct produsului** (Grila 1.5):',
     ('table', T(['Principiu', 'Cum se regăsește în SOUL M', 'Cum se verifică în proiect'], [list(c) for c in CIRCULAR], [2400, 4638, 2600])),
     '**Etapele de realizare în perioada de implementare** (identice cu CF și Raportul științific):',
@@ -319,7 +324,7 @@ fill(134, [
 
 drop(137, 138)
 t = B[139]
-loc = ['[[Adresa completă a sediului social]], București, [[sector]]',
+loc = [SEDIU + ' (sediul social) [[A: sau adresa unui spațiu închiriat în BI, dacă apartamentul nu e adecvat]]',
        'Spațiu de birou + laborator electronic (bancul de test, aparatele de măsură, stația de lipit, imprimanta SLA)',
        '[[A: suprafața în mp]]',
        '[[A: proprietate / chirie / comodat]] — contractul acoperă implementarea + 3 ani de durabilitate, cu clauza că proprietarul nu are drepturi asupra bunurilor din proiect (se anexează la contractare)',
@@ -354,7 +359,8 @@ intang = [
     ['Cerere de marcă UE (3 clase) — taxă EUIPO', 'Marcă (protecție IP)', '5.345', 'protecția numelui produsului (A6, R3); fără TVA'],
     ['Cerere de desen/model industrial UE multiplu (corp SOUL M + capsula OU) — taxe EUIPO', 'Desen/model industrial', '4.785', 'protecția formei produsului înainte de publicare (A6, R3)'],
     ['KiCad, PlatformIO, CadQuery, Git (open-source)', 'Software, licențe gratuite', '0', 'proiectare PCB, firmware, CAD parametric'],
-    ['Abonamente SaaS pentru CDI: API AI (LLM/STT/TTS), găzduire UE, CAD — linia 18', 'Servicii SaaS (nu se capitalizează)', '21.032', 'rularea serverului AI și a fluxului vocal pentru testele P5–P7 (A2–A5)'],
+    ['Abonamente SaaS pentru CDI: API AI pentru teste (chei de test cu limită de cost) și CAD — linia 18a', 'Servicii SaaS (nu se capitalizează)', '15.983', 'testele P5–P7 (latență, degradare, memorie) și proiectarea carcasei (A2–A5); nu e AI inclus în produs'],
+    ['Infrastructură cloud de test în UE (servere virtuale pentru instanța de test SOUL Cloud) — linia 18b', 'Servicii SaaS / infrastructură de testare (nu se capitalizează) [[de confirmat la helpdesk și pe Anexa 20]]', '5.049', 'folosită exclusiv la testarea prototipurilor în L2–L22 și oprită la final; operarea comercială ulterioară se plătește din fonduri proprii'],
 ]
 fill_row(rs[1], intang[0])
 last = rs[1]
@@ -368,8 +374,8 @@ rs = rows(t)
 mat = [
     ['Plăci de dezvoltare Waveshare ESP32-S3-Touch-LCD-2.8C', '8 buc.', '1.527', 'modele de laborator și bancuri paralele de test (A2, A3)'],
     ['Panouri IPS rotunde 2,8″ 480×480 (ST7701)', '20 buc.', '1.120', 'prototipuri rev A/B și lotul de 15 (A4)'],
-    ['Seturi audio (2 microfoane MEMS I²S + amplificator + difuzor)', '25 seturi', '1.527', 'subsistemul vocal, AEC, P6 (A2, A4)'],
-    ['Celule Li-ion 2500–3000 mAh cu conector MX1.25', '30 buc.', '1.222', 'autonomie și înlocuire baterie (P9, P10)'],
+    ['Seturi audio I²S (microfon MEMS + amplificator + difuzor)', '25 seturi', '1.527', 'comenzi vocale offline și audio (P5) (A2, A4)'],
+    ['Celule LiPo 803450, 1500 mAh, cu PCM și conector MX1.25', '30 buc.', '1.222', 'autonomie și înlocuire baterie (P9, P10)'],
     ['Componente electronice (conectori, pini pogo, IMU, RTC, pasive, cabluri, șuruburi Torx, spume)', 'lot', '8.144', 'asamblarea prototipurilor și a capsulelor OU (A4)'],
     ['Rășină SLA și consumabile de imprimare', 'lot', '3.563', 'carcase SLA la scara M și fixturi de test (A2, A4)'],
     ['Obiecte de inventar (unelte, stație de lipit, dispozitive de fixare)', 'lot', '1.858', 'asamblare și QC (A4)'],
@@ -442,8 +448,8 @@ write_runs(nt, '[[Ct: confirmă posibilitatea CIM pentru administrator; alternat
 
 drop(175)
 fill(176, [
-    'În perioada de durabilitate (3 ani după plata finală) resursele umane cresc odată cu traseul TRL 6 → 9 (Secțiunea VI) și sunt finanțate din venituri, precomenzi și, după durabilitate, dintr-o rundă de investiții:',
-    '- **An 1:** păstrăm inginerul embedded ca 1 normă întreagă (PCB rev C, certificare CE/RED + EN 18031, Founders 00); managerul de proiect devine responsabil de producție și vânzări.',
+    'În perioada de durabilitate (3 ani după plata finală) resursele umane cresc odată cu traseul TRL 6 → 9 (Secțiunea VI) și sunt finanțate din venituri, finanțări nerambursabile și, după durabilitate, dintr-o rundă de investiții:',
+    '- **An 1:** păstrăm inginerul embedded ca 1 normă întreagă (PCB rev C, certificare CE/RED + EN 18031, prima serie de 10–25 de unități); managerul de proiect devine responsabil de producție și vânzări.',
     '- **An 2:** angajăm 1 persoană suport/QA (asistență clienți, testare loturi, garanții) și 1 inginer hardware (0,5 → 1 normă în An 2–3) pentru Batch 1 și sculele de producție.',
     '- **An 3–5:** echipa ajunge la 5–6 persoane în activitatea inovatoare (firmware, hardware, suport, vânzări B2B); calificări: studii superioare în electronică/calculatoare, experiență embedded/RF; studentul din proiect are prioritate la angajare.',
     'Costurile sunt incluse în proiecția din §6.3 (liniile „cheltuieli CDI” și „cheltuieli comercializare”).',
@@ -458,13 +464,14 @@ for tr, v in zip(rs[1:4], pp[:3]):
     fill_row(tr, v)
 add_row_after(rs[3], pp[3])
 nt = copy.deepcopy(B[184]); t.addnext(nt)
-write_runs(nt, '**Punctul de pornire** este rezultatul validat la TRL 5 (R2: 15 prototipuri, raportul TRL 5, pre-scanul EMC/RF) și protecția IP (R3). **Cerințele pentru TRL 6–9:** PCB rev C cu modul radio certificat, certificare CE/RED + EN 18031, dosar GPSR, înregistrări EPR/ANMAP, scule de producție, aplicația de telefon, lanț de aprovizionare cu 2 furnizori pe componentele critice. **Modelul de valorificare:** comercializare directă a hardware-ului (349 € Founders → 199–299 € Standard) + serviciu opțional (voce/memorie) + licențiere B2B a designului/firmware-ului. Orice investiție de capital se face într-un vehicul separat sau după perioada de durabilitate, fără transfer de IP în durabilitate. Calendarul acoperă **5 ani** post-finalizare (An 1 ≈ 2029–2030).')
+write_runs(nt, '**Punctul de pornire** este rezultatul validat la TRL 5 (R2: 15 prototipuri, raportul TRL 5, pre-scanul EMC/RF) și protecția IP (R3). **Cerințele pentru TRL 6–9:** PCB rev C cu modul radio certificat, certificare CE/RED + EN 18031, dosar GPSR, înregistrări EPR/ANMAP, scule de producție, aplicația de telefon, lanț de aprovizionare cu 2 furnizori pe componentele critice. **Modelul de valorificare:** comercializare directă a hardware-ului (de la 249 €) + accesorii și piese de schimb + licențiere B2B a designului/firmware-ului; AI-ul nu e inclus și nu e revândut (fiecare proprietar își conectează propriul AI). Orice investiție de capital se face într-un vehicul separat sau după perioada de durabilitate, fără transfer de IP în durabilitate. Calendarul acoperă **5 ani** post-finalizare (An 1 ≈ 2029–2030).')
 
 drop(186)
 fill(187, [
-    'Strategia de IP urmează regula **„întâi protecția, apoi publicarea”** (file first, publish later): cererile de design și marcă se depun până la L5–L6, iar articolul științific se trimite abia după (≤ L20). Protecția acoperă forma produsului (design UE), numele (marcă UE), eventualele soluții tehnice brevetabile (evaluate la L12–L18) și know-how-ul (secret comercial).',
+    f'**Ce e deja public.** Depozitul de lucru ({REPO_PUBLIC}) e public din {PUBLIC_SINCE} și conține {FIRST_PUB}. **Data primei publicări** (din git): 24.09.2026 pentru randări (26.09.2026 pentru MĂRGĂRITAR v9) și 25.09.2026 pentru decodorul tastaturii și conceptul ferestrei radio. Consecințe: (1) designul formei MĂRGĂRITAR se depune înainte de expirarea grației de 12 luni (~{DESIGN_DEADLINE}), adică înainte de contractul estimat (aug.–oct. 2027) — acum, prin EUIPO SME Fund, sau imediat după depunerea CF, din fonduri proprii, în afara bugetului; (2) metoda de decodare și conceptul ferestrei radio nu mai sunt revendicate ca brevet sau secret comercial (noutatea e probabil pierdută); (3) [[A: decide dacă depozitul, inclusiv dosarul, devine privat]].',
+    'Pentru tot ce e **nou** din acest moment se aplică regula **„întâi protecția, apoi publicarea”**: marca UE ≤ L6, designul elementelor noi din proiect ≤ L18, articolul științific după (≤ L20). Protecția acoperă forma produsului (design UE), numele (marcă UE), soluțiile tehnice nepublicate (evaluate la L12–L18) și know-how-ul nepublicat (secret comercial).',
     ('table', T(['Pas', 'Ce', 'Când', 'Cost / linie'], [list(r) for r in IPPLAN], [700, 5538, 1900, 1500])),
-    '**Dovada demersurilor în implementare (Grila 2.1d):** numărul și data cererilor EUIPO (design ≤ L5, marcă ≤ L6), raportul de brevetabilitate (L18). **Publicarea open-access (Grila 1.4):** revista țintă [[Cl: revista aleasă, ex. MDPI Electronics sau Sensors / IEEE Access, cu captura paginii de APC]]; APC bugetat în linia 21; preprint în Zenodo. **Licențe open-source:** codul terț (MIT/OFL) rămâne sub licențele sale; motorul ochilor poate fi publicat open-source după depunerea cererilor IP, ca strategie de standardizare.',
+    '**Dovada demersurilor în implementare (Grila 2.1d):** numărul și data cererilor EUIPO (marcă ≤ L6, design pentru elementele noi ≤ L18; cererea pentru forma MĂRGĂRITAR, depusă înainte de 24.09.2027, se anexează ca dovadă, fără finanțare din proiect), raportul de brevetabilitate (L18). **Publicarea open-access (Grila 1.4):** revista țintă [[Cl: revista aleasă, ex. MDPI Electronics sau Sensors / IEEE Access, cu captura paginii de APC]]; APC bugetat în linia 21; preprint în Zenodo. **Licențe open-source:** codul terț (MIT/OFL) rămâne sub licențele sale; SOUL Bridge e deja open source (MIT); restul codului (inclusiv motorul ochilor) e vizibil în depozitul public, dar fără licență open-source declarată (toate drepturile rezervate) [[A: decide: depozit privat sau licență explicită]].',
 ])
 
 drop(190)
@@ -484,7 +491,7 @@ rs = rows(t)
 opex_dep = [L(P[y]['opex'] + P[y]['dep']) for y in range(1, 6)]
 vals = [
     row('rev'), row('rev'), ['[[Ct]]'] * 5, opex_dep, row('rd'), row('com'), row('ebitda'), row('net'), row('capex'),
-    ['precomenzi Founders; fonduri proprii; EUIPO SME Fund; EDIH', 'PR BI 1.2 / Eurostars; crowdfunding; pre-seed în vehicul separat', 'venituri; EIC Accelerator; credit FNGCIMM', 'venituri; credit pentru stoc; rundă de capital (după durabilitate)', 'venituri recurente; licențe'],
+    ['vânzări (prima serie); fonduri proprii; EUIPO SME Fund; EDIH', 'PR BI 1.2 / Eurostars; crowdfunding; pre-seed în vehicul separat', 'venituri; EIC Accelerator; credit FNGCIMM', 'venituri; credit pentru stoc; rundă de capital (după durabilitate)', 'venituri recurente; licențe'],
     ['2', '4', '4', '5', '6'],
 ]
 for tr, v in zip(rs[1:], vals):
@@ -492,14 +499,27 @@ for tr, v in zip(rs[1:], vals):
 set_cell(tcs(rs[1])[0], 'Venituri din exploatare (total) — activitatea SOUL*')
 nt = copy.deepcopy(B[193]); t.addnext(nt)
 write_runs(nt, '* Proiecția acoperă activitatea SOUL (valori în lei, rotunjite la mia de lei, curs orientativ 5,09 lei/€); activitatea curentă a firmei (KREA, MundiShop) se adaugă de contabil [[Ct]]. Cheltuielile de exploatare includ costul bunurilor vândute, cheltuielile CDI, de comercializare, generale și amortizarea. Toate valorile sunt **estimări [E]**.')
+PR = proj.run(0.5, 0.9)
+
+
+def M(x):
+    return f"{x * RATE / 1e6:.1f}".replace('.', ',')
+
+
+pos = [y for y in range(1, 6) if PR[y]['ebitda'] > 0]
+prud = (f"**Scenariu prudent (−50 % unități, −10 % preț) [E]:** EBITDA negativ în An 1–{pos[0] - 1} și pozitiv din An {pos[0]} "
+        f"(≈ {M(PR[pos[0]]['ebitda'])} M lei), ≈ {M(PR[5]['ebitda'])} M lei în An 5; pierderile din primii ani se acoperă din vânzări, "
+        "finanțări nerambursabile (PR BI 1.2/Eurostars) și, după durabilitate, capital.") if pos else \
+       "**Scenariu prudent (−50 % unități, −10 % preț) [E]:** EBITDA rămâne negativ în cei 5 ani; vezi măsurile din §6.4."
+VAT_TXT = f'{proj.VAT:.2f}'.replace('.', ',')
 assump = [
-    '**Ipoteza 1 — volume și prețuri [E]:** An 1: 25 Founders × 349 € + 150 Batch 1 × 299 €; An 2: 150 × 299 € + 700 Standard × 279 €; An 3: 2.000 × 259 €; An 4: 4.000 × 249 €; An 5: 7.000 × 239 € (preț net mediu, după marja distribuitorilor). Reperele de preț sunt în §3.3 (OpenAI × Ive 300–400 $, STARBOY 349 $, Loona DeskMate 299 $).',
-    '**Ipoteza 2 — cota de piață [E]:** 7.000 de unități în An 5 ≈ 3–14 % din piața adresabilă estimată în §3.1 (50–250 mii de unități în nișa „dispozitiv AI dedicat premium, BYO-AI, UE-first”), adică ≈ 0,014 % din cei ~50 M de utilizatori profesionali de AI generativ din UE.',
-    '**Ipoteza 3 — clienți [E]:** An 1: 175 de clienți (25 din lista de așteptare + 150 din crowdfunding/magazin); conversie listă → cumpărător 2–10 % (referințe de crowdfunding, research 01); 20–50 de clienți B2B în An 3–5.',
-    '**Ipoteza 4 — costuri unitare [E]:** COGS 190 € (Founders, loturi mici CNC) → 150 € (Batch 1) → 110 € → 80 € → 65 € → 60 € (An 5, PCB cu modul certificat, carcasă la volum); logistică, plăți și garanții 8 % din venitul hardware; CAC 20–30 €/unitate + costuri fixe de marketing și suport.',
-    '**Ipoteza 5 — venituri recurente [E]:** serviciu opțional voce/memorie 4 €/lună, adoptat de 15 % din baza instalată din An 2 (cost direct 50 % din venit: API AI + voce, 1–4 $/utilizator/lună, research 04); accesorii și piese de schimb 5 % din venitul hardware; licențiere B2B 20/40/60 k€ în An 3/4/5.',
-    '**Ipoteza 6 — CDI și echipă [E]:** An 1: inginer 1 normă + certificare CE/RED + EN 18031 (5–12 k€ + 0–9 k€); An 2: + suport/QA + inginer hardware 0,5 normă; An 3–5: 4–6 persoane. CapEx: scule și fixturi de producție (5/40/60/30/30 k€). Impozit pe profit 16 % cu reportarea pierderilor [[Ct: confirmă regimul fiscal]].',
-    '**Scenariu prudent (−50 % unități, −10 % preț):** EBITDA negativ în An 1–3 și pozitiv din An 4 (≈ 0,4 M lei), ≈ 1,3 M lei în An 5; pierderile din An 1–3 se acoperă din precomenzi, finanțări nerambursabile (PR BI 1.2/Eurostars) și, după durabilitate, capital.',
+    f'**Ipoteza 1 — volume și prețuri [E]:** An 1: prima serie (25) + 150 de unități Batch 1, la 249 €; An 2: 850 × 249 €; An 3: 2.000 × 239 €; An 4: 4.000 × 229 €; An 5: 7.000 × 219 € (prețuri cu TVA inclusă; preț mediu încasat după marja distribuitorilor; prețul de listă rămâne „de la 249 €”). **Veniturile sunt modelate fără TVA** (împărțite la {VAT_TXT}, ≈ 206 € net la 249 €), pentru că presupunem că ARTEMIS devine plătitoare de TVA (plafonul de 395.000 lei se socotește cu tot cu activitatea curentă) și vânzările B2C la distanță în alte state UE peste 10.000 €/an trec prin OSS (TVA-ul statului cumpărătorului; folosim 21 % ca medie [E]). Reperele de preț sunt în §3.3 (OpenAI × Ive 300–400 $, STARBOY 349 $, Loona DeskMate 299 $).',
+    '**Ipoteza 2 — cota de piață [E]:** 7.000 de unități în An 5 ≈ 3–14 % din piața adresabilă estimată în §3.1 (50–250 mii de unități în nișa „dispozitiv AI dedicat premium, cu AI-ul proprietarului, UE-first”), adică ≈ 0,014 % din cei ~50 M de utilizatori profesionali de AI generativ din UE.',
+    '**Ipoteza 3 — clienți [E]:** An 1: 175 de clienți (prima serie din lista de așteptare + 150 din magazin/crowdfunding); conversie listă → cumpărător 2–10 % (referințe de crowdfunding, research 01); 20–50 de clienți B2B în An 3–5.',
+    '**Ipoteza 4 — costuri unitare [E]:** COGS 190 € (prima serie, loturi mici CNC) → 150 € (Batch 1) → 110 € → 80 € → 65 € → 60 € (An 5, PCB cu modul certificat, carcasă la volum); logistică, plăți și garanții 8 % din venitul hardware; CAC 20–30 €/unitate + costuri fixe de marketing și suport.',
+    '**Ipoteza 5 — alte venituri [E]:** accesorii și piese de schimb 5 % din venitul hardware; licențiere B2B 20/40/60 k€ în An 3/4/5. **Fără venituri din AI:** SOUL nu include și nu revinde AI; eventualele servicii SOUL Cloud opționale (backup, sincronizare) nu sunt incluse în proiecție.',
+    '**Ipoteza 6 — CDI și echipă [E]:** An 1: inginer 1 normă + certificare CE/RED + EN 18031 (5–12 k€ + 0–9 k€); An 2: + suport/QA + inginer hardware 0,5 normă; An 3–5: 4–6 persoane. CapEx: scule și fixturi de producție (5/40/60/30/30 k€). Impozit pe profit 16 % cu reportarea pierderilor [[Ct: confirmă regimul fiscal (micro/profit) și momentul înregistrării în scopuri de TVA + OSS; ARTEMIS e azi neplătitoare de TVA]].',
+    prud,
 ]
 fill(195, assump)
 drop(196, 197)

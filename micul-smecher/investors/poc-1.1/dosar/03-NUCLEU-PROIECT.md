@@ -2,8 +2,8 @@
 tip: finanțare
 proiect: SOUL-PoC
 rol: SURSA UNICĂ DE ADEVĂR pentru CF, Anexa 3 (Plan de afaceri), Anexa 16 (Raport științific), Anexa 19, CV-uri, fișe de post, Anexa 13
-actualizat: 2026-09-25
-stare: draft 1, de confirmat de Andu; de reverificat pe ghidul final
+actualizat: 2026-10-12
+stare: draft 2 (adus la zi pe faptele din 12.10.2026), de confirmat de Andu; de reverificat pe ghidul final
 ---
 
 # 03 · Nucleul proiectului SOUL-PoC
@@ -12,7 +12,11 @@ stare: draft 1, de confirmat de Andu; de reverificat pe ghidul final
 >
 > **Regula de vocabular.** SOUL se descrie ca **„dispozitiv tangibil de interacțiune om–mașină / asistent personal AI”**. **Nu** folosim „companion emoțional”, „prieten pentru singurătate” sau „consiliere” (§5.3.3 p. 61 exclude serviciile de consiliere psihologică și de „stabilire a întâlnirilor”). Nu scriem „AI revoluționar”: grila 1.2 nu punctează afirmațiile generice despre AI/IoT.
 >
-> **Mărimea M** este decizia în vigoare (Jurnal decizii, 25.09.2026). `docs/00-START-HERE.md` încă descrie S (1,75″). În dosar folosim **doar M**.
+> **Produsul în vigoare:** SOUL mărimea **M**, forma **MĂRGĂRITAR** (decizia din 26.09.2026), **~90 × 101 × 31,5 mm**, aluminiu anodizat, 5 culori (Silver, Graphite, Midnight, Ember, Champagne). `docs/00-START-HERE.md` mai dă 90 × 103 (HOPA) — în dosar folosim **doar MĂRGĂRITAR M**.
+>
+> **Regula AI (decizia din 03.10.2026).** Fiecare proprietar își conectează **propriul AI**: Claude cu contul/cheia lui de la Anthropic și conectorul din aplicația Claude; ChatGPT cu cheia lui (în lucru); „Sign in with ChatGPT” doar după aprobarea OpenAI; sau modul offline. **SOUL nu include și nu revinde AI.** Abonamentele Claude Pro/Max **nu** pot fi folosite de dispozitive terțe (regula Anthropic) — nu scriem niciodată altceva.
+>
+> **Regula cifrelor.** Nu inventăm cifre, scrisori, parteneri, publicații sau certificări. Ce nu știm se marchează **[de completat]**.
 
 ---
 
@@ -20,14 +24,18 @@ stare: draft 1, de confirmat de Andu; de reverificat pe ghidul final
 
 | Câmp | Valoare |
 |---|---|
-| Solicitant | ARTEMIS DIGITAL S.R.L., București (brand KREA; MundiShop), neplătitoare de TVA, micro-IMM (de confirmat) |
+| Solicitant | **ARTEMIS DIGITAL S.R.L.** (brand KREA; MundiShop) · CUI **53145290** · Reg. Com. **J2025098748009** · EUID **ROONRC.J2025098748009** · înregistrată la **17.12.2025** |
+| Sediu social | Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București (apartament: de verificat dacă e „locație adecvată”, ghid §5.2.1 XII) |
+| CAEN | principal **7311** (agenții de publicitate). **De adăugat înainte de depunere** (Andu + contabilul): 2640, 6210, 7210, 7411, 4740 (+ 4791 pentru vânzarea online) — lista **nu e reverificată pe CAEN Rev.3** |
+| TVA | **neplătitoare de TVA** (ANAF, 12.10.2026) → TVA e eligibilă în buget |
+| IMM | micro-IMM (de confirmat de contabil, cu firmele legate) |
 | Reprezentant legal | Andu (administrator) |
 | Acronim | **SOUL-PoC** |
 | **Titlu RO** | **SOUL — dispozitiv AI tangibil, local-first, cu interfață circulară și carcasă reparabilă din aluminiu: validarea modelului conceptual de la TRL 3 la TRL 5** |
 | **Titlu EN** | **SOUL — a tangible, local-first AI interaction device with a circular interface and a repairable aluminium enclosure: proof of concept from TRL 3 to TRL 5** |
 | Tip inovare | **inovare de produs** (bun fizic + firmware + serviciu software asociat) |
-| TRL pornire → țintă | TRL 3 → **TRL 5** (TRL 4 = rezultat intermediar, poarta IE2) |
-| Durata implementării | **24 de luni** (L1 = luna semnării contractului; estimat sept.–oct. 2027 → sept.–oct. 2029) |
+| TRL pornire → țintă | TRL 3 (**de atestat după D8** — raportul de laborator pe placa 2.8C, în curs) → **TRL 5** (TRL 4 = rezultat intermediar, poarta IE2) |
+| Durata implementării | **24 de luni** (L1 = luna semnării contractului; data depinde de calendarul apelului, care nu e publicat — estimat 2027 → 2029) |
 | Locație | sediul social ARTEMIS, București (spațiu de birou + laborator electronic) |
 | Valoare totală eligibilă = nerambursabilă | **191.308 €** (100 %), de minimis |
 
@@ -37,8 +45,8 @@ stare: draft 1, de confirmat de Andu; de reverificat pe ghidul final
 
 Declarăm **două** domenii, argumentate pe obiective, activități și rezultate (nu pe CAEN, §5.2.1 XIV p. 47–48):
 
-1. **Tehnologia Informației și Comunicațiilor (TIC).** Firmware embedded (C++17) pentru randare SDF în timp real; tastatură circulară cu decodare probabilistică; arhitectură AI hibridă local-first (parser offline RO/EN + modele de limbaj la alegerea utilizatorului prin tool-calling, conector MCP); flux vocal în timp real (Opus/WebSocket, servere UE); securitate cibernetică conform EN 18031 (BLE LE Secure Connections, OTA semnat, secure boot). Rezultate: firmware SoulOS, serviciul AI, protocoalele și datele de validare.
-2. **Sisteme și Componente Inteligente.** Un sistem ciber-fizic integrat: ESP32-S3, afișaj rotund IPS 480×480, touch capacitiv, IMU, microfoane MEMS, PMU, baterie înlocuibilă și antenă BLE/Wi-Fi integrată într-o carcasă CNC din aluminiu cu fereastră radio polimerică. Rezultate: PCB propriu, arhitectura electromecanică, măsurătorile RF/energie/EMC.
+1. **Tehnologia Informației și Comunicațiilor (TIC).** Firmware embedded (C++17) pentru randare SDF în timp real; tastatură circulară cu decodare probabilistică; arhitectură local-first (parser offline RO/EN, comenzi vocale offline EN cu ESP-SR, memorie portabilă pe dispozitiv — SOUL Memory) în care AI-ul e ales și conectat de proprietar (azi Claude, cu contul/cheia proprie, prin conectorul MCP cu OAuth 2.1; ChatGPT cu cheie proprie — în lucru); SOUL Cloud găzduit în UE (împerechere cu chei de dispozitiv, gateway WebSocket, GDPR); securitate cibernetică conform EN 18031 (BLE LE Secure Connections, OTA semnat, secure boot). Rezultate: firmware SoulOS, SOUL Cloud, protocoalele și datele de validare.
+2. **Sisteme și Componente Inteligente.** Un sistem ciber-fizic integrat: ESP32-S3, afișaj rotund IPS 480×480, touch capacitiv, giroscop/accelerometru QMI8658, RTC, buzzer, microfon și difuzor I²S opționale, baterie LiPo 1500 mAh înlocuibilă și antenă BLE/Wi-Fi integrată într-o carcasă CNC din aluminiu cu fereastră radio polimerică. Rezultate: PCB propriu, arhitectura electromecanică, măsurătorile RF/energie/EMC.
 
 *Opțional, de discutat cu expertul:* **Industrii Culturale și Creative** (designul industrial al obiectului, limbajul expresiv al ochilor). Doar dacă argumentul e solid; două domenii bine argumentate sunt suficiente pentru 5 puncte.
 
@@ -61,16 +69,16 @@ Efectul: **un segment global în creștere** (Plaud > 2 M dispozitive; Fuzozo ~3
 **Dovezile se atașează** (Grila 1.2 cere surse verificabile): rapoarte și articole de presă cu link și dată, textele regulamentelor UE, benchmark-ul celor 24 de competitori (research 11), ≥ 3 publicații științifice recente (§3.4).
 
 ### 3.2 Ipoteza de cercetare (Anexa 16 §1.1, formularea „dacă…, atunci…”)
-> **Dacă** un dispozitiv de 90 × 103 × 31 mm cu afișaj rotund de 2,8″ integrează (i) un motor de randare SDF optimizat pentru un microcontroler ESP32-S3, (ii) o tastatură QWERTY circulară cu decodare probabilistică, (iii) o arhitectură AI hibridă local-first cu degradare controlată și (iv) o carcasă din aluminiu cu fereastră radio polimerică și baterie înlocuibilă, **atunci** sistemul poate atinge simultan, în mediu relevant, **≥ 30 fps** la animație, **≥ 20 cuvinte/min** la tastare, latența vocală **p50 ≤ 1,5 s**, **≥ 90 %** comenzi executate corect fără internet, atenuare RF prin carcasă **≤ 6 dB** și **≥ 24 h** de autonomie în profil tipic.
+> **Dacă** un dispozitiv de ~90 × 101 × 31,5 mm cu afișaj rotund de 2,8″ integrează (i) un motor de randare SDF optimizat pentru un microcontroler ESP32-S3, (ii) o tastatură QWERTY circulară cu decodare probabilistică, (iii) o arhitectură local-first în care AI-ul e ales și conectat de proprietar, cu degradare controlată și memorie portabilă pe dispozitiv, și (iv) o carcasă din aluminiu cu fereastră radio polimerică și baterie înlocuibilă de 1500 mAh, **atunci** sistemul poate atinge simultan, în mediu relevant, **≥ 30 fps** la animație, **≥ 20 cuvinte/min** la tastare, latența unui tur AI **p50 ≤ 1,5 s**, **≥ 90 %** comenzi executate corect fără internet, atenuare RF prin carcasă **≤ 6 dB** și **≥ 24 h** de autonomie în profil tipic.
 
 Sub-ipotezele H1–H5 sunt în §7.
 
 ### 3.3 Ce e nou (elemente de diferențiere verificabile)
 | # | Element | Stadiul actual / competitori | Contribuția SOUL-PoC (măsurabilă) |
 |---|---|---|---|
-| N1 | Randare SDF anti-aliased a „ochilor” parametrici pe MCU, pe un panou RGB 480×480 fără memorie proprie (framebuffer în PSRAM) | competitorii folosesc animații pre-randate (sprite-uri) sau SoC-uri scumpe | ≥ 30 fps cu Wi-Fi + BLE active; 24 de reacții procedurale; personalitate derivată din ID-ul cipului |
+| N1 | Randare SDF anti-aliased a „ochilor” parametrici pe MCU, pe un panou RGB 480×480 fără memorie proprie (framebuffer în PSRAM) | competitorii folosesc animații pre-randate (sprite-uri) sau SoC-uri scumpe | ≥ 30 fps cu Wi-Fi + BLE active; 120 de designuri de ochi și 31 de expresii; fiecare unitate „se naște” cu o pereche de ochi derivată din ID-ul cipului |
 | N2 | Round QWERTY cu tastele de la margine „stăpâne” pe bordură, decodare probabilistică, diacritice RO automate | smartwatch-uri: 10–30 WPM în literatură; fără suport RO | ≥ 20 WPM, UER ≤ 3 %, diacritice automate |
-| N3 | Arhitectură „un singur set de acțiuni, trei moduri” (fără AI / Claude / ChatGPT), fallback local, conector MCP, cheie proprie criptată | dispozitivele au un singur furnizor, au cloud obligatoriu sau merg doar offline | ≥ 90 % succes offline; continuitate 100 % la căderea rețelei |
+| N3 | Arhitectură „un singur set de acțiuni, AI-ul proprietarului”: offline / Claude (cheia proprie sau conectorul din aplicația Claude, OAuth 2.1 MCP) / ChatGPT (cheie proprie); memorie portabilă pe dispozitiv (SOUL Memory), dată oricărui AI conectat | dispozitivele au un singur furnizor, cloud obligatoriu sau abonament la AI-ul producătorului | ≥ 90 % succes offline; continuitate 100 % la căderea rețelei; 100 % din memorie păstrată la schimbarea AI-ului |
 | N4 | Carcasă CNC din aluminiu cu antenă prin fereastră polimerică în talpă + încărcare prin pini în capsula OU | carcasele metalice blochează RF; obiectele premium nu au AI | atenuare ≤ 6 dB; legătură BLE ≥ 10 m |
 | N5 | Reparabilitate de la proiectare: baterie schimbabilă de utilizator (Torx), fără adeziv pe celulă, componente modulare, OTA | multe gadgeturi au baterii lipite/nedemontabile | înlocuire ≤ 5 min de către utilizatori neexperți |
 
@@ -83,34 +91,36 @@ Sub-ipotezele H1–H5 sunt în §7.
 
 ## 4. TRL 3 — ce avem și ce mai trebuie produs până la depunere
 
-### 4.1 Ce avem deja (dovezi, cu locul din vault)
+### 4.1 Ce avem deja (dovezi, cu locul din vault; starea la 12.10.2026)
 | # | Dovada | Unde | Ce demonstrează |
 |---|---|---|---|
-| D1 | Firmware „Suflet” + modulele SoulOS v1 (Canvas SDF, Face, Brain, Personality, Gestures, ClaudeLink, Keyboard, TextField, Predictor, TimePicker, Alarms, Shell); **61/61 teste Unity** trec; compilează pentru `amoled143`/`amoled175`/`sim` | `firmware/` (README) | funcțiile critice validate analitic/experimental pe componente separate |
-| D2 | Simulator pe PC care produce cadrele reale ale motorului (10 clipuri: idle, boop, purr, dizzy, sleep…) + cadre cu tastatura și time-picker-ul | `firmware/sim`, `media/` | comportamentul vizual și logica UI, reproductibil |
-| D3 | Serviciul AI `suflet_ai` v0.2: 3 moduri, 8 acțiuni cu scheme JSON stricte, parser local RO/EN, conector MCP, cheie proprie criptată; **49/49 teste** | `ai/` | arhitectura hibridă și degradarea controlată |
-| D4 | Prototipul web SoulOS (tastatura rotundă interactivă) | `os/index.html`, `os/research/04` | geometria tastaturii, testabilă cu utilizatori |
+| D1 | Firmware **SoulOS 1.8.0** (lansat 04.10.2026, compilat fără avertismente): ochii (120 de designuri, 31 de expresii, rarități; fiecare unitate primește o pereche din ID-ul cipului), giroscop, tastatura circulară, alarme, notițe, hărți/vreme/aplicații, SOUL Memory, comenzi vocale offline EN (ESP-SR), Claude Hardware Buddy (BLE), protocolul SOUL Cloud; **198+ teste native** trec (`pio test -e native`); build-uri `lcd28` (placa 2.8C), `lcd28_voice`, `sim`. Reproiectarea „SoulOS Alive” (aprobată 12.10.2026) e **în lucru** (1.9.0) | `firmware/` (README, PERF.md, BRINGUP.md); commit 95d8465 | funcțiile critice verificate software pe componente separate |
+| D2 | Simulator pe PC care rulează aceeași bibliotecă ca placa și produce cadrele reale + bancul de performanță (≈ 30 fps estimat [E]) | `firmware/sim`, `firmware/PERF.md`, `media/` | comportamentul vizual și logica UI, reproductibil |
+| D3 | **SOUL Cloud**: împerechere cu chei de dispozitiv, gateway WebSocket, conector MCP cu OAuth 2.1, cheie proprie criptată, export/ștergere GDPR; **283 de teste**; rulat cap-coadă cu simulatorul (nu încă cu claude.ai real). **SOUL Bridge**: Claude Code-ul proprietarului, de pe computerul lui, open source (MIT) | `ai/`, `bridge/`, `docs/07`, `docs/10` | conectarea AI-ului proprietarului, degradarea controlată, memoria |
+| D4 | SoulOS pe web (ochii ca interfață, tastatura rotundă, demo public) | `os/index.html`, `os/DESIGN-ALIVE.md` | tastatura testabilă cu utilizatori |
 | D5 | Geometria tastaturii pe diametre (pas = 0,0944·D → 6,7 mm pe Ø70) și analiza panourilor | `research/12` §1–2 | justificarea analitică a alegerii 2,8″ |
-| D6 | CAD parametric (CadQuery), STL/STEP pentru P0, randări v6/v7/M | `prototip/`, `renders/` | conceptul electromecanic |
-| D7 | Istoricul git (commit-uri datate) | repo vault | cronologia CD (utilă și la Grila 3.2a) |
+| D6 | Forma finală **MĂRGĂRITAR** M: randări v9, planșe, STL-urile prototipului P0 | `renders/v9/`, `blueprints/final/`, `prototip/` | conceptul electromecanic |
+| D7 | Istoricul git (commit-uri datate; primul commit SOUL: 24.09.2026) | repo vault | cronologia CD (utilă și la Grila 3.2a) |
 
-**Limita actuală (declarăm cinstit):** nimic nu a rulat încă pe hardware fizic, iar firmware-ul țintește ecranul AMOLED CO5300. Pentru M trebuie portat pe **ST7701 (RGB) + GT911**.
+**Limita actuală (declarăm cinstit):** **nimic nu a rulat încă pe hardware.** Placa Waveshare ESP32-S3-Touch-LCD-2.8C e **comandată**, dar **netestată**. Firmware-ul e verificat doar prin teste pe PC și în simulator.
+
+**Deci TRL 3 e azi declarat, nu atestat.** Anexa 18 definește TRL 3 ca trecerea de la „pe hârtie” la stadiul experimental, cu **măsurători inițiale de laborator**; simularea doar completează experimentul fizic. D1–D7 sunt validare analitică și verificare software. Până la D8, în toate documentele scriem „TRL 3 — **de atestat după D8**”, fără „atins” și fără „în laborator”. **Poarta de lansare:** în `draft/_build/data.py`, `D8_DONE = False` pune pe Anexa 16 mesajul roșu „NU SE SEMNEAZĂ” și blochează versiunea pentru semnare (`SOUL_FOR_SIGNATURE=1 bash _build/build.sh` se oprește cu eroare). Se trece pe `True` doar când raportul D8 există; atunci textele revin automat la „atestat”.
 
 ### 4.2 Ce producem ÎNAINTE de depunere (dovezile experimentale TRL 3)
-Placa **Waveshare ESP32-S3-Touch-LCD-2.8C** (≈ 40 $) + un microfon I2S + un amplificator mic se cumpără **din bani proprii și NU intră în buget** (§5.2.1 IV).
+Placa **Waveshare ESP32-S3-Touch-LCD-2.8C** (ESP32-S3R8, 8 MB PSRAM, 16 MB flash) + bateria LiPo 1500 mAh + un microfon I²S + un amplificator mic se cumpără **din bani proprii și NU intră în buget** (§5.2.1 IV). **Fiecare experiment se filmează pe placa reală.**
 
 | # | Experiment (T−6 … T−2 săpt.) | Metodă | Rezultat de raportat | Cine |
 |---|---|---|---|---|
-| X1 | **Port pe 2.8C**: driver RGB ST7701 (Arduino_GFX `Arduino_RGB_Display`), framebuffer în PSRAM, touch GT911 | build `lcd28c` | firmware rulând pe placă; video | Cl (cod) + A (flash, filmare) |
-| X2 | **fps la ochi** | contor de cadre pe serial, 10 min, cu Wi-Fi oprit/pornit | median/p5 fps (baseline pentru H1) | Cl + A |
-| X3 | **Precizia touch** | test „grilă de ținte” 6,7 mm, 200 de atingeri, 3 persoane | % atingeri corecte, eroare medie în mm | Cl + A |
-| X4 | **Tastare pilot** pe prototipul web (desktop/tabletă la scara 70 mm) și pe placă | fraze standard (MacKenzie), N = 5 | WPM, rata de eroare (baseline pentru H2) | A + Cl |
-| X5 | **Parserul offline** pe un corpus de 200 de comenzi RO/EN | `pytest` + script de corpus | % comenzi corecte (baseline pentru H3) | Cl |
-| X6 | **Latența unui tur AI** (text) cu Claude/OpenAI | 50 de tururi, cronometrare | p50/p90 în secunde | Cl |
-| X7 | **Împerecherea BLE** cu Claude Desktop Hardware Buddy + RSSI prin plăci de aluminiu (tablă 1,5 mm) | telefon cu nRF Connect, 1/3/5 m | atenuare orientativă în dB | A |
-| X8 | Consumul plăcii (ecran aprins/stins) | multimetru USB | mA (baseline pentru H5) | A |
+| X1 | **Bring-up pe 2.8C**: imaginea SoulOS 1.8.0 pe placă; ecran ST7701, touch GT911, IMU, RTC, BLE | `BRINGUP.md` | firmware rulând pe placă; **video** | A (flash, filmare) + Cl (corecturi) |
+| X2 | **fps la ochi** | linia `[perf]` pe serial, 10 min, Wi-Fi oprit/pornit | median/p5 fps (baseline H1) | Cl + A |
+| X3 | **Precizia touch** | „grilă de ținte” 6,7 mm, 200 de atingeri, 3 persoane | % corecte, eroare medie în mm | Cl + A |
+| X4 | **Tastare pilot** pe SoulOS web (la scara reală) și pe placă | fraze MacKenzie, N = 5 | WPM, rata de eroare (baseline H2) | A + Cl |
+| X5 | **Comenzile offline**: parserul pe 200 de comenzi RO/EN + comenzile vocale EN (ESP-SR), dacă e montat microfonul | teste + script de corpus | % comenzi corecte (baseline H3) | Cl + A |
+| X6 | **Latența unui tur AI** (text) cu cheia proprie Claude/OpenAI (cont de test cu limită de cost) | 50 de tururi | p50/p90 în secunde | Cl + A |
+| X7 | **BLE** cu Claude Desktop (Hardware Buddy) + RSSI prin tablă de aluminiu 1,5 mm | nRF Connect, 1/3/5 m | atenuare orientativă în dB | A |
+| X8 | **Consumul plăcii** cu LiPo 1500 mAh (ecran aprins/stins) | multimetru USB (BRINGUP §5d) | mA (baseline H5; estimarea de azi: ≈ 177–227 mA treaz, ≈ 35–60 mA cu ecranul stins [E]) | A |
 
-**Livrabil înainte de depunere:** „Raport de laborator TRL 3 — SOUL M (2.8C)”, datat și semnat, cu loguri, fotografii, video cu marcaj de timp, hash-ul commit-ului git și rezultatele X1–X8. Aceasta e anexa principală a Raportului științific (Anexa 16 §2.3 D1–D3; Grila 2.3b).
+**Livrabil înainte de depunere:** „Raport de laborator TRL 3 — SOUL M (2.8C)”, datat și semnat, cu loguri, fotografii, **video cu marcaj de timp pe placa reală**, hash-ul commit-ului git și rezultatele X1–X8. Aceasta e anexa principală a Raportului științific (Anexa 16 §2.3; Grila 2.3b).
 
 ---
 
@@ -120,10 +130,10 @@ Placa **Waveshare ESP32-S3-Touch-LCD-2.8C** (≈ 40 $) + un microfon I2S + un am
 
 | Cod | Obiectiv specific (SMART) | Indicator + țintă | Termen | Activități | Rezultat |
 |---|---|---|---|---|---|
-| **O1** | Realizarea și validarea în laborator (**TRL 4**) a modelului integrat SOUL M (afișaj 2,8″ + touch + audio + baterie + AI hibrid) | fps median ≥ 30 · precizie touch ≥ 97 % · WPM ≥ 15 (N = 6) · succes offline ≥ 90 % · latență vocală p50 ≤ 1,8 s · 8/8 protocoale rulate | **L14** | A1, A2, A3 | R1 Raport TRL 4 |
-| **O2** | Proiectarea și realizarea a **15 prototipuri pre-serie** cu PCB propriu și carcasă CNC din aluminiu cu baterie înlocuibilă | 15/15 unități funcționale · atenuare RSSI ≤ 6 dB · înlocuirea bateriei ≤ 5 min · autonomie ≥ 24 h (profil tipic) | **L17** | A4 | R2 (partea 1) |
-| **O3** | Validarea în **mediu relevant (TRL 5)** cu ≥ 12 utilizatori timp de 4 săptămâni + pre-testare EMC/RF | WPM ≥ 20 și UER ≤ 3 % · latență p50 ≤ 1,5 s / p90 ≤ 2,5 s · succes offline ≥ 90 % · ≥ 99 % sesiuni fără crash · SUS ≥ 75 · 0 depășiri la pre-scan (marjă ≥ 3 dB) | **L22** | A5 | R2 Raport TRL 5 |
-| **O4** | Protejarea și valorificarea rezultatelor | cerere de design EUIPO (≤ L5) · cerere de marcă (≤ L6) · 1 articol OA peer-review trimis (≤ L20) · ≥ 2 acorduri de pilot/distribuție + plan de comercializare (L24) | **L24** | A6, A7 | R3, R4, R5 |
+| **O1** | Realizarea și validarea în laborator (**TRL 4**) a modelului integrat SOUL M (afișaj rotund 2,8″ + touch + IMU + audio opțional + baterie + AI la alegerea proprietarului) | fps median ≥ 30 · precizie touch ≥ 97 % · WPM ≥ 15 (N = 6) · succes offline ≥ 90 % · latența unui tur AI p50 ≤ 1,8 s · 8/8 protocoale rulate | **L14** | A1, A2, A3 | R1 Raport TRL 4 |
+| **O2** | Proiectarea și realizarea a **15 prototipuri pre-serie** cu PCB propriu și carcasă CNC din aluminiu (forma MĂRGĂRITAR) cu baterie înlocuibilă | 15/15 unități funcționale · atenuare RSSI ≤ 6 dB · înlocuirea bateriei ≤ 5 min · autonomie ≥ 24 h (profil tipic) | **L17** | A4 | R2 (partea 1) |
+| **O3** | Validarea în **mediu relevant (TRL 5)** cu ≥ 12 utilizatori timp de 4 săptămâni + pre-testare EMC/RF | WPM ≥ 20 și UER ≤ 3 % · latența unui tur AI p50 ≤ 1,5 s / p90 ≤ 2,5 s · succes offline ≥ 90 % · ≥ 99 % sesiuni fără crash · SUS ≥ 75 · 0 depășiri la pre-scan (marjă ≥ 3 dB) | **L22** | A5 | R2 Raport TRL 5 |
+| **O4** | Protejarea și valorificarea rezultatelor | cerere de design EUIPO pentru forma MĂRGĂRITAR depusă înainte de 24.09.2027 (în afara bugetului) · cerere de design pentru elementele noi, nepublicate, din proiect (≤ L18) · cerere de marcă (≤ L6) · 1 articol OA peer-review trimis (≤ L20) · ≥ 2 acorduri de pilot/distribuție + plan de comercializare (L24) | **L24** | A6, A7 | R3, R4, R5 |
 
 ### Rezultatele așteptate (max. 5, §3.9 p. 27)
 - **R1** — Model de laborator SOUL M validat la TRL 4 + Raport de validare TRL 4 (L14).
@@ -142,11 +152,11 @@ Tip: **CDI** = activitate de bază (I.1–I.4, ≥ 50 % din buget); **Conex** = 
 |---|---|---|---|---|---|
 | **A0** | Pregătirea CF, a Planului de afaceri, a Raportului științific + validarea de către expert | Conex **II.2**, *precontractuală* | înainte de depunere | – | CF, Anexa 3, Anexa 16 semnată |
 | **A1** | Specificații, protocoale experimentale, setup de laborator | CDI **I.3** (+ **I.1** echipamente) | L1–L3 | 1.1 specificația sistemului M; 1.2 protocoalele P1–P10 cu praguri; 1.3 achiziția aparatelor de măsură și a PC-ului; 1.4 bancul de test (cutie ecranată, analizor de consum) | L1.1 Specificație; L1.2 Protocoale; **M1 Banc de test validat (L3)** |
-| **A2** | Modelul de laborator M integrat: port RGB/ST7701, GT911, audio I2S (2 mic + amplificator), baterie 2500–3000 mAh, carcasă SLA la scara M, flux vocal (xiaozhi-esp32 adaptat + server UE `suflet_ai`), scalarea tastaturii la 480 px | CDI **I.3** + materiale | L2–L8 | 2.1 firmware afișaj/touch; 2.2 subsistem audio + AEC; 2.3 alimentare/PMU; 2.4 carcasă SLA; 2.5 server vocal UE; 2.6 integrare | L2.1 Model de laborator funcțional; **IE1 (L6): raport intermediar CDI** |
+| **A2** | Modelul de laborator M integrat: SoulOS pe ESP32-S3 (ST7701, GT911, QMI8658, RTC), audio I²S opțional (microfon + amplificator + difuzor), baterie LiPo 1500 mAh, carcasă SLA la scara M, comenzi vocale offline EN (ESP-SR), conectarea AI-ului proprietarului (cheie proprie, conectorul Claude prin SOUL Cloud în UE, SOUL Bridge), SOUL Memory | CDI **I.3** + materiale | L2–L8 | 2.1 firmware afișaj/touch/IMU pe placă; 2.2 audio I²S + comenzi vocale offline; 2.3 alimentare, încărcare, consum; 2.4 carcasă SLA; 2.5 SOUL Cloud în UE + SOUL Memory; 2.6 integrare | L2.1 Model de laborator funcțional; **IE1 (L6): raport intermediar CDI** |
 | **A3** | Validarea TRL 4 în laborator (protocoalele P1–P8, §7) + analiza rezultatelor + **raportul de etapă TRL 4** | CDI **I.3** | L6–L14 | 3.1 teste de componente; 3.2 teste de sistem; 3.3 studiu de tastare N = 6; 3.4 analiză + decizie de poartă | **R1 Raport TRL 4 (L14) = IE2**; decizia go/no-go TRL 5 |
-| **A4** | Prototipul pre-serie: PCB propriu (ESP32-S3-WROOM-1, ST7701, GT911, ES8311/ES7210, PMU, IMU, RTC, pini de încărcare), antenă prin fereastră polimerică, carcasă CNC Al 6061 rev A (3 seturi) și rev B (5 + 15 seturi), baterie înlocuibilă, capsula OU; securitatea EN 18031 (secure boot, OTA semnat) | CDI **I.3/I.4** + servicii | L9–L17 | 4.1 schema și layout rev A (L9–L11); 4.2 fabricare + test rev A (L11–L13); 4.3 antenă + RF (serviciu extern); 4.4 **după poarta L14**: rev B + lotul de 15 carcase; 4.5 asamblare și QC | L4.1 PCB rev A testat; **M3 15 prototipuri (L17)** |
-| **A5** | Validarea TRL 5 în mediu relevant: 15 unități la 12–15 utilizatori din BI (case, birouri, un living lab), 4 săptămâni, telemetrie opt-in; protocoalele P1–P10; 2 workshop-uri de testare; pre-testare EMC/RF (2 sesiuni) | CDI **I.3** + servicii de testare | L16–L22 | 5.1 recrutarea panelului (≥ 40 % femei, ≥ 2 persoane cu deficiențe de vedere/motorii); 5.2 teren; 5.3 pre-scan; 5.4 analiza + raportul TRL 5 | **R2 Raport TRL 5 (L22) = IE3** |
-| **A6** | Protecția IP și valorificarea: căutare de anteriorități (L1–L3), design UE (≤ L5), marcă UE (≤ L6), evaluarea brevetabilității/modelului de utilitate (L12–L18); customer discovery (≥ 30 de interviuri), transformarea scrisorilor de intenție în acorduri, planul de comercializare | CDI **I.2/I.4** + conex **II.1** (promovare pentru validare comercială) | L1–L24 | – | **R3** (L18), **R5** (L24) |
+| **A4** | Prototipul pre-serie: PCB propriu (ESP32-S3 cu 8 MB PSRAM, ST7701, GT911, QMI8658, RTC, microfon + amplificator I²S, încărcare, pini pentru capsula OU), antenă prin fereastră polimerică, carcasă CNC Al 6061 anodizată, forma MĂRGĂRITAR, rev A (3 seturi) și rev B (5 + 15 seturi), baterie înlocuibilă, capsula OU; securitatea EN 18031 (secure boot, OTA semnat) | CDI **I.3/I.4** + servicii | L9–L17 | 4.1 schema și layout rev A (L9–L11); 4.2 fabricare + test rev A (L11–L13); 4.3 antenă + RF (serviciu extern); 4.4 **după poarta L14**: rev B + lotul de 15 carcase; 4.5 asamblare și QC | L4.1 PCB rev A testat; **M3 15 prototipuri (L17)** |
+| **A5** | Validarea TRL 5 în mediu relevant: 15 unități la 12–15 utilizatori din BI (case, birouri, un living lab), 4 săptămâni, telemetrie opt-in; fiecare participant folosește modul offline și propriul AI (cine nu are cont primește o cheie de test a proiectului, cu limită de cost, doar pe durata testului); protocoalele P1–P10; 2 workshop-uri de testare; pre-testare EMC/RF (2 sesiuni) | CDI **I.3** + servicii de testare | L16–L22 | 5.1 recrutarea panelului (≥ 40 % femei, ≥ 2 persoane cu deficiențe de vedere/motorii); 5.2 teren; 5.3 pre-scan; 5.4 analiza + raportul TRL 5 | **R2 Raport TRL 5 (L22) = IE3** |
+| **A6** | Protecția IP și valorificarea: căutare de anteriorități (L1–L3), marcă UE (≤ L6), design UE pentru elementele noi din proiect (≤ L18; forma MĂRGĂRITAR, deja publică, se depune înainte de 24.09.2027, în afara bugetului), evaluarea brevetabilității doar pentru soluțiile nepublicate (L12–L18); customer discovery (≥ 30 de interviuri), transformarea scrisorilor de intenție în acorduri, planul de comercializare | CDI **I.2/I.4** + conex **II.1** (promovare pentru validare comercială) | L1–L24 | – | **R3** (L18), **R5** (L24) |
 | **A7** | Diseminare: manuscris (după depunerea IP), trimitere la o revistă OA peer-review (≤ L20), preprint în repozitoriu OA (Zenodo), prezentare la o conferință/târg, demo public | Conex **II.1** | L14–L24 | – | **R4** |
 | **A8** | Management, audit financiar, comunicare și vizibilitate | Conex **II.3, II.4, II.5** | L1–L24 | – | rapoarte de progres, raport de audit, afiș/panou, comunicate |
 
@@ -173,31 +183,31 @@ Tip: **CDI** = activitate de bază (I.1–I.4, ≥ 50 % din buget); **Conex** = 
 | **IE2** | **Raportul de etapă TRL 4** + obiectivele TRL 5 | **L14** (≤ 2/3 = L16) | pragurile O1 atinse sau abaterile motivate; decizia go/no-go; dacă e no-go → Anexa 17 (eșec de cercetare) | **calitativ CDI (obligatoriu)** |
 | M3 | 15 prototipuri pre-serie | L17 | QC trecut 15/15 | CDI |
 | **IE3** | Raportul TRL 5 | **L22** | pragurile O3 atinse | calitativ CDI |
-| IE-M1..M3 | Achiziții (L4, L15), progres financiar (≥ 30 % la L10, ≥ 70 % la L18), cerere IP depusă (L6) | – | – | management |
+| IE-M1..M3 | Achiziții (L4, L15), progres financiar (≥ 30 % la L10, ≥ 70 % la L18), cerere de marcă depusă (L6) | – | – | management |
 
 ---
 
 ## 7. Protocoalele de validare TRL 4 și TRL 5 (indicatori măsurabili)
 
-Ipoteze: **H1** randare · **H2** tastare/touch · **H3** AI hibrid și voce · **H4** RF prin aluminiu · **H5** energie și reparabilitate.
+Ipoteze: **H1** randare · **H2** tastare/touch · **H3** AI-ul proprietarului, offline-first, memorie portabilă · **H4** RF prin aluminiu · **H5** energie (LiPo 1500 mAh) și reparabilitate.
 
 | Cod | Protocol | Ipoteză | Metodă de măsurare | Baseline (TRL 3, se completează din X1–X8) | Prag TRL 4 (laborator, L14) | Prag TRL 5 (mediu relevant, L22) |
 |---|---|---|---|---|---|---|
-| **P1** | fps la animația ochilor | H1 | contor de cadre în firmware, log serial/telemetrie; 60 min; Wi-Fi + BLE active; 24 de reacții | X2 | median ≥ 30 fps, p5 ≥ 24 | median ≥ 30, p5 ≥ 24 pe 15 unități; 0 artefacte de drift raportate |
+| **P1** | fps la animația ochilor | H1 | contor de cadre în firmware, log serial/telemetrie; 60 min; Wi-Fi + BLE active; toate cele 31 de expresii | X2 | median ≥ 30 fps, p5 ≥ 24 | median ≥ 30, p5 ≥ 24 pe 15 unități; 0 artefacte de drift raportate |
 | **P2** | Precizia touch | H2 | grilă de ținte de 6,7 mm pe tot discul (inclusiv bordura), 200 de atingeri/persoană | X3 | ≥ 97 % (N = 6) | ≥ 97 % (N ≥ 12) |
 | **P3** | Viteza și acuratețea tastării | H2 | set de fraze MacKenzie–Soukoreff (EN) + set RO; 15 min de acomodare; WPM, UER, CER | X4 | ≥ 15 WPM, UER ≤ 5 % (N = 6) | **≥ 20 WPM, UER ≤ 3 %** (N ≥ 12) |
 | **P4** | Diacritice RO automate | H2 | corpus de 300 de cuvinte RO | – | ≥ 90 % corecte | ≥ 95 % corecte |
-| **P5** | Succesul offline | H3 | corpus de 200 de comenzi RO/EN (alarme, mementouri, notițe, cronometre, liste), fără internet | X5 | ≥ 90 % | ≥ 90 % pe comenzile reale din teren |
-| **P6** | Latența vocală end-to-end | H3 | de la sfârșitul rostirii la primul sunet; 100 de ture; Wi-Fi casnic; servere UE | X6 (text) | p50 ≤ 1,8 s, p90 ≤ 3 s | **p50 ≤ 1,5 s, p90 ≤ 2,5 s** |
-| **P7** | Degradarea controlată | H3 | se taie rețeaua sau cheia API în 50 de scenarii | – | 100 % fără blocare; răspuns local | 100 %; ≥ 99 % sesiuni fără crash (telemetrie) |
+| **P5** | Succesul offline (text și voce) | H3 | 200 de comenzi RO/EN scrise (alarme, mementouri, notițe, cronometre, liste) + 100 de comenzi vocale EN (ESP-SR), fără internet | X5 | ≥ 90 % | ≥ 90 % pe comenzile reale din teren |
+| **P6** | Latența unui tur AI end-to-end | H3 | de la trimiterea întrebării pe SOUL la începutul răspunsului pe ecran; 100 de ture; Wi-Fi casnic; AI-ul proprietarului (direct cu cheia lui sau prin SOUL Cloud în UE) | X6 | p50 ≤ 1,8 s, p90 ≤ 3 s | **p50 ≤ 1,5 s, p90 ≤ 2,5 s** |
+| **P7** | Degradarea controlată + portabilitatea memoriei | H3 | se taie rețeaua sau cheia API în 50 de scenarii; se schimbă AI-ul în 10 scenarii | – | 100 % fără blocare; răspuns local; 100 % din memorie păstrată | 100 %; ≥ 99 % sesiuni fără crash; 100 % din memorie păstrată |
 | **P8** | RF prin carcasă | H4 | RSSI în cutia ecranată și la 1/3/5/10 m: placă goală vs. SLA vs. Al rev A/B; pachete pierdute BLE | X7 | atenuare ≤ 8 dB (rev A) | **≤ 6 dB (rev B)**; legătură stabilă ≥ 10 m în interior; PDR ≥ 99 %; reconectare ≤ 3 s |
-| **P9** | Autonomie și consum | H5 | analizor de consum; profil tipic definit (ecran activ 25 % din timp, 30 de interacțiuni vocale, BLE conectat); standby | X8 | modelul de consum validat ± 15 % | **≥ 24 h** în profil tipic; ≥ 7 zile standby |
+| **P9** | Autonomie și consum | H5 | analizor de consum; profil tipic definit (ecran activ ~1 h/zi, stins/somn restul, 50 de întrebări AI, BLE conectat); LiPo 1500 mAh | X8 | modelul de consum validat ± 15 % | **≥ 24 h** în profil tipic (estimarea de azi ≈ 32 h [E], docs/09 §3) |
 | **P10** | Reparabilitate + utilizabilitate | H5 | cronometrarea înlocuirii bateriei (Torx) de către utilizatori neexperți; chestionar SUS; test de accesibilitate (voce, modul „taste mari”, contrast) | – | procedura documentată; ≤ 10 min (N = 3) | **≤ 5 min, 100 % reușită (N ≥ 10)**; SUS ≥ 75 |
 | (P11) | Pre-scan EMC/RF (EN 300 328, EN 301 489-1/-17) | – | laborator acreditat, 2 sesiuni (rev A, rev B) | – | – | 0 depășiri, marjă ≥ 3 dB (rev B) |
 
-**Mediul relevant la TRL 5 (Anexa 18):** configurația e „similară aplicației finale în aproape toate aspectele” (PCB propriu, carcasă finală din aluminiu, baterie finală, firmware + server UE) și rulează în condițiile reale de utilizare (locuințe și birouri din BI, rețele Wi-Fi casnice, zgomot ambiental, utilizatori reali), completate cu reproducerea controlată în laborator (cutie ecranată, atenuare calibrată). Diferențele față de produsul final (fără certificare CE, fără ambalaj, fără producție în serie) se analizează explicit în raportul TRL 5.
+**Mediul relevant la TRL 5 (Anexa 18):** configurația e „similară aplicației finale în aproape toate aspectele” (PCB propriu, carcasă finală din aluminiu, baterie finală, firmware SoulOS + SOUL Cloud în UE) și rulează în condițiile reale de utilizare (locuințe și birouri din BI, rețele Wi-Fi casnice, zgomot ambiental, utilizatori reali), completate cu reproducerea controlată în laborator (cutie ecranată, atenuare calibrată). Diferențele față de produsul final (fără certificare CE, fără ambalaj, fără producție în serie) se analizează explicit în raportul TRL 5.
 
-**Etică și date:** consimțământ informat, telemetrie opt-in, pseudonimizare, ștergerea datelor la final, fără înregistrarea audio brută (GDPR). Informare AI Act art. 50 la prima pornire.
+**Etică și date:** consimțământ informat, telemetrie opt-in, pseudonimizare, ștergerea datelor la final, fără înregistrarea audio brută (comenzile vocale offline se recunosc pe dispozitiv), export și ștergere la cerere (GDPR). Informare AI Act art. 50 la prima pornire. Participanții își folosesc propriul AI; produsul nu include AI.
 
 ---
 
@@ -213,7 +223,7 @@ Ipoteze: **H1** randare · **H2** tastare/touch · **H3** AI hibrid și voce · 
 | L4.2 | 15 prototipuri pre-serie + fișele QC | A4 | L17 | echipa |
 | L5.1 | Rapoartele de pre-testare EMC/RF | A5 | L18 / L21 | laborator + coordonator |
 | **R2** | **Raportul de validare TRL 5** (+ setul de date anonimizat) | A5 | L22 | coordonator tehnic |
-| **R3** | Cererile IP (design UE, marcă UE) + raportul de brevetabilitate | A6 | L5 / L6 / L18 | Andu + consilier PI |
+| **R3** | Cererile IP din proiect (marcă UE, design UE pentru elementele noi) + raportul de brevetabilitate | A6 | L6 / L18 | Andu + consilier PI |
 | **R4** | Manuscris trimis OA peer-review + preprint + prezentare la conferință | A7 | L20 / L24 | coordonator + student |
 | **R5** | Planul de valorificare + ≥ 2 acorduri | A6 | L24 | Andu |
 
@@ -252,7 +262,7 @@ Ipoteze: **H1** randare · **H2** tastare/touch · **H3** AI hibrid și voce · 
 
 ## 10. Bugetul (țintă 191.308 € eligibil = nerambursabil, 100 %)
 
-Ipoteze: **TVA 21 % inclusă** pe achiziții (ARTEMIS e neplătitoare, deci TVA e eligibilă §5.3.2 p. 59); taxele EUIPO sunt fără TVA; serviciile din străinătate au TVA prin taxare inversă (nerecuperabilă, deci eligibilă — Ct confirmă). Salariile sunt brute + CAM 2,25 %. Curs orientativ ≈ 5,09 lei/€ (**se înlocuiește cu InforEuro din ghidul final**). Prețurile sunt **[E] până sosesc ofertele**.
+Ipoteze: **TVA 21 % inclusă** pe achiziții (ARTEMIS e neplătitoare de TVA — ANAF, 12.10.2026 — deci TVA e eligibilă §5.3.2 p. 59); taxele EUIPO sunt fără TVA; serviciile din străinătate au TVA prin taxare inversă (nerecuperabilă, deci eligibilă — Ct confirmă). Salariile sunt brute + CAM 2,25 %. Curs orientativ ≈ 5,09 lei/€ (**se înlocuiește cu InforEuro din ghidul final**). Prețurile sunt **[E] până sosesc ofertele**.
 
 ### 10.1 Buget pe linii
 | # | Linie | Categorie MySMIS / tip activitate | Activitate | € (cu TVA) |
@@ -268,14 +278,15 @@ Ipoteze: **TVA 21 % inclusă** pe achiziții (ARTEMIS e neplătitoare, deci TVA 
 | 8 | Cutie ecranată RF ≥ 60 dB (900 + TVA) | Active corporale (2.2) | A3, A5 | 1.089 |
 | 9 | Stație de lucru PC (2.000 + TVA) | Active corporale (grupa 3, echipamente informatice) | A2–A5 | 2.420 |
 | 10 | Imprimantă 3D SLA (3.900 + TVA) | Active corporale (2.1) | A2, A4 | 4.719 |
-| 11 | Materiale: 8 plăci 2.8C, 20 de panouri de 2,8″, 25 de seturi audio, 30 de celule Li-ion, componente, rășină, obiecte de inventar (3.725 + TVA) | Materiale, consumabile, obiecte de inventar | A2, A4 | 4.507 |
+| 11 | Materiale: 8 plăci 2.8C, 20 de panouri de 2,8″, 25 de seturi audio I²S, 30 de celule LiPo 1500 mAh, componente, rășină, obiecte de inventar (3.725 + TVA) | Materiale, consumabile, obiecte de inventar | A2, A4 | 4.507 |
 | 12 | CNC + anodizare carcase Al 6061 (3 + 5 + 15 seturi) (5.550 + TVA) | Servicii (echivalente) pentru dezvoltare experimentală | A4 | 6.716 |
 | 13 | Fabricare + asamblare PCB propriu rev A/B (3.000 + TVA) | Servicii pentru dezvoltare experimentală | A4 | 3.630 |
 | 14 | Pre-testare EMC/RF, 2 sesiuni (4.000 + TVA) | Servicii de sprijinire a inovării (testare) | A5 | 4.840 |
 | 15 | Evaluare preliminară EN 18031 (2.500 + TVA) | Consultanță în inovare (utilizarea standardelor) | A4 | 3.025 |
 | 16 | Servicii CDI externalizate: proiectarea/validarea antenei prin carcasa din aluminiu (4.500 + TVA) | Servicii CDI externalizate (I.3) | A4 | 5.445 |
 | 17 | 2 workshop-uri/sesiuni de testare cu utilizatori | Workshop-uri colaborative (validare TRL 4–5) | A5 | 2.500 |
-| 18 | SaaS: API AI (LLM/STT/TTS), găzduire UE, CAD (≈ 4.132 + TVA) | Servicii SaaS pentru CDI | A2–A5 | 5.000 |
+| 18a | SaaS: API AI pentru teste (chei cu limită de cost, doar în validare) + CAD (≈ 3.140 + TVA) | Servicii SaaS pentru CDI (modelare, testare, simulare, analiza datelor) | A2–A5 | 3.800 |
+| 18b | Infrastructură cloud de test în UE: servere virtuale pentru instanța de test SOUL Cloud, folosite **exclusiv** la testarea prototipurilor în L2–L22, oprite la final (≈ 992 + TVA) | Servicii SaaS pentru CDI — infrastructură de testare [de confirmat la helpdesk și pe Anexa 20; alternativ: servicii pentru dezvoltare experimentală] | A2–A5 | 1.200 |
 | 19 | Taxe EUIPO: marcă UE (3 clase ≈ 1.050) + desen industrial multiplu (≈ 940) | Obținerea/protejarea activelor necorporale | A6 | 1.990 |
 | 20 | Consilier în proprietate industrială: anterioritate, depunere, brevetabilitate (1.250 + TVA) | Consultanță în inovare (protecția activelor necorporale) | A6 | 1.512 |
 | | **Subtotal activitate de bază** | | | **154.040** |
@@ -330,10 +341,10 @@ Nu se adaugă alți indicatori în CF. Metricile tehnice P1–P11 apar în „Re
 ## 12. Economia circulară (Grila 1.5, 5 p. — trebuie să fie în **produs**, nu în echipamentele cumpărate)
 | Principiu | Cum se regăsește în SOUL M | Cum se verifică în proiect |
 |---|---|---|
-| **Prelungirea duratei de viață / reparabilitate** | **baterie înlocuibilă de utilizator** (conector MX1.25, spumă, nu adeziv; Reg. 2023/1542 art. 11); închidere cu **șuruburi Torx** standard; module înlocuibile (panou, placă, difuzor) | P10: înlocuire ≤ 5 min; ghid de reparare publicat |
+| **Prelungirea duratei de viață / reparabilitate** | **baterie LiPo 1500 mAh înlocuibilă de utilizator** (conector MX1.25, spumă, nu adeziv; Reg. 2023/1542 art. 11); închidere cu **șuruburi Torx** standard; module înlocuibile (panou, placă, difuzor) | P10: înlocuire ≤ 5 min; ghid de reparare publicat |
 | **Design pentru dezasamblare și reciclare** | carcasă **monomaterial Al 6061** (reciclabil nelimitat), fără adezivi structurali; talpă polimerică detașabilă; marcarea materialelor | raport de dezasamblare: ≥ 90 % din masă separabilă pe fracții |
-| **Actualizare software (OTA)** în loc de înlocuire hardware | funcții noi livrate prin OTA semnat; hardware-ul nu se învechește la schimbarea modelului AI (BYO-AI) | OTA semnat demonstrat la TRL 5 |
-| **Independența de server** (evită „bricking”-ul de tip Humane) | modul offline complet + serverul AI publicabil/escrow | P5, P7 |
+| **Actualizare software (OTA)** în loc de înlocuire hardware | funcții noi livrate prin OTA semnat; hardware-ul nu se învechește la schimbarea modelului AI (proprietarul își alege AI-ul; memoria rămâne pe dispozitiv) | OTA semnat demonstrat la TRL 5 |
+| **Independența de server** (evită „bricking”-ul de tip Humane) | modul offline complet; SOUL Memory pe dispozitiv; SOUL Cloud doar transmite mesajele; SOUL Bridge open source (MIT) | P5, P7 |
 | **Reducerea resurselor pe unitatea de output** | un singur obiect pentru notițe/alarme/remindere/aprobări Claude; capsula OU fără baterie; ambalaj din pulpă/carton | BOM + fișa materialelor |
 | **Piese de schimb** | angajament: baterii și piese de schimb 5 ani | Plan de afaceri §6 |
 
@@ -355,20 +366,27 @@ Nu se adaugă alți indicatori în CF. Metricile tehnice P1–P11 apar în „Re
 
 ---
 
-## 14. Planul IP: „întâi protecția, apoi publicarea” (Plan de afaceri §6.2; Grila 1.4 + 2.1d)
+## 14. Planul IP: ce e deja public + „întâi protecția, apoi publicarea” pentru ce e nou (Plan de afaceri §6.2; Grila 1.4 + 2.1d)
+
+**Ce e deja public (verificat 12.10.2026).** Depozitul `github.com/KREA123/obsidian-vault` e **public** de la crearea lui, pe **24.09.2026** (API GitHub: `visibility: public`, niciun eveniment de schimbare a vizibilității). Conține randările SOUL din 24.09.2026 (forma MĂRGĂRITAR v9 din 26.09.2026); decodorul tastaturii (`firmware/lib/Suflet/src/Predictor.cpp`, `Keyboard.cpp`) și conceptul ferestrei radio (`research/10-carcasa-aluminiu.md`) din 25.09.2026; motorul ochilor din 24.09.2026 și restul firmware-ului din sept.–oct. 2026; acest dosar. **Data primei publicări (din git):** 24.09.2026 (randările; MĂRGĂRITAR v9: 26.09.2026); 25.09.2026 (decodorul tastaturii, `Predictor.cpp`/`Keyboard.cpp`; conceptul ferestrei radio, `research/10`).
+
+**Consecințe:** (1) grația de 12 luni pentru design expiră pe ~**24.09.2027**, iar contractul e estimat în aug.–oct. 2027 (00 P10), deci „design ≤ L5” ar fi **prea târziu** → designul MĂRGĂRITAR se depune **acum prin EUIPO SME Fund** sau **imediat după depunerea CF**, din fonduri proprii, în afara bugetului; (2) metoda de decodare și conceptul ferestrei radio sunt publice → **nu** le mai revendicăm ca brevet sau secret comercial; (3) motorul ochilor e deja vizibil public (fără licență open-source = toate drepturile rezervate); (4) **întrebare pentru Andu:** facem depozitul privat, inclusiv dosarul? (nu anulează ce s-a publicat deja, dar oprește divulgarea lucrului nou).
+
 | Pas | Ce | Când | Cost / linie |
 |---|---|---|---|
-| 0 | Căutare **TMview + DesignView** pentru „SOUL” (clasele 9, 42, 14, 28) — risc mare de conflict (SOUL Electronics etc.) | **acum**, înainte de depunere | 0 € |
-| 0b | **Dacă** marca verbală e liberă: poate fi depusă **înainte** de proiect prin **EUIPO SME Fund** (voucher 75 %, până la 04.12.2026). Atunci **nu** mai apare în bugetul PoC (fără dublă finanțare, §5.2.1 V), iar linia 19 se folosește pentru **marca figurativă/clase suplimentare** și design | T−8 săpt. | în afara proiectului |
-| 1 | Consilier PI: anterioritate + strategie (design / model de utilitate OSIM / brevet) | L1–L3 | linia 20 |
-| 2 | **Desen/model industrial UE multiplu**: corpul SOUL M + capsula OU (+ eventual interfața grafică a ochilor) | **≤ L5**. ⚠ Grație de 12 luni de la **prima divulgare publică**: dacă randările v6/M sunt publice din sept. 2026, cererea trebuie depusă până în **sept. 2027**. Dacă asta cade înainte de contract, o depunem **după depunerea CF, ca activitate precontractuală** (la risc propriu) | linia 19 |
-| 3 | **Marcă UE** (verbală sau figurativă, 3 clase) | ≤ L6 | linia 19 |
-| 4 | Evaluarea brevetabilității/modelului de utilitate: carcasa cu fereastră radio polimerică + mecanismul bateriei înlocuibile + contactele OU; metoda de decodare a tastaturii circulare | L12–L18 | linia 20; depunerea OSIM, dacă merită, în perioada de durabilitate |
-| 5 | **Publicare** (articol OA, preprint Zenodo) doar **după** depunerea cererilor de la pașii 2–3 | trimitere ≤ L20 | linia 21 |
-| 6 | Secret comercial: parametrii decodorului, datele de antrenare, tuning-ul antenei | continuu | – |
-| 7 | Cesiunea drepturilor Andu → ARTEMIS (codul și designul pre-proiect) + registrul licențelor open-source (MIT/OFL) | **înainte de depunere** | 0 € |
+| 0 | Ce e deja public: depozitul github.com/KREA123/obsidian-vault e public din 24.09.2026 (API GitHub, 12.10.2026) și conține randările SOUL din 24.09.2026 (forma MĂRGĂRITAR v9 din 26.09.2026); decodorul tastaturii (`firmware/lib/Suflet/src/Predictor.cpp`, `Keyboard.cpp`) și conceptul ferestrei radio (`research/10-carcasa-aluminiu.md`) din 25.09.2026; motorul ochilor din 24.09.2026 și restul firmware-ului din sept.–oct. 2026; acest dosar. Tot ce e acolo se tratează ca divulgat la data primului commit. [de completat: A: decide dacă depozitul, inclusiv dosarul, devine privat; nu anulează divulgarea de până acum] | acum | 0 € |
+| 0a | Căutare TMview + DesignView pentru „SOUL” (clasele 9, 42, 14, 28) — risc mare de conflict (SOUL Electronics etc.) | acum, înainte de depunere | 0 € |
+| 0b | Desen/model industrial UE pentru forma MĂRGĂRITAR (corpul SOUL M; + capsula OU și ochii, dacă apar în materialele publice). Grația de 12 luni curge de la prima divulgare (randările din 24.09.2026; MĂRGĂRITAR v9 din 26.09.2026) și expiră pe ~24.09.2027, înainte de contractul estimat (aug.–oct. 2027). Se depune acum prin EUIPO SME Fund (voucher, până la 04.12.2026) sau imediat după depunerea CF, din fonduri proprii; nu intră în bugetul PoC (fără dublă finanțare, §5.2.1 V) | T−8 săpt. … imediat după depunerea CF; în orice caz înainte de 24.09.2027 | în afara proiectului |
+| 0c | Dacă marca verbală e liberă: poate fi depusă înainte de proiect prin același voucher SME Fund. Atunci nu mai apare în bugetul PoC, iar linia 19 se folosește pentru marca figurativă/clase suplimentare și designul elementelor noi | T−8 săpt. | în afara proiectului |
+| 1 | Consilier PI: anterioritate (inclusiv propriile publicări din depozitul public) + strategie (design / model de utilitate OSIM / brevet) | L1–L3 | linia 20 |
+| 2 | Desen/model industrial UE pentru elementele noi, nepublicate, rezultate în proiect (forma rev B a carcasei și a capsulei OU, dacă diferă de cele publice; interfața grafică finală) — depus înainte de orice publicare a lor | ≤ L18 | linia 19 |
+| 3 | Marcă UE (verbală sau figurativă, 3 clase) | ≤ L6 | linia 19 |
+| 4 | Evaluarea brevetabilității/modelului de utilitate **doar pentru soluțiile nepublicate** dezvoltate în proiect (implementarea măsurată a ferestrei radio și a antenei, mecanismul bateriei înlocuibile și contactele OU, dacă nu sunt publice). Metoda de decodare a tastaturii și conceptul ferestrei radio sunt publice din 25.09.2026, deci noutatea lor e probabil pierdută: nu le revendicăm | L12–L18 | linia 20; depunerea OSIM, dacă merită, în perioada de durabilitate |
+| 5 | Publicare (articol OA, preprint Zenodo) doar după depunerea cererilor pentru elementele nepublicate (pasul 2) | trimitere ≤ L20 | linia 21 |
+| 6 | Secret comercial **doar pentru ce nu e public**: datele de măsurare RF și tuning-ul antenei din proiect, layout-ul PCB rev A/B, corpusurile și datele de test noi — păstrate în afara depozitului public | continuu | – |
+| 7 | Cesiunea drepturilor Andu → ARTEMIS (codul și designul pre-proiect) + registrul licențelor open-source (MIT/OFL); vizibilitatea publică a depozitului nu e o licență (nu are licență open-source declarată, în afară de SOUL Bridge — MIT) | înainte de depunere | 0 € |
 
-Calendarul (IP la L5–L6, publicare la L20) respectă regula grilei 1.4 „Patent first, publish later”: evaluatorul verifică doar coerența calendarului.
+Calendarul (marcă la L6, design pentru elementele noi la L18, publicare la L20) respectă regula grilei 1.4 „Patent first, publish later” pentru tot ce e nou; ce e deja public e declarat cinstit, cu data primei publicări.
 
 **Revista țintă (10 p. la 1.4):** o revistă OA peer-review indexată (ex. MDPI *Electronics* sau *Sensors*; IEEE *Access*), APC ≈ 2,5–3 k€. Alternativă fără cost: o revistă „diamond OA”. Includem și preprintul în Zenodo (repozitoriu OA).
 
@@ -377,18 +395,18 @@ Calendarul (IP la L5–L6, publicare la L20) respectă regula grilei 1.4 „Pate
 ## 15. Riscuri (Plan de afaceri §6.4 + CF; Grila 2.1e, 4 p.)
 | # | Risc | Prob. | Impact | Măsuri |
 |---|---|---|---|---|
-| R1 | **Eșec de cercetare**: H1/H3/H4 nu se validează (fps < 30 pe RGB, atenuare RF > 6 dB, latență > prag) | medie | mare | poarta IE2 la L14 (≤ 2/3); alternative tehnice pregătite (randare parțială, bounce-buffers, fereastră radio mai mare, antenă externă în talpă, server mai aproape/model mai mic); dacă tot nu merge → **Anexa 17**, se decontează max. 50 % și **nu cumpărăm activele pentru TRL 5 înainte de poartă** |
+| R1 | **Eșec de cercetare**: H1/H3/H4/H5 nu se validează (fps < 30 pe RGB, atenuare RF > 6 dB, latență > prag, autonomie < 24 h cu 1500 mAh) | medie | mare | poarta IE2 la L14 (≤ 2/3); alternative tehnice pregătite (randare parțială, bounce-buffers, fereastră radio mai mare, antenă externă în talpă, alt model AI ales de proprietar, mai mult somn al ecranului); dacă tot nu merge → **Anexa 17**, se decontează max. 50 % și **nu cumpărăm activele pentru TRL 5 înainte de poartă** |
 | R2 | Recrutarea coordonatorului/inginerului întârzie | medie | mare | declarații de disponibilitate semnate **înainte de depunere**; detașare de la o organizație de cercetare ca variantă |
 | R3 | Lanțul de aprovizionare (panouri, module, CNC) | medie | mediu | 2 furnizori pe linie; stoc tampon la L2 |
 | R4 | Ghidul final schimbă plafoanele (Anexa 20) sau calendarul | medie | mediu | buget modular; rezervă de curs 4 % |
 | R5 | Curs valutar: plafonul de minimis/200 k€ depășit la semnare | mică | mediu | 191 k€ în loc de 200 k€ |
-| R6 | ARTEMIS devine plătitoare de TVA → TVA neeligibilă | medie | mediu | monitorizare lunară a CA; notificarea AM-ului; reducerea TVA din buget |
+| R6 | ARTEMIS devine plătitoare de TVA (plafonul de 395.000 lei poate fi depășit din activitatea curentă sau, după proiect, din vânzările SOUL) → TVA neeligibilă în proiect; după proiect, vânzările se taxează (OSS pentru B2C la distanță în UE peste 10.000 €/an) | medie | mediu | monitorizare lunară a CA; notificarea AM-ului; reducerea TVA din buget; proiecția post-PoC e calculată deja **fără TVA** (249 € cu TVA ≈ 206 € net); înregistrare OSS înainte de primele vânzări în alte state UE |
 | R7 | Cash-flow până la rambursare | medie | mare | prefinanțare (§12.1), cereri de plată (§12.2), linie de credit FNGCIMM |
-| R8 | Dependența de API-uri terțe (Claude/OpenAI/STT/TTS) | mică | mediu | modul offline; mai mulți furnizori; server UE propriu |
+| R8 | Dependența de furnizorii de AI și de politicile lor (Pro/Max nu pot fi folosite de dispozitive terțe; „Sign in with ChatGPT” cere aprobarea OpenAI) | medie | mediu | modul offline complet; cheia API a proprietarului sau conectorul din aplicația Claude; mai mulți furnizori; nu promitem ce depinde de aprobări neobținute; SOUL nu include și nu revinde AI |
 | R9 | Conformitate (AI Act art. 50, GDPR, EN 18031) | mică | mediu | informare AI la pornire; DPA; evaluarea EN 18031 (linia 15) |
-| R10 | **Conflict cu planul Founders 00** (vânzarea a 25 buc. cu CE în primăvara 2027): dacă SOUL M e vândut/certificat înainte de contract, proiectul pare „demarat/finalizat” și TRL > 5 | **mare, dacă nu se decide** | **eliminatoriu** | **Decizie Andu (recomandare):** nu certificăm CE și nu vindem SOUL M înainte de contract; waitlist-ul rămâne (e dovadă de piață); Founders 00 devine **pasul post-PoC** (§16). Varianta B: lansare rapidă fără grant (equity) + PR BI 1.2 în loc de PoC |
+| R10 | **Vânzare sau certificare CE înainte de contract** → proiectul pare „demarat/finalizat” și TRL > 5 | **redusă** (decizia din 26.09.2026) | **eliminatoriu** | **Decis:** fără ediție Founders; pe site doar listă de așteptare, nicio rezervare sau plată; magazinul Shopify nu vinde și SOUL nu se certifică CE înainte de contract; prima serie (10–25 buc.) e **pasul post-PoC** (§16) |
 | R11 | Schimbări de acționariat (ex. un investitor angel intră în ARTEMIS) | medie | **eliminatoriu** (condiții artificiale, §5.1.2) | investiția se face **într-un vehicul separat** sau **după durabilitate**, cu avizul AM; fără transfer de IP în durabilitate |
-| R12 | Conflict de marcă „SOUL” | mare | mediu | căutare acum; marcă figurativă/compusă ca rezervă; designul protejează forma oricum |
+| R12 | Conflict de marcă „SOUL” | mare | mediu | căutare acum; marcă figurativă/compusă ca rezervă; designul (depus înainte de 24.09.2027) protejează forma oricum |
 
 ---
 
@@ -397,12 +415,12 @@ Pornim de la rezultatul validat la TRL 5 (15 prototipuri, R2).
 
 | Etapa | TRL | Perioada (An 1 = primele 12 luni după finalizare, ≈ 2029–2030) | Ce | Finanțare |
 |---|---|---|---|---|
-| **Founders 00** (pilot) | 6 → 7 | An 1 (S1) | 25 de unități numerotate, PCB rev C, **certificare CE/RED + EN 18031** (5–12 k€ + 0–9 k€), înregistrări ANMAP, GPSR; vânzare în RO; feedback | venituri din precomenzi (25 × 349 €), fonduri proprii, EUIPO SME Fund (IP), EDIH (testare) |
+| **Prima serie** (10–25 buc.) | 6 → 7 | An 1 (S1) | 10–25 unități, PCB rev C, **certificare CE/RED + EN 18031** [E: 5–12 k€ + 0–9 k€], înregistrări ANMAP/EPR, GPSR; vânzare din magazinul propriu, de la 249 €; feedback | venituri din vânzări, fonduri proprii, EUIPO SME Fund (IP), EDIH (testare) |
 | **Batch 1 / CE complet** | 7 → 8 | An 1 (S2) – An 2 | 300 de unități, scule (matrițe parțiale), aplicația de telefon, 3–5 piețe UE (EPR, reprezentant autorizat) | **PR BI 1.2** (produse noi în IMM) sau **Eurostars Call 12/13**, pre-seed/angel **într-un vehicul care nu afectează PoC-ul**, crowdfunding (Indiegogo/Gamefound — Kickstarter nu e disponibil din RO) |
 | **SOUL Standard** | 9 | An 2 – An 3 | 1–10 k unități/an, PCB cu modul certificat, cost < 60 €/buc., canale: online direct + retail de design + B2B (echipe care folosesc Claude Code) | venituri, **EIC Accelerator** (la TRL 6–8), credit garantat FNGCIMM pentru stoc |
-| **Platforma** | 9 | An 3 – An 5 | abonament opțional (voce/memorie), accesorii, SoulOS pentru parteneri, licențierea designului/firmware-ului | venituri recurente, licențe |
+| **Platforma** | 9 | An 3 – An 5 | accesorii și piese de schimb, SoulOS pentru parteneri, licențierea designului/firmware-ului; eventual servicii SOUL Cloud opționale (backup, sincronizare), **fără AI inclus** | venituri din accesorii, licențe |
 
-**Modelul de valorificare:** comercializare directă a hardware-ului (349 € Founders → 199–299 € Standard) + serviciu opțional (voce/memorie) + licențiere B2B. **Proiecția financiară pe 5 ani** (Anexa 3 §6.3) se construiește din ipoteze explicite (preț, unități, COGS €190 → €60, marjă, CAC) — Claude o calculează separat, cu contabilul.
+**Modelul de valorificare:** comercializare directă a hardware-ului (**de la 249 €**, preț de listă **cu TVA inclusă**, ≈ 206 € fără TVA; un singur produs în 5 culori) + accesorii și piese de schimb + licențiere B2B. **AI-ul nu e inclus și nu e revândut.** **Proiecția financiară pe 5 ani** (Anexa 3 §6.3) e calculată în `draft/_build/proj.py` din ipoteze explicite [E]: 175 → 850 → 2.000 → 4.000 → 7.000 de unități, preț cu TVA 249 → 219 €, **venituri calculate fără TVA** (÷ 1,21; ARTEMIS va fi plătitoare de TVA, iar vânzările B2C în alte state UE trec prin OSS), COGS 190 → 60 €, fără venituri din AI. Contabilul o verifică.
 
 **Resursele umane în durabilitate (Anexa 3 §5.4):** păstrăm inginerul embedded (1 FTE din An 1), angajăm 1 suport/QA în An 2 și 1 inginer hardware în An 2–3; finanțate din venituri + rundă.
 
@@ -410,8 +428,8 @@ Pornim de la rezultatul validat la TRL 5 (15 prototipuri, R2).
 
 ## 17. Grupul țintă (§3.7 NOTA)
 1. Utilizatorii-pilot din București-Ilfov (≥ 12) care participă la validarea TRL 5.
-2. Profesioniștii care lucrează zilnic cu asistenți AI (dezvoltatori care folosesc Claude Code/Cowork, creatori, freelanceri): nevoia de aprobări și notițe rapide, fără telefon.
-3. Utilizatorii care vor un asistent **privat, cu funcționare offline**, fără abonament obligatoriu.
+2. Profesioniștii care lucrează zilnic cu asistenți AI (dezvoltatori care folosesc Claude Code/Cowork, creatori, freelanceri) și își conectează propriul cont AI: nevoia de aprobări și notițe rapide, fără telefon.
+3. Utilizatorii care vor un asistent **privat, cu funcționare offline**, fără abonament obligatoriu și fără un AI impus de producător.
 4. Persoanele cu nevoi de accesibilitate (control vocal, taste mari).
 5. Ecosistemul regional: laboratoare universitare (UPB), ateliere CNC/PCB, laboratoare de testare.
 
@@ -424,7 +442,8 @@ Pornim de la rezultatul validat la TRL 5 (15 prototipuri, R2).
 | Laborator EMC/RF acreditat | pre-scan EN 300 328 / 301 489 | contract de servicii | A5 | ofertă + scrisoare de disponibilitate |
 | Organizație de cercetare parteneră (UPB ETTI / IMT / ICI) | expertiză RF/antene, eventual acces la camera anecoică, recrutarea studentului | acord de colaborare | A4, A5 | **scrisoare de intenție** (se poate număra și la 4.2 dacă are cele 7 elemente) |
 | Ateliere CNC, PCB | prototipare | contracte de servicii | A4 | oferte |
-| Software | Git, PlatformIO, KiCad (gratuit), CAD (SaaS), servere UE | licențe/SaaS | toate | – |
+| Software | Git, PlatformIO, KiCad (gratuit), CAD și API AI pentru teste (SaaS, linia 18a); infrastructură cloud de test în UE pentru SOUL Cloud, doar în validare (linia 18b) | licențe/SaaS | toate | – |
+| Placa de dezvoltare 2.8C + simulatorul | ESP32-S3R8, IPS 2,8″ 480×480, GT911, QMI8658, RTC | proprie (comandată din bani proprii, în afara bugetului; **încă netestată**) | X1–X8, A1–A3 | raportul TRL 3 + video |
 | Date | corpusuri RO/EN (comenzi, fraze de tastare) | proprii | A3, A5 | – |
 
 ---

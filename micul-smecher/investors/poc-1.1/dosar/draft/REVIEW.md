@@ -2,159 +2,150 @@
 tip: finanțare
 proiect: SOUL-PoC
 rol: autoverificarea draft-urilor Anexa 3 + Anexa 16 + modele, față de Grila ETF (Anexa 10)
-actualizat: 2026-09-25
-stare: draft 1, de citit de Andu; expertul revizuiește Anexa 16
+actualizat: 2026-10-12
+stare: draft 3 (12.10.2026, după verificarea dosarului); de citit de Andu; Anexa 16 NU se semnează până la D8
 ---
 
 # REVIEW · Autoverificare pe Grila ETF
 
 **Fișiere din `dosar/draft/`:**
 
-| Fișier | Ce este | Pagini (randare LibreOffice) |
+| Fișier | Ce este | Pagini (PDF, LibreOffice) |
 |---|---|---|
-| `Anexa_3_Plan_Afaceri_SOUL_DRAFT.docx` | modelul oficial Anexa 3 completat secțiune cu secțiune | 32 |
-| `Anexa_16_Raport_Stiintific_SOUL_DRAFT.docx` | modelul oficial Anexa 16 completat, gata de revizuirea și semnătura expertului | 22 |
-| `Scrisoare_de_intentie_MODEL.docx` | ghid + 3 variante de o pagină (A retailer/distribuitor, B laborator universitar, C utilizator pilot din mediul de afaceri), fiecare cu cele 7 elemente din Grila 4.2 | 4 |
-| `Declaratie_cesiune_drepturi_MODEL.docx` | contract de cesiune gratuită Andu → ARTEMIS (cod, design, CAD, brand) + inventar + lista componentelor open-source. **⚠ De revizuit de un avocat** | 3 |
+| `Anexa_3_Plan_Afaceri_SOUL_DRAFT.docx` + `out_a3.pdf` | modelul oficial Anexa 3 completat secțiune cu secțiune | 34 |
+| `Anexa_16_Raport_Stiintific_SOUL_DRAFT.docx` + `out_a16.pdf` | modelul oficial Anexa 16 completat, gata de revizuirea expertului; **nu se semnează până la D8** | 24 |
+| `Scrisoare_de_intentie_MODEL.docx` + `.pdf` | ghid + 3 variante de o pagină (A retailer/distribuitor, B laborator universitar, C utilizator pilot), fiecare cu cele 7 elemente din Grila 4.2 | 4 |
+| `Declaratie_cesiune_drepturi_MODEL.docx` + `.pdf` | contract de cesiune gratuită Andu → ARTEMIS (cod, design, CAD, ochi, brand) + inventar + componentele open-source. **⚠ De revizuit de un avocat** | 3 |
 
-**Cum au fost făcute.** Șabloanele oficiale au fost editate direct: structura, titlurile, numerotarea, tabelele, antetul și subsolul au rămas cele din model. S-au șters: instrucțiunile albastre (✏), sfaturile verzi (✔), secțiunea „Ghid de utilizare” (și intrarea ei din cuprins) și propozițiile-ghid de sub titluri. Avertismentele portocalii (⚠) au rămas, pentru că fac parte din model. Tot ce nu știm încă e marcat **[între paranteze, cu fundal galben]**. Cifrele, lunile, obiectivele, activitățile, indicatorii, bugetul, TRL-ul și domeniile RIS3 sunt copiate din `03-NUCLEU-PROIECT.md` prin același fișier de date, deci sunt identice în Anexa 3 și în Anexa 16. Toate documentele trec validarea XSD (`validate.py`) și au fost randate în PDF și verificate vizual.
+**Cum se refac.** Totul se generează din `_build/data.py` (aceleași date ca `03-NUCLEU-PROIECT.md`). Comanda: `bash _build/build.sh` (copiază șabloanele oficiale din `apel/`, rulează `build_a3.py`, `build_a16.py`, `build_models.py`, apoi LibreOffice → PDF). Șabloanele oficiale au fost editate direct: structura, titlurile, numerotarea, tabelele, antetul și subsolul au rămas cele din model. S-au șters doar instrucțiunile (✏), sfaturile (✔) și secțiunea „Ghid de utilizare”. Avertismentele (⚠) au rămas. Tot ce nu știm e marcat **[între paranteze, cu fundal galben]**.
 
-**Abateri de la `03-NUCLEU` (de decis de Andu):**
-1. **Numărul de teste firmware:** în nucleu scrie 55/55. Azi, `pio test -e native` dă **61/61** (cele 6 teste noi sunt pentru geometria de 480 px a lui SOUL M). În draft am scris 61/61, cu mențiunea „55 în v1 + 6 pentru 480 px”. **Actualizați nucleul §4.1 D1.** Testele AI dau 49/49, ca în nucleu.
-2. **X1 (portul pe 2.8C):** codul pentru `lcd28` există deja și compilează (`firmware/README.md`), dar nu a fost încă încărcat pe placă. În draft apare „codul există, compilează; neflash-uit” și este marcat „în curs”.
-3. **Proiecția financiară pe 5 ani** nu exista în nucleu (§16 spunea „Claude o calculează separat”). Am construit-o în `scratchpad/work/proj.py` din ipotezele explicite din nucleu (349 € → 239–299 €, COGS 190 € → 60 €, echipa din §16). Toate valorile sunt etichetate [E]. Trebuie trecută în nucleu și verificată de contabil.
-4. **Defalcarea materialelor (linia 11)** și împărțirea taxelor EUIPO (1.050 € + 940 €) pe rânduri sunt orientative [E]. Totalurile sunt cele din nucleu.
+## Ce s-a schimbat la 12.10.2026 (față de draftul din 25.09)
+1. **Firma:** CUI 53145290, J2025098748009, EUID, data înregistrării 17.12.2025, sediul din Sector 3, CAEN 7311 + codurile de adăugat, neplătitoare de TVA — completate în Anexa 3 §2.1, Anexa 16, scrisori și cesiune.
+2. **Produsul:** forma MĂRGĂRITAR, ~90 × 101 × 31,5 mm, 5 culori; placa ESP32-S3-Touch-LCD-2.8C (ESP32-S3R8, 8 MB PSRAM, 16 MB flash), QMI8658, RTC, buzzer, microfon + difuzor I²S opționale, **LiPo 1500 mAh** (în loc de 2500–3000 mAh și codecul ES8311/ES7210).
+3. **Software:** firmware **SoulOS 1.8.0** (198+ teste native, fără avertismente; „Alive” 1.9.0 în lucru), **SOUL Cloud** (283 de teste), SOUL Bridge (open source), SOUL Memory, comenzi vocale offline EN (ESP-SR) — în locul „61/61 teste” și „serviciul AI suflet_ai 49/49”.
+4. **AI:** fiecare proprietar își conectează **propriul AI**; SOUL nu include și nu revinde AI. Ipoteza H3 și protocoalele P5–P7 s-au schimbat: **latența unui tur AI** (nu latența vocală prin server UE), comenzi offline scrise + vocale, **memoria păstrată la schimbarea AI-ului**. Pragurile numerice au rămas aceleași.
+5. **Comercial:** preț **de la 249 €**, fără ediție Founders, doar listă de așteptare, fără CE azi, prima serie 10–25 buc. după proiect. Riscul R10 a devenit „redus” (decizia e luată). Proiecția pe 5 ani a fost refăcută (`_build/proj.py`): fără venituri din AI/abonamente, preț net 249 → 219 €.
+6. **H5:** ținta „≥ 7 zile standby” a fost scoasă (nu e susținută cu 1500 mAh); rămâne **≥ 24 h** în profil tipic (estimarea de azi ≈ 32 h [E], `docs/09` §3).
 
----
+## Corecturi după verificarea dosarului (12.10.2026, draft 3)
+1. **TRL 3 declarat, nu atestat.** Anexa 18 cere măsurători inițiale de laborator; D1–D7 sunt analitice/software. Anexa 16 §2.1, §2.2 (rândul TRL 3), §2.4, datele generale și Anexa 3 (antet, §1.1, §4.2) spun acum „TRL 3 — **de atestat după D8**”, fără „ATINS” și fără „în laborator”. **Poarta de lansare** în `_build/data.py`: `D8_DONE = False` pune pe Anexa 16 mesajul roșu „NU SE SEMNEAZĂ ȘI NU SE DEPUNE”, iar `SOUL_FOR_SIGNATURE=1 bash _build/build.sh` se oprește cu eroare. Când raportul D8 există, `D8_DONE = True` readuce automat formularea „atestat”.
+2. **IP: depozitul vault e public** (GitHub, din 24.09.2026). Data primei publicări e completată din git (randări 24.09.2026, MĂRGĂRITAR v9 26.09.2026, decodorul tastaturii și fereastra radio 25.09.2026). Designul MĂRGĂRITAR se depune **înainte de 24.09.2027** (SME Fund acum sau imediat după depunerea CF, în afara bugetului); O4, A6, R3, IE-M, Anexa 3 §3.4/§6.2, Anexa 16 §6.4 și `03-NUCLEU` §14 nu mai spun „design ≤ L5”. Brevetul și secretul comercial se limitează la ce nu e public; „motorul ochilor poate fi publicat open-source după IP” a fost scos. Întrebare pentru Andu: depozitul devine privat?
+3. **Decembrie — o singură regulă** în `00` și `04`: ghidul final cel târziu pe ~1 decembrie (MySMIS ~31 decembrie); realist, până la începutul lui noiembrie [estimare].
+4. **Expertul:** citată **Decizia CM PR BI nr. 54/29.09.2026** (a + (b sau c)) în `00` (rândul 0, E4, respingeri), `01`, `02`, `04` și în Anexa 16; ținta sigură rămâne a + b + c.
+5. **TVA în proiecție:** 249 € e preț de listă **cu TVA**; `proj.py` calculează veniturile **fără TVA** (÷ 1,21, ≈ 206 € net), cu trecerea la plătitor de TVA și OSS în Ipoteza 1, Ipoteza 6 și R6.
+6. **Anexa 3 §1.4** scurtată la ~½ pagină: tabelul N1–N5 mutat în §4.3.
+7. **ChatGPT** nu mai e prezentat ca funcțional: scrisorile (A, B, C), Anexa 3 §1.1/§1.4/§3.5/SWOT/§4.1/§4.3 și Anexa 16 §1.3/§1.5 spun „Claude, cu contul sau cheia proprie; în curând și ChatGPT, cu cheie proprie — în lucru”. H3, N3 și P6/P7 rămân ținte de cercetare.
+8. **Anexa 3 §2.2:** activitatea CD SOUL a fost realizată de fondator din 24.09.2026 și e transferată prin cesiune; ARTEMIS o continuă (CAEN 7210 de adăugat). Aceeași formulare în `02` (3.2a).
+9. **Linia 18 împărțită:** 18a SaaS (API AI pentru teste + CAD, 3.800 €) și 18b infrastructură cloud de test în UE (1.200 €, folosită doar în validare) — totalul neschimbat; întrebare la helpdesk în `04` Pasul 2.
 
 ## 1. Scor pe subcriterii (evaluarea draft-urilor, nu a dosarului complet)
 
-Legendă: **Complet** = textul acoperă tot ce cere grila · **Parțial** = conținutul există, dar punctajul depinde de un document sau de un nume care lipsește · **0** = nu se poate puncta încă.
+Legendă: **Complet** = textul acoperă tot ce cere grila · **Parțial** = punctajul depinde de un document sau de un nume care lipsește · **0** = nu se poate puncta încă.
 
 ### 1. Contribuția la OS 1.1 (40)
-
-| Sub | Max | Unde în draft | Stare | Motiv / ce lipsește | Estimare |
-|---|---|---|---|---|---|
-| 1.1 RIS3 (≥ 2 domenii) | 5 | A3 antet + §4.1 (bifate TIC și SCI, argumentare pe O/A/R); A16 date generale + §1.3 | **Complet*** | *Subdomeniile exacte din RIS3 BI sunt încă placeholder (Cl, după descărcarea strategiei). Aceeași formulare trebuie pusă și în CF | 5 |
-| 1.2 Relevanța problemei | 15 | A3 §1.1, §1.4, §3.1, §3.3; A16 §1.1–1.5, §2 | **Complet** | Problemă europeană cu surse cu link și dată (Eurostat, IDC, TechCrunch, Axios, The Register, EUR-Lex), 11 lucrări 2021–2025 cu DOI verificate prin Crossref/arXiv, tabelul N1–N5 cu ținte măsurabile. Riscul rămâne subiectivitatea evaluatorului: punctajul ține de D8 (dovezile pe hardware) | 10–15 |
-| 1.3 Sediu în BI ≤ 31.12.2025 | 5 | A3 §2.1 (adresă = placeholder) | **Parțial** | se dovedește prin certificatul constatator, nu prin text | 5 dacă data e OK |
-| 1.4 Publicare OA | 10 | A3 §6.2; A16 §6.4 + §5.4 (R4) + bugetul (linia 21, APC 3.388 €) | **Complet*** | APC bugetat, OA peer-review + Zenodo, calendar IP (≤ L5/L6) → trimitere ≤ L20. *Revista țintă nu e încă numită (placeholder Cl + captura paginii de APC) | 10 |
-| 1.5 Economie circulară | 5 | A3 §4.3 (tabelul EC) + §3.4; A16 §1.5, P10, H5, [10–11] | **Complet** | principiile sunt aplicate produsului și verificate prin P10 (înlocuirea bateriei ≤ 5 min), raportul de dezasamblare și OTA | 5 |
+| Sub | Max | Stare | Ce lipsește | Estimare |
+|---|---|---|---|---|
+| 1.1 RIS3 (≥ 2 domenii) | 5 | **Complet*** | *subdomeniile exacte din RIS3 BI (Cl) | 5 |
+| 1.2 Relevanța problemei | 15 | **Complet** | punctajul real ține de dovezile pe hardware (D8) | 10–15 |
+| 1.3 Sediu în BI ≤ 31.12.2025 | 5 | **Complet** | firma e înregistrată la 17.12.2025 în Sector 3; se dovedește prin certificatul constatator (≤ 30 de zile) | 5 |
+| 1.4 Publicare OA | 10 | **Complet*** | *revista țintă nenumită încă (Cl + captura APC) | 10 |
+| 1.5 Economie circulară | 5 | **Complet** | – | 5 |
 
 ### 2. Calitatea documentației (37)
-
-| Sub | Max | Unde | Stare | Motiv | Estimare |
-|---|---|---|---|---|---|
-| 2.1a Nevoie de piață + grup țintă | 2 | A3 §3.1, §3.2 (4 segmente cuantificate [E]) + grupul țintă | **Complet** | fiecare cifră de piață are link și dată; dimensiunea adresabilă e o estimare declarată | 2 |
-| 2.1b Etapele de realizare | 2 | A3 §4.3: tabelul A0–A8, Gantt L1–L24, dependențe, milestone-uri | **Complet** | – | 2 |
-| 2.1c Poziționare competitivă | 2 | A3 §3.3 (9 competitori, cu țară, soluție, avantaj, surse), §3.5 (preț, canale, promovare, obiective), §3.6 SWOT | **Complet** | – | 2 |
-| 2.1d IP | 5 | A3 §6.2 (plan în 9 pași: TMview, design UE ≤ L5, marcă ≤ L6, brevetabilitate L12–L18, secret comercial, cesiune, „întâi protecția, apoi publicarea”), bugetul liniilor 19–20 | **Complet** | demersuri concrete, cu termene și costuri. Mai puternic dacă depunem căutarea TMview/DesignView și, eventual, marca prin SME Fund | 5 |
-| 2.1e Riscuri + eșec de cercetare | 4 | A3 §6.4 (R1–R12; R1 = eșec de cercetare, poarta IE2, Anexa 17, activele TRL 5 după poartă); §1.3 | **Complet** | – | 4 |
-| 2.2a Încadrarea liniilor + praguri | 2 | A3 §4.7 (sinteza bugetului + verificarea pragurilor), §4.5–4.7 | **Complet*** | *Se reverifică pe Anexa 20 finală (plafoane) și la helpdesk (CNC/PCBA ca „servicii echivalente”) | 1–2 |
-| 2.2b ≥ 2 surse pe linie | 3 | – (Anexa 19 + oferte) | **0 azi** | nu ține de aceste draft-uri: lipsesc ofertele. Notă de sursă unică pentru taxele EUIPO | 0 → 3 |
-| 2.2c Salarii ≤ HG 1188 | 2 | A3 §5.2–5.3 (categoria HG, plafonul și tariful pe fiecare rând; CAM separat) | **Complet** | 34/35 · 25/35 · 12/15 · 18/50 €/h | 2 |
-| 2.3a Problemă, ipoteză, obiective | 3 | A16 §1.1 (ipoteză „dacă…, atunci…” cu cifre, falsificabilă), §1.4 O1–O4, §6.1 H1–H5 | **Complet** | – | 3 |
-| 2.3b TRL 3 cu dovezi | 2 | A16 §2.1–2.4 (D1–D7 existente, D8 + X1–X8 „în curs”) | **Parțial** | fără raportul de laborator pe placa 2.8C, evaluatorul vede doar teste software + simulator | 1 → 2 după X1–X8 |
-| 2.3c Activități TRL 4–5, metodologie | 3 | A16 §3.1–3.3 (5 etape, P1–P11 cu metodă, baseline, praguri TRL 4/5, mediu), mediul relevant (Anexa 18), etica | **Complet** | – | 3 |
-| 2.3d Resurse pentru TRL superior | 3 | A16 §4.1–4.2; A3 §2.5, §4.4 | **Parțial** | resursele sunt descrise complet, dar grila cere documente: scrisori de la UPB/IMT și de la laboratorul EMC, oferte | 1,5 → 3 |
-| 2.3e Plan de lucru | 2 | A16 §5.1–5.4 (A1–A8 cu TRL, livrabile, milestone-uri; Gantt; 11 livrabile cu responsabil) | **Complet** | – | 2 |
-| 2.3f Ipoteze, indicatori, rezultate | 2 | A16 §6.1–6.3 (H1–H5; I1–I14 cu UM, țintă, metodă; R1–R5 cu baseline → țintă) | **Complet** | – | 2 |
+| Sub | Max | Stare | Ce lipsește | Estimare |
+|---|---|---|---|---|
+| 2.1a Piață + grup țintă | 2 | Complet | – | 2 |
+| 2.1b Etape | 2 | Complet | – | 2 |
+| 2.1c Poziționare | 2 | Complet | – | 2 |
+| 2.1d IP | 5 | Complet* | *depozitul public din 24.09.2026: designul MĂRGĂRITAR înainte de 24.09.2027; mai puternic cu căutarea TMview/DesignView atașată | 4–5 |
+| 2.1e Riscuri + eșec de cercetare | 4 | Complet | – | 4 |
+| 2.2a Încadrarea liniilor + praguri | 2 | Complet* | *reverificare pe Anexa 20 finală și la helpdesk (CNC/PCB) | 1–2 |
+| 2.2b ≥ 2 surse pe linie | 3 | **0 azi** | ofertele | 0 → 3 |
+| 2.2c Salarii ≤ HG 1188 | 2 | Complet | – | 2 |
+| 2.3a Problemă, ipoteză, obiective | 3 | Complet | – | 3 |
+| 2.3b TRL 3 cu dovezi | 2 | **Parțial — risc de eligibilitate** | placa e comandată, netestată; lipsesc X1–X8 + video pe placa reală. Fără D8, TRL 3 nu poate fi atestat (respingere) | 1 → 2 |
+| 2.3c Activități TRL 4–5 | 3 | Complet | – | 3 |
+| 2.3d Resurse pentru TRL superior | 3 | **Parțial** | scrisori de la laborator universitar/EMC, oferte | 1,5 → 3 |
+| 2.3e Plan de lucru | 2 | Complet | – | 2 |
+| 2.3f Ipoteze, indicatori | 2 | Complet | – | 2 |
 
 ### 3. Capacitatea de implementare (9)
-
-| Sub | Max | Unde | Stare | Motiv | Estimare |
-|---|---|---|---|---|---|
-| 3.1 Echipa nominalizată | 5 | A3 §5.2 (cerințele de profil sunt scrise; numele = placeholder) | **0 azi** | coordonatorul (≥ 5 ani / doctor) și inginerul (≥ 2 ani) trebuie nominalizați, cu CV + dovezi, înainte de depunere | 0 → 5 |
-| 3.2a Experiența CDI a firmei | 2 | A3 §2.3 (D1–D8), A16 §2.3 | **Parțial** | dovezile există, dar cer „Raportul tehnic Activitatea CDI SOUL 2026” semnat, cu anexe (git, loguri de test) | 1–2 |
-| 3.2b Încă un membru cu experiență CDI | 2 | A3 §1.3, §5.3 (Andu) | **Parțial** | trebuie CV-ul lui Andu cu activitatea CD SOUL documentată sau un al doilea inginer | 1–2 |
+| Sub | Max | Stare | Ce lipsește | Estimare |
+|---|---|---|---|---|
+| 3.1 Echipa nominalizată | 5 | **0 azi** | coordonator (≥ 5 ani / doctor) + inginer (≥ 2 ani), cu CV și dovezi | 0 → 5 |
+| 3.2a Experiența CDI a firmei | 2 | **Parțial** | firmă înregistrată la 17.12.2025, CAEN principal de publicitate; avem doar dovezile SOUL din sept.–oct. 2026 (raport tehnic semnat + anexe) | 1 |
+| 3.2b Încă un membru cu experiență CDI | 2 | Parțial | CV-ul lui Andu cu activitatea CD SOUL sau un al doilea inginer | 1–2 |
 
 ### 4. Sustenabilitate și teme orizontale (14)
-
-| Sub | Max | Unde | Stare | Motiv | Estimare |
-|---|---|---|---|---|---|
-| 4.1 Strategie post-PoC (5 elemente) | 5 | A3 §6.1 (4 etape TRL 6→9, cerințe, perioade, surse de finanțare, punct de pornire = R2), §6.3 (proiecție pe 5 ani + 7 ipoteze + scenariu prudent), §5.4 | **Complet** | (i) traseul TRL ✓ (ii) modelul de business ✓ (iii) sursele ✓ (iv) 5 ani ✓ (v) legătura cu R2 ✓. Contabilul trebuie să completeze rândul „alte venituri” | 5 |
-| 4.2 ≥ 2 scrisori valide | 4 | `Scrisoare_de_intentie_MODEL.docx` (toate cele 7 elemente, bifate în tabelul de control) | **0 azi** | modelul e gata; scrisorile trebuie semnate de ≥ 2 entități distincte, datate cu ≤ 6 luni înainte de depunere | 0 → 4 |
-| 4.3a Tânăr ≤ 24 ani în CD | 3 | A3 §5.1, §5.2 (studentul, A3/A5/A7) | **Parțial** | trebuie nominalizat, cu adeverință de student 2026–2027 + CIM/angajament + fișă de post | 0 → 3 |
-| 4.3b Măsură suplimentară | 2 | A3 §5.1 (panelul TRL 5 cu ≥ 40 % femei / ≥ 3 persoane peste 55 de ani / ≥ 2 persoane cu dizabilități + testul de accesibilitate cu raport public) | **Complet** | se anexează politica internă semnată și, ideal, scrisoarea asociației | 2 |
+| Sub | Max | Stare | Ce lipsește | Estimare |
+|---|---|---|---|---|
+| 4.1 Strategie post-PoC | 5 | Complet | contabilul completează „alte venituri” | 5 |
+| 4.2 ≥ 2 scrisori valide | 4 | **0 azi** | scrisorile semnate (modelul e gata) | 0 → 4 |
+| 4.3a Tânăr ≤ 24 ani | 3 | Parțial | studentul + adeverința 2026–2027 | 0 → 3 |
+| 4.3b Măsură suplimentară | 2 | Complet | politica internă semnată | 2 |
 
 ### Total
-
 | | 1 (40) | 2 (37) | 3 (9) | 4 (14) | **Total** |
 |---|---|---|---|---|---|
-| **Draft-urile azi** (placeholder-ele netratate, fără D8, oferte, echipă, scrisori) | 35–40 | 30,5–31,5 | 2–4 | 7 | **≈ 75–83** |
-| **Cu tot ce e listat mai jos** (X1–X8, oferte, echipă, scrisori, student, revista, subdomeniile RIS3) | 38–40 | 35–37 | 7–9 | 14 | **≈ 94–100** (realist ~92) |
+| **Draft-urile azi** | 35–40 | 30,5–31,5 | 2–3 | 7 | **≈ 75–82** |
+| **Cu tot ce e în `04-CE-TREBUIE-SA-FACA-ANDU.md`** | 37–40 | 33–36 | 6–8 | 13–14 | **≈ 89–98** (realist ~91, cu subiectivitatea evaluatorilor) |
 
-**Pe scurt:** textul acoperă integral 19 din cele 26 de subcriterii. Celelalte 7 (2.2b, 2.3b, 2.3d, 3.1, 3.2, 4.2, 4.3a) depind de **documente și nume**, nu de redactare.
+**Pe scurt:** textul acoperă integral 19 din 26 de subcriterii. Celelalte 7 (2.2b, 2.3b, 2.3d, 3.1, 3.2, 4.2, 4.3a) depind de **documente și nume**, nu de redactare.
 
----
-
-## 2. Lista completă a placeholder-elor și cine le completează
+## 2. Placeholder-ele rămase și cine le completează
 
 **A** = Andu · **Ct** = contabilul · **E** = expertul · **Cl** = Claude · **M** = membrii echipei · **F** = parteneri/furnizori · **Av** = avocat
 
-### Anexa 3 — Plan de afaceri (61 de marcaje)
-
+### Anexa 3 (54 de marcaje)
 | Unde | Placeholder | Cine |
 |---|---|---|
-| antet, §2.1 | CUI, nr. Reg. Com. (J40/…), data înființării (din certificatul constatator) | A / Ct |
-| antet, §2.1 | domeniul RIS3: subdomeniile exacte din RIS3 BI 2021–2027 | Cl (după descărcarea de pe adrbi.ro) |
 | antet, semnătura | data completării / data semnării | A |
-| §2.1 | adresa sediului, sectorul, locația de implementare (dacă diferă) | A |
-| §2.1 | codul CAEN principal; codul CAEN de CD autorizat la locul de implementare | Ct |
-| §2.1 | capitalul social, structura acționariatului, numărul mediu de angajați | Ct / A |
-| §2.1 | categoria IMM (Anexa 7, inclusiv firmele legate) | Ct |
-| §2.1, declarația | numele complet al reprezentantului legal (Andu) | A |
+| §2.1 | locul de implementare (apartamentul e adecvat sau spațiu închiriat în BI) | A |
+| §2.1 | codurile CAEN de adăugat (verificare pe CAEN Rev.3) | Ct |
+| §2.1 | capital social, acționariat, număr mediu de angajați, categoria IMM (Anexa 7) | Ct / A |
+| §2.1, declarația | numele complet al reprezentantului legal | A |
 | §1.3, §2.4 | confirmarea „fără proiecte anterioare cu finanțare europeană” | A |
-| §1.3, §5.2 | numele coordonatorului tehnic/științific, al inginerului embedded și al studentului + CV/diplome/adeverință | A + M |
-| §2.2 | 2–3 fraze cu cifre despre KREA/MundiShop (ani, clienți, echipă) | A |
-| §2.3 | semnarea cesiunii (model în dosar) | A (+ Av) |
-| §2.3 (D1) | exportul logurilor de test + hash-ul git la data depunerii | A + Cl |
-| §2.5 | organizația de cercetare (UPB ETTI / IMT / ICI), laboratorul EMC/RF, asociația persoanelor cu dizabilități, expertul (nume, afiliere); scrisori/oferte „de obținut” | A + F |
-| §4.1 | citarea exactă a subdomeniilor RIS3 BI | Cl |
-| §4.4 | adresa, suprafața (mp), dreptul de folosință (proprietate/chirie/comodat) | A |
-| §5.1 | semnarea politicii de egalitate de șanse; verificarea scutirii de impozit CD | A; Ct |
-| §5.1 | nominalizarea studentului + adeverința 2026–2027 | A + M |
-| §5.3 | CIM pentru administrator sau serviciu extern de management | Ct |
-| §6.2 | revista țintă OA (MDPI Electronics/Sensors sau IEEE Access) + captura paginii de APC | Cl |
-| §6.3 | rândul „alte venituri” (activitatea curentă, An 1–5) ×5; regimul fiscal | Ct |
-| §6.4 (R10) | decizia Founders 00 (fără CE/vânzare SOUL M înainte de contract) | A |
+| §1.3, §5.2, §5.3 | numele coordonatorului, inginerului, studentului + CV/diplome/adeverință | A + M |
+| §2.2 | 2–3 fraze cu cifre despre KREA/MundiShop | A |
+| §2.3 | semnarea cesiunii; licența ESP-SR | A (+ Av); Cl |
+| §2.3 (D1) | exportul logurilor + hash-ul git la depunere | A + Cl |
+| §2.5 | organizația de cercetare, laboratorul EMC/RF, asociația, expertul; scrisori/oferte | A + F |
+| §4.1 | subdomeniile RIS3 BI | Cl |
+| §4.4 | suprafața, dreptul de folosință | A |
 | §4.7 | spațiul de minimis în RegAS | Ct |
+| §5.1 | politica de egalitate de șanse; scutirea de impozit CD | A; Ct |
+| §5.3 | CIM pentru administrator sau serviciu extern | Ct |
+| §6.2 | decizia despre depozitul public; revista OA + captura APC (data primei publicări e completată din git: 24.09.2026) | A; Cl |
+| §6.3 | „alte venituri” An 1–5; regimul fiscal | Ct |
 
-### Anexa 16 — Raport științific (69 de marcaje)
-
+### Anexa 16 (67 de marcaje)
 | Unde | Placeholder | Cine |
 |---|---|---|
-| date generale | CUI / Reg. Com.; tipul de expert (independent sau colectiv) | A / Ct; A + E |
-| identificarea expertului, semnături | nume, afiliere, domeniu, dovezile a) ≥ 5 ani b) ≥ 2 publicații cu DOI c) certificări; semnătura și data | **E** |
-| §1.2 | validarea selecției bibliografice (și eventuale surse proprii ale expertului) | **E** |
+| date generale | tipul de expert (independent sau colectiv) | A + E |
+| identificarea expertului, semnături | nume, afiliere, domeniu, dovezile a) b) c); semnătura și data | **E** |
+| §1.2 | validarea bibliografiei | **E** |
 | §1.3 | subdomeniile RIS3 BI | Cl |
-| §2.2, §2.3 (D8), §6.3 (R1, R2), X1–X8 (×10 „în curs”) | rezultatele experimentelor X1–X8 și Raportul de laborator TRL 3 datat și semnat | **A + Cl** (T−6 … T−2 săpt.) |
-| §2.3 (D1), §7.2 | exportul git + hash-ul la data depunerii | A + Cl |
-| §2.3 | cesiunea semnată înainte de depunere | A (+ Av) |
-| §4.1 | dreptul de folosință al spațiului; laboratorul EMC/RF acreditat (denumire) | A |
-| §4.1, §4.2 (×5 „anexa nr. …”, ×4 „de anexat”) | UPB ETTI / IMT / ICI, laboratorul EMC, living lab-ul, asociația, firma de software/retailerul + documentele lor | A + F |
-| §4.2, §5.4 (×9 „[Nume]”) | numele coordonatorului, inginerului, studentului | A + M |
-| §6.4 | revista țintă + captura paginii de APC | Cl |
-| VIII | semnătura solicitantului (Andu) + data | A |
+| §2.2, §2.3 (D8), §6.3, X1–X8 (×10 „în curs”) | rezultatele X1–X8 pe placa reală + raportul TRL 3 + video | **A + Cl** |
+| §2.3 (D1), §7.2 | exportul git + hash-ul | A + Cl |
+| §2.3 | cesiunea semnată | A (+ Av) |
+| §4.1–4.2 | spațiul; laboratorul EMC/RF; partenerii + documentele lor | A + F |
+| §4.2, §5.4 (×9 „[Nume]”) | coordonator, inginer, student | A + M |
+| §6.4 | revista țintă | Cl |
+| VIII | semnătura solicitantului + data | A |
 
-### Scrisoare_de_intentie_MODEL
+### Modele
+- **Scrisoarea de intenție:** se completează de fiecare emitent (antet, număr, dată ≤ 6 luni înainte de depunere, reprezentant legal, CUI, contact, semnătură). Datele ARTEMIS sunt deja completate.
+- **Cesiunea:** datele lui Andu (CNP, CI, domiciliu), data (anterioară depunerii), hash-urile commit-urilor, ce e deja public open source (SOUL Bridge, MIT), licențele dependențelor Python/Node și ESP-SR. **Av** verifică cele 5 puncte din caseta roșie.
 
-Se completează de fiecare emitent: antetul, numărul și data (≤ 6 luni înainte de depunere), numele și funcția reprezentantului legal, CUI, e-mail, telefon, semnătura. Pe variante: A (magazinul, numărul de prototipuri expuse, piața de distribuție, comanda orientativă), B (laboratorul, domeniul de expertiză, facultatea, lunile L4–L22), C (numărul de utilizatori-pilot, achiziția orientativă). **Cine:** A obține scrisorile; F le semnează. Țintă: 3–4 scrisori de la entități distincte.
-
-### Declaratie_cesiune_drepturi_MODEL
-
-Datele de identificare ale lui Andu (CNP, CI, domiciliu), datele ARTEMIS (sediu, J40, CUI), data (**anterioară depunerii**), hash-urile commit-urilor din Anexa 1, domeniile și conturile, licențele dependențelor Python. **Av** verifică cele 5 puncte din caseta roșie: operele create cu asistență AI, desenul/modelul nedepus, semnul „SOUL” neînregistrat, eventuala hotărâre AGA, data certă. Semnează A (în nume propriu și pentru ARTEMIS).
-
----
-
-## 3. Ce mai trebuie făcut pentru punctajul maxim (în ordinea impactului)
-
-1. **X1–X8 pe placa 2.8C + Raportul de laborator TRL 3** → 2.3b (+1), 1.2 (credibilitate), 3.2a. După ce apar valorile, Claude le trece în A16 §2.3/§6.3 și în baseline-ul P1–P9.
-2. **Echipa nominalizată** (coordonator ≥ 5 ani, inginer ≥ 2 ani, student ≤ 24 ani) → 3.1 (+5), 3.2b (+2), 4.3a (+3).
-3. **≥ 2 (ideal 3–4) scrisori semnate** după model → 4.2 (+4). Scrisoarea de la laboratorul universitar ajută și la 2.3d.
-4. **Oferte: 2 pe fiecare linie + nota de sursă unică pentru EUIPO** → 2.2b (+3).
-5. **Expertul**: citește A16, completează blocul de identificare, validează bibliografia, semnează.
-6. **Claude:** subdomeniile RIS3 BI, revista OA cu captura paginii de APC, actualizarea `03-NUCLEU` (61/61 teste, proiecția pe 5 ani), aceleași texte în CF.
-7. **Contabilul:** §2.1, regimul fiscal, „alte venituri”, RegAS, CIM-ul administratorului.
-
-*Scripturile de generare (reproductibile, de rulat după orice schimbare din nucleu) sunt în scratchpad-ul sesiunii: `work/data.py` (datele din nucleu), `build_a3.py`, `build_a16.py`, `build_models.py`, `proj.py` (proiecția). Nu fac parte din vault.*
+## 3. Cerințe din ghid pe care încă nu le îndeplinim
+1. **Dovezile TRL 3 pe hardware** (Anexa 16 §II; Grila 2.3b): placa e comandată, netestată. **Fără D8, TRL 3 nu poate fi atestat** — poarta `D8_DONE` blochează semnarea Anexei 16.
+2. **Expertul** eligibil (Decizia CM 54/29.09.2026: a + (b sau c); ținta sigură a + b + c) care semnează Anexa 16 — lipsă (fără el: respingere).
+3. **Echipa nominalizată** (Grila 3.1, 4.3a) și **CV + fișe de post** pentru toate pozițiile (§7.4 poz. 4).
+4. **≥ 2 surse pe linie** (Anexa 19 + oferte) — Anexa 19 nu o avem încă.
+5. **≥ 2 scrisori de intenție** valide (Grila 4.2).
+6. **Locația adecvată** (§5.2.1 XII): sediul e un apartament — de lămurit.
+7. **Codurile CAEN** pentru CD (Anexa 3 §2.1 le cere) — de adăugat.
+8. **Verificările firmei:** RegAS/de minimis, IMM cu firmele legate, zero datorii, nicio schimbare de asociați după 03.06.2026.
+9. **Cesiunea drepturilor** semnată înainte de depunere.
+10. **Anexele 19, 20 și ghidul final** nu sunt publicate; bugetul se reverifică pe ele (inclusiv linia 18b).
+11. **Designul MĂRGĂRITAR** se depune înainte de 24.09.2027 (depozitul GitHub e public din 24.09.2026), în afara bugetului.

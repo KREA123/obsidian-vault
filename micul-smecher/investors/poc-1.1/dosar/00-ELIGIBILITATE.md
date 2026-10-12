@@ -3,7 +3,7 @@ tip: finanțare
 proiect: SOUL-PoC
 apel: PR BI P1/1.1/1/2026 — Proof of Concept
 solicitant: ARTEMIS DIGITAL S.R.L.
-actualizat: 2026-09-25
+actualizat: 2026-10-12
 sursa: Ghidul solicitantului, versiunea 03.06.2026 (94 p.) + Anexele 3, 10, 16, 18
 ---
 
@@ -15,6 +15,33 @@ Legendă stare: ✅ îndeplinit sau sub controlul nostru · ❓ trebuie verifica
 
 > Nimeni nu poate garanta finanțarea. Matricea de mai jos elimină riscul de **respingere**. Punctajul se tratează în `02-PUNCTAJ.md`.
 
+## Pe scurt (12.10.2026): putem depune în decembrie? Avem șanse mari?
+
+**Decembrie: nu e sigur.** Ghidul pe care îl avem e cel **din consultare** (03.06.2026). Datele de deschidere și de închidere sunt **goale** (§4.3.1–4.3.2 p. 34). Ghidul final **nu era publicat** la 12.10.2026 (verificat în nota „Finanțare — toate sursele pentru SOUL”). Regula din draft: **30 de zile de pregătire** după publicarea ghidului final, apoi **90 de zile de depunere** (§3.1 p. 21). Draftul scrie că apelul se închide „......2026” (p. 34), iar calendarul ADR BI anunțase noiembrie 2026. Estimarea noastră: fereastra reală e între **decembrie 2026 și februarie 2027** [neverificat]. Deci:
+- **Regula de urmărit [estimare]:** cu cele 30 de zile de pregătire, ghidul final trebuie să apară **cel târziu pe ~1 decembrie** (MySMIS s-ar deschide ~31 decembrie). **Realist**, ca să depunem **confortabil** în decembrie, trebuie să apară **până la începutul lui noiembrie**. Aceeași regulă e în `04` și în nota din vault „Finanțare — PR BI PoC 1.1 pentru SOUL”.
+- **Dacă** apare mai târziu, depunem când se deschide (cel mai probabil ianuarie–februarie 2027 [estimare]). Dosarul trebuie să fie gata **înainte**, ca să depunem în prima săptămână.
+- Atenție: dacă evaluarea trece în 2027, contabilul trebuie să depună **imediat** bilanțul pe 2026, altfel evaluarea se suspendă (§8.4 p. 79).
+
+**Șanse „foarte mari”: nu putem promite.** Ce știm sigur:
+- Bugetul apelului e **5.000.000 €** (§3.3 p. 22). La ~191 k€ pe proiect intră **~25–26 de proiecte**.
+- Pragul minim e **70 de puncte**. Peste prag, câștigă cei cu punctajul cel mai mare (§8.1, §8.4).
+- Firma și proiectul **se încadrează pe fond** (micro-IMM din București, înregistrată pe 17.12.2025, TRL 3 → 5). **Dar** TRL 3 e azi doar declarat: fără măsurătorile pe placa reală (D8, X1–X8), expertul nu are pe ce să-l ateste, iar un TRL sub 3 înseamnă respingere. Anexa 16 nu se semnează până la D8.
+- **Azi** dosarul ar lua ≈ 75–82 de puncte (vezi `draft/REVIEW.md`): trece de 70, dar probabil **nu** intră în primele ~25.
+- Cu tot ce e în `04-CE-TREBUIE-SA-FACA-ANDU.md` (expert, coordonator, scrisori, oferte, video TRL 3 pe placă) ajungem la ≈ 90+ (estimare). Atunci șansele sunt **bune**, dar nu garantate: nu știm câte proiecte vin și cât de bune sunt.
+
+## Datele firmei (certificat ONRC + ANAF, 12.10.2026)
+
+| Câmp | Valoare | Ce înseamnă pentru dosar |
+|---|---|---|
+| Denumire | ARTEMIS DIGITAL S.R.L. | solicitantul |
+| CUI / Reg. Com. / EUID | 53145290 / J2025098748009 / ROONRC.J2025098748009 | intră în Anexa 3, Anexa 16, scrisori, cesiune |
+| Data înregistrării | **17.12.2025** | ✅ înainte de 31.12.2025 → **5 puncte** la Grila 1.3 (dacă sediul nu s-a mutat de atunci) |
+| Sediu social | Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București | ✅ în Regiunea BI. ⚠ e un **apartament**: vezi P18 (locația trebuie să fie „adecvată”) |
+| CAEN principal | 7311 (agenții de publicitate) | ghidul cere RIS3 argumentat pe proiect, **nu pe CAEN** (§5.2.1 XIV p. 48). Anexa 3 cere însă „coduri CAEN relevante proiect” |
+| CAEN de adăugat | 2640, 6210, 7210, 7411, 4740 (+ 4791 pentru vânzarea online) | **înainte de depunere**, cu contabilul. Lista **nu e reverificată pe CAEN Rev.3**; la 4791 verificăm că mai înseamnă vânzare online |
+| TVA | **neplătitoare** (ANAF, 12.10.2026) | ✅ TVA e eligibilă în buget (C12) |
+| Vechime | sub 1 an | nu e o condiție de eligibilitate; slăbește doar Grila 3.2a (experiența CDI a firmei) |
+
 ---
 
 ## 0. ATENȚIE: ghidul pe care îl avem este versiunea de CONSULTARE
@@ -23,9 +50,10 @@ Ghidul datat 03.06.2026 este **versiunea supusă consultării publice** (consult
 
 | # | Ce lipsește sau e contradictoriu în draft | Unde | Ce poate schimba ghidul final | Ce facem |
 |---|---|---|---|---|
+| 0 | **Ce s-a schimbat deja:** criteriile de selecție PoC 1.1 au fost aprobate prin **Decizia CM PR BI nr. 54 din 29.09.2026** (Anexa 1). Criteriul de eligibilitate II pentru expert: **≥ 5 ani** de experiență relevantă **plus** (**≥ 2 articole** în ultimii 10 ani **SAU** o calificare/certificare/rezultat relevant). Ghidul din consultare cerea a + b + c cumulativ | https://regiobucuresti-ilfov.ro/decizii-cm-pr-bi-2021-2027 (verificat pe document, nota din vault „Finanțare — expertul științific pentru PoC 1.1”) | ghidul final preia, probabil, criteriile aprobate | ținta sigură rămâne **a + b + c**; minimul acceptat e **a + (b sau c)**; reverificăm pe ghidul final |
 | 1 | Numărul și data **Schemei de ajutor de minimis** (Anexa 15) sunt goale („aprobată prin Decizia ......”) | §1.1 p. 6; §2.3.3 p. 21; §3.2 p. 22; §3.13 p. 28 | condiții suplimentare în schemă (ex. sectoare excluse, cumul, durată) | citim Anexa 15 în ziua publicării |
 | 2 | Luna și **cursul InforEuro** sunt goale | §3.3 p. 22; §5.2.1 VIII p. 45; §5.4 p. 62 | valoarea maximă în lei (200.000 € × curs) | păstrăm bugetul la **≈ 191 k€**, adică ~4 % rezervă de curs |
-| 3 | **Datele de deschidere/închidere** MySMIS sunt goale | §4.3.1–4.3.2 p. 34 | Draftul spune 30 de zile de pregătire + 90 de zile de depunere (§3.1 p. 21). Calendarul ADR BI anunță **deschidere și închidere în noiembrie 2026**, deci fereastra poate fi mult mai scurtă | dosar complet **înainte** de deschidere; depunem în prima săptămână |
+| 3 | **Datele de deschidere/închidere** MySMIS sunt goale | §4.3.1–4.3.2 p. 34 | Draftul spune 30 de zile de pregătire + 90 de zile de depunere (§3.1 p. 21). Calendarul ADR BI anunțase noiembrie 2026; la 12.10.2026 ghidul final **nu e publicat**, deci fereastra probabilă e dec. 2026 – feb. 2027 [neverificat] | dosar complet **înainte** de deschidere; depunem în prima săptămână |
 | 4 | §4.1 p. 33 spune că data deschiderii = data publicării ghidului aprobat, iar §3.1 p. 21 și §4.2 p. 33 spun că urmează 30 de zile de pregătire | p. 21 vs p. 33 | calendar real | la fel ca rândul 3 |
 | 5 | Grila 2.3 trimite la „Raport Științific TRL (model obligatoriu **Anexa 17**)”, dar ghidul (§7.4 p. 68, §14 p. 93) numește modelul **Anexa 16**. Anexa 17 este raportul de eșec de cercetare | Grila 2.3 | renumerotare | folosim modelul primit (Anexa 16) și verificăm numerotarea finală |
 | 6 | Numerotare dublă „7.5” (aspecte administrative + documente la contractare) | p. 71 | doar editorial | – |
@@ -44,14 +72,14 @@ Ghidul datat 03.06.2026 este **versiunea supusă consultării publice** (consult
 | # | Condiție | Citare | Ce trebuie să dovedească ARTEMIS | Stare | Documentul exact | Când se verifică |
 |---|---|---|---|---|---|---|
 | S1 | Societate constituită în baza Legii 31/1990 (SRL) | §5.1.1 I a), p. 35 | SRL înregistrat la ONRC | ✅ (SRL) | Certificat constatator ONRC; act constitutiv consolidat (la contractare) | depunere + contractare |
-| S2 | **IMM** (micro/mică/mijlocie) conform Legii 346/2004 și Anexei I la Reg. 651/2014, **inclusiv întreprinderile partenere/legate** | §5.1.1 I c), p. 36; §3.4 p. 22 (Anexele 7, 7.1) | < 250 salariați, CA ≤ 50 M€ și/sau active ≤ 43 M€, pe **ultimele 2 exerciții financiare consecutive** anterioare anului depunerii (p. 36). Se agregă firmele în care Andu sau ARTEMIS au > 25 % | ❓ probabil micro, dar trebuie verificate **firmele legate prin Andu** | **Anexa 7** Declarație IMM + calculul pentru întreprinderi partenere/legate; bilanțuri F10/F20/F30/F40 | depunere; condiția e obligatorie **până la semnarea contractului** (p. 35) |
-| S3 | Anii de referință pentru IMM | §5.1.1, p. 36 | Depunere în **2026** → exercițiile **2024 + 2025**. Depunere în **2027** → **2025 + 2026**, iar bilanțul 2026 nu e depus înainte de ~mai 2027. Evaluarea se **suspendă** până la depunerea bilanțului dacă procesul trece într-un nou exercițiu (§8.4 p. 79) | ❓ | – | – |
-| S4 | Sediu social **sau** sediu secundar în Regiunea București-Ilfov | §5.1.1 I b), p. 36; §3.7 ii | Sediul ARTEMIS e în București. Condiția trebuie îndeplinită cel târziu **la prima plată** (p. 35) | ✅ probabil (❓ confirmare pe certificat) | Certificat constatator | prima plată |
+| S2 | **IMM** (micro/mică/mijlocie) conform Legii 346/2004 și Anexei I la Reg. 651/2014, **inclusiv întreprinderile partenere/legate** | §5.1.1 I c), p. 36; §3.4 p. 22 (Anexele 7, 7.1) | < 250 salariați, CA ≤ 50 M€ și/sau active ≤ 43 M€, pe **ultimele 2 exerciții financiare consecutive** anterioare anului depunerii (p. 36). Se agregă firmele în care Andu sau ARTEMIS au > 25 % | ❓ probabil micro (firmă nouă, 17.12.2025), dar trebuie verificate **firmele legate prin Andu** | **Anexa 7** Declarație IMM + calculul pentru întreprinderi partenere/legate; bilanțuri F10/F20/F30/F40 | depunere; condiția e obligatorie **până la semnarea contractului** (p. 35) |
+| S3 | Anii de referință pentru IMM | §5.1.1, p. 36 | Firma există din **17.12.2025**, deci are un singur exercițiu (2025, câteva zile). Depunere în **2026** → 2025 (+ estimări pentru firmă nouă, Anexa 7.1). Depunere în **2027** → 2025 + 2026, iar bilanțul 2026 se depune abia ~mai 2027. Evaluarea se **suspendă** până la depunerea bilanțului dacă procesul trece într-un nou exercițiu (§8.4 p. 79) | ❓ contabilul | Anexa 7 + bilanțul 2025 | – |
+| S4 | Sediu social **sau** sediu secundar în Regiunea București-Ilfov | §5.1.1 I b), p. 36; §3.7 ii | Sediul ARTEMIS e în București, Sector 3 (din 17.12.2025). Condiția trebuie îndeplinită cel târziu **la prima plată** (p. 35) | ✅ | Certificat constatator | prima plată |
 | S5 | **Nu** e sucursală/agenție/reprezentanță fără personalitate juridică | §5.1.1 p. 36; §5.1.2 p. 41 | persoană juridică | ✅ | Certificat constatator | depunere |
 | S6 | Un singur proiect per **întreprindere unică** în acest apel | §3.4 p. 22 | Nicio altă firmă legată de Andu nu depune alt proiect PoC | ❓ | Declarația unică | depunere |
-| S7 | **Fără „condiții artificiale”**: nicio schimbare de acționariat și/sau administratori (inclusiv fuziune, achiziție, divizare) **după data publicării ghidului în consultare** (≈ 03/04.06.2026) | §5.1.2 p. 41 + „Atenție” p. 41; §5.1.1 II A, p. 38 (modificări temporare în ultimul an pentru a evita regula celor 2 ani sau încadrarea ca legată) | ONRC: istoricul mențiunilor arată **0 modificări** de asociați/administratori după 03.06.2026 | ❓ **Andu confirmă** | Certificat constatator **cu istoric** (furnizare informații extinsă ONRC) | oricând, **inclusiv în implementare și durabilitate** (p. 41). Consecința: respingere sau reziliere |
+| S7 | **Fără „condiții artificiale”**: nicio schimbare de acționariat și/sau administratori (inclusiv fuziune, achiziție, divizare) **după data publicării ghidului în consultare** (≈ 03/04.06.2026) | §5.1.2 p. 41 + „Atenție” p. 41; §5.1.1 II A, p. 38 (modificări temporare în ultimul an pentru a evita regula celor 2 ani sau încadrarea ca legată) | ONRC: istoricul mențiunilor arată **0 modificări** de asociați/administratori după 03.06.2026 (firma e înregistrată din 17.12.2025, deci contează doar ce s-a schimbat după 03.06.2026) | ❓ **Andu confirmă** | Certificat constatator **cu istoric** (furnizare informații extinsă ONRC) | oricând, **inclusiv în implementare și durabilitate** (p. 41). Consecința: respingere sau reziliere |
 | S8 | Nu e în insolvență, faliment, reorganizare, dizolvare, lichidare, **activitate suspendată** | §5.1.1 II A, p. 37 | stare „funcțiune” | ❓ | Certificat constatator; Declarația unică | depunere → durabilitate |
-| S9 | Nu e **întreprindere în dificultate** (Reg. 651/2014): la SRL cu vechime > 3 ani, pierderile acumulate nu au „mâncat” mai mult de jumătate din capitalul social, adică **capitalurile proprii ≥ ½ din capitalul social subscris** | §1.3 Glosar p. 13; §5.1.1 II A, p. 37 | Bilanțul ultimului exercițiu (2025) arată capitaluri proprii pozitive și ≥ ½ din capitalul social | ❓ **RISC MARE**: MundiShop are pierderi (~9.700 lei/lună în notele noastre) | F10 (bilanț), rândul „Capitaluri proprii – total” | depunere (Declarația unică) + contractare |
+| S9 | Nu e **întreprindere în dificultate** (Reg. 651/2014): la SRL cu vechime > 3 ani, pierderile acumulate nu au „mâncat” mai mult de jumătate din capitalul social, adică **capitalurile proprii ≥ ½ din capitalul social subscris** | §1.3 Glosar p. 13; §5.1.1 II A, p. 37 | Regula se aplică SRL-urilor cu vechime **> 3 ani**. ARTEMIS e înregistrată la 17.12.2025, deci regula capitalurilor proprii nu i se aplică acum; rămâne doar condiția să nu fie în insolvență | ✅ probabil (contabilul confirmă; pierderile MundiShop nu mai sunt un blocaj pe acest criteriu) | F10 (bilanț), rândul „Capitaluri proprii – total” | depunere (Declarația unică) + contractare |
 | S10 | Fără ordin de recuperare a unui ajutor de stat neexecutat | p. 37 | – | ❓ (probabil ✅) | Declarația unică | depunere → contractare |
 | S11 | Nu e într-o situație incompatibilă cu ajutorul de minimis | p. 37 | vezi §5 de mai jos | ❓ | Declarația unică, Anexa 5 | – |
 | S12 | Fără condamnări definitive pentru fraudă cu fonduri UE/publice | p. 37 | – | ✅ presupus | Declarația unică | – |
@@ -71,7 +99,7 @@ Ghidul datat 03.06.2026 este **versiunea supusă consultării publice** (consult
 | # | Condiție | Citare | Ce trebuie să dovedim | Stare | Documentul exact |
 |---|---|---|---|---|---|
 | P1 | Proiectul se încadrează în Prioritatea 1, Acțiunea 1.1, OS 1.1; toate activitățile sunt eligibile | §5.2.1 I, p. 41–42 | activitățile A1–A8 mapate pe tipurile I.1–I.4 și II.1–II.5 | ✅ | CF + `03-NUCLEU` §6 |
-| P2 | **TRL de pornire minim 3** (conform Anexei 18) și **fezabilitatea atingerii TRL 5** | §5.2.1 II, p. 42; §3.6 p. 23; §5.2.2 p. 48–50 | Raport științific (Anexa 16) cu **minimum 2 dovezi** experimentale TRL 3 (Anexa 16 §II) | ❌ **dovezile pe placa fizică 2.8C lipsesc** | Anexa 16 + dosarul de dovezi TRL 3 (`03-NUCLEU` §4) |
+| P2 | **TRL de pornire minim 3** (conform Anexei 18) și **fezabilitatea atingerii TRL 5** | §5.2.1 II, p. 42; §3.6 p. 23; §5.2.2 p. 48–50 | Raport științific (Anexa 16) cu **minimum 2 dovezi** experimentale TRL 3 (Anexa 16 §II) | ❌ **dovezile pe placa fizică 2.8C lipsesc**: placa e comandată, încă netestată; trebuie filmat X1–X8 pe placa reală | Anexa 16 + dosarul de dovezi TRL 3 (`03-NUCLEU` §4) |
 | P3 | Ținta declarată este **TRL 5**. TRL 4 e acceptat doar ca rezultat intermediar în caz de eșec parțial asumat și **nu poate fi ținta declarată** | §5.2.2 p. 48 și p. 49 | obiectivele, activitățile și indicatorii duc explicit la TRL 5 | ✅ (în nucleu) | CF, Plan de afaceri, Raport științific |
 | P4 | **Cercetarea fundamentală nu e eligibilă** | §5.2.2 „Atenție” p. 49 | Formulăm activitățile ca cercetare industrială + dezvoltare experimentală (definiții §1.3 p. 10) | ✅ | CF |
 | P5 | Proiectul include **obligatoriu activități I.3** (CDI făcută de cercetătorii proprii sau prin servicii externalizate) | §5.2.2 I.3 p. 49; §5.2.4 p. 51 | echipă CDI angajată (CIM) + servicii CDI externalizate | ✅ (în nucleu) | CF, CV-uri, fișe de post |
@@ -79,7 +107,7 @@ Ghidul datat 03.06.2026 este **versiunea supusă consultării publice** (consult
 | P7 | **Nicio procedură de achiziție și niciun angajament juridic ferm** (comandă, contract, plată) pentru echipamente, servicii tehnice, CD, prototipare, testare **înainte de depunerea CF**. Excepții: consultanța pentru CF și anexe (inclusiv raportul științific și planul de afaceri) și managementul de proiect | §5.2.1 IV p. 43; §5.2.4 p. 51–52; §5.2.1 lista „NU sunt eligibile”, p. 48 | Placa 2.8C pentru dovada TRL 3 se cumpără **din bani proprii și NU intră în buget**. Nicio ofertă acceptată sau comandă pentru liniile bugetate. **Ofertele de preț** (fără comandă) sunt permise | ✅ dacă respectăm regula | Declarația unică |
 | P8 | Fără finanțare publică în ultimii 5 ani pentru același tip de activități; fără dublă finanțare pentru aceleași costuri | §5.2.1 V p. 43–44 | **Voucherul EUIPO SME Fund** sau serviciile EDIH pentru SOUL nu pot acoperi aceleași cheltuieli ca proiectul | ❓ (vezi `03-NUCLEU` §14 – IP) | Declarația unică; declarație la contractare |
 | P9 | Proiectul nu face obiectul unui aviz motivat al Comisiei (art. 258 TFUE) | §5.2.1 VI p. 44 | – | ✅ | Declarația unică |
-| P10 | Implementarea (inclusiv plățile) se încheie până la **31.12.2029** | §5.2.1 VII p. 44; §5.6 p. 63 | 24 de luni. Contractul se semnează în ≤ 180 (+45) de zile de la închiderea apelului (§8.9 p. 82). Cu închidere ≈ feb. 2027, contractul vine ≈ aug.–oct. 2027 și implementarea se termină ≈ aug.–oct. 2029 | ✅ (rezervă ~2 luni) | CF — calendar |
+| P10 | Implementarea (inclusiv plățile) se încheie până la **31.12.2029** | §5.2.1 VII p. 44; §5.6 p. 63 | 24 de luni. Contractul se semnează în ≤ 180 (+45) de zile de la închiderea apelului (§8.9 p. 82). Cu închidere ≈ feb. 2027, contractul vine ≈ aug.–oct. 2027 și implementarea se termină ≈ aug.–oct. 2029 | ✅ (rezervă ~2 luni). ⚠ Dacă apelul se închide după ~aprilie 2027, 24 de luni nu mai încap până la 31.12.2029 → scurtăm proiectul. ⚠ **IP:** randările SOUL sunt publice din 24.09.2026 (depozitul GitHub), deci grația de 12 luni pentru design expiră pe ~24.09.2027, **înainte** de contract → designul MĂRGĂRITAR se depune acum (SME Fund) sau imediat după depunerea CF, în afara bugetului (`03-NUCLEU` §14) | CF — calendar |
 | P11 | Activitățile se bifează „Precontractuală” / „Postcontractuală” | §5.2.1 VII p. 44 | A0 (consultanța CF + raportul științific) = precontractuală | ✅ | CF |
 | P12 | **Valoare nerambursabilă 50.000–200.000 €** la cursul InforEuro al lunii anterioare ghidului final | §5.2.1 VIII p. 45; §5.4 p. 62 | Nucleu: **191.308 €** eligibil = nerambursabil. Minimul e obligatoriu până la contract (p. 35) | ✅ | Buget CF |
 | P13 | Cofinanțare publică **până la 100 %** din valoarea eligibilă, în limita plafonului de minimis | §3.4 p. 22; §5.5 p. 62–63 | cerem 100 % | ✅ | Buget CF |
@@ -87,11 +115,11 @@ Ghidul datat 03.06.2026 este **versiunea supusă consultării publice** (consult
 | P15 | Caracterul durabil 3 ani (fără încetarea activității, fără mutare din regiune, fără schimbarea proprietății care dă avantaj nejustificat, fără modificare substanțială) | §3.18 p. 30–31; §5.2.1 X p. 46 | **Nu transferăm IP-ul/echipamentele SOUL într-o firmă nouă** în perioada de durabilitate | ✅ angajament | Declarația unică |
 | P16 | Principii orizontale: egalitate de șanse, gen, nediscriminare, **accesibilitate** (rezultatele trebuie să fie accesibile persoanelor cu dizabilități), DNSH | §3.16–3.19 p. 28–32; §5.2.1 XI p. 46 | măsuri concrete în CF (`03-NUCLEU` §13) | ✅ (în nucleu) | CF; Grila DNSH (Anexa 11); lista de verificare orizontale |
 | P17 | DNSH, măsuri minime la echipamente: cerințe de proiectare ecologică (Dir. 2009/125/CE) pentru calculatoare/afișaje; **RoHS** (Dir. 2011/65/UE, HG 322/2013); trasabilitatea deșeurilor DEEE (OUG 5/2015) | §3.17 p. 29–30 | Specificațiile din oferte conțin „conform ErP/ecodesign + RoHS”. Contract cu un colector autorizat pentru rebuturile de prototip | ✅ (de pus în caietele de sarcini) | CF; oferte; la implementare: procese-verbale de predare DEEE |
-| P18 | Locația în Regiunea BI și **adecvată** (liberă, cu utilități, de uzură acceptabilă, încadrată ca spațiu pentru activități economice/de cercetare). Altfel proiectul poate fi respins | §5.2.1 XII p. 46–47; §8.9 vizita pe teren p. 83–84 | Spațiu cu masă de laborator electronic, prize, internet, depozitare. **Dacă sediul e o locuință**, pregătim pentru vizită un colț de laborator organizat | ❓ | Plan de afaceri §4.4; contract spațiu (contractare); vizită la fața locului |
+| P18 | Locația în Regiunea BI și **adecvată** (liberă, cu utilități, de uzură acceptabilă, încadrată ca spațiu pentru activități economice/de cercetare). Altfel proiectul poate fi respins | §5.2.1 XII p. 46–47; §8.9 vizita pe teren p. 83–84 | Sediul e un **apartament** (bl. PM18bis, ap. 123, Sector 3). Ghidul cere un spațiu „încadrat în categoria spațiilor în care se pot desfășura activități economice și/sau de cercetare”. **Fie** confirmăm (contabil/helpdesk ADR BI) că apartamentul-sediu e acceptat și pregătim un colț de laborator, **fie** închiriem un mic spațiu în BI și îl înregistrăm ca punct de lucru (permis până la prima plată) | ❓ **risc real** — de lămurit înainte de depunere | Plan de afaceri §4.4; contract spațiu (contractare); vizită la fața locului |
 | P19 | Măsuri de comunicare și vizibilitate (emblema UE + „Cofinanțat de Uniunea Europeană”, sigla Guvernului, sigla PR BI, sigla ADR BI) | §3.21 p. 32–33; §5.2.1 XIII p. 47 | Activitatea A8 (II.5) cu buget | ✅ | CF |
 | P20 | Cel puțin un domeniu **RIS3 BI**, argumentat pe obiective/activități/rezultate, **nu pe CAEN**. Argumentarea: succint în CF, detaliat în Planul de afaceri și în Raportul științific | §5.2.1 XIV p. 47–48 | TIC + Sisteme și componente inteligente | ✅ | CF, Anexa 3 §4.1, Anexa 16 §1.3 |
-| P21 | Proiecte **neeligibile**: sectoare excluse; investiții demarate; **lucrări de construcții**; proiecte finalizate; în afara BI; investiții dintr-un contract anterior reziliat/nefinalizat | §5.2.1 p. 48 | **Atenție la Founders 00:** dacă SOUL M se certifică CE și se vinde înainte de contract, proiectul riscă să fie „demarat/finalizat” și TRL-ul real > 5 (vezi `03-NUCLEU` §15) | ⚠️ decizie Andu | Declarația unică |
-| P22 | Rezultate CD ale unei terțe entități → dovada drepturilor (cesiune, licență, acord). **Costul dobândirii drepturilor anterioare NU e eligibil** | §5.2.1 II p. 42; §5.2.2 p. 50; §7.4 poz. 5 p. 69 | Codul, designul și CAD-ul SOUL au fost create de Andu (persoană fizică, cu Claude) → **cesiune gratuită de drepturi Andu → ARTEMIS**, datată înainte de depunere. Plus **lista componentelor open-source** folosite (claude-desktop-buddy MIT, fontul Nunito OFL, eventual xiaozhi-esp32 MIT) cu licențele lor | ❌ | Contract de cesiune + „Declarație privind drepturile și licențele terților” (anexă la Raportul științific) |
+| P21 | Proiecte **neeligibile**: sectoare excluse; investiții demarate; **lucrări de construcții**; proiecte finalizate; în afara BI; investiții dintr-un contract anterior reziliat/nefinalizat | §5.2.1 p. 48 | **Decis la 26.09.2026:** fără ediție Founders; pe site doar listă de așteptare, nicio rezervare sau plată. Regula rămâne: **magazinul Shopify nu vinde** și SOUL **nu se certifică CE** înainte de contract (altfel proiectul pare „demarat/finalizat” și TRL > 5) | ✅ dacă respectăm regula | Declarația unică |
+| P22 | Rezultate CD ale unei terțe entități → dovada drepturilor (cesiune, licență, acord). **Costul dobândirii drepturilor anterioare NU e eligibil** | §5.2.1 II p. 42; §5.2.2 p. 50; §7.4 poz. 5 p. 69 | Codul, designul și CAD-ul SOUL au fost create de Andu (persoană fizică, cu Claude) → **cesiune gratuită de drepturi Andu → ARTEMIS**, datată înainte de depunere. Plus **lista componentelor open-source** folosite (claude-desktop-buddy MIT, fonturile Nunito/Alive OFL, valori de registre din xiaozhi-esp32 MIT, ESP-SR Espressif — licență de verificat) cu licențele lor. SOUL Bridge e publicat de noi sub MIT: cesiunea trebuie să respecte licența deja dată | ❌ | Contract de cesiune + „Declarație privind drepturile și licențele terților” (anexă la Raportul științific) |
 | P23 | Eșecul de cercetare: raport după modelul Anexei 17, cel târziu la **2/3 din implementare**. Se decontează maximum **50 %** din cheltuielile eligibile, iar activele pentru TRL 5 nu se mai decontează | §5.2.2 p. 50; §5.3.1 p. 54; §5.7.1 p. 63–64; §6 p. 65 | Planificăm „poarta TRL 4” la L14 (≤ L16 = 2/3 din 24) și amânăm achizițiile specifice TRL 5 după poartă | ✅ (în nucleu) | CF — calendar; Plan de monitorizare |
 | P24 | Indicatori: **doar RCO 01, RCO 02 (=1) și RCR 03 (=1)**. Nu se acceptă alți indicatori în CF | §3.8 p. 24–27 | Indicatorii tehnici merg la „rezultate așteptate” (**max. 5**, §3.9 p. 27), în Raportul științific și în indicatorii de etapă | ✅ | CF |
 | P25 | RCR 03 la un an după plata finală: cel puțin un livrabil (prototip TRL 5–6 validat cu utilizatori, scrisori/contracte pilot, cereri IP, contracte comerciale). **Lipsa lui aduce corecții financiare** | §3.8.2 p. 26 | Prototipuri TRL 5 + cereri IP + acorduri pilot (planificate) | ✅ (plan) | Primul raport de durabilitate |
@@ -116,7 +144,7 @@ Ghidul datat 03.06.2026 este **versiunea supusă consultării publice** (consult
 | C9 | **II.2 + II.3 + II.4 + II.5 ≤ 10 %** din valoarea totală eligibilă (directe + indirecte 7 %) | §5.3.2 NOTA p. 59 | 16.964 € = 8,9 % din 191.308 € | ✅ |
 | C10 | Management: salarii pentru personalul **angajat** al solicitantului, în plafoanele HG 1188 Anexa 2, sau servicii cu atribuții clar separate | §5.3.2 II.3 p. 58–59 | Andu ca manager de proiect (CIM, 20 h/lună) — ❓ verificăm cu contabilul CIM-ul administratorului | ❓ |
 | C11 | **Costuri indirecte = exact 7 %** din costurile directe eligibile (rată forfetară). Chiria, utilitățile și personalul administrativ intră aici și **nu** se bugetează separat | §5.3.4 p. 61–62; §5.3.5 | 12.515 € | ✅ |
-| C12 | **TVA eligibilă** dacă e nerecuperabilă (ARTEMIS e **neplătitoare**), cu declarație Anexa 6 / Anexa 1 la Ordinul 4013/5316/2023 la fiecare cerere de rambursare | §5.3.2 p. 59; §5.3.3 p. 61 | Bugetăm cu TVA 21 % pe achiziții. **Dacă ARTEMIS devine plătitoare de TVA** (plafon 395.000 lei), TVA-ul devine neeligibil de la acea dată → notificăm AM-ul și ajustăm | ✅ / ⚠ |
+| C12 | **TVA eligibilă** dacă e nerecuperabilă (ARTEMIS e **neplătitoare**), cu declarație Anexa 6 / Anexa 1 la Ordinul 4013/5316/2023 la fiecare cerere de rambursare | §5.3.2 p. 59; §5.3.3 p. 61 | ARTEMIS e **neplătitoare de TVA** (ANAF, 12.10.2026). Bugetăm cu TVA 21 % pe achiziții. **Dacă ARTEMIS devine plătitoare de TVA** (plafon 395.000 lei), TVA-ul devine neeligibil de la acea dată → notificăm AM-ul și ajustăm | ✅ / ⚠ |
 | C13 | **Neeligibile**: echipamente **second-hand**; terenuri/clădiri; **leasing**; contribuție în natură; costul creditului; **mijloace de transport** (subgrupa 2.3, cu excepția 2.3.6); amenzi; TVA recuperabilă; **tablete și telefoane mobile**; sisteme de minare crypto; cheltuieli peste plafoane | §5.3.3 p. 59–61 | **Nu bugetăm telefoane/tablete** pentru testarea aplicației sau a BLE (folosim ce avem). Nu cumpărăm plăci sau instrumente la mâna a doua | ✅ |
 | C14 | Neeligibile: activități de „servicii de stabilire a întâlnirilor”, agenții matrimoniale, **video chat online pentru consiliere matrimonială și psihologică**, astrologie | §5.3.3 p. 61 | **Formulare**: SOUL e „dispozitiv de interacțiune om–mașină / asistent personal tangibil”, **nu** „companion emoțional pentru singurătate” sau terapie | ✅ (regulă de redactare) |
 | C15 | Bugetul se fundamentează prin **≥ 2 surse verificabile** (oferte, cataloage, capturi de ecran). O singură sursă doar cu notă justificativă (furnizor unic, specificații unice etc.) | §7.3 p. 67; Grila 2.2b | `01-DOCUMENTE` §C listează sursele pe linie | ❌ de strâns |
@@ -146,7 +174,7 @@ Ghidul datat 03.06.2026 este **versiunea supusă consultării publice** (consult
 | E1 | Raport științific pe modelul **Anexa 16**, care atestă **TRL de pornire ≥ 3** și **fezabilitatea TRL 5** la final. Se depune odată cu CF. **Lipsa lui = respingere fără clarificări** | §7.4 poz. 5 p. 68–69; „Atenție” p. 71 | ❌ (Claude redactează) | Anexa 16 PDF semnat |
 | E2 | „Elaborat de beneficiar, validat de expert”. Semnat de **solicitant** (răspunde de conținut) **și** de **expert/experți** (confirmă validitatea) | §7.4 poz. 5 p. 69 | ❌ | idem |
 | E3 | Expert: **intern** (angajat al solicitantului) **sau independent**, **sau** un colectiv științific al unei **organizații de cercetare** | p. 42 | ❌ de găsit | CV + contract/comandă |
-| E4 | Expertul (sau cel puțin un membru al colectivului) îndeplinește **cumulativ**: a) **≥ 5 ani** de experiență dovedită în domeniul RIS3 vizat; b) **≥ 2 articole/lucrări** publicate în ultimii 10 ani în publicații recunoscute internațional/de specialitate din domeniu; c) **acreditări/certificări** relevante în domeniu, obținute în ultimii 10 ani | p. 42; p. 49–50; §7.4 poz. 6 p. 69–70 | ❌ | CV Europass semnat + listă publicații cu DOI + copii certificări/acreditări + dovada experienței |
+| E4 | **Criteriul aprobat (Decizia CM PR BI nr. 54/29.09.2026, Anexa 1):** a) + (b) **sau** c)). **Ghidul din consultare** (03.06.2026) cere, mai strict, ca expertul (sau cel puțin un membru al colectivului) să îndeplinească **cumulativ**: a) **≥ 5 ani** de experiență dovedită în domeniul RIS3 vizat; b) **≥ 2 articole/lucrări** publicate în ultimii 10 ani în publicații recunoscute internațional/de specialitate din domeniu; c) **acreditări/certificări** relevante în domeniu, obținute în ultimii 10 ani | p. 42; p. 49–50; §7.4 poz. 6 p. 69–70 | ❌ | CV Europass semnat + listă publicații cu DOI + copii certificări/acreditări + dovada experienței |
 | E5 | Raportul: minimum **3 surse științifice din ultimii 5 ani**, minimum **2 dovezi TRL 3**, tabel TRL 1–5, protocoale, Gantt, ipoteze, indicatori cu valori-țintă, bibliografie | Anexa 16 §I–VII | ❌ | Anexa 16 |
 | E6 | Declarația expertului include „absența calității de angajat al beneficiarului” (cu excepția expertului intern) | Anexa 16 §VIII | – | Anexa 16 §VIII |
 | E7 | Costul expertului e eligibil la II.2 (în plafonul de 10 %) | §5.3.2 II.2 p. 58 | ✅ | factură |
@@ -209,7 +237,7 @@ Lista completă, cu responsabili și valabilitate, e în `01-DOCUMENTE.md`. Pe s
 14. Orice criteriu de eligibilitate neîndeplinit „oricând pe perioada procesului de evaluare, selecție și contractare” (§5 p. 35); plus obligația de a notifica AM-ul în **5 zile lucrătoare** despre orice schimbare (p. 34–35).
 
 ### 9.3 Respingere pe fond (evaluatorul constată)
-15. **TRL de pornire < 3** (Anexa 16 §2.1: „un TRL declarat sub TRL 3 conduce la respingerea proiectului”) sau raport științific fără validarea unui expert care îndeplinește **cumulativ** a+b+c (§5.2.1 II p. 42).
+15. **TRL de pornire < 3** (Anexa 16 §2.1: „un TRL declarat sub TRL 3 conduce la respingerea proiectului”) sau raport științific fără validarea unui expert eligibil: a + (b sau c) după Decizia CM 54/29.09.2026; a + b + c cumulativ după ghidul din consultare (§5.2.1 II p. 42). Țintim a + b + c.
 16. Proiect **fără activități I.3** sau doar cu activități conexe (§5.2.4 p. 51; §5.2.1 „Atenție” p. 43).
 17. **Activitatea de bază < 50 %** din bugetul eligibil (§5.2.1 III p. 42).
 18. **Investiții demarate** (comandă fermă sau contract) înainte de depunere (§5.2.4 p. 51–52; p. 48).
@@ -228,20 +256,20 @@ Lista completă, cu responsabili și valabilitate, e în `01-DOCUMENTE.md`. Pe s
 
 ---
 
-## 10. Sinteza stării (25.09.2026)
+## 10. Sinteza stării (12.10.2026)
 
 | Blocant | Cine | Termen recomandat |
 |---|---|---|
 | S7 fără schimbări de asociați/administratori după 03/04.06.2026 | Andu | imediat |
-| S9 întreprindere în dificultate (capitaluri proprii 2025) | contabil | imediat |
+| P18 locația: apartamentul-sediu e acceptat sau închiriem un spațiu în BI | Andu + contabil (+ helpdesk ADR BI) | T−6 săpt. |
+| CAEN: 7210 + celelalte coduri adăugate la ONRC | Andu + contabil | T−6 săpt. |
 | P14 plafonul de minimis (RegAS + firmele legate) | contabil + Andu | T−6 săpt. |
-| S2/S3 IMM + firmele legate + anii de referință | contabil | T−6 săpt. |
+| S2/S3 IMM + firmele legate + anii de referință (firmă nouă) | contabil | T−6 săpt. |
 | S14 datorii ANAF + locale = 0 | contabil | continuu |
-| P2 dovezi TRL 3 pe placa 2.8C | Andu (placa) + Claude (port, protocol) | T−4 săpt. |
+| P2 dovezile TRL 3 pe placa 2.8C (X1–X8 + video pe placa reală) | Andu (placa, filmare) + Claude (protocol, corecturi) | T−4 săpt. |
 | E3/E4 expertul | Andu | T−5 săpt. |
-| P22 cesiunea drepturilor Andu → ARTEMIS + lista licențelor OSS | Andu + Claude (draft) | T−3 săpt. |
-| P21 decizia Founders 00 vs. PoC | Andu | T−6 săpt. |
+| P22 cesiunea drepturilor Andu → ARTEMIS + lista licențelor OSS | Andu + Claude (draft) + avocat | T−3 săpt. |
 | T2–T5 echipa (coordonator, inginer, student) | Andu | T−3 săpt. |
 | C15 ofertele (2 pe linie) | Andu + furnizori | T−2 săpt. |
 
-T = data deschiderii apelului în MySMIS (≈ noiembrie 2026).
+T = data deschiderii apelului în MySMIS (nepublicată; probabil dec. 2026 – feb. 2027).

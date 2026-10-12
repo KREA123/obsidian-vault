@@ -6,7 +6,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import OxmlElement
 from docxlib import write_runs, W, set_rpr
-from data import TITLU, APPLICANT
+from data import TITLU, APPLICANT, CUI, REGCOM, SEDIU, DIMS, FW, AI_OWN, REPO_PUBLIC, PUBLIC_SINCE
 
 OUTDIR = sys.argv[1]
 NAVY = RGBColor(0x1B, 0x3A, 0x6B)
@@ -124,10 +124,10 @@ table(d, ['Element obligatoriu (Grila 4.2)', 'Unde apare în model'], [
 ], [8.5, 8.1])
 
 SOL = ('SOUL este un dispozitiv tangibil de interacțiune om–mașină / asistent personal AI dezvoltat de ARTEMIS DIGITAL S.R.L.: '
-       'un obiect de ~90 × 103 × 31 mm, cu carcasă din aluminiu reciclabil și afișaj rotund de 2,8″, care arată doi ochi expresivi și '
-       'are o tastatură circulară. Funcționează offline (notițe, alarme, mementouri, liste) sau cu asistentul AI ales de utilizator '
-       '(Claude, ChatGPT sau cheie proprie), inclusiv pentru aprobarea cererilor Claude Code; datele sunt procesate pe servere din UE, '
-       'iar bateria poate fi înlocuită de utilizator. Proiectul validează SOUL de la TRL 3 la TRL 5: 15 prototipuri pre-serie testate '
+       f'un obiect de {DIMS}, cu carcasă din aluminiu reciclabil anodizat și afișaj rotund de 2,8″ cu touch, care arată doi ochi vii și '
+       'are o tastatură circulară. Funcționează offline (notițe, alarme, mementouri, liste, comenzi vocale în engleză) sau cu AI-ul '
+       f'conectat de proprietar ({AI_OWN}; SOUL nu include AI), inclusiv pentru aprobarea cererilor '
+       'Claude Code; serviciul SOUL Cloud e găzduit în UE, memoria rămâne pe dispozitiv, iar bateria poate fi înlocuită de utilizator. Proiectul validează SOUL de la TRL 3 la TRL 5: 15 prototipuri pre-serie testate '
        'de ≥ 12 utilizatori din București-Ilfov timp de 4 săptămâni.')
 
 variants = [
@@ -156,7 +156,7 @@ for k, (code, kind, who, roles, form, horizon) in enumerate(variants):
     P(d, '[[ANTETUL EMITENTULUI — denumire, CUI, adresă, e-mail, telefon]]', 'c')
     P(d, '**SCRISOARE DE INTENȚIE**', 'c', 14)
     P(d, 'Nr. [[…]] / Data: [[ZZ.LL.AAAA]]', 'r')
-    P(d, f'Către: **{APPLICANT}**, CUI [[…]], [[adresa]], București')
+    P(d, f'Către: **{APPLICANT}**, CUI {CUI}, {SEDIU}')
     d.add_heading('1. Proiectul vizat', level=2)
     P(d, f'Subsemnatul/a [[Nume Prenume]], în calitate de **reprezentant legal** ([[funcția]]) al [[denumirea entității]] (CUI [[…]]), confirm interesul entității noastre de a colabora cu {APPLICANT} în legătură cu proiectul **„{TITLU}”** (acronim **SOUL-PoC**), propus spre finanțare în cadrul apelului PR BI P1/1.1/1/2026 — Proof of Concept, Programul Regional București-Ilfov 2021–2027.', 'j')
     d.add_heading('2. Soluția vizată', level=2)
@@ -182,23 +182,23 @@ P(d, '**(declarație-contract de cesiune, cu titlu gratuit)**', 'c')
 P(d, 'Nr. [[…]] / Data: [[ZZ.LL.AAAA — anterioară depunerii cererii de finanțare]]', 'c')
 d.add_heading('1. Părțile', level=2)
 P(d, '**Cedentul:** [[Nume Prenume]] („Andu”), cetățean român, domiciliat în [[adresa]], CNP [[…]], act de identitate [[CI seria … nr. …]], în calitate de autor/creator, denumit în continuare „**Cedentul**”;', 'j')
-P(d, f'**Cesionarul:** **{APPLICANT}**, cu sediul în [[adresa]], București, înregistrată la Registrul Comerțului sub nr. [[J40/…/…]], CUI [[…]], reprezentată legal de [[Nume Prenume]], în calitate de administrator, denumită în continuare „**Cesionarul**”.', 'j')
+P(d, f'**Cesionarul:** **{APPLICANT}**, cu sediul în {SEDIU}, înregistrată la Registrul Comerțului sub nr. {REGCOM}, CUI {CUI}, reprezentată legal de [[Nume Prenume]], în calitate de administrator, denumită în continuare „**Cesionarul**”.', 'j')
 P(d, 'Temei legal: Legea nr. 8/1996 privind dreptul de autor și drepturile conexe (în special art. 39–45 și art. 73–81 privind programele pentru calculator); Legea nr. 129/1992 privind protecția desenelor și modelelor; Regulamentul (CE) nr. 6/2002 privind desenele sau modelele comunitare; Legea nr. 84/1998 privind mărcile; Codul civil.', 'j', 10, italic=True)
 d.add_heading('2. Obiectul cesiunii', level=2)
 P(d, '2.1. Cedentul cesionează Cesionarului, **exclusiv**, **cu titlu gratuit**, **pe întreaga durată de protecție** și **pentru teritoriul întregii lumi**, toate drepturile patrimoniale de proprietate intelectuală pe care le deține, în măsura în care există, asupra rezultatelor enumerate în **Anexa 1** („Rezultatele SOUL”), create până la data prezentului contract, și anume:', 'j')
-for x in ['codul sursă și obiect al firmware-ului „Suflet”/SoulOS, al serviciului AI `suflet_ai`, al simulatorului, al prototipului web SoulOS și al instrumentelor asociate (programe pentru calculator), inclusiv documentația;',
-          'designul industrial al produsului SOUL (corpul SOUL, variantele v6/v7/S/M, capsula de încărcare „OU”, interfața grafică a „ochilor”), modelele CAD (CadQuery/OpenSCAD, STL/STEP), randările și desenele, inclusiv dreptul de a solicita înregistrarea ca desen/model industrial în orice țară și la EUIPO și dreptul de prioritate aferent;',
+for x in ['codul sursă și obiect al firmware-ului SoulOS (inclusiv biblioteca „Suflet”), al serviciului SOUL Cloud (`ai/`), al SOUL Bridge (`bridge/`), al simulatorului, al SoulOS pe web și al instrumentelor asociate (programe pentru calculator), inclusiv documentația;',
+          'designul industrial al produsului SOUL (corpul SOUL în forma MĂRGĂRITAR, mărimea M, și variantele anterioare HOPA/v6–v8, capsula de încărcare „OU”, interfața grafică a „ochilor” — cele 120 de designuri și expresiile lor), modelele CAD (CadQuery/OpenSCAD, STL/STEP), randările și desenele, inclusiv dreptul de a solicita înregistrarea ca desen/model industrial în orice țară și la EUIPO și dreptul de prioritate aferent;',
           'soluțiile tehnice, know-how-ul și rezultatele de cercetare (studii, specificații, protocoale, date de test), inclusiv dreptul de a solicita brevete sau modele de utilitate;',
-          'semnul/denumirea „SOUL” și elementele de identitate vizuală (logo, nume de produs), inclusiv dreptul de a depune cereri de înregistrare ca marcă, precum și orice nume de domeniu și cont asociat [[de enumerat în Anexa 1]].']:
+          'semnul/denumirea „SOUL” și elementele de identitate vizuală (logo „The Glass O”, brand book, trailer, nume de produs), inclusiv dreptul de a depune cereri de înregistrare ca marcă, precum și orice nume de domeniu și cont asociat [[de enumerat în Anexa 1]].']:
     P(d, x, bullet=True)
 P(d, '2.2. Drepturile cedate includ, fără limitare, dreptul de reproducere, distribuire, închiriere, import, comunicare publică, punere la dispoziția publicului, traducere, adaptare, modificare și realizare de opere derivate, dreptul de a exploata comercial Rezultatele SOUL, de a acorda licențe (inclusiv open-source) și de a cesiona mai departe drepturile, prin orice mijloc și în orice formă, cunoscută sau necunoscută la data semnării.', 'j')
-P(d, '2.3. Cesiunea **nu** cuprinde componentele terțe enumerate în **Anexa 2**, care rămân sub licențele lor (MIT, BSD, SIL OFL etc.); Cesionarul le va folosi cu respectarea acestor licențe.', 'j')
+P(d, '2.3. Cesiunea **nu** cuprinde componentele terțe enumerate în **Anexa 2**, care rămân sub licențele lor (MIT, BSD, SIL OFL etc.); Cesionarul le va folosi cu respectarea acestor licențe. Cesiunea se face cu respectarea licențelor open-source deja acordate publicului de Cedent (ex. SOUL Bridge, publicat sub licența MIT [[A: confirmă ce e deja public și sub ce licență]]). Părțile iau act că depozitul git în care sunt păstrate Rezultatele SOUL (' + REPO_PUBLIC + ') este vizibil public din ' + PUBLIC_SINCE + ', fără o licență open-source declarată pentru restul conținutului; vizibilitatea publică nu constituie licență [[avocat: verificați formularea]].', 'j')
 d.add_heading('3. Prețul', level=2)
 P(d, '3.1. Cesiunea se face **cu titlu gratuit**. Cedentul declară că nu pretinde și nu va pretinde nicio remunerație sau despăgubire pentru drepturile cedate, inclusiv din viitoarea exploatare a Rezultatelor SOUL [[avocat: verificați renunțarea la remunerația proporțională/„bestseller” — art. 43 alin. (3) Legea 8/1996]].', 'j')
 P(d, '3.2. Părțile iau act că, potrivit ghidului apelului PR BI P1/1.1/1/2026, costul dobândirii drepturilor asupra rezultatelor CD anterioare nu este eligibil și nu va fi solicitat la finanțare.', 'j')
 d.add_heading('4. Declarațiile Cedentului', level=2)
 for x in ['este autorul/creatorul Rezultatelor SOUL (singur, cu asistența unor instrumente software, inclusiv asistenți AI), iar datele creației sunt atestate de istoricul depozitului git (primul commit: 24.09.2026; commit de referință: [[hash la data semnării]]);',
-          'nu a cedat și nu a licențiat anterior, exclusiv sau neexclusiv, drepturile asupra Rezultatelor SOUL către terți și nu există litigii sau revendicări privind aceste drepturi;',
+          'nu a cedat și nu a licențiat anterior, exclusiv sau neexclusiv, drepturile asupra Rezultatelor SOUL către terți, cu excepția licențelor open-source publice menționate la art. 2.3, și nu există litigii sau revendicări privind aceste drepturi;',
           'Rezultatele SOUL nu au fost create în executarea unui contract individual de muncă sau a unui alt contract cu un terț care ar conferi drepturi acestuia [[avocat/Ct: de verificat, inclusiv raportul cu ARTEMIS dacă Andu este salariat]];',
           'toate componentele terțe cunoscute sunt enumerate în Anexa 2, cu licențele lor;',
           'va semna orice document suplimentar necesar pentru înregistrarea drepturilor pe numele Cesionarului (EUIPO, OSIM, registre de domenii) și va preda Cesionarului, la cerere, toate fișierele sursă.']:
@@ -214,23 +214,26 @@ table(d, ['CEDENT', 'CESIONAR'], [
 page_break(d)
 d.add_heading('Anexa 1 — Rezultatele SOUL cedate (inventar)', level=2)
 table(d, ['Nr.', 'Rezultat', 'Locație / identificare', 'Data / versiune'], [
-    ['1', 'Firmware „Suflet” / SoulOS (C++17): bibliotecile `lib/Suflet`, `src/`, `sim/`, `test/`, `tools/`', 'depozit git, `micul-smecher/firmware/`', '[[hash commit]] / 25.09.2026'],
-    ['2', 'Serviciul AI `suflet_ai` (Python) + teste + exemple', '`micul-smecher/ai/`', '[[hash commit]]'],
-    ['3', 'Prototipul web și specificația SoulOS', '`micul-smecher/os/` (index.html, SPEC.md, ARCHITECTURE.md, research/)', '[[hash commit]]'],
-    ['4', 'Modele CAD, STL/STEP, prototip P0', '`micul-smecher/cad/`, `micul-smecher/prototip/`', '[[hash commit]]'],
-    ['5', 'Randări și design industrial (v6/v7/S/M, capsula OU, „ochii”)', '`micul-smecher/renders/`, `media/`', '[[hash commit]]'],
-    ['6', 'Identitate vizuală și denumirea „SOUL” (logo, nume)', '`micul-smecher/brand/`, `site/`', '[[hash commit]]'],
-    ['7', 'Studii, specificații, protocoale, date', '`micul-smecher/research/`, `docs/`, `blueprints/`', '[[hash commit]]'],
-    ['8', 'Nume de domeniu / conturi', '[[de completat]]', '[[…]]'],
+    ['1', f'Firmware SoulOS (C++17, {FW} + lucrul la 1.9.0): `lib/Suflet`, `src/`, `sim/`, `test/`, `tools/`', 'depozit git, `micul-smecher/firmware/`', '[[hash commit]] / 1.8.0 = 95d8465 (04.10.2026)'],
+    ['2', 'SOUL Cloud (Python) + teste + instrumente', '`micul-smecher/ai/`', '[[hash commit]]'],
+    ['3', 'SOUL Bridge (Node.js; publicat open source, MIT)', '`micul-smecher/bridge/`', '[[hash commit]]'],
+    ['4', 'SoulOS pe web și specificațiile SoulOS', '`micul-smecher/os/` (index.html, SPEC.md, ARCHITECTURE.md, DESIGN-ALIVE.md)', '[[hash commit]]'],
+    ['5', 'Ochii SOUL (120 de designuri, 31 de expresii)', '`micul-smecher/eyes/`', '[[hash commit]]'],
+    ['6', 'Modele CAD, STL/STEP, prototip P0, planșe', '`micul-smecher/cad/`, `prototip/`, `blueprints/`', '[[hash commit]]'],
+    ['7', 'Randări și design industrial (MĂRGĂRITAR v9 și variantele anterioare, capsula OU)', '`micul-smecher/renders/`, `media/`', '[[hash commit]]'],
+    ['8', 'Identitate vizuală și denumirea „SOUL” (logo, brand book, trailer, site, temă Shopify)', '`micul-smecher/brand/`, `trailer/`, `site/`', '[[hash commit]]'],
+    ['9', 'Studii, specificații, protocoale, date', '`micul-smecher/research/`, `docs/`', '[[hash commit]]'],
+    ['10', 'Nume de domeniu / conturi', '[[de completat]]', '[[…]]'],
 ], [1.0, 6.2, 6.0, 3.4])
 d.add_heading('Anexa 2 — Componente terțe excluse din cesiune (se folosesc sub licențele lor)', level=2)
 table(d, ['Componentă', 'Unde e folosită', 'Licență'], [
     ['anthropics/claude-desktop-buddy (Anthropic, PBC)', '`firmware/src/ble_link.cpp` (adaptat)', 'MIT'],
-    ['78/xiaozhi-esp32 (Shenzhen Xinzhi Future Technology)', 'valori de registre PMU, hartă de pini; poarta vocală (planificat)', 'MIT'],
+    ['78/xiaozhi-esp32 (Shenzhen Xinzhi Future Technology)', 'valori de registre și hartă de pini (`src/board.h`, `src/main.cpp`)', 'MIT'],
+    ['Espressif ESP-SR (MultiNet, modele de vorbire)', 'comenzile vocale offline (`src/voice_sr.*`, build `lcd28_voice`)', '[[licența Espressif — de verificat]]'],
     ['Inigo Quilez — funcții SDF 2D', '`Canvas.cpp` (sdHeart, sdStar5)', 'MIT'],
-    ['Fontul Nunito (The Nunito Project Authors)', '`FontData.h` (glife rasterizate)', 'SIL OFL 1.1'],
+    ['Fontul Nunito (The Nunito Project Authors) și fonturile din `FontAliveData.h`', 'glife rasterizate în firmware', 'SIL OFL 1.1'],
     ['GFX Library for Arduino; SensorLib; ArduinoJson; Unity', 'biblioteci PlatformIO (nevendorizate)', 'BSD; MIT; MIT; MIT'],
-    ['Dependențele Python din `ai/requirements.txt` (ex. SDK Anthropic)', 'serviciul AI', '[[de listat cu licențele]]'],
+    ['Dependențele Python din `ai/` (ex. SDK MCP) și dependențele Node.js din `bridge/`', 'SOUL Cloud, SOUL Bridge', '[[de listat cu licențele]]'],
 ], [6.2, 6.4, 4.0])
 d.save(f'{OUTDIR}/Declaratie_cesiune_drepturi_MODEL.docx')
 print('ok')

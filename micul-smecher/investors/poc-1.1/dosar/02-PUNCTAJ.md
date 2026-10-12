@@ -1,7 +1,7 @@
 ---
 tip: finanțare
 proiect: SOUL-PoC
-actualizat: 2026-09-25
+actualizat: 2026-10-12
 sursa: Anexa 10 — Grila ETF PoC 1.1 (versiunea 03.06.2026); Ghid §8.4–8.5
 ---
 
@@ -10,7 +10,7 @@ sursa: Anexa 10 — Grila ETF PoC 1.1 (versiunea 03.06.2026); Ghid §8.4–8.5
 ## Regulile jocului
 - **Maximum 100 de puncte**: Contribuția la OS 1.1 = 40 · Calitatea documentației = 37 · Capacitatea de implementare = 9 · Sustenabilitate și teme orizontale = 14.
 - **Pragul minim de calitate: 70 de puncte.** Sub 70 proiectul e respins (§3.1 p. 22; §8.5 p. 80).
-- **Selecția se face în ordinea descrescătoare a punctajului, până se epuizează bugetul** (§8.1 p. 77; §8.4 p. 80). Bugetul apelului e **5.000.000 €** (§3.3 p. 22). La ~190 k€ pe proiect, se finanțează **~25–30 de proiecte**. Cei care au trecut de 70 dar nu încap intră pe lista de rezervă.
+- **Selecția se face în ordinea descrescătoare a punctajului, până se epuizează bugetul** (§8.1 p. 77; §8.4 p. 80). Bugetul apelului e **5.000.000 €** (§3.3 p. 22). La ~191 k€ pe proiect, se finanțează **~26 de proiecte** (mai multe doar dacă alții cer mai puțin). Cei care au trecut de 70 dar nu încap intră pe lista de rezervă.
 - **Punctajul care câștigă e necunoscut.** În apelurile competitive de acest tip, ultimul proiect finanțat are adesea 85–90+ puncte [E]. **Ținta noastră e ≥ 92.**
 - **Clarificările NU pot crește punctajul** (Grila, final). Tot ce aduce puncte trebuie să fie în dosar **la depunere**.
 - **Departajarea la punctaj egal:** 1) Calitate (secțiunea 2) → 2) Relevanță (secțiunea 1) → 3) Sustenabilitate și teme orizontale (secțiunea 4) → 4) subcriteriul 1.2 → 5) **data depunerii** (§8.4 p. 80). Deci depunem devreme.
@@ -26,8 +26,8 @@ sursa: Anexa 10 — Grila ETF PoC 1.1 (versiunea 03.06.2026); Ghid §8.4–8.5
 |---|---|---|---|---|
 | **1.1** RIS3 BI (≥ 2 domenii) | 5 | argumentare explicită, consecventă în CF + Anexa 3 („Piață”, „Tehnologie”) + Anexa 16 (încadrare tematică) | **TIC + Sisteme și Componente Inteligente**, fiecare legat de obiective/activități/rezultate concrete (`03-NUCLEU` §2). Aceeași formulare în cele trei documente. Citarea subdomeniilor exacte din strategia RIS3 BI | **5** |
 | **1.2** Relevanța problemei | 15 | problemă demonstrată la nivel **european/internațional** cu surse verificabile (studii, statistici, regulamente, literatură); diferențiere tehnologică **măsurabilă**; **nu** se punctează afirmațiile generice despre AI/IoT | Problema pe patru axe (cloud-dependence și „bricking”, latență, text pe ecrane rotunde, reparabilitate), cu dovezi: regulamentele UE (2023/1542 art. 11, 2024/1799, 2024/1689, 2022/30); cazurile Humane/Moxie/Rabbit cu link; datele de piață (Plaud, Fuzozo, campanii Kickstarter); benchmark-ul celor 24 de competitori (research 11) ca tabel anexat; ≥ 3 lucrări științifice; tabelul N1–N5 „ce e nou” cu cifre-țintă; dovezile TRL 3 | **10–15** (ținta 15; riscul: evaluatorul vede „încă un gadget AI” și dă 10 pentru relevanță doar națională) |
-| **1.3** Sediu/punct de lucru în BI înregistrat ≤ 31.12.2025 | 5 | certificat constatator emis cu ≤ 30 de zile înainte de depunere; data înregistrării sediului/punctului de lucru | Sediul ARTEMIS din București. Confirmăm pe certificat că data înregistrării e ≤ 31.12.2025 (dacă sediul a fost mutat după această dată: 2 p.) | **5** (❓ de confirmat) |
-| **1.4** Publicare open-access | 10 | 10 p. = **OA cu peer-review**, minim trimiterea în perioada de implementare; linie bugetară pentru publicare **sau** soluție gratuită concretă; publicarea pe site-ul propriu **nu** contează; regula „patent first, publish later” e acceptată dacă e coerentă în calendar | Linia 21 (APC ≈ 3,4 k€); **revista numită** (ex. MDPI *Electronics* / IEEE *Access*) cu captura paginii de APC; plus preprint Zenodo; calendar: IP la L5–L6 → trimitere ≤ L20; menționat în CF „Activități”, „Buget”, în Anexa 16 (planul de diseminare) și în Anexa 3 (§6.2) | **10** |
+| **1.3** Sediu/punct de lucru în BI înregistrat ≤ 31.12.2025 | 5 | certificat constatator emis cu ≤ 30 de zile înainte de depunere; data înregistrării sediului/punctului de lucru | ARTEMIS e înregistrată la **17.12.2025** cu sediul în Sector 3, București. Certificatul constatator (≤ 30 de zile) trebuie să arate că sediul e același din 17.12.2025 | **5** |
+| **1.4** Publicare open-access | 10 | 10 p. = **OA cu peer-review**, minim trimiterea în perioada de implementare; linie bugetară pentru publicare **sau** soluție gratuită concretă; publicarea pe site-ul propriu **nu** contează; regula „patent first, publish later” e acceptată dacă e coerentă în calendar | Linia 21 (APC ≈ 3,4 k€); **revista numită** (ex. MDPI *Electronics* / IEEE *Access*) cu captura paginii de APC; plus preprint Zenodo; calendar: marcă ≤ L6 și design pentru elementele noi ≤ L18 → trimitere ≤ L20 (ce e deja public în depozitul GitHub din 24.09.2026 e declarat cu data primei publicări, nu ascuns); menționat în CF „Activități”, „Buget”, în Anexa 16 (planul de diseminare) și în Anexa 3 (§6.2) | **10** |
 | **1.5** Economie circulară în soluție | 5 | principiul EC aplicat **direct produsului**, descris explicit și demonstrabil tehnic | Baterie înlocuibilă de utilizator (Reg. 2023/1542 art. 11), șuruburi Torx, carcasă monomaterial Al reciclabilă, OTA, funcționare fără server (anti-„bricking”), piese de schimb 5 ani; **protocolul P10** măsoară înlocuirea în ≤ 5 min (`03-NUCLEU` §12) | **5** |
 | **Subtotal** | **40** | | | **35–40** |
 
@@ -37,21 +37,21 @@ sursa: Anexa 10 — Grila ETF PoC 1.1 (versiunea 03.06.2026); Ghid §8.4–8.5
 |---|---|---|---|---|
 | **2.1a** Nevoia de piață + grupul țintă | 2 | explicit, corelat, cu surse | Anexa 3 §III cu date de piață citate (research 01, 04, 11), segmente cuantificate, grupul țintă din `03-NUCLEU` §17 | 2 |
 | **2.1b** Etapele de realizare în implementare | 2 | clar | tabelul A0–A8 + Gantt + milestone-uri | 2 |
-| **2.1c** Poziționare competitivă (prețuri, canale, model de business, promovare) + avantaje | 2 | – | matricea competitorilor + harta de poziționare (research 11), prețuri 349/199–299 €, canalele, modelul | 2 |
-| **2.1d** IP deja protejat **sau** demersuri concrete până la final | **5** | în implementare se cere dovada depunerii | Plan IP cu pași, termene, costuri (linii 19–20), consilier PI; **ideal**: căutarea TMview făcută și, dacă e posibil, marca depusă deja prin SME Fund înainte de depunere | **5** |
+| **2.1c** Poziționare competitivă (prețuri, canale, model de business, promovare) + avantaje | 2 | – | matricea competitorilor + harta de poziționare (research 11), preț de la 249 € (fără ediție Founders, fără AI inclus), canalele, modelul | 2 |
+| **2.1d** IP deja protejat **sau** demersuri concrete până la final | **5** | în implementare se cere dovada depunerii | Plan IP cu pași, termene, costuri (linii 19–20), consilier PI; **ideal**: căutarea TMview făcută și, dacă e posibil, marca depusă deja prin SME Fund înainte de depunere. **Atenție:** depozitul vault e public din 24.09.2026 (randări, decodorul tastaturii, fereastra radio), deci: designul MĂRGĂRITAR se depune înainte de 24.09.2027 (SME Fund acum sau imediat după depunerea CF, în afara bugetului), iar brevetul/secretul comercial se limitează la ce nu e public (`03-NUCLEU` §14). Un plan care pretinde noutate pentru ce e public ar pierde puncte | **4–5** |
 | **2.1e** Riscuri + mecanisme, **inclusiv eșecul de cercetare** | 4 | – | tabelul R1–R12 cu probabilitate/impact/măsuri; poarta IE2; Anexa 17; regula activelor pentru TRL 5 după poartă | 4 |
 | **2.1 total** | **15** | P = integral · P/2 = parțial · 0 | fiecare afirmație cu sursă sau trimitere la anexă | **13–15** |
-| **2.2a** Încadrarea corectă a liniilor + praguri | 2 | 1 linie greșită = −1; > 1 = 0 | fiecare linie cu categoria MySMIS exactă (`03-NUCLEU` §10.1); 10 % conexe și 7 % indirecte verificate; reverificare pe **Anexa 20** finală | 1–2 |
+| **2.2a** Încadrarea corectă a liniilor + praguri | 2 | 1 linie greșită = −1; > 1 = 0 | fiecare linie cu categoria MySMIS exactă (`03-NUCLEU` §10.1); 10 % conexe și 7 % indirecte verificate; reverificare pe **Anexa 20** finală. Găzduirea SOUL Cloud a fost scoasă din linia SaaS într-o linie separată (18b, „infrastructură de test”, folosită doar în validare), pentru că SaaS din ghid (§5.3.2 p. 57) acoperă servicii „utilizate exclusiv pentru modelarea, testarea, simularea, analiza datelor și dezvoltarea prototipurilor digitale”; întrebare la helpdesk (`04` Pasul 2) | 1–2 |
 | **2.2b** ≥ 2 surse pentru **toate** liniile nesalariale | 3 | 1 linie fără surse = 1,5; > 1 = 0 | 2 surse pe fiecare linie (`01-DOCUMENTE` §C); **notă justificativă de sursă unică** pentru taxele EUIPO și, dacă e cazul, pentru serviciul CDI al universității | 1,5–3 |
 | **2.2c** Salarii ≤ HG 1188/2022 + L. 183/2024 | 2 | 1 persoană peste = 1; > 1 = 0 | tarife sub plafoane cu marjă (34/35, 25/35, 12/15, 18/50 €/h); categoria HG scrisă în fișa de post; CAM separat | 2 |
 | **2.2 total** | **7** | | | **5–7** |
 | **2.3a** Problema, relevanța, obiectivele coerente cu ipoteza | 3 | – | ipoteza „dacă…, atunci…” cu cifre (`03-NUCLEU` §3.2), O1–O4 legate de H1–H5 | 3 |
-| **2.3b** TRL de pornire argumentat prin dovezi verificabile | 2 | declararea simplă nu ajunge; nu se acceptă TRL bazat pe intenții | **Raportul de laborator TRL 3 pe placa 2.8C** (X1–X8) + 55/49 teste + simulator + video datat + hash git | **2** (doar dacă facem X1–X8; altfel 1) |
+| **2.3b** TRL de pornire argumentat prin dovezi verificabile | 2 | declararea simplă nu ajunge; nu se acceptă TRL bazat pe intenții | **Raportul de laborator TRL 3 pe placa 2.8C** (X1–X8) + **video pe placa reală** + teste (firmware 1.8.0: 198+; SOUL Cloud: 283) + simulator + hash git | **2** doar cu X1–X8 pe placă. **Azi TRL 3 e declarat, nu atestat** (D1–D7 sunt analitice/software; Anexa 18 cere măsurători inițiale de laborator). Fără D8, expertul nu are pe ce atesta TRL 3 → **risc de respingere**, nu doar −1 punct. Anexa 16 are poarta de lansare D8_DONE |
 | **2.3c** Activități adecvate TRL 4–5, detaliate metodologic | 3 | protocoale, criterii, mediu de testare | tabelul P1–P11 cu metodă, baseline, prag TRL 4, prag TRL 5 și definiția mediului relevant | 3 |
 | **2.3d** Resurse pentru TRL superior (infrastructură, laboratoare, afilieri) | 3 | „afirmațiile generale nesusținute de documente nu sunt suficiente” | **scrisori/acorduri** de la un laborator EMC/RF și de la o organizație de cercetare (UPB/IMT/ICI); oferte; fotografii ale bancului de lucru | 1,5–3 |
 | **2.3e** Plan realist, cu termene și livrabile măsurabile | 2 | – | Gantt pe luni, dependențe, M1–M3, IE1–IE3, livrabilele L1.1–R5 cu responsabil | 2 |
 | **2.3f** Ipoteze, indicatori științifici, rezultate cuantificabile | 2 | fără „îmbunătățire/optimizare” fără unități | H1–H5, P1–P11 cu unități și valori-țintă | 2 |
-| **2.3 total** | **15** | | expertul trebuie să **semneze** un raport pe care l-a înțeles și asumat | **12,5–15** |
+| **2.3 total** | **15** | | expertul trebuie să **semneze** un raport pe care l-a înțeles și asumat. Criteriul de eligibilitate al expertului aprobat prin **Anexa 1 la Decizia CM PR BI nr. 54/29.09.2026**: ≥ 5 ani experiență + (≥ 2 articole în ultimii 10 ani **SAU** o calificare/certificare/rezultat relevant); ghidul din consultare cerea a + b + c cumulativ. Ținta sigură rămâne a + b + c, până la ghidul final | **12,5–15** |
 | **Subtotal** | **37** | | | **30–37** |
 
 ### 3. Capacitatea de implementare — 9 p.
@@ -59,7 +59,7 @@ sursa: Anexa 10 — Grila ETF PoC 1.1 (versiunea 03.06.2026); Ghid §8.4–8.5
 | Sub | Max | Ce cere grila | Cum luăm maximul | Estimare |
 |---|---|---|---|---|
 | **3.1** Echipa nominalizată **la depunere** | 5 | (i) coordonator: doctor **sau** ≥ 5 ani în domeniu **sau** ≥ 2 proiecte CDI conduse **și** (ii) ≥ 1 expert cu studii superioare în domeniu și ≥ 2 ani (sau ≥ 1 publicație WoS/Scopus). Doar una dintre condiții = 3 p. | **Recrutăm înainte de depunere**: coordonator embedded ≥ 5 ani (ideal cadru didactic UPB cu doctorat) + inginer embedded ≥ 2 ani. CV Europass, diplome, adeverințe, declarații de disponibilitate | **3–5** (punctul cel mai slab azi) |
-| **3.2a** Experiența CDI a firmei | 2 | dovezi documentare, nu declarații (prototipuri, rapoarte tehnice, validări, livrabile) | Raport tehnic „Activitatea CDI SOUL 2026” cu anexe: istoric git datat, rapoartele celor 55 + 49 de teste, clipurile simulatorului, prototipul SoulOS, raportul de laborator TRL 3, research 01–12 | **1–2** (risc: evaluatorul poate cere un contract/proiect „oficial”) |
+| **3.2a** Experiența CDI a firmei | 2 | dovezi documentare, nu declarații (prototipuri, rapoarte tehnice, validări, livrabile) | Raport tehnic „Activitatea CDI SOUL 2026”, cu aceeași formulare ca Anexa 3 §2.2: „activitatea CD SOUL a fost realizată de fondator din 24.09.2026 și este transferată firmei prin cesiunea din [data]; ARTEMIS o continuă ca activitate proprie (CAEN 7210 adăugat la [data])”. Anexe: istoric git datat (din 24.09.2026), rapoartele testelor (198+ firmware, 283 SOUL Cloud), clipurile simulatorului, SoulOS pe web, raportul de laborator TRL 3, research 01–12 | **1** (risc mare: firma e înregistrată din 17.12.2025, are CAEN principal de publicitate și nicio activitate CDI anterioară lui sept. 2026) |
 | **3.2b** Încă un membru (în afara celor de la 3.1) cu experiență CDI | 2 | CV, publicații, proiecte | Andu (documentat) **sau** un al doilea inginer cu proiecte CDI | 1–2 |
 | **Subtotal** | **9** | | | **5–9** |
 
@@ -67,8 +67,8 @@ sursa: Anexa 10 — Grila ETF PoC 1.1 (versiunea 03.06.2026); Ghid §8.4–8.5
 
 | Sub | Max | Ce cere grila | Cum luăm maximul | Estimare |
 |---|---|---|---|---|
-| **4.1** Strategie post-PoC (toate cele 5 elemente, cumulativ) | 5 | (i) traseul TRL; (ii) modelul de business; (iii) sursele de finanțare; (iv) calendar **≥ 5 ani**; (v) legătura cu rezultatul PoC | tabelul din `03-NUCLEU` §16 (Founders 00 → Batch 1/CE → Standard → Platforma), surse de finanțare numite, proiecția pe 5 ani cu ipoteze | **5** (2,5 dacă proiecția e slabă) |
-| **4.2** ≥ 2 acorduri/scrisori valide, de la entități distincte | 4 | **toate cele 7 elemente**, datate cu ≤ 6 luni înainte de depunere; altfel nu se iau în calcul | 3–4 scrisori (una de rezervă) după **modelul din `04-CE-TREBUIE-SA-FACA-ANDU.md`**: un retailer/distribuitor, o firmă de software care folosește Claude Code (pilot), o organizație de cercetare/living lab | **4** |
+| **4.1** Strategie post-PoC (toate cele 5 elemente, cumulativ) | 5 | (i) traseul TRL; (ii) modelul de business; (iii) sursele de finanțare; (iv) calendar **≥ 5 ani**; (v) legătura cu rezultatul PoC | tabelul din `03-NUCLEU` §16 (prima serie 10–25 buc. cu CE → Batch 1 → Standard → Platforma), surse de finanțare numite, proiecția pe 5 ani cu ipoteze | **5** (2,5 dacă proiecția e slabă) |
+| **4.2** ≥ 2 acorduri/scrisori valide, de la entități distincte | 4 | **toate cele 7 elemente**, datate cu ≤ 6 luni înainte de depunere; altfel nu se iau în calcul | 3–4 scrisori (una de rezervă) după **modelul din `draft/Scrisoare_de_intentie_MODEL.docx`**: un retailer/distribuitor, o firmă de software care folosește Claude Code (pilot), o organizație de cercetare/living lab | **4** |
 | **4.3a** Tânăr ≤ 24 ani, înmatriculat în învățământul superior, în CD | 3 | dovezi: adeverință de student, CIM, fișă de post | student UPB angajat part-time, cu documentele atașate | **3** |
 | **4.3b** ≥ 1 măsură suplimentară pentru egalitate de șanse | 2 | conform Metodologiei ADR BI pentru principiile orizontale | panelul TRL 5 cu ≥ 40 % femei + persoane cu dizabilități + testarea accesibilității cu o asociație; politica internă anexată | **2** |
 | **Subtotal** | **14** | | | **12–14** |
@@ -80,8 +80,8 @@ sursa: Anexa 10 — Grila ETF PoC 1.1 (versiunea 03.06.2026); Ghid §8.4–8.5
 | Scenariu | 1 (40) | 2 (37) | 3 (9) | 4 (14) | **Total** | Condiții |
 |---|---|---|---|---|---|---|
 | **Maxim** | 40 | 37 | 9 | 14 | **100** | totul făcut perfect, evaluatori favorabili |
-| **Realist (dacă executăm `04-CE-...`)** | 37–40 | 33–36 | 7–9 | 13–14 | **≈ 90–99** (cel mai probabil ~92) | expert bun, echipă nominalizată, 2 surse pe fiecare linie, dovezi TRL 3 pe placă |
-| **Dacă lipsesc echipa și dovezile TRL 3** | 35 | 29 | 3–5 | 12 | **≈ 79–81** | trece de 70, dar probabil **nu intră în bugetul apelului** |
+| **Realist (dacă executăm `04-CE-...`)** | 37–40 | 33–36 | 6–8 | 13–14 | **≈ 89–98** (cel mai probabil ~91) | expert bun, echipă nominalizată, 2 surse pe fiecare linie, dovezi TRL 3 pe placă |
+| **Dacă lipsesc echipa și dovezile TRL 3** | 35 | 29 | 3–5 | 12 | **≈ 79–81** dacă e admis | fără D8, TRL 3 nu poate fi atestat → **risc de respingere**; chiar admis, probabil **nu intră în bugetul apelului** |
 | **Pesimist** | 30 | 25 | 3 | 9,5 | **≈ 67–70** | 1.2 = 5, surse lipsă, fără scrisori valide → **risc de respingere** |
 
 **Concluzia sinceră:** proiectul poate trece ușor de pragul de 70. **Câștigul real** (intrarea în primele ~25–30 de proiecte) depinde de patru lucruri pe care le controlăm: **(1) dovezile TRL 3 pe placa fizică, (2) un expert solid, (3) coordonatorul + inginerul nominalizați la depunere, (4) 2 surse pe fiecare linie.** Fiecare lipsă costă 2–5 puncte, iar la o competiție strânsă 5 puncte fac diferența.
@@ -94,7 +94,8 @@ sursa: Anexa 10 — Grila ETF PoC 1.1 (versiunea 03.06.2026); Ghid §8.4–8.5
 5. **Cursul InforEuro** la semnare (plafonul de 200 k€ și cel de minimis).
 6. **Durata evaluării**: dacă trece în 2027, se schimbă anii de referință IMM și se suspendă procesul până la depunerea bilanțului (§8.4 p. 79).
 7. Disponibilitatea reală a persoanelor recrutate după contract.
-8. Cum evaluează evaluatorul „experiența CDI a firmei” (3.2a) pentru o agenție de marketing/IT fără proiecte CDI finanțate anterior.
+8. Cum evaluează evaluatorul „experiența CDI a firmei” (3.2a) pentru o firmă înregistrată la 17.12.2025, cu CAEN principal de publicitate, fără proiecte CDI finanțate anterior.
+9. Data reală a apelului (ghidul final nu e publicat la 12.10.2026).
 
 ## Ce maximizează șansele (în ordinea impactului)
 1. Dovezi TRL 3 pe hardware real (2.3b + 1.2 + credibilitate generală).
