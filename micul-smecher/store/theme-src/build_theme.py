@@ -270,8 +270,8 @@ links_new = """<nav class="foot-links" aria-label="Legal">
         <a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener" data-i18n="f.anpc">{{ 'soul.f_anpc' | t }}</a>
       </nav>"""
 t = t.replace(links, links_new)
-# company identity (Legea 365/2002 art. 5): real values come from theme settings; until all are set, a plain "listed before opening" line
-co_old = re.search(r'<span data-co="address" hidden>.*?</a></p>', t, re.S)
+# company identity (Legea 365/2002 art. 5): values come from theme settings (defaults = the ONRC certificate, checked at ANAF)
+co_old = re.search(r'<span data-co="address">.*?</a></p>', t, re.S)
 assert co_old, "footer company block"
 t = t.replace(co_old.group(0), "{%- render 'soul-company' -%}</p>")
 t = t.replace("ARTEMIS DIGITAL S.R.L. · ", "{{ settings.company_name | escape }} · ", 1)
@@ -354,11 +354,12 @@ w("snippets/soul-price.liquid", """{%- comment -%} "from" price of SOUL, formatt
     echo cents | money_without_trailing_zeros
   endif
 -%}""")
-w("snippets/soul-company.liquid", """{%- comment -%}Company identity lines for the footer and the legal page. Fill them in Theme settings > Company (legal).{%- endcomment -%}
+w("snippets/soul-company.liquid", """{%- comment -%}Company identity lines for the footer and the legal page (Legea 365/2002 art. 5). Theme settings > Company (legal); defaults come from the ONRC certificate.{%- endcomment -%}
 {%- if settings.company_address != blank -%}{{ 'soul.f_addr' | t }} {{ settings.company_address | escape }}<br>{%- endif -%}
-{%- if settings.company_cui != blank -%}{{ 'soul.f_cui' | t }} {{ settings.company_cui | escape }} · {% endif -%}
+{%- if settings.company_cui != blank -%}{{ 'soul.f_cui' | t }} {{ settings.company_cui | escape }}{% if settings.company_reg != blank %} · {% else %}<br>{% endif %}{%- endif -%}
 {%- if settings.company_reg != blank -%}{{ 'soul.f_reg' | t }} {{ settings.company_reg | escape }}<br>{%- endif -%}
-{%- if settings.company_address == blank or settings.company_cui == blank or settings.company_reg == blank -%}{{ 'soul.f_copending' | t }}<br>{%- endif -%}
+{%- if settings.company_euid != blank -%}{{ 'soul.f_euid' | t }} {{ settings.company_euid | escape }}<br>{%- endif -%}
+{%- unless settings.company_vat -%}{{ 'soul.f_vat' | t }}<br>{%- endunless -%}
 {{ 'soul.f_contact' | t }} {% if settings.contact_email != blank -%}<a class="email" href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>{%- else -%}<a class="email" href="{{ routes.root_url }}">{{ shop.name }}</a>{%- endif -%}""")
 w("snippets/meta-tags.liquid", """{%- liquid
   assign og_title = page_title | default: shop.name
@@ -738,6 +739,8 @@ tpl("article.json", ["main-article"])
 tpl("cart.json", ["main-cart"])
 
 # ------------------------------------------------------------------ config
+# from the ONRC registration certificate (ARTEMIS DIGITAL S.R.L.), checked against ANAF on 2026-10-12. The phone number is never published.
+COMPANY = {"company_address": "Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București", "company_cui": "53145290", "company_reg": "J2025098748009", "company_euid": "ROONRC.J2025098748009"}
 settings_schema = [
     {"name": "theme_info", "theme_name": "SOUL", "theme_version": "3.0.0", "theme_author": "ARTEMIS DIGITAL S.R.L.",
      "theme_documentation_url": "https://help.shopify.com/manual/online-store/themes", "theme_support_url": "https://help.shopify.com/"},
@@ -753,9 +756,13 @@ settings_schema = [
         {"type": "page", "id": "warranty_page", "label": L("settings_schema.store.warranty", "Warranty page (2-year legal guarantee)", "Pagina despre garanție (garanția legală de 2 ani)")}]},
     {"name": L("settings_schema.company.name", "Company (legal)", "Firma (date legale)"), "settings": [
         {"type": "text", "id": "company_name", "default": "ARTEMIS DIGITAL S.R.L.", "label": L("settings_schema.company.cname", "Company name", "Denumire firmă")},
-        {"type": "text", "id": "company_address", "label": L("settings_schema.company.address", "Registered address", "Sediu social")},
-        {"type": "text", "id": "company_cui", "label": L("settings_schema.company.cui", "Tax ID (CUI)", "CUI")},
-        {"type": "text", "id": "company_reg", "label": L("settings_schema.company.reg", "Trade Register No.", "Nr. Reg. Com.")},
+        {"type": "text", "id": "company_address", "default": COMPANY["company_address"], "label": L("settings_schema.company.address", "Registered office", "Sediu social")},
+        {"type": "text", "id": "company_cui", "default": COMPANY["company_cui"], "label": L("settings_schema.company.cui", "Tax ID (CUI)", "CUI"),
+         "info": L("settings_schema.company.cui_info", "No RO prefix while the company is not VAT-registered.", "Fără prefixul RO cât timp firma nu e plătitoare de TVA.")},
+        {"type": "text", "id": "company_reg", "default": COMPANY["company_reg"], "label": L("settings_schema.company.reg", "Trade Register No.", "Nr. Reg. Com.")},
+        {"type": "text", "id": "company_euid", "default": COMPANY["company_euid"], "label": L("settings_schema.company.euid", "EUID", "EUID")},
+        {"type": "checkbox", "id": "company_vat", "default": False, "label": L("settings_schema.company.vat", "VAT-registered", "Plătitor de TVA"),
+         "info": L("settings_schema.company.vat_info", "Off: the footer says “Not VAT-registered. Prices shown are final.” (ANAF, checked 12.10.2026).", "Oprit: subsolul scrie „Neplătitor de TVA. Prețurile afișate sunt finale.” (ANAF, verificat 12.10.2026).")},
         {"type": "text", "id": "contact_email", "default": "office@krea.ro", "label": L("settings_schema.company.email", "Contact email", "Email de contact")}]},
     {"name": L("settings_schema.brand.name", "Brand and sharing", "Brand și distribuire"), "settings": [
         {"type": "image_picker", "id": "favicon", "label": L("settings_schema.brand.favicon", "Favicon (square, 512 px)", "Favicon (pătrat, 512 px)")},
@@ -763,7 +770,7 @@ settings_schema = [
         {"type": "text", "id": "share_description", "default": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied.", "label": L("settings_schema.brand.desc", "Fallback share description", "Descriere de rezervă pentru distribuire")}]}
 ]
 jw("config/settings_schema.json", settings_schema)
-defaults = {"prelaunch": True, "fallback_price": 249, "waitlist_tag": "waitlist", "company_name": "ARTEMIS DIGITAL S.R.L.", "contact_email": "office@krea.ro",
+defaults = {"prelaunch": True, "fallback_price": 249, "waitlist_tag": "waitlist", "company_name": "ARTEMIS DIGITAL S.R.L.", "contact_email": "office@krea.ro", **COMPANY, "company_vat": False,
             "share_description": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied."}
 jw("config/settings_data.json", {"current": dict(defaults), "presets": {"Default": dict(defaults)}})
 

@@ -1,6 +1,7 @@
-{%- comment -%}Company identity lines for the footer and the legal page. Fill them in Theme settings > Company (legal).{%- endcomment -%}
+{%- comment -%}Company identity lines for the footer and the legal page (Legea 365/2002 art. 5). Theme settings > Company (legal); defaults come from the ONRC certificate.{%- endcomment -%}
 {%- if settings.company_address != blank -%}{{ 'soul.f_addr' | t }} {{ settings.company_address | escape }}<br>{%- endif -%}
-{%- if settings.company_cui != blank -%}{{ 'soul.f_cui' | t }} {{ settings.company_cui | escape }} · {% endif -%}
+{%- if settings.company_cui != blank -%}{{ 'soul.f_cui' | t }} {{ settings.company_cui | escape }}{% if settings.company_reg != blank %} · {% else %}<br>{% endif %}{%- endif -%}
 {%- if settings.company_reg != blank -%}{{ 'soul.f_reg' | t }} {{ settings.company_reg | escape }}<br>{%- endif -%}
-{%- if settings.company_address == blank or settings.company_cui == blank or settings.company_reg == blank -%}{{ 'soul.f_copending' | t }}<br>{%- endif -%}
+{%- if settings.company_euid != blank -%}{{ 'soul.f_euid' | t }} {{ settings.company_euid | escape }}<br>{%- endif -%}
+{%- unless settings.company_vat -%}{{ 'soul.f_vat' | t }}<br>{%- endunless -%}
 {{ 'soul.f_contact' | t }} {% if settings.contact_email != blank -%}<a class="email" href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>{%- else -%}<a class="email" href="{{ routes.root_url }}">{{ shop.name }}</a>{%- endif -%}

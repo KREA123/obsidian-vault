@@ -17,7 +17,7 @@ site/
 ## Ce e adevărat pe pagină
 
 - Prelansare: doar listă de așteptare. Nu se plătește nimic, nu există precomandă, avans sau ediție „Founders”.
-- Preț: **de la 249 €**. ARTEMIS DIGITAL S.R.L. e înregistrată ca neplătitoare de TVA, deci pagina nu scrie „cu TVA”. Dacă firma devine plătitoare de TVA, adaugă textul înapoi și prefixul RO la CUI.
+- Preț: **de la 249 €**, preț final. ARTEMIS DIGITAL S.R.L. e neplătitoare de TVA (ANAF, scpTVA=false, verificat pe 12.10.2026), deci pagina nu scrie „cu TVA”; subsolul spune „Neplătitor de TVA”. Dacă firma devine plătitoare de TVA, adaugă textul înapoi și prefixul RO la CUI.
 - Fără certificare CE încă. Pagina nu pretinde CE.
 - AI: owner-ul își aduce propriul AI. Claude: propria cheie API Anthropic + SOUL adăugat ca conector personalizat în aplicația Claude. ChatGPT: propria cheie API OpenAI (în dezvoltare); „Sign in with ChatGPT” așteaptă aprobarea OpenAI. Sau offline.
 
@@ -30,15 +30,16 @@ window.SOUL_CONFIG = {
   PRICES: { from: 249 },
   SHIP: { en: "after CE testing", ro: "după testele CE" },
   CONTACT_EMAIL: "office@krea.ro",
-  COMPANY: { address: "", cui: "", reg: "" }   // din certificatul ONRC
+  COMPANY: { address: "Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București",
+             cui: "53145290", reg: "J2025098748009", euid: "ROONRC.J2025098748009" }   // certificatul ONRC, verificat la ANAF
 };
 ```
 
-Cât timp `COMPANY` e gol, subsolul spune că datele firmei apar înainte de deschiderea publică.
+Datele firmei sunt scrise și direct în HTML-ul subsolului (se văd și fără JavaScript) și în `legal.html`. Dacă se schimbă ceva, schimbă-le în toate trei locurile. Telefonul firmei nu se publică.
 
 ## Înainte de orice URL public (checklist)
 
-- [ ] `COMPANY.address`, `COMPANY.cui`, `COMPANY.reg` completate din ONRC (Legea 365/2002 art. 5). Fără „RO” la CUI dacă firma nu e plătitoare de TVA.
+- [x] `COMPANY` completat din certificatul ONRC (Legea 365/2002 art. 5): sediu, CUI 53145290 (fără „RO”, firma nu e plătitoare de TVA), J2025098748009, EUID ROONRC.J2025098748009.
 - [ ] Nota de confidențialitate din `legal.html` citită și confirmată (perioada de păstrare de 24 de luni, Shopify ca persoană împuternicită).
 - [ ] Domeniul ales, apoi: `og:image` cu URL absolut, `<link rel="canonical">`, `/ro/` ca URL separat cu `hreflang`, `sitemap.xml`.
 - [ ] Lista de așteptare reală: în Shopify (tema din `store/`), formularul nativ de client. Pe site-ul static, `WAITLIST_ENDPOINT` către un serviciu care respectă nota de confidențialitate.

@@ -69,21 +69,19 @@ const RO = {
   "hold.idle": "Ține apăsat pe sticlă (sau pe buton) și SOUL ascultă. Dai drumul și îți răspunde.",
   "hold.btn": "ține ca să vorbești", "hold.micOff": "microfon oprit",
   "hold.note": "Un demo scriptat, nu un AI live. Pe SOUL-ul adevărat microfonul e pornit doar cât timp ții degetul pe sticlă. Merge și cu Space sau Enter.",
-  "os.eyebrow": "SoulOS", "os.h2": "un mic sistem de operare.<br>pe un cerc.",
-  "os.lead": "Panouri de sticlă care plutesc peste fața lui, o tastatură rotundă, notițe, mementouri, alarme, hărți și aplicații mici. Merge pe hotspotul telefonului. Iar când se odihnește, e doar ochi pe negru pur.",
-  "os.alt0": "Randare de concept: SOUL pe un birou de lemn, cu tastatura SoulOS pe ecranul rotund: cuvântul Hello deasupra unei tastaturi QWERTY rotunde.",
+  "os.eyebrow": "SoulOS", "os.h2": "ochii sunt<br>sistemul.",
+  "os.lead": "Atingi sticla și ochii urcă, devenind fața fiecărui ecran. Negru pur, culori plate, forme rotunde și pline: aceeași limbă ca ochii și piatra.",
+  "os.a1": "Cadranul SoulOS: aplicații în formă de pietricele stau în cerc în jurul a doi ochi roz. Jos e selectat Talk.",
+  "os.a2": "Harta în SoulOS: ochii stau într-un cerc negru, sus, peste hartă, cu un buton Where to? dedesubt.",
+  "os.a3": "Cadranul SoulOS în galben și albastru: culorile ochilor galbeni Sunday Toast pe un corp Albastru noapte.",
+  "os.a4": "Ecranul Talk din SoulOS imediat după deschidere: ochii sus, Your Claude, Hold, or type și un buton Write to Claude.",
+  "os.fig": "Ecrane din prototipul web SoulOS, 480 × 480",
+  "os.c1t": "un cadran făcut pentru cerc", "os.c1": "Aplicațiile stau în jurul ochilor ca niște pietricele. Rotești inelul cu degetul. Marginea rotundă nu taie nimic.",
+  "os.c2t": "ochii rămân cu tine", "os.c2": "Deschizi o hartă, o notiță sau AI-ul: ochii urcă în partea de sus a cercului și reacționează în continuare. Nu pleacă niciodată de pe ecran.",
+  "os.c3t": "culori din ochii cu care s-a născut", "os.c3": "Ecranele fiecărui SOUL își iau culorile din perechea lui de ochi și din corpul de aluminiu. Aici: ochi Sunday Toast pe Albastru noapte.",
+  "os.c4t": "aplicațiile se deschid cu o clipire", "os.c4": "Două pleoape negre se închid o clipă, ecranul se schimbă în spatele lor și se deschid pe aplicația ta. Înapoi e aceeași clipire, invers.",
   "os.sbK": "repaus", "os.sb": "Fără ceas, fără lumină, fără notificări care se holbează la tine. În repaus, SOUL arată doar ochii, pe negru pur.",
-  "os.row": "Ecrane SoulOS",
-  "os.a1": "Tastatura SoulOS pe ecranul rotund: Hello scris deasupra unei tastaturi QWERTY rotunde.", "os.a2": "SoulOS după un mesaj către Claude: memento pus pentru ora 17:00.",
-  "os.a3": "Alegerea modului AI în SoulOS.", "os.a4": "Alarmă SoulOS pusă rotind un cadran pe margine, aici la 7.",
-  "os.a5": "Orbita din SoulOS: numele aplicațiilor stau pe marginea de jos ca un zâmbet.", "os.a6": "Azi în SoulOS: vremea, câte un lucru pe rând.",
-  "os.c1t": "o tastatură adevărată", "os.c1": "QWERTY rotund, cu sugestii, diacritice și anulare.",
-  "os.c2t": "îi scrii AI-ului tău", "os.c2": "„Amintește-mi la 5 să sun la bancă” devine un memento adevărat.",
-  "os.c3t": "moduri AI", "os.c3": "Claude-ul tău, ChatGPT-ul tău sau deloc AI.",
-  "os.c4t": "alarme pe cadran", "os.c4": "Rotești marginea până la oră. Se trezește el întâi, apoi te trezește pe tine.",
-  "os.c5t": "orbita", "os.c5": "Aplicațiile stau pe margine ca un zâmbet. Le învârți cu degetul.",
-  "os.c6t": "azi", "os.c6": "Glisezi în sus și îți spune câte un lucru pe rând.",
-  "os.cta": "încearcă SoulOS", "os.ctap": "Rulează chiar aici, în browser: aceeași interfață ca pe piatră.",
+  "os.cta": "încearcă SoulOS", "os.ctap": "Prototipul SoulOS rulează chiar aici, în browser. Același design e construit acum în firmware-ul lui SOUL.",
   "night.alt": "Randare de concept, noaptea: SOUL în oul lui OU deschis, în întuneric, cu ochi somnoroși, luminat doar de strălucirea caldă a oului.",
   "night.hint": "atinge-l ca să-l trezești. n-o să-i placă.", "night.eyebrow": "OU · oul lui de încărcare", "night.h2": "noaptea,<br>doarme în oul lui.",
   "night.l1t": "se încarcă pe dedesubt", "night.l1": "Contacte aurii în picior. Îl pui în OU și se încarcă. Niciun cablu în piatră.",
@@ -126,7 +124,7 @@ const RO = {
   "res.th": "ești pe listă.", "res.tp": "Tocmai ți-a zâmbit. Îți scriem înaintea tuturor.", "res.tc": "culoare", "res.tl": "limbă",
   "res.demo": "Mod de previzualizare: pagina asta încă nu trimite emailul nicăieri. Versiunea de magazin o va face.",
   "f.privacy": "Nota de confidențialitate", "f.terms": "Termeni", "f.cookies": "Cookie-uri", "f.withdraw": "Retragere și retur", "f.warranty": "Garanție", "f.os": "Încearcă SoulOS", "f.anpc": "Litigii consumatori (ANPC · SAL)",
-  "f.company": "Companie", "f.city": "București, România", "f.addr": "Adresă:", "f.cui": "CUI:", "f.reg": "Nr. Reg. Com.:", "f.contact": "Contact:", "f.coPending": "Sediul social, CUI și Nr. Reg. Com. apar aici înainte ca lista de așteptare să se deschidă publicului.",
+  "f.company": "Companie", "f.city": "București, România", "f.addr": "Sediul social:", "f.cui": "CUI:", "f.reg": "Nr. Reg. Com.:", "f.euid": "EUID:", "f.vat": "Neplătitor de TVA. Prețurile afișate sunt finale.", "f.contact": "Contact:",
   "f.status": "Stadiul produsului", "f.statusp": "SOUL e un produs în dezvoltare. Încă nu are certificare CE și nu e oferit spre vânzare. Nota de confidențialitate se aplică de acum. Termenii de vânzare, retragerea, garanția și datele producătorului conform GPSR se aplică doar când începe vânzarea și vor fi completate înainte.",
   "f.tm": "Claude este o marcă comercială a Anthropic. ChatGPT este o marcă comercială a OpenAI. SOUL este independent și nu este afiliat cu Anthropic sau OpenAI și nici susținut de acestea.",
   "f.made": "© 2026 ARTEMIS DIGITAL S.R.L. Ține sticla.", "f.ro": "Proiectat în România."
@@ -202,9 +200,8 @@ function fillConfig() {
   const P = CFG.PRICES || {};
   $$("[data-price]").forEach(el => { const v = P[el.dataset.price]; if (v != null) el.textContent = money(v); });
   $$("[data-cfg='email']").forEach(el => { if (CFG.CONTACT_EMAIL) { el.textContent = CFG.CONTACT_EMAIL; if (el.tagName === "A") el.href = "mailto:" + CFG.CONTACT_EMAIL; } });
-  const CO = CFG.COMPANY || {}; let coAll = true;
-  ["address", "cui", "reg"].forEach(k => { const v = (CO[k] || "").trim(); if (!v) coAll = false; $$(`[data-cfg='${k}']`).forEach(el => { el.textContent = v; }); $$(`[data-co='${k}']`).forEach(el => { el.hidden = !v; }); });
-  $$("[data-co='pending']").forEach(el => { el.hidden = coAll; });
+  const CO = CFG.COMPANY || {};
+  ["address", "cui", "reg", "euid"].forEach(k => { const v = (CO[k] || "").trim(); $$(`[data-cfg='${k}']`).forEach(el => { el.textContent = v; }); $$(`[data-co='${k}']`).forEach(el => { el.hidden = !v; }); });
   $$("[data-count]").forEach(el => { el.textContent = COUNT; });
 }
 const langHooks = [];
@@ -728,13 +725,31 @@ if (hand) {
   hand.cv.addEventListener("contextmenu", e => e.preventDefault());
 }
 
-/* ================================================================== SoulOS standby: eyes on pure black */
-const sb = $("#standby-cv");
-if (sb && SE) {
-  const inst = SE.createEyes(sb, byId("original"), { fit: .82, bezel: false, sheen: false, background: "#000", interactive: false, randomMood: true });
-  const rec = { inst, cv: sb, role: "standby", follow: true };
-  LIVE.push(rec);
-  sb.addEventListener("click", () => tapReact(rec));
+/* ================================================================== SoulOS Alive: the glass shows one screen at a time, and changes behind a blink */
+const osGlass = $("#os-glass"), osCaps = $$(".os-cap");
+if (osGlass && osCaps.length) {
+  let osIdx = 0, osTimer = 0, osSeen = false, osUser = false;
+  const show = (i, user) => {
+    i = (i + osCaps.length) % osCaps.length;
+    if (user) { osUser = true; clearInterval(osTimer); }
+    if (i === osIdx && user) return;
+    osIdx = i;
+    const k = osCaps[i].dataset.show;
+    osCaps.forEach((b, j) => b.setAttribute("aria-pressed", String(j === i)));
+    const swap = () => $$("img", osGlass).forEach(im => { const on = im.dataset.shot === k; im.classList.toggle("on", on); if (on) im.removeAttribute("aria-hidden"); else im.setAttribute("aria-hidden", "true"); });
+    if (RM) { swap(); return; }
+    osGlass.classList.remove("blink"); void osGlass.offsetWidth; osGlass.classList.add("blink");
+    setTimeout(swap, 100);
+    setTimeout(() => osGlass.classList.remove("blink"), 320);
+  };
+  osCaps.forEach((b, i) => b.addEventListener("click", () => show(i, true)));
+  const tick = () => { if (!document.hidden && osSeen && !osUser) show(osIdx + 1, false); };
+  if (!RM && "IntersectionObserver" in window) {
+    new IntersectionObserver(es => es.forEach(e => {
+      osSeen = e.isIntersecting; clearInterval(osTimer);
+      if (osSeen && !osUser) osTimer = setInterval(tick, 4200);
+    }), { threshold: .45 }).observe(osGlass);
+  }
 }
 
 /* ================================================================== night */

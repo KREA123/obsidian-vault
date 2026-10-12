@@ -109,7 +109,11 @@
       "cname": "Denumire firmă",
       "address": "Sediu social",
       "cui": "CUI",
+      "cui_info": "Fără prefixul RO cât timp firma nu e plătitoare de TVA.",
       "reg": "Nr. Reg. Com.",
+      "euid": "EUID",
+      "vat": "Plătitor de TVA",
+      "vat_info": "Oprit: subsolul scrie „Neplătitor de TVA. Prețurile afișate sunt finale.” (ANAF, verificat 12.10.2026).",
       "email": "Email de contact"
     },
     "brand": {

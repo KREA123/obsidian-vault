@@ -5,24 +5,31 @@
       <h2 class="h-l rv" id="os-title" data-i18n="os.h2">{{ 'soul.os_h2_html' | t }}</h2>
       <p class="lead rv" data-i18n="os.lead">{{ 'soul.os_lead' | t }}</p>
     </div>
-    <div class="os-top">
-      <figure class="frame rv">
-        <span class="tag" data-i18n="fig.render" style="position:absolute;left:16px;top:16px;z-index:2">{{ 'soul.fig_render' | t }}</span>
-        <img src="{{ 'typing.webp' | asset_url }}" srcset="{{ 'typing-sm.webp' | asset_url }} 800w, {{ 'typing.webp' | asset_url }} 1600w" sizes="(max-width:860px) calc(100vw - 32px), 700px" width="1600" height="900" loading="lazy" decoding="async" style="display:block;width:100%;height:100%;object-fit:cover" alt="{{ 'soul.os_alt0' | t }}" data-i18n-attr="alt:os.alt0">
+    <div class="os-alive">
+      <figure class="os-dev rv">
+        <div class="os-ring">
+          <div class="os-glass" id="os-glass">
+          <img class="on" src="{{ 'os-alive-dial-440.webp' | asset_url }}" srcset="{{ 'os-alive-dial-440.webp' | asset_url }} 440w, {{ 'os-alive-dial-880.webp' | asset_url }} 880w" sizes="(max-width:520px) calc(100vw - 60px), 440px" width="880" height="880" loading="lazy" decoding="async" data-shot="dial" alt="{{ 'soul.os_a1' | t }}" data-i18n-attr="alt:os.a1">
+          <img src="{{ 'os-alive-eyes-440.webp' | asset_url }}" srcset="{{ 'os-alive-eyes-440.webp' | asset_url }} 440w, {{ 'os-alive-eyes-880.webp' | asset_url }} 880w" sizes="(max-width:520px) calc(100vw - 60px), 440px" width="880" height="880" loading="lazy" decoding="async" data-shot="eyes" alt="{{ 'soul.os_a2' | t }}" data-i18n-attr="alt:os.a2" aria-hidden="true">
+          <img src="{{ 'os-alive-born-440.webp' | asset_url }}" srcset="{{ 'os-alive-born-440.webp' | asset_url }} 440w, {{ 'os-alive-born-880.webp' | asset_url }} 880w" sizes="(max-width:520px) calc(100vw - 60px), 440px" width="880" height="880" loading="lazy" decoding="async" data-shot="born" alt="{{ 'soul.os_a3' | t }}" data-i18n-attr="alt:os.a3" aria-hidden="true">
+          <img src="{{ 'os-alive-blink-440.webp' | asset_url }}" srcset="{{ 'os-alive-blink-440.webp' | asset_url }} 440w, {{ 'os-alive-blink-880.webp' | asset_url }} 880w" sizes="(max-width:520px) calc(100vw - 60px), 440px" width="880" height="880" loading="lazy" decoding="async" data-shot="blink" alt="{{ 'soul.os_a4' | t }}" data-i18n-attr="alt:os.a4" aria-hidden="true">
+            <span class="os-lid t" aria-hidden="true"></span><span class="os-lid b" aria-hidden="true"></span>
+          </div>
+        </div>
+        <figcaption data-i18n="os.fig">{{ 'soul.os_fig' | t }}</figcaption>
       </figure>
-      <div class="standby rv">
-        <p class="eyebrow" data-i18n="os.sbK">{{ 'soul.os_sbk' | t }}</p>
-        <canvas id="standby-cv" aria-hidden="true"></canvas>
-        <p data-i18n="os.sb">{{ 'soul.os_sb' | t }}</p>
+      <div class="rv">
+        <ol class="os-caps">
+        <li><button type="button" class="os-cap" data-show="dial" aria-pressed="true" aria-controls="os-glass"><b data-i18n="os.c1t">{{ 'soul.os_c1t' | t }}</b><span data-i18n="os.c1">{{ 'soul.os_c1' | t }}</span></button></li>
+        <li><button type="button" class="os-cap" data-show="eyes" aria-pressed="false" aria-controls="os-glass"><b data-i18n="os.c2t">{{ 'soul.os_c2t' | t }}</b><span data-i18n="os.c2">{{ 'soul.os_c2' | t }}</span></button></li>
+        <li><button type="button" class="os-cap" data-show="born" aria-pressed="false" aria-controls="os-glass"><b data-i18n="os.c3t">{{ 'soul.os_c3t' | t }}</b><span data-i18n="os.c3">{{ 'soul.os_c3' | t }}</span></button></li>
+        <li><button type="button" class="os-cap" data-show="blink" aria-pressed="false" aria-controls="os-glass"><b data-i18n="os.c4t">{{ 'soul.os_c4t' | t }}</b><span data-i18n="os.c4">{{ 'soul.os_c4' | t }}</span></button></li>
+        </ol>
+        <div class="os-sb">
+          <p class="eyebrow" data-i18n="os.sbK">{{ 'soul.os_sbk' | t }}</p>
+          <p data-i18n="os.sb">{{ 'soul.os_sb' | t }}</p>
+        </div>
       </div>
-    </div>
-    <div class="os-row" tabindex="0" role="region" aria-label="{{ 'soul.os_row' | t }}" data-i18n-attr="aria-label:os.row">
-      <figure><img src="{{ 'os-keyboard.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a1' | t }}" data-i18n-attr="alt:os.a1"><figcaption><b data-i18n="os.c1t">{{ 'soul.os_c1t' | t }}</b><span data-i18n="os.c1">{{ 'soul.os_c1' | t }}</span></figcaption></figure>
-      <figure><img src="{{ 'os-claude.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a2' | t }}" data-i18n-attr="alt:os.a2"><figcaption><b data-i18n="os.c2t">{{ 'soul.os_c2t' | t }}</b><span data-i18n="os.c2">{{ 'soul.os_c2' | t }}</span></figcaption></figure>
-      <figure><img src="{{ 'os-modes.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a3' | t }}" data-i18n-attr="alt:os.a3"><figcaption><b data-i18n="os.c3t">{{ 'soul.os_c3t' | t }}</b><span data-i18n="os.c3">{{ 'soul.os_c3' | t }}</span></figcaption></figure>
-      <figure><img src="{{ 'os-alarm.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a4' | t }}" data-i18n-attr="alt:os.a4"><figcaption><b data-i18n="os.c4t">{{ 'soul.os_c4t' | t }}</b><span data-i18n="os.c4">{{ 'soul.os_c4' | t }}</span></figcaption></figure>
-      <figure><img src="{{ 'os-launcher.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a5' | t }}" data-i18n-attr="alt:os.a5"><figcaption><b data-i18n="os.c5t">{{ 'soul.os_c5t' | t }}</b><span data-i18n="os.c5">{{ 'soul.os_c5' | t }}</span></figcaption></figure>
-      <figure><img src="{{ 'os-today.webp' | asset_url }}" width="628" height="719" loading="lazy" decoding="async" alt="{{ 'soul.os_a6' | t }}" data-i18n-attr="alt:os.a6"><figcaption><b data-i18n="os.c6t">{{ 'soul.os_c6t' | t }}</b><span data-i18n="os.c6">{{ 'soul.os_c6' | t }}</span></figcaption></figure>
     </div>
     {%- if section.settings.demo_url != blank -%}
     <div class="os-cta">

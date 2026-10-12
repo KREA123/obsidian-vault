@@ -64,17 +64,34 @@
       {
         "type": "text",
         "id": "company_address",
+        "default": "Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București",
         "label": "t:settings_schema.company.address"
       },
       {
         "type": "text",
         "id": "company_cui",
-        "label": "t:settings_schema.company.cui"
+        "default": "53145290",
+        "label": "t:settings_schema.company.cui",
+        "info": "t:settings_schema.company.cui_info"
       },
       {
         "type": "text",
         "id": "company_reg",
+        "default": "J2025098748009",
         "label": "t:settings_schema.company.reg"
+      },
+      {
+        "type": "text",
+        "id": "company_euid",
+        "default": "ROONRC.J2025098748009",
+        "label": "t:settings_schema.company.euid"
+      },
+      {
+        "type": "checkbox",
+        "id": "company_vat",
+        "default": false,
+        "label": "t:settings_schema.company.vat",
+        "info": "t:settings_schema.company.vat_info"
       },
       {
         "type": "text",

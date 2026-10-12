@@ -24,11 +24,12 @@
 window.SOUL_CONFIG = {
   WAITLIST_ENDPOINT: "",            // "" = demo mode (sign-ups stay in this browser). Shopify: the theme posts the native customer form instead.
   CURRENCY: "EUR",
-  PRICES: { from: 249 },            // SOUL size M, aluminium, "from" price. ARTEMIS DIGITAL is not VAT-registered (confirm before launch): no "incl. VAT" text.
+  PRICES: { from: 249 },            // SOUL size M, aluminium, "from" price. Final price: ARTEMIS DIGITAL is not VAT-registered (ANAF, scpTVA=false, checked 2026-10-12), so no "incl. VAT" text.
   SHIP: { en: "after CE testing", ro: "după testele CE" },
   CONTACT_EMAIL: "office@krea.ro",
-  // Legea 365/2002 art. 5: fill these from the ONRC certificate before any public URL goes live (no "RO" prefix on the CUI unless VAT-registered).
-  COMPANY: { address: "", cui: "", reg: "" }
+  // Legea 365/2002 art. 5. From the ONRC registration certificate, checked against ANAF on 2026-10-12.
+  // No "RO" prefix on the CUI: the company is not VAT-registered. Add it (and "incl. VAT") only if that changes.
+  COMPANY: { address: "Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București", cui: "53145290", reg: "J2025098748009", euid: "ROONRC.J2025098748009" }
 };
 document.documentElement.classList.add("js");
 </script>
@@ -309,20 +310,33 @@ button,input,select{font:inherit;color:inherit}
 .demo-note{font-size:.84rem;color:var(--ink-2)}
 .frame .hold-hint{position:absolute;left:50%;top:auto;bottom:16px;transform:translateX(-50%);white-space:nowrap;pointer-events:none;z-index:3}
 
-/* soulos */
-.os-top{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:stretch}
-@media (max-width:860px){.os-top{grid-template-columns:minmax(0,1fr)}}
-.standby{display:grid;align-content:space-between;gap:20px;padding:24px;border-radius:32px;background:#000;color:#F6F3EC}
-.standby canvas{width:min(100%,300px);aspect-ratio:1;display:block;margin:auto}
-.standby p{color:#B6B9C0;font-size:.95rem}
-.standby .eyebrow{color:#9EA1A8}
-.os-row{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(190px,23%,260px);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:12px;margin-top:clamp(24px,3vw,36px);scrollbar-width:thin;overscroll-behavior-x:contain}
-.os-row figure{scroll-snap-align:start;display:grid;gap:10px}
-.os-row img{display:block;width:100%;border-radius:26px;background:#E4E6E1}
-.os-row figcaption{font-size:.92rem;color:var(--ink-2)}
-.os-row figcaption b{display:block;color:var(--ink);font-weight:600}
-.os-cta{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;margin-top:clamp(24px,3vw,40px)}
+/* soulos: SoulOS Alive, shown in a round black glass */
+.os-alive{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,80px);align-items:center}
+@media (max-width:860px){.os-alive{grid-template-columns:minmax(0,1fr)}}
+.os-dev{display:grid;justify-items:center;gap:16px}
+.os-ring{width:min(100%,468px);aspect-ratio:1;border-radius:50%;padding:clamp(9px,1.6vw,14px);background:linear-gradient(145deg,#E4E5E7,#AEB1B5 55%,#D6D8DA);box-shadow:var(--shadow)}
+.os-glass{position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;background:#000;isolation:isolate}
+.os-glass img{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .01s}
+.os-glass img.on{opacity:1}
+.os-lid{position:absolute;left:-30%;width:160%;height:62%;background:#000;border-radius:50%;z-index:2;transform:scaleY(0);pointer-events:none}
+.os-lid.t{top:-12%;transform-origin:50% 0}
+.os-lid.b{bottom:-12%;transform-origin:50% 100%}
+.os-glass.blink .os-lid{animation:os-lid .29s linear both}
+@keyframes os-lid{0%{transform:scaleY(0);animation-timing-function:cubic-bezier(.55,0,1,.45)}27.6%{transform:scaleY(1)}41.4%{transform:scaleY(1);animation-timing-function:cubic-bezier(.34,1.8,.64,1)}100%{transform:scaleY(0)}}
+.os-dev figcaption{font:500 .68rem/1.4 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);text-align:center;max-width:44ch}
+.os-caps{display:grid;gap:10px;counter-reset:cap}
+.os-cap{counter-increment:cap;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:16px;row-gap:4px;width:100%;min-height:44px;padding:18px 20px;border:1px solid var(--line);border-radius:22px 26px 24px 20px;background:transparent;text-align:left;cursor:pointer;transition:background .2s,border-color .2s}
+.os-cap::before{content:counter(cap);grid-row:span 2;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--paper);border:1px solid var(--line-2);font:500 .72rem/1 var(--f-mono);color:var(--ink-2)}
+.os-cap b{font-size:1.12rem;font-weight:650;letter-spacing:-.02em;line-height:1.2}
+.os-cap span{color:var(--ink-2);font-size:.95rem;line-height:1.45}
+.os-cap:hover{border-color:var(--line-2)}
+.os-cap[aria-pressed="true"]{background:var(--card);border-color:var(--line-2)}
+.os-cap[aria-pressed="true"]::before{background:#000;color:#FFF0C8;border-color:#000}
+.os-sb{display:grid;gap:6px;margin-top:18px;padding-left:4px}
+.os-sb p:last-child{color:var(--ink-2);font-size:.95rem;max-width:52ch}
+.os-cta{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;margin-top:clamp(28px,4vw,48px)}
 .os-cta p{color:var(--ink-2);max-width:52ch;flex:1 1 260px}
+@media (prefers-reduced-motion:reduce){.os-glass.blink .os-lid{animation:none}}
 
 /* night */
 .night{background:var(--night);color:var(--night-ink);--ink:var(--night-ink);--ink-2:var(--night-2);--line:rgba(255,255,255,.12);--line-2:rgba(255,255,255,.28);--focus:#FFB347;overflow:clip}
@@ -742,31 +756,38 @@ select.input option{background:#121214;color:#F6F3EC}
   <div class="wrap">
     <div class="head">
       <p class="eyebrow rv" data-i18n="os.eyebrow">SoulOS</p>
-      <h2 class="h-l rv" id="os-title" data-i18n="os.h2">a whole little os.<br>on a circle.</h2>
-      <p class="lead rv" data-i18n="os.lead">Glass panels that float over its face, a round keyboard, notes, reminders, alarms, maps and little apps. It roams with your phone's hotspot. And when it rests, it's just eyes on pure black.</p>
+      <h2 class="h-l rv" id="os-title" data-i18n="os.h2">the eyes<br>are the os.</h2>
+      <p class="lead rv" data-i18n="os.lead">Touch the glass and the eyes glide up to become the face of every screen. Pure black, flat colour, chunky round shapes: the same language as the eyes and the stone.</p>
     </div>
-    <div class="os-top">
-      <figure class="frame rv">
-        <span class="tag" data-i18n="fig.render" style="position:absolute;left:16px;top:16px;z-index:2">concept render</span>
-        <img src="media/v2/typing.webp" srcset="media/v2/typing-sm.webp 800w, media/v2/typing.webp 1600w" sizes="(max-width:860px) calc(100vw - 32px), 700px" width="1600" height="900" loading="lazy" decoding="async" style="display:block;width:100%;height:100%;object-fit:cover" alt="Concept render of SOUL on a wooden desk with the SoulOS keyboard on its round screen: the word Hello typed above a round QWERTY keyboard." data-i18n-attr="alt:os.alt0">
+    <div class="os-alive">
+      <figure class="os-dev rv">
+        <div class="os-ring">
+          <div class="os-glass" id="os-glass">
+          <img class="on" src="media/v4/os-alive-dial-440.webp" srcset="media/v4/os-alive-dial-440.webp 440w, media/v4/os-alive-dial-880.webp 880w" sizes="(max-width:520px) calc(100vw - 60px), 440px" width="880" height="880" loading="lazy" decoding="async" data-shot="dial" alt="SoulOS home dial: app icons shaped like small stones sit in a ring around two pink eyes. Talk is selected at the bottom." data-i18n-attr="alt:os.a1">
+          <img src="media/v4/os-alive-eyes-440.webp" srcset="media/v4/os-alive-eyes-440.webp 440w, media/v4/os-alive-eyes-880.webp 880w" sizes="(max-width:520px) calc(100vw - 60px), 440px" width="880" height="880" loading="lazy" decoding="async" data-shot="eyes" alt="SoulOS map: the eyes sit in a black circle at the top, over the map, with a Where to? button below." data-i18n-attr="alt:os.a2" aria-hidden="true">
+          <img src="media/v4/os-alive-born-440.webp" srcset="media/v4/os-alive-born-440.webp 440w, media/v4/os-alive-born-880.webp 880w" sizes="(max-width:520px) calc(100vw - 60px), 440px" width="880" height="880" loading="lazy" decoding="async" data-shot="born" alt="The SoulOS dial in yellow and blue: the colours of yellow Sunday Toast eyes on a Midnight body." data-i18n-attr="alt:os.a3" aria-hidden="true">
+          <img src="media/v4/os-alive-blink-440.webp" srcset="media/v4/os-alive-blink-440.webp 440w, media/v4/os-alive-blink-880.webp 880w" sizes="(max-width:520px) calc(100vw - 60px), 440px" width="880" height="880" loading="lazy" decoding="async" data-shot="blink" alt="The SoulOS Talk screen right after opening: the eyes at the top, Your Claude, Hold, or type, and a Write to Claude button." data-i18n-attr="alt:os.a4" aria-hidden="true">
+            <span class="os-lid t" aria-hidden="true"></span><span class="os-lid b" aria-hidden="true"></span>
+          </div>
+        </div>
+        <figcaption data-i18n="os.fig">Screens from the SoulOS web prototype, 480 × 480</figcaption>
       </figure>
-      <div class="standby rv">
-        <p class="eyebrow" data-i18n="os.sbK">standby</p>
-        <canvas id="standby-cv" aria-hidden="true"></canvas>
-        <p data-i18n="os.sb">No clock, no glow, no notifications staring at you. In standby, SOUL shows only its eyes on pure black.</p>
+      <div class="rv">
+        <ol class="os-caps">
+        <li><button type="button" class="os-cap" data-show="dial" aria-pressed="true" aria-controls="os-glass"><b data-i18n="os.c1t">a dial made for a circle</b><span data-i18n="os.c1">Your apps sit around the eyes like small stones. Turn the ring with a finger. Nothing gets cut off by the round edge.</span></button></li>
+        <li><button type="button" class="os-cap" data-show="eyes" aria-pressed="false" aria-controls="os-glass"><b data-i18n="os.c2t">the eyes stay with you</b><span data-i18n="os.c2">Open a map, a note or your AI: the eyes move to the top of the circle and keep reacting. They never leave the screen.</span></button></li>
+        <li><button type="button" class="os-cap" data-show="born" aria-pressed="false" aria-controls="os-glass"><b data-i18n="os.c3t">colours from the eyes it was born with</b><span data-i18n="os.c3">Each SOUL's screens take their colours from its own pair of eyes and its aluminium body. Here: Sunday Toast eyes on Midnight.</span></button></li>
+        <li><button type="button" class="os-cap" data-show="blink" aria-pressed="false" aria-controls="os-glass"><b data-i18n="os.c4t">apps open with a blink</b><span data-i18n="os.c4">Two black lids close for a moment, the screen changes behind them, and they open on your app. Going back is the same blink, in reverse.</span></button></li>
+        </ol>
+        <div class="os-sb">
+          <p class="eyebrow" data-i18n="os.sbK">standby</p>
+          <p data-i18n="os.sb">No clock, no glow, no notifications staring at you. In standby, SOUL shows only its eyes on pure black.</p>
+        </div>
       </div>
-    </div>
-    <div class="os-row" tabindex="0" role="region" aria-label="SoulOS screens" data-i18n-attr="aria-label:os.row">
-      <figure><img src="media/v3/os-keyboard.webp" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS keyboard on the round screen: Hello typed above a round QWERTY keyboard." data-i18n-attr="alt:os.a1"><figcaption><b data-i18n="os.c1t">a real keyboard</b><span data-i18n="os.c1">Round QWERTY with suggestions, accents and undo.</span></figcaption></figure>
-      <figure><img src="media/v3/os-claude.webp" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS after a message to Claude: Done. I'll ping you at 5:00 PM. Reminder set." data-i18n-attr="alt:os.a2"><figcaption><b data-i18n="os.c2t">write to your AI</b><span data-i18n="os.c2">“Remind me at 5 to call the bank” becomes a real reminder.</span></figcaption></figure>
-      <figure><img src="media/v3/os-modes.webp" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS AI mode picker." data-i18n-attr="alt:os.a3"><figcaption><b data-i18n="os.c3t">ai modes</b><span data-i18n="os.c3">Your Claude, your ChatGPT or no AI at all.</span></figcaption></figure>
-      <figure><img src="media/v3/os-alarm.webp" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS alarm set by turning a dial on the rim, here at 7." data-i18n-attr="alt:os.a4"><figcaption><b data-i18n="os.c4t">alarms on a dial</b><span data-i18n="os.c4">Turn the rim to the hour. It wakes up first, then wakes you.</span></figcaption></figure>
-      <figure><img src="media/v3/os-launcher.webp" width="628" height="719" loading="lazy" decoding="async" alt="The SoulOS Orbit: app names ride the lower rim like a smile." data-i18n-attr="alt:os.a5"><figcaption><b data-i18n="os.c5t">the orbit</b><span data-i18n="os.c5">Your apps sit on the rim like a smile. Spin them with a finger.</span></figcaption></figure>
-      <figure><img src="media/v3/os-today.webp" width="628" height="719" loading="lazy" decoding="async" alt="SoulOS Today: the weather, one thing at a time." data-i18n-attr="alt:os.a6"><figcaption><b data-i18n="os.c6t">today</b><span data-i18n="os.c6">Swipe up and it tells you one thing at a time.</span></figcaption></figure>
     </div>
     <div class="os-cta">
       <a class="btn" href="os.html"><span data-i18n="os.cta">try SoulOS</span><span class="arr" aria-hidden="true">→</span></a>
-      <p data-i18n="os.ctap">It runs right here in your browser: the same interface as on the stone.</p>
+      <p data-i18n="os.ctap">The SoulOS prototype runs right here in your browser. The same design is being built into SOUL's firmware.</p>
     </div>
   </div>
 </section>
@@ -942,7 +963,7 @@ select.input option{background:#121214;color:#F6F3EC}
     <div class="legal">
       <div>
         <h4 data-i18n="f.company">Company</h4>
-        <p>ARTEMIS DIGITAL S.R.L. · <span data-i18n="f.city">Bucharest, Romania</span><br><span data-co="address" hidden><span data-i18n="f.addr">Address:</span> <span data-cfg="address"></span><br></span><span data-co="cui" hidden><span data-i18n="f.cui">Tax ID (CUI):</span> <span data-cfg="cui"></span> · </span><span data-co="reg" hidden><span data-i18n="f.reg">Trade Register No.:</span> <span data-cfg="reg"></span><br></span><span data-co="pending" data-i18n="f.coPending">Registered office, tax ID (CUI) and Trade Register No. are listed here before the waitlist opens to the public.</span><br><span data-i18n="f.contact">Contact:</span> <a class="email" data-cfg="email" href="mailto:office@krea.ro">office@krea.ro</a></p>
+        <p>ARTEMIS DIGITAL S.R.L. · <span data-i18n="f.city">Bucharest, Romania</span><br><span data-co="address"><span data-i18n="f.addr">Registered office:</span> <span data-cfg="address">Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București</span><br></span><span data-co="cui"><span data-i18n="f.cui">Tax ID (CUI):</span> <span data-cfg="cui">53145290</span> · </span><span data-co="reg"><span data-i18n="f.reg">Trade Register No.:</span> <span data-cfg="reg">J2025098748009</span><br></span><span data-co="euid"><span data-i18n="f.euid">EUID:</span> <span data-cfg="euid">ROONRC.J2025098748009</span><br></span><span data-i18n="f.vat">Not VAT-registered. Prices shown are final.</span><br><span data-i18n="f.contact">Contact:</span> <a class="email" data-cfg="email" href="mailto:office@krea.ro">office@krea.ro</a></p>
       </div>
       <div>
         <h4 data-i18n="f.status">Product status</h4>

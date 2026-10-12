@@ -107,9 +107,13 @@
     "company": {
       "name": "Company (legal)",
       "cname": "Company name",
-      "address": "Registered address",
+      "address": "Registered office",
       "cui": "Tax ID (CUI)",
+      "cui_info": "No RO prefix while the company is not VAT-registered.",
       "reg": "Trade Register No.",
+      "euid": "EUID",
+      "vat": "VAT-registered",
+      "vat_info": "Off: the footer says “Not VAT-registered. Prices shown are final.” (ANAF, checked 12.10.2026).",
       "email": "Contact email"
     },
     "brand": {

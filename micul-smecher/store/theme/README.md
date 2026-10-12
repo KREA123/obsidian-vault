@@ -16,7 +16,8 @@ Ia pașii în ordine. Fiecare pas spune unde dai click în Shopify Admin.
 2. **Settings → Store details**
    - Store name: `SOUL`
    - Legal business name: `ARTEMIS DIGITAL S.R.L.`
-   - Adresa: sediul social din București
+   - Adresa: sediul social, Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București
+   - Nu pune telefonul firmei nicăieri public.
    - Store currency: **EUR**. Alege moneda înainte de prima comandă, pentru că după aceea e greu de schimbat.
 3. **Settings → Plan**: alege un plan. Pe perioada de probă, magazinul are parolă și nimeni nu vede lista de așteptare. Parola o scoți la pasul 9.
 
@@ -50,7 +51,13 @@ Ia pașii în ordine. Fiecare pas spune unde dai click în Shopify Admin.
      - **SOUL product**: îl alegi după pasul 5.
      - **Fallback price**: 249.
      - **Waitlist tag**: `waitlist`.
-   - **Company (legal)**: denumirea firmei, sediul, CUI, Nr. Reg. Com. și emailul de contact (implicit `office@krea.ro`). Până le completezi pe toate trei, subsolul spune că datele firmei apar înainte de deschiderea publică. Legea 365/2002 art. 5 le cere înainte ca magazinul să fie public. Fără prefixul RO la CUI cât timp firma e neplătitoare de TVA.
+   - **Company (legal)**: vin deja completate din certificatul ONRC (verificate la ANAF pe 12.10.2026). Legea 365/2002 art. 5 le cere înainte ca magazinul să fie public:
+     - Denumire: ARTEMIS DIGITAL S.R.L.
+     - Sediu social: Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București
+     - CUI: 53145290 (fără prefixul RO: firma nu e plătitoare de TVA)
+     - Nr. Reg. Com.: J2025098748009 · EUID: ROONRC.J2025098748009
+     - Email de contact: `office@krea.ro`
+     - **VAT-registered** rămâne **debifat**. Așa, subsolul scrie „Neplătitor de TVA. Prețurile afișate sunt finale.” Dacă firma devine plătitoare de TVA, bifează-l, pune RO în fața CUI-ului și verifică textele despre preț.
    - **Brand and sharing**:
      - **Favicon**: logo-ul pătrat din `brand/SOUL-Brand-Package/Favicon`.
      - **Social share image**: o imagine de 1200×630, de exemplu randarea hero.
@@ -161,6 +168,8 @@ Apoi:
   - `product.json` are culorile, lista de așteptare, „born with”, AI-ul tău, specificațiile și întrebările.
   - `page.how-it-works.json`, `page.faq.json` și `page.legal.json` sunt paginile de la pasul 6.
 - `snippets/waitlist-form.liquid`: formularul `{% form 'customer' %}` cu etichete și acord.
+- `sections/soulos.liquid`: SoulOS Alive într-o sticlă rotundă neagră. Patru ecrane din prototipul web (`os-alive-*.webp`, 440 și 880 px) se schimbă cu o clipire când apeși pe cele patru texte. Butonul „try SoulOS” apare doar dacă pui un link în setarea secțiunii.
+- `snippets/soul-company.liquid`: datele firmei în subsol și pe pagina legală (sediu, CUI, Nr. Reg. Com., EUID, „Neplătitor de TVA”, email).
 - `snippets/soul-price.liquid`: prețul „de la”, formatat de Shopify cu filtrul `money`, deci urmează moneda pieței.
 - `locales/`: textele site-ului (`en.default.json`, `ro.json`) și textele din editor (`*.schema.json`).
 - `assets/`:

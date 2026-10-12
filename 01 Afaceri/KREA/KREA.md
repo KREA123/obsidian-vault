@@ -7,6 +7,7 @@ actualizat: 2026-09-23
 # KREA
 
 Agenție de marketing și IT din București (krea.ro, office@krea.ro), brandul sub care operează ARTEMIS DIGITAL S.R.L. (neplătitor de TVA). Fondator: Andu.
+Date publice ARTEMIS DIGITAL S.R.L. (certificat ONRC, verificat ANAF 2026-10-12): sediu București, Sector 3, Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123 · CUI 53145290 (fără RO, neplătitor de TVA) · Nr. Reg. Com. J2025098748009 · EUID ROONRC.J2025098748009 · CAEN 7311 · contact office@krea.ro.
 
 Rolul în planul mare: **motorul de cash** care finanțează investițiile și celelalte afaceri.
 

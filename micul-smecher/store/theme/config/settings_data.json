@@ -5,6 +5,11 @@
     "waitlist_tag": "waitlist",
     "company_name": "ARTEMIS DIGITAL S.R.L.",
     "contact_email": "office@krea.ro",
+    "company_address": "Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București",
+    "company_cui": "53145290",
+    "company_reg": "J2025098748009",
+    "company_euid": "ROONRC.J2025098748009",
+    "company_vat": false,
     "share_description": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied."
   },
   "presets": {
@@ -14,6 +19,11 @@
       "waitlist_tag": "waitlist",
       "company_name": "ARTEMIS DIGITAL S.R.L.",
       "contact_email": "office@krea.ro",
+      "company_address": "Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București",
+      "company_cui": "53145290",
+      "company_reg": "J2025098748009",
+      "company_euid": "ROONRC.J2025098748009",
+      "company_vat": false,
       "share_description": "A palm-sized aluminium stone with two living eyes. Your own AI, embodied."
     }
   }

@@ -44,6 +44,8 @@ const base = lang => ({ settings: JSON.parse(read('config/settings_data.json')).
     available_countries: [{ iso_code: 'RO', name: 'Romania', currency: { iso_code: 'RON', symbol: 'lei' } }, { iso_code: 'DE', name: 'Germany', currency: { iso_code: 'EUR', symbol: '€' } }], country: { iso_code: 'RO' } },
   shop: { name: 'SOUL', privacy_policy: { url: '/policies/privacy-policy' }, terms_of_service: { url: '/policies/terms-of-service' } },
   cart: { item_count: 0, currency: { iso_code: 'EUR' }, items: [] }, page_title: 'SOUL', canonical_url: 'https://soul.example/', current_page: 1, content_for_header: '' });
+// snippets see theme settings as globals, like on Shopify
+engine.options.globals = { settings: JSON.parse(read('config/settings_data.json')).current };
 for (const [tplName, lang] of [['index', 'en'], ['index', 'ro'], ['product', 'en'], ['page.legal', 'ro']]) {
   LOC = JSON.parse(read(`locales/${lang === 'en' ? 'en.default' : lang}.json`));
   const tpl = JSON.parse(read(`templates/${tplName}.json`));
