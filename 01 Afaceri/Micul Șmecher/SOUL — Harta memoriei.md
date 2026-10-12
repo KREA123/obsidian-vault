@@ -131,6 +131,7 @@ actualizat: 2026-10-03
 - [[micul-smecher/research/design-max/render-brief|Render brief v5: SOUL final + OU capsule + ALT A (PIATRA) + ALT B (MĂRGĂRITAR) (2026-09-24]] — `research/design-max/render-brief.md`
 
 ## Investitori și finanțare
+- [[Finanțare — toate sursele pentru SOUL]] — **toate programele de bani (UE, România, credite AI, acceleratoare, investitori), top 5 și calendarul oct. 2026 → dec. 2027** (2026-10-12)
 - [[micul-smecher/investors/DECK|SOUL: pitch deck content (v1, 2026-09-25)]] — `investors/DECK.md`
 - [[micul-smecher/investors/FINANTARE-ROMANIA|Finanțare nerambursabilă și publică pentru SOUL — prin ARTEMIS DIGITAL S.R.L.]] — `investors/FINANTARE-ROMANIA.md`
 - [[micul-smecher/investors/INVESTORS|SOUL: investor research, target list, 90-day raise plan (2026-09-25)]] — `investors/INVESTORS.md`

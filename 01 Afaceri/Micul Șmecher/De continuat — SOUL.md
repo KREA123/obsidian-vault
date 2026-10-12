@@ -26,6 +26,11 @@ actualizat: 2026-10-03
 - [ ] 7. **Creează repo-ul GitHub „soul”** (`krea123/soul`) pentru copia partajată — apoi Claude rulează sincronizarea (B.5).
 - [ ] 8. **Distribuie artefactele** (sunt private până le partajezi tu din claude.ai): site v2 https://claude.ai/artifact/WZtQ7JpCjpj6M3sfgJugHC · SoulOS v4 https://claude.ai/artifact/BFboeyYNYTUBrzsiB9uEfA · galeria de ochi https://claude.ai/artifact/M8CVFPvTN3FCj6fC9UbA3D · semnătura https://claude.ai/artifact/36i5S4iZkq3t48ZqJZwFt5
 - [ ] 9. (opțional) Testează SOUL Bridge pe Mac/PC-ul tău cu contul tău Pro/Max (docs/08 §3.1 și §7) — singurul test pe care Claude nu-l poate face.
+- [ ] 10. **Finanțare — primele 3 termene** (detalii în [[Finanțare — toate sursele pentru SOUL]]):
+  - **PoC 1.1** (ADR BI, ~dec. 2026–feb. 2027, data exactă nestabilită): urmărești ghidul final pe regiobucuresti-ilfov.ro/apeluri și găsești expertul științific pentru Anexa 16 (UPB, ICI, IMT).
+  - **Eurostars Call 12** (deschis 17.12.2026, **termen 4.03.2027**): găsești un partener străin (prin Enterprise Europe Network) și întrebi UEFISCDI de rata și plafonul pentru România.
+  - **PR BI 1.2 produse noi** (realist T1–T2 2027): adaugi la ONRC coduri CAEN pentru electronice/software/cercetare (cu contabilul) și alegi între PoC și 1.2 din cauza plafonului de minimis de €300k.
+  - Săptămâna asta, rapid: aplici la Claude for Startups și ElevenLabs Startup Grants (cu email de firmă, SOUL pentru adulți/vârstnici, nu copii).
 
 ## B. Ce face Claude (după ce Andu deblochează)
 - [ ] 1. **După placa reală:** corecturile din BRINGUP (rotație, touch, `IMU_MAP`), testul BLE Hardware Buddy cu Claude Desktop real, timpii măsurați în docs/07 (înlocuiește estimările [E]).
