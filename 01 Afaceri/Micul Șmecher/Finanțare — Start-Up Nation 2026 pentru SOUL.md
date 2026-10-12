@@ -102,7 +102,7 @@ actualizat: 2026-10-12
 - **Dublă finanțare:** ghidul PoC (§5.2.1 V) cere ca proiectul să **nu** primească fonduri publice din alte surse. Start-Up Nation pe SOUL = PoC respins. ❌
 - **Schimbare de asociați:** după publicarea ghidului în consultare (~04.06.2026) e „condiție artificială”. Andu nu poate coborî sub 50% în ARTEMIS. ❌
 - **P15** din dosarul PoC: nu mutăm IP-ul SOUL într-o firmă nouă. ❌
-- **De minimis:** €300k pe orice 3 ani glisanți. PoC cere €191.308 → rămân ~€108.700. Un SRL nou legat doar prin Andu ca persoană fizică probabil **nu** intră în același plafon [neverificat, de confirmat cu ADR BI sau contabilul]. Oricum, blocajul real e dubla finanțare, nu plafonul.
+- **De minimis:** €300k pe orice 3 ani glisanți. PoC cere 191.240 € (bugetul aliniat la ofertele verificate, 12.10.2026) → rămân ≥ 108.760 €. Un SRL nou legat doar prin Andu ca persoană fizică probabil **nu** intră în același plafon [neverificat, de confirmat cu ADR BI sau contabilul]. Oricum, blocajul real e dubla finanțare, nu plafonul.
 
 ## 7. Alte surse de bani (pe scurt)
 
