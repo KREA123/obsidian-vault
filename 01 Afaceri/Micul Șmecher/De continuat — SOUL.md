@@ -31,6 +31,7 @@ actualizat: 2026-10-03
   - **Eurostars Call 12** (deschis 17.12.2026, **termen 4.03.2027**): găsești un partener străin (prin Enterprise Europe Network) și întrebi UEFISCDI de rata și plafonul pentru România.
   - **PR BI 1.2 produse noi** (realist T1–T2 2027): adaugi la ONRC coduri CAEN pentru electronice/software/cercetare (cu contabilul) și alegi între PoC și 1.2 din cauza plafonului de minimis de €300k.
   - Săptămâna asta, rapid: aplici la Claude for Startups și ElevenLabs Startup Grants (cu email de firmă, SOUL pentru adulți/vârstnici, nu copii).
+  - **Start-Up Nation 2026** (2026-10-12): nu se aplică pentru SOUL (s-au deschis doar cursurile; banii doar pentru firme noi de absolvenți sub 30 de ani; ar strica PoC 1.1). Tu doar confirmi că decizia din 25.09 rămâne — detalii în [[Finanțare — Start-Up Nation 2026 pentru SOUL]].
 
 ## B. Ce face Claude (după ce Andu deblochează)
 - [ ] 1. **După placa reală:** corecturile din BRINGUP (rotație, touch, `IMU_MAP`), testul BLE Hardware Buddy cu Claude Desktop real, timpii măsurați în docs/07 (înlocuiește estimările [E]).
