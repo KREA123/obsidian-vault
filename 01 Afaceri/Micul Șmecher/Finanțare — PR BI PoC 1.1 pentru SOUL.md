@@ -15,7 +15,7 @@ actualizat: 2026-10-12
 
 **2) Șanse: reale, dar nu „foarte mari”.** Apelul e competitiv: minimum 70 de puncte, apoi clasament până se termină 5 M€ (cam 25–40 de proiecte). Nu știm câți vor aplica. La apelul ADR BI pentru microîntreprinderi s-au cerut de 4,3 ori mai mulți bani decât erau. Azi, cu golurile actuale, șansele sunt mici. Cu dosarul complet la 90+ de puncte suntem competitivi, dar fără garanție.
 Ce ne poate scufunda:
-- expertul TRL 3 nu are toate cele 3 condiții (5 ani, 2 articole, acreditare) → respingere directă;
+- expertul care validează raportul TRL 3 nu îndeplinește criteriul de eligibilitate II (≥ 5 ani experiență relevantă **plus** 2 articole în ultimii 10 ani **SAU** o calificare/certificare/rezultat relevant — Anexa 1 la Decizia CM PR BI nr. 54, 29.09.2026, verificat pe document) → respingere directă;
 - un contract sau o achiziție pentru proiect semnată înainte de depunere (efectul stimulativ);
 - schimbare de asociați sau administratori după 04.06.2026, ori plafon de minimis depășit pe firmele legate;
 - fără coordonator tehnic, scrisori și student pierdem 10–15 puncte și cădem sub linia de finanțare;
@@ -23,8 +23,8 @@ Ce ne poate scufunda:
 
 **3) Ce facem:**
 1. **Andu:** ONRC, RegAS, bilanț 2025 — confirmă acționariat, IMM, datorii, de minimis (octombrie).
-2. **Fondatorul:** placa 2.8C cu SoulOS, filmare și măsurători = 2 dovezi TRL 3 (octombrie).
-3. **Andu + fondatorul:** expertul (UPB/IMT/ICI), cu cele 3 condiții verificate pe acte, și coordonatorul tehnic (până la 15 noiembrie).
+2. **Andu:** placa 2.8C cu SoulOS, filmare și măsurători = 2 dovezi TRL 3 (octombrie).
+3. **Andu:** expertul (vezi [[Finanțare — expertul științific pentru PoC 1.1]]), cu criteriul II verificat pe acte (CV, publicații sau certificări), și coordonatorul tehnic (până la 15 noiembrie).
 4. **Andu:** minimum 2 scrisori de intenție și câte 2 oferte pe linie de buget; nimic semnat ferm înainte de depunere (noiembrie).
 5. **Claude:** dosar complet până la 1 decembrie, verificare săptămânală a site-ului, întrebare la helpdesk@adrbi.ro despre angajarea studentului înainte de depunere, punctaj recalculat pe ghidul final.
 
@@ -44,7 +44,7 @@ Documentele oficiale primite de la Andu (Anexele 3, 10, 16, 18) sunt salvate în
 | **IMM** (ultimele 2 bilanțuri), fără datorii la stat | Condiție de bază | ❓ |
 | **De minimis** primit în ultimii 3 ani (ARTEMIS + firmele legate) < €300k minus grantul cerut | Plafonul se socotește pe toate firmele lui Andu la un loc | ❓ verifici în RegAS |
 | **Nicio achiziție pentru proiect înainte de depunere** | Efectul stimulativ | ⚠️ Placa de test pentru dovada TRL 3 se poate cumpăra, dar **nu o punem în buget** |
-| **Raportul științific (Anexa 16) semnat de un expert** cu ≥ 5 ani experiență în domeniu, ≥ 2 publicații în ultimii 10 ani, acreditări; **nu angajat** (sau expert intern, dacă ghidul permite) | Obligatoriu pentru atestarea TRL 3 | ❌ **trebuie găsit** (UPB — Electronică/Automatică, IMT București, ICI) |
+| **Raportul științific (Anexa 16) validat de un expert** — intern (angajat cu contract de muncă) sau independent, ori un colectiv al unei organizații de cercetare — cu ≥ 5 ani experiență relevantă **plus** 2 articole în ultimii 10 ani **SAU** o calificare/certificare/rezultat relevant (Decizia CM 54, 29.09.2026) | Obligatoriu pentru atestarea TRL 3 | ❌ **trebuie găsit** (UPB — Electronică/Automatică, IMT București, ICI) |
 | **Dovezi TRL 3**: minim 2 dovezi experimentale | Obligatoriu | 🟡 Avem firmware testat (55 teste), simulator, serviciu AI (49 teste), prototip SoulOS, CAD. **Ne lipsește testul pe placa fizică**: cumpărăm placa Waveshare, rulăm firmware-ul, filmăm și măsurăm |
 | Sediu sau punct de lucru în București/Ilfov | Pentru punctaj | ✅ probabil (ARTEMIS e în București) |
 
