@@ -27,7 +27,7 @@ Datele firmei (le folosim peste tot): **ARTEMIS DIGITAL S.R.L.**, CUI **53145290
 ## Pasul 1 — Verificări despre firmă · **acum (până la T−6 săpt.)**
 - [ ] **Certificat constatator cu istoric** (portal ONRC). Verifici: nicio schimbare de asociați/administratori după 03.06.2026. Îmi trimiți PDF-ul.
 - [ ] **Statut IMM** (cu contabilul). Firma e nouă (17.12.2025), deci are doar exercițiul 2025. Contabilul face Anexa 7 și verifică **toate firmele în care ai peste 25 %**.
-- [ ] **De minimis** (cu contabilul). Lista tuturor ajutoarelor de minimis din ultimii 3 ani, pentru ARTEMIS și firmele legate. Verificare în **RegAS** (Consiliul Concurenței). Ne trebuie **cel puțin 108.700 € liberi** din plafonul de 300.000 €.
+- [ ] **De minimis** (cu contabilul). Lista tuturor ajutoarelor de minimis din ultimii 3 ani, pentru ARTEMIS și firmele legate. Verificare în **RegAS** (Consiliul Concurenței). Ne trebuie **cel puțin 108.760 € liberi** din plafonul de 300.000 €.
 - [ ] **Datorii.** SPV ANAF + primăria Sectorului 3: zero restanțe. Contabilul verifică și cazierul fiscal.
 - [ ] **Coduri CAEN** (cu contabilul, la ONRC). Azi ai doar **7311** (publicitate). Adaugi: **2640, 6210, 7210, 7411, 4740** (+ **4791** pentru vânzarea online). Contabilul verifică lista pe **CAEN Rev.3** (la 4791 verifică dacă mai înseamnă vânzare online). E o schimbare de activitate, nu de asociați, deci e permisă.
 - [ ] **Locul proiectului.** Sediul e un **apartament**. Ghidul cere un spațiu potrivit pentru activitate economică sau de cercetare și face vizită la fața locului. Alegi:

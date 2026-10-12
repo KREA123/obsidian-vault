@@ -336,9 +336,9 @@ for tr, v in zip(rows(t), loc):
 drop(142)
 t = B[144]
 eq = [
-    ['Osciloscop digital 4 canale', '≥ 200 MHz, ≥ 1 GSa/s, decodare I²C/SPI/UART/I²S; RoHS', '1', '7.635', '7.635', 'semnalele RGB, I²C, I²S, alimentarea (A1–A5); verificare H1, H5'],
-    ['Analizor de spectru', '≥ 3 GHz (acoperă 2,4 GHz BLE/Wi-Fi), tracking generator opțional', '1', '17.815', '17.815', 'măsurătorile RF prin carcasă (P8) și pregătirea pre-scanului (P11); H4'],
-    ['Analizor de consum / source-measure', 'măsurare curent nA–A, eșantionare ≥ 100 kS/s, profilare energie', '1', '5.090', '5.090', 'modelul de consum și autonomia (P9); H5'],
+    ['Osciloscop digital 4 canale', '≥ 200 MHz, ≥ 1 GSa/s, decodare I²C/SPI/UART (decodare I²S de dorit, nu obligatorie); RoHS', '1', lei(830), lei(830), 'semnalele RGB, I²C, I²S, alimentarea (A1–A5); verificare H1, H5'],
+    ['Analizor de spectru', '≥ 3 GHz (acoperă 2,4 GHz BLE/Wi-Fi), cu tracking generator', '1', lei(2440), lei(2440), 'măsurătorile RF prin carcasă (P8) și pregătirea pre-scanului (P11); H4'],
+    ['Analizor de consum (Joulescope JS320 sau echivalent)', 'măsurare curent nA–A, eșantionare ≥ 100 kS/s, profilare energie', '1', lei(880), lei(880), 'modelul de consum și autonomia (P9); H5'],
     ['Cutie ecranată RF', 'atenuare ≥ 60 dB la 2,4 GHz, treceri pentru USB/RF', '1', '4.581', '4.581', 'măsurători RSSI reproductibile, controlul interferențelor (P8)'],
     ['Stație de lucru PC', 'CPU ≥ 8 nuclee, 32 GB RAM, SSD 1 TB; ecodesign/ErP', '1', '10.180', '10.180', 'compilare firmware, simulare, analiza datelor, CAD (A2–A5)'],
     ['Imprimantă 3D SLA', 'rezoluție XY ≤ 50 µm, volum ≥ 14 × 8 × 15 cm', '1', '19.851', '19.851', 'carcase SLA la scara M (A2), dispozitive de test și fixare (A4)'],
@@ -348,16 +348,18 @@ fill_row(rs[1], eq[0]); fill_row(rs[2], eq[1])
 last = rs[2]
 for e in eq[2:]:
     last = add_row_after(last, e)
-fill_row(rs[3], ['TOTAL echipamente', '', '', '', '65.152', '12.800 € fără TVA (15.488 € cu TVA 21 %, liniile 5–10)'], bold=True)
+_eq_net = 830 + 2440 + 880 + 900 + 2000 + 3900
+fill_row(rs[3], ['TOTAL echipamente', '', '', '', lei(_eq_net), f'{feur(_eq_net)} € fără TVA ({feur(EQUIP)} € cu TVA 21 %, liniile 5–10)'], bold=True)
 note = copy.deepcopy(B[145]); t.addnext(note)
-write_runs(note, 'Valorile sunt estimări [E] la cursul orientativ de 5,09 lei/€, până la primirea a câte 2 oferte pe linie; cursul se înlocuiește cu InforEuro din ghidul final. Toate echipamentele sunt noi (nu second-hand) și se achiziționează conform Ordinului MFE 1284/2016, după depunere.')
+write_runs(note, 'Valorile pentru osciloscop, analizorul de spectru și analizorul de consum (liniile 5–7) se bazează pe prețuri publice verificate (12.10.2026); celelalte sunt estimări [E]. Pentru fiecare linie se obțin câte 2 oferte înainte de achiziție. Conversia folosește cursul orientativ de 5,09 lei/€; cursul se înlocuiește cu InforEuro din ghidul final. Toate echipamentele sunt noi (nu second-hand) și se achiziționează conform Ordinului MFE 1284/2016, după depunere.')
 
 drop(147)
 t = B[148]
 rs = rows(t)
+_tm_lei, _ds_lei = round(EUIPO_TM * RATE), round(EUIPO_DS * RATE)  # each row rounded once; TOTAL = sum of the rows
 intang = [
-    ['Cerere de marcă UE (3 clase) — taxă EUIPO', 'Marcă (protecție IP)', '5.345', 'protecția numelui produsului (A6, R3); fără TVA'],
-    ['Cerere de desen/model industrial UE multiplu (corp SOUL M + capsula OU) — taxe EUIPO', 'Desen/model industrial', '4.785', 'protecția formei produsului înainte de publicare (A6, R3)'],
+    ['Cerere de marcă UE (3 clase) — taxă EUIPO', 'Marcă (protecție IP)', feur(_tm_lei), 'protecția numelui produsului (A6, R3); fără TVA'],
+    ['Cerere de desen/model industrial UE multiplu, 2 designuri, pentru elementele noi, nepublicate, din proiect (ex. forma rev B a carcasei și a capsulei OU, dacă diferă de cele publice; interfața grafică finală) — taxe EUIPO', 'Desen/model industrial', feur(_ds_lei), 'protecția elementelor noi înainte de publicarea lor (A6, R3); fără TVA. Forma MĂRGĂRITAR (corpul SOUL M și capsula OU), deja publică, se depune separat, înainte de ' + DESIGN_DEADLINE + ', în afara bugetului'],
     ['KiCad, PlatformIO, CadQuery, Git (open-source)', 'Software, licențe gratuite', '0', 'proiectare PCB, firmware, CAD parametric'],
     ['Abonamente SaaS pentru CDI: API AI pentru teste (chei de test cu limită de cost) și CAD — linia 18a', 'Servicii SaaS (nu se capitalizează)', '15.983', 'testele P5–P7 (latență, degradare, memorie) și proiectarea carcasei (A2–A5); nu e AI inclus în produs'],
     ['Infrastructură cloud de test în UE (servere virtuale pentru instanța de test SOUL Cloud) — linia 18b', 'Servicii SaaS / infrastructură de testare (nu se capitalizează) [[de confirmat la helpdesk și pe Anexa 20]]', '5.049', 'folosită exclusiv la testarea prototipurilor în L2–L22 și oprită la final; operarea comercială ulterioară se plătește din fonduri proprii'],
@@ -366,7 +368,7 @@ fill_row(rs[1], intang[0])
 last = rs[1]
 for e in intang[1:]:
     last = add_row_after(last, e)
-fill_row(rs[2], ['TOTAL active necorporale', '', '10.129', '1.990 € (taxe oficiale, fără TVA, linia 19); consilierul PI este serviciu (linia 20: 6.363 lei fără TVA)'], bold=True)
+fill_row(rs[2], ['TOTAL active necorporale (marcă + design; fără serviciile SaaS de mai sus, care nu se capitalizează)', '', feur(_tm_lei + _ds_lei), f"{feur(LINE_EUR['19'])} € (taxe oficiale, fără TVA, linia 19: marcă {feur(EUIPO_TM)} € + 2 designuri {feur(EUIPO_DS)} €);" ' consilierul PI este serviciu (linia 20: 6.363 lei fără TVA)'], bold=True)
 
 drop(151)
 t = B[152]
@@ -394,11 +396,11 @@ for nr, line, cat, act, eur in BUDGET:
     else:
         bud_rows.append([nr, line, cat, act, eur])
 fill(153, [
-    '**Sinteza bugetului proiectului** (identică cu secțiunea Buget din CF; € cu TVA 21 % inclusă — ARTEMIS e neplătitoare de TVA; salarii brute + CAM 2,25 %; prețuri [E] până la primirea ofertelor):',
+    '**Sinteza bugetului proiectului** (identică cu secțiunea Buget din CF; € cu TVA 21 % inclusă — ARTEMIS e neplătitoare de TVA; salarii brute + CAM 2,25 %; liniile ' + PRICED_LINES + ' au la bază prețuri publice verificate (12.10.2026), restul sunt estimări [E] până la primirea ofertelor):',
     ('table', T(['Nr.', 'Linie bugetară', 'Categorie / tip activitate', 'Activitate', '€'], bud_rows, [700, 4100, 2700, 1100, 1038], size=17)),
     '**Verificarea pragurilor:**',
     ('table', T(['Prag', 'Valoare', 'Stare'], [list(c) for c in BUDGET_CHECKS], [3800, 3838, 2000])),
-    'Justificarea valorii: salariile acoperă ~3.900 de ore de CD pe 24 de luni, minimul realist pentru a porta, integra, proiecta un PCB, face două iterații de carcasă și rula două campanii de validare; tarifele sunt sub plafoanele HG 1188/2022. Echipamentele sunt strict cele de măsură fără de care nu se pot verifica H1–H5. Prototiparea se face în două iterații (A → B) plus un lot de 15 unități (N ≥ 12 utilizatori + rezervă). Pre-testarea EMC/RF și EN 18031 reduc riscul fazei următoare (CE) fără să intre în certificarea finală (TRL 7–8, necerută în proiect).',
+    f'Justificarea valorii: salariile acoperă {feur(CD_HOURS)} de ore de CD pe 24 de luni (liniile 1–3), minimul realist pentru a porta, integra, proiecta un PCB, face două iterații de carcasă și rula două campanii de validare; tarifele sunt sub plafoanele HG 1188/2022. Echipamentele sunt strict cele de măsură fără de care nu se pot verifica H1–H5. Prototiparea se face în două iterații (A → B) plus un lot de 15 unități (N ≥ 12 utilizatori + rezervă). Pre-testarea EMC/RF și EN 18031 reduc riscul fazei următoare (CE) fără să intre în certificarea finală (TRL 7–8, necerută în proiect).',
 ])
 
 # ------------------------------------------------------------------ V
@@ -471,7 +473,7 @@ fill(187, [
     f'**Ce e deja public.** Depozitul de lucru ({REPO_PUBLIC}) e public din {PUBLIC_SINCE} și conține {FIRST_PUB}. **Data primei publicări** (din git): 24.09.2026 pentru randări (26.09.2026 pentru MĂRGĂRITAR v9) și 25.09.2026 pentru decodorul tastaturii și conceptul ferestrei radio. Consecințe: (1) designul formei MĂRGĂRITAR se depune înainte de expirarea grației de 12 luni (~{DESIGN_DEADLINE}), adică înainte de contractul estimat (aug.–oct. 2027) — acum, prin EUIPO SME Fund, sau imediat după depunerea CF, din fonduri proprii, în afara bugetului; (2) metoda de decodare și conceptul ferestrei radio nu mai sunt revendicate ca brevet sau secret comercial (noutatea e probabil pierdută); (3) [[A: decide dacă depozitul, inclusiv dosarul, devine privat]].',
     'Pentru tot ce e **nou** din acest moment se aplică regula **„întâi protecția, apoi publicarea”**: marca UE ≤ L6, designul elementelor noi din proiect ≤ L18, articolul științific după (≤ L20). Protecția acoperă forma produsului (design UE), numele (marcă UE), soluțiile tehnice nepublicate (evaluate la L12–L18) și know-how-ul nepublicat (secret comercial).',
     ('table', T(['Pas', 'Ce', 'Când', 'Cost / linie'], [list(r) for r in IPPLAN], [700, 5538, 1900, 1500])),
-    '**Dovada demersurilor în implementare (Grila 2.1d):** numărul și data cererilor EUIPO (marcă ≤ L6, design pentru elementele noi ≤ L18; cererea pentru forma MĂRGĂRITAR, depusă înainte de 24.09.2027, se anexează ca dovadă, fără finanțare din proiect), raportul de brevetabilitate (L18). **Publicarea open-access (Grila 1.4):** revista țintă [[Cl: revista aleasă, ex. MDPI Electronics sau Sensors / IEEE Access, cu captura paginii de APC]]; APC bugetat în linia 21; preprint în Zenodo. **Licențe open-source:** codul terț (MIT/OFL) rămâne sub licențele sale; SOUL Bridge e deja open source (MIT); restul codului (inclusiv motorul ochilor) e vizibil în depozitul public, dar fără licență open-source declarată (toate drepturile rezervate) [[A: decide: depozit privat sau licență explicită]].',
+    '**Dovada demersurilor în implementare (Grila 2.1d):** numărul și data cererilor EUIPO (marcă ≤ L6, design pentru elementele noi ≤ L18; cererea pentru forma MĂRGĂRITAR, depusă înainte de 24.09.2027, se anexează ca dovadă, fără finanțare din proiect), raportul de brevetabilitate (L18). **Publicarea open-access (Grila 1.4):** revista țintă ' + JOURNAL + ' [[Cl: captura paginii de APC]]; APC bugetat în linia 21; preprint în Zenodo. **Licențe open-source:** codul terț (MIT/OFL) rămâne sub licențele sale; SOUL Bridge e deja open source (MIT); restul codului (inclusiv motorul ochilor) e vizibil în depozitul public, dar fără licență open-source declarată (toate drepturile rezervate) [[A: decide: depozit privat sau licență explicită]].',
 ])
 
 drop(190)

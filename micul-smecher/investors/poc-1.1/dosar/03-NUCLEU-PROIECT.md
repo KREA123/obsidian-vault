@@ -37,7 +37,7 @@ stare: draft 2 (adus la zi pe faptele din 12.10.2026), de confirmat de Andu; de 
 | TRL pornire → țintă | TRL 3 (**de atestat după D8** — raportul de laborator pe placa 2.8C, în curs) → **TRL 5** (TRL 4 = rezultat intermediar, poarta IE2) |
 | Durata implementării | **24 de luni** (L1 = luna semnării contractului; data depinde de calendarul apelului, care nu e publicat — estimat 2027 → 2029) |
 | Locație | sediul social ARTEMIS, București (spațiu de birou + laborator electronic) |
-| Valoare totală eligibilă = nerambursabilă | **191.308 €** (100 %), de minimis |
+| Valoare totală eligibilă = nerambursabilă | **191.240 €** (100 %), de minimis |
 
 ---
 
@@ -260,9 +260,9 @@ Ipoteze: **H1** randare · **H2** tastare/touch · **H3** AI-ul proprietarului, 
 
 ---
 
-## 10. Bugetul (țintă 191.308 € eligibil = nerambursabil, 100 %)
+## 10. Bugetul (țintă 191.240 € eligibil = nerambursabil, 100 %)
 
-Ipoteze: **TVA 21 % inclusă** pe achiziții (ARTEMIS e neplătitoare de TVA — ANAF, 12.10.2026 — deci TVA e eligibilă §5.3.2 p. 59); taxele EUIPO sunt fără TVA; serviciile din străinătate au TVA prin taxare inversă (nerecuperabilă, deci eligibilă — Ct confirmă). Salariile sunt brute + CAM 2,25 %. Curs orientativ ≈ 5,09 lei/€ (**se înlocuiește cu InforEuro din ghidul final**). Prețurile sunt **[E] până sosesc ofertele**.
+Ipoteze: **TVA 21 % inclusă** pe achiziții (ARTEMIS e neplătitoare de TVA — ANAF, 12.10.2026 — deci TVA e eligibilă §5.3.2 p. 59); taxele EUIPO sunt fără TVA; serviciile din străinătate au TVA prin taxare inversă (nerecuperabilă, deci eligibilă — Ct confirmă). Salariile sunt brute + CAM 2,25 %. Curs orientativ ≈ 5,09 lei/€ (**se înlocuiește cu InforEuro din ghidul final**). Prețurile sunt **[E] până sosesc ofertele**; liniile 5, 6, 7, 14, 19, 21, 23 sunt aliniate (12.10.2026) la prețurile verificate din [[Finanțare — oferte de preț pentru PoC 1.1]], iar linia 17 a fost redusă ca să compenseze (vezi mai jos).
 
 ### 10.1 Buget pe linii
 | # | Linie | Categorie MySMIS / tip activitate | Activitate | € (cu TVA) |
@@ -272,55 +272,57 @@ Ipoteze: **TVA 21 % inclusă** pe achiziții (ARTEMIS e neplătitoare de TVA —
 | 2 | Salariu inginer embedded/firmware (1.680 h × 25 €) | Cheltuieli salariale CDI (I.3) | A2–A5 | 42.000 |
 | 3 | Salariu student cercetare (1.200 h × 12 €) | Cheltuieli salariale CDI (I.3) | A3, A5, A7 | 14.400 |
 | 4 | CAM 2,25 % pe liniile 1–3 | Cheltuieli salariale CDI | – | 2.187 |
-| 5 | Osciloscop digital 4 canale ≥ 200 MHz (1.500 + TVA) | Active corporale – dezvoltare experimentală (subgr. 2.2) | A1–A5 | 1.815 |
-| 6 | Analizor de spectru ≥ 3 GHz (3.500 + TVA) | Active corporale (2.2) | A3, A4, A5 | 4.235 |
-| 7 | Analizor de consum / source-measure (1.000 + TVA) | Active corporale (2.2) | A3, A5 | 1.210 |
+| 5 | Osciloscop digital 4 canale ≥ 200 MHz, decodare I²C/SPI/UART (I²S de dorit) (830 + TVA) | Active corporale – dezvoltare experimentală (subgr. 2.2) | A1–A5 | 1.004 |
+| 6 | Analizor de spectru ≥ 3 GHz, cu tracking generator (2.440 + TVA) | Active corporale (2.2) | A3, A4, A5 | 2.952 |
+| 7 | Analizor de consum (Joulescope JS320 sau echivalent) (880 + TVA) | Active corporale (2.2) | A3, A5 | 1.065 |
 | 8 | Cutie ecranată RF ≥ 60 dB (900 + TVA) | Active corporale (2.2) | A3, A5 | 1.089 |
 | 9 | Stație de lucru PC (2.000 + TVA) | Active corporale (grupa 3, echipamente informatice) | A2–A5 | 2.420 |
 | 10 | Imprimantă 3D SLA (3.900 + TVA) | Active corporale (2.1) | A2, A4 | 4.719 |
-| 11 | Materiale: 8 plăci 2.8C, 20 de panouri de 2,8″, 25 de seturi audio I²S, 30 de celule LiPo 1500 mAh, componente, rășină, obiecte de inventar (3.725 + TVA) | Materiale, consumabile, obiecte de inventar | A2, A4 | 4.507 |
+| 11 | Materiale: 8 plăci 2.8C, 20 de panouri de 2,8″, 25 de seturi audio I²S (microfon + amplificator + difuzor), 30 de celule LiPo 1500 mAh, componente, rășină, obiecte de inventar (3.725 + TVA) | Materiale, consumabile, obiecte de inventar | A2, A4 | 4.507 |
 | 12 | CNC + anodizare carcase Al 6061 (3 + 5 + 15 seturi) (5.550 + TVA) | Servicii (echivalente) pentru dezvoltare experimentală | A4 | 6.716 |
 | 13 | Fabricare + asamblare PCB propriu rev A/B (3.000 + TVA) | Servicii pentru dezvoltare experimentală | A4 | 3.630 |
-| 14 | Pre-testare EMC/RF, 2 sesiuni (4.000 + TVA) | Servicii de sprijinire a inovării (testare) | A5 | 4.840 |
+| 14 | Pre-testare EMC/RF, 2 sesiuni: EMC EN 301 489-1/-17 (≈ 4.610) + radio EN 300 328 (≈ 2.390, [E]) (7.000 + TVA) | Servicii de sprijinire a inovării (testare) | A5 | 8.470 |
 | 15 | Evaluare preliminară EN 18031 (2.500 + TVA) | Consultanță în inovare (utilizarea standardelor) | A4 | 3.025 |
 | 16 | Servicii CDI externalizate: proiectarea/validarea antenei prin carcasa din aluminiu (4.500 + TVA) | Servicii CDI externalizate (I.3) | A4 | 5.445 |
-| 17 | 2 workshop-uri/sesiuni de testare cu utilizatori | Workshop-uri colaborative (validare TRL 4–5) | A5 | 2.500 |
-| 18a | SaaS: API AI pentru teste (chei cu limită de cost, doar în validare) + CAD (≈ 3.140 + TVA) | Servicii SaaS pentru CDI (modelare, testare, simulare, analiza datelor) | A2–A5 | 3.800 |
-| 18b | Infrastructură cloud de test în UE: servere virtuale pentru instanța de test SOUL Cloud, folosite **exclusiv** la testarea prototipurilor în L2–L22, oprite la final (≈ 992 + TVA) | Servicii SaaS pentru CDI — infrastructură de testare [de confirmat la helpdesk și pe Anexa 20; alternativ: servicii pentru dezvoltare experimentală] | A2–A5 | 1.200 |
-| 19 | Taxe EUIPO: marcă UE (3 clase ≈ 1.050) + desen industrial multiplu (≈ 940) | Obținerea/protejarea activelor necorporale | A6 | 1.990 |
+| 17 | 2 workshop-uri/sesiuni de testare cu utilizatori: sală, materiale de test, gustare (1.240 + TVA) | Workshop-uri colaborative (validare TRL 4–5) | A5 | 1.500 |
+| 18a | SaaS: API AI pentru teste (chei de test cu limită de cost, doar în validare) + CAD (≈ 3.140 + TVA) | Servicii SaaS pentru CDI (modelare, testare, simulare, analiza datelor) | A2–A5 | 3.800 |
+| 18b | Infrastructură cloud de test în UE: servere virtuale pentru instanța de test SOUL Cloud, folosite exclusiv la testarea prototipurilor în L2–L22, oprite la final (≈ 992 + TVA) | Servicii SaaS pentru CDI — infrastructură de testare [de confirmat la helpdesk și pe Anexa 20; alternativ: servicii pentru dezvoltare experimentală] | A2–A5 | 1.200 |
+| 19 | Taxe EUIPO: marcă UE, 3 clase (850 + 50 + 150 = 1.050) + desen industrial multiplu, 2 designuri (350 + 125 = 475) | Obținerea/protejarea activelor necorporale | A6 | 1.525 |
 | 20 | Consilier în proprietate industrială: anterioritate, depunere, brevetabilitate (1.250 + TVA) | Consultanță în inovare (protecția activelor necorporale) | A6 | 1.512 |
-| | **Subtotal activitate de bază** | | | **154.040** |
+| | **Subtotal activitate de bază** | | | **153.966** |
 | **II.1 DISEMINARE (conex, în afara plafonului de 10 %)** | | | | |
-| 21 | Taxă de publicare open-access peer-review (APC ≈ 2.800 + TVA) | Publicarea rezultatelor | A7 | 3.388 |
+| 21 | Taxă de publicare open-access peer-review (APC ≈ 2.349 + TVA) | Publicarea rezultatelor | A7 | 2.842 |
 | 22 | Conferință/târg internațional: taxă, transport, cazare, diurnă, max. 2 persoane | Participare la conferințe/târguri | A7 | 2.900 |
-| 23 | Customer discovery / focus-grupuri (1.240 + TVA) | Promovare pentru validare comercială | A6 | 1.500 |
-| | **Subtotal II.1** | | | **7.788** |
+| 23 | Customer discovery / focus-grupuri, 2 grupuri (1.700 + TVA) | Promovare pentru validare comercială | A6 | 2.057 |
+| | **Subtotal II.1** | | | **7.799** |
 | **II.2–II.5 (plafon cumulat 10 % din total)** | | | | |
 | 24 | II.2 Consultanță pentru CF + validarea Raportului științific de către expert | Consultanță pentru CF (precontractuală) | A0 | 4.500 |
 | 25 | II.3 Salariu manager de proiect (480 h × 18 €) + CAM | Management | A8 | 8.834 |
 | 26 | II.4 Audit financiar (2.000 + TVA) | Audit | A8 | 2.420 |
 | 27 | II.5 Comunicare și vizibilitate (1.000 + TVA) | Informare și publicitate | A8 | 1.210 |
 | | **Subtotal II.2–II.5** | | | **16.964** |
-| | **TOTAL COSTURI DIRECTE** | | | **178.793** |
-| 28 | Costuri indirecte **7 %** × costuri directe (chirie, utilități, personal suport) | Rată forfetară | – | **12.515** |
-| | **TOTAL ELIGIBIL = NERAMBURSABIL (100 %)** | | | **191.308** |
+| | **TOTAL COSTURI DIRECTE** | | | **178.729** |
+| 28 | Costuri indirecte **7 %** × costuri directe (chirie, utilități, personal suport) | Rată forfetară | – | **12.511** |
+| | **TOTAL ELIGIBIL = NERAMBURSABIL (100 %)** | | | **191.240** |
 
 ### 10.2 Verificarea pragurilor
 | Prag | Valoare | Stare |
 |---|---|---|
-| 50.000 € ≤ nerambursabil ≤ 200.000 € | 191.308 € (rezervă de curs ~4,3 %) | ✅ |
-| Activitatea de bază ≥ 50 % din eligibil | 154.040 / 191.308 = **80,5 %** | ✅ |
-| II.2 + II.3 + II.4 + II.5 ≤ 10 % din eligibilul total | 16.964 / 191.308 = **8,9 %** (plafon 19.131 €) | ✅ |
-| Indirecte = exact 7 % din directe | 12.515 € | ✅ |
-| De minimis: 191.308 € + ajutoarele anterioare ≤ 300.000 € | spațiu necesar ≥ 108.692 € liber | ❓ |
+| 50.000 € ≤ nerambursabil ≤ 200.000 € | 191.240 € (rezervă de curs ~4,4 %) | ✅ |
+| Activitatea de bază ≥ 50 % din eligibil | 153.966 / 191.240 = **80,5 %** | ✅ |
+| II.2 + II.3 + II.4 + II.5 ≤ 10 % din eligibilul total | 16.964 / 191.240 = **8,9 %** (plafon 19.124 €) | ✅ |
+| Indirecte = exact 7 % din directe | 12.511 € | ✅ |
+| De minimis: 191.240 € + ajutoarele anterioare ≤ 300.000 € | spațiu necesar ≥ 108.760 € liber | ❓ |
 | Salarii ≤ HG 1188 Anexa 2 | 34 ≤ 35 · 25 ≤ 35 · 12 ≤ 15 · 18 ≤ 50 | ✅ |
 | Nimic neeligibil (telefoane, tablete, second-hand, leasing, vehicule) | – | ✅ |
 | Eșec de cercetare: max. 50 % decontat; activele pentru TRL 5 cad | liniile 12 (lotul de 15), 13 (rev B), 14 se angajează **după IE2** | ✅ |
 
-**Proporții:** personal CDI 52 % · echipamente 8 % · materiale + servicii de prototipare/testare/SaaS 19 % · IP + publicare + diseminare 6 % · conexe II.2–II.5 9 % · indirecte 7 %.
+**Proporții (din 191.240 €):** personal CDI 52,0 % · echipamente 6,9 % · materiale + servicii de prototipare/testare/SaaS 20,0 % · IP + publicare + diseminare 5,7 % · conexe II.2–II.5 8,9 % · indirecte 6,5 % (= 7 % din directe) · total 100 %.
+
+**Corecturi din ofertele verificate (12.10.2026):** linia 5 Rigol DHO924S (rigolshop.eu 719 € net; RONEXPRIM 5.102 lei cu TVA), decodarea I²S e „de dorit”, nu obligatorie · linia 6 Siglent SSA3032X Plus (Welectron, Batronix: 2.439 € net) · linia 7 Joulescope **JS320 sau echivalent** (JS220 nu se mai fabrică; Welectron 878 € net) · linia 14 EMC la ZUT Szczecin ≈ 9.800 PLN net/sesiune × 2 ≈ 4.610 € net + radio EN 300 328 ≈ 2.390 € net [E] (fără preț public; ofertele cerute la Łukasiewicz-PIT, cetecom, NMi) · linia 19 taxele EUIPO reale: marcă 3 clase 1.050 € + 2 designuri 475 € · linia 21 Frontiers in Robotics and AI CHF 2.195 · linia 23 focusgrupuri.ro 850 €/grup × 2. Creșterile (linia 14 +3.630, linia 23 +557) depășeau economiile cu 937 €, așa că **linia 17 (workshop-uri) scade de la 2.500 la 1.500 €**: e linia cea mai slab justificată (doar sala are preț, ≈ 250–300 € pentru 2 zile). Totalul scade de la 191.308 (de fapt 191.307: suma veche a liniilor era 178.792, nu 178.793) la **191.240 €**.
 
 ### 10.3 Justificarea valorii (pentru CF, secțiunea „Buget – Justificare”)
-- Salariile acoperă ~3.900 de ore de CD pe 24 de luni: minimul realist pentru a porta, integra, proiecta un PCB, face două iterații de carcasă și rula două campanii de validare. Tarifele sunt **sub plafoane** și la nivelul pieței embedded din București.
+- Salariile acoperă 4.080 de ore de CD pe 24 de luni (liniile 1–3: 1.200 + 1.680 + 1.200 h): minimul realist pentru a porta, integra, proiecta un PCB, face două iterații de carcasă și rula două campanii de validare. Tarifele sunt **sub plafoane** și la nivelul pieței embedded din București.
 - Echipamentele sunt strict cele de măsură fără de care nu se pot verifica H1–H5 (RF, consum, semnale). Nu cumpărăm aparatură „de confort”.
 - Prototiparea (CNC, PCB) se face în două iterații (A → B), plus un lot de 15 unități, minimul pentru N ≥ 12 utilizatori + rezervă.
 - Pre-testarea EMC/RF și EN 18031 reduc riscul fazei următoare (CE) fără să intre în certificarea finală, care e TRL 7–8 și **nu e cerută în proiect**.
@@ -388,7 +390,7 @@ Nu se adaugă alți indicatori în CF. Metricile tehnice P1–P11 apar în „Re
 
 Calendarul (marcă la L6, design pentru elementele noi la L18, publicare la L20) respectă regula grilei 1.4 „Patent first, publish later” pentru tot ce e nou; ce e deja public e declarat cinstit, cu data primei publicări.
 
-**Revista țintă (10 p. la 1.4):** o revistă OA peer-review indexată (ex. MDPI *Electronics* sau *Sensors*; IEEE *Access*), APC ≈ 2,5–3 k€. Alternativă fără cost: o revistă „diamond OA”. Includem și preprintul în Zenodo (repozitoriu OA).
+**Revista țintă (10 p. la 1.4):** *Frontiers in Robotics and AI* (OA peer-review indexată), APC CHF 2.195 ≈ 2.349 € fără TVA (2.842 € cu TVA, linia 21); alternative cu preț verificat: IEEE *Access* ($2.160), *JMIR Human Factors* ($1.985). Alternativă fără cost: o revistă „diamond OA”. Includem și preprintul în Zenodo (repozitoriu OA).
 
 ---
 

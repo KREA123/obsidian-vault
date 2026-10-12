@@ -55,7 +55,7 @@ TITLU_EN = ('SOUL — a tangible, local-first AI interaction device with a circu
             'aluminium enclosure: proof of concept from TRL 3 to TRL 5')
 RIS3 = ('1. Tehnologia Informației și Comunicațiilor (TIC); 2. Sisteme și Componente Inteligente '
         '[[Cl: subdomeniile exacte din RIS3 BI 2021–2027, după descărcarea strategiei de pe adrbi.ro]]')
-TOTAL = '191.308 €'
+# TOTAL (the eligible total, e.g. '191.240 €') is computed from the budget lines below.
 
 OBJ_GENERAL = ('validarea modelului conceptual SOUL (dispozitiv AI tangibil, local-first, cu interfață circulară și '
                'carcasă reparabilă) de la TRL 3 la TRL 5, în 24 de luni, la București.')
@@ -187,52 +187,100 @@ DELIVERABLES = [
     ('R5', 'Planul de valorificare + ≥ 2 acorduri', 'A6', 'L24', 'Andu'),
 ]
 
-# nr, line, category, activity, eur
-BUDGET = [
-    ('I', 'ACTIVITATEA DE BAZĂ (CDI)', None, None, None),
-    ('1', 'Salariu coordonator tehnic/științific (1.200 h × 34 €)', 'Cheltuieli salariale CDI (I.3)', 'A1–A5, A7', '40.800'),
-    ('2', 'Salariu inginer embedded/firmware (1.680 h × 25 €)', 'Cheltuieli salariale CDI (I.3)', 'A2–A5', '42.000'),
-    ('3', 'Salariu student cercetare (1.200 h × 12 €)', 'Cheltuieli salariale CDI (I.3)', 'A3, A5, A7', '14.400'),
-    ('4', 'CAM 2,25 % pe liniile 1–3', 'Cheltuieli salariale CDI', '–', '2.187'),
-    ('5', 'Osciloscop digital 4 canale ≥ 200 MHz (1.500 + TVA)', 'Active corporale – dezvoltare experimentală (subgr. 2.2)', 'A1–A5', '1.815'),
-    ('6', 'Analizor de spectru ≥ 3 GHz (3.500 + TVA)', 'Active corporale (2.2)', 'A3, A4, A5', '4.235'),
-    ('7', 'Analizor de consum / source-measure (1.000 + TVA)', 'Active corporale (2.2)', 'A3, A5', '1.210'),
-    ('8', 'Cutie ecranată RF ≥ 60 dB (900 + TVA)', 'Active corporale (2.2)', 'A3, A5', '1.089'),
-    ('9', 'Stație de lucru PC (2.000 + TVA)', 'Active corporale (grupa 3, echipamente informatice)', 'A2–A5', '2.420'),
-    ('10', 'Imprimantă 3D SLA (3.900 + TVA)', 'Active corporale (2.1)', 'A2, A4', '4.719'),
-    ('11', 'Materiale: 8 plăci 2.8C, 20 de panouri de 2,8″, 25 de seturi audio I²S (microfon + amplificator + difuzor), 30 de celule LiPo 1500 mAh, componente, rășină, obiecte de inventar (3.725 + TVA)', 'Materiale, consumabile, obiecte de inventar', 'A2, A4', '4.507'),
-    ('12', 'CNC + anodizare carcase Al 6061 (3 + 5 + 15 seturi) (5.550 + TVA)', 'Servicii (echivalente) pentru dezvoltare experimentală', 'A4', '6.716'),
-    ('13', 'Fabricare + asamblare PCB propriu rev A/B (3.000 + TVA)', 'Servicii pentru dezvoltare experimentală', 'A4', '3.630'),
-    ('14', 'Pre-testare EMC/RF, 2 sesiuni (4.000 + TVA)', 'Servicii de sprijinire a inovării (testare)', 'A5', '4.840'),
-    ('15', 'Evaluare preliminară EN 18031 (2.500 + TVA)', 'Consultanță în inovare (utilizarea standardelor)', 'A4', '3.025'),
-    ('16', 'Servicii CDI externalizate: proiectarea/validarea antenei prin carcasa din aluminiu (4.500 + TVA)', 'Servicii CDI externalizate (I.3)', 'A4', '5.445'),
-    ('17', '2 workshop-uri/sesiuni de testare cu utilizatori', 'Workshop-uri colaborative (validare TRL 4–5)', 'A5', '2.500'),
-    ('18a', 'SaaS: API AI pentru teste (chei de test cu limită de cost, doar în validare) + CAD (≈ 3.140 + TVA)', 'Servicii SaaS pentru CDI (modelare, testare, simulare, analiza datelor)', 'A2–A5', '3.800'),
-    ('18b', 'Infrastructură cloud de test în UE: servere virtuale pentru instanța de test SOUL Cloud, folosite exclusiv la testarea prototipurilor în L2–L22, oprite la final (≈ 992 + TVA)', 'Servicii SaaS pentru CDI — infrastructură de testare [[de confirmat la helpdesk și pe Anexa 20; alternativ: servicii pentru dezvoltare experimentală]]', 'A2–A5', '1.200'),
-    ('19', 'Taxe EUIPO: marcă UE (3 clase ≈ 1.050) + desen industrial multiplu (≈ 940)', 'Obținerea/protejarea activelor necorporale', 'A6', '1.990'),
-    ('20', 'Consilier în proprietate industrială: anterioritate, depunere, brevetabilitate (1.250 + TVA)', 'Consultanță în inovare (protecția activelor necorporale)', 'A6', '1.512'),
-    ('', 'Subtotal activitate de bază', '', '', '154.040'),
-    ('II.1', 'DISEMINARE (conex, în afara plafonului de 10 %)', None, None, None),
-    ('21', 'Taxă de publicare open-access peer-review (APC ≈ 2.800 + TVA)', 'Publicarea rezultatelor', 'A7', '3.388'),
-    ('22', 'Conferință/târg internațional: taxă, transport, cazare, diurnă, max. 2 persoane', 'Participare la conferințe/târguri', 'A7', '2.900'),
-    ('23', 'Customer discovery / focus-grupuri (1.240 + TVA)', 'Promovare pentru validare comercială', 'A6', '1.500'),
-    ('', 'Subtotal II.1', '', '', '7.788'),
-    ('II.2–II.5', 'PLAFON CUMULAT 10 % DIN TOTAL', None, None, None),
-    ('24', 'II.2 Consultanță pentru CF + validarea Raportului științific de către expert', 'Consultanță pentru CF (precontractuală)', 'A0', '4.500'),
-    ('25', 'II.3 Salariu manager de proiect (480 h × 18 €) + CAM', 'Management', 'A8', '8.834'),
-    ('26', 'II.4 Audit financiar (2.000 + TVA)', 'Audit', 'A8', '2.420'),
-    ('27', 'II.5 Comunicare și vizibilitate (1.000 + TVA)', 'Informare și publicitate', 'A8', '1.210'),
-    ('', 'Subtotal II.2–II.5', '', '', '16.964'),
-    ('', 'TOTAL COSTURI DIRECTE', '', '', '178.793'),
-    ('28', 'Costuri indirecte 7 % × costuri directe (chirie, utilități, personal suport)', 'Rată forfetară', '–', '12.515'),
-    ('', 'TOTAL ELIGIBIL = NERAMBURSABIL (100 %)', '', '', '191.308'),
+# nr, line, category, activity, eur (int, € cu TVA). Subtotals, indirects, total and checks are COMPUTED below — edit only the lines.
+# 12.10.2026: prices aligned to the verified offers note (01 Afaceri/Micul Șmecher/Finanțare — oferte de preț pentru PoC 1.1):
+# L5 Rigol DHO924S (rigolshop.eu 719 net; RONEXPRIM 5.102 lei cu TVA) · L6 Siglent SSA3032X Plus (Welectron/Batronix 2.439 net) ·
+# L7 Joulescope JS320 (Welectron 878 net; JS220 discontinued) · L14 ZUT Szczecin EMC ≈ 9.800 PLN net/sesiune × 2 + radio EN 300 328 [E] ·
+# L19 EUIPO fees (marcă 850+50+150; design 350+125) · L21 Frontiers APC CHF 2.195 · L23 focusgrupuri.ro 850 €/grup × 2.
+# Rebalanced from L17 (least justified: only the room has a price, ≈ 250–300 € for 2 days): 2.500 -> 1.500.
+PRICED_LINES = '5, 6, 7, 19, 21, 23'  # lines resting on verified public prices (12.10.2026); the rest stay [E] until the offers arrive
+JOURNAL = ('Frontiers in Robotics and AI (APC CHF 2.195 ≈ 2.349 € fără TVA, bugetat în linia 21; alternative verificate: '
+           'IEEE Access, JMIR Human Factors)')
+_SEC_I, _SEC_II1, _SEC_II2 = 'I', 'II.1', 'II.2–II.5'
+_LINES = [
+    (_SEC_I, '1', 'Salariu coordonator tehnic/științific (1.200 h × 34 €)', 'Cheltuieli salariale CDI (I.3)', 'A1–A5, A7', 40800),
+    (_SEC_I, '2', 'Salariu inginer embedded/firmware (1.680 h × 25 €)', 'Cheltuieli salariale CDI (I.3)', 'A2–A5', 42000),
+    (_SEC_I, '3', 'Salariu student cercetare (1.200 h × 12 €)', 'Cheltuieli salariale CDI (I.3)', 'A3, A5, A7', 14400),
+    (_SEC_I, '4', 'CAM 2,25 % pe liniile 1–3', 'Cheltuieli salariale CDI', '–', 2187),
+    (_SEC_I, '5', 'Osciloscop digital 4 canale ≥ 200 MHz, decodare I²C/SPI/UART (I²S de dorit) (830 + TVA)', 'Active corporale – dezvoltare experimentală (subgr. 2.2)', 'A1–A5', 1004),
+    (_SEC_I, '6', 'Analizor de spectru ≥ 3 GHz, cu tracking generator (2.440 + TVA)', 'Active corporale (2.2)', 'A3, A4, A5', 2952),
+    (_SEC_I, '7', 'Analizor de consum (Joulescope JS320 sau echivalent) (880 + TVA)', 'Active corporale (2.2)', 'A3, A5', 1065),
+    (_SEC_I, '8', 'Cutie ecranată RF ≥ 60 dB (900 + TVA)', 'Active corporale (2.2)', 'A3, A5', 1089),
+    (_SEC_I, '9', 'Stație de lucru PC (2.000 + TVA)', 'Active corporale (grupa 3, echipamente informatice)', 'A2–A5', 2420),
+    (_SEC_I, '10', 'Imprimantă 3D SLA (3.900 + TVA)', 'Active corporale (2.1)', 'A2, A4', 4719),
+    (_SEC_I, '11', 'Materiale: 8 plăci 2.8C, 20 de panouri de 2,8″, 25 de seturi audio I²S (microfon + amplificator + difuzor), 30 de celule LiPo 1500 mAh, componente, rășină, obiecte de inventar (3.725 + TVA)', 'Materiale, consumabile, obiecte de inventar', 'A2, A4', 4507),
+    (_SEC_I, '12', 'CNC + anodizare carcase Al 6061 (3 + 5 + 15 seturi) (5.550 + TVA)', 'Servicii (echivalente) pentru dezvoltare experimentală', 'A4', 6716),
+    (_SEC_I, '13', 'Fabricare + asamblare PCB propriu rev A/B (3.000 + TVA)', 'Servicii pentru dezvoltare experimentală', 'A4', 3630),
+    (_SEC_I, '14', 'Pre-testare EMC/RF, 2 sesiuni: EMC EN 301 489-1/-17 (≈ 4.610) + radio EN 300 328 (≈ 2.390, [E]) (7.000 + TVA)', 'Servicii de sprijinire a inovării (testare)', 'A5', 8470),
+    (_SEC_I, '15', 'Evaluare preliminară EN 18031 (2.500 + TVA)', 'Consultanță în inovare (utilizarea standardelor)', 'A4', 3025),
+    (_SEC_I, '16', 'Servicii CDI externalizate: proiectarea/validarea antenei prin carcasa din aluminiu (4.500 + TVA)', 'Servicii CDI externalizate (I.3)', 'A4', 5445),
+    (_SEC_I, '17', '2 workshop-uri/sesiuni de testare cu utilizatori: sală, materiale de test, gustare (1.240 + TVA)', 'Workshop-uri colaborative (validare TRL 4–5)', 'A5', 1500),
+    (_SEC_I, '18a', 'SaaS: API AI pentru teste (chei de test cu limită de cost, doar în validare) + CAD (≈ 3.140 + TVA)', 'Servicii SaaS pentru CDI (modelare, testare, simulare, analiza datelor)', 'A2–A5', 3800),
+    (_SEC_I, '18b', 'Infrastructură cloud de test în UE: servere virtuale pentru instanța de test SOUL Cloud, folosite exclusiv la testarea prototipurilor în L2–L22, oprite la final (≈ 992 + TVA)', 'Servicii SaaS pentru CDI — infrastructură de testare [[de confirmat la helpdesk și pe Anexa 20; alternativ: servicii pentru dezvoltare experimentală]]', 'A2–A5', 1200),
+    (_SEC_I, '19', 'Taxe EUIPO: marcă UE, 3 clase (850 + 50 + 150 = 1.050) + desen industrial multiplu, 2 designuri (350 + 125 = 475)', 'Obținerea/protejarea activelor necorporale', 'A6', 1525),
+    (_SEC_I, '20', 'Consilier în proprietate industrială: anterioritate, depunere, brevetabilitate (1.250 + TVA)', 'Consultanță în inovare (protecția activelor necorporale)', 'A6', 1512),
+    (_SEC_II1, '21', 'Taxă de publicare open-access peer-review (APC ≈ 2.349 + TVA)', 'Publicarea rezultatelor', 'A7', 2842),
+    (_SEC_II1, '22', 'Conferință/târg internațional: taxă, transport, cazare, diurnă, max. 2 persoane', 'Participare la conferințe/târguri', 'A7', 2900),
+    (_SEC_II1, '23', 'Customer discovery / focus-grupuri, 2 grupuri (1.700 + TVA)', 'Promovare pentru validare comercială', 'A6', 2057),
+    (_SEC_II2, '24', 'II.2 Consultanță pentru CF + validarea Raportului științific de către expert', 'Consultanță pentru CF (precontractuală)', 'A0', 4500),
+    (_SEC_II2, '25', 'II.3 Salariu manager de proiect (480 h × 18 €) + CAM', 'Management', 'A8', 8834),
+    (_SEC_II2, '26', 'II.4 Audit financiar (2.000 + TVA)', 'Audit', 'A8', 2420),
+    (_SEC_II2, '27', 'II.5 Comunicare și vizibilitate (1.000 + TVA)', 'Informare și publicitate', 'A8', 1210),
+]
+
+
+def feur(n):
+    """12345 -> '12.345' (RO thousands separator)."""
+    return f'{n:,.0f}'.replace(',', '.')
+
+
+def pct(a, b):
+    return f'{100 * a / b:.1f}'.replace('.', ',')
+
+
+LINE_EUR = {nr: v for _, nr, _, _, _, v in _LINES}
+SUB_I = sum(v for s, *_, v in _LINES if s == _SEC_I)
+SUB_II1 = sum(v for s, *_, v in _LINES if s == _SEC_II1)
+SUB_II2 = sum(v for s, *_, v in _LINES if s == _SEC_II2)
+DIRECT = SUB_I + SUB_II1 + SUB_II2
+INDIRECT = round(0.07 * DIRECT)
+ELIGIBIL = DIRECT + INDIRECT
+EQUIP = sum(LINE_EUR[k] for k in ('5', '6', '7', '8', '9', '10'))
+CD_HOURS = 1200 + 1680 + 1200  # lines 1–3 (coordonator + inginer + student) = 4.080 h CD
+EUIPO_TM, EUIPO_DS = 1050, 475  # line 19 split: EU trade mark (3 classes) + multiple design (2 designs), € fără TVA
+assert EUIPO_TM + EUIPO_DS == LINE_EUR['19']
+# budget shares (03-NUCLEU „Proporții”), one decimal so they add up to 100 %
+_SHARE_GROUPS = [
+    ('personal CDI', ('1', '2', '3', '4')),
+    ('echipamente', ('5', '6', '7', '8', '9', '10')),
+    ('materiale + servicii de prototipare/testare/SaaS', ('11', '12', '13', '14', '15', '16', '17', '18a', '18b')),
+    ('IP + publicare + diseminare', ('19', '20', '21', '22', '23')),
+    ('conexe II.2–II.5', ('24', '25', '26', '27')),
+]
+SHARES = [(n, sum(LINE_EUR[k] for k in ks)) for n, ks in _SHARE_GROUPS] + [('indirecte', INDIRECT)]
+assert sum(v for _, v in SHARES) == ELIGIBIL
+TOTAL = feur(ELIGIBIL) + ' €'
+assert ELIGIBIL <= 200000 and SUB_I >= 0.5 * ELIGIBIL and SUB_II2 <= 0.10 * ELIGIBIL
+
+_HEAD = {_SEC_I: ('I', 'ACTIVITATEA DE BAZĂ (CDI)'), _SEC_II1: ('II.1', 'DISEMINARE (conex, în afara plafonului de 10 %)'),
+         _SEC_II2: ('II.2–II.5', 'PLAFON CUMULAT 10 % DIN TOTAL')}
+_SUBNAME = {_SEC_I: ('Subtotal activitate de bază', SUB_I), _SEC_II1: ('Subtotal II.1', SUB_II1), _SEC_II2: ('Subtotal II.2–II.5', SUB_II2)}
+BUDGET = []
+for _sec in (_SEC_I, _SEC_II1, _SEC_II2):
+    BUDGET.append(_HEAD[_sec] + (None, None, None))
+    BUDGET += [(nr, line, cat, act, feur(v)) for s, nr, line, cat, act, v in _LINES if s == _sec]
+    BUDGET.append(('', _SUBNAME[_sec][0], '', '', feur(_SUBNAME[_sec][1])))
+BUDGET += [
+    ('', 'TOTAL COSTURI DIRECTE', '', '', feur(DIRECT)),
+    ('28', 'Costuri indirecte 7 % × costuri directe (chirie, utilități, personal suport)', 'Rată forfetară', '–', feur(INDIRECT)),
+    ('', 'TOTAL ELIGIBIL = NERAMBURSABIL (100 %)', '', '', feur(ELIGIBIL)),
 ]
 BUDGET_CHECKS = [
-    ('50.000 € ≤ nerambursabil ≤ 200.000 €', '191.308 € (rezervă de curs ~4,3 %)', 'îndeplinit'),
-    ('Activitatea de bază ≥ 50 % din eligibil', '154.040 / 191.308 = 80,5 %', 'îndeplinit'),
-    ('II.2 + II.3 + II.4 + II.5 ≤ 10 % din eligibilul total', '16.964 / 191.308 = 8,9 % (plafon 19.131 €)', 'îndeplinit'),
-    ('Indirecte = exact 7 % din directe', '12.515 €', 'îndeplinit'),
-    ('De minimis: 191.308 € + ajutoarele anterioare ≤ 300.000 €', 'spațiu necesar ≥ 108.692 € liber', '[[Ct: de verificat în RegAS]]'),
+    ('50.000 € ≤ nerambursabil ≤ 200.000 €', f'{TOTAL} (rezervă de curs ~{pct(200000 - ELIGIBIL, 200000)} %)', 'îndeplinit'),
+    ('Activitatea de bază ≥ 50 % din eligibil', f'{feur(SUB_I)} / {feur(ELIGIBIL)} = {pct(SUB_I, ELIGIBIL)} %', 'îndeplinit'),
+    ('II.2 + II.3 + II.4 + II.5 ≤ 10 % din eligibilul total', f'{feur(SUB_II2)} / {feur(ELIGIBIL)} = {pct(SUB_II2, ELIGIBIL)} % (plafon {feur(int(0.10 * ELIGIBIL))} €)', 'îndeplinit'),
+    ('Indirecte = exact 7 % din directe', f'{feur(INDIRECT)} €', 'îndeplinit'),
+    (f'De minimis: {TOTAL} + ajutoarele anterioare ≤ 300.000 €', f'spațiu necesar ≥ {feur(300000 - ELIGIBIL)} € liber', '[[Ct: de verificat în RegAS]]'),
     ('Salarii ≤ HG 1188/2022 Anexa 2', '34 ≤ 35 · 25 ≤ 35 · 12 ≤ 15 · 18 ≤ 50 €/h', 'îndeplinit'),
     ('Eșec de cercetare: max. 50 % decontat; activele pentru TRL 5 cad', 'liniile 12 (lotul de 15), 13 (rev B), 14 se angajează după IE2', 'îndeplinit'),
 ]

@@ -83,7 +83,7 @@ Pe fiecare linie: **2 oferte sau 1 ofertă + 1 catalog/captură de website**. Ca
 | Infrastructură cloud de test în UE — linia 18b | prețurile publice Hetzner/OVH (capturi) | alternativă (Scaleway) | Cl |
 | EUIPO marcă + design | taxele oficiale EUIPO (captură) | – (taxă oficială, **notă justificativă de sursă unică**) | Cl |
 | Consilier în proprietate industrială | 2 cabinete autorizate OSIM | – | A |
-| APC open-access | pagina de APC a revistei 1 (ex. MDPI *Electronics*/*Sensors*) | revista 2 (ex. IEEE Access) | Cl |
+| APC open-access | pagina de APC a revistei 1 (*Frontiers in Robotics and AI*, CHF 2.195) | revista 2 (IEEE *Access*, $2.160) | Cl |
 | Conferință/târg (taxă, transport, cazare) | site-ul evenimentului + oferte de zbor/cazare (capturi) | a doua variantă | Cl |
 | Customer discovery / focus-grupuri | agenție de research 1 | agenție 2 | A |
 | II.2 Consultanță + expert | oferta expertului | a doua ofertă (alt expert sau alt cabinet) | A |

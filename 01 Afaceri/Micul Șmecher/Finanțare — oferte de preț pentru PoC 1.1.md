@@ -36,31 +36,32 @@ actualizat: 2026-10-12
 - Furnizor din China: taxă vamală ~6 % + TVA de import 21 %. Ceri preț **DAP/DDP București**.
 - Cere mereu: **preț fără TVA + TVA, separat**.
 
-**Bugetul estimat din prețurile găsite: ≈ 189.200 € total eligibil** (dosarul: 191.308 €). E o **estimare**:
-- am schimbat doar 7 linii unde avem prețuri verificate (L5, L6, L7, L14, L19, L21, L23);
-- restul liniilor rămân la cifra din dosar, pentru că încă nu au preț (CNC, PCBA, laboratoare, audit etc.).
+**Bugetul din dosar, aliniat la prețurile găsite (12.10.2026): 191.240 € total eligibil** (înainte: 191.308 €).
+- am schimbat 7 linii unde avem prețuri verificate (L5, L6, L7, L14, L19, L21, L23) și am scăzut L17 ca să compensez;
+- restul liniilor rămân la cifra din dosar, pentru că încă nu au preț (CNC, PCBA, laboratoare, audit etc.);
+- sursa unică e `micul-smecher/investors/poc-1.1/dosar/draft/_build/data.py` (subtotalurile se calculează automat); tabelul complet e în `dosar/03-NUCLEU-PROIECT.md` §10.
 
-| Categorie (cu TVA) | Dosar | Estimare din prețuri | De ce |
+| Categorie (cu TVA) | Dosar vechi | Dosar nou | De ce |
 |---|---:|---:|---|
 | Salarii CDI L1–L4 (fără oferte) | 99.387 € | 99.387 € | neschimbat |
-| Echipamente L5–L10 | 15.488 € | **13.242 €** | osciloscop ≈ 1.000, analizor spectru ≈ 2.951, Joulescope JS320 ≈ 1.063; PC și SLA fără surse |
+| Echipamente L5–L10 | 15.488 € | **13.249 €** | osciloscop 1.004, analizor spectru 2.952, Joulescope JS320 1.065; PC, cutie RF și SLA neschimbate (fără surse complete) |
 | Materiale L11 | 4.507 € | 4.507 € | sub-articolele cu preț găsit fac ≈ 1.200 €; rămâne loc pentru panouri, rășină, componente |
 | Prototipare L12 CNC + L13 PCBA | 10.346 € | 10.346 € | **niciun preț încă** (doar ofertă după STEP/Gerber) |
-| Testare și R&D L14–L16 | 13.310 € | **14.050 €** | EMC la ZUT (PL) ≈ 5.580 € pentru 2 sesiuni, **doar EMC, fără radio** |
-| Workshop-uri L17 | 2.500 € | 2.500 € | doar sala are preț (≈ 250–300 € pe 2 zile) |
+| Testare și R&D L14–L16 | 13.310 € | **16.940 €** | L14 = 8.470 (7.000 + TVA): EMC la ZUT (PL) ≈ 4.610 € net pe 2 sesiuni + radio EN 300 328 ≈ 2.390 € net [E], fără preț public |
+| Workshop-uri L17 | 2.500 € | **1.500 €** | redusă ca să compenseze L14/L23: e linia cea mai slab justificată (doar sala are preț, ≈ 250–300 € pe 2 zile) |
 | SaaS L18 | 5.000 € | 5.000 € | prețuri unitare găsite; totalul depinde de consum |
 | PI L19–L20 | 3.502 € | **3.037 €** | EUIPO real: 1.050 (marcă, 3 clase) + 475 (2 designuri) = 1.525 € |
-| Diseminare L21–L23 | 7.788 € | **7.799 €** | APC Frontiers ≈ 2.842; focus grupuri ≈ 2.057 |
-| II.2–II.5 L24–L27 (plafon 10 %) | 16.964 € | 16.964 € | 9,0 % din total, sub plafon |
-| **Costuri directe** | 178.793 € | **176.832 €** | |
-| Indirecte 7 % (fără oferte) | 12.515 € | 12.378 € | |
-| **TOTAL ELIGIBIL** | **191.308 €** | **≈ 189.210 €** | sub 200.000 €; activitatea de bază ≈ 80 % (min. 50 %) |
+| Diseminare L21–L23 | 7.788 € | **7.799 €** | APC Frontiers 2.842; focus grupuri 2.057 (2 × 850 + TVA) |
+| II.2–II.5 L24–L27 (plafon 10 %) | 16.964 € | 16.964 € | 8,9 % din total, sub plafon (19.124 €) |
+| **Costuri directe** | 178.793 € | **178.729 €** | (suma veche a liniilor era de fapt 178.792) |
+| Indirecte 7 % (fără oferte) | 12.515 € | **12.511 €** | |
+| **TOTAL ELIGIBIL** | **191.308 €** | **191.240 €** | sub 200.000 € (rezervă de curs ~4,4 %); activitatea de bază 153.966 € = 80,5 % (min. 50 %) |
 
-**Atenție la 4 corecturi pentru dosar** (nu le-am făcut eu, dosarul îl editează altcineva):
-1. **L19 EUIPO:** 2 designuri costă 475 €, nu ≈ 940 €. Ori scazi la 1.525 €, ori justifici 5 designuri.
-2. **L14 EMC:** doar partea EMC (fără radio EN 300 328) iese deja ≈ 5.580 € pe 2 sesiuni. 4.840 € e prea puțin.
-3. **L7:** Joulescope JS220 nu se mai fabrică. Scrie în Anexa 3 „JS320 sau echivalent”.
-4. **L5:** osciloscoapele găsite nu decodează sigur I2S. Scrie „decodare I2S de dorit”, nu obligatoriu.
+**Cele 4 corecturi sunt aplicate în dosar (12.10.2026):**
+1. **L19 EUIPO:** 1.525 € (marcă 3 clase 1.050 + 2 designuri 475), nu 1.990 €.
+2. **L14 EMC/radio:** 8.470 € (7.000 + TVA) în loc de 4.840 €. Partea radio EN 300 328 e încă [E]: cere ofertele de la PIT, cetecom, NMi.
+3. **L7:** Anexa 3 scrie „Joulescope JS320 sau echivalent” (JS220 nu se mai fabrică).
+4. **L5:** Anexa 3 scrie „decodare I²S de dorit, nu obligatorie”.
 
 ## 2. Furnizorii pe fiecare linie
 
