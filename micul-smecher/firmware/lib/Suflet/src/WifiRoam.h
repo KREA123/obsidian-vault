@@ -156,11 +156,11 @@ class AskQueue {
   static constexpr float kMaxAgeS = 6 * 3600.0f;
   struct Item {
     std::string text;
-    float t = 0;    // the caller's monotonic seconds
+    double t = 0;   // the caller's monotonic seconds
     int tries = 0;  // sent before and lost on the way
   };
-  bool push(const std::string& text, float now, int tries = 0);  // false = a duplicate (still queued once)
-  bool pop(float now, Item& out);                 // the oldest fresh one
+  bool push(const std::string& text, double now, int tries = 0);  // false = a duplicate (still queued once)
+  bool pop(double now, Item& out);                 // the oldest fresh one
   int size() const { return (int)q_.size(); }
   void clear() { q_.clear(); }
   int dropped() const { return dropped_; }

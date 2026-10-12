@@ -43,6 +43,7 @@ class TouchGestures {
   float textSlopPx = 12.0f;
   float textMovePx = 2.0f;   // report moves of at least this much
   float textJumpPx = 70.0f;  // a jump this big between two samples = a new finger
+  void setClockForTest(double t) { t_ = t, tDown_ = t - 10, lastTap_ = t - 10; }  // tests: weeks of uptime
 
  private:
   void push(Ev e, float x, float y) {
@@ -56,7 +57,7 @@ class TouchGestures {
   void updateText(bool down, float x, float y);
   EvQueue<16, TouchEv> q_{};
   TouchMode mode_ = TouchMode::Face;
-  float t_ = 0, tDown_ = 0, lastTap_ = -10;
+  double t_ = 0, tDown_ = 0, lastTap_ = -10;  // s: doubles, so holds and taps work after weeks of uptime (1.9)
   float x0_ = 0, y0_ = 0, x_ = 0, y_ = 0, moved_ = 0, mx_ = 0, my_ = 0;
   bool down_ = false, holding_ = false, stroking_ = false, swallow_ = false;
 };
@@ -84,7 +85,7 @@ class MotionDetector {
 
  private:
   EvQueue<8> q_{};
-  float t_ = 0;
+  double t_ = 0;
   bool init_ = false;
   float gx_ = 0, gy_ = 0, gz_ = 1;  // fast gravity (tau 0.25 s)
   float nx_ = 0, ny_ = 0, nz_ = 1;  // neutral pose (tau 4 s)
@@ -92,10 +93,11 @@ class MotionDetector {
   float stillFor_ = 0;
   // burst tracking (knock vs pick-up)
   bool burst_ = false;
-  float burstT0_ = 0, burstQuiet_ = 0, burstPeak_ = 0, burstPx_ = 0, burstPy_ = 0,
+  double burstT0_ = 0;
+  float burstQuiet_ = 0, burstPeak_ = 0, burstPx_ = 0, burstPy_ = 0,
         stillBefore_ = 0;
   // shake
-  float peaks_[8] = {0};
+  double peaks_[8] = {0};
   int nPeaks_ = 0;
   bool above_ = false;
   float shakeCool_ = 0;

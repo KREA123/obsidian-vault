@@ -298,7 +298,7 @@ void Os::drawMemory(Canvas& cv) {
   const size_t n = mem_ ? mem_->size() : 0;
   rimTop(cv, (R ? "Memorie \xC2\xB7 " : "Memory \xC2\xB7 ") + std::to_string(n), kCream);
   if (!mem_) return;
-  buildMemoryItems(items_);
+  buildItems(items_);  // (1.9.0: buildMemoryItems alone appended: every repaint drew the Forget pill once more)
   if (memSel_ >= 0) {
     const Fact* f = mem_->find(memSel_);
     if (!f) return;
@@ -321,14 +321,15 @@ void Os::drawMemory(Canvas& cv) {
     rimBottom(cv, R ? "ține Uită ca să uit" : "hold Forget to forget", kCream, kFaint);
     return;
   }
-  const std::vector<int> rows = mem_->list(memFilter_);
-  if (rows.empty() && wheel_.focused() == 0) {
+  bool none = true;  // no fact matches (from the cached rows: the list is not searched again on every repaint)
+  for (const WheelRow& r : wheelRows()) none &= r.id < IdMemRow;
+  if (none && wheel_.focused() == 0) {
     textAt(cv, fonts::body(), 233, 188, memFilter_.empty() ? (R ? "Încă nu țin minte nimic." : "I remember nothing. Yet.")
                                                             : (R ? "Nimic cu „" : "Nothing with “") + memFilter_ + "\xE2\x80\x9D",
            kCream);
   }
   drawWheel(cv);
-  if (rows.empty() && memFilter_.empty() && wheel_.focused() == 0)
+  if (none && memFilter_.empty() && wheel_.focused() == 0)
     textAt(cv, fonts::caption(), 233, 224, R ? "Spune „ține minte că…”" : "Say \xE2\x80\x9Cremember that\xE2\x80\xA6\xE2\x80\x9D", kCream, kDim);
 }
 

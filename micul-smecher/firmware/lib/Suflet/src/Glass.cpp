@@ -1,6 +1,8 @@
 #pragma GCC optimize("O3")  // 1.8: the pixel loops (firmware/PERF.md: -5..-16 % instructions in the sim, +18 KB flash)
 #include "Glass.h"
 
+#include "PsramAlloc.h"
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -596,7 +598,8 @@ void GlassLayer::flatArc(Canvas& cv, float cx, float cy, float rm, float hw, flo
     cv.arc(cx, cy, rm, a0, a1, 2 * hw, c, alpha);
     return;
   }
-  static Path* path = new (std::nothrow) Path();  // on the heap (its 4 KB contour buffer: PSRAM on the device)
+  static void* mem = psramAlloc(sizeof(Path));  // made once in PSRAM (its 4 KB contour buffer), never internal RAM
+  static Path* path = mem ? new (mem) Path() : nullptr;
   if (!path || !path->reserve(256)) return;
   Path& p = *path;
   p.clear();

@@ -128,7 +128,7 @@ class Keyboard {
     bool active = false;
     std::string before, orig, repl, after;
     size_t pos = 0;
-    float t = 0;
+    double t = 0;
   };
   void layout();
   void refresh();  // suggestions + layout after an edit
@@ -180,7 +180,8 @@ class Keyboard {
   bool bkspHeld_ = false, bkspRepeated_ = false;
   float bkspT_ = 0, bkspNext_ = 0;
   // time
-  float t_ = 0, lastSpaceT_ = -10, lastShiftT_ = -10, blinkT_ = 0, undoChipUntil_ = -1;
+  double t_ = 0, lastSpaceT_ = -10, lastShiftT_ = -10, undoChipUntil_ = -1;  // s: doubles (1.9)
+  float blinkT_ = 0;
   bool changed_ = true, caretOn_ = true;
 };
 

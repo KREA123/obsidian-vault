@@ -25,7 +25,7 @@ bool Os::offlineChat(const std::string& text) {
   const bool offline = aiMode() == AiMode::None || !net_.connected || (aiMode() == AiMode::Bridge && !net_.bridgeOnline);
   if (!offline) return false;
   std::string say, face;
-  uint32_t seed = now_ ^ (uint32_t)(t_ * 1000);
+  uint32_t seed = now_ ^ (uint32_t)(uint64_t)(t_ * 1000);
   for (char c : text) seed = seed * 31u + (uint8_t)c;
   if (!smallTalk(text, ro(), now_ ? (int)(now_ % 86400 / 3600) : -1, seed, say, face)) return false;
   AiReply r;
@@ -163,7 +163,7 @@ void Os::voiceCommand(int id) {
     }
     case VoiceAction::Chat: {
       r.face = (LineTopic)a.arg == LineTopic::Joke ? "excited" : "happy";
-      say(pickLine((LineTopic)a.arg, ro(), now_ ^ (uint32_t)(t_ * 997), now_ && (now_ % 86400 / 3600 >= 22 || now_ % 86400 / 3600 < 6) ? 2 : 1));
+      say(pickLine((LineTopic)a.arg, ro(), now_ ^ (uint32_t)(uint64_t)(t_ * 997), now_ && (now_ % 86400 / 3600 >= 22 || now_ % 86400 / 3600 < 6) ? 2 : 1));
       break;
     }
     default: break;

@@ -33,6 +33,11 @@ class TimePicker {
     changed_ = true;
   }
   void setNow(uint32_t localEpoch);  // 0 = clock unknown (no "rings in" line)
+  // SoulOS Alive (1.9, the web's "alarm set", os/DESIGN-ALIVE.md): the thin 8 px rim ring in the born palette
+  // (the day e1, the night e2, the minutes' sweep e1), the knob an e1 disc, Bricolage Grotesque, a mint ✓.
+  // Without it (the Shell), the 1.8 glass picker.
+  void setAlive(Rgb e1, Rgb e2, Rgb on1);
+  bool alive() const { return alive_; }
 
   bool touch(const TouchEv& e);
   void update(float dt);
@@ -71,20 +76,23 @@ class TimePicker {
   float ringR() const { return r_; }
 
  private:
-  void setFromPoint(float x, float y, float t);
+  void setFromPoint(float x, float y, double t);
   void polar(float deg, float r, float& x, float& y) const;
   float S(float designPx) const { return g_.s(designPx); }
   DisplayGeometry g_;
   float cx_ = kCx, cy_ = kCy, r_ = kR, track_ = kTrack;
   Rect title_, digits_, rel_, ok_;
   float clear0_ = 0, clear1_ = 0;
-  bool open_ = false, changed_ = true, dragging_ = false, okDown_ = false;
+  bool open_ = false, changed_ = true, dragging_ = false, okDown_ = false, alive_ = false;
+  Rgb e1_, e2_, on1_;
+  void renderAlive(Canvas& cv);
   int h_ = 7, m_ = 0;
   DialMode mode_ = DialMode::Hours;
   Lang lang_ = Lang::En;
   uint32_t now_ = 0;
   float advanceIn_ = -1;  // countdown to the minutes after lifting in hours mode
-  float lastDeg_ = 0, lastT_ = -1;
+  float lastDeg_ = 0;
+  double lastT_ = -1;
   KbResult result_ = KbResult::None;
 };
 

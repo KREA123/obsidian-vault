@@ -39,7 +39,7 @@ struct AppFetch {
 // what the device knows about its storage (the Device app)
 struct StorageInfo {
   uint32_t flashKb = 0, appKb = 0, appMaxKb = 0, nvsUsed = 0, nvsTotal = 0, heapKb = 0, psramKb = 0, psramTotalKb = 0;
-  std::string fw = "1.8.0", board;
+  std::string fw = "1.9.0", board;
   int rssi = 0;
 };
 
@@ -62,7 +62,7 @@ struct AppsState {
   int wxPage = 0, calSel = -1, calPage = 0;
   int wxErr = 0, calErr = 0, mapErr = 0;  // HTTP status of the last failure (409 no location, 404, 501 not set up, -1 offline)
   std::string calErrCode, mapErrCode, mapErrMsg;
-  float wxAsked = -100, calAsked = -100, whereAsked = -100, ratesAsked = -1e9f, viewAsked = -100;
+  double wxAsked = -100, calAsked = -100, whereAsked = -100, ratesAsked = -1e9, viewAsked = -100;  // Os::t_ (s)
   bool wxWait = false, calWait = false, whereWait = false, viewWait = false, routeWait = false;
   // ---- maps ---------------------------------------------------------------
   maps::MapBundle bundle;
@@ -81,9 +81,10 @@ struct AppsState {
   double viewLat = 0, viewLon = 0;
   float rimA = 0;               // rim zoom: the angle at the last move
   bool dragging = false, rimDrag = false, rimArmed = false;  // a touch on the rim zooms once it moves
-  float dragX = 0, dragY = 0, downX = 0, downY = 0, downT = 0;
+  float dragX = 0, dragY = 0, downX = 0, downY = 0;
+  double downT = 0;
   bool arrivedShown = false;
-  float navAsked = -100;
+  double navAsked = -100;
   // ---- music --------------------------------------------------------------
   SoundGen sound;
   bool playing = false;
@@ -122,7 +123,7 @@ struct AppsState {
   double value = 1;
   // ---- find my phone / device --------------------------------------------
   int findState = 0;  // 0 idle, 1 asking, 2 ringing on a page, 3 push only, 4 nobody listening, 5 error
-  float findT = 0;
+  double findT = 0;
   StorageInfo storage;
   // ---- quick replies ------------------------------------------------------
   int replied = -1;

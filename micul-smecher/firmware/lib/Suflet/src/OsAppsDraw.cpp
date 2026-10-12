@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <new>
+
 #include "Os.h"
 #include "QrImage.h"
 #include "Raster.h"
@@ -263,8 +265,9 @@ void Os::buildAppsItems(std::vector<Item>& out) const {
 // ---------------------------------------------------------------- glyphs ---
 
 Path& Os::scratchPath() {  // one path for the glyphs, the dial's pebbles and the speech tail (4 KB of contour buffer)
-  static Path p;
-  return p;
+  // made once in PSRAM (1.9: a static Path was 4 KB of internal RAM); its edges are PSRAM too (Path::reserve)
+  static Path* p = new (psramAlloc(sizeof(Path))) Path();
+  return *p;
 }
 
 void Os::drawGlyph(Canvas& cv, AppId a, float cx, float cy, float size, Rgb c, float alpha, float stroke) {
@@ -344,7 +347,7 @@ void Os::drawSky(Canvas& cv, apps::Sky sky, float cx, float cy, float size, floa
         else if (sky == apps::Sky::Snow) cv.ellipse(x + dx, y + 7.5f * s, 1.3f * s, 1.3f * s, pal::kWhite, a);
       }
       if (sky == apps::Sky::Storm) {
-        static Path p;
+        Path& p = scratchPath();  // (1.9: was a static Path, 4 KB of internal RAM)
         if (p.reserve(64)) {
           p.clear();
           const float pts[] = {x + 1 * s, y + 3 * s, x - 2.5f * s, y + 8.5f * s, x + 0.2f * s, y + 8.5f * s, x - 1.2f * s, y + 12 * s,
@@ -362,7 +365,7 @@ void Os::drawSky(Canvas& cv, apps::Sky sky, float cx, float cy, float size, floa
 
 void Os::drawArrow(Canvas& cv, float cx, float cy, float size, float deg, Rgb c, float alpha) {
   // "walk along the line, then turn this way": a stem up from the bottom, then the turn, then the head
-  static Path p;
+  Path& p = scratchPath();  // (1.9: was a static Path, 4 KB of internal RAM)
   if (!p.reserve(512)) return;
   p.clear();
   const float s = g_.s(size), x = g_.s(cx), y = g_.s(cy), w = s * 0.14f;
@@ -588,7 +591,7 @@ void Os::drawWeather(Canvas& cv) {
       const int n = wrapLines(fonts::caption(), R ? "Leagă SOUL de contul tău: Setări › AI › SOUL Cloud." : "Pair SOUL with your account: Settings › AI › SOUL Cloud.", g_.s(290), l, 3);
       for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 260 + i * 26, l[i], kCream, kDim);
     } else if (A.wxWait) {
-      const float pulse = 0.6f + 0.35f * sinf(t_ * 3.0f);
+      const float pulse = 0.6f + 0.35f * sinf(animT() * 3.0f);
       drawSky(cv, apps::Sky::Part, 233, 236, 64, pulse);
       textAt(cv, fonts::body(), 233, 306, R ? "Întreb cerul…" : "Asking the sky…", kCream, pulse);
     } else if (A.wxErr == 409) {  // no location yet
@@ -717,7 +720,7 @@ void Os::drawMaps(Canvas& cv) {
     float sx, sy;
     v.toScreen(wx, wy, sx, sy);
     const float accPx = (float)(A.fix.accM / maps::metresPerPx(la, v.z) * v.scale);
-    mp.paintYou(cv, sx, sy, accPx, t_);
+    mp.paintYou(cv, sx, sy, accPx, animT());
   }
   // a dark band at the rim keeps the words on the rim readable over the map
   face_.raster().ring(cv, g_.cx(), g_.cy(), g_.s(226), g_.s(22), kDark, 0.55f);
@@ -821,7 +824,7 @@ void Os::drawCalendar(Canvas& cv) {
   rimTop(cv, std::string(R ? "Agenda · " : "Agenda · ") + dayName(now_, R), kCream);
   if (!A.agenda.ok) {
     if (A.calWait) {
-      const float pulse = 0.6f + 0.35f * sinf(t_ * 3.0f);
+      const float pulse = 0.6f + 0.35f * sinf(animT() * 3.0f);
       textAt(cv, fonts::body(), 233, 240, R ? "Citesc calendarul…" : "Reading your calendar…", kCream, pulse);
     } else if (!cloudOk(net_) || A.calErr == 404) {
       textAt(cv, fonts::body(), 233, 168, R ? "Leagă-ți calendarul" : "Link your calendar", kCream);
@@ -968,7 +971,7 @@ void Os::drawGames(Canvas& cv) {
       cv.ellipse(cx + g_.s(h.x), cy + g_.s(h.y), g_.s(games::TiltBall::kHole), g_.s(games::TiltBall::kHole), pal_.peb, fade_);
       cv.ring(cx + g_.s(h.x), cy + g_.s(h.y), g_.s(games::TiltBall::kHole), g_.s(3), kAmber, 0.8f * fade_);
     }
-    if (T.running()) cv.star(cx + g_.s(T.star().x), cy + g_.s(T.star().y), g_.s(games::TiltBall::kStar), t_ * 1.5f, Rgb::hex(0xFFD76B), fade_);
+    if (T.running()) cv.star(cx + g_.s(T.star().x), cy + g_.s(T.star().y), g_.s(games::TiltBall::kStar), animT() * 1.5f, Rgb::hex(0xFFD76B), fade_);
     cv.ellipse(cx + g_.s(T.x()), cy + g_.s(T.y()), g_.s(games::TiltBall::kBall), g_.s(games::TiltBall::kBall), pal_.e1, fade_);
     if (T.running())
       rimTop(cv, std::to_string(T.score()) + (R ? " stele · " : " stars · ") + std::to_string((int)ceilf(T.left())) + " s · " +
@@ -1210,7 +1213,7 @@ void Os::drawFindPhone(Canvas& cv) {
   rimTop(cv, R ? "Găsește telefonul" : "Find my phone", kCream);
   const bool ringing = A.findState == 1 || A.findState == 2;
   if (ringing) {
-    const float ph = fmodf(t_ * 0.8f, 1.0f);
+    const float ph = fmodf(animT() * 0.8f, 1.0f);
     for (int k = 0; k < 2; ++k) {
       const float f = fmodf(ph + k * 0.5f, 1.0f);
       cv.ring(g_.s(233), g_.s(300), g_.s(60 + f * 60), g_.s(4), pal_.e1, (1 - f) * 0.7f * fade_);

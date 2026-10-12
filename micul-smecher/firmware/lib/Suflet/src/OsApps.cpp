@@ -1648,8 +1648,8 @@ void Os::appsFace(FaceInputs& in) const {
     case View::FindPhone:
       if (A.findState == 1 || A.findState == 2) {  // looking around for the phone
         in.look = true;
-        in.lookX = 0.8f * sinf(t_ * 2.2f);
-        in.lookY = 0.2f * cosf(t_ * 1.7f);
+        in.lookX = 0.8f * sinf(animT() * 2.2f);
+        in.lookY = 0.2f * cosf(animT() * 1.7f);
       }
       break;
     case View::Breathe:

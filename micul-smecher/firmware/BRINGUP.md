@@ -1,6 +1,6 @@
 # SOUL M bring-up: the first 15 minutes on a real 2.8C
 
-*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0 (§4b: 1.4.x, §4c: 1.5.0, §4d: 1.6, §4e: 1.7, §5: 1.8.0). Nothing below has run on a board yet: every line
+*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0 (§4b: 1.4.x, §4c: 1.5.0, §4d: 1.6, §4e: 1.7, §5: 1.8.0, §5f: 1.9.0 SoulOS Alive). Nothing below has run on a board yet: every line
 is either "verified on the PC" (native tests, the simulator) or "expected, check it". This page is the
 checklist that turns the second kind into the first. Write the numbers you measure into the table at
 the end and commit them.*
@@ -18,6 +18,10 @@ the end and commit them.*
 **Without tools:** open <https://espressif.github.io/esptool-js/>, *Connect* (pick the USB JTAG/serial
 port), set **Flash Address `0x0`**, choose `release/SOUL-2.8C-install.bin`, *Program*. It is one merged
 image (bootloader, partition table, app); erase is not needed. Then press **RESET**.
+
+The image now is **1.9.0** (SoulOS Alive): 2,643,088 B, sha256
+`a3de844d64bcd44c6f1d46384dc84bb2e5f5a922743eb9107fdb1372aa02e152` (`sha256sum` / `certutil -hashfile … SHA256` to
+check the download). After the steps below, do §5f for the new UI.
 
 **With PlatformIO:** `pio run -e lcd28 -t upload && pio device monitor -b 115200`.
 
@@ -389,6 +393,58 @@ The 1.7 workaround restarts the RGB transfer at the next VSYNC after every NVS /
 - [ ] If all pass: tell the firmware side to make `lcd28_xip` the release env. If it does not boot or flickers
       more: stay on `lcd28` and note what you saw.
 
+### 5f · SoulOS Alive on the glass (firmware 1.9.0, 15 min)
+
+1.9.0 is the approved SoulOS Alive design (`../os/DESIGN-ALIVE.md`): standby = the eyes alone on black; a touch
+wakes them and they glide up; the home is a **dial of pebbles** around the eyes; every list is a **wheel**; opening
+an app is a **lid wipe** (two black lids close in 80 ms, the screen changes behind them, they open in 170 ms). None of
+it has run on a board. Flash `release/SOUL-2.8C-install.bin` (1.9.0) at **0x0**; the serial banner and
+*Settings › Device* must say **1.9.0** (if they say 1.8.0, the old image is still on it). Do §3b (IMU axes) first:
+the dial and the wheels lean on the same axes. The `[perf]` line now ends with
+`int block N K, sprites N (built N), psram fallbacks N, rows built N`.
+
+**a · The dial's tilt direction** (the lean is measured against how you hold SOUL, so it needs a *change* of angle)
+- [ ] On the dial (swipe left on the face), hold SOUL upright in your hand, then **tip its right side down ~20–30°**
+      and back. Expected: the dial steps **once or twice**, the way a swipe to the left turns it (the pebble right of
+      the focused one comes to the bottom). The other way round: add `-DSUFLET_LEAN_X_SIGN=-1.0f` to `env:lcd28`'s
+      `build_flags`, rebuild, re-check, and tell the firmware side.
+- [ ] **Hold it still at that angle for 10 s**: the dial must **not** keep turning (at most the one step at the
+      start). Come back to upright: it must **not** step back.
+- [ ] Tip the left side down past upright: it steps the other way.
+
+**b · The wheels' tilt and touch** (Settings, Alarms, SOUL Memory)
+- [ ] Settings: tip the top of SOUL (the ring) away from you ~30° and back: the focused row moves on by one or a few
+      rows, then stops while you hold it. Note which way it went: ____ (expected: to the next row, down the list).
+      The other way: `-DSUFLET_LEAN_Y_SIGN=-1.0f`. Holding SOUL flat on the table: nothing moves.
+- [ ] **Touch alignment**: tap the row *above* and the row *below* the focused one, near their left and right ends:
+      each tap turns the wheel to that row and acts on it; a tap on a row's ↑ disc (Settings › Apps) hits the disc,
+      not the row. A slow drag of one finger moves one row per ~56 px. A tap that lands on the wrong row: note the
+      row and how far off (px) — that is the touch calibration (§3), not the wheel.
+- [ ] The time picker (Alarms › + New): the thin ring is your palette (the day half e1, the night half e2), the hour
+      labels 0 / 6 / 12 / 18 sit on black notches and are easy to read; dragging along the rim moves the pink knob
+      under your finger (not beside it); lifting goes to the minutes; ✓ sets the alarm.
+
+**c · The lid wipe** (look closely: this is where tearing would show)
+- [ ] Open and close five apps from the dial. The lids close top-down / bottom-up as two smooth curves, the screen
+      changes while they are shut, they open with a small overshoot. **No horizontal tear line, no half-old /
+      half-new frame, no flash of the old screen after the lids open.** With *Settings › Reduce motion* on: no lids,
+      a direct cut.
+- [ ] `[perf]` while opening and closing apps: `draw` ≤ ~16 ms, fps 30 (asked 30). A frame that stutters: note the
+      app.
+
+**d · Memory after the dial** (the 1.9.0 heap fixes: the pebble sprites are in PSRAM, never internal RAM)
+- [ ] After boot, idle: `m` → internal free / lowest / largest block: ____ / ____ / ____ K.
+- [ ] Open the dial **ten times** (fling it around each time), then ask Claude one question over Wi-Fi (SOUL Cloud
+      or your key) **with Claude Desktop connected over BLE**, then `m` again and read the `[perf]` line: internal
+      lowest ≥ 40 KB, largest block ≥ 16 KB (§5c targets); `sprites` ≤ 40; **`psram fallbacks 0`** (anything else
+      means PSRAM was full and the sprites went to internal RAM: report it); PSRAM free ≥ 1 MB. The sprites take up to
+      ~1.2 MB of PSRAM once the dial has been used (the retired frosted glass freed ~2 MB).
+- [ ] Leave SOUL on SOUL Memory › the list for a minute with 50+ facts: `rows built` in the `[perf]` line grows by at
+      most a few (it was rebuilt every frame before 1.9.0).
+
+**e · Long uptime** (optional, if a unit can stay on the charger): after ≥ 2 days on, the eyes still blink, a fling on
+the dial still coasts, a double tap still works (1.9.0's clocks are doubles: a float stopped advancing after ~12 days).
+
 ## 6 · Wi-Fi and the AI (4 min)
 
 1. Settings → Wi-Fi → **Set up from a phone**. SOUL scans the networks first, then opens the access
@@ -468,6 +524,9 @@ run a command → SOUL's eyes go wide with an amber rim → hold the glass = app
 | §5c: internal lowest / largest block after a turn + BLE; smallest stack head-room | |
 | §5d: mA screen off (80 MHz) vs 240 MHz | |
 | §5e: XIP boots? flicker gone? draw ms vs lcd28 | |
+| §5f: dial tilt sign OK / flipped? wheel tilt sign? steady hold = no spin? | |
+| §5f: wheel taps on the right row? lid wipe tear-free? | |
+| §5f: internal lowest / largest block after 10 dials + a turn + BLE; psram fallbacks | |
 | fps / frame ms Claude prompt | |
 | min free internal heap after a cloud turn + BLE | |
 | mA awake 100 % / night / asleep / off | |

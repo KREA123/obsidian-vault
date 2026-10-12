@@ -1041,7 +1041,7 @@ void Brain::compose(const Inputs& in, float dt) {
   }
   // breathing: 2 % on a 4 s cycle awake, slower asleep
   const float period = mode_ == Mode::Asleep ? 6.0f : 4.0f;
-  const float br = 1.0f + 0.02f * sinf(t_ * 2 * kPi / period);
+  const float br = 1.0f + 0.02f * sinf((float)fmod(t_, (double)period) * 2 * kPi / period);
   // bounce: squash when pressed, stretch on the rebound
   const float b = bounce_.x * 0.12f;
   for (Eye* eye : {&f.L, &f.R}) {

@@ -1,12 +1,26 @@
 # SOUL M install image
 
-`SOUL-2.8C-install.bin` — SoulOS firmware 1.8.0 for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+`SOUL-2.8C-install.bin` — SoulOS firmware **1.9.0** (SoulOS Alive) for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
 (ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
 (`partitions.csv`: Arduino's `default_16MB` with the unused `spiffs` split into `soulmem` (128 KB, SOUL Memory) and `model` (3.2 MB, the optional speech models), + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
 
-- built 2026-10-04 from `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler warnings,
-  `pio check -e lcd28` clean; app 2,394,603 B of 6.25 MB (4.2 MB headroom), static RAM 113,172 B of 320 KB
-- size 2,465,024 B · sha256 `1248f38eeaef5e2e936dc7dc557672350842acba33bf0a6ccec9af9cde8b8120`
+- built 2026-10-12 from a clean `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler
+  warnings, `pio check -e lcd28` clean, 226 native tests green; app 2,572,655 B of 6.25 MB (3.8 MB headroom), static
+  RAM 85,604 B of 320 KB
+- size **2,643,088 B** · sha256 `a3de844d64bcd44c6f1d46384dc84bb2e5f5a922743eb9107fdb1372aa02e152`
+- 1.9.0: **SoulOS Alive** (`../../os/DESIGN-ALIVE.md`, the design approved on 2026-10-11): standby is the eyes alone on
+  black; a touch wakes them and they glide up into one slot above every screen; the home is a dial of MĂRGĂRITAR
+  pebbles around the eyes (drag, fling, a lean); every list is a wheel; opening an app is a blink of the whole glass
+  (the lid wipe); the born palette (each SOUL's eye colours) on every screen, Bricolage Grotesque + Martian Mono;
+  the alarm time picker on a thin rim ring in the palette. Critic fixes in this build: a lean turns a list's wheel
+  (it never did); a steady grip no longer spins the dial (the lean is against how SOUL is held); the dial's sprites
+  and the other scratch buffers are in PSRAM, not the internal RAM Wi-Fi / BLE / TLS need (static RAM −12 KB);
+  the lists' rows are no longer rebuilt every frame (SOUL Memory with 200 facts −23 % a frame); the clocks are
+  doubles (a float clock stopped after ~12 days of uptime). Numbers: [`../PERF.md`](../PERF.md) "1.9.0". Same
+  partition table as 1.6–1.8 (settings, alarms, notes, SOUL Memory and the device key survive). Not yet run on the
+  board: first boot checks in [`../BRINGUP.md`](../BRINGUP.md) §5f (the dial's and the wheels' tilt direction,
+  touch on the wheel rows, the lid wipe without tearing, the internal heap after the dial). Pictures:
+  `../sim/shots/alive/soulos-alive-device-vs-web.png` (the device's pixels next to the approved web design).
 - 1.8.0: **performance** ([`../PERF.md`](../PERF.md)), the same look (31,455 simulator frames hashed: identical
   to 1.7 but for 68 frames / 266 pixels where 1.7's partial repaint had differed from a full redraw, now fixed).
   Estimated on the S3 from instruction counts: standby −30 % CPU per frame (the worst of the 120 designs −29 %),

@@ -7,14 +7,17 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 #include <string>
 #include <vector>
 
 #include "Alive.h"
 #include "Frame.h"
 #include "Gestures.h"
+#include "Memory.h"
 #include "Os.h"
 #include "Palette.h"
+#include "PsramAlloc.h"
 #include "StoneData.h"
 #include "palette_fixture.h"
 
@@ -550,6 +553,190 @@ static void test_alive_os_dial_by_swipe_tap_and_tilt() {
   TEST_ASSERT_EQUAL_INT((int)want, (int)d.os.view());
 }
 
+// 1.9 (critic): a lean turns a list's wheel through the whole OS (it never did: the gravity average that the
+// lean is measured against was only fed on the frosted glass, and SoulOS Alive's glass is flat)
+static void test_alive_os_a_lean_turns_the_settings_wheel() {
+  Dev d;
+  d.run(0.5f);
+  d.os.go(View::Settings);
+  d.run(1.0f);
+  TEST_ASSERT_TRUE(d.os.wheelView());
+  const int f0 = d.os.wheel().focused();
+  // tip it forward 37° (0.6 g) and hold it for 2 s: the focused row moves on
+  d.imu.ay = 0.6f;
+  d.imu.az = 0.8f;
+  d.run(2.0f);
+  const int f1 = d.os.wheel().focused();
+  TEST_ASSERT_TRUE(f1 != f0);
+  TEST_ASSERT_TRUE(abs(f1 - f0) <= 5);  // one row every 0.45 s while the lean lasts (~1.7 s for 0.6 g)
+  // held there: it stops (the lean is against how SOUL is held); level again: it does not turn back
+  d.run(4.0f);
+  const int f2 = d.os.wheel().focused();
+  d.imu.ay = 0;
+  d.imu.az = 1;
+  d.run(3.0f);
+  TEST_ASSERT_EQUAL_INT(f2, d.os.wheel().focused());
+}
+
+// 1.9 (critic): held steadily at an angle (a normal grip, 20° sideways = 0.35 g), the home dial moves at most once
+// (the absolute gravity spun it one pebble every 0.45 s for as long as SOUL was held); level again, it stays
+static int dialSteps(const Dev& d, int from) { return (d.os.launcherIndex() - from + d.os.appCount()) % d.os.appCount(); }
+
+static void test_alive_os_a_steady_grip_does_not_spin_the_dial() {
+  Dev d;
+  d.run(0.4f);
+  d.swipe(330, 240, 150, 240);
+  d.run(0.8f);
+  TEST_ASSERT_EQUAL_INT((int)View::Launcher, (int)d.os.view());
+  const int start = d.os.launcherIndex();
+  d.imu.ax = 0.35f;
+  d.imu.az = 0.937f;
+  int moves = 0, last = start;
+  for (int i = 0; i < 300; ++i) {  // 10 s
+    d.step();
+    if (d.os.launcherIndex() != last) ++moves, last = d.os.launcherIndex();
+  }
+  TEST_ASSERT_TRUE(moves <= 1);
+  d.imu.ax = 0;
+  d.imu.az = 1;
+  for (int i = 0; i < 90; ++i) {
+    d.step();
+    if (d.os.launcherIndex() != last) ++moves, last = d.os.launcherIndex();
+  }
+  TEST_ASSERT_TRUE(moves <= 1);
+  // a deliberate lean the other way (past level) still steps the dial that way
+  d.imu.ax = -0.5f;
+  d.imu.az = 0.866f;
+  const int before = d.os.launcherIndex();
+  d.run(0.6f);
+  TEST_ASSERT_TRUE(dialSteps(d, before) >= d.os.appCount() - 2 && dialSteps(d, before) != 0);
+}
+
+// 1.9 (critic): the OS clock is a double: after 12 days of uptime a float clock stopped advancing (1/30 s rounded
+// to 0), and from ~1 day the fling's speed came out wrong. Start at 1e6 s (11.6 days) and everything still works.
+static void test_alive_os_works_after_weeks_of_uptime() {
+  Dev d;
+  d.os.setUptimeForTest(1.0e6);
+  d.tg.setClockForTest(1.0e6);
+  d.brain.setClockForTest(1.0e6);
+  d.run(0.4f);
+  const double t0 = d.os.uptime();
+  d.run(1.0f);
+  TEST_ASSERT_TRUE(fabs(d.os.uptime() - t0 - 1.0) < 0.01);
+  d.swipe(330, 240, 150, 240);
+  d.run(0.8f);
+  TEST_ASSERT_EQUAL_INT((int)View::Launcher, (int)d.os.view());
+  // a fling: a fast drag of ~2 pebbles' width, let go at speed, coasts further than the finger went
+  const int start = d.os.launcherIndex();
+  d.finger = true;
+  for (int k = 0; k <= 5; ++k) {
+    d.fx = d.g.s(380 - 36.0f * k);
+    d.fy = d.g.s(330);
+    d.step();
+  }
+  d.finger = false;
+  d.run(1.5f);
+  TEST_ASSERT_TRUE(dialSteps(d, start) >= 3 && dialSteps(d, start) <= 8);
+  // the tilt's rate limit still lets it step
+  const int before = d.os.launcherIndex();
+  d.imu.ax = 0.5f;
+  d.imu.az = 0.866f;
+  d.run(1.0f);
+  TEST_ASSERT_TRUE(dialSteps(d, before) >= 1);
+  // a double tap on the face (the touch gestures' own clock)
+  TouchGestures tg;
+  tg.setMode(TouchMode::Face);
+  tg.setClockForTest(1.0e6);
+  bool dbl = false;
+  for (int k = 0; k < 2; ++k) {
+    for (int i = 0; i < 2; ++i) tg.update(true, 240, 240, 1.0f / 30);
+    for (int i = 0; i < 3; ++i) tg.update(false, 240, 240, 1.0f / 30);
+  }
+  TouchEv e;
+  while (tg.poll(e)) dbl |= e.e == Ev::DoubleTap;
+  TEST_ASSERT_TRUE(dbl);
+}
+
+// 1.9 (critic): the dial's pebble sprites are made in PSRAM (PsramAlloc.h), reuse evicted buffers and are built
+// a few at a time: opening the dial built 68 (11 in one frame) and four flings 130 more
+static void test_alive_dial_sprites_are_few_and_in_psram() {
+  Dev d;
+  d.run(0.4f);
+  const uint64_t psram0 = psramStats().bytes;
+  const uint32_t b0 = d.os.spriteBuilds();
+  d.swipe(330, 240, 150, 240);
+  d.run(1.0f);
+  const uint32_t opening = d.os.spriteBuilds() - b0;
+  TEST_ASSERT_TRUE(opening > 0 && opening <= 40);
+  TEST_ASSERT_TRUE(psramStats().bytes - psram0 > 40000);  // the sprites' buffers went through psramAlloc
+  TEST_ASSERT_TRUE(d.os.spriteCount() <= 40);
+  uint32_t worst = 0;
+  const uint32_t b1 = d.os.spriteBuilds(), a1 = psramStats().allocs;
+  for (int f = 0; f < 4; ++f) {  // four flings, alternating
+    d.finger = true;
+    for (int k = 0; k <= 5; ++k) {
+      d.fx = d.g.s(f % 2 ? 90 + 36.0f * k : 380 - 36.0f * k);
+      d.fy = d.g.s(330);
+      const uint32_t b = d.os.spriteBuilds();
+      d.step();
+      worst = std::max(worst, d.os.spriteBuilds() - b);
+    }
+    d.finger = false;
+    for (int i = 0; i < 45; ++i) {
+      const uint32_t b = d.os.spriteBuilds();
+      d.step();
+      worst = std::max(worst, d.os.spriteBuilds() - b);
+    }
+  }
+  const uint32_t flings = d.os.spriteBuilds() - b1, allocs = psramStats().allocs - a1;
+  printf("  sprites: opening %u, 4 flings %u (%u allocations), worst frame %u\n", (unsigned)opening, (unsigned)flings,
+         (unsigned)allocs, (unsigned)worst);
+  TEST_ASSERT_TRUE(flings <= 100);
+  TEST_ASSERT_TRUE(allocs <= 12);  // an evicted sprite's buffers are reused: no heap churn once the 40 slots exist
+  TEST_ASSERT_TRUE(worst <= 6);
+  // and the screen at rest is exactly what a full redraw draws (no stand-in left behind)
+  d.run(1.0f);
+  TEST_ASSERT_EQUAL_INT(0, d.fullDiff());
+}
+
+// 1.9 (critic): a list's rows are built when they change, not three times a frame (a 200-fact Memory list copied
+// every fact's text each time)
+static void test_alive_wheel_rows_are_cached() {
+  Dev d;
+  SoulMemory mem;
+  char t[160];
+  for (int i = 0; i < 200; ++i) {
+    snprintf(t, sizeof t, "Ana likes %d: coffee with oat milk in the morning", i);
+    mem.remember(t, FactKind::Preference, FactSrc::User, 1790000000u + (uint32_t)i * 600);
+  }
+  d.os.setMemory(&mem);
+  d.run(0.4f);
+  d.os.go(View::Memory);
+  d.run(1.0f);
+  TEST_ASSERT_TRUE(d.os.wheelView());
+  uint32_t b = d.os.wheelRowsBuilt();
+  d.run(3.0f);  // at rest: nothing to rebuild
+  TEST_ASSERT_TRUE(d.os.wheelRowsBuilt() - b <= 1);
+  b = d.os.wheelRowsBuilt();
+  for (int i = 0; i < 6; ++i) d.os.wheelTurn(1), d.run(0.3f);  // turning: the same rows
+  TEST_ASSERT_TRUE(d.os.wheelRowsBuilt() - b <= 1);
+  TEST_ASSERT_EQUAL_INT(6 + 1, d.os.wheel().focused());  // (Search is row 0, the default focus row 1)
+  // a fact forgotten elsewhere (the AI, the phone): the list follows at once
+  b = d.os.wheelRowsBuilt();
+  const int n = d.os.wheel().count();
+  mem.forgetId(mem.at(0).id);
+  d.run(0.1f);
+  TEST_ASSERT_EQUAL_INT(n - 1, d.os.wheel().count());
+  TEST_ASSERT_TRUE(d.os.wheelRowsBuilt() - b >= 1);
+  // Settings: its values follow the clock, rebuilt at most about once a second at rest
+  d.os.go(View::Settings);
+  d.run(1.0f);
+  b = d.os.wheelRowsBuilt();
+  d.run(3.0f);
+  TEST_ASSERT_TRUE(d.os.wheelRowsBuilt() - b <= 4);
+  d.os.setMemory(nullptr);
+}
+
 static void test_alive_os_reactions_follow_the_table() {
   Dev d;
   d.run(1.0f);
@@ -721,6 +908,11 @@ void runAliveTests() {
   RUN_TEST(test_alive_os_eye_slot_on_every_app_screen);
   RUN_TEST(test_alive_os_lid_wipe_opens_and_closes_apps_inside_the_frame);
   RUN_TEST(test_alive_os_dial_by_swipe_tap_and_tilt);
+  RUN_TEST(test_alive_os_a_lean_turns_the_settings_wheel);
+  RUN_TEST(test_alive_os_a_steady_grip_does_not_spin_the_dial);
+  RUN_TEST(test_alive_os_works_after_weeks_of_uptime);
+  RUN_TEST(test_alive_dial_sprites_are_few_and_in_psram);
+  RUN_TEST(test_alive_wheel_rows_are_cached);
   RUN_TEST(test_alive_os_reactions_follow_the_table);
   RUN_TEST(test_alive_os_look_previews_births_and_keeps_the_body);
   RUN_TEST(test_alive_os_speech_on_wake_and_standby_is_the_eyes_alone);

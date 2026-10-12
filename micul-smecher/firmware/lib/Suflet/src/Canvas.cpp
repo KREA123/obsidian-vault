@@ -4,6 +4,7 @@
 namespace suflet {
 
 TextProbe* Canvas::probe = nullptr;
+bool Canvas::probeOnly = false;
 
 static constexpr float kTau = 6.28318531f;
 
@@ -255,7 +256,8 @@ int Canvas::drawText(const Font& f, float x, int y, const char* s, Rgb c, float 
     if (!g->w || !g->h) continue;
     if (probe) {
       const float q[8] = {(float)gx, (float)gy, (float)(gx + g->w), (float)gy, (float)(gx + g->w), (float)(gy + g->h), (float)gx, (float)(gy + g->h)};
-      probe->glyph(f, q, alpha, false);
+      probe->glyph(f, q, alpha, false, (accent && utf8::isRoDiacritic(cp)) ? *accent : c);
+      if (probeOnly) continue;
     }
     const Rect box = clip(Rect{gx, gy, gx + g->w, gy + g->h});
     if (box.empty()) continue;
@@ -332,7 +334,10 @@ void Canvas::drawTextArc(const Font& f, float cx, float cy, float r, float a, co
       if (sy < by0) by0 = sy;
       if (sy > by1) by1 = sy;
     }
-    if (probe) probe->glyph(f, quad, alpha, true);
+    if (probe) {
+      probe->glyph(f, quad, alpha, true, c);
+      if (probeOnly) continue;
+    }
     Rect box = clip(Rect{(int)floorf(bx0) - 1, (int)floorf(by0) - 1, (int)ceilf(bx1) + 1, (int)ceilf(by1) + 1});
     if (box.empty()) continue;
     bool any = false;

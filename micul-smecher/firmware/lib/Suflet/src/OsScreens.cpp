@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <functional>
+
 #include "Os.h"
 #include "Raster.h"
 
@@ -191,20 +193,41 @@ void Os::buildWheel(std::vector<WheelRow>& out) const {
   buildMemoryWheel(out);
 }
 
-int Os::wheelCount() const {
-  buildWheel(rows_);
-  return (int)rows_.size();
+// The rows, cached (1.9): built again only when the screen changes, after anything that repaints the whole
+// screen (a tap, an edit, data from the cloud: invalidate()), when SOUL Memory changes, and once a second on the
+// screens whose values follow the clock. Turning or resting costs nothing (a 200-fact Memory list was rebuilt,
+// every fact's text copied, 3-4 times a frame).
+const std::vector<Os::WheelRow>& Os::wheelRows() const {
+  if (!wheelView()) {
+    rows_.clear();
+    rowsView_ = View::Count;
+    return rows_;
+  }
+  const bool memory = view_ == View::Memory;
+  const uint32_t memKey = memory && mem_ ? mem_->generation() * 2654435761u ^ (uint32_t)std::hash<std::string>()(memFilter_) : 0;
+  const bool stale = rowsDirty_ || rowsView_ != view_ || rowsMem_ != memKey || (!memory && t_ - rowsAt_ >= 1.0);
+  if (stale) {
+    buildWheel(rows_);
+    ++rowsBuilt_;
+    rowsDirty_ = false;
+    rowsView_ = view_;
+    rowsMem_ = memKey;
+    rowsAt_ = t_;
+  }
+  return rows_;
 }
+
+int Os::wheelCount() const { return (int)wheelRows().size(); }
 
 float Os::wheelY() const { return alive::Wheel::kY; }
 
 // the row in focus when a wheel opens: the chosen one (Your AI), else the second (the web's min(1, n - 1))
 int Os::wheelDefault() const {
   if (view_ == View::Memory && mem_ && mem_->list(memFilter_).empty()) return 0;  // Search, under "I remember nothing"
-  buildWheel(rows_);
-  for (size_t i = 0; i < rows_.size(); ++i)
-    if (rows_[i].kind == RowSel) return (int)i;
-  return rows_.size() > 1 ? 1 : 0;
+  const std::vector<WheelRow>& rows = wheelRows();
+  for (size_t i = 0; i < rows.size(); ++i)
+    if (rows[i].kind == RowSel) return (int)i;
+  return rows.size() > 1 ? 1 : 0;
 }
 
 void Os::wheelSync() {
@@ -241,7 +264,11 @@ void Os::wheelUpdate(float dt) {
   wheelSync();
   if (wheelFor_ == View::Count) return;
   const eyes::EyeMotion& m = face_.motion();
-  if (m.active() && gravInit_ && !down_ && wheel_.tilt(m.gravY() - gLp_[1], t_, reducedMotion())) react(alive::Event::ListTurn);
+  const float lean = leanY_.value();  // forward / back, against how SOUL is held (alive::Lean)
+  if (m.active() && leanY_.ready() && !down_ && wheel_.tilt(lean, t_, reducedMotion())) {
+    leanY_.stepped(lean > 0 ? 1 : -1);
+    react(alive::Event::ListTurn);
+  }
   wheel_.update(dt);
   if (wheel_.pos() != wheelShownPos_) {
     invalidateWheel();
@@ -262,9 +289,9 @@ void Os::wheelTurn(int d) {
 
 int Os::wheelRowOf(int id) const {
   if (!wheelView()) return -1;
-  buildWheel(rows_);
-  for (size_t i = 0; i < rows_.size(); ++i)
-    if (rows_[i].id == id || rows_[i].id2 == id) return (int)i;
+  const std::vector<WheelRow>& rows = wheelRows();
+  for (size_t i = 0; i < rows.size(); ++i)
+    if (rows[i].id == id || rows[i].id2 == id) return (int)i;
   return -1;
 }
 
@@ -289,8 +316,7 @@ bool Os::wheelFocusRow(int row) {
 
 void Os::wheelItems(std::vector<Item>& out) const {
   if (!wheelView() || wheelFor_ != view_) return;
-  std::vector<WheelRow> rows;
-  buildWheel(rows);
+  const std::vector<WheelRow>& rows = wheelRows();
   const float Y = wheelY();
   for (int i = 0; i < (int)rows.size(); ++i) {
     if (abs(i - wheel_.focused()) > 1) continue;
@@ -321,9 +347,9 @@ bool Os::wheelTap(float x, float y) {
   const float px = x / g_.k(), py = y / g_.k();
   const int row = wheel_.hit(px, py, wheelY());
   if (row < 0) return false;
-  buildWheel(rows_);
-  if (row >= (int)rows_.size()) return false;
-  const WheelRow r = rows_[(size_t)row];
+  const std::vector<WheelRow>& rows = wheelRows();
+  if (row >= (int)rows.size()) return false;
+  const WheelRow r = rows[(size_t)row];  // (a copy: acting on it may change the rows)
   int id = r.id;
   if (r.id2 >= 0) {
     const int h = hitItem(x, y);
@@ -460,8 +486,7 @@ void Os::drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& 
 
 void Os::drawWheel(Canvas& cv) {
   wheelSync();
-  buildWheel(rows_);
-  const std::vector<WheelRow> rows = rows_;
+  const std::vector<WheelRow>& rows = wheelRows();
   const int n = (int)rows.size(), f = wheel_.focused();
   const float Y = wheelY();
   const Rect clip = cv.clipRect();

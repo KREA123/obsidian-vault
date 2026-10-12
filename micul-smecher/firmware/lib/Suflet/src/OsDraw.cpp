@@ -812,7 +812,7 @@ void Os::drawBridge(Canvas& cv) {
   } else if (!net_.connected) {
     textAt(cv, fonts::body(), 233, 220, R ? "Întâi Wi-Fi-ul" : "Wi-Fi first", kCream);
   } else if (net_.bridgeCode.empty()) {
-    const float pulse = 0.6f + 0.35f * sinf(t_ * 3.0f);
+    const float pulse = 0.6f + 0.35f * sinf(animT() * 3.0f);
     textAt(cv, fonts::body(), 233, 220, R ? "Fac un cod…" : "Making a code…", kCream, pulse);
   } else {
     const bool cloud = net_.bridgeCode.size() == 8;
@@ -1030,7 +1030,7 @@ void Os::drawPair(Canvas& cv) {
     return;
   }
   if (net_.pairCode.size() != 8) {
-    const float pulse = 0.6f + 0.35f * sinf(t_ * 3.0f);
+    const float pulse = 0.6f + 0.35f * sinf(animT() * 3.0f);
     textAt(cv, fonts::body(), 233, 214, net_.cloudOnline ? (R ? "Aștept codul…" : "Getting a code…") : (R ? "Ajung la SOUL Cloud…" : "Reaching SOUL Cloud…"),
            kCream, pulse);
     textAt(cv, fonts::caption(), 233, 252, id, kCream, kFaint);

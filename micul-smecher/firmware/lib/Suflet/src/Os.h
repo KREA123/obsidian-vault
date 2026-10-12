@@ -37,6 +37,7 @@
 #include "Memory.h"
 #include "OsApps.h"
 #include "Palette.h"
+#include "PsramAlloc.h"
 #include "SoulFace.h"
 #include "TimePicker.h"
 #include "WifiRoam.h"
@@ -346,6 +347,11 @@ class Os {
   int shownDesign() const { return lookDesign_ >= 0 ? lookDesign_ : birth_.design; }
   bool reducedMotion() const { return set_.reduceMotion != 0; }
   const alive::Dial& dial() const { return dial_; }
+  uint32_t spriteBuilds() const { return spriteBuilds_; }
+  uint32_t wheelRowsBuilt() const { return rowsBuilt_; }  // times a wheel's rows were built (tests, perf)
+  double uptime() const { return t_; }                   // s since begin()
+  void setUptimeForTest(double s) { t_ = s; }            // tests: start late in a long uptime  // dial pebble sprites built so far (tests, perf)
+  size_t spriteCount() const { return sprites_.size(); }
   bool lidsActive() const { return lids_.active() && lidsShown_; }
   float lidCover() const { return lidsActive() ? lids_.cover() : 0.0f; }
   bool lidsClosing() const { return lidsActive() && lids_.closing(); }  // the old screen is still behind them
@@ -425,7 +431,10 @@ class Os {
   void kbCommit(const std::string& text);
   void showAnswer(const AiReply& r, AiErr err, const char* src);
   AiContext context() const;
-  void invalidate() { dirtyAll_ = true; }
+  void invalidate() {
+    dirtyAll_ = true;
+    rowsDirty_ = true;  // whatever repaints the whole screen may have changed a wheel's rows
+  }
   void invalidate(const Rect& r) { dirty_.add(r); }
   void setDirtyFromKeyboard();
   void pushCmd(OsCmd c);
@@ -509,7 +518,12 @@ class Os {
   bool wheelDragged_ = false;
   int wheelGrab_ = 0;
   float wheelShownPos_ = -1;
-  mutable std::vector<WheelRow> rows_;  // scratch
+  mutable std::vector<WheelRow> rows_;  // the current wheel's rows, cached (wheelRows)
+  mutable View rowsView_ = View::Count;
+  mutable bool rowsDirty_ = true;
+  mutable uint32_t rowsMem_ = 0, rowsBuilt_ = 0;
+  mutable double rowsAt_ = -1;
+  const std::vector<WheelRow>& wheelRows() const;
   int wheelCount() const;
   float wheelY() const;
   int wheelDefault() const;
@@ -548,7 +562,8 @@ class Os {
   float dialIdleT_ = 0;
   bool dialBored_ = false;
   bool dialGrab_ = false;   // a horizontal drag turns the dial
-  float dragVx_ = 0, lastMoveX_ = 0, lastMoveT_ = 0;
+  float dragVx_ = 0, lastMoveX_ = 0;
+  double lastMoveT_ = 0;
   int boops_ = 0;
   int lastDialFocus_ = -1;
   struct PebShown {  // what each dial pebble looked like when last drawn (its damage)
@@ -562,15 +577,21 @@ class Os {
   Rect speechLast_;
   // the dial's pebbles (stone + glyph) cached as sprites: colour (premultiplied on black) + coverage, per app,
   // size (1/32 steps) and focus; built once, blitted every frame they move (DESIGN-ALIVE.md §8)
+  // (1.9) its buffers in PSRAM (PsramAlloc.h): never the internal RAM Wi-Fi, BLE and TLS need; an evicted
+  // sprite's buffers are reused, and at most kSpriteBuildsPerFrame are built in one frame
   struct PebSprite {
     uint32_t key = 0, used = 0;
-    int w = 0, h = 0;
-    std::vector<uint16_t> col;
-    std::vector<uint8_t> a;
+    int w = 0, h = 0, q = 0;
+    std::vector<uint16_t, PsramAllocator<uint16_t>> col;
+    std::vector<uint8_t, PsramAllocator<uint8_t>> a;
   };
-  std::vector<PebSprite> sprites_;
-  uint32_t spriteTick_ = 0, palGen_ = 1;
-  const PebSprite& pebbleSprite(int i, float scale, bool focus);
+  static constexpr int kSprites = 40, kSpriteBuildsPerFrame = 4;
+  std::vector<PebSprite, PsramAllocator<PebSprite>> sprites_;
+  std::vector<uint16_t, PsramAllocator<uint16_t>> spriteCov_;  // the coverage canvas a build draws into
+  uint32_t spriteTick_ = 0, palGen_ = 1, spriteBuilds_ = 0;
+  int spriteBuildsFrame_ = 0;
+  bool spriteShort_ = false;  // a smaller sprite stood in this frame: the pebbles are drawn again next frame
+  const PebSprite* pebbleSprite(int i, float scale, bool focus, float alpha);  // null: not this frame
   void drawDialPebble(Canvas& cv, int i, float x, float y, float scale, bool focus, float alpha);
   bool lastDialMoving_ = false;
   float lastDialOpen_ = -1;
@@ -608,16 +629,21 @@ class Os {
   BootStep bootStep_ = BootStep::Birth;
   int kbCtx_ = 0;
   uint32_t now_ = 0;
-  float t_ = 0, viewT_ = 0, fade_ = 1;
+  // t_: s since boot, a double (1.9): a float stopped advancing after ~12 days (an added 1/30 s rounded to 0)
+  double t_ = 0;
+  float viewT_ = 0, fade_ = 1;
+  float animT() const { return (float)fmod(t_, 3600.0); }  // the clock for sin() pulses: wraps hourly, keeps precision
   bool voice_ = false;
 
   // gestures
   bool down_ = false, holding_ = false, stroking_ = false, swallow_ = false;
-  float dx0_ = 0, dy0_ = 0, dx_ = 0, dy_ = 0, downT_ = 0, lastTapT_ = -10, lastTapX_ = 0, lastTapY_ = 0;
+  float dx0_ = 0, dy0_ = 0, dx_ = 0, dy_ = 0, lastTapX_ = 0, lastTapY_ = 0;
+  double downT_ = 0, lastTapT_ = -10;
   bool brainHold_ = false;
   int holdItem_ = -1;
   float holdItemT_ = 0;
-  float lookUntil_ = 0, lookX_ = 0, lookY_ = 0;
+  double lookUntil_ = 0;
+  float lookX_ = 0, lookY_ = 0;
   bool buttonDown_ = false;
   float buttonT_ = 0;
 
@@ -694,6 +720,7 @@ class Os {
   float peekT_ = 0, idleT_ = 0, auraLevel_ = 0, offsetT_ = 0;
   float gLp_[3] = {0, 0, 0};  // slow average of gravity: the tilt parallax is the difference
   bool gravInit_ = false, asleep_ = false;
+  alive::Lean leanX_, leanY_;  // the sideways lean turns the dial, forward / back the wheels (alive::Lean)
 
   // offline voice commands (OsVoice.cpp)
   bool sleepReq_ = false;
@@ -704,7 +731,7 @@ class Os {
   int memSel_ = -1, memUndoId_ = 0;  // the fact open on the Memory screen; the toast's undo
   std::string memFilter_;
   uint32_t memBackupGen_ = 0;
-  float memBackupT_ = 0;
+  double memBackupT_ = 0;
   bool memBackupWas_ = false;
   bool memoryAsk(const std::string& text);         // remember / forget / answered from memory: true = handled
   std::string memoryBlock(const std::string& q);   // the context block for an AI job

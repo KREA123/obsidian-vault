@@ -19,6 +19,7 @@ constexpr Rect kTitle{110, 44, 356, 84};
 constexpr Rect kDigits{56, 146, 410, 274};
 constexpr Rect kRel{70, 280, 396, 314};
 constexpr Rect kOk{150, 318, 316, 384};
+constexpr Rect kOkAlive{185, 314, 281, 406};  // the Alive ✓: a 72 px mint ring at (233, 360), a 96 px target
 constexpr float kClear0 = 166, kClear1 = 244;  // annulus cleared before redrawing the ring
 
 bool hitRect(const Rect& r, float x, float y) { return x >= r.x0 && x < r.x1 && y >= r.y0 && y < r.y1; }
@@ -41,9 +42,12 @@ void annulus(Canvas& cv, float cx, float cy, float r0, float r1, float a0, float
   const float s0 = a0 * kPi / 180.0f, s1 = (a0 + span) * kPi / 180.0f;
   const float ux0 = cosf(s0), uy0 = sinf(s0), ux1 = cosf(s1), uy1 = sinf(s1);
   const bool wide = span > 180.0f;
+  // only inside the canvas's clip (1.9: it drew the whole ring on every partial repaint, over the labels and
+  // the knob drawn before it in an earlier pass)
+  const Rect cl = cv.clipRect();
   const int ya = (int)floorf(cy - r1 - 1), yb = (int)ceilf(cy + r1 + 1);
   Rect touched;
-  for (int y = ya < 0 ? 0 : ya; y < yb && y < cv.height(); ++y) {
+  for (int y = ya < cl.y0 ? cl.y0 : ya; y < yb && y < cl.y1; ++y) {
     const float dy = y + 0.5f - cy;
     const float ro = r1 + 1.0f, ri = r0 - 1.0f;
     if (dy * dy >= ro * ro) continue;
@@ -64,8 +68,8 @@ void annulus(Canvas& cv, float cx, float cy, float r0, float r1, float a0, float
         xb = cx + ox;
       }
       int x0 = (int)floorf(xa), x1 = (int)ceilf(xb);
-      if (x0 < 0) x0 = 0;
-      if (x1 > cv.width()) x1 = cv.width();
+      if (x0 < cl.x0) x0 = cl.x0;
+      if (x1 > cl.x1) x1 = cl.x1;
       if (x1 <= x0) continue;
       touched.add(Rect{x0, y, x1, y + 1});
       for (int x = x0; x < x1; ++x) {
@@ -107,9 +111,19 @@ void TimePicker::setGeometry(const DisplayGeometry& g) {
   title_ = sr(kTitle);
   digits_ = sr(kDigits);
   rel_ = sr(kRel);
-  ok_ = sr(kOk);
+  ok_ = sr(alive_ ? kOkAlive : kOk);
   clear0_ = S(kClear0);
   clear1_ = S(kClear1);
+  changed_ = true;
+}
+
+void TimePicker::setAlive(Rgb e1, Rgb e2, Rgb on1) {
+  const bool was = alive_;
+  alive_ = true;
+  e1_ = e1;
+  e2_ = e2;
+  on1_ = on1;
+  if (!was) setGeometry(g_);  // the ✓'s target moves
   changed_ = true;
 }
 
@@ -169,13 +183,13 @@ uint32_t TimePicker::minutesUntil() const {
   return t ? (t - now_ + 59) / 60 : 0;
 }
 
-void TimePicker::setFromPoint(float x, float y, float t) {
+void TimePicker::setFromPoint(float x, float y, double t) {
   const float deg = atan2f(y - cy_, x - cx_) * (180.0f / kPi);
   bool fast = false;
   if (lastT_ >= 0 && t > lastT_) {
     float dd = fabsf(deg - lastDeg_);
     if (dd > 180) dd = 360 - dd;
-    fast = dd / (t - lastT_) > 90.0f;  // above 90°/s: 5-minute steps
+    fast = dd / (float)(t - lastT_) > 90.0f;  // above 90°/s: 5-minute steps
   }
   lastDeg_ = deg;
   lastT_ = t;
@@ -244,6 +258,10 @@ bool TimePicker::overlaps(const Rect& r) const {
 }
 
 void TimePicker::render(Canvas& cv) {
+  if (alive_) {
+    renderAlive(cv);
+    return;
+  }
   // clear what we own (not the middle, where the eyes are)
   GlassLayer& G = glass();
   for (const Rect& r : {title_, digits_, rel_, ok_}) {
@@ -326,6 +344,86 @@ void TimePicker::render(Canvas& cv) {
   G.orb(cv, S(233), S(350), S(30), GlassStyle::accent(pal::kMint, 0.45f, 0.14f));  // a mint glass orb
   cv.segment(S(221), S(351), S(229), S(359), S(3.4f), pal::kMint);
   cv.segment(S(229), S(359), S(245), S(342), S(3.4f), pal::kMint);
+  changed_ = false;
+}
+
+// SoulOS Alive (os/index.html dialHTML + the Alive CSS: .ddig 700 104 px, the ink's 66 % for the labels): every
+// word in Bricolage Grotesque, nothing under 22 px, the hour labels on a black notch cut into the ring so they
+// never sit on a colour (the 1.8 picker's 6 and 18 were pale blue on a blue ring).
+void TimePicker::renderAlive(Canvas& cv) {
+  GlassLayer& G = glass();
+  for (const Rect& r : {title_, digits_, rel_, ok_}) {
+    G.background(cv, r);  // black (the flat glass)
+    cv.markDirty(r);
+  }
+  G.backgroundRing(cv, cx_, cy_, clear0_, clear1_);
+  cv.markDirty(cv.clip(Rect{(int)(cx_ - clear1_), (int)(cy_ - clear1_), (int)(cx_ + clear1_) + 1, (int)(cy_ + clear1_) + 1}));
+  const bool H = mode_ == DialMode::Hours;
+  const Rgb ink = Rgb::hex(0xFBF4E3), cream = Rgb(255, 240, 200), mint = Rgb::hex(0x7FE3C0);
+  const float hw = S(4);  // the 8 px ring
+  if (H) {  // the day (06-18, the top half) e1, the night e2, both at half strength
+    annulus(cv, cx_, cy_, r_ - hw, r_ + hw, 0, 360, e1_, 0.5f, false, &e2_);
+  } else if (m_ > 0) {  // the minutes: an e1 sweep from 00 to the knob, round-capped
+    annulus(cv, cx_, cy_, r_ - hw, r_ + hw, 270, 6.0f * m_, e1_, 1.0f);
+    cv.ellipse(cx_, cy_ - r_, hw, hw, e1_, 1.0f);
+  }
+  const int N = H ? 24 : 60;
+  for (int i = 0; i < N; ++i) {
+    const float deg = H ? hourAngle(i) : minuteAngle(i);
+    const bool major = H ? i % 6 == 0 : i % 5 == 0;
+    float ax, ay, bx, by;
+    polar(deg, S(major ? 223.0f : 225.0f), ax, ay);
+    polar(deg, S(231.0f), bx, by);
+    cv.segment(ax, ay, bx, by, S(major ? 3.0f : 2.0f), cream, major ? 0.6f : 0.25f);
+  }
+  const Font& lf = fonts::caption();
+  for (int k = 0; k < 4; ++k) {
+    const int v = H ? k * 6 : k * 15;
+    char buf[4];
+    snprintf(buf, sizeof buf, H ? "%d" : "%02d", v);
+    float x, y;
+    polar(H ? hourAngle(v) : minuteAngle(v), r_, x, y);
+    const float w = (float)Canvas::measureText(lf, buf) * 0.5f + S(7), h = S(14);
+    cv.roundRect(x - w, y - h, x + w, y + h, h, pal::kBlack, 1);  // the notch in the ring
+    cv.drawText(lf, x, centreBase(lf, y), buf, ink, 0.66f, Align::Center);
+  }
+  // the knob: an e1 disc ringed in black, its value in the ink on e1
+  float kx, ky;
+  polar(knobAngle(), r_, kx, ky);
+  cv.ellipse(kx, ky, S(30), S(30), pal::kBlack, 1);
+  cv.ellipse(kx, ky, S(27), S(27), e1_, 1);
+  char val[4];
+  snprintf(val, sizeof val, "%02d", H ? h_ : m_);
+  cv.drawText(lf, kx, centreBase(lf, ky), val, on1_, 1, Align::Center);
+  // the label
+  cv.drawText(lf, cx_, centreBase(lf, S(64)), lang_ == Lang::Ro ? "Alarmă" : "Alarm", ink, 0.66f, Align::Center);
+  // the digits: the part being set in the ink and underlined in e1, the other part and ':' faint
+  const Font& df = fonts::bigDigits();
+  char hh[4], mm[4];
+  snprintf(hh, sizeof hh, "%02d", h_);
+  snprintf(mm, sizeof mm, "%02d", m_);
+  const int wh = Canvas::measureText(df, hh), wc = Canvas::measureText(df, ":"), wm = Canvas::measureText(df, mm);
+  const float x0 = cx_ - (wh + wc + wm) * 0.5f;
+  const int base = centreBase(df, S(208));
+  cv.drawText(df, x0, base, hh, H ? ink : cream, H ? 1.0f : 0.34f);
+  cv.drawText(df, x0 + wh, base, ":", cream, 0.34f);
+  cv.drawText(df, x0 + wh + wc, base, mm, H ? cream : ink, H ? 0.34f : 1.0f);
+  const float ux = H ? x0 : x0 + wh + wc, uw = H ? wh : wm;
+  cv.roundRect(ux + S(4), S(258), ux + uw - S(4), S(263), S(2.5f), e1_, 1);
+  // "rings in 9 h 12 min"
+  const uint32_t mins = minutesUntil();
+  if (mins) {
+    char rel[48];
+    const char* pre = lang_ == Lang::Ro ? "sună în" : "rings in";
+    if (mins >= 60) snprintf(rel, sizeof rel, "%s %u h %u min", pre, (unsigned)(mins / 60), (unsigned)(mins % 60));
+    else snprintf(rel, sizeof rel, "%s %u min", pre, (unsigned)mins);
+    cv.drawText(lf, cx_, centreBase(lf, S(296)), rel, ink, 0.66f, Align::Center);
+  }
+  // ✓: a mint ring and its check
+  cv.ellipse(S(233), S(360), S(36), S(36), mint, 0.12f);
+  cv.ring(S(233), S(360), S(35), S(2.5f), mint, 1);
+  cv.segment(S(220), S(361), S(229), S(370), S(3.2f), mint);
+  cv.segment(S(229), S(370), S(247), S(351), S(3.2f), mint);
   changed_ = false;
 }
 

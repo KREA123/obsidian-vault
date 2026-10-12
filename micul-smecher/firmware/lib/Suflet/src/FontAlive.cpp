@@ -9,5 +9,6 @@ const Font& caption() { return fontalive::kSmall2; }
 const Font& body() { return fontalive::kBody; }
 const Font& name() { return fontalive::kName; }
 const Font& title() { return fontalive::kTitle; }
+const Font& bigDigits() { return fontalive::kDigits2; }
 }  // namespace fonts
 }  // namespace suflet

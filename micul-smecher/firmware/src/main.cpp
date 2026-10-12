@@ -61,7 +61,7 @@
 #ifndef SUFLET_LCD_XIP
 #define SUFLET_LCD_XIP 0  // env lcd28_xip: code + rodata run from PSRAM, flash writes no longer stall the panel
 #endif
-#define FW_VERSION "1.8.0"
+#define FW_VERSION "1.9.0"
 
 using namespace suflet;
 
@@ -1211,6 +1211,11 @@ void loop() {
                   os.perf.fps, os.fpsHint(*brain), os.perf.frameMs, os.perf.renderMs, os.perf.pushMs, os.perf.cpu * 100,
                   viewName(os.view()), modeName(brain->mode()), (unsigned)os.perf.heapKb,
                   (unsigned)(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL) / 1024), (unsigned)os.perf.psramKb);
+    // 1.9: what SoulOS Alive costs the heaps (BRINGUP.md §5f): the internal heap's largest block, the dial's
+    // pebble sprites (made in PSRAM: a fallback means PSRAM was full and internal RAM was used) and the wheels
+    Serial.printf(", int block %u K, sprites %u (built %u), psram fallbacks %u, rows built %u",
+                  (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) / 1024), (unsigned)os.spriteCount(),
+                  (unsigned)os.spriteBuilds(), (unsigned)suflet::psramStats().fallbacks, (unsigned)os.wheelRowsBuilt());
 #if defined(SUFLET_BOARD_LCD28)
     {  // 1.8: the last present (copy into the back buffer, the wait for the panel) and the clock
       const lcd28::DisplayStats& ds = lcd28::displayStats();

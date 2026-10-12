@@ -38,6 +38,7 @@
 #include "Frame.h"
 #include "Geometry.h"
 #include "Gestures.h"
+#include "Memory.h"
 #include "Os.h"
 #include "Personality.h"
 #include <openssl/rand.h>
@@ -889,6 +890,42 @@ std::vector<Scenario> scenarios() {
            s.os.go(View::Home);
            s.run(0.5f);
          }
+       }},
+      // 1.9.0 (the critic's "SOUL Memory wheel" cost): Settings › Memory with 200 facts, at rest, turned by drags and
+      // swipes, a fact opened and closed; perf_bench.py measures it with Os::update (where the rows were rebuilt)
+      {"bench_memwheel", "Bench: SOUL Memory's wheel with 200 facts: at rest, drags, swipes, a fact opened", true,
+       [](Sim& s) {
+         static SoulMemory mem;
+         static const char* kWho[] = {"Ana", "Mihai", "Ioana", "the doctor", "Bogdan", "grandma"};
+         char t[160];
+         for (int i = 0; i < 200; ++i) {
+           snprintf(t, sizeof t, "%s %s %d: %s", kWho[i % 6], i % 3 ? "likes" : "said", i,
+                    i % 4 ? "coffee with oat milk in the morning" : "the appointment is on saturday at noon");
+           mem.remember(t, i % 5 ? FactKind::Preference : FactKind::Person, FactSrc::User, 1790000000u + (uint32_t)i * 600);
+         }
+         s.os.setMemory(&mem);
+         s.run(0.5f);
+         s.os.go(View::Memory);
+         s.run(1.5f);  // at rest
+         for (int i = 0; i < 3; ++i) {  // a slow drag up two rows, a swipe back down
+           s.finger = true;
+           for (int k = 0; k <= 20; ++k) {
+             s.fx = P(233);
+             s.fy = P(360 - 6.0f * k);
+             s.step(true);
+           }
+           s.finger = false;
+           s.run(0.6f);
+           s.swipe(233, 220, 233, 300, 0.6f);
+         }
+         s.os.wheelTurn(6);
+         s.run(1.0f);
+         s.tap(233, s.os.wheel().place(s.os.wheel().focused()).y, 1.0f);  // the focused fact opens
+         s.os.back();
+         s.run(1.5f);
+         s.os.go(View::Home);
+         s.run(0.3f);
+         s.os.setMemory(nullptr);
        }},
       // 1.8 perf pass (firmware/PERF.md, tools/perf_bench.py): one design (SIM_DESIGN=<index>), notifications,
       // the aura's drift/tilt repaint

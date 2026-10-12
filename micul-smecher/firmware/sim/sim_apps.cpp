@@ -88,7 +88,7 @@ struct AppSim {
     pw.batPct = 78;
     os.setPower(pw);
     StorageInfo si;
-    si.fw = "1.8.0";
+    si.fw = "1.9.0";
     si.board = "lcd28";
     si.appKb = 2404;
     si.appMaxKb = 6400;

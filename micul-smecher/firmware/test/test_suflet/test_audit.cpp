@@ -7,6 +7,11 @@
 //   target  any control is under 44 px on its short side
 //   rim     a word on the rim touches a word or a control of the screen
 //   eyes    the eyes' drawn pixels touch a control or a word
+//   contrast (1.9) a glyph whose colour, at its opacity, stands out from what is drawn under it by less than
+//           2:1 (WCAG luminance ratio) over most of its box: a word on a colour of its own lightness (the 1.8
+//           time picker's pale blue "6" and "18" on its blue ring). Measured at the glyph's opacity but never
+//           below 75 %: fading is the design's own de-emphasis (a wheel's neighbours at half strength, the digit
+//           not being set at 34 %), a word painted on its own colour is not
 // Plus the wheels (§4) and Claude's ask (two 68 px buttons, the "Hold = yes · 2× = no" line at >= 22 px).
 #include <math.h>
 #include <stdio.h>
@@ -27,6 +32,7 @@ struct Quad {
   int px;
   float a;
   bool arc;
+  Rgb c;
   float minX() const { return std::min(std::min(p[0], p[2]), std::min(p[4], p[6])); }
   float maxX() const { return std::max(std::max(p[0], p[2]), std::max(p[4], p[6])); }
   float minY() const { return std::min(std::min(p[1], p[3]), std::min(p[5], p[7])); }
@@ -35,13 +41,14 @@ struct Quad {
 
 struct Probe : TextProbe {
   std::vector<Quad> q;
-  void glyph(const Font& f, const float* quad, float alpha, bool arc) override {
+  void glyph(const Font& f, const float* quad, float alpha, bool arc, Rgb c) override {
     if (alpha < 0.05f) return;  // invisible (fading out): not on the glass
     Quad g;
     for (int i = 0; i < 8; ++i) g.p[i] = quad[i];
     g.px = f.px;
     g.a = alpha;
     g.arc = arc;
+    g.c = c;
     q.push_back(g);
   }
 };
@@ -68,6 +75,29 @@ bool quadsHit(const Quad& a, const Quad& b) {  // two glyphs: their boxes (the r
   return quadHitsBox(a, b.minX(), b.minY(), b.maxX(), b.maxY(), 1.0f);
 }
 
+double lin(double v) {
+  v /= 255.0;
+  return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4);
+}
+double luminance(double r, double g, double b) { return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b); }
+// the share of a glyph's box where its ink (its colour at its opacity over what is under it) is below 2:1
+float lowContrastShare(const Quad& g, const std::vector<uint16_t>& under, int W, int H) {
+  const int x0 = std::max(0, (int)floorf(g.minX())), x1 = std::min(W, (int)ceilf(g.maxX()));
+  const int y0 = std::max(0, (int)floorf(g.minY())), y1 = std::min(H, (int)ceilf(g.maxY()));
+  int n = 0, low = 0;
+  for (int y = y0; y < y1; ++y)
+    for (int x = x0; x < x1; ++x) {
+      const Rgb b = Rgb::from565(under[(size_t)y * W + x]);
+      const double a = std::max(g.a, 0.75f);
+      const double ir = b.r + (g.c.r - b.r) * a, ig = b.g + (g.c.g - b.g) * a, ib = b.b + (g.c.b - b.b) * a;
+      const double l1 = luminance(ir, ig, ib), l2 = luminance(b.r, b.g, b.b);
+      const double ratio = (std::max(l1, l2) + 0.05) / (std::min(l1, l2) + 0.05);
+      ++n;
+      low += ratio < 2.0;
+    }
+  return n ? (float)low / n : 0.0f;
+}
+
 struct Audit {
   std::vector<std::string> fails;
   int glyphs = 0, controls = 0;
@@ -83,6 +113,16 @@ void auditState(const alive_states::State& st, Audit& out) {
   Probe probe;
   Canvas::probe = &probe;
   s.os.render(cv);
+  // what is under the words: the same screen drawn again without them
+  std::vector<uint16_t> under((size_t)W * H, 0);
+  {
+    Canvas uc(W, H, under.data());
+    Probe skip;
+    Canvas::probe = &skip;
+    Canvas::probeOnly = true;
+    s.os.render(uc);
+    Canvas::probeOnly = false;
+  }
   Canvas::probe = nullptr;
   std::vector<Os::Control> cs;
   s.os.controls(cs);
@@ -95,7 +135,7 @@ void auditState(const alive_states::State& st, Audit& out) {
   auto fail = [&](const char* what) {
     if (out.fails.size() < 60) out.fails.push_back(std::string(st.name) + ": " + what);
   };
-  int cut = 0, small = 0, rim = 0, eyes = 0, tiny = 0;
+  int cut = 0, small = 0, rim = 0, eyes = 0, tiny = 0, faint = 0;
   for (const Quad& g : probe.q) {
     for (int k = 0; k < 4 && !cut; ++k)
       if (hypotf(g.p[2 * k] - cx, g.p[2 * k + 1] - cy) > R) {
@@ -104,6 +144,15 @@ void auditState(const alive_states::State& st, Audit& out) {
         fail(m);
         ++cut;
       }
+    if (!faint) {
+      const float share = lowContrastShare(g, under, W, H);
+      if (share > 0.5f) {
+        snprintf(m, sizeof m, "contrast: a %d px glyph at (%.0f, %.0f), #%02X%02X%02X at %.0f%%: under 2:1 over %.0f%% of it", g.px,
+                 g.p[0], g.p[1], g.c.r, g.c.g, g.c.b, g.a * 100, share * 100);
+        fail(m);
+        ++faint;
+      }
+    }
     if ((g.px < 18 || (g.a < 0.8f && g.px < 20)) && !small) {
       snprintf(m, sizeof m, "type: a %d px glyph at %.0f%% (floor 18 px, 20 px under 80 %%) at (%.0f, %.0f)", g.px, g.a * 100, g.p[0], g.p[1]);
       fail(m);
@@ -167,6 +216,53 @@ void auditState(const alive_states::State& st, Audit& out) {
 }
 
 }  // namespace
+
+// the contrast check catches what the critic saw on the 1.8 time picker (screen-37 of 1.9's first shots: its hour
+// labels, cream at 60 %, on its saturated blue ring) and passes the Alive picker (the labels on a black notch
+// cut into the 8 px ring, in the born palette)
+static int rimLabelsUnreadable(const std::vector<Quad>& q, const std::vector<uint16_t>& under) {
+  int bad = 0;
+  for (const Quad& g : q)
+    if (hypotf((g.minX() + g.maxX()) * 0.5f - 240, (g.minY() + g.maxY()) * 0.5f - 240) > 190)  // on the rim
+      bad += lowContrastShare(g, under, 480, 480) > 0.5f;
+  return bad;
+}
+
+static void test_audit_contrast_catches_the_old_time_picker() {
+  std::vector<uint16_t> buf((size_t)480 * 480, 0), under((size_t)480 * 480, 0);
+  {  // 1.8 as shot: "6" and "18" (cream, 60 %) on the 40 px blue ring at r 211
+    Canvas cv(480, 480, buf.data()), uc(480, 480, under.data());
+    for (Canvas* c : {&cv, &uc}) c->ring(240, 240, 211, 40, Rgb::hex(0x6EB4FF));
+    Probe probe;
+    Canvas::probe = &probe;
+    const Font& f = fonts::small();
+    cv.drawText(f, 28, 248, "6", pal::kEyeDay, 0.6f, Align::Center);
+    cv.drawText(f, 452, 248, "18", pal::kEyeDay, 0.6f, Align::Center);
+    Canvas::probe = nullptr;
+    TEST_ASSERT_EQUAL_INT(3, rimLabelsUnreadable(probe.q, under));  // the glyphs 6, 1, 8
+  }
+  // 1.9: the Alive picker, drawn by TimePicker itself
+  TimePicker tp;
+  tp.setGeometry(displays::kLcd28);  // 480 px
+  tp.setAlive(Rgb::hex(0xFFB3E6), Rgb::hex(0x4D64FF), Rgb::hex(0x1A0F18));
+  tp.open(7, 0);
+  std::fill(buf.begin(), buf.end(), 0);
+  std::fill(under.begin(), under.end(), 0);
+  Canvas cv(480, 480, buf.data()), uc(480, 480, under.data());
+  Probe probe, skip;
+  Canvas::probe = &probe;
+  tp.render(cv);
+  Canvas::probe = &skip;
+  Canvas::probeOnly = true;
+  tp.render(uc);
+  Canvas::probeOnly = false;
+  Canvas::probe = nullptr;
+  int rim = 0;
+  for (const Quad& g : probe.q) rim += hypotf((g.minX() + g.maxX()) * 0.5f - 240, (g.minY() + g.maxY()) * 0.5f - 240) > 190;
+  TEST_ASSERT_GREATER_THAN(4, rim);  // 0 6 12 18 and the knob's 07
+  TEST_ASSERT_EQUAL_INT(0, rimLabelsUnreadable(probe.q, under));
+  for (const Quad& g : probe.q) TEST_ASSERT_TRUE(g.px >= 22);  // Bricolage, nothing under 22 px
+}
 
 static void test_audit_every_screen_is_round_safe_readable_and_tappable() {
   Audit a;
@@ -330,6 +426,7 @@ static void test_today_one_widget_and_the_answer_pebble() {
 
 void runAuditTests() {
   RUN_TEST(test_audit_every_screen_is_round_safe_readable_and_tappable);
+  RUN_TEST(test_audit_contrast_catches_the_old_time_picker);
   RUN_TEST(test_wheel_rows_fit_the_circle_and_turn_on_the_spring);
   RUN_TEST(test_wheel_lists_turn_act_and_end_with_new);
   RUN_TEST(test_claude_asks_with_two_big_buttons);

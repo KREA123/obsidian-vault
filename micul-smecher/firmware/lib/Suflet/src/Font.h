@@ -47,6 +47,7 @@ const Font& caption();  // 22 px Bricolage Grotesque 600: secondary lines, the d
 const Font& body();     // 27 px Bricolage Grotesque 500: rows, body
 const Font& name();     // 30 px Bricolage Grotesque 700: the dial's curved app name, titles
 const Font& title();    // 36 px Bricolage Grotesque 700: big titles
+const Font& bigDigits();  // 104 px Bricolage Grotesque 700, 0-9 and ':' only: the alarm time picker (1.9)
 }  // namespace fonts
 
 enum class Align : uint8_t { Left, Center, Right };

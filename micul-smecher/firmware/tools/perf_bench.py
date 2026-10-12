@@ -53,7 +53,11 @@ FRAMES = [
     ("bench_games", "Games: tilt ball + rhythm", 30),
     ("bench_alive", "SoulOS Alive: the home dial (drag, fling, tilt) + apps opened / closed through the lid wipe", 30),
     ("bench_wheel", "SoulOS Alive: the lists' wheels (Settings, Alarms, World clock, Habits) turned by drags, swipes, a neighbour", 30),
+    ("bench_memwheel", "SoulOS Alive: SOUL Memory's wheel, 200 facts (at rest, drags, swipes, a fact opened); with Os::update", 30),
 ]
+# scenarios measured with SoulOS's update too (not only the compose): where their cost is (1.9.0: the wheels' rows)
+WITH_UPDATE = {"bench_memwheel"}
+UPDATE = "suflet::Os::update*"
 MICROS = [
     ("bench_json", "Cloud JSON: the recorded SOUL Cloud session (33 frames) + a Claude answer", "session"),
     ("bench_memory", "SOUL Memory: rank + context block over 200 facts", "question"),
@@ -63,12 +67,13 @@ MICROS = [
 APPS_STILLS = "apps"
 
 
-def callgrind(scenario: str, toggle: str, env: dict | None = None) -> dict:
+def callgrind(scenario: str, toggle, env: dict | None = None) -> dict:
+    toggles = [toggle] if isinstance(toggle, str) else list(toggle)
     with tempfile.TemporaryDirectory() as tmp:
         out = os.path.join(tmp, "cg.out")
         e = dict(os.environ, SIM_HASH="1", **(env or {}))
-        p = subprocess.run(["valgrind", "--tool=callgrind", f"--toggle-collect={toggle}", f"--callgrind-out-file={out}",
-                            str(PROGRAM), tmp, scenario], capture_output=True, text=True, env=e)
+        p = subprocess.run(["valgrind", "--tool=callgrind", *[f"--toggle-collect={t}" for t in toggles],
+                            f"--callgrind-out-file={out}", str(PROGRAM), tmp, scenario], capture_output=True, text=True, env=e)
         if p.returncode != 0:
             raise RuntimeError(f"{scenario}: {p.stderr[-800:]}")
         total = 0
@@ -102,7 +107,7 @@ def run_all(designs: bool, jobs: int) -> dict:
     tasks = {}
     with cf.ThreadPoolExecutor(jobs) as ex:
         for name, _what, _fps in FRAMES:
-            tasks[("frame", name)] = ex.submit(callgrind, name, COMPOSE)
+            tasks[("frame", name)] = ex.submit(callgrind, name, [COMPOSE, UPDATE] if name in WITH_UPDATE else COMPOSE)
         for name, _what, _unit in MICROS:
             tasks[("micro", name)] = ex.submit(callgrind, name, MICRO)
         if designs:

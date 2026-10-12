@@ -140,7 +140,8 @@ class Brain {
   // Stillness before dozing off; 0 = the personality's own (20..60 s by day,
   // 12 s at night). SoulOS keeps the eyes awake longer (they are always on).
   float sleepAfterS = 0, nightSleepAfterS = 0;
-  float time() const { return t_; }
+  double time() const { return t_; }
+  void setClockForTest(double t) { t_ = t, nextBlink_ = t + 1.5, nextSaccade_ = t + 1.0, lastInteractT_ = t; }
 
  private:
   struct Spring {
@@ -177,7 +178,8 @@ class Brain {
   BodyLight body_;
   Mode mode_ = Mode::Awake;
   Reaction cur_ = Reaction::None, queued_ = Reaction::None;
-  float t_ = 0, rt_ = 0, dur_ = 0;
+  double t_ = 0;  // s since boot: a double, so blinks and naps keep working after weeks of uptime (1.9)
+  float rt_ = 0, dur_ = 0;
   bool held_ = false;
   float releaseTail_ = 0;
   float hour_ = -1;
@@ -190,11 +192,12 @@ class Brain {
   float audio_ = 0;
 
   // idle life
-  float nextBlink_ = 1.5f, blinkT_ = -1, blinkDur_ = 0.13f, nextSaccade_ = 1.0f;
+  double nextBlink_ = 1.5, nextSaccade_ = 1.0;
+  float blinkT_ = -1, blinkDur_ = 0.13f;
   float gazeTX_ = 0, gazeTY_ = 0;
   Spring gx_, gy_, bounce_;
   float sideSign_ = 1;  // which way it looks away / hops
-  float lastTapT_ = -100, lastInteractT_ = 0;
+  double lastTapT_ = -100, lastInteractT_ = 0;
   int tapBurst_ = 0;
   float lonelyCool_ = 0;
   float knockX_ = 0, knockY_ = 0;

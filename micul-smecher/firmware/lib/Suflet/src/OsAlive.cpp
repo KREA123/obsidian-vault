@@ -50,6 +50,7 @@ void Os::applyPalette() {
   ++palGen_;  // the dial's sprites are rebuilt in the new colours
   sprites_.clear();
   glass().setFlatColors(pal_.peb, pal_.peb2, pal_.pebe);
+  tp_.setAlive(pal_.e1, pal_.e2, pal_.on1);  // the alarm's time picker in the born palette (1.9)
   invalidate();
 }
 
@@ -159,7 +160,7 @@ void Os::aliveGo(View from, View to) {
 void Os::say(LineTopic t, float secs) {
   if (!faceOrDial(view_) || asleep_ || lidsActive()) return;
   if (view_ == View::Home && peekT_ <= 0) return;  // standby is the eyes alone
-  const uint32_t seed = birth_.seed ^ (uint32_t)(t_ * 1000.0f) ^ ((uint32_t)t << 24);
+  const uint32_t seed = birth_.seed ^ (uint32_t)(uint64_t)(t_ * 1000.0) ^ ((uint32_t)t << 24);
   const int hour = now_ ? localclock::hour(now_) : -1;
   const char* line = pickLine(t, ro(), seed, hour >= 0 && alive::isNight(hour) ? 2 : 0);
   if (!line || !*line) return;
@@ -217,15 +218,15 @@ void Os::renderOverlay(Canvas& cv, const RectList&, RectList& painted) {
   const float c = lids_.cover();
   if (c <= 0) return;
   const int W = cv.width(), H = cv.height();
-  // per column: the upper lid's lower edge, the lower lid's upper edge (heap, once: PSRAM on the device)
+  // per column: the upper lid's lower edge, the lower lid's upper edge (made once, in PSRAM: PsramAlloc.h)
   static float* yu = nullptr;
   static float* yl = nullptr;
   static int cap = 0;
   if (cap < W) {
-    free(yu);
-    free(yl);
-    yu = (float*)malloc(sizeof(float) * W);
-    yl = (float*)malloc(sizeof(float) * W);
+    psramFree(yu);
+    psramFree(yl);
+    yu = (float*)psramAlloc(sizeof(float) * W);
+    yl = (float*)psramAlloc(sizeof(float) * W);
     cap = yu && yl ? W : 0;
     if (!cap) return;
   }
@@ -286,25 +287,61 @@ void Os::drawPebble(Canvas& cv, float cx, float cy, float w, float h, Rgb edge, 
   ras.fill(cv, p, edge, alpha, nullptr, FillRule::EvenOdd);
 }
 
-const Os::PebSprite& Os::pebbleSprite(int i, float scale, bool focus) {
-  const int q = (int)lroundf(scale * 32);
-  const uint32_t key = (palGen_ & 0x3FFFu) << 18 | (uint32_t)(i & 0xFF) << 10 | (uint32_t)(q & 0x1FF) << 1 | (focus ? 1u : 0u);
+const Os::PebSprite* Os::pebbleSprite(int i, float scale, bool focus, float alpha) {
+  // the size in 1/32 steps at rest; while the dial opens (the spread grows every pebble at once) in 1/8 steps,
+  // while it turns in 1/16, both rounded down so the sprite never outgrows the pebble's damage box
+  int q = (int)lroundf(scale * 32);
+  if (dial_.openness() < 0.999f) q = (int)floorf(scale * 8) * 4;
+  else if (dial_.moving()) q = (int)floorf(scale * 16) * 2;
+  if (q < 4) q = 4;
+  const uint32_t base = (palGen_ & 0x3FFFu) << 18 | (uint32_t)(i & 0xFF) << 10 | (focus ? 1u : 0u);
+  const uint32_t key = base | (uint32_t)(q & 0x1FF) << 1;
   ++spriteTick_;
   for (PebSprite& sp : sprites_)
     if (sp.key == key) {
       sp.used = spriteTick_;
-      return sp;
+      return &sp;
     }
+  // over this frame's build budget: the nearest smaller one already built stands in for a frame, and a pebble
+  // still faint (the opening spread's first frames) waits a frame; both are drawn right on the next frames
+  if (spriteBuildsFrame_ >= kSpriteBuildsPerFrame) {
+    PebSprite* best = nullptr;
+    for (PebSprite& sp : sprites_)
+      if ((sp.key & ~(0x1FFu << 1)) == base && sp.q <= q && (!best || sp.q > best->q)) best = &sp;
+    if (best || alpha < 0.35f) spriteShort_ = true;
+    if (best) {
+      best->used = spriteTick_;
+      return best;
+    }
+    if (alpha < 0.35f) return nullptr;
+  }
+  ++spriteBuildsFrame_;
+  ++spriteBuilds_;
+  // the slot: a new one, or the least recently used one's (its PSRAM buffers are reused)
+  if (sprites_.capacity() < (size_t)kSprites) sprites_.reserve(kSprites);
+  size_t slot = sprites_.size();
+  if (sprites_.size() >= (size_t)kSprites) {
+    slot = 0;
+    for (size_t k = 1; k < sprites_.size(); ++k)
+      if (sprites_[k].used < sprites_[slot].used) slot = k;
+  } else {  // a new slot: its buffers made once at the largest pebble's size, so reusing it never reallocates
+    sprites_.emplace_back();
+    const size_t most = (size_t)((((int)ceilf(g_.s(alive::Dial::kW) * 1.6f) + 6) & ~1) * (((int)ceilf(g_.s(alive::Dial::kH) * 1.6f) + 6) & ~1));
+    sprites_.back().col.reserve(most);
+    sprites_.back().a.reserve(most);
+  }
+  PebSprite& sp = sprites_[slot];
   // build it: the stone (and its glyph) drawn on black in a small canvas, and the stone's coverage (white)
   const float sc = q / 32.0f, w = g_.s(alive::Dial::kW) * sc, h = g_.s(alive::Dial::kH) * sc;
-  PebSprite sp;
   sp.key = key;
+  sp.q = q;
   sp.used = spriteTick_;
   sp.w = ((int)ceilf(w) + 6) & ~1;  // even: the stone's centre falls on a pixel corner
   sp.h = ((int)ceilf(h) + 6) & ~1;
-  sp.col.assign((size_t)sp.w * sp.h, 0);
-  std::vector<uint16_t> cov((size_t)sp.w * sp.h, 0);
-  Canvas tc(sp.w, sp.h, sp.col.data()), mc(sp.w, sp.h, cov.data());
+  const size_t n = (size_t)sp.w * sp.h;
+  sp.col.assign(n, 0);
+  spriteCov_.assign(n, 0);
+  Canvas tc(sp.w, sp.h, sp.col.data()), mc(sp.w, sp.h, spriteCov_.data());
   const Rgb c = pal_.accent(i);
   const float cx = sp.w * 0.5f, cy = sp.h * 0.5f;
   if (focus) drawPebble(tc, cx, cy, w, h, c, c, 1);  // the focused stone: filled with its colour
@@ -314,20 +351,15 @@ const Os::PebSprite& Os::pebbleSprite(int i, float scale, bool focus) {
   drawGlyph(tc, appAt(i), cx / g_.k(), cy / g_.k(), 24 * sc, focus ? pal_.ink(i) : c, 1, fmaxf(2.6f, g_.s(4) * sc));
   fade_ = f;
   drawPebble(mc, cx, cy, w, h, pal::kWhite, pal::kWhite, 1);
-  sp.a.resize(cov.size());
-  for (size_t k = 0; k < cov.size(); ++k) sp.a[k] = (uint8_t)(((cov[k] >> 5) & 0x3F) * 255 / 63);
-  if (sprites_.size() >= 40) {  // the least recently used goes
-    size_t old = 0;
-    for (size_t k = 1; k < sprites_.size(); ++k)
-      if (sprites_[k].used < sprites_[old].used) old = k;
-    sprites_.erase(sprites_.begin() + old);
-  }
-  sprites_.push_back(std::move(sp));
-  return sprites_.back();
+  sp.a.resize(n);
+  for (size_t k = 0; k < n; ++k) sp.a[k] = (uint8_t)(((spriteCov_[k] >> 5) & 0x3F) * 255 / 63);
+  return &sp;
 }
 
 void Os::drawDialPebble(Canvas& cv, int i, float x, float y, float scale, bool focus, float alpha) {
-  const PebSprite& sp = pebbleSprite(i, scale, focus);
+  const PebSprite* spp = pebbleSprite(i, scale, focus, alpha);
+  if (!spp) return;
+  const PebSprite& sp = *spp;
   const int x0 = (int)lroundf(x - sp.w * 0.5f), y0 = (int)lroundf(y - sp.h * 0.5f);
   const Rect r = cv.clip(Rect{x0, y0, x0 + sp.w, y0 + sp.h});
   if (r.empty()) return;
@@ -538,6 +570,7 @@ void Os::drawLook(Canvas& cv) {
 
 void Os::aliveUpdate(float dt) {
   face_.reducedMotion = reducedMotion();
+  spriteBuildsFrame_ = 0;
   // the lid wipe: the new screen appears behind the shut lids, then every frame of the opening
   if (lids_.active()) {
     const bool mid = lids_.update(dt);
@@ -569,8 +602,18 @@ void Os::aliveUpdate(float dt) {
   if (view_ != View::Launcher) return;
   // the dial
   if (dial_.count() != appCount()) dial_.reset(appCount(), orbit_, false);
+  if (spriteShort_) {  // last frame drew a stand-in sprite somewhere: draw the pebbles again with the right ones
+    spriteShort_ = false;
+    for (int i = 0; i < dial_.count() && i < (int)AppId::Count; ++i) invalidate(peb_[i].r);
+  }
   const eyes::EyeMotion& m = face_.motion();
-  if (m.active() && !down_ && dial_.tilt(m.gravX(), t_)) dialIdleT_ = 0;
+  // the sideways lean against how SOUL is held (1.9: the absolute gravity spun the dial for as long as SOUL was
+  // held at an angle); the sign of the board's X axis: BRINGUP.md §5f
+  const float lean = leanX_.value();
+  if (m.active() && leanX_.ready() && !down_ && dial_.tilt(lean, t_)) {
+    leanX_.stepped(lean > 0 ? 1 : -1);
+    dialIdleT_ = 0;
+  }
   const int open = dial_.update(dt, reducedMotion());
   orbit_ = dial_.focused();
   // damage: each pebble whose place, size, opacity or focus changed (old and new box)

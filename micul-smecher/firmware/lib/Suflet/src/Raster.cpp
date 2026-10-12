@@ -1,5 +1,6 @@
 #pragma GCC optimize("O3")  // 1.8: the pixel loops (firmware/PERF.md: -5..-16 % instructions in the sim, +18 KB flash)
 #include "Raster.h"
+#include "PsramAlloc.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -15,7 +16,7 @@ static constexpr int kSub = 4;  // sub-scanlines per pixel row
 
 bool Path::reserve(int maxEdges) {
   if (maxEdges <= cap_) return true;
-  Edge* ne = (Edge*)realloc(e_, sizeof(Edge) * maxEdges);
+  Edge* ne = (Edge*)psramRealloc(e_, sizeof(Edge) * maxEdges);  // (1.9) PSRAM: never the internal heap
   if (!ne) return false;
   e_ = ne;
   cap_ = maxEdges;

@@ -1,8 +1,58 @@
-# SOUL firmware performance: 1.7.0 → 1.8.0 → 1.9 (SoulOS Alive core + screens)
+# SOUL firmware performance: 1.7.0 → 1.8.0 → 1.9.0 (SoulOS Alive)
 
 *Measured 2026-10-04 on the PC (the simulator runs the device's own `lib/Suflet`). Nothing here has run on a
 board yet: the ESP32-S3 milliseconds and milliamps are estimates from instruction counts and datasheet
 currents. [`BRINGUP.md`](BRINGUP.md) §5 measures them on the 2.8C; write the real numbers there.*
+
+## 1.9.0: the release (critic fixes, 2026-10-12)
+
+*SoulOS Alive as shipped in `release/SOUL-2.8C-install.bin` 1.9.0. Before = `perf/1.9-alive-screens.json`, after =
+`perf/1.9.0.json` (same method: callgrind on the simulator, 2.3 ns / instruction, still estimates until BRINGUP §5
+and §5f run on a board).*
+
+| Scenario | screens M instr | 1.9.0 M instr | Δ | est. frame ms | est. fps |
+|---|---:|---:|---:|---:|---:|
+| SoulOS Alive: the home dial (drag, fling, tilt) + apps through the lid wipe (`bench_alive`) | 3.40 | 3.13 | −8 % | 13.0 → 12.3 | 30 |
+| Launcher orbit: swipe, open Alarms (the new time picker), set one | 2.70 | 2.53 | −6 % | 9.6 → 9.3 | 30 |
+| The lists' wheels (`bench_wheel`) | 3.36 | 3.34 | −0 % | 13.4 → 13.4 | 30 |
+| **SOUL Memory's wheel, 200 facts** (`bench_memwheel`, new; compose **+ `Os::update`**) | 4.34 | **3.33** | −23 % | 14.6 → 12.3 | 30 |
+
+Every other scenario is unchanged (±1 %); the heaviest is still Claude's ask at 17.6 ms of a 30 fps frame's 20.8 ms.
+`bench_memwheel` is measured with `Os::update` too (`perf_bench.py` `WITH_UPDATE`), because that is where the lists'
+rows were rebuilt: `Os::update` alone over the scenario 106.1 M → 8.5 M instructions (−92 %, 0.29 → 0.02 M a frame);
+`bench_wheel`'s `Os::update` 11.5 → 8.0 M; `bench_alive`'s 23.9 → 24.4 M (+2 %: the leans, the double clock). The
+"before" of `bench_memwheel` is the 1.9 screens commit (`046290e`) with the same scenario added.
+
+- **The wheels' rows are cached** (`Os::wheelRows`): built again only on a new screen, after anything that repaints
+  the whole screen (a tap, an edit, the cloud: `invalidate()`), when SOUL Memory's generation or search changes, and
+  once a second on the screens whose values follow the clock. Before, `wheelUpdate` → `wheelSync` → `wheelCount`
+  rebuilt them every frame at rest, `drawWheel` twice more plus a copy, and the Memory screen ran `mem_->list()` on
+  every repaint: ~400–600 small internal-RAM allocations per build with 200 facts. Tested: at rest and turning, ≤ 1
+  build; a fact forgotten elsewhere shows at once (`test_alive_wheel_rows_are_cached`).
+- **The dial's pebble sprites** (`Os::pebbleSprite`): their buffers in **PSRAM** (`PsramAlloc.h`:
+  `heap_caps_malloc(MALLOC_CAP_SPIRAM)`; pioarduino's `CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=4096` had put every
+  buffer ≤ 4 KB, 126 KB of the 491 KB cache, in internal RAM); each of the 40 slots made once at the largest
+  pebble's size (≤ ~1.2 MB of PSRAM once the dial has been used; the retired frosted glass freed ~2 MB) and reused
+  when evicted; sizes in 1/8 steps while the dial opens and 1/16 while it turns (1/32 at rest); at most 4 built
+  per frame (a smaller cached one stands in for a frame, a still-faint pebble waits a frame; both are redrawn the
+  next frame). Measured (`test_alive_dial_sprites_are_few_and_in_psram`): opening 68 → **35** builds, four flings
+  130 → **84** builds with **10** allocations (was 3 per build), worst frame 11 → **3** builds; the screen at rest
+  equals a full redraw.
+- **Other internal RAM moved out**: the lid wipe's per-column edges, `GlassLayer::flatArc`'s path and the shared
+  scratch path are made in PSRAM; two more `static Path` (weather storm icon, the maps arrow: 4 KB each in `.bss`) now
+  use the shared one; `Path::reserve` asks for PSRAM explicitly. **Static RAM** (`.dram0.data` + `.bss`)
+  97,644 → **85,604 B** (−12.0 KB). The serial `[perf]` line adds the internal heap's largest block, the sprites
+  (count / built), PSRAM fallbacks and the rows built (BRINGUP §5f d).
+- **Flash**: app 2,558,323 → **2,572,655 B** (+14 KB: the time picker's 104 px Bricolage digits, 18.5 KB,
+  `tools/gen_font_alive.py`); install image 2,643,088 B.
+- **Exactness** (`perf_bench.py --verify`): only 1.8's known frames differ from a full redraw (the find-phone and map
+  pulses, 162 frames). Fixed on the way: the time picker's ring ignored the canvas clip (every partial repaint drew
+  the whole ring again, over its labels and knob: the "day/night tint" frames and the saturated ring of the 1.8
+  picker), and an open Memory fact drew its Forget pill once more on every repaint (its item list was appended to,
+  never cleared).
+- **Long uptime**: the OS clock (`Os::t_`), the Brain's, the touch gestures', the keyboard's and the touch events' times
+  are doubles (a float stopped advancing after ~12 days of uptime; a fling's speed was ±25 % off after one day);
+  sin() pulses use the clock wrapped hourly. Tested from 1e6 s (`test_alive_os_works_after_weeks_of_uptime`).
 
 ## 1.9: SoulOS Alive screens (2026-10-12)
 

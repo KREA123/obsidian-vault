@@ -2,6 +2,13 @@
 // Drawing lives in OsDraw.cpp.
 #include "Os.h"
 
+#ifndef SUFLET_LEAN_X_SIGN
+#define SUFLET_LEAN_X_SIGN 1.0f  // + : SOUL's right side down steps the dial like a swipe to the left (BRINGUP §5f)
+#endif
+#ifndef SUFLET_LEAN_Y_SIGN
+#define SUFLET_LEAN_Y_SIGN 1.0f  // + : the top (the ring) tipped away from you steps a wheel to the next row
+#endif
+
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -1803,6 +1810,22 @@ bool Os::idleReturns() const {
 void Os::glassUpdate(float dt, const Brain& brain) {
   GlassLayer& G = glass();
   asleep_ = brain.mode() == Mode::Asleep || brain.mode() == Mode::Off;
+  // gravity's slow average (the glass parallax) and the leans that turn the dial and the wheels: every frame,
+  // also on the flat glass (1.9: they were only fed behind the early return below, so a lean never turned a wheel)
+  const eyes::EyeMotion& m = face_.motion();
+  const float gv[3] = {m.gravX(), m.gravY(), m.gravZ()};
+  for (int i = 0; i < 3; ++i) {
+    if (!gravInit_) gLp_[i] = gv[i];
+    gLp_[i] += (gv[i] - gLp_[i]) * (dt / 2.5f > 1 ? 1 : dt / 2.5f);
+  }
+  gravInit_ = true;
+  if (m.active()) {  // the signs: BRINGUP.md §5f (-DSUFLET_LEAN_X_SIGN=-1 / _Y_ turns the dial / the wheels around)
+    leanX_.update(SUFLET_LEAN_X_SIGN * gv[0], dt);
+    leanY_.update(SUFLET_LEAN_Y_SIGN * gv[1], dt);
+  } else {  // the IMU asleep (screen off) or absent: the next lean starts from wherever SOUL is then
+    leanX_.reset();
+    leanY_.reset();
+  }
   if (G.flat()) return;  // SoulOS Alive: pure black behind everything, nothing to build or drift
   // the aura (never behind the eyes on a face moment); when a screen opens from the eyes it waits 0.2 s for
   // them to step back, so it never rises behind the big eyes
@@ -1826,20 +1849,13 @@ void Os::glassUpdate(float dt, const Brain& brain) {
     }
   }
   // the read window: a slow drift + a lean against the tilt (the IMU), at most 4 times a second
-  const eyes::EyeMotion& m = face_.motion();
-  const float gv[3] = {m.gravX(), m.gravY(), m.gravZ()};
-  for (int i = 0; i < 3; ++i) {
-    if (!gravInit_) gLp_[i] = gv[i];
-    gLp_[i] += (gv[i] - gLp_[i]) * (dt / 2.5f > 1 ? 1 : dt / 2.5f);
-  }
-  gravInit_ = true;
   offsetT_ += dt;
   if (offsetT_ >= 0.25f && G.on()) {
     offsetT_ = 0;
     const float M = (float)GlassLayer::kMargin;
     const float tx = clampf((gv[0] - gLp_[0]) * 40.0f, -0.5f * M, 0.5f * M);
     const float ty = clampf(-(gv[1] - gLp_[1]) * 40.0f, -0.5f * M, 0.5f * M);
-    const float dx = 0.5f * M * sinf(t_ * 6.2831853f / 31.0f) + tx, dy = 0.5f * M * sinf(t_ * 6.2831853f / 37.0f + 1.0f) + ty;
+    const float dx = 0.5f * M * sinf(animT() * 6.2831853f / 31.0f) + tx, dy = 0.5f * M * sinf(animT() * 6.2831853f / 37.0f + 1.0f) + ty;
     if (G.setOffset((int)lroundf(dx), (int)lroundf(dy))) invalidate();
   }
 }
@@ -1867,7 +1883,7 @@ FaceInputs Os::faceInputs(const Brain& b) const {
     in.lookY = lookY_;
   }
   // breathing idle (§3): on the face and the dial the eyes swell 1.2 % over 5.5 s
-  if (view_ == View::Home || view_ == View::Launcher) in.layout.k *= alive::breath(t_, reducedMotion());
+  if (view_ == View::Home || view_ == View::Launcher) in.layout.k *= alive::breath(animT(), reducedMotion());
   if (listening_) in.state = FaceState::Listen;
   // a turn handed to the owner's computer: waiting (on its way) until Claude Code has it, then thinking
   else if (thinking_ && aiMode() == AiMode::Bridge && net_.askState == 1) in.state = FaceState::Wait;
@@ -1881,7 +1897,7 @@ FaceInputs Os::faceInputs(const Brain& b) const {
   else if (needsInternet() && net_.saved > 0 && offT_ > 20.0f && (view_ == View::Home || view_ == View::Launcher)) {
     // no internet for a while: heavier lids, and now and then a glance around, looking for a signal
     in.state = FaceState::Offline;
-    const float ph = fmodf(t_, 9.0f);
+    const float ph = fmodf(animT(), 9.0f);
     if (!in.look && ph < 1.6f) {
       in.look = true;
       in.lookX = 0.6f * sinf(ph / 1.6f * 6.2831853f);

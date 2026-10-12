@@ -443,7 +443,7 @@ void WifiRoamer::probed(uint32_t now, ProbeResult r) {
 
 // --------------------------------------------------------------- AskQueue ---
 
-bool AskQueue::push(const std::string& text, float now, int tries) {
+bool AskQueue::push(const std::string& text, double now, int tries) {
   if (text.empty()) return false;
   for (const Item& it : q_)
     if (it.text == text) return false;
@@ -455,7 +455,7 @@ bool AskQueue::push(const std::string& text, float now, int tries) {
   return true;
 }
 
-bool AskQueue::pop(float now, Item& out) {
+bool AskQueue::pop(double now, Item& out) {
   while (!q_.empty()) {
     Item it = q_.front();
     q_.erase(q_.begin());

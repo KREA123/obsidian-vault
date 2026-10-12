@@ -98,12 +98,14 @@ inline float clampf(float v, float a, float b) { return v < a ? a : (v > b ? b :
 struct TextProbe {
   virtual ~TextProbe() = default;
   // quad: the glyph bitmap's four corners (x, y) x 4, in drawing order (rotated along the rim for arc text)
-  virtual void glyph(const Font& f, const float* quad, float alpha, bool arc) = 0;
+  // c: its colour (the contrast check measures it against what is under it)
+  virtual void glyph(const Font& f, const float* quad, float alpha, bool arc, Rgb c) = 0;
 };
 
 class Canvas {
  public:
   static TextProbe* probe;
+  static bool probeOnly;  // with a probe: report the glyphs but draw none (the audit's "what is under the words")
   Canvas(int w, int h, uint16_t* buf) : w_(w), h_(h), buf_(buf), clip_{0, 0, w, h} {}
 
   int width() const { return w_; }

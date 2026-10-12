@@ -34,6 +34,8 @@ SIZES = [
     ("kFontBody", BRIC, 27, 500, ALIVE, "rows, body text"),
     ("kFontName", BRIC, 30, 700, ALIVE, "the dial's curved app name, titles"),
     ("kFontTitle", BRIC, 36, 700, ALIVE, "big titles, the callout"),
+    # (1.9) the alarm time picker's digits, the web's .ddig (700, 104 px): 0-9 and ':' only
+    ("kFontDigits2", BRIC, 104, 700, "0123456789:", "the time picker's digits"),
 ]
 
 

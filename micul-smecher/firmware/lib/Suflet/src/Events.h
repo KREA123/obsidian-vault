@@ -68,7 +68,7 @@ inline const char* evName(Ev e) {
 struct TouchEv {
   Ev e = Ev::None;
   int16_t x = 0, y = 0;
-  float t = 0;
+  double t = 0;  // s since boot
 };
 
 template <int N, class T = Ev>

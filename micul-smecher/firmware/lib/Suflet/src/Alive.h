@@ -182,7 +182,7 @@ class Dial {
     if (reducedMotion) rot_ = (float)tgt_;
   }
   // the gravity's sideways lean (g): past ~17° it steps one pebble every 0.45 s; true when it stepped
-  bool tilt(float gx, float now) {
+  bool tilt(float gx, double now) {
     if (fabsf(gx) < kTiltG || hasTgt_ || dragging_ || now - lastTilt_ < kTiltEvery) return false;
     lastTilt_ = now;
     tgt_ = (int)lroundf(rot_) + (gx > 0 ? 1 : -1);
@@ -283,7 +283,8 @@ class Dial {
     }
   }
   int n_ = 1;
-  float rot_ = 0, vr_ = 0, dragRot_ = 0, open_ = 1, ov_ = 0, lastTilt_ = -10;
+  float rot_ = 0, vr_ = 0, dragRot_ = 0, open_ = 1, ov_ = 0;
+  double lastTilt_ = -10;
   int tgt_ = 0, after_ = -1;
   bool hasTgt_ = false, dragging_ = false;
 };
@@ -325,7 +326,7 @@ class Wheel {
   }
   bool turn(int d, bool reducedMotion) { return turnTo(f_ + d, reducedMotion); }
   // the forward / back lean (g): past ~17° it steps one row every 0.45 s; true when it stepped
-  bool tilt(float gy, float now, bool reducedMotion) {
+  bool tilt(float gy, double now, bool reducedMotion) {
     if (fabsf(gy) < kTiltG || now - lastTilt_ < kTiltEvery) return false;
     lastTilt_ = now;
     return turn(gy > 0 ? 1 : -1, reducedMotion);
@@ -383,7 +384,54 @@ class Wheel {
   static int clampi(int v, int a, int b) { return v < a ? a : (v > b ? b : v); }
   static float clampf(float v, float a, float b) { return v < a ? a : (v > b ? b : v); }
   int n_ = 0, f_ = 0;
-  float pos_ = 0, v_ = 0, lastTilt_ = -10;
+  float pos_ = 0, v_ = 0;
+  double lastTilt_ = -10;
+};
+
+// ---- the lean (1.9): what turns the dial and the wheels ----------------------------------------------------
+// One axis of gravity (g) against how SOUL is being held: the difference from a slow average (2.5 s). A steady
+// grip at any angle reads as no lean (the average catches up), so only a change of angle turns anything.
+// Coming back from a lean is not a lean the other way: while the device returns toward the pose it had before
+// the lean (`home`), the opposite direction reads 0, and once it is back within kHome the average snaps to it.
+// Leaning on past home, the other way, is a new lean.
+class Lean {
+ public:
+  static constexpr float kTau = 2.5f, kHome = 0.12f;
+  void reset() { init_ = false, dir_ = 0; }
+  void update(float g, float dt) {
+    if (!init_) {
+      avg_ = home_ = g;
+      init_ = true;
+    }
+    avg_ += (g - avg_) * (dt / kTau > 1 ? 1 : (dt > 0 ? dt / kTau : 0));
+    g_ = g;
+    if (dir_ != 0) {
+      const float still = (g - home_) * (float)dir_;  // how far it still leans the way it stepped
+      if (still < kHome) {
+        dir_ = 0;
+        if (still > -kHome) avg_ = g;  // back home: the lean is over
+      }
+    }
+  }
+  bool ready() const { return init_; }
+  float average() const { return avg_; }
+  // the lean now (g); 0 while it is only coming back from the last one
+  float value() const {
+    if (!init_) return 0;
+    const float v = g_ - avg_;
+    if (dir_ != 0 && v * (float)dir_ < 0) return 0;
+    return v;
+  }
+  // the dial / wheel stepped on this lean (dir = +1 / -1): remember where it came from
+  void stepped(int dir) {
+    if (dir_ == 0) home_ = avg_;
+    dir_ = dir > 0 ? 1 : -1;
+  }
+
+ private:
+  float avg_ = 0, home_ = 0, g_ = 0;
+  int dir_ = 0;
+  bool init_ = false;
 };
 
 // ---- the eye reactions (§6) ------------------------------------------------------------------------------
@@ -455,12 +503,13 @@ class Speech {
   }
   bool rising() const { return showing() && shownFor_ < kRise + 0.1f; }  // (+ the frames that land it exactly)
   // a greeting at most once every 20 s
-  bool greetDue(float now) const { return now - lastGreet_ >= kGreetEvery; }
-  void greeted(float now) { lastGreet_ = now; }
+  bool greetDue(double now) const { return now - lastGreet_ >= kGreetEvery; }
+  void greeted(double now) { lastGreet_ = now; }
 
  private:
   const char* line_ = nullptr;
-  float left_ = 0, shownFor_ = 0, lastGreet_ = -1e9f;
+  float left_ = 0, shownFor_ = 0;
+  double lastGreet_ = -1e9;
 };
 
 }  // namespace alive
