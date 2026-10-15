@@ -44,6 +44,7 @@ actualizat: 2026-10-03
 - [[Viziunea — momentul iPhone]] — gestul-semnătură, „one more thing”, filmul de lansare
 - [[SOUL — Cereri parteneriat Anthropic și OpenAI]] — emailurile către Anthropic și OpenAI (Sign in with ChatGPT)
 - [[Finanțare — PR BI PoC 1.1 pentru SOUL]] — grantul PoC 1.1
+- [[SOUL — Fabrică și lanț de producție]] — **fabrică mică vs lanț de producție: variantele A–D, costuri, parteneri RO, autorizații, bani, plan 2026–2028** (2026-10-15); model `docs/factory/SOUL-fabrica-model.xlsx`
 - [[Planul de bani Micul Șmecher]] · [[Produs și dezvoltare Micul Șmecher]] · [[Brand și lansare Micul Șmecher]] · [[Conformitate și riscuri Micul Șmecher]] · [[Piață și concurență Micul Șmecher]]
 - [[Jurnal decizii]] — toate deciziile SOUL, datate
 
