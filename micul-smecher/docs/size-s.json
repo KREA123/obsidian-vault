@@ -1,0 +1,66 @@
+{
+  "_about": "SOUL size S: single source of truth for the final product size (decision 2026-10-20). Details, method and sources: docs/12-SIZE-S.md. [V] = verified on Waveshare's page/wiki/drawing/STEP on 2026-10-20; [E] = estimate.",
+  "version": "2026-10-20",
+  "product": "SOUL S",
+  "shape": "MARGARITAR v9 at its native design scale (renders/v9/src/marg_geo.py local geometry), back half compressed by s_back",
+  "dims_mm": { "w": 63.0, "h": 70.8, "d": 23.0 },
+  "dims_note": "w 62.96 and h 70.8 (foot bottom to crown, incl. the 1.2 mm polymer foot) are the marg_geo local numbers [V, computed]; d 23.0 is the chosen target (s_back 0.807; the M renders use 0.735 = 22.05 mm at this scale, the uncompressed shape is 25.65 mm)",
+  "s_back": 0.807,
+  "glass_d": 52.0,
+  "glass": "custom flat 2.5D black-printed cover glass, 0.7 mm, 45 deg chamfer seat [E]",
+  "display": "1.75\" round AMOLED, CO5300 driver, QSPI, capacitive touch (CST9217 on the Waveshare board), active area 43.76 mm, true black",
+  "resolution": [466, 466],
+  "board": {
+    "dev": "Waveshare ESP32-S3-Touch-AMOLED-1.75 (firmware env amoled175)",
+    "product": "custom round PCB ~46 mm, ESP32-S3-WROOM-1-N16R8 + bare 1.75\" AMOLED panel, AXP2101-class PMU, ES8311 + ES7210-class codecs, 2 MEMS mics [E, EVT]"
+  },
+  "battery_mAh": 750,
+  "battery": "LiPo 603040 class (6.2 x 30.5 x 42 mm incl. PCM, 750 mAh typ / 720 min, 2.8 Wh) [V-s datasheet listing]; custom pouch of the same envelope at DVT",
+  "weight_g_est": 85,
+  "weight_note": "[E] 75-95 g: alu shell ~46 g, cell ~15 g, PCB ~7 g, glass + panel ~6 g, polymer chassis + foot ~6 g, rest ~5 g",
+  "est_battery_life": {
+    "typical_day_h": 27,
+    "range_h": [21, 34],
+    "with_light_sleep_firmware_h": 55,
+    "model": "docs/09 section 3 day (1 h awake, 15 h asleep or screen off, 8 h deep sleep, 50 questions) with the S currents in docs/12 section 2.5: ~661 mAh/day [E]",
+    "m_for_comparison_h": 32
+  },
+  "internal_stack_mm": {
+    "display_glass_to_panel_back": 1.65,
+    "pcb_front_from_glass_front": 2.65,
+    "pcb_back_from_glass_front": 3.45,
+    "battery_front_from_glass_front": 4.75,
+    "needed_behind_glass_over_battery": 13.37,
+    "available_over_battery_footprint_min": 14.3,
+    "margin_worst_corner": 0.93
+  },
+  "variants": {
+    "S-P0_dev_board": {
+      "dims_mm": { "w": 63.0, "h": 70.8, "d": 25.65 },
+      "s_back": 1.0,
+      "board": "Waveshare ESP32-S3-Touch-AMOLED-1.75 with its stock glass (TP OD 48.96 mm)",
+      "battery_mAh": 500,
+      "battery": "LiPo 503035 (5.05 x 30 x 35.5 mm)",
+      "est_battery_life_h": 18,
+      "weight_g_est": 90
+    },
+    "M_prototype": {
+      "dims_mm": { "w": 90.0, "h": 101.0, "d": 31.5 },
+      "p0_kit_dims_mm": { "w": 112.1, "h": 125.1, "d": 31.6 },
+      "dims_note": "90 x 101 x 31.5 is the M design (renders v9); the DIY P0-M kit around the stock 2.8C board (glass 95.86 mm) is 112.1 x 125.1 x 31.6 (prototip/README.md)",
+      "board": "Waveshare ESP32-S3-Touch-LCD-2.8C",
+      "display": "2.8\" round IPS 480 x 480",
+      "battery_mAh": 1500,
+      "role": "prototype for tests and the PoC TRL 3 proof (firmware 1.9.0)"
+    }
+  },
+  "cnc": {
+    "shell_surface_cm2": 97.2,
+    "shell_volume_cm3_at_1.4mm": 13.6,
+    "billet_kg_per_set": 0.4,
+    "cycle_min_per_set": 24,
+    "m_reference": { "billet_kg_per_set": 1.0, "cycle_min_per_set": 45 }
+  },
+  "price_from_eur": 249,
+  "company": "ARTEMIS DIGITAL S.R.L."
+}
