@@ -136,6 +136,7 @@ actualizat: 2026-10-03
 - [[Finanțare — expertul științific pentru PoC 1.1]] — **cine semnează Anexa 16: cerințele (Decizia CM 54), lista scurtă UPB, costul, coordonatorul tehnic, emailul gata de trimis** (2026-10-12)
 - [[Finanțare — Start-Up Nation 2026 pentru SOUL]] — **Start-Up Nation sesiunea 2: nu se potrivește pentru SOUL/ARTEMIS; eligibilitate, buget teoretic, conflictul cu PoC 1.1** (2026-10-12)
 - [[Finanțare — oferte de preț pentru PoC 1.1]] — **ofertele de preț: regula de 2 surse pe fiecare linie, furnizorii găsiți pe fiecare linie, bugetul estimat ≈ 189k €, emailuri de cerere de ofertă RO/EN** (2026-10-12)
+- [[Finanțare — crowdfunding și alte surse pentru SOUL]] — **crowdfunding (Indiegogo da, Kickstarter nu pentru RO), precomenzi Shopify, investitori și regula PoC 1.1 despre asociați, credite, checklist înainte de bani, plan 2026–2028** (2026-10-20)
 - [[micul-smecher/investors/DECK|SOUL: pitch deck content (v1, 2026-09-25)]] — `investors/DECK.md`
 - [[micul-smecher/investors/FINANTARE-ROMANIA|Finanțare nerambursabilă și publică pentru SOUL — prin ARTEMIS DIGITAL S.R.L.]] — `investors/FINANTARE-ROMANIA.md`
 - [[micul-smecher/investors/INVESTORS|SOUL: investor research, target list, 90-day raise plan (2026-09-25)]] — `investors/INVESTORS.md`

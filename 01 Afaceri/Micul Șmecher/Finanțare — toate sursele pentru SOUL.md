@@ -8,6 +8,7 @@ actualizat: 2026-10-12
 
 > Harta tuturor banilor de cercetare și inovare AI pe care îi poate lua **ARTEMIS DIGITAL S.R.L.** pentru SOUL, între oct. 2026 și dec. 2027. Hub: [[Micul Șmecher]] · harta proiectului: [[SOUL — Harta memoriei]] · pași: [[De continuat — SOUL]].
 > Dosare separate: [[Finanțare — PR BI PoC 1.1 pentru SOUL]] · [[Finanțare — expertul științific pentru PoC 1.1]] · [[Finanțare — Start-Up Nation 2026 pentru SOUL]] (Start-Up Nation nu e repetat aici).
+> Bani non-grant (crowdfunding, precomenzi, investitori, credite): [[Finanțare — crowdfunding și alte surse pentru SOUL]] (2026-10-20).
 > **[neverificat]** = cifra sau data vine dintr-o singură căutare și nu a fost confirmată pe o a doua sursă oficială.
 
 **Răspuns scurt:** acum, la 12.10.2026, nu e deschis niciun apel cu bani mulți pentru noi. Banii reali vin în 2027: **PoC 1.1** (cel mai sigur), **PR BI 1.2**, **Eurostars** (4 mar. 2027), **EIC Pre-Accelerator** (18 nov. 2027) și **UEFISCDI PTE** (sept. 2027). Săptămâna asta facem doar lucruri mici și gratuite: credite AI și voce, hubul EDIH, partenerul universitar.
