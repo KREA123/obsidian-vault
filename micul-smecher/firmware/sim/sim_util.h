@@ -17,6 +17,24 @@ namespace suflet {
 // that changed `ch` (the back buffer also misses what the previous frame changed): presentPlan(), as there.
 inline uint64_t presentCost(const RectList& ch, RectList& last) { return (uint64_t)presentPlan(ch, last).pixels(); }
 
+// The pixels the AMOLEDs' displayPresent() (src/main.cpp, QSPI) sends for a frame that changed `ch`: each changed
+// rectangle on its own, its start and size made even (the CO5300 wants that); the panel keeps the rest, so there
+// is no back buffer to catch up (SOUL S, firmware/PERF.md "SOUL S: the QSPI push")
+inline uint64_t qspiCost(const RectList& ch, int W, int H) {
+  uint64_t px = 0;
+  for (int i = 0; i < ch.n; ++i) {
+    Rect r = ch.r[i];
+    r.x0 &= ~1;
+    r.y0 &= ~1;
+    r.x1 = (r.x1 + 1) & ~1;
+    r.y1 = (r.y1 + 1) & ~1;
+    if (r.x1 > W) r.x1 = W;
+    if (r.y1 > H) r.y1 = H;
+    if (!r.empty()) px += (uint64_t)r.w() * (uint64_t)r.h();
+  }
+  return px;
+}
+
 
 // SIM_HASH=1: write one 64-bit FNV-1a hash of the RGB565 canvas per frame (<name>.hash) instead of the raw
 // frames: a pixel-exact before/after check of every scenario (tools/perf_bench.py --check) in a few KB.

@@ -9,6 +9,8 @@
     python3 tools/perf_bench.py --check DIR_A DIR_B   are two --hashes runs pixel-identical? (exit 1 if not)
     python3 tools/perf_bench.py --verify              every incremental frame vs the same state drawn whole
                                                       (SIM_VERIFY=1): which views ever differ, how many frames
+    python3 tools/perf_bench.py --glass s [--json s.json]   SOUL S: every frame scenario at 466 px (the AMOLED-1.75)
+                                                      with the QSPI push model (firmware/PERF.md "SOUL S")
 
 Needs `pio run -e sim` first and valgrind. Instructions are callgrind's Ir (x86-64, the sim built -O2): the
 same counts BRINGUP.md §4-4e used. The ESP32-S3 estimate scales them by NS_PER_IR (calibrated in BRINGUP §4b:
@@ -32,6 +34,12 @@ PROGRAM = FW / ".pio" / "build" / "sim" / "program"
 NS_PER_IR = 2.3        # ESP32-S3 ns per x86 instruction of the sim (BRINGUP §4b calibration, mid-range)
 PSRAM_MBPS = 50.0      # canvas -> back frame buffer memcpy, PSRAM to PSRAM (payload MB/s; measure: `F`, push ms)
 LOOP_MS = 1.0          # touch, IMU, BLE, the Brain and SoulOS update per frame (outside compose)
+# SOUL S (the AMOLED-1.75, CO5300 over QSPI, src/main.cpp displayPresent): each changed rectangle is copied into a
+# PSRAM push buffer (PSRAM_MBPS) and sent with Arduino_GFX's ESP32QSPI at panel->begin(40000000): 4 lines x 40 MHz
+# = 20 MB/s raw. QSPI_MBPS is the payload rate after the per-chunk commands and byte swaps [estimare: ~80 % of raw;
+# BRINGUP measures it with `F`]. There is no back buffer: the panel keeps what did not change.
+QSPI_MBPS = 16.0
+S_ARGS = ["c0ffee123456", "466"]  # the sim's own chip id (the same design as at 480 px), the 466 px glass
 COMPOSE = "suflet::FrameComposer::compose*"
 MICRO = "suflet_bench_*"
 
@@ -67,13 +75,13 @@ MICROS = [
 APPS_STILLS = "apps"
 
 
-def callgrind(scenario: str, toggle, env: dict | None = None) -> dict:
+def callgrind(scenario: str, toggle, env: dict | None = None, args: list | None = None) -> dict:
     toggles = [toggle] if isinstance(toggle, str) else list(toggle)
     with tempfile.TemporaryDirectory() as tmp:
         out = os.path.join(tmp, "cg.out")
         e = dict(os.environ, SIM_HASH="1", **(env or {}))
         p = subprocess.run(["valgrind", "--tool=callgrind", *[f"--toggle-collect={t}" for t in toggles],
-                            f"--callgrind-out-file={out}", str(PROGRAM), tmp, scenario], capture_output=True, text=True, env=e)
+                            f"--callgrind-out-file={out}", str(PROGRAM), tmp, scenario, *(args or [])], capture_output=True, text=True, env=e)
         if p.returncode != 0:
             raise RuntimeError(f"{scenario}: {p.stderr[-800:]}")
         total = 0
@@ -85,6 +93,9 @@ def callgrind(scenario: str, toggle, env: dict | None = None) -> dict:
         m = re.search(r"^BENCH \S+ composed=(\d+) changed_px=(\d+) copied_px=(\d+)", p.stdout, re.M)
         if m:
             res.update(frames=int(m[1]), changed_px=int(m[2]), copied_px=int(m[3]))
+        m = re.search(r"^BENCH \S+ .*qspi_px=(\d+) qspi_max=(\d+)", p.stdout, re.M)
+        if m:
+            res.update(qspi_px=int(m[1]), qspi_max=int(m[2]))
         m = re.search(r"^MICRO \S+ ops=(\d+)", p.stdout, re.M)
         if m:
             res.update(ops=int(m[1]))
@@ -101,6 +112,45 @@ def frame_row(name: str, r: dict, fps_asked: int) -> dict:
     fps = min(fps_asked, max(12.0, cap)) if cap < fps_asked else fps_asked
     return dict(name=name, frames=n, mir=mir, render_ms=render, copied_px=r.get("copied_px", 0), push_ms=push,
                 frame_ms=frame, fps=fps, fps_asked=fps_asked)
+
+
+def frame_row_s(name: str, r: dict, fps_asked: int) -> dict:
+    """SOUL S: the same render model (the same S3 at 240 MHz), the QSPI push instead of the 2.8C's copy."""
+    n = max(1, r.get("frames", 1))
+    mir = r["ir"] / n / 1e6
+    render = mir * NS_PER_IR
+    per_px = 2 / (QSPI_MBPS * 1e6) * 1e3 + 2 / (PSRAM_MBPS * 1e6) * 1e3  # ms per pixel: the copy + the QSPI send
+    push = r.get("qspi_px", 0) * per_px
+    worst = r.get("qspi_max", 0) * per_px
+    frame = render + push + LOOP_MS
+    cap = 1000.0 / (frame * 1.6)
+    fps = min(fps_asked, max(12.0, cap)) if cap < fps_asked else fps_asked
+    return dict(name=name, frames=n, mir=mir, render_ms=render, qspi_px=r.get("qspi_px", 0), push_ms=push,
+                qspi_max=r.get("qspi_max", 0), worst_push_ms=worst, frame_ms=frame, fps=fps, fps_asked=fps_asked)
+
+
+def run_s(jobs: int) -> dict:
+    with cf.ThreadPoolExecutor(jobs) as ex:
+        futs = {name: ex.submit(callgrind, name, [COMPOSE, UPDATE] if name in WITH_UPDATE else COMPOSE, None, S_ARGS)
+                for name, _w, _f in FRAMES}
+        return {"glass": "s", "frames": {name: frame_row_s(name, f.result(), next(fp for n, _w, fp in FRAMES if n == name))
+                                         for name, f in futs.items()}}
+
+
+def table_s(res: dict) -> str:
+    full = 466 * 466
+    per_px = 2 / (QSPI_MBPS * 1e6) * 1e3 + 2 / (PSRAM_MBPS * 1e6) * 1e3
+    out = [f"SOUL S, 466 px: a whole frame ({full:,} px) is {full * per_px:.1f} ms of push [estimare: {QSPI_MBPS:.0f} MB/s QSPI "
+           f"+ the {PSRAM_MBPS:.0f} MB/s copy].", "",
+           "| Scenario | M instr / frame | est. render ms | px pushed / frame | est. push ms | worst frame px | worst push ms | est. fps (asked) |",
+           "|---|---:|---:|---:|---:|---:|---:|---:|"]
+    for name, what, _fps in FRAMES:
+        r = res["frames"].get(name)
+        if not r:
+            continue
+        out.append(f"| {what} (`{name}`) | {r['mir']:.2f} | {r['render_ms']:.1f} | {r['qspi_px']:,} | {r['push_ms']:.1f} | "
+                   f"{r['qspi_max']:,} | {r['worst_push_ms']:.1f} | {r['fps']:.0f} ({r['fps_asked']}) |")
+    return "\n".join(out)
 
 
 def run_all(designs: bool, jobs: int) -> dict:
@@ -257,6 +307,7 @@ def main() -> int:
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
     ap.add_argument("--compare", nargs=2)
     ap.add_argument("--hashes")
+    ap.add_argument("--glass", choices=["m", "s"], default="m")
     ap.add_argument("--check", nargs=2)
     ap.add_argument("--verify", action="store_true")
     a = ap.parse_args()
@@ -271,6 +322,12 @@ def main() -> int:
         return verify(a.jobs)
     if a.hashes:
         hashes(Path(a.hashes), a.jobs)
+        return 0
+    if a.glass == "s":
+        res = run_s(a.jobs)
+        if a.json:
+            json.dump(res, open(a.json, "w"), indent=1)
+        print(table_s(res))
         return 0
     res = run_all(a.designs, a.jobs)
     if a.json:

@@ -74,6 +74,8 @@ void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
   wheel_.setSpec(dens_.wheel);
   kb_.setGeometry(g);
   tp_.setGeometry(g);
+  if (!dens_.reference) tp_.setRim(190, dens_.ts);
+  kb_.setDense(!dens_.reference);  // SOUL S: the S keyboard (5 mm keys, Keyboard.h)  // SOUL S: the ring in, the knob and notches for the S words
   // SoulOS Alive (1.9): flat pebbles on pure black; the frosted glass and its ~2 MB of aura buffers are retired
   glass().setFlat(true);
   glass().setRaster(&face_.raster());
@@ -119,7 +121,9 @@ FaceLayoutT Os::layoutFor(View v) const {
     case View::Talk:
       if (thinking_ || voiceWait_) return slot(dens_.think);
       break;
-    case View::MySoul: return FaceLayoutT{0.40f, 0, -0.2f};  // Look: the eyes big at the top
+    case View::MySoul:  // Look: the eyes big at the top (S: a little smaller, and My SOUL's card has the slot)
+      if (sGlass()) return page_ == 1 ? FaceLayoutT{0.36f, 0, -0.215f} : slot(dens_.card);
+      return FaceLayoutT{0.40f, 0, -0.2f};
     case View::Answer:
       if (thinking_) return slot(dens_.think);  // thinking is a face moment: the eyes squint, big
       break;

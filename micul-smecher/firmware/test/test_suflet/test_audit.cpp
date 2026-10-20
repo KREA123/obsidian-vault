@@ -1,17 +1,24 @@
 // SoulOS Alive · the round audit on the device (os/DESIGN-ALIVE.md §9; the web's os/tests/alive-audit.mjs).
-// Every screen in sim/alive_states.h (the web audit's states + the device's own), drawn by the real Os at
-// 480 px, measured from what was drawn: every glyph (Canvas::probe) and every control (Os::controls) and the
-// eyes' own pixels. It fails if:
-//   cut     any visible glyph corner or control corner (a rounded corner at its 45° point) is past r = 228
-//   type    any visible glyph is below 18 px (and anything under 80 % opacity below 20 px)
-//   target  any control is under 44 px on its short side
+// Every screen in sim/alive_states.h (the web audit's states + the device's own), drawn by the real Os on EACH
+// glass (SOUL M: the 2.8C, 480 px over Ø70.13 mm; SOUL S: the AMOLED-1.75, 466 px over Ø43.76 mm), measured from
+// what was drawn: every glyph (Canvas::probe) and every control (Os::controls) and the eyes' own pixels. The floors
+// are millimetres, the same on both glasses (Density.h): type 2.63 mm (18 px on M, 28 on S), secondary words
+// 2.92 mm (20 / 31 px), targets 6.43 mm (44 / 68 px), the safe circle 0.95 of the lit disc (r 228 / 221). It fails if:
+//   cut     any visible glyph corner or control corner (a rounded corner at its 45° point) is past the safe circle
+//   type    any visible glyph is below the type floor (and anything under 80 % opacity below the secondary floor)
+//   target  any control is under the target on its short side (a keyboard key: under 5 mm, its pitch)
 //   rim     a word on the rim touches a word or a control of the screen
-//   eyes    the eyes' drawn pixels touch a control or a word
+//   eyes    the eyes' drawn pixels touch a control or a word, or leave the safe circle (the eye slot)
 //   contrast (1.9) a glyph whose colour, at its opacity, stands out from what is drawn under it by less than
 //           2:1 (WCAG luminance ratio) over most of its box: a word on a colour of its own lightness (the 1.8
 //           time picker's pale blue "6" and "18" on its blue ring). Measured at the glyph's opacity but never
 //           below 75 %: fading is the design's own de-emphasis (a wheel's neighbours at half strength, the digit
 //           not being set at 34 %), a word painted on its own colour is not
+// And (the S screens step, 2026-10-20: what the first S stills showed and the checks above did not see):
+//   words   two lines of words touch (glyph boxes of different lines overlap by more than 1 px)
+//   overlap two controls overlap without one holding the other (two pills drawn over each other)
+//   spill   a word straddles a control's edge (a label longer than its pill, a line running into a button)
+//   trunc   a line cut to almost nothing: "…" after fewer than 3 characters ("W…", "T…")
 // Plus the wheels (§4) and Claude's ask (two 68 px buttons, the "Hold = yes · 2× = no" line at >= 22 px).
 #include <math.h>
 #include <stdio.h>
@@ -34,6 +41,8 @@ struct Quad {
   float a;
   bool arc;
   Rgb c;
+  uint32_t cp;  // the code point
+  int run;      // the line of words it belongs to (one drawText / drawTextArc call)
   float minX() const { return std::min(std::min(p[0], p[2]), std::min(p[4], p[6])); }
   float maxX() const { return std::max(std::max(p[0], p[2]), std::max(p[4], p[6])); }
   float minY() const { return std::min(std::min(p[1], p[3]), std::min(p[5], p[7])); }
@@ -50,6 +59,8 @@ struct Probe : TextProbe {
     g.a = alpha;
     g.arc = arc;
     g.c = c;
+    g.cp = cp;
+    g.run = run;
     q.push_back(g);
   }
 };
@@ -104,24 +115,32 @@ struct Audit {
   int glyphs = 0, controls = 0;
 };
 
-// the glass audited and its floors: SOUL M (480 px: 18 / 20 px words, 44 px targets, r 228) or SOUL S (466 px:
-// the same millimetres, Density.h: 28 / 31 px words, 68 px targets, r 221)
+// the glass audited and its floors, in millimetres (Density.h): SOUL M (480 px: 18 / 20 px words, 44 px targets,
+// r 228) or SOUL S (466 px: 28 / 31 px words, 68 px targets, r 221)
+constexpr float kFloorMm = 18.0f / (480.0f / 70.13f), kSecondaryMm = 20.0f / (480.0f / 70.13f),
+                kTargetMm = 44.0f / (480.0f / 70.13f);  // 2.63 mm, 2.92 mm, 6.43 mm
+// a keyboard's key (controls 2000-2999): its pitch, a row of them with no gaps between; >= 5 mm (os/DESIGN-ALIVE.md
+// §S: the S keyboard decision; 34 px on M, whose QWERTY keys are 6.6 mm; 53 px on S, whose keys are 5.1 mm)
+constexpr float kKeyMm = 5.0f;
 struct Glass {
   DisplayGeometry g = displays::kLcd28;
-  float floorPx = 18, secondaryPx = 20, targetPx = 44, R = 228;
-  static Glass of(const DisplayGeometry& g) {
+  float floorPx = 18, secondaryPx = 20, targetPx = 44, keyPx = 34, R = 228;
+  const char* name = "M";
+  static Glass of(const DisplayGeometry& g, const char* name) {
     Glass a;
     a.g = g;
-    const Density d = Density::forGlass(g);
-    a.floorPx = roundf(d.typeFloorPx);
-    a.secondaryPx = floorf(d.secondaryPx);
-    a.targetPx = floorf(d.targetPx);
+    a.name = name;
+    a.floorPx = roundf(kFloorMm * g.pxPerMm());
+    a.secondaryPx = floorf(kSecondaryMm * g.pxPerMm() + 0.01f);
+    a.targetPx = floorf(kTargetMm * g.pxPerMm() + 0.01f);
+    a.keyPx = floorf(kKeyMm * g.pxPerMm());
     a.R = 0.95f * g.w * 0.5f;
     return a;
   }
 };
 
 void auditState(const alive_states::State& st, Audit& out, const Glass& gl = Glass()) {
+  fonts::setRamp(fonts::TypeRamp::M);  // (Os::begin sets the glass's own)
   alive_states::Rig s(st.booted, -1, gl.g);
   TEST_ASSERT_TRUE_MESSAGE(alive_states::setup(s, st.name), st.name);
   const int W = gl.g.w, H = gl.g.h;
@@ -180,8 +199,9 @@ void auditState(const alive_states::State& st, Audit& out, const Glass& gl = Gla
   }
   for (const Os::Control& c : cs) {
     const float w = (float)c.r.w(), h = (float)c.r.h();
-    if (std::min(w, h) < gl.targetPx - 0.5f && !tiny) {
-      snprintf(m, sizeof m, "target: control %d is %.0f x %.0f px (< %.0f)", c.id, w, h, gl.targetPx);
+    const float need = c.id >= 2000 && c.id < 3000 ? gl.keyPx : gl.targetPx;
+    if (std::min(w, h) < need - 0.5f && !tiny) {
+      snprintf(m, sizeof m, "target: control %d is %.0f x %.0f px (< %.0f)", c.id, w, h, need);
       fail(m);
       ++tiny;
     }
@@ -211,11 +231,77 @@ void auditState(const alive_states::State& st, Audit& out, const Glass& gl = Gla
         ++rim;
       }
   }
+  // two lines of words never touch (the glyphs of one line may: kerning)
+  int words = 0, overlap = 0, spill = 0, trunc = 0;
+  for (size_t i = 0; i < probe.q.size() && !words; ++i)
+    for (size_t j = i + 1; j < probe.q.size(); ++j) {
+      const Quad &a = probe.q[i], &b = probe.q[j];
+      if (a.run == b.run || (a.arc && b.arc)) continue;
+      if (a.arc || b.arc) continue;  // (the rim check above)
+      const float ox = std::min(a.maxX(), b.maxX()) - std::max(a.minX(), b.minX());
+      const float oy = std::min(a.maxY(), b.maxY()) - std::max(a.minY(), b.minY());
+      if (ox > 1.5f && oy > 1.5f) {
+        snprintf(m, sizeof m, "words: a %d px glyph at (%.0f, %.0f) touches a %d px glyph of another line at (%.0f, %.0f)", a.px,
+                 a.minX(), a.minY(), b.px, b.minX(), b.minY());
+        fail(m);
+        ++words;
+        break;
+      }
+    }
+  // two controls never overlap, unless one holds the other (a wheel row's ↑ disc)
+  for (size_t i = 0; i < cs.size() && !overlap; ++i)
+    for (size_t j = i + 1; j < cs.size(); ++j) {
+      const Rect &a = cs[i].r, &b = cs[j].r;
+      const int ox = std::min(a.x1, b.x1) - std::max(a.x0, b.x0), oy = std::min(a.y1, b.y1) - std::max(a.y0, b.y0);
+      if (ox <= 1 || oy <= 1) continue;
+      const bool aInB = a.x0 >= b.x0 && a.x1 <= b.x1 && a.y0 >= b.y0 && a.y1 <= b.y1;
+      const bool bInA = b.x0 >= a.x0 && b.x1 <= a.x1 && b.y0 >= a.y0 && b.y1 <= a.y1;
+      if (aInB || bInA) continue;
+      snprintf(m, sizeof m, "overlap: control %d (%d,%d-%d,%d) and control %d (%d,%d-%d,%d)", cs[i].id, a.x0, a.y0, a.x1, a.y1,
+               cs[j].id, b.x0, b.y0, b.x1, b.y1);
+      fail(m);
+      ++overlap;
+      break;
+    }
+  // a word is in a control or out of it, never across its edge
+  for (const Quad& g : probe.q) {
+    if (g.arc || spill) continue;
+    const float x0 = g.minX() + 1, y0 = g.minY() + 1, x1 = g.maxX() - 1, y1 = g.maxY() - 1;
+    for (const Os::Control& c : cs) {
+      if (c.id >= 1000 && c.id < 2000) continue;  // the dial's pebbles: their names ride the focused one's rim
+      const bool touches = x1 > c.r.x0 && x0 < c.r.x1 && y1 > c.r.y0 && y0 < c.r.y1;
+      const bool inside = x0 >= c.r.x0 && x1 <= c.r.x1 && y0 >= c.r.y0 && y1 <= c.r.y1;
+      if (touches && !inside) {
+        snprintf(m, sizeof m, "spill: a %d px glyph (%.0f,%.0f-%.0f,%.0f) across the edge of control %d (%d,%d-%d,%d)", g.px, g.minX(),
+                 g.minY(), g.maxX(), g.maxY(), c.id, c.r.x0, c.r.y0, c.r.x1, c.r.y1);
+        fail(m);
+        ++spill;
+        break;
+      }
+    }
+  }
+  // "…" after fewer than 3 characters
+  for (size_t i = 0; i < probe.q.size() && !trunc; ++i) {
+    if (probe.q[i].cp != 0x2026) continue;
+    int before = 0;
+    for (size_t j = 0; j < i; ++j) before += probe.q[j].run == probe.q[i].run && probe.q[j].cp != ' ';
+    if (before < 3) {
+      snprintf(m, sizeof m, "trunc: a line cut to %d character(s) + \u2026 at (%.0f, %.0f)", before, probe.q[i].minX(), probe.q[i].minY());
+      fail(m);
+      ++trunc;
+    }
+  }
   // the eyes' pixels never touch a control or a word (the dial's pebbles orbit them: the dial is the eyes' own)
   for (int y = 0; y < H && !eyes; ++y)
     for (int x = 0; x < W && !eyes; ++x) {
       if (!buf[(size_t)y * W + x]) continue;
       const float px = x + 0.5f, py = y + 0.5f;
+      if (hypotf(px - cx, py - cy) > gl.g.w * 0.5f) {  // (the lit disc: the eyes may fill it, never leave it)
+        snprintf(m, sizeof m, "eyes: an eye pixel (%d, %d) off the glass", x, y);
+        fail(m);
+        ++eyes;
+        break;
+      }
       for (const Os::Control& c : cs)
         if (c.id < 1000 && px > c.r.x0 + 1 && px < c.r.x1 - 1 && py > c.r.y0 + 1 && py < c.r.y1 - 1) {
           snprintf(m, sizeof m, "eyes: an eye pixel (%d, %d) on control %d", x, y, c.id);
@@ -283,46 +369,53 @@ static void test_audit_contrast_catches_the_old_time_picker() {
   for (const Quad& g : probe.q) TEST_ASSERT_TRUE(g.px >= 22);  // Bricolage, nothing under 22 px
 }
 
-static void test_audit_every_screen_is_round_safe_readable_and_tappable() {
+// every screen on one glass; AUDIT_ALL=1 .pio/build/native/program prints each screen's result
+static void auditGlass(const Glass& gl, int minGlyphs) {
   Audit a;
-  for (int i = 0; i < alive_states::kStateCount; ++i) auditState(alive_states::kStates[i], a);
-  for (const std::string& f : a.fails) printf("  AUDIT %s\n", f.c_str());
-  printf("  audit: %d screens, %d glyphs, %d controls, %d failures\n", alive_states::kStateCount, a.glyphs, a.controls, (int)a.fails.size());
+  const bool each = getenv("AUDIT_ALL") != nullptr;
+  for (int i = -1; i < alive_states::kStateCount; ++i) {
+    static const alive_states::State kStandby = {"standby", "", true};
+    const alive_states::State& st = i < 0 ? kStandby : alive_states::kStates[i];
+    Audit one;
+    auditState(st, one, gl);
+    a.glyphs += one.glyphs;
+    a.controls += one.controls;
+    for (const std::string& f : one.fails) a.fails.push_back(f);
+    if (each) printf("  %s %-16s %s\n", gl.name, st.name, one.fails.empty() ? "ok" : "FAIL");
+  }
+  for (const std::string& f : a.fails) printf("  AUDIT %s %s\n", gl.name, f.c_str());
+  printf("  audit %s: %d screens, %d glyphs, %d controls, %d failures (type >= %.0f px, targets >= %.0f px, r %.0f)\n", gl.name,
+         alive_states::kStateCount + 1, a.glyphs, a.controls, (int)a.fails.size(), gl.floorPx, gl.targetPx, gl.R);
   TEST_ASSERT_GREATER_THAN(40, alive_states::kStateCount);
-  TEST_ASSERT_GREATER_THAN(2000, a.glyphs);
+  TEST_ASSERT_GREATER_THAN(minGlyphs, a.glyphs);
   TEST_ASSERT_EQUAL_INT(0, (int)a.fails.size());
+  fonts::setRamp(fonts::TypeRamp::M);  // (the next tests draw SOUL M)
 }
 
-// SOUL S (decision 2026-10-20): the core screens on the 1.75" AMOLED pass the same audit at S's floors, which are
-// M's millimetres (Density.h): type >= 28 px (2.63 mm), secondary >= 31 px, targets >= 68 px (6.4 mm), r 221
-static void test_audit_soul_s_core_screens() {
-  static const alive_states::State kCore[] = {
-      {"standby", "", true},  {"home-peek", "", true},    {"apps", "", true},       {"settings", "", true},
-      {"alarms", "", true},   {"worldclock", "", true},   {"voice-answer", "", true}, {"claude-ask", "", true},
-      {"voice-think", "", true}, {"notification", "", true},
-  };
-  const Glass gl = Glass::of(displays::kAmoled175);
+// SOUL M, the prototype: the 2.8C at 480 px
+static void test_audit_every_screen_on_soul_m() {
+  const Glass gl = Glass::of(displays::kLcd28, "M");
+  TEST_ASSERT_EQUAL_FLOAT(18, gl.floorPx);
+  TEST_ASSERT_EQUAL_FLOAT(20, gl.secondaryPx);
+  TEST_ASSERT_EQUAL_FLOAT(44, gl.targetPx);
+  TEST_ASSERT_EQUAL_FLOAT(34, gl.keyPx);
+  TEST_ASSERT_EQUAL_FLOAT(228, gl.R);
+  auditGlass(gl, 2000);
+}
+
+// SOUL S, the product (decision 2026-10-20): every screen on the 1.75" AMOLED at the same millimetres
+static void test_audit_every_screen_on_soul_s() {
+  const Glass gl = Glass::of(displays::kAmoled175, "S");
   TEST_ASSERT_EQUAL_FLOAT(28, gl.floorPx);
+  TEST_ASSERT_EQUAL_FLOAT(31, gl.secondaryPx);
   TEST_ASSERT_EQUAL_FLOAT(68, gl.targetPx);
-  Audit a;
-  for (const alive_states::State& st : kCore) auditState(st, a, gl);
-  for (const std::string& f : a.fails) printf("  AUDIT S %s\n", f.c_str());
-  printf("  audit S: %d screens, %d glyphs, %d controls, %d failures\n", (int)(sizeof kCore / sizeof kCore[0]), a.glyphs,
-         a.controls, (int)a.fails.size());
-  TEST_ASSERT_GREATER_THAN(150, a.glyphs);
-  TEST_ASSERT_EQUAL_INT(0, (int)a.fails.size());
-  // AUDIT_S_ALL=1 .pio/build/native/program: every other screen on S too, printed, not asserted (the to-do list of
-  // the S screens step: SOUL-S.md §5)
-  if (getenv("AUDIT_S_ALL")) {
-    Audit all;
-    for (int i = 0; i < alive_states::kStateCount; ++i) {
-      Audit one;
-      auditState(alive_states::kStates[i], one, gl);
-      printf("  S %-16s %s\n", alive_states::kStates[i].name, one.fails.empty() ? "ok" : "");
-      for (const std::string& f : one.fails) printf("      %s\n", f.c_str());
-    }
-  }
-  fonts::setRamp(fonts::TypeRamp::M);  // (the next tests draw SOUL M)
+  TEST_ASSERT_EQUAL_FLOAT(53, gl.keyPx);
+  TEST_ASSERT_EQUAL_FLOAT(221.35f, gl.R);
+  // the floors are the Density layer's (what the screens are laid out with)
+  const Density d = Density::forGlass(displays::kAmoled175);
+  TEST_ASSERT_EQUAL_FLOAT(roundf(d.typeFloorPx), gl.floorPx);
+  TEST_ASSERT_EQUAL_FLOAT(floorf(d.targetPx), gl.targetPx);
+  auditGlass(gl, 1500);
 }
 
 static void test_wheel_rows_fit_the_circle_and_turn_on_the_spring() {
@@ -476,8 +569,8 @@ static void test_today_one_widget_and_the_answer_pebble() {
 }
 
 void runAuditTests() {
-  RUN_TEST(test_audit_every_screen_is_round_safe_readable_and_tappable);
-  RUN_TEST(test_audit_soul_s_core_screens);
+  RUN_TEST(test_audit_every_screen_on_soul_m);
+  RUN_TEST(test_audit_every_screen_on_soul_s);
   RUN_TEST(test_audit_contrast_catches_the_old_time_picker);
   RUN_TEST(test_wheel_rows_fit_the_circle_and_turn_on_the_spring);
   RUN_TEST(test_wheel_lists_turn_act_and_end_with_new);

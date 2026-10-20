@@ -169,6 +169,22 @@ struct Rig {
     finger = false;
     run(gap);
   }
+  // a tap on control `id` (Os::controls): SOUL M taps where 1.9.0 always tapped (mx, my: its stills stay the same
+  // pixels); any other glass taps the control's centre, wherever its layout put it (SOUL S, Density.h)
+  void tapControl(int id, float mx, float my, float gap = 0.6f) {
+    if (g.w == 480) {
+      tap(mx, my, gap);
+      return;
+    }
+    std::vector<Os::Control> cs;
+    os.controls(cs);
+    for (const Os::Control& c : cs)
+      if (c.id == id) {
+        tap((c.r.x0 + c.r.x1) * 0.5f / g.k(), (c.r.y0 + c.r.y1) * 0.5f / g.k(), gap);
+        return;
+      }
+    tap(mx, my, gap);
+  }
   void tapRow(int row, float gap = 0.6f) {
     os.wheelFocusRow(row);
     run(0.05f);
@@ -309,13 +325,13 @@ inline bool setup(Rig& s, const std::string& n) {
     open(AppId::Claude, n == "claude-ask" ? 5.6f : 1.2f);  // (after the "Claude needs you" banner)
   } else if (n == "music") {
     open(AppId::Music);
-    s.tap(233, 296, 0.6f);
+    s.tapControl(200, 233, 296, 0.6f);  // play
   } else if (n == "soul" || n == "mysoul") {
     open(AppId::MySoul);
   } else if (n == "look") {
     open(AppId::MySoul);
-    s.tap(172, 326, 0.8f);  // Look
-    s.tap(363, 214, 0.8f);  // ›: preview the next birth
+    s.tapControl(19, 172, 326, 0.8f);    // Look
+    s.tapControl(3001, 363, 214, 0.8f);  // ›: preview the next birth
   } else if (n == "games") {
     open(AppId::Games);
   } else if (n == "game-star") {
@@ -361,7 +377,7 @@ inline bool setup(Rig& s, const std::string& n) {
       s.run(1.2f);
     }
     if (n == "maps-walking") {
-      s.tap(233, 326, 0.8f);
+      s.tapControl(229, 233, 326, 0.8f);  // Start
       const maps::RouteData& r = os.apps().route;
       const int i = r.steps[1].idx;
       char fix[200];
@@ -436,16 +452,16 @@ inline bool setup(Rig& s, const std::string& n) {
     s.run(0.6f);
   } else if (n == "stopwatch") {
     open(AppId::Stopwatch);
-    s.tap(296, 352, 0.2f);
+    s.tapControl(200, 296, 352, 0.2f);  // start
     s.run(1.6f);
-    s.tap(170, 352, 0.2f);
+    s.tapControl(221, 170, 352, 0.2f);  // lap
     s.run(1.0f);
   } else if (n == "wifi" || n == "wifi-hotspot") {
     os.go(View::Settings);
     s.run(0.3f);
     os.go(View::Wifi);
     s.run(1.0f);
-    if (n == "wifi-hotspot") s.tap(233, 300, 1.0f);
+    if (n == "wifi-hotspot") s.tapControl(17, 233, 300, 1.0f);  // Add my phone's hotspot
   } else if (n == "pair-code") {
     s.net.paired = false;
     s.net.pairCode = "K7Q2M9XD";
@@ -466,10 +482,10 @@ inline bool setup(Rig& s, const std::string& n) {
     s.run(2.0f);
     s.tap(233, 250, 1.0f);  // tap to meet me
     if (n != "boot-name") {
-      s.tap(233, 226, 1.0f);  // the first name
+      s.tapControl(100, 233, 226, 1.0f);  // the first name
       if (n == "boot-hold") {
-        s.tap(233, 336, 0.6f);  // No AI
-        s.tap(233, 412, 1.0f);  // Next
+        s.tapControl(103, 233, 336, 0.6f);  // No AI
+        s.tapControl(1, 233, 412, 1.0f);    // Next
       }
     }
     s.run(0.6f);

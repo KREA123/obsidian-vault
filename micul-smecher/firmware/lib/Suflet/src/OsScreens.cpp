@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <algorithm>
 #include <functional>
 
 #include "Os.h"
@@ -31,7 +32,11 @@ namespace {
 const Rgb kInk = Rgb::hex(0xFBF4E3), kAmber = Rgb::hex(0xFFB347), kMint = Rgb::hex(0xC9F2E4), kIce = Rgb::hex(0x9FC6FF);
 const Rgb kOnMint = Rgb::hex(0x06231B), kOnAmber = Rgb::hex(0x2A1700);
 constexpr float kPi = 3.14159265f;
-constexpr uint8_t kWheelItem = 9;  // Item::font of a wheel row's hit box (drawn by drawWheel, not drawItems)
+constexpr uint8_t kWheelItem = 9;
+const Font& itemFont(int i, bool large) {  // Item::font (the same as OsDraw.cpp's fontOf)
+  if (large) ++i;
+  return i == 0 ? fonts::caption() : i == 1 ? fonts::body() : fonts::title();
+}  // Item::font of a wheel row's hit box (drawn by drawWheel, not drawItems)
 
 std::string fitText(const Font& f, const std::string& s, float maxW) {
   if (maxW <= 0) return "";
@@ -325,12 +330,12 @@ void Os::wheelItems(std::vector<Item>& out) const {
     const WheelRow& r = rows[(size_t)i];
     Item it;
     it.font = kWheelItem;
-    if (r.id2 >= 0) {  // the row's second control (↑): a 48 px disc on its left, hit first
-      const float ts = dens_.ts;
+    if (r.id2 >= 0) {  // the row's second control (↑): a 48 px disc on its left, hit first (S: a 68 px target)
+      const float d = upDisc(p);
       it.id = r.id2;
-      it.x = 233 - p.w * 0.5f + 10 * ts + 24 * ts * p.scale;
+      it.x = 233 - p.w * 0.5f + 10 * dens_.ts + d * 0.5f;
       it.y = p.y;
-      it.w = it.h = 48 * ts * p.scale;
+      it.w = it.h = d;
       out.push_back(it);
     }
     it.id = r.id;
@@ -420,7 +425,7 @@ void Os::drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& 
   const float ta = a * r.dim;
   // left: the ↑ disc, a glyph, a check
   if (r.id2 >= 0) {
-    const float cx = x0 + 10 * ts + 24 * s, R = 22 * s;
+    const float d = upDisc(p), cx = x0 + 10 * ts + d * 0.5f, R = d * 0.5f - 2 * s;
     cv.ellipse(g_.s(cx), g_.s(p.y), g_.s(R), g_.s(R), pal_.peb2, a * fade_);
     cv.ring(g_.s(cx), g_.s(p.y), g_.s(R - 1.5f), g_.s(3), pal_.pebe, a * fade_);
     const float k = 8 * s;
@@ -445,13 +450,37 @@ void Os::drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& 
     if (r.on) checkMark(cv, cx, cy, 12 * ts, kMint, ta);
     tx += 34 * ts;
   }
+  // a narrow row (a neighbour low on the glass, S's big words) keeps its title readable: no title cut to under
+  // 4 letters ("W…"); the value goes first, then the tag, then (not focused) the toggle (the round audit's trunc)
+  bool showValue = !r.value.empty(), showTag = !r.tag.empty(), showToggle = r.kind == RowToggle;
+  if (!r.title.empty() && r.kind != RowNew) {
+    const char* p0 = r.title.c_str();
+    const char* pe = p0 + r.title.size();
+    const char* q = p0;
+    for (int n = 0; n < 4 && q < pe; ++n) utf8::next(q, pe);
+    const std::string head = q < pe ? std::string(p0, (size_t)(q - p0)) + "\xE2\x80\xA6" : r.title;
+    const float need = textW(fonts::body(), head);
+    auto room = [&]() {
+      float w = rx - tx;
+      if (showToggle) w -= dens_.toggleW + 12 * ts;
+      if (showValue && !showToggle) {
+        const Font& vf = r.bigTag ? fonts::name() : fonts::caption();
+        w -= textW(vf, fitText(vf, r.value, g_.s(p.w * dens_.valueShare))) + 12 * ts;
+      }
+      if (showTag) w -= textW(r.bigTag ? fonts::name() : fonts::body(), r.tag) + 12 * ts;
+      return w;
+    };
+    if (room() < need && showValue && !showToggle) showValue = false;
+    if (room() < need && showTag) showTag = false;
+    if (room() < need && showToggle && !focus) showToggle = false;
+  }
   // right: a toggle, a check (done), or the value
-  if (r.kind == RowToggle) {
+  if (showToggle) {
     toggleAt(cv, rx - dens_.toggleW * 0.5f, p.y, r.on, a);
     rx -= dens_.toggleW + 12 * ts;
   }
   const float rxSub = rx;
-  if (r.kind != RowToggle && !r.value.empty()) {
+  if (r.kind != RowToggle && showValue) {
     const Font& vf = r.bigTag ? fonts::name() : fonts::caption();
     const std::string v = fitText(vf, r.value, g_.s(p.w * dens_.valueShare));
     textAt(cv, vf, rx, r.bigTag ? p.y : (twoLines ? yT : p.y), v, sel ? pal_.on1 : r.valueC, ta, Align::Right);
@@ -463,7 +492,7 @@ void Os::drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& 
   }
   // the tag (a time) in front of the title; the second line starts under the first word
   const float subX = tx;
-  if (!r.tag.empty()) {
+  if (showTag) {
     const Font& tf = r.bigTag ? fonts::name() : fonts::body();
     textAt(cv, tf, tx, yT, r.tag, ink, ta, Align::Left);
     tx += (float)Canvas::measureText(tf, r.tag.c_str()) / g_.k() + 12 * ts;
@@ -508,6 +537,81 @@ void Os::drawWheel(Canvas& cv) {
     rimRing(cv, dens_.ringR, -26 * d2r, 26 * d2r, pal_.peb2, 1, dens_.ringW);
     const float t = -22 + 44 * (wheel_.pos() / (float)(n - 1));
     rimRing(cv, dens_.ringR, (t - 4) * d2r, (t + 4) * d2r, pal_.e1, 1, dens_.ringW);
+  }
+}
+
+// ------------------------------------------------------- SOUL S: rows ---
+
+// SOUL S (firmware/SOUL-S.md §5): the words grew (the S type ramp) and so did every pill (68 px = 6.4 mm), so a row
+// laid out at M's x would overlap or leave the circle. On S every row of controls with a pill in it is laid out
+// again here: its members side by side, 12 px apart, centred, as wide as the circle allows at the row's height
+// (its tallest member's rounded corners inside the safe circle). Too wide: the pills' padding first (down to 16 px
+// a side), then the body face steps down to the caption face, then the widest pill is squeezed (its words cut with
+// "…"). A single pill too wide is narrowed in place. Discs and tiles keep their width. Never on M.
+void Os::fitRows(std::vector<Item>& out) const {
+  if (dens_.reference) return;
+  // a screen with a full ring on the rim (the countdown, focus, ringing, Claude asks, listening): inside the ring
+  const bool ring = (view_ == View::Timer && timerRun_) || view_ == View::Focus || view_ == View::Ringing ||
+                    (view_ == View::Claude && claude_.prompt) || (view_ == View::Talk && listening_);
+  const float R = ring ? 216 - 4 - 4 : dens_.safeR - 2, gap = 12, tgt = dens_.targetDesign();
+  std::vector<uint8_t> seen(out.size(), 0);
+  for (size_t i = 0; i < out.size(); ++i) {
+    if (seen[i] || out[i].id < 0 || out[i].w <= 0 || out[i].font == kWheelItem) continue;
+    std::vector<size_t> row;
+    for (size_t j = i; j < out.size(); ++j)
+      if (!seen[j] && out[j].id >= 0 && out[j].w > 0 && out[j].font != kWheelItem && fabsf(out[j].y - out[i].y) < 1) {
+        row.push_back(j);
+        seen[j] = 1;
+      }
+    bool pills = false, fixed = false;
+    float h = 0;
+    for (size_t j : row) pills |= out[j].underline, fixed |= out[j].fixed, h = fmaxf(h, out[j].h);
+    if (!pills || fixed) continue;  // discs, tiles: the screen's own S layout
+    std::sort(row.begin(), row.end(), [&](size_t a, size_t b) { return out[a].x < out[b].x; });
+    const float k = h * 0.5f * 0.2929f, dy = fabsf(out[i].y - 233) + h * 0.5f - k;
+    const float avail = dy < R ? 2 * (sqrtf(R * R - dy * dy) + k) : 0;
+    auto words = [&](const Item& it) { return textW(itemFont(it.font, set_.largeText), it.label); };
+    auto minW = [&](const Item& it) { return fmaxf(fmaxf(words(it) + 32, it.h), tgt); };
+    auto total = [&]() {
+      float t = gap * (float)(row.size() - 1);
+      for (size_t j : row) t += out[j].w;
+      return t;
+    };
+    if (total() > avail) {  // 1. the padding
+      float spare = 0;
+      for (size_t j : row)
+        if (out[j].underline) spare += fmaxf(0, out[j].w - minW(out[j]));
+      const float cut = fminf(total() - avail, spare);
+      for (size_t j : row)
+        if (out[j].underline && spare > 0) out[j].w -= cut * fmaxf(0, out[j].w - minW(out[j])) / spare;
+    }
+    if (total() > avail) {  // 2. the caption face
+      for (size_t j : row)
+        if (out[j].underline && out[j].font > 0) {
+          out[j].font = 0;
+          out[j].w = fminf(out[j].w, fmaxf(minW(out[j]), words(out[j]) + dens_.pillPad));
+        }
+    }
+    for (int guard = 0; total() > avail + 0.5f && guard < 64; ++guard) {  // 3. squeeze the widest pill
+      size_t wi = row[0];
+      bool any = false;
+      for (size_t j : row)
+        if (out[j].underline && (!any || out[j].w > out[wi].w)) wi = j, any = true;
+      if (!any || out[wi].w <= tgt) break;
+      out[wi].w = fmaxf(tgt, out[wi].w - (total() - avail));
+    }
+    if (row.size() == 1) {  // one pill: narrowed, kept inside the circle where it is
+      Item& it = out[row[0]];
+      const float half = avail * 0.5f;
+      if (it.x - it.w * 0.5f < 233 - half) it.x = 233 - half + it.w * 0.5f;
+      if (it.x + it.w * 0.5f > 233 + half) it.x = 233 + half - it.w * 0.5f;
+      continue;
+    }
+    float x = 233 - total() * 0.5f;
+    for (size_t j : row) {
+      out[j].x = x + out[j].w * 0.5f;
+      x += out[j].w + gap;
+    }
   }
 }
 

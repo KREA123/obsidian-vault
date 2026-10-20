@@ -257,3 +257,66 @@ the alarm dial, the keyboard, Control, a game), at device scale. It fails if:
 - the "where am I" rim names overlap content.
 
 `node os/tests/alive-audit.mjs [shotsDir]` also writes one still per state and `audit-sheet.png`.
+
+## S · SoulOS Alive on SOUL S (the 1.75" AMOLED, 2026-10-20)
+
+The product is SOUL S (decision 2026-10-20, `03 Decizii/Jurnal decizii.md`): the Waveshare ESP32-S3-Touch-AMOLED-1.75,
+466 × 466 px over a Ø43.76 mm lit disc (10.65 px/mm). SOUL M (the 2.8C, 6.84 px/mm) stays the prototype. Everything
+above holds on S, measured in **millimetres**, not pixels (`firmware/lib/Suflet/src/Density.h`, `firmware/SOUL-S.md`):
+
+| | SOUL M (480 px) | SOUL S (466 px) |
+|---|---|---|
+| Type floor (2.63 mm) / secondary words (2.92 mm) | 18 / 20 px | 28 / 31 px |
+| Control target (6.43 mm) | 44 px | 68 px |
+| A keyboard key (5.0 mm, its pitch) | 34 px (the QWERTY keys are 6.6 mm) | 53 px (the S keys are 5.1 mm) |
+| Safe circle (0.95 of the disc) | r 228 | r 221 |
+
+**The rules S adds** (every screen of `firmware/sim/alive_states.h`, 59 with standby, audited on both glasses):
+
+1. **Fewer, bigger things.** A screen keeps its one focal element, but where M had three lines S has two, and long
+   hints are said in fewer words (Wi-Fi's "Phone hotspot", Bridge's "In a terminal:", "No GPS: your phone tells me").
+   Nothing is ellipsized to under four letters: a narrow wheel row drops its value, then its tag, then (not focused)
+   its toggle, before its title.
+2. **Rows of pills are laid out by the glass** (`Os::fitRows`): side by side, 12 px apart, centred, as wide as the
+   circle allows at their height; inside the rim ring when one is drawn (the countdown, focus, ringing, Claude asks,
+   listening). Too wide: less padding, then the caption face, then the widest pill is narrowed. Never on M.
+3. **Discs, tiles and fields are placed by the screen** (Control, Maps, Music, Convert, Look, the timer presets, the
+   stopwatch): every one ≥ 68 px, the ones on the rim moved in so their round edge stays inside r 221.
+4. **The dial's speech** sits over the eyes on S (under them it covered the pebbles beside the focused one); the
+   clock's capsule steps aside while it shows.
+5. **The alarm picker's ring** is at r 190 (its knob's value, in the S caption face, stays inside the circle); the
+   "Alarm" label goes (the ring's "12" is where it was; the Alarms app says what this is).
+6. **The boot** asks the name with the three names in one row of pills, and the brain as a 2 × 2 grid of pills in
+   shorter words (four 68 px rows do not fit under the question).
+
+### The S keyboard (decision)
+
+Typing is the only text input on S until its ES8311 / ES7210 codecs are driven (`firmware/SOUL-S.md` §4), so the
+keyboard has to work. M's Round QWERTY (10 keys across) at S's glass gives 4.1 mm keys, under the ~4.5–5 mm a
+fingertip needs without a zoom step. Options weighed:
+
+- **QWERTY at S size**, keys 4.1 mm: misses the floor. Rejected.
+- **Ambiguous keys** (T9 or QWERTY pairs, a dictionary picks the word): big keys, but the on-device lexicon is
+  ~500 words (`WordListData.h`), and the keyboard also types Wi-Fi passwords, API keys and names (`verbatim`), which
+  must be exact. Rejected for now.
+- **Voice first**, the keyboard as a fallback: right for S, not possible until the codecs work. Later (see below).
+- **Fewer keys per row, exact** (chosen): five rows of 54 px keys (**5.1 mm** square), each row as many keys as its
+  chord at the safe circle holds: `a–g` (7) · `h–o` (8) · `p–v` (7) · `⇧ w x y z ⌫` · `123 · space · ✓`. That is the
+  whole alphabet with no second step, so it stays exact for passwords. **Alphabetical**, because QWERTY's three
+  rows (10 · 9 · 7) cannot survive a 7 · 8 · 7 · 4 reflow: reflowed QWERTY loses the shape that makes it fast and
+  keeps an order nobody can scan; the alphabet is findable on a first look. The field is one line (the end you
+  are typing), the three prediction chips stay (with RO auto-diacritics; 46 px = 4.3 mm tall, a secondary target over the keys), a long press still gives ă â î ș ț,
+  `123` holds the numbers and punctuation. The key floor (5 mm) is in the round audit for every key.
+- **When the codecs work**, holding the glass is talking again and the keyboard is the second way in (the M path:
+  "Hold, or type"). Measure on the board: words per minute and errors, S keyboard vs M's QWERTY, 5 people.
+
+### The audit on both glasses
+
+`firmware/test/test_suflet/test_audit.cpp` (`test_audit_every_screen_on_soul_m`, `…_on_soul_s`) runs every state on
+each glass with that glass's floors (above, from millimetres) and fails on: a glyph or control corner past the safe
+circle; type under the floor; a control under the target (a key under 5 mm); rim words touching content; the eyes
+touching a word or a control or leaving the glass; low contrast; and, new with S: **words** (two lines of words
+touching), **overlap** (two controls overlapping unless one holds the other), **spill** (a word across a control's
+edge) and **trunc** (a line cut to under 3 characters + "…"). Both glasses: 0 failures.
+`AUDIT_ALL=1 .pio/build/native/program` prints each screen's result. Stills of every S screen and the true-size sheet
+(S next to M): `firmware/sim/shots/alive-s/` (`soulos-alive-S-sheet.png`).

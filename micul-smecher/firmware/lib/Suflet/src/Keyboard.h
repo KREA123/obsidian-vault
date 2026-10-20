@@ -59,6 +59,13 @@ class Keyboard {
   void setGeometry(const DisplayGeometry& g);
   const DisplayGeometry& geometry() const { return g_; }
   int rowH() const { return rowH_; }
+  // SOUL S (Density.h, os/DESIGN-ALIVE.md §S "the S keyboard"): the same keyboard laid out for the 1.75" glass.
+  // No key under 5 mm: five rows of 54 px keys (5.1 mm) in alphabetical order (7 · 8 · 7 · ⇧ 4 ⌫ · 123 space ✓:
+  // as many as each row's chord holds), a one-line field, the three chips, the S type (Bricolage, >= 28 px).
+  // Off (the default): SOUL M's Round QWERTY, unchanged.
+  void setDense(bool on);
+  bool dense() const { return dense_; }
+  static constexpr int kDenseRowH = 54, kDenseRow0 = 158;
 
   void open(const KbConfig& cfg, const std::string& initial = "");
   void close() {
@@ -110,7 +117,7 @@ class Keyboard {
   Predictor& predictor() { return pred_; }
 
   // ---- rendering -----------------------------------------------------------
-  Rect bounds() const { return g_.rect(0, 60, (int)DisplayGeometry::kDesignPx, 402); }
+  Rect bounds() const { return dense_ ? g_.rect(0, 52, (int)DisplayGeometry::kDesignPx, 432) : g_.rect(0, 60, (int)DisplayGeometry::kDesignPx, 402); }
   bool changed() const { return changed_; }
   // What looks different since the last call: the field, the suggestion bar, the key that went down or
   // up, the callout, the tray; bounds() when the keys themselves changed (layer, shift, a new open).
@@ -161,6 +168,14 @@ class Keyboard {
 
   DisplayGeometry g_;
   int rowH_ = kRowH, fieldBottom_ = kFieldBottom, sugBottom_ = kSugBottom;
+  bool dense_ = false;
+  void layoutDense();
+  const Font& keyFont() const;     // a letter on a key
+  const Font& labelFont() const;   // 123, the chips
+  const Font& fieldFont() const;   // the text field
+  const Font& calloutFont() const; // the callout, the tray
+  float trayPitch() const { return S(dense_ ? 54 : 44); }
+  float trayH() const { return S(dense_ ? 70 : 62); }
   KbConfig cfg_;
   TextField field_;
   Predictor pred_;

@@ -180,6 +180,11 @@ bool Os::speechRect(Rect& r) const {
   float w = 60;
   for (int i = 0; i < n; ++i) w = fmaxf(w, (float)Canvas::measureText(fonts::caption(), lines[i].c_str()) + dens_.speechWPad);
   const float h = n * dens_.speechLine + dens_.speechPadY;
+  if (dial && sGlass()) {  // SOUL S: over the eyes (under them it would cover the pebbles beside the focused one)
+    const float bottom = S * 0.5f + l.cy * S - 0.25f * l.k * S - 8;
+    r = Rect{(int)floorf(S * 0.5f - w * 0.5f), (int)floorf(bottom - h), (int)ceilf(S * 0.5f + w * 0.5f), (int)ceilf(bottom)};
+    return true;
+  }
   r = Rect{(int)floorf(S * 0.5f - w * 0.5f), (int)floorf(top), (int)ceilf(S * 0.5f + w * 0.5f), (int)ceilf(top + h)};
   return true;
 }
@@ -189,15 +194,17 @@ void Os::drawSpeech(Canvas& cv) {
   if (!speechRect(r)) return;
   const float rise = speech_.rise(reducedMotion());
   const float off = (1 - rise) * 14, a = fminf(1.0f, fmaxf(0.0f, rise * 1.4f));
-  const Rect shown{r.x0 - 2, r.y0 - 10, r.x1 + 2, r.y1 + 16};
+  const Rect shown{r.x0 - 2, r.y0 - 10, r.x1 + 2, r.y1 + (sGlass() && view_ == View::Launcher ? 24 : 16)};  // (S dial: the tail under it)
   if (!overlaps(shown, cv.clipRect()) || a <= 0.01f) return;
   const float x0 = (float)r.x0, y0 = r.y0 + off, x1 = (float)r.x1, y1 = r.y1 + off, cx = (x0 + x1) * 0.5f;
   cv.roundRect(x0, y0, x1, y1, 18, pal_.e1, a);
-  {  // the tail: a 45° square under the bubble's top edge, pointing up at the eyes
+  {  // the tail: a 45° square under the bubble's top edge, pointing up at the eyes (S's dial: down, from over them)
     Path& p = scratchPath();
     if (p.reserve(1024)) {
       p.clear();
-      const float xy[8] = {cx - 8, y0 + 2, cx, y0 - 6, cx + 8, y0 + 2, cx, y0 + 10};
+      const bool above = view_ == View::Launcher && sGlass();
+      const float ty = above ? y1 - 2 : y0 + 2, d = above ? -1.0f : 1.0f;
+      const float xy[8] = {cx - 8, ty, cx, ty - 8 * d, cx + 8, ty, cx, ty + 8 * d};
       p.polygon(xy, 4);
       face_.raster().fill(cv, p, pal_.e1, a);
     }
@@ -427,7 +434,9 @@ void Os::drawDial(Canvas& cv) {
     }
     textAt(cv, fonts::caption(), 233, sp.factY, fact, kInk, 0.84f * dial_.openness());
   }
-  rimTop(cv, clockOf(now_) + (previewing() ? (ro() ? " · previzualizare" : " · preview") : ""), kInk, 0.82f);
+  // (SOUL S: the speech bubble sits over the eyes, where the clock's capsule is: the clock steps aside for it)
+  if (!(sGlass() && speech_.showing()))
+    rimTop(cv, clockOf(now_) + (previewing() ? (ro() ? " · previzualizare" : " · preview") : ""), kInk, 0.82f);
 }
 
 void Os::invalidateDial() {
@@ -486,12 +495,29 @@ void Os::dialTouch(const TouchEv& e) {
 
 // ---------------------------------------------------------------- Look ---
 
-static constexpr float kLookPrevX = 103, kLookNextX = 363, kLookY = 214, kSwatchY = 342, kLookBackY = 284;
-
-static float swatchX(int i) { return 233 + (i - 2) * 52.0f; }
+// Look's layout: SOUL M's 1.9.0 numbers; SOUL S (Density.h) has 68 px targets (6.4 mm) for ‹ ›, the five bodies
+// (a row across the widest part of the glass) and Back, under smaller eyes
+namespace {
+struct LookSpec {
+  float prevX = 103, nextX = 363, y = 214, tagY = 248, swatchY = 342, backY = 284;
+  float arrowW = 60, arrowH = 52, swatchW = 50, swatchH = 52, swatchStep = 52, backH = 48, bodyW = 40, bodyH = 44;
+  float swatchX(int i) const { return 233 + (i - 2) * swatchStep; }
+};
+LookSpec lookSpec(const Density& d) {
+  LookSpec l;
+  if (d.reference) return l;
+  const float t = d.targetDesign();
+  l.prevX = 233 - 150, l.nextX = 233 + 150, l.y = 200, l.tagY = 252, l.swatchY = 302, l.backY = 376;
+  l.arrowW = l.arrowH = l.swatchW = l.swatchH = l.backH = t;
+  l.swatchStep = t + 6;
+  l.bodyW = 54, l.bodyH = 60;
+  return l;
+}
+}  // namespace
 
 void Os::lookControls(std::vector<Control>& out) const {  // the round audit: Look's targets, panel px
   const float k = g_.k();
+  const LookSpec L = lookSpec(dens_);
   auto add = [&](float cx, float cy, float w, float h, float r, int id) {
     Control c;
     c.r = Rect{(int)lroundf((cx - w * 0.5f) * k), (int)lroundf((cy - h * 0.5f) * k), (int)lroundf((cx + w * 0.5f) * k),
@@ -500,34 +526,35 @@ void Os::lookControls(std::vector<Control>& out) const {  // the round audit: Lo
     c.id = id;
     out.push_back(c);
   };
-  add(kLookPrevX, kLookY, 60, 52, 26, 3000);
-  add(kLookNextX, kLookY, 60, 52, 26, 3001);
-  for (int i = 0; i < (int)Body::Count; ++i) add(swatchX(i), kSwatchY, 50, 52, 20, 3010 + i);
-  if (previewing()) add(233, kLookBackY, 260, 48, 24, 3002);
+  add(L.prevX, L.y, L.arrowW, L.arrowH, L.arrowH * 0.5f, 3000);
+  add(L.nextX, L.y, L.arrowW, L.arrowH, L.arrowH * 0.5f, 3001);
+  for (int i = 0; i < (int)Body::Count; ++i) add(L.swatchX(i), L.swatchY, L.swatchW, L.swatchH, 20, 3010 + i);
+  if (previewing()) add(233, L.backY, 260, L.backH, L.backH * 0.5f, 3002);
 }
 
 bool Os::lookTap(float x, float y) {
   const float px = x / g_.k(), py = y / g_.k();
-  if (fabsf(py - kLookY) <= 26) {  // 52 x 60 px targets
-    if (fabsf(px - kLookPrevX) <= 30) {
+  const LookSpec L = lookSpec(dens_);
+  if (fabsf(py - L.y) <= L.arrowH * 0.5f) {  // 52 x 60 px targets (S: 68 x 68)
+    if (fabsf(px - L.prevX) <= L.arrowW * 0.5f) {
       react(alive::Event::Tap);
       lookStep(-1);
       return true;
     }
-    if (fabsf(px - kLookNextX) <= 30) {
+    if (fabsf(px - L.nextX) <= L.arrowW * 0.5f) {
       react(alive::Event::Tap);
       lookStep(1);
       return true;
     }
   }
-  if (fabsf(py - kSwatchY) <= 26)
+  if (fabsf(py - L.swatchY) <= L.swatchH * 0.5f)
     for (int i = 0; i < (int)Body::Count; ++i)
-      if (fabsf(px - swatchX(i)) <= 25) {
+      if (fabsf(px - L.swatchX(i)) <= L.swatchW * 0.5f) {
         react(alive::Event::Tap);
         setBody((Body)i);
         return true;
       }
-  if (previewing() && fabsf(py - kLookBackY) <= 24 && fabsf(px - 233) <= 130) {  // Back to {name}
+  if (previewing() && fabsf(py - L.backY) <= L.backH * 0.5f && fabsf(px - 233) <= 130) {  // Back to {name}
     react(alive::Event::Tap);
     lookReset();
     return true;
@@ -538,37 +565,40 @@ bool Os::lookTap(float x, float y) {
 void Os::drawLook(Canvas& cv) {
   const bool R = ro();
   const Design& d = kDesigns[shownDesign()];
+  const LookSpec L = lookSpec(dens_);
   rimTop(cv, R ? "Privire" : "Look", kInk, 0.9f);
   // ‹ the birth ›
   const Font& nf = fonts::caption();
   for (int side = -1; side <= 1; side += 2) {  // chunky chevrons, 4 px round strokes like the glyphs
-    const float x = g_.s(side < 0 ? kLookPrevX : kLookNextX), y = g_.s(kLookY), d = g_.s(7), t = g_.s(4);
+    const float x = g_.s(side < 0 ? L.prevX : L.nextX), y = g_.s(L.y), d = g_.s(7 * dens_.ts), t = g_.s(4 * dens_.ts);
     cv.segment(x - side * d * 0.5f, y - d * 1.4f, x + side * d * 0.9f, y, t, pal_.e1, fade_);  // the point outward
     cv.segment(x + side * d * 0.9f, y, x - side * d * 0.5f, y + d * 1.4f, t, pal_.e1, fade_);
   }
-  textAt(cv, fonts::body(), 233, kLookY, d.name, kInk);
+  textAt(cv, fonts::body(), 233, L.y, d.name, kInk);
   char b[96];
   snprintf(b, sizeof b, "%s · #%03d · %s", kRarityName[(int)d.rarity], d.num,
            previewing() ? (R ? "PREVIZUALIZARE" : "PREVIEW") : (R ? "AL TĂU" : "YOURS"));
   for (char* c = b; *c; ++c)
     if (*c >= 'a' && *c <= 'z') *c = (char)(*c - 32);
-  textAt(cv, fonts::tag(), 233, 248, b, Rgb::hex(kRarityColor[(int)d.rarity]));
+  textAt(cv, fonts::tag(), 233, L.tagY, b, Rgb::hex(kRarityColor[(int)d.rarity]));
   if (previewing()) {  // Back to {its own birth}
     const std::string back = std::string(R ? "Înapoi la " : "Back to ") + kDesigns[birth_.design].name;
     const float tw = (float)Canvas::measureText(nf, back.c_str()) / g_.k();
-    pill(cv, 233, kLookBackY, fminf(tw + 44, 300), 48, back, PillStyle::Mint, nf);
+    pill(cv, 233, L.backY, fminf(tw + 44 * dens_.ts, 300 * dens_.cs), L.backH, back, PillStyle::Mint, nf);
   } else {  // the three palette colours it was born with
     const Rgb chips[3] = {pal_.e1, pal_.e2, pal_.b1};
-    for (int i = 0; i < 3; ++i) cv.roundRect(g_.s(233 + (i - 1) * 34.0f - 14), g_.s(kLookBackY - 5), g_.s(233 + (i - 1) * 34.0f + 14), g_.s(kLookBackY + 5), g_.s(5), chips[i], fade_);
+    const float cw = 14 * dens_.ts, ch = 5 * dens_.ts, step = 34 * dens_.ts;
+    for (int i = 0; i < 3; ++i) cv.roundRect(g_.s(233 + (i - 1) * step - cw), g_.s(L.backY - ch), g_.s(233 + (i - 1) * step + cw), g_.s(L.backY + ch), g_.s(ch), chips[i], fade_);
   }
   // the five bodies, drawn as the stone
   for (int i = 0; i < (int)Body::Count; ++i) {
     const Rgb c = Rgb::hex(bodyInfo((Body)i).hex);
-    const float x = g_.s(swatchX(i)), y = g_.s(kSwatchY), w = g_.s(40), h = g_.s(44);
+    const float x = g_.s(L.swatchX(i)), y = g_.s(L.swatchY), w = g_.s(L.bodyW), h = g_.s(L.bodyH);
     if (i == (int)set_.body) drawPebble(cv, x, y, w + g_.s(10), h + g_.s(10), kInk, pal::kBlack, fade_);
     drawPebble(cv, x, y, w, h, c, c, fade_);
   }
-  rimBottom(cv, std::string(bodyInfo(body()).name) + (R ? " · corp" : " · body"), kInk, 0.7f);
+  // (S: Back sits where the rim's words would: the body's name shows when it is not previewing)
+  if (!(sGlass() && previewing())) rimBottom(cv, std::string(bodyInfo(body()).name) + (R ? " · corp" : " · body"), kInk, 0.7f);
 }
 
 // --------------------------------------------------------------- update ---
@@ -591,16 +621,18 @@ void Os::aliveUpdate(float dt) {
     Rect r;
     const bool now = speechRect(r);
     if (now) {
-      const Rect shown{r.x0 - 2, r.y0 - 10, r.x1 + 2, r.y1 + 16};
+      const Rect shown{r.x0 - 2, r.y0 - 10, r.x1 + 2, r.y1 + (sGlass() && view_ == View::Launcher ? 24 : 16)};  // (S dial: the tail under it)
       if (!speechWas_ || speech_.rising()) invalidate(shown);
       if (speechWas_ && (shown.x0 != speechLast_.x0 || shown.y0 != speechLast_.y0 || shown.x1 != speechLast_.x1 ||
                          shown.y1 != speechLast_.y1))
         invalidate(speechLast_);
       speechLast_ = shown;
       if (view_ == View::Launcher && !speechWas_) invalidateDial();  // the fact and the name step aside
+      if (view_ == View::Launcher && !speechWas_ && sGlass()) invalidate();  // (S: and the clock)
     } else if (speechWas_) {
       invalidate(speechLast_);
       if (view_ == View::Launcher) invalidateDial();
+      if (view_ == View::Launcher && sGlass()) invalidate();  // (S: the clock comes back)
     }
     speechWas_ = now;
   }

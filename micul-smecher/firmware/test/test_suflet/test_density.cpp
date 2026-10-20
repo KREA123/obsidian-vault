@@ -4,6 +4,7 @@
 // (M pixel-identical to 1.9.0) and the S audit in test_audit.cpp.
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <unity.h>
 
 #include <vector>
@@ -228,6 +229,163 @@ static void test_density_burn_in_care() {
   fonts::setRamp(fonts::TypeRamp::M);
 }
 
+
+// ---- the S screens step (SOUL-S.md §5, os/DESIGN-ALIVE.md §S) ------------------------------------------------
+
+static void sTap(Keyboard& kb, float x, float y) {
+  kb.touch(TouchEv{Ev::TouchDown, (int16_t)x, (int16_t)y, 0});
+  kb.touch(TouchEv{Ev::TouchUp, (int16_t)x, (int16_t)y, 0});
+  kb.update(0.1f);
+}
+
+// the S keyboard: no key under 5 mm, alphabetical rows as wide as each row's chord, inside the circle; it types
+static void test_s_keyboard_has_5mm_keys_and_types() {
+  fonts::setRamp(fonts::TypeRamp::S);
+  Keyboard kb;
+  kb.setGeometry(displays::kAmoled175);
+  kb.setDense(true);
+  KbConfig c;
+  c.placeholder = "New note…";
+  kb.open(c);
+  TEST_ASSERT_TRUE(kb.dense());
+  TEST_ASSERT_EQUAL_INT(31, kb.keyCount());  // 26 letters, ⇧ ⌫, 123, space, ✓
+  const float pxPerMm = displays::kAmoled175.pxPerMm();
+  TEST_ASSERT_TRUE(kb.rowH() / pxPerMm >= 5.0f);
+  std::string order;
+  for (int i = 0; i < kb.keyCount(); ++i) {
+    const Key& k = kb.key(i);
+    TEST_ASSERT_TRUE_MESSAGE((k.x1 - k.x0) / pxPerMm >= 5.0f, "a key under 5 mm");
+    for (int sx = 0; sx < 2; ++sx)  // its corners (radius 16, the 45° point) inside the safe circle
+      for (int sy = 0; sy < 2; ++sy) {
+        const float x = (sx ? k.x1 : k.x0) + (sx ? -4.7f : 4.7f), y = k.y0 + (sy ? kb.rowH() - 4.7f : 4.7f);
+        TEST_ASSERT_TRUE(hypotf(x - 233, y - 233) <= 221.35f);
+      }
+    if (k.id == KeyId::Char && k.cp >= 'a' && k.cp <= 'z') order += (char)k.cp;
+  }
+  TEST_ASSERT_EQUAL_STRING("abcdefghijklmnopqrstuvwxyz", order.c_str());
+  // it types: "hi sol" (the auto-capital), a backspace, the 123 layer and back
+  for (const char* p = "hi sol"; *p; ++p) {
+    float x, y;
+    TEST_ASSERT_TRUE(kb.keyCenter((uint32_t)*p, x, y));
+    sTap(kb, x, y);
+  }
+  TEST_ASSERT_EQUAL_STRING("Hi sol", kb.text().c_str());
+  float x, y;
+  TEST_ASSERT_TRUE(kb.keyCenter(KeyId::Bksp, x, y));
+  sTap(kb, x, y);
+  TEST_ASSERT_EQUAL_STRING("Hi so", kb.text().c_str());
+  TEST_ASSERT_TRUE(kb.keyCenter(KeyId::Layer, x, y));
+  sTap(kb, x, y);
+  TEST_ASSERT_EQUAL_INT((int)KbLayer::Num, (int)kb.layer());
+  TEST_ASSERT_TRUE(kb.keyCenter((uint32_t)'7', x, y));
+  sTap(kb, x, y);
+  TEST_ASSERT_EQUAL_STRING("Hi so7", kb.text().c_str());
+  for (int i = 0; i < kb.keyCount(); ++i) TEST_ASSERT_TRUE((kb.key(i).x1 - kb.key(i).x0) / pxPerMm >= 5.0f);
+  // a hold on a: the tray (ă â à á ä: the Romanian letters are a long-press away, as on M; an English sentence
+  // puts them after the others)
+  TEST_ASSERT_TRUE(kb.keyCenter(KeyId::Layer, x, y));
+  sTap(kb, x, y);
+  TEST_ASSERT_TRUE(kb.keyCenter((uint32_t)'a', x, y));
+  kb.touch(TouchEv{Ev::TouchDown, (int16_t)x, (int16_t)y, 0});
+  kb.touch(TouchEv{Ev::HoldStart, (int16_t)x, (int16_t)y, 0});
+  TEST_ASSERT_TRUE(kb.trayOpen());
+  kb.touch(TouchEv{Ev::TouchUp, (int16_t)x, (int16_t)y, 0});
+  TEST_ASSERT_EQUAL_STRING("Hi so7\xC3\xA0", kb.text().c_str());  // à
+  // and it draws inside its bounds
+  std::vector<uint16_t> fb((size_t)466 * 466, 0);
+  Canvas cv(466, 466, fb.data());
+  kb.render(cv);
+  const Rect b = kb.bounds();
+  for (int yy = 0; yy < 466; ++yy)
+    for (int xx = 0; xx < 466; ++xx)
+      if (fb[(size_t)yy * 466 + xx]) TEST_ASSERT_TRUE(xx >= b.x0 && xx < b.x1 && yy >= b.y0 && yy < b.y1);
+  fonts::setRamp(fonts::TypeRamp::M);
+}
+
+// SOUL M's keyboard is untouched: Round QWERTY, 32 keys, the 1.9.0 geometry
+static void test_m_keyboard_unchanged() {
+  fonts::setRamp(fonts::TypeRamp::M);
+  Keyboard kb;
+  kb.setGeometry(displays::kLcd28);
+  KbConfig c;
+  kb.open(c);
+  TEST_ASSERT_FALSE(kb.dense());
+  TEST_ASSERT_EQUAL_INT(32, kb.keyCount());
+  TEST_ASSERT_EQUAL_INT('q', (int)kb.key(0).cp);
+  TEST_ASSERT_EQUAL_INT(54, kb.rowH());  // 52 design px at 480
+}
+
+// rows of pills on S: never overlapping, inside the circle (inside the ring, when one rings the rim)
+static void test_s_rows_of_pills_fit() {
+  for (const char* st : {"alarm-ring", "note", "game-over", "msg", "soul", "breathe", "timer-countdown", "claude-ask", "boot-name",
+                         "boot-brain", "maps-route", "wifi-hotspot"}) {
+    alive_states::Rig s(strncmp(st, "boot", 4) != 0, -1, displays::kAmoled175);
+    TEST_ASSERT_TRUE_MESSAGE(alive_states::setup(s, st), st);
+    std::vector<Os::Control> cs;
+    s.os.controls(cs);
+    const bool ring = !strcmp(st, "alarm-ring") || !strcmp(st, "timer-countdown") || !strcmp(st, "claude-ask");
+    int pills = 0;
+    for (size_t i = 0; i < cs.size(); ++i) {
+      const Rect& a = cs[i].r;
+      if (a.h() >= 68) ++pills;
+      const float k = fminf(cs[i].radius, fminf((float)a.w(), (float)a.h()) * 0.5f) * 0.2929f;
+      for (float x : {a.x0 + k, a.x1 - k})
+        for (float y : {a.y0 + k, a.y1 - k}) TEST_ASSERT_TRUE_MESSAGE(hypotf(x - 233, y - 233) <= (ring ? 212.5f : 221.35f), st);
+      for (size_t j = i + 1; j < cs.size(); ++j) {
+        const Rect& b = cs[j].r;
+        const bool apart = a.x1 <= b.x0 + 1 || b.x1 <= a.x0 + 1 || a.y1 <= b.y0 + 1 || b.y1 <= a.y0 + 1;
+        TEST_ASSERT_TRUE_MESSAGE(apart, st);
+      }
+    }
+    TEST_ASSERT_GREATER_THAN_MESSAGE(0, pills, st);
+  }
+  fonts::setRamp(fonts::TypeRamp::M);
+}
+
+// S's own layouts still work: Look's › previews the next birth, the Control tiles toggle, Convert's swap swaps
+static void test_s_screens_still_act() {
+  {
+    alive_states::Rig s(true, -1, displays::kAmoled175);
+    TEST_ASSERT_TRUE(alive_states::setup(s, "look"));
+    TEST_ASSERT_TRUE(s.os.lookOpen());
+    TEST_ASSERT_TRUE(s.os.previewing());
+  }
+  {
+    alive_states::Rig s(true, -1, displays::kAmoled175);
+    TEST_ASSERT_TRUE(alive_states::setup(s, "maps-walking"));
+    TEST_ASSERT_TRUE(s.os.apps().navOn);
+  }
+  {
+    alive_states::Rig s(true, -1, displays::kAmoled175);
+    TEST_ASSERT_TRUE(alive_states::setup(s, "wifi-hotspot"));
+    std::vector<Os::Control> cs;
+    s.os.controls(cs);
+    TEST_ASSERT_EQUAL_INT(2, (int)cs.size());  // the hotspot page: Type it, From phone
+  }
+  {
+    alive_states::Rig s(true, -1, displays::kAmoled175);
+    TEST_ASSERT_TRUE(alive_states::setup(s, "control"));
+    const bool was = s.os.apps().dnd;
+    s.tapControl(300, 0, 0, 0.6f);  // Quiet
+    TEST_ASSERT_TRUE(s.os.apps().dnd != was);
+  }
+  {
+    alive_states::Rig s(true, -1, displays::kAmoled175);
+    TEST_ASSERT_TRUE(alive_states::setup(s, "convert"));
+    const int from = s.os.apps().from, to = s.os.apps().to;
+    s.tapControl(213, 0, 0, 0.6f);  // the swap disc
+    TEST_ASSERT_EQUAL_INT(to, s.os.apps().from);
+    TEST_ASSERT_EQUAL_INT(from, s.os.apps().to);
+  }
+  {  // the boot on S: a name from the row of three, No AI from the 2 x 2 grid, Next: "hold the glass"
+    alive_states::Rig s(false, -1, displays::kAmoled175);
+    TEST_ASSERT_TRUE(alive_states::setup(s, "boot-hold"));
+    TEST_ASSERT_EQUAL_INT((int)BootStep::Hold, (int)s.os.bootStep());
+    TEST_ASSERT_EQUAL_INT((int)AiMode::None, (int)s.os.aiMode());
+  }
+  fonts::setRamp(fonts::TypeRamp::M);
+}
+
 void runDensityTests() {
   RUN_TEST(test_density_m_is_the_reference_glass);
   RUN_TEST(test_density_s_keeps_the_millimetres);
@@ -235,4 +393,8 @@ void runDensityTests() {
   RUN_TEST(test_density_s_wheel_slot_and_ask_fit);
   RUN_TEST(test_density_s_os_on_the_amoled);
   RUN_TEST(test_density_burn_in_care);
+  RUN_TEST(test_s_keyboard_has_5mm_keys_and_types);
+  RUN_TEST(test_m_keyboard_unchanged);
+  RUN_TEST(test_s_rows_of_pills_fit);
+  RUN_TEST(test_s_screens_still_act);
 }

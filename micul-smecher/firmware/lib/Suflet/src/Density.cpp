@@ -70,6 +70,9 @@ Density Density::forGlass(const DisplayGeometry& g) {
     d.card.cy = (cy - C) / S;
   }
   const float slotBottom = C + d.card.cy * S + kEyeH * S * d.card.k * 0.5f;
+  // ---- the keyboard's eyes: smaller, over its one-line field (Keyboard::setDense) ----
+  d.keyboard.k = 0.2f;
+  d.keyboard.cy = -0.43f;
   // ---- the dial: pebbles at the touch target, the orbit solved from the focused one ----
   alive::DialSpec& dl = d.dial;
   const alive::DialSpec m0;
@@ -129,7 +132,7 @@ Density Density::forGlass(const DisplayGeometry& g) {
   d.speechPadX = 24 * cs;
   d.speechWPad = 26 * cs;
   d.speechW = fminf(340 * cs, 380);
-  d.speechDialW = 236;  // two lines over the dial's middle (the screens step: S's dial bubble, SOUL-S.md)
+  d.speechDialW = 224;  // two lines over the eyes, clear of the pebbles at the sides (OsAlive.cpp speechRect)
   d.speechDialGap = 0;
   // ---- the answer pebble: from under the slot to above the bottom rim's words ----
   Answer& a = d.answer;

@@ -38,6 +38,13 @@ class TimePicker {
   // Without it (the Shell), the 1.8 glass picker.
   void setAlive(Rgb e1, Rgb e2, Rgb on1);
   bool alive() const { return alive_; }
+  // SOUL S (Density.h): the ring further in (its knob's value, in the S caption face, stays inside the safe
+  // circle) and the label notches as big as the S words. M: r 205, scale 1.
+  void setRim(float ringDesignR, float labelScale) {
+    ringDesign_ = ringDesignR;
+    labelK_ = labelScale;
+    setGeometry(g_);
+  }
 
   bool touch(const TouchEv& e);
   void update(float dt);
@@ -80,7 +87,7 @@ class TimePicker {
   void polar(float deg, float r, float& x, float& y) const;
   float S(float designPx) const { return g_.s(designPx); }
   DisplayGeometry g_;
-  float cx_ = kCx, cy_ = kCy, r_ = kR, track_ = kTrack;
+  float cx_ = kCx, cy_ = kCy, r_ = kR, track_ = kTrack, ringDesign_ = kR, labelK_ = 1;
   Rect title_, digits_, rel_, ok_;
   float clear0_ = 0, clear1_ = 0;
   bool open_ = false, changed_ = true, dragging_ = false, okDown_ = false, alive_ = false;

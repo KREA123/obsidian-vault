@@ -200,7 +200,7 @@ void Os::buildMemoryItems(std::vector<Item>& out) const {
     out.push_back(it);
   };
   if (memSel_ >= 0) {
-    if (mem_->find(memSel_)) add(IdMemForget, 233, 384, 150, 52, R ? "Uită" : "Forget", kAmber, 0, true);
+    if (mem_->find(memSel_)) add(IdMemForget, 233, L(384, 380), 150, 52, R ? "Uită" : "Forget", kAmber, 0, true);
     return;
   }
   // the list is a wheel (buildMemoryWheel): Search, the facts, Backup, Forget all
@@ -303,9 +303,11 @@ void Os::drawMemory(Canvas& cv) {
     const Fact* f = mem_->find(memSel_);
     if (!f) return;
     std::string lines[4];
-    const int k = wrapLines(fonts::body(), f->text, g_.s(270), lines, f->mmdd ? 3 : 4);
-    pebRect(cv, 84, 152, 382, 190 + k * 32 + (f->mmdd ? 58 : 32), 30, pal_.peb, pal_.e1, 3);
-    for (int i = 0; i < k; ++i) textAt(cv, fonts::body(), 233, 182 + i * 32, lines[i], kCream);
+    // (SOUL S: the S body face, 44 px a line, one line fewer, on a wider pebble)
+    const float lp = L(32, 44), x0 = L(84, 66), top = L(152, 132), y0 = L(182, 168), cap = L(26, 34);
+    const int k = wrapLines(fonts::body(), f->text, g_.s(L(270, 300)), lines, (f->mmdd ? 3 : 4) - (sGlass() ? 1 : 0));
+    pebRect(cv, x0, top, 466 - x0, top + 38 + k * lp + (f->mmdd ? 32 + cap : 32) + L(0, 6), 30, pal_.peb, pal_.e1, 3);
+    for (int i = 0; i < k; ++i) textAt(cv, fonts::body(), 233, y0 + i * lp, lines[i], kCream);
     std::string meta = std::string(kindLabel(f->kind, R)) + " \xC2\xB7 " + srcLabel(f->src, R);
     if (f->created) {
       const time_t t = (time_t)f->created;
@@ -315,8 +317,8 @@ void Os::drawMemory(Canvas& cv) {
       snprintf(b, sizeof b, " \xC2\xB7 %d.%02d.%d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
       meta += b;
     }
-    textAt(cv, fonts::caption(), 233, 182 + k * 32 + 4, cutTo(fonts::caption(), meta, g_.s(270)), kCream, kDim);
-    if (f->mmdd) textAt(cv, fonts::caption(), 233, 182 + k * 32 + 30, dayMonthText(f->mmdd, R), kMint);
+    textAt(cv, fonts::caption(), 233, y0 + k * lp + 4 - L(0, 8), cutTo(fonts::caption(), meta, g_.s(L(270, 300))), kCream, kDim);
+    if (f->mmdd) textAt(cv, fonts::caption(), 233, y0 + k * lp + 4 - L(0, 8) + cap, dayMonthText(f->mmdd, R), kMint);
     drawItems(cv, items_);
     rimBottom(cv, R ? "ține Uită ca să uit" : "hold Forget to forget", kCream, kFaint);
     return;
@@ -324,13 +326,14 @@ void Os::drawMemory(Canvas& cv) {
   bool none = true;  // no fact matches (from the cached rows: the list is not searched again on every repaint)
   for (const WheelRow& r : wheelRows()) none &= r.id < IdMemRow;
   if (none && wheel_.focused() == 0) {
-    textAt(cv, fonts::body(), 233, 188, memFilter_.empty() ? (R ? "Încă nu țin minte nimic." : "I remember nothing. Yet.")
+    textAt(cv, fonts::body(), 233, L(188, 150), memFilter_.empty() ? (sGlass() ? (R ? "Nu țin minte nimic." : "I remember nothing.")
+                                                                                 : (R ? "Încă nu țin minte nimic." : "I remember nothing. Yet."))
                                                             : (R ? "Nimic cu „" : "Nothing with “") + memFilter_ + "\xE2\x80\x9D",
            kCream);
   }
   drawWheel(cv);
   if (none && memFilter_.empty() && wheel_.focused() == 0)
-    textAt(cv, fonts::caption(), 233, 224, R ? "Spune „ține minte că…”" : "Say \xE2\x80\x9Cremember that\xE2\x80\xA6\xE2\x80\x9D", kCream, kDim);
+    textAt(cv, fonts::caption(), 233, L(224, 188), R ? "Spune „ține minte că…”" : "Say \xE2\x80\x9Cremember that\xE2\x80\xA6\xE2\x80\x9D", kCream, kDim);
 }
 
 }  // namespace suflet

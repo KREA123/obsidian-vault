@@ -100,6 +100,10 @@ struct TextProbe {
   // quad: the glyph bitmap's four corners (x, y) x 4, in drawing order (rotated along the rim for arc text)
   // c: its colour (the contrast check measures it against what is under it)
   virtual void glyph(const Font& f, const float* quad, float alpha, bool arc, Rgb c) = 0;
+  // set by the Canvas before each glyph(): the code point, and the run (one drawText / drawTextArc call: the
+  // glyphs of one line of words share it, so the audit only compares glyphs of different lines)
+  uint32_t cp = 0;
+  int run = 0;
 };
 
 class Canvas {

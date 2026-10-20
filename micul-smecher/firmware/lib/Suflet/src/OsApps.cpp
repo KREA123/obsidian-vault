@@ -794,7 +794,8 @@ bool Os::appsTouch(const TouchEv& e) {
       A.dragging = false;
       A.rimDrag = A.rimArmed = false;
       A.dial = -1;
-      if (view_ == View::Control && r > 168 && y > 40 && y < 430 && fabsf(x - 233) > 110) {
+      // (SOUL S: the rim band starts further out, past its bigger tiles' corners)
+      if (view_ == View::Control && r > L(168, 186) && y > 40 && y < 430 && fabsf(x - 233) > 110) {
         A.dial = x < 233 ? 0 : 1;  // the left rim is light, the right rim is the volume
         A.rimDrag = true;
       } else if (view_ == View::Maps && r > 186 && A.downY > 70 && !A.sendSheet) {
@@ -884,7 +885,7 @@ bool Os::appsTouch(const TouchEv& e) {
         lastTapY_ = e.y;
         const int id = hitItem(e.x, e.y);
         if (id >= 0) activate(id);
-        else if (view_ == View::Maps && A.navOn && y < 200) {  // the step card: "I'm at the turn"
+        else if (view_ == View::Maps && A.navOn && y < L(200, 280)) {  // the step card: "I'm at the turn"
           A.nav.next();
           face_.react(X_happy, 0.5f);
           invalidate();

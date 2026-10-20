@@ -55,7 +55,7 @@ struct AppSim {
   bool cloudUp = true, haveFix = true, speaker = true;
   double composeMs = 0;
   int composed = 0, composedAll = 0;  // composedAll: every frame (callgrind collects them all)
-  uint64_t copiedPx = 0, changedPx = 0, repairPx = 0;
+  uint64_t copiedPx = 0, changedPx = 0, repairPx = 0, qspiPx = 0, qspiMax = 0;
   RectList lastChanged;
   int fullRepairs = 0;
   
@@ -180,6 +180,11 @@ struct AppSim {
     ++composedAll;
     changedPx += comp.stats().changedPx;
     copiedPx += presentCost(comp.changedList(), lastChanged);
+    {
+      const uint64_t q = qspiCost(comp.changedList(), cv.width(), cv.height());
+      qspiPx += q;
+      if (q > qspiMax && composedAll > 1) qspiMax = q;  // (the worst frame after the first one, which draws everything)
+    }
     
     repairPx += comp.stats().repairPx;
     fullRepairs += comp.stats().repairPx >= (uint32_t)(W * H);
@@ -466,9 +471,9 @@ int appsMode(const std::string& dir, const std::string& which, int px) {
   else if (which == "bench_games") benchGames(s);
   else allApps(s);
   printf("%s: %d frames, compose %.2f ms/frame on this PC\n", which.c_str(), s.composed, s.composeMs / (s.composed ? s.composed : 1));
-  printf("BENCH %s composed=%d changed_px=%.0f copied_px=%.0f repair_px=%.0f full_repairs=%d\n", which.c_str(),
+  printf("BENCH %s composed=%d changed_px=%.0f copied_px=%.0f repair_px=%.0f full_repairs=%d qspi_px=%.0f qspi_max=%llu\n", which.c_str(),
          s.composedAll, (double)s.changedPx / (s.composedAll ? s.composedAll : 1),
          (double)s.copiedPx / (s.composedAll ? s.composedAll : 1), (double)s.repairPx / (s.composedAll ? s.composedAll : 1),
-         s.fullRepairs);
+         s.fullRepairs, (double)s.qspiPx / (s.composedAll ? s.composedAll : 1), (unsigned long long)s.qspiMax);
   return 0;
 }

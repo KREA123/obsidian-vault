@@ -1,4 +1,5 @@
 // Unit tests for the soul engine. Run on the PC: pio test -e native
+#include <stdlib.h>
 #include <unity.h>
 
 #include <cmath>
@@ -1437,6 +1438,11 @@ void runDensityTests();  // test_density.cpp: SOUL M / SOUL S density tokens, AM
 
 int main(int, char**) {
   UNITY_BEGIN();
+  if (getenv("SUFLET_ONLY_AUDIT")) {  // the screens' loop: only the round audit and the density tests
+    runAuditTests();
+    runDensityTests();
+    return UNITY_END();
+  }
   RUN_TEST(test_personality_is_deterministic);
   RUN_TEST(test_rarity_distribution);
   RUN_TEST(test_touch_tap_and_double_tap);

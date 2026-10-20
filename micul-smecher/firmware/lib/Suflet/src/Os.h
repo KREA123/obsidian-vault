@@ -423,6 +423,7 @@ class Os {
     uint8_t font = 0;  // 0 small, 1 text, 2 large
     bool underline = false;
     float alpha = 1;
+    bool fixed = false;  // SOUL S: placed by its screen (fitRows leaves its row alone)
   };
   enum : int { kNone = -1 };
   void buildItems(std::vector<Item>& out) const;
@@ -501,6 +502,13 @@ class Os {
               Align a = Align::Center);
   FaceLayoutT layoutFor(View v) const;
 
+  // SOUL S (Density.h, firmware/SOUL-S.md §5): a screen's own number on S next to SOUL M's (M keeps every 1.9.0
+  // literal, so the 2.8C draws what it always drew); fitRows: S's rows of pills, centred, inside the circle
+  bool sGlass() const { return !dens_.reference; }
+  float L(float m, float s) const { return dens_.reference ? m : s; }
+  float textW(const Font& f, const std::string& s) const { return (float)Canvas::measureText(f, s.c_str()) / g_.k(); }
+  void fitRows(std::vector<Item>& out) const;
+
   // round-native screens (OsScreens.cpp): wheels, pills, toggles, rings
   struct WheelRow {
     int id = -1;          // the control (activate(id) on a tap; holdItem_ on a hold)
@@ -543,6 +551,11 @@ class Os {
   bool wheelTap(float x, float y);
   void drawWheel(Canvas& cv);
   void drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& p, bool focus);
+  // a row's ↑ disc (Settings › Apps): 48 px at the row's scale; S never under its 68 px target
+  float upDisc(const alive::Wheel::Place& p) const {
+    const float d = 48 * dens_.ts * p.scale;
+    return dens_.reference ? d : fmaxf(d, dens_.targetDesign());
+  }
   void invalidateWheel();
   // flat pieces in design px (scaled here): a pebble surface, a pill, a toggle, a ring on the rim
   void pebRect(Canvas& cv, float x0, float y0, float x1, float y1, float r, Rgb fill, Rgb edge, float edgeW, float alpha = 1);

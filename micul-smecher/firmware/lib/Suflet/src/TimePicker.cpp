@@ -105,14 +105,14 @@ void TimePicker::setGeometry(const DisplayGeometry& g) {
   g_ = g;
   cx_ = g.cx();
   cy_ = g.cy();
-  r_ = S(kR);
+  r_ = S(ringDesign_);
   track_ = S(kTrack);
   auto sr = [&](const Rect& r) { return g.rect(r.x0, r.y0, r.x1, r.y1); };
   title_ = sr(kTitle);
   digits_ = sr(kDigits);
   rel_ = sr(kRel);
   ok_ = sr(alive_ ? kOkAlive : kOk);
-  clear0_ = S(kClear0);
+  clear0_ = S(fminf(kClear0, ringDesign_ - 30 * fminf(labelK_, 1.15f) - 6));  // (M: 166; S: under its knob)
   clear1_ = S(kClear1);
   changed_ = true;
 }
@@ -383,20 +383,21 @@ void TimePicker::renderAlive(Canvas& cv) {
     snprintf(buf, sizeof buf, H ? "%d" : "%02d", v);
     float x, y;
     polar(H ? hourAngle(v) : minuteAngle(v), r_, x, y);
-    const float w = (float)Canvas::measureText(lf, buf) * 0.5f + S(7), h = S(14);
+    const float w = (float)Canvas::measureText(lf, buf) * 0.5f + S(7 * labelK_), h = S(14 * labelK_);
     cv.roundRect(x - w, y - h, x + w, y + h, h, pal::kBlack, 1);  // the notch in the ring
     cv.drawText(lf, x, centreBase(lf, y), buf, ink, 0.66f, Align::Center);
   }
   // the knob: an e1 disc ringed in black, its value in the ink on e1
   float kx, ky;
   polar(knobAngle(), r_, kx, ky);
-  cv.ellipse(kx, ky, S(30), S(30), pal::kBlack, 1);
-  cv.ellipse(kx, ky, S(27), S(27), e1_, 1);
+  const float kk = fminf(labelK_, 1.15f);  // (S: a little bigger for its two S digits, still inside the lit disc)
+  cv.ellipse(kx, ky, S(30 * kk), S(30 * kk), pal::kBlack, 1);
+  cv.ellipse(kx, ky, S(27 * kk), S(27 * kk), e1_, 1);
   char val[4];
   snprintf(val, sizeof val, "%02d", H ? h_ : m_);
   cv.drawText(lf, kx, centreBase(lf, ky), val, on1_, 1, Align::Center);
-  // the label
-  cv.drawText(lf, cx_, centreBase(lf, S(64)), lang_ == Lang::Ro ? "Alarmă" : "Alarm", ink, 0.66f, Align::Center);
+  // the label (SOUL S: none: its ring's "12" sits where the label would, and the Alarms app says what this is)
+  if (labelK_ <= 1) cv.drawText(lf, cx_, centreBase(lf, S(64)), lang_ == Lang::Ro ? "Alarmă" : "Alarm", ink, 0.66f, Align::Center);
   // the digits: the part being set in the ink and underlined in e1, the other part and ':' faint
   const Font& df = fonts::bigDigits();
   char hh[4], mm[4];

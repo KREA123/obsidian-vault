@@ -24,6 +24,12 @@ constexpr int kSlotW[3] = {124, 154, 124};
 constexpr int kFieldW = 300;        // line width that fits the upper text line chord
 constexpr int kBase1 = 89, kBase2 = 121;  // baselines of the two text lines
 constexpr int kSugBase = 165;
+// SOUL S (setDense): the field capsule, its one line, the three chips (design px of the 466 disc)
+constexpr int kDFieldX0 = 112, kDFieldX1 = 354, kDFieldY0 = 56, kDFieldY1 = 104, kDFieldMid = 80, kDFieldW = 222;
+constexpr int kDSlotX[3] = {43, 165, 307};
+constexpr int kDSlotW[3] = {116, 136, 116};
+constexpr int kDSugY0 = 108, kDSugY1 = 154;
+constexpr float kDSafeR = 219;  // the keys' corners stay inside the safe circle (0.95 of the disc, - 2)
 
 // Long-press variants (research/04 §2); the Romanian letter comes first.
 struct Variants {
@@ -181,11 +187,82 @@ std::string fitText(const Font& f, const std::string& s, int maxW) {
 void Keyboard::setGeometry(const DisplayGeometry& g) {
   g_ = g;
   drawn_.valid = false;
-  rowH_ = SI(kRowH);
-  fieldBottom_ = SI(kFieldBottom);
-  sugBottom_ = SI(kSugBottom);
+  rowH_ = SI(dense_ ? kDenseRowH : kRowH);
+  fieldBottom_ = SI(dense_ ? kDSugY0 - 2 : kFieldBottom);
+  sugBottom_ = SI(dense_ ? kDenseRow0 - 2 : kSugBottom);
   layout();
   changed_ = true;
+}
+
+void Keyboard::setDense(bool on) {
+  dense_ = on;
+  setGeometry(g_);
+}
+
+const Font& Keyboard::keyFont() const { return dense_ ? fonts::body() : fonts::text(); }
+const Font& Keyboard::labelFont() const { return dense_ ? fonts::caption() : fonts::small(); }
+const Font& Keyboard::fieldFont() const { return dense_ ? fonts::caption() : fonts::text(); }
+const Font& Keyboard::calloutFont() const { return dense_ ? fonts::title() : fonts::large(); }
+
+// SOUL S: five rows of 54 px keys, each row as many keys as its chord holds at >= 54 px, centred; the keys of a
+// row share its width (a row of fewer keys gets wider ones, up to 64 px)
+void Keyboard::layoutDense() {
+  nKeys_ = 0;
+  struct RowKey {
+    KeyId id;
+    uint32_t cp;
+    float w;  // relative width
+  };
+  auto row = [&](int r, const RowKey* ks, int n) {
+    const float y0 = kDenseRow0 + r * kDenseRowH, y1 = y0 + kDenseRowH;
+    const float dy = fmaxf(fabsf(y0 - 233), fabsf(y1 - 233)) - 4;  // (the caps' 12 px corners)
+    const float avail = 2 * sqrtf(fmaxf(0, kDSafeR * kDSafeR - dy * dy));
+    float units = 0;
+    for (int i = 0; i < n; ++i) units += ks[i].w;
+    const float unit = fminf(64.0f, floorf(avail / units));
+    float x = 233 - unit * units * 0.5f;
+    for (int i = 0; i < n; ++i) {
+      Key& k = keys_[nKeys_++];
+      const float w = unit * ks[i].w;
+      k.id = ks[i].id;
+      k.cp = ks[i].cp;
+      k.x0 = (int16_t)SI(x);
+      k.x1 = (int16_t)SI(x + w);
+      k.cx = (int16_t)SI(x + w * 0.5f);
+      k.y0 = (int16_t)SI(y0);
+      x += w;
+    }
+  };
+  auto chars = [&](int r, const char* s) {
+    RowKey ks[10];
+    int n = 0;
+    for (const char* p = s; *p && n < 10;) ks[n++] = {KeyId::Char, utf8::next(p), 1};
+    row(r, ks, n);
+  };
+  if (layer_ == KbLayer::Abc) {
+    chars(0, "abcdefg");
+    chars(1, "hijklmno");
+    chars(2, "pqrstuv");
+    const RowKey r3[] = {{KeyId::Shift, 0, 1}, {KeyId::Char, 'w', 1}, {KeyId::Char, 'x', 1}, {KeyId::Char, 'y', 1},
+                         {KeyId::Char, 'z', 1}, {KeyId::Bksp, 0, 1}};
+    row(3, r3, 6);
+  } else if (layer_ == KbLayer::Num) {
+    chars(0, "1234567");
+    chars(1, "890-/:;(");
+    chars(2, ")€&@\".,");
+    const RowKey r3[] = {{KeyId::SymLayer, 0, 1.2f}, {KeyId::Char, '?', 1}, {KeyId::Char, '!', 1}, {KeyId::Char, '\'', 1},
+                         {KeyId::Bksp, 0, 1.2f}};
+    row(3, r3, 5);
+  } else {
+    chars(0, "[]{}#%^");
+    chars(1, "*+=_\\|~<");
+    chars(2, ">$£„”…·");
+    const RowKey r3[] = {{KeyId::SymLayer, 0, 1}, {KeyId::Char, 0xB0, 1}, {KeyId::Char, 0x2013, 1}, {KeyId::Char, 0xAB, 1},
+                         {KeyId::Char, 0xBB, 1}, {KeyId::Bksp, 0, 1}};
+    row(3, r3, 6);
+  }
+  const RowKey r4[] = {{KeyId::Layer, 0, 1.2f}, {KeyId::Space, ' ', 1.5f}, {KeyId::Done, 0, 1.2f}};
+  row(4, r4, 3);
 }
 
 void Keyboard::open(const KbConfig& cfg, const std::string& initial) {
@@ -212,6 +289,10 @@ void Keyboard::open(const KbConfig& cfg, const std::string& initial) {
 }
 
 void Keyboard::layout() {
+  if (dense_) {
+    layoutDense();
+    return;
+  }
   nKeys_ = 0;
   // cx, y0 and w are design pixels; keys are stored in panel pixels
   auto put = [&](KeyId id, uint32_t cp, int cx, int y0, int w) {
@@ -429,7 +510,12 @@ void Keyboard::cancel() {
 int Keyboard::hitKey(float x, float y) const {
   if (y < sugBottom_) return -1;
   const float yd = y / g_.k();  // rows are chosen in design pixels
-  const int rowY = SI(yd >= 342 ? 346 : (yd >= 288 ? 288 : (yd >= 236 ? 236 : 184)));
+  int rowY = SI(yd >= 342 ? 346 : (yd >= 288 ? 288 : (yd >= 236 ? 236 : 184)));
+  if (dense_) {
+    int r = (int)floorf((yd - kDenseRow0) / kDenseRowH);
+    r = r < 0 ? 0 : (r > 4 ? 4 : r);
+    rowY = SI(kDenseRow0 + r * kDenseRowH);
+  }
   int best = -1;
   float bd = 1e9f;
   for (int i = 0; i < nKeys_; ++i) {
@@ -447,6 +533,7 @@ int Keyboard::hitKey(float x, float y) const {
 
 int Keyboard::hitSuggestion(float x, float y) const {
   if (y < fieldBottom_ || y >= sugBottom_) return -1;
+  if (dense_) return x < S(kDSlotX[1] - 3) ? 0 : (x < S(kDSlotX[2] - 3) ? 1 : 2);
   return x < S(153) ? 0 : (x < S(312) ? 1 : 2);
 }
 
@@ -524,9 +611,9 @@ bool Keyboard::openTray(const Key& k) {
   }
   // The tray grows toward the centre; its first item sits under the finger.
   const bool right = k.cx <= g_.cx();
-  const float pitch = S(44);
+  const float pitch = trayPitch();
   t.n = n;
-  t.top = k.y0 - SI(64);
+  t.top = k.y0 - SI(dense_ ? 74 : 64);
   int left = (int)lroundf(right ? k.cx - S(22) : k.cx - S(22) - pitch * (n - 1));
   if (left < SI(16)) left = SI(16);
   if (left + pitch * n > S(450)) left = (int)lroundf(S(450) - pitch * n);
@@ -540,12 +627,12 @@ bool Keyboard::openTray(const Key& k) {
 }
 
 void Keyboard::trackTray(float x, float y) {
-  const float pitch = S(44);
+  const float pitch = trayPitch();
   int sel = (int)floorf((x - tray_.left) / pitch);
   if (sel < 0) sel = 0;
   if (sel >= tray_.n) sel = tray_.n - 1;
   // lifting far away from the tray cancels
-  const float cy = tray_.top + S(31);
+  const float cy = tray_.top + trayH() * 0.5f;
   if (fabsf(y - cy) > S(95) || x < tray_.left - S(40) || x > tray_.left + pitch * tray_.n + S(40)) sel = -1;
   if (sel != tray_.sel) {
     tray_.sel = sel;
@@ -649,6 +736,38 @@ void Keyboard::update(float dt) {
 // -------------------------------------------------------------- rendering ---
 
 void Keyboard::drawField(Canvas& cv) {
+  if (dense_) {  // SOUL S: one line (its end, where the caret is), the S caption face
+    const Font& f = fieldFont();
+    const std::string& s = field_.text();
+    const int mid = (int)lroundf(g_.cx());
+    const int base = (int)lroundf(S(kDFieldMid) + (f.ascent - f.descent) * 0.5f);
+    int caretX = mid;
+    if (s.empty()) {
+      const int w = Canvas::measureText(f, cfg_.placeholder);
+      const std::string ph = fitText(f, cfg_.placeholder, SI(kDFieldW));
+      cv.drawText(f, mid + 3.0f, base, ph.c_str(), kCream, 0.38f, Align::Center);
+      caretX = mid - (w < SI(kDFieldW) ? w : SI(kDFieldW)) / 2 - 3;
+    } else {
+      std::vector<std::pair<size_t, size_t>> lines;
+      wrap(f, s, SI(kDFieldW), lines);
+      const auto& L = lines.back();
+      const int w = Canvas::measureText(f, s.c_str() + L.first, (int)(L.second - L.first));
+      const int lx = mid - w / 2;
+      cv.drawText(f, (float)lx, base, s.c_str() + L.first, kCream, 0.95f, Align::Left, nullptr, (int)(L.second - L.first));
+      caretX = lx + w + 1;
+      if (auto_.active && auto_.after == s && auto_.pos >= L.first && auto_.pos < L.second) {
+        const float age = t_ - auto_.t;
+        const float a = age < 0.4f ? 1.0f : 1.0f - (age - 0.4f) / 0.6f;
+        if (a > 0) {
+          const int ux0 = lx + Canvas::measureText(f, s.c_str() + L.first, (int)(auto_.pos - L.first));
+          const int ux1 = ux0 + Canvas::measureText(f, auto_.repl.c_str());
+          cv.roundRect((float)ux0, base + 6.0f, (float)ux1, base + 8.5f, 1, pal::kMint, a);
+        }
+      }
+    }
+    if (caretOn_) cv.roundRect((float)caretX, base - 26.0f, caretX + 3.0f, base + 7.0f, 1.5f, pal::kIce);
+    return;
+  }
   const Font& f = fonts::text();
   const std::string& s = field_.text();
   const int mid = (int)lroundf(g_.cx()), base1 = SI(kBase1), base2 = SI(kBase2);
@@ -686,8 +805,21 @@ void Keyboard::drawField(Canvas& cv) {
 }
 
 void Keyboard::drawSuggestions(Canvas& cv) {
-  const Font& f = fonts::small();
+  const Font& f = labelFont();
   const bool chips = field_.blank() && !(undoChipUntil_ > t_);
+  if (dense_) {  // SOUL S: three chips across the chord under the field
+    for (int i = 0; i < 3; ++i) {
+      const Suggestion& sg = sug_[i];
+      if (sg.empty()) continue;
+      const float x0 = S(kDSlotX[i]), x1 = x0 + S(kDSlotW[i]), y0 = S(kDSugY0), y1 = S(kDSugY1);
+      if (sg.bold || chips) glass().panel(cv, x0, y0, x1, y1, (y1 - y0) * 0.5f, GlassStyle::plain());
+      const std::string label = fitText(f, sg.label, SI(kDSlotW[i]) - 16);
+      const Rgb mint = pal::kMint;
+      cv.drawText(f, (x0 + x1) * 0.5f, (int)lroundf((y0 + y1) * 0.5f + (f.ascent - f.descent) * 0.5f), label.c_str(), kCream,
+                  sg.bold || chips ? 1.0f : 0.82f, Align::Center, sg.undo ? nullptr : &mint);
+    }
+    return;
+  }
   for (int i = 0; i < 3; ++i) {
     const Suggestion& sg = sug_[i];
     if (sg.empty()) continue;
@@ -706,7 +838,7 @@ void Keyboard::drawSuggestions(Canvas& cv) {
 
 void Keyboard::drawKey(Canvas& cv, int i) {
   const Key& k = keys_[i];
-  const float q = g_.k();  // icons are drawn geometry: they scale with the keys
+  const float q = g_.k() * (dense_ ? 1.25f : 1.0f);  // icons are drawn geometry: they scale with the keys (S: 54 px)
   const float x0 = k.x0 + 2 * q, x1 = k.x1 - 2 * q, y0 = k.y0 + 3 * q, y1 = k.y0 + rowH_ - 3 * q;
   const float cx = k.cx, cy = (y0 + y1) * 0.5f;
   const bool pressed = i == pressed_ && !tray_.open;
@@ -724,8 +856,8 @@ void Keyboard::drawKey(Canvas& cv, int i) {
   st.shadowR = 4;
   st.shadowDy = 2;
   glass().panel(cv, x0, y0, x1, y1, 12 * q, st);
-  const Font& tf = fonts::text();
-  const Font& sf = fonts::small();
+  const Font& tf = keyFont();
+  const Font& sf = labelFont();
   switch (k.id) {
     case KeyId::Char: {
       const uint32_t cp = layer_ == KbLayer::Abc && shift_ != KbShift::Off ? utf8::upper(k.cp) : k.cp;
@@ -734,13 +866,20 @@ void Keyboard::drawKey(Canvas& cv, int i) {
       break;
     }
     case KeyId::Space: {
+      if (dense_) {  // (S: a space bar's bracket: the key is too short for "EN · RO")
+        const float w = (x1 - x0) * 0.32f;
+        cv.segment(cx - w, cy + 6 * q, cx + w, cy + 6 * q, 2.4f * q, kCream, 0.6f);
+        cv.segment(cx - w, cy + 6 * q, cx - w, cy, 2.4f * q, kCream, 0.6f);
+        cv.segment(cx + w, cy + 6 * q, cx + w, cy, 2.4f * q, kCream, 0.6f);
+        break;
+      }
       const char* label = cfg_.uiLang == Lang::Ro ? "RO · EN" : "EN · RO";
       cv.drawText(sf, cx, baselineFor(sf, 'H', cy), label, kCream, 0.38f, Align::Center);
       break;
     }
     case KeyId::Layer:
     case KeyId::SymLayer: {
-      const char* label = k.id == KeyId::Layer ? (layer_ == KbLayer::Abc ? "?123" : "ABC")
+      const char* label = k.id == KeyId::Layer ? (layer_ == KbLayer::Abc ? (dense_ ? "123" : "?123") : (dense_ ? "abc" : "ABC"))
                                                : (layer_ == KbLayer::Num ? "#+=" : "123");
       cv.drawText(sf, cx, baselineFor(sf, 'H', cy), label, kCream, 0.8f, Align::Center);
       break;
@@ -787,29 +926,30 @@ void Keyboard::drawKey(Canvas& cv, int i) {
 }
 
 void Keyboard::drawCallout(Canvas& cv, const Key& k) {
-  const float x = clampf(k.cx - S(29), S(30), S(378)), y = k.y0 - S(64);
-  const float w = S(58), h = S(66);
+  const float w = S(dense_ ? 66 : 58), h = S(dense_ ? 74 : 66);
+  const float x = clampf(k.cx - w * 0.5f, S(30), S(dense_ ? 370 : 378)), y = k.y0 - S(dense_ ? 74 : 64);
   GlassStyle st = GlassStyle::plain();  // a dark glass bubble, so the letter reads over the keys
   st.tint = kCallout;
   st.tintA = 0.7f;
   glass().panel(cv, x, y, x + w, y + h, S(20), st);
   const uint32_t cp = layer_ == KbLayer::Abc && shift_ != KbShift::Off ? utf8::upper(k.cp) : k.cp;
-  const Font& lf = fonts::large();
+  const Font& lf = calloutFont();
   cv.drawText(lf, x + w * 0.5f, baselineFor(lf, cp, y + h * 0.5f), cpStr(cp).c_str(), kCream, 1.0f, Align::Center);
 }
 
 void Keyboard::drawTray(Canvas& cv) {
-  const float pitch = S(44);
+  const float pitch = trayPitch();
   const float x0 = tray_.left - S(6), x1 = tray_.left + pitch * tray_.n + S(6), y0 = (float)tray_.top,
-              y1 = tray_.top + S(62);
+              y1 = tray_.top + trayH();
   GlassStyle st = GlassStyle::plain();
   st.tint = kCallout;
   st.tintA = 0.75f;
   glass().panel(cv, x0, y0, x1, y1, S(22), st);
-  const Font& lf = fonts::large();
+  const Font& lf = calloutFont();
   for (int i = 0; i < tray_.n; ++i) {
     const float cx = tray_.left + pitch * i + pitch * 0.5f;
-    if (i == tray_.sel) cv.roundRect(cx - S(21), y0 + S(5), cx + S(21), y1 - S(5), S(10), kCapPressed);
+    const float hw = S(dense_ ? 26 : 21);
+    if (i == tray_.sel) cv.roundRect(cx - hw, y0 + S(5), cx + hw, y1 - S(5), S(10), kCapPressed);
     const char* p = tray_.items[i].c_str();
     const uint32_t cp = utf8::next(p);
     cv.drawText(lf, cx, baselineFor(lf, cp, (y0 + y1) * 0.5f), tray_.items[i].c_str(), kCream, 1.0f,
@@ -893,8 +1033,8 @@ Keyboard::Look Keyboard::look() const {
     t.i(tray_.left);
     t.i(tray_.top);
     for (int i = 0; i < tray_.n; ++i) t.str(tray_.items[i]);
-    L.trayBox = grow(Rect{(int)floorf(tray_.left - S(6)), tray_.top, (int)ceilf(tray_.left + S(44) * tray_.n + S(6)) + 1,
-                          (int)ceilf(tray_.top + S(62)) + 1}, kPad);
+    L.trayBox = grow(Rect{(int)floorf(tray_.left - S(6)), tray_.top, (int)ceilf(tray_.left + trayPitch() * tray_.n + S(6)) + 1,
+                          (int)ceilf(tray_.top + trayH()) + 1}, kPad);
   }
   L.tray = t.h;
   return L;
@@ -909,8 +1049,9 @@ Rect Keyboard::keyBox(int i) const {
 Rect Keyboard::calloutBox(int i) const {
   if (i < 0 || i >= nKeys_) return Rect{};
   const Key& k = keys_[i];
-  const float x = clampf(k.cx - S(29), S(30), S(378)), y = k.y0 - S(64);
-  return grow(Rect{(int)floorf(x), (int)floorf(y), (int)ceilf(x + S(58)) + 1, (int)ceilf(y + S(66)) + 1}, kPad);
+  const float w = S(dense_ ? 66 : 58), h = S(dense_ ? 74 : 66);
+  const float x = clampf(k.cx - w * 0.5f, S(30), S(dense_ ? 370 : 378)), y = k.y0 - S(dense_ ? 74 : 64);
+  return grow(Rect{(int)floorf(x), (int)floorf(y), (int)ceilf(x + w) + 1, (int)ceilf(y + h) + 1}, kPad);
 }
 
 void Keyboard::takeDamage(RectList& out) {
@@ -933,8 +1074,13 @@ void Keyboard::takeDamage(RectList& out) {
     add(b);
     return;
   }
-  if (was.field != now.field) add(grow(Rect{(int)S(76), (int)S(62), (int)ceilf(S(390)) + 1, (int)ceilf(S(130)) + 1}, kPad));
-  if (was.sug != now.sug) add(Rect{b.x0, (int)S(138) - kPad, b.x1, (int)ceilf(S(178)) + 1 + kPad});
+  if (dense_) {
+    if (was.field != now.field) add(grow(Rect{(int)S(kDFieldX0), (int)S(kDFieldY0), (int)ceilf(S(kDFieldX1)) + 1, (int)ceilf(S(kDFieldY1)) + 1}, kPad));
+    if (was.sug != now.sug) add(Rect{b.x0, (int)S(kDSugY0) - kPad, b.x1, (int)ceilf(S(kDSugY1)) + 1 + kPad});
+  } else {
+    if (was.field != now.field) add(grow(Rect{(int)S(76), (int)S(62), (int)ceilf(S(390)) + 1, (int)ceilf(S(130)) + 1}, kPad));
+    if (was.sug != now.sug) add(Rect{b.x0, (int)S(138) - kPad, b.x1, (int)ceilf(S(178)) + 1 + kPad});
+  }
   if (was.pressed != now.pressed) {
     add(keyBox(was.pressed));
     add(keyBox(now.pressed));
@@ -956,7 +1102,10 @@ void Keyboard::render(Canvas& cv) {
   cv.setClip(c);
   glass().background(cv, b);  // the aura (black when the glass is off)
   cv.markDirty(c);
-  glass().panel(cv, S(76), S(62), S(390), S(130), S(26), GlassStyle::plain());  // the field: a glass capsule
+  if (dense_)  // the field: a glass capsule (S: one line)
+    glass().panel(cv, S(kDFieldX0), S(kDFieldY0), S(kDFieldX1), S(kDFieldY1), S(24), GlassStyle::plain());
+  else
+    glass().panel(cv, S(76), S(62), S(390), S(130), S(26), GlassStyle::plain());  // the field: a glass capsule
   drawField(cv);
   drawSuggestions(cv);
   for (int i = 0; i < nKeys_; ++i) drawKey(cv, i);

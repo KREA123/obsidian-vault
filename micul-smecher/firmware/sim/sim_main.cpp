@@ -146,7 +146,7 @@ struct Sim {
   std::function<void(OsCmd)> onCmd;            // lan mode: the SOUL Bridge commands (a new code, forget)
   float aiDelay = 1.3f;
   double composeMs = 0;
-  uint64_t changedPx = 0, copiedPx = 0, repairPx = 0;
+  uint64_t changedPx = 0, copiedPx = 0, repairPx = 0, qspiPx = 0, qspiMax = 0;
   int fullRepairs = 0;  // copied: what the 2.8C's displayPresent() copies into the back buffer
   RectList lastChanged;
   int composed = 0;
@@ -295,6 +295,11 @@ struct Sim {
     composeMs += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
     changedPx += comp.stats().changedPx;
     copiedPx += presentCost(comp.changedList(), lastChanged);
+    {
+      const uint64_t q = qspiCost(comp.changedList(), W, H);
+      qspiPx += q;
+      if (q > qspiMax && composed > 0) qspiMax = q;  // (the worst frame after the first one, which draws everything)
+    }
     repairPx += comp.stats().repairPx;
     if (getenv("SIM_VERIFY")) {  // debugging the frame pipeline: incremental vs a full redraw of the same state
       static std::vector<uint16_t> ref((size_t)W * H);
@@ -1691,9 +1696,10 @@ int main(int argc, char** argv) {
            sc.name, rec.frames, s.composeMs / (s.composed ? s.composed : 1),
            100.0 * s.changedPx / ((double)W * H * (s.composed ? s.composed : 1)), (unsigned)(glass().rebuilds - rebuilt), sc.caption);
     rebuilt = glass().rebuilds;
-    printf("BENCH %s composed=%d changed_px=%.0f copied_px=%.0f repair_px=%.0f full_repairs=%d ring_passes=%u\n", sc.name, s.composed,
-           (double)s.changedPx / (s.composed ? s.composed : 1), (double)s.copiedPx / (s.composed ? s.composed : 1),
-           (double)s.repairPx / (s.composed ? s.composed : 1), s.fullRepairs, s.comp.stats().ringPasses);
+    printf("BENCH %s composed=%d changed_px=%.0f copied_px=%.0f repair_px=%.0f full_repairs=%d ring_passes=%u qspi_px=%.0f qspi_max=%llu\n",
+           sc.name, s.composed, (double)s.changedPx / (s.composed ? s.composed : 1), (double)s.copiedPx / (s.composed ? s.composed : 1),
+           (double)s.repairPx / (s.composed ? s.composed : 1), s.fullRepairs, s.comp.stats().ringPasses,
+           (double)s.qspiPx / (s.composed ? s.composed : 1), (unsigned long long)s.qspiMax);
   }
   return 0;
 }

@@ -3,7 +3,8 @@
 Decision 2026-10-20 (`03 Decizii/Jurnal decizii.md`): the product is **SOUL S**. It is the MĂRGĂRITAR at its native
 scale, with a round **1.75" AMOLED, 466 × 466** on the **Waveshare ESP32-S3-Touch-AMOLED-1.75** (`pio run -e amoled175`).
 The working prototype stays **SOUL M**, the Waveshare 2.8C (`env:lcd28`, firmware 1.9.0 "SoulOS Alive"), for testing
-and the PoC TRL 3 proof. This page covers firmware step 1: the Alive core on S.
+and the PoC TRL 3 proof. This page covers firmware step 1 (the Alive core on S, §1–§4) and step 2 (every SoulOS Alive
+screen on S, the round audit on both glasses, the S keyboard and the QSPI push: §5–§7).
 
 ## 1 · The glass, verified
 
@@ -86,37 +87,86 @@ keyboard. This is the same path as an M without the mic, and it is tested. To do
 plus I2S (TDM for the ES7210), from Espressif's `esp_codec_dev` register sequences, checked on the board. It feeds the
 existing `audioRecord` / `audioTake` / `netTranscribe` / ESP-SR path, and `SUFLET_VOICE` then turns STT on.
 
-## 5 · What is on S now, and the screens step
+## 5 · Every screen on S (step 2, 2026-10-20)
 
-**Core screens done, audited at S's floors** (`test_audit_soul_s_core_screens`: 10 screens, 0 failures). They are
-standby, wake, the dial, the wheels (Settings, Alarms, World clock), the AI's thinking and answer, Claude asks, and
-the notification banner. Stills and the true-size sheet against M are in `sim/shots/alive-s/`
-(`.pio/build/sim/program DIR alive-s; python3 tools/alive_s_sheet.py DIR sim/shots/alive-s`).
+**All 59 states** of `sim/alive_states.h` (standby + the web audit's 41 + the device's 17) pass the round audit on
+**both glasses**, at each glass's floors in millimetres: `test_audit_every_screen_on_soul_m` (480 px: 18 px type,
+44 px targets, r 228) and `test_audit_every_screen_on_soul_s` (466 px: 28 px type, 68 px targets, r 221), 0 failures
+each. The audit grew four checks the first S stills showed were missing (`test_audit.cpp`): **words** (two lines of
+words touching), **overlap** (two controls overlapping), **spill** (a word across a control's edge), **trunc** (a
+line cut to under 3 characters + "…"); and a key floor of **5 mm** for keyboard keys. Design rules and the keyboard
+decision: `os/DESIGN-ALIVE.md` §S.
 
-**The screens step** gets its to-do list from `AUDIT_S_ALL=1 .pio/build/native/program`, which runs every screen on S
-and prints the result without asserting it. As of this step:
+How S's screens are laid out (M keeps every 1.9.0 number: `Os::L(m, s)` returns M's literal on the 2.8C):
 
-- **Targets under 68 px:** timer presets (58), Music controls (64), My SOUL name / rename (46), Look ‹ › (60 × 52),
-  the Maps rim buttons (52), Convert's rows (50), the ↑ disc in Settings › Apps (59), Control's tiles (58), walking
-  nav (56). Each needs a new layout, not just bigger numbers.
-- **Cut by the circle:** the Maps and Bridge headers (−15 / −5 px x), alarm ringing's Snooze, the Wi-Fi hotspot
-  buttons, the boot "No AI" step, the alarm time picker's labels, Control's bottom tile.
-- **The keyboard** (Nunito 26 keys, 44 px pitch = 4.1 mm on S). It needs an S keyboard: fewer keys per row, or a
-  T9 / rim-letter picker plus word suggestions. Until the codecs are driven, typing is the only text input on S.
-- **Rim collisions:** Weather's bottom hint touches a word.
-- **Not audited, seen on the stills:** the dial's speech bubble (2 lines × 236 px) overlaps the tips of the ±1
-  pebbles; a narrow lower neighbour truncates its title ("W… Acasa ›"); Alarms' sub-lines ("weekdays …").
-- **The screens still on Nunito** (keyboard, time picker labels) and the app screens in `OsAppsDraw.cpp` and
-  `OsMemory.cpp` use literal design px. Move them onto `dens_` tokens the same way, and keep M pixel-identical
-  (`perf_bench.py --hashes` before/after, `--check`).
-- **Perf on S** [estimare]: a full-screen push is 466 × 466 × 2 = 434 KB over QSPI (Arduino_GFX, ~40–80 MHz). A
-  whole frame (the lid wipe, 290 ms) is then roughly 25–45 ms. Measure on the board (`F` serial command) and add an
-  S column to PERF.md.
+- **Rows of pills** (`Os::fitRows`, `OsScreens.cpp`): on S, every row of controls with a pill in it is laid out
+  again: side by side 12 px apart, centred, as wide as the safe circle allows at its height (inside the rim ring on
+  the countdown, focus, ringing, Claude asks and listening). Too wide: less padding, then the caption face, then the
+  widest pill narrows. That fixed Snooze/Stop, Pause/Stop, Look/Rename, Edit/Delete, Again/Games, the message's four
+  replies, Calm/2 min, Phone/End, Type it/From phone, Yes/No and New code/Forget.
+- **Each screen's own S numbers** for what is not a row of pills: the timer presets (68 px discs, 76 apart),
+  Music (72 / 92 px discs), My SOUL and Look (68 px ‹ ›, the five bodies as 68 px targets across the widest part of
+  the glass, smaller eyes), Maps (the ± and centre discs moved in, the nav card between 68 px ‹ ›, the no-GPS hint
+  in fewer words), Convert (two 72 px fields, the unit pills at their right end, the swap disc on the left), Control
+  (`ControlSpec`: 92 × 70 capsules, four 124 × 76 tiles with shorter words, the AI line in its 236 px hit box),
+  Wi-Fi (three pills under the state, in shorter words), Bridge, Pair, About, the message card, Device, Weather,
+  Calendar, Memory, Games over, the boot (names in one row, the brain as a 2 × 2 grid), the ringing alarm.
+- **Wheels**: a narrow row (a neighbour low on the glass) keeps its title readable: the value goes first, then
+  the tag, then (not focused) the toggle (`drawWheelRow`). Settings › Apps' ↑ disc is never under 68 px on S.
+- **The dial's speech** sits over the eyes on S, the clock capsule steps aside while it shows (`speechRect`).
+- **The alarm picker** (`TimePicker::setRim`): the ring at r 190, the notches and knob for the S words, no label.
+- **The S keyboard** (`Keyboard::setDense`): 5 rows of 54 px keys (5.1 mm), alphabetical (7 · 8 · 7 · ⇧ 4 ⌫ ·
+  123 space ✓), a one-line field, the three chips, Bricolage at ≥ 32 px; long-press trays and the 123 / #+= layers
+  as on M. The decision (vs QWERTY at 4.1 mm, ambiguous keys, voice first): DESIGN-ALIVE §S.
+- **The state rig** (`alive_states.h` `Rig::tapControl`) taps a control by its id on S, where its layout put it
+  (M taps the 1.9.0 coordinates, so M's stills are the same pixels).
 
-## 6 · Builds and checks (this step)
+**SOUL M**: pixel-identical to 1.9.0 except where the new checks found a real bug on M too:
+- the wheels' narrow neighbour rows ("A… 21 ›", "We…") now show their title ("Apps", "Weather");
+- Maps' walking nav drew its ‹ › twice (the item's own label under the disc's chevron);
+- Control's light capsule hit box overlapped the first tile by 8 px, and the AI line's hit box was narrower than its
+  words (hit boxes only: no pixel changed).
+`perf_bench.py --hashes` before / after on M: 177 files, 25,954 frames, **229 differ**, all in `bench_wheel` (15),
+`bench_maps` (126) and the apps stills (88: the maps nav and Settings › Apps); the 59 `screens` stills: 2 differ
+(`31-appsset`, `49-maps-walking`); the 30 `alive` stills: identical.
 
-- `pio test -e native`: 233 / 233. New: `test_density.cpp`, with M as the reference, S's mm, the dial and wheel
-  geometry, the Os on the AMOLED and burn-in. Also the S audit in `test_audit.cpp`.
-- `pio run -e lcd28` and `pio run -e amoled175`: zero warnings. `amoled175` now has `-Wall -Wextra` and
-  `lib_ignore = ESP_SR` like lcd28. Flash: lcd28 2.58 MB, amoled175 2.80 MB (+ the S atlases).
+Tests: `test_density.cpp` adds the S keyboard (31 keys, each ≥ 5 mm, inside the circle, alphabetical; it types,
+deletes, switches to 123 and opens the tray), M's keyboard unchanged, S's rows of pills (12 screens: inside the
+circle / the ring, never overlapping) and S's screens still acting (Look's ›, the nav's Start, the hotspot page,
+Control's Quiet, Convert's swap, the boot to "hold the glass" with No AI).
+
+Stills: `sim/shots/alive-s/s-NN-name.png` (every S screen, pixel for pixel) and `soulos-alive-S-sheet.png` (each
+next to M at true size, 5 px/mm): `.pio/build/sim/program DIR alive-s; python3 tools/alive_s_sheet.py DIR sim/shots/alive-s`.
+
+**Still open on S**: the codecs (§4: voice is the better input on a 44 mm glass); the keyboard's speed and errors
+measured with people (DESIGN-ALIVE §S); the map's own street labels can sit under the nav card (as on M); the
+dial's speech is two lines (a long line ends in "…", as on M).
+
+## 6 · Perf on S: the QSPI push
+
+The S3 and the render are the same as on M; what differs is the push. The 2.8C copies each frame's changed
+rectangles (and the previous frame's) into its RGB back buffer in PSRAM; the AMOLED-1.75's CO5300 keeps its own
+frame, so `displayPresent` (`src/main.cpp`) sends **only the changed rectangles** (even-aligned), each copied into a
+PSRAM push buffer and sent through Arduino_GFX's `ESP32QSPI` at `panel->begin(40000000)`: 4 lines × 40 MHz =
+20 MB/s raw. Waveshare's wiki and product page give no QSPI clock and no frame rate under stated conditions (the
+wiki quotes LVGL demos at "50~60" and "200~300" frames, no conditions). The model [estimare]: 16 MB/s payload +
+the 50 MB/s copy → **a whole frame (466 × 466) ≈ 36 ms**; partial updates are what keep S fast.
+
+`python3 tools/perf_bench.py --glass s` (new: every frame scenario at 466 px under callgrind, the QSPI cost from the
+simulator's `qspi_px` / `qspi_max`; table in `PERF.md` "SOUL S"; numbers in `perf/1.9-s-screens.json`):
+11 of 17 scenarios at their asked fps (est.); six are push-bound: Claude asks 20 fps, the wheels 21, SOUL Memory's
+wheel 23, maps and games 24, IMU motion 25 (asked 30; the adaptive cap keeps the loop ≤ 60 % of a core, floor 12).
+A screen change (the lid wipe, a full redraw) is one ~36 ms frame. To try on the board, in this order:
+1. measure the push (`F` serial command: `push ms`) and the real payload rate;
+2. the QSPI clock at 80 MHz if the CO5300 and the board's traces take it (not stated by Waveshare: test, do not
+   assume) — the model then gives ~22 ms a whole frame;
+3. an asynchronous push (ESP-IDF `esp_lcd` panel IO with DMA, the next frame rendered while the last one is sent),
+   which hides most of the push behind the render.
+
+## 7 · Builds and checks
+
+- `pio test -e native`: **237 / 237** (step 1: 233; the two audits now run every state on M and on S; +4 S tests).
+  `SUFLET_ONLY_AUDIT=1 AUDIT_ALL=1 .pio/build/native/program` runs only the audits and prints every screen.
+- `pio run -e lcd28` and `pio run -e amoled175`: zero warnings. Flash: lcd28 2.60 MB (2,595,227 B), amoled175
+  2.82 MB (2,815,475 B). Static RAM: 86,156 / 85,924 B.
 - `pio check -e lcd28` and `pio check -e amoled175`: no defects.

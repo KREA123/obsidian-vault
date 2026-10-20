@@ -68,6 +68,55 @@ static std::string ago(uint32_t now, uint32_t at, bool ro) {
 
 static bool cloudOk(const NetInfo& n) { return n.relay && n.paired; }
 
+// ---------------------------------------------------- SOUL S layouts ---
+// The screens below that place discs, tiles and fields of their own (not rows of pills: OsScreens.cpp fitRows)
+// take their numbers from these: SOUL M's 1.9.0 literals, or SOUL S's (Density.h: 68 px = 6.4 mm targets, the S
+// type, the 221 px safe circle). firmware/SOUL-S.md §5.
+namespace {
+struct ControlSpec {  // pulled down from the eyes: the light / volume capsules, four tiles, the AI line
+  float capX[2] = {96, 370}, capY = 182, capW = 84, capH = 58, capR = 20, capCapDy = -12, capValDy = 13;
+  float tileX[2] = {180, 286}, tileY[2] = {238, 330}, tileW = 100, tileH = 84, tileR = 24, iconDy = -13, labelDy = 20, labelW = 94;
+  float aiY = 402, aiW = 230, aiH = 44, aiTextDy = -2, iconK = 1;
+  // the light capsule's hit box: inside the drawn capsule, clear of the first tile (the 1.9.0 box overlapped it by
+  // 8 px; the AI line's was 180 px for 190 px of words: the round audit's overlap / spill, 2026-10-20)
+  float autoX = 92, autoW = 72;
+};
+ControlSpec controlSpecFor(const Density& d) {
+  ControlSpec c;
+  if (d.reference) return c;
+  const float t = d.targetDesign();
+  c.capX[0] = 88, c.capX[1] = 378, c.capY = 158, c.capW = 92, c.capH = 70, c.capCapDy = -15, c.capValDy = 15;
+  c.tileX[0] = 233 - 67, c.tileX[1] = 233 + 67, c.tileY[0] = 236, c.tileY[1] = 318, c.tileW = 124, c.tileH = 76;
+  c.iconDy = -15, c.labelDy = 17, c.labelW = 116;
+  c.aiY = 392, c.aiW = 236, c.aiH = t, c.aiTextDy = 0, c.iconK = 1.25f;
+  c.autoX = c.capX[0], c.autoW = c.capW;
+  return c;
+}
+struct MusicSpec {  // prev / play / next, the sleep timer pill
+  float y = 296, dx = 93, side = 64, play = 86, pillY = 378, nameY = 182, wordsY = 216, tri = 10, icon = 14;
+};
+MusicSpec musicSpecFor(const Density& d) {
+  MusicSpec m;
+  if (d.reference) return m;
+  m.y = 276, m.dx = 112, m.side = 72, m.play = 92, m.pillY = 362, m.nameY = 158, m.wordsY = 196, m.tri = 12, m.icon = 16;
+  return m;
+}
+struct ConvertSpec {  // SOUL S only (M keeps its literals): the number field, the result field, the swap disc
+  float qtyY = 164, x0 = 112, x1 = 392, fromY = 238, toY = 318, ctlH = 68.5f, fieldH = 72, swapX = 70, swapY = 278,
+        swap = 68.5f, footY = 380, pillPad = 60;
+  float unitWidth(const std::string& label) const {
+    return fmaxf(ctlH, (float)Canvas::measureText(fonts::caption(), label.c_str()) + pillPad);
+  }
+  float unitX(float w) const { return x1 - 4 - w * 0.5f; }
+};
+ConvertSpec convertSpecFor(const Density& d) {
+  ConvertSpec c;
+  c.ctlH = c.swap = d.targetDesign();
+  c.pillPad = d.pillPad;
+  return c;
+}
+}  // namespace
+
 // ---------------------------------------------------------------- facts ---
 
 std::string Os::appFact(AppId a) const {
@@ -162,20 +211,20 @@ void Os::buildAppsItems(std::vector<Item>& out) const {
   switch (view_) {
     case View::Answer:
       if (!thinking_ && !acceptMode_ && !cardHidden_ && !cardTitle_.empty() && net_.paired) {  // a message: its replies
-        add(AReply + 0, 152, 306, 96, 50, "OK", kCream, 0, true);
-        add(AReply + 1, 290, 306, 160, 50, R ? "Vin acum" : "On my way", kCream, 0, true);
-        add(AReply + 2, 166, 360, 128, 50, R ? "Mai târziu" : "Later", kCream, 0, true, kDim);
-        add(AReply + 3, 300, 360, 116, 50, R ? "Scrie…" : "Type…", kCream, 0, true, kDim);
+        // (S: two rows of 68 px pills under the card, OsDraw.cpp drawAnswer)
+        add(AReply + 0, 152, L(306, 320), 96, 50, "OK", kCream, 0, true);
+        add(AReply + 1, 290, L(306, 320), 160, 50, R ? "Vin acum" : "On my way", kCream, 0, true);
+        add(AReply + 2, 166, L(360, 392), 128, 50, R ? "Mai târziu" : "Later", kCream, 0, true, kDim);
+        add(AReply + 3, 300, L(360, 392), 116, 50, R ? "Scrie…" : "Type…", kCream, 0, true, kDim);
       }
       break;
-    case View::Control:
-      add(ATile + 0, 180, 238, 100, 84, "", kCream, 0, false);
-      add(ATile + 1, 286, 238, 100, 84, "", kCream, 0, false);
-      add(ATile + 2, 180, 330, 100, 84, "", kCream, 0, false);
-      add(ATile + 3, 286, 330, 100, 84, "", kCream, 0, false);
-      add(AAuto, 96, 182, 84, 58, "", kCream, 0, false);  // the light's capsule: a tap = auto
-      add(AAi, 233, 402, 180, 44, "", kCream, 0, false);
+    case View::Control: {
+      const ControlSpec c = controlSpecFor(dens_);
+      for (int i = 0; i < 4; ++i) add(ATile + i, c.tileX[i % 2], c.tileY[i / 2], c.tileW, c.tileH, "", kCream, 0, false);
+      add(AAuto, c.autoX, c.capY, c.autoW, c.capH, "", kCream, 0, false);  // the light's capsule: a tap = auto
+      add(AAi, 233, c.aiY, c.aiW, c.aiH, "", kCream, 0, false);
       break;
+    }
     case View::Weather:
       if (!A.weather.ok && !A.wxWait && cloudOk(net_) && A.wxErr != 409)
         add(ARetry, 233, 330, 170, 50, R ? "Încearcă iar" : "Try again", kCream, 0, true);
@@ -185,44 +234,49 @@ void Os::buildAppsItems(std::vector<Item>& out) const {
         add(ARetry, 233, 330, 170, 50, R ? "Încearcă iar" : "Try again", kCream, 0, true);
       break;  // the events: a wheel (OsScreens.cpp)
     case View::Maps:
+      // (SOUL S: every disc a 6.4 mm target, the ones on the rim moved in so they stay inside the circle)
       if (A.sendSheet) {
-        add(AClose, 233, 404, 130, 48, R ? "Gata" : "Done", kCream, 0, true);
+        add(AClose, 233, L(404, 398), 130, 48, R ? "Gata" : "Done", kCream, 0, true);
       } else if (!A.haveFix && !A.preview && !A.navOn) {
-        if (cloudOk(net_)) add(AWifi, 233, 386, 170, 50, R ? "Prin Wi-Fi" : "Use Wi-Fi", kCream, 0, true, kDim);
+        if (cloudOk(net_)) add(AWifi, 233, L(386, 380), 170, 50, R ? "Prin Wi-Fi" : "Use Wi-Fi", kCream, 0, true, kDim);
       } else if (A.navOn) {
-        add(APhone, 166, 372, 120, 50, R ? "Telefon" : "Phone", kCream, 0, true, kDim);
-        add(AEnd, 300, 372, 110, 50, R ? "Stop" : "End", kAmber, 0, true);
-        add(APrev, 64, 208, 56, 56, "\xE2\x80\xB9", kCream, 1, false);
-        add(ANext, 402, 208, 56, 56, "\xE2\x80\xBA", kCream, 1, false);
+        const float d = L(56, dens_.targetDesign());
+        add(APhone, 166, L(372, 364), 120, 50, R ? "Telefon" : "Phone", kCream, 0, true, kDim);
+        add(AEnd, 300, L(372, 364), 110, 50, R ? "Stop" : "End", kAmber, 0, true);
+        add(APrev, L(64, 52), L(208, 216), d, d, "\xE2\x80\xB9", kCream, 1, false);
+        add(ANext, L(402, 414), L(208, 216), d, d, "\xE2\x80\xBA", kCream, 1, false);
       } else if (A.preview) {
-        add(AStartNav, 233, 326, 150, 52, R ? "Pornește" : "Start", kMint, 1, true);
-        add(APhone, 166, 384, 120, 48, R ? "Telefon" : "Phone", kCream, 0, true, kDim);
-        add(AMode, 300, 384, 120, 48, A.routeMode == "walk" ? (R ? "pe jos" : "walk") : A.routeMode == "bike" ? (R ? "bicicletă" : "bike") : (R ? "mașină" : "car"),
+        add(AStartNav, 233, L(326, 290), 150, 52, R ? "Pornește" : "Start", kMint, 1, true);
+        add(APhone, 166, L(384, 366), 120, 48, R ? "Telefon" : "Phone", kCream, 0, true, kDim);
+        add(AMode, 300, L(384, 366), 120, 48, A.routeMode == "walk" ? (R ? "pe jos" : "walk") : A.routeMode == "bike" ? (R ? "bicicletă" : "bike") : (R ? "mașină" : "car"),
             kCream, 0, true, kDim);
       } else {
-        add(AGo, 233, 322, 160, 52, R ? "Unde mergem?" : "Where to?", kCream, 0, true);
-        add(AMinus, 50, 233, 52, 52, "-", kCream, 1, false);
-        add(APlus, 416, 233, 52, 52, "+", kCream, 1, false);
-        add(ACenter, 100, 344, 54, 54, "", kCream, 0, false);
+        const float d = L(52, dens_.targetDesign());
+        add(AGo, 233, L(322, 314), 160, 52, R ? "Unde mergem?" : "Where to?", kCream, 0, true);
+        add(AMinus, L(50, 52), 233, d, d, "-", kCream, 1, false);
+        add(APlus, L(416, 414), 233, d, d, "+", kCream, 1, false);
+        add(ACenter, L(100, 96), L(344, 314), L(54, d), L(54, d), "", kCream, 0, false);  // (S: in Where to?'s row)
       }
       break;
-    case View::Music:
-      add(APrev, 140, 296, 64, 64, "", kCream, 0, false);
-      add(AStart, 233, 296, 86, 86, "", kCream, 0, false);
-      add(ANext, 326, 296, 64, 64, "", kCream, 0, false);
+    case View::Music: {
+      const MusicSpec m = musicSpecFor(dens_);
+      add(APrev, 233 - m.dx, m.y, m.side, m.side, "", kCream, 0, false);
+      add(AStart, 233, m.y, m.play, m.play, "", kCream, 0, false);
+      add(ANext, 233 + m.dx, m.y, m.side, m.side, "", kCream, 0, false);
       if (A.speaker) {
         std::string s = A.sleepMin ? (R ? "Se oprește în " : "Stops in ") + std::to_string((int)ceilf(A.sleepLeft / 60)) + " min"
                                    : (R ? "Fără oprire" : "No sleep timer");
-        add(ASleepT, 233, 378, 220, 48, s, kCream, 0, true, kDim);
+        add(ASleepT, 233, m.pillY, 220, 48, s, kCream, 0, true, kDim);
       }
       break;
+    }
     case View::Games:
       if (A.game >= 0) {  // (the menu is a wheel)
         const bool over = (A.game == 0 && A.tilt.over()) || (A.game == 1 && A.rhythm.over()) ||
                           (A.game == 2 && A.memory.phase() == games::EyeMemory::Phase::Over);
         if (over) {
-          add(AAgain, 164, 336, 132, 52, R ? "Încă o dată" : "Again", kMint, 0, true);
-          add(AMenu, 304, 336, 116, 52, R ? "Jocuri" : "Games", kCream, 0, true, kDim);
+          add(AAgain, 164, L(336, 334), 132, 52, R ? "Încă o dată" : "Again", kMint, 0, true);
+          add(AMenu, 304, L(336, 334), 116, 52, R ? "Jocuri" : "Games", kCream, 0, true, kDim);
         }
       }
       break;
@@ -243,12 +297,25 @@ void Os::buildAppsItems(std::vector<Item>& out) const {
       }
       break;
     case View::Stopwatch:
-      add(ALap, 170, 352, 68, 68, "", kCream, 0, false);
-      add(AStart, 296, 352, 68, 68, "", kCream, 0, false);
+      add(ALap, 170, L(352, 346), L(68, 72), L(68, 72), "", kCream, 0, false);
+      add(AStart, 296, L(352, 346), L(68, 72), L(68, 72), "", kCream, 0, false);
       break;
     case View::Convert: {
       const std::vector<apps::Unit>& u = apps::units((apps::Quantity)A.q);
-      add(AQty, 233, 174, 190, 48, std::string(apps::quantityName((apps::Quantity)A.q, R)) + " \xE2\x80\xBA", kCream, 0, true);
+      const std::string qty = std::string(apps::quantityName((apps::Quantity)A.q, R)) + " \xE2\x80\xBA";
+      if (sGlass()) {  // SOUL S (ConvertSpec): two 68 px fields, the unit pills at their right end, the swap disc left
+        const ConvertSpec c = convertSpecFor(dens_);
+        const size_t first = out.size();
+        const float fromW = c.unitWidth(u[A.from].label), toW = c.unitWidth(u[A.to].label);
+        add(AQty, 233, c.qtyY, 190, 48, qty, kCream, 0, true);
+        add(AValue, (c.x0 + c.unitX(fromW) - fromW * 0.5f - 6) * 0.5f, c.fromY, c.unitX(fromW) - fromW * 0.5f - 6 - c.x0, c.ctlH, "", kCream, 0, false);
+        add(AFrom, c.unitX(fromW), c.fromY, fromW, c.ctlH, u[A.from].label, kCream, 0, true);
+        add(ASwap, c.swapX, c.swapY, c.swap, c.swap, "", kCream, 0, false);
+        add(ATo, c.unitX(toW), c.toY, toW, c.ctlH, u[A.to].label, kMint, 0, true);
+        for (size_t i = first + 1; i < out.size(); ++i) out[i].fixed = true;  // (placed here, not by fitRows)
+        break;
+      }
+      add(AQty, 233, 174, 190, 48, qty, kCream, 0, true);
       add(AValue, 190, 232, 232, 50, "", kCream, 0, false);
       add(AFrom, 342, 232, 72, 44, u[A.from].label, kCream, 0, true);
       add(ASwap, 112, 280, 48, 48, "", kCream, 0, false);
@@ -436,44 +503,52 @@ void Os::drawControl(Canvas& cv) {
   if (A.volume > 0.01f) rimRing(cv, 214, vk, v0, pal_.e2, 1, 8);
   cv.ellipse(g_.cx() + g_.s(214) * cosf(vk), g_.cy() + g_.s(214) * sinf(vk), g_.s(9), g_.s(9), kCream, fade_);
   static const char* const kBr[2][4] = {{"auto", "low", "mid", "high"}, {"auto", "mică", "medie", "mare"}};
-  pebRect(cv, 54, 153, 138, 211, 20, pal_.peb, pal_.pebe, 0);
-  textAt(cv, fonts::caption(), 96, 170, R ? "lumină" : "light", kCream, kDim);
-  textAt(cv, fonts::body(), 96, 195, kBr[R][set_.bright % 4], set_.bright == 0 ? kAmber : kCream);
-  pebRect(cv, 328, 153, 412, 211, 20, pal_.peb, pal_.pebe, 0);
-  textAt(cv, fonts::caption(), 370, 170, "vol", kCream, kDim);
-  textAt(cv, fonts::body(), 370, 195, std::to_string((int)lroundf(A.volume * 100)), pal_.e2);
-  // four tiles
+  const ControlSpec C = controlSpecFor(dens_);
+  for (int k = 0; k < 2; ++k) {  // the light's capsule (a tap = auto), the volume's
+    const float x = C.capX[k];
+    pebRect(cv, x - C.capW * 0.5f, C.capY - C.capH * 0.5f, x + C.capW * 0.5f, C.capY + C.capH * 0.5f, C.capR, pal_.peb, pal_.pebe, 0);
+    textAt(cv, fonts::caption(), x, C.capY + C.capCapDy, k ? std::string("vol") : std::string(R ? "lumină" : "light"), kCream, kDim);
+    if (k) textAt(cv, fonts::body(), x, C.capY + C.capValDy, std::to_string((int)lroundf(A.volume * 100)), pal_.e2);
+    else textAt(cv, fonts::body(), x, C.capY + C.capValDy, kBr[R][set_.bright % 4], set_.bright == 0 ? kAmber : kCream);
+  }
+  // four tiles (SOUL S: shorter words, so they are whole on its 124 px tiles)
   struct T {
     const char* en;
     const char* ro;
+    const char* enS;
+    const char* roS;
     bool on;
     Rgb c;
-  } tiles[4] = {{"Quiet", "Liniște", A.dnd, kAmber},
-                {"Large text", "Text mare", set_.largeText != 0, kMint},
-                {"Find phone", "Telefonul", A.findState == 1 || A.findState == 2, kAmber},
-                {"Sleep", "Somn", false, kCream}};
-  static const float kx[] = {180, 286, 180, 286}, ky[] = {238, 238, 330, 330};
+  } tiles[4] = {{"Quiet", "Liniște", "Quiet", "Liniște", A.dnd, kAmber},
+                {"Large text", "Text mare", "Big text", "Mărit", set_.largeText != 0, kMint},
+                {"Find phone", "Telefonul", "Phone", "Telefon", A.findState == 1 || A.findState == 2, kAmber},
+                {"Sleep", "Somn", "Sleep", "Somn", false, kCream}};
+  const float ik = C.iconK;
   for (int i = 0; i < 4; ++i) {
     const T& t = tiles[i];
+    const float kx = C.tileX[i % 2], ky = C.tileY[i / 2], iy = ky + C.iconDy;
     const Rgb ink = t.on ? (t.c == kMint ? Rgb::hex(0x06231B) : Rgb::hex(0x2A1700)) : kCream;
-    pebRect(cv, kx[i] - 50, ky[i] - 42, kx[i] + 50, ky[i] + 42, 24, t.on ? t.c : pal_.peb, pal_.pebe, 0);
+    pebRect(cv, kx - C.tileW * 0.5f, ky - C.tileH * 0.5f, kx + C.tileW * 0.5f, ky + C.tileH * 0.5f, C.tileR, t.on ? t.c : pal_.peb, pal_.pebe, 0);
     if (i == 0) {  // a crescent
-      cv.ellipse(g_.s(kx[i]), g_.s(ky[i] - 13), g_.s(10), g_.s(10), ink, fade_);
-      cv.ellipse(g_.s(kx[i] + 5), g_.s(ky[i] - 17), g_.s(9), g_.s(9), t.on ? t.c : pal_.peb, fade_);
+      cv.ellipse(g_.s(kx), g_.s(iy), g_.s(10 * ik), g_.s(10 * ik), ink, fade_);
+      cv.ellipse(g_.s(kx + 5 * ik), g_.s(iy - 4 * ik), g_.s(9 * ik), g_.s(9 * ik), t.on ? t.c : pal_.peb, fade_);
     } else if (i == 1) {
-      textAt(cv, fonts::name(), kx[i], ky[i] - 13, "Aa", ink, 1);
+      textAt(cv, fonts::name(), kx, iy, "Aa", ink, 1);
     } else if (i == 2) {
-      drawGlyph(cv, AppId::FindPhone, kx[i], ky[i] - 13, 24, ink, 1, g_.s(3));
+      drawGlyph(cv, AppId::FindPhone, kx, iy, 24 * ik, ink, 1, g_.s(3 * ik));
     } else {
-      cv.arc(g_.s(kx[i] - 7), g_.s(ky[i] - 17), g_.s(5), 0.2f, kPi - 0.2f, g_.s(3), ink, fade_);
-      cv.arc(g_.s(kx[i] + 7), g_.s(ky[i] - 17), g_.s(5), 0.2f, kPi - 0.2f, g_.s(3), ink, fade_);
+      cv.arc(g_.s(kx - 7 * ik), g_.s(iy - 4 * ik), g_.s(5 * ik), 0.2f, kPi - 0.2f, g_.s(3 * ik), ink, fade_);
+      cv.arc(g_.s(kx + 7 * ik), g_.s(iy - 4 * ik), g_.s(5 * ik), 0.2f, kPi - 0.2f, g_.s(3 * ik), ink, fade_);
     }
-    textAt(cv, fonts::caption(), kx[i], ky[i] + 20, fit(fonts::caption(), R ? t.ro : t.en, g_.s(94)), ink, 1);
+    const char* label = sGlass() ? (R ? t.roS : t.enS) : (R ? t.ro : t.en);
+    textAt(cv, fonts::caption(), kx, ky + C.labelDy, fit(fonts::caption(), label, g_.s(C.labelW)), ink, 1);
   }
   const std::string ai = std::string("AI \xC2\xB7 ") +
                          (aiMode() == AiMode::None ? (R ? "fără" : "none") : aiMode() == AiMode::Cloud ? "SOUL Cloud"
                           : aiMode() == AiMode::ChatGpt ? "ChatGPT" : "Claude");
-  textAt(cv, fonts::body(), 233, 400, ai, aiMode() == AiMode::None ? kCream : kAmber);
+  // (M: the body face, wider than its 180 px hit box; S: the caption face, inside its 236 px one)
+  const Font& af = sGlass() ? fonts::caption() : fonts::body();
+  textAt(cv, af, 233, C.aiY + C.aiTextDy, ai, aiMode() == AiMode::None ? kCream : kAmber);
 }
 
 // ------------------------------------------------------------- today ---
@@ -588,16 +663,17 @@ void Os::drawWeather(Canvas& cv) {
       textAt(cv, fonts::body(), 233, 186, R ? "Vremea vine prin" : "Weather comes via", kCream);
       textAt(cv, fonts::body(), 233, 218, "SOUL Cloud", pal_.e1);
       std::string l[3];
-      const int n = wrapLines(fonts::caption(), R ? "Leagă SOUL de contul tău: Setări › AI › SOUL Cloud." : "Pair SOUL with your account: Settings › AI › SOUL Cloud.", g_.s(290), l, 3);
-      for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 260 + i * 26, l[i], kCream, kDim);
+      const int n = wrapLines(fonts::caption(), R ? "Leagă SOUL de contul tău: Setări › AI › SOUL Cloud." : "Pair SOUL with your account: Settings › AI › SOUL Cloud.", g_.s(L(290, 340)), l, 3);
+      for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, L(260, 250) + i * L(26, 34), l[i], kCream, kDim);
     } else if (A.wxWait) {
       const float pulse = 0.6f + 0.35f * sinf(animT() * 3.0f);
       drawSky(cv, apps::Sky::Part, 233, 236, 64, pulse);
       textAt(cv, fonts::body(), 233, 306, R ? "Întreb cerul…" : "Asking the sky…", kCream, pulse);
     } else if (A.wxErr == 409) {  // no location yet
-      textAt(cv, fonts::body(), 233, 168, R ? "Unde ești?" : "Where are you?", kCream);
-      textAt(cv, fonts::caption(), 233, 196, R ? "SOUL n-are GPS: spune-i din telefon" : "No GPS here: tell me from your phone", kCream, kDim);
-      drawQr(cv, meWhere(net_, birth_.chip), 233, 292, 128);
+      textAt(cv, fonts::body(), 233, L(168, 156), R ? "Unde ești?" : "Where are you?", kCream);
+      textAt(cv, fonts::caption(), 233, L(196, 192), sGlass() ? (R ? "N-am GPS: spune-mi din telefon" : "No GPS: tell me from your phone")
+                                                            : (R ? "SOUL n-are GPS: spune-i din telefon" : "No GPS here: tell me from your phone"), kCream, kDim);
+      drawQr(cv, meWhere(net_, birth_.chip), 233, L(292, 290), L(128, 116));
       rimBottom(cv, R ? "scanează: Trimite locația" : "scan: Share my location", kCream, kFaint);
     } else {
       textAt(cv, fonts::body(), 233, 214, A.wxErr == 501 ? (R ? "Vremea nu e pornită" : "Weather isn't set up")
@@ -615,22 +691,24 @@ void Os::drawWeather(Canvas& cv) {
   rimTop(cv, top, kCream);
   char b[64];
   if (A.wxPage == 0) {
-    drawSky(cv, W.sky, 162, 206, 58, 1);
+    // (SOUL S: everything 20 px higher and the hours' pebble wider, clear of the bottom rim's words)
+    const float ty = L(206, 176);
+    drawSky(cv, W.sky, L(162, 150), ty, L(58, 64), 1);
     snprintf(b, sizeof b, "%d", W.t);
     const int tw = Canvas::measureText(fonts::digits(), b);
-    textAt(cv, fonts::digits(), 274, 206, b, kCream);
-    cv.ring(g_.s(274) + tw * 0.5f + g_.s(10), g_.s(178), g_.s(6), g_.s(3.5f), kCream, fade_);  // the degree sign
+    textAt(cv, fonts::digits(), 274, ty, b, kCream);
+    cv.ring(g_.s(274) + tw * 0.5f + g_.s(10), g_.s(ty - 28), g_.s(6), g_.s(3.5f), kCream, fade_);  // the degree sign
     snprintf(b, sizeof b, "%s \xC2\xB7 \xE2\x86\x91%d\xC2\xB0 \xE2\x86\x93%d\xC2\xB0", W.word.c_str(), W.hi, W.lo);
-    textAt(cv, fonts::body(), 233, 270, fit(fonts::body(), b, g_.s(320)), kCream);
+    textAt(cv, fonts::body(), 233, L(270, 240), fit(fonts::body(), b, g_.s(L(320, 380))), kCream);
     // the next hours on a pebble
-    pebRect(cv, 84, 296, 382, 392, 30, pal_.peb, pal_.pebe, 0);
+    pebRect(cv, L(84, 88), L(296, 264), L(382, 378), L(392, 360), 30, pal_.peb, pal_.pebe, 0);
     const int n = (int)W.hours.size() < 5 ? (int)W.hours.size() : 5;
     for (int i = 0; i < n; ++i) {
-      const float x = 233 + (i - (n - 1) / 2.0f) * 54;
-      textAt(cv, fonts::caption(), x, 316, W.hours[i].hh, kCream, kDim);
-      drawSky(cv, W.hours[i].sky, x, 343, 20, 1);
+      const float x = 233 + (i - (n - 1) / 2.0f) * L(54, 58);
+      textAt(cv, fonts::caption(), x, L(316, 284), W.hours[i].hh, kCream, kDim);
+      drawSky(cv, W.hours[i].sky, x, L(343, 312), L(20, 24), 1);
       snprintf(b, sizeof b, "%d\xC2\xB0", W.hours[i].t);
-      textAt(cv, fonts::caption(), x, 372, b, kCream);
+      textAt(cv, fonts::caption(), x, L(372, 340), b, kCream);
     }
   } else {
     for (int i = 0; i < (int)W.days.size() && i < 3; ++i) {
@@ -683,18 +761,20 @@ void Os::drawMaps(Canvas& cv) {
   if (!A.haveFix && A.bundle.empty()) {  // SOUL does not know where it is: say how to tell it
     rimTop(cv, R ? "Hărți" : "Maps", kCream);
     if (!cloudOk(net_)) {
-      textAt(cv, fonts::body(), 233, 186, R ? "Hărțile vin prin" : "Maps come via", kCream);
-      textAt(cv, fonts::body(), 233, 218, "SOUL Cloud", pal_.e1);
+      textAt(cv, fonts::body(), 233, L(186, 160), R ? "Hărțile vin prin" : "Maps come via", kCream);
+      textAt(cv, fonts::body(), 233, L(218, 202), "SOUL Cloud", pal_.e1);
       std::string l[4];
       const int n = wrapLines(fonts::caption(), R ? "SOUL n-are GPS. Leagă-l de cont (Setări › AI › SOUL Cloud) și trimite-i locația din telefon."
                                                   : "SOUL has no GPS. Pair it (Settings › AI › SOUL Cloud), then share your location from your phone.",
-                              g_.s(290), l, 4);
-      for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, 258 + i * 26, l[i], kCream, kDim);
+                              g_.s(L(290, 340)), l, 4);
+      for (int i = 0; i < n; ++i) textAt(cv, fonts::caption(), 233, L(258, 244) + i * L(26, 34), l[i], kCream, kDim);
       return;
     }
-    textAt(cv, fonts::body(), 233, 168, A.whereWait ? (R ? "Unde sunt?…" : "Where am I?…") : (R ? "Unde ești?" : "Where are you?"), kCream);
-    textAt(cv, fonts::caption(), 233, 196, R ? "N-am GPS: telefonul tău îmi spune" : "No GPS here: your phone tells me", kCream, kDim);
-    drawQr(cv, meWhere(net_, birth_.chip), 233, 280, 116);
+    // (SOUL S: the hint in fewer words, the QR a little smaller, so the pill under it keeps 68 px)
+    textAt(cv, fonts::body(), 233, L(168, 156), A.whereWait ? (R ? "Unde sunt?…" : "Where am I?…") : (R ? "Unde ești?" : "Where are you?"), kCream);
+    textAt(cv, fonts::caption(), 233, L(196, 192), sGlass() ? (R ? "N-am GPS: îmi spune telefonul" : "No GPS: your phone tells me")
+                                                          : (R ? "N-am GPS: telefonul tău îmi spune" : "No GPS here: your phone tells me"), kCream, kDim);
+    drawQr(cv, meWhere(net_, birth_.chip), 233, L(280, 276), L(116, 104));
     buildItems(items_);
     drawItems(cv, items_);
     return;
@@ -738,31 +818,36 @@ void Os::drawMaps(Canvas& cv) {
     const maps::Step& st = A.route.steps[s < (int)A.route.steps.size() ? s : (int)A.route.steps.size() - 1];
     const bool off = A.nav.offRoute(), arrived = A.nav.arrived();
     // the step card under the eyes: the arrow (relative to the line you walk: SOUL has no compass), the distance, the street
-    pebRect(cv, 100, 154, 366, 262, 28, arrived ? Rgb::lerp(pal_.peb, kMint, 0.25f) : pal_.peb, arrived ? kMint : off ? kAmber : pal_.pebe,
+    // (SOUL S: the card between the 68 px ‹ › discs, its three lines 34 px apart)
+    const float cx0 = L(100, 92), cx1 = L(366, 374), cy0 = L(154, 132), cy1 = L(262, 290), tx = L(270, 268), tw = L(170, 196);
+    pebRect(cv, cx0, cy0, cx1, cy1, 28, arrived ? Rgb::lerp(pal_.peb, kMint, 0.25f) : pal_.peb, arrived ? kMint : off ? kAmber : pal_.pebe,
             arrived || off ? 3 : 0);
     if (arrived) {
-      textAt(cv, fonts::title(), 233, 196, R ? "Ai ajuns" : "You're there", kMint);
-      textAt(cv, fonts::caption(), 233, 234, fit(fonts::caption(), A.route.to, g_.s(230)), kCream, kDim);
+      textAt(cv, fonts::title(), 233, L(196, 180), R ? "Ai ajuns" : "You're there", kMint);
+      textAt(cv, fonts::caption(), 233, L(234, 230), fit(fonts::caption(), A.route.to, g_.s(L(230, 250))), kCream, kDim);
     } else if (off) {
-      textAt(cv, fonts::body(), 233, 186, R ? "Ai ieșit de pe traseu" : "Off the route", kAmber);
-      textAt(cv, fonts::caption(), 233, 216, R ? "înapoi la linia portocalie" : "back to the amber line", kCream, kDim);
-      textAt(cv, fonts::caption(), 233, 242, R ? "sau ține apăsat: oprește" : "or hold: end it", kCream, kDim);
+      textAt(cv, fonts::body(), 233, L(186, 170), R ? "Ai ieșit de pe traseu" : "Off the route", kAmber);
+      textAt(cv, fonts::caption(), 233, L(216, 212), fit(fonts::caption(), R ? "înapoi la linia portocalie" : "back to the amber line", g_.s(L(260, 260))), kCream, kDim);
+      textAt(cv, fonts::caption(), 233, L(242, 246), R ? "sau ține apăsat: oprește" : "or hold: end it", kCream, kDim);
     } else {
-      drawArrow(cv, 156, 208, 58, A.route.turnAngle(s), kCream, 1);
+      drawArrow(cv, L(156, 140), L(208, 212), L(58, 64), A.route.turnAngle(s), kCream, 1);
       const int d = (int)A.nav.toTurnM();
       if (d >= 1000) snprintf(b, sizeof b, "%.1f km", d / 1000.0);
       else snprintf(b, sizeof b, "%d m", (d + 5) / 10 * 10);
-      textAt(cv, fonts::title(), 270, 190, b, kCream);
-      textAt(cv, fonts::caption(), 270, 222, fit(fonts::caption(), maps::turnWord(st.turn, R), g_.s(170)), kCream, kDim);
-      if (!st.street.empty()) textAt(cv, fonts::caption(), 270, 246, fit(fonts::caption(), st.street, g_.s(170)), kCream, kDim);
+      textAt(cv, fonts::title(), tx, L(190, 172), b, kCream);
+      textAt(cv, fonts::caption(), tx, L(222, 214), fit(fonts::caption(), maps::turnWord(st.turn, R), g_.s(tw)), kCream, kDim);
+      if (!st.street.empty()) textAt(cv, fonts::caption(), tx, L(246, 248), fit(fonts::caption(), st.street, g_.s(tw)), kCream, kDim);
     }
     buildItems(items_);
+    std::vector<Item> pills;
     for (const Item& it : items_)
-      if (it.id == APrev || it.id == ANext) {  // ‹ › discs
+      if (it.id == APrev || it.id == ANext) {  // ‹ › discs (their own chevron: not the item's label as well)
         cv.ellipse(g_.s(it.x), g_.s(it.y), g_.s(it.w * 0.5f), g_.s(it.w * 0.5f), pal_.peb2, fade_);
         textAt(cv, fonts::name(), it.x, it.y - 2, it.label, kCream);
+      } else if (it.underline) {
+        pills.push_back(it);
       }
-    drawItems(cv, items_);
+    drawItems(cv, pills);
     const int eta = A.nav.etaS();
     const uint32_t at = now_ + (uint32_t)eta;
     const float left = A.nav.leftM();
@@ -773,11 +858,11 @@ void Os::drawMaps(Canvas& cv) {
     return;
   }
   if (A.preview && A.route.valid()) {
-    pebRect(cv, 86, 154, 380, 240, 28, pal_.peb, pal_.pebe, 0);
-    textAt(cv, fonts::body(), 233, 182, fit(fonts::body(), A.route.to, g_.s(260)), kCream);
+    pebRect(cv, L(86, 70), L(154, 134), L(380, 396), L(240, 246), 28, pal_.peb, pal_.pebe, 0);
+    textAt(cv, fonts::body(), 233, L(182, 166), fit(fonts::body(), A.route.to, g_.s(L(260, 300))), kCream);
     const int min = (A.route.durS + 59) / 60;
     snprintf(b, sizeof b, "%.1f km \xC2\xB7 %d min \xC2\xB7 %s", A.route.distM / 1000.0, min, hm(now_ + (uint32_t)A.route.durS).c_str());
-    textAt(cv, fonts::caption(), 233, 214, b, kCream, kDim);
+    textAt(cv, fonts::caption(), 233, L(214, 210), sGlass() ? fit(fonts::caption(), b, g_.s(300)) : std::string(b), kCream, kDim);
     buildItems(items_);
     drawItems(cv, items_);
     return;
@@ -846,12 +931,13 @@ void Os::drawCalendar(Canvas& cv) {
   if (A.calSel >= 0 && A.calSel < (int)A.agenda.events.size()) {
     const apps::Event& e = A.agenda.events[A.calSel];
     std::string l[3];
-    const int n = wrapLines(fonts::body(), e.title, g_.s(270), l, 3);
-    pebRect(cv, 84, 152, 382, 214 + n * 32 + (e.place.empty() ? 0 : 28), 30, pal_.peb, pal_.e1, 3);
+    const float lp = L(32, 44), x0 = L(84, 66), top = L(152, 136);  // (S: the S body face, 44 px a line)
+    const int n = wrapLines(fonts::body(), e.title, g_.s(L(270, 300)), l, 3);
+    pebRect(cv, x0, top, 466 - x0, top + 62 + n * lp + (e.place.empty() ? 0 : L(28, 38)), 30, pal_.peb, pal_.e1, 3);
     std::string when = std::string(dayName(e.start, R)) + " " + (e.allDay ? (R ? "toată ziua" : "all day") : hm(e.start) + "\xE2\x80\x93" + hm(e.end));
-    textAt(cv, fonts::caption(), 233, 178, when, kCream, kDim);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::body(), 233, 210 + i * 32, l[i], kCream);
-    if (!e.place.empty()) textAt(cv, fonts::caption(), 233, 210 + n * 32, fit(fonts::caption(), e.place, g_.s(270)), kCream, kDim);
+    textAt(cv, fonts::caption(), 233, top + 26, when, kCream, kDim);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::body(), 233, top + 58 + i * lp + L(0, 8), l[i], kCream);
+    if (!e.place.empty()) textAt(cv, fonts::caption(), 233, top + 58 + n * lp + L(0, 4), fit(fonts::caption(), e.place, g_.s(L(270, 300))), kCream, kDim);
     rimBottom(cv, R ? "atinge: înapoi" : "tap: back", kCream, kFaint);
     return;
   }
@@ -877,20 +963,22 @@ void Os::drawMusic(Canvas& cv) {
     return;
   }
   const char* name = SoundGen::name(A.sound.kind(), R);
-  textAt(cv, fonts::name(), 233, 182, name, kCream);
+  const MusicSpec M = musicSpecFor(dens_);
+  textAt(cv, fonts::name(), 233, M.nameY, name, kCream);
   static const char* const en[] = {"on a window, far thunder", "deep and even", "slow waves", "a crackling fire"};
   static const char* const r[] = {"pe geam, tunet departe", "adânc și egal", "valuri încete", "un foc care trosnește"};
-  textAt(cv, fonts::caption(), 233, 216, (R ? r : en)[A.sound.kind() % 4], kCream, kDim);
+  textAt(cv, fonts::caption(), 233, M.wordsY, (R ? r : en)[A.sound.kind() % 4], kCream, kDim);
   // prev / play / next: discs (play filled e1)
-  cv.ellipse(g_.s(140), g_.s(296), g_.s(31), g_.s(31), pal_.peb2, fade_);
-  cv.ring(g_.s(140), g_.s(296), g_.s(29.5f), g_.s(3), pal_.pebe, fade_);
-  cv.ellipse(g_.s(326), g_.s(296), g_.s(31), g_.s(31), pal_.peb2, fade_);
-  cv.ring(g_.s(326), g_.s(296), g_.s(29.5f), g_.s(3), pal_.pebe, fade_);
-  cv.ellipse(g_.s(233), g_.s(296), g_.s(43), g_.s(43), A.playing ? pal_.e1 : kMint, fade_);
+  const float px0 = 233 - M.dx, px1 = 233 + M.dx, sr = M.side * 0.5f - 1;
+  cv.ellipse(g_.s(px0), g_.s(M.y), g_.s(sr), g_.s(sr), pal_.peb2, fade_);
+  cv.ring(g_.s(px0), g_.s(M.y), g_.s(sr - 1.5f), g_.s(3), pal_.pebe, fade_);
+  cv.ellipse(g_.s(px1), g_.s(M.y), g_.s(sr), g_.s(sr), pal_.peb2, fade_);
+  cv.ring(g_.s(px1), g_.s(M.y), g_.s(sr - 1.5f), g_.s(3), pal_.pebe, fade_);
+  cv.ellipse(g_.s(233), g_.s(M.y), g_.s(M.play * 0.5f), g_.s(M.play * 0.5f), A.playing ? pal_.e1 : kMint, fade_);
   Path& p = scratchPath();
   if (p.reserve(256)) {
     p.clear();
-    const float x = g_.s(233), y = g_.s(296), s = g_.s(14);
+    const float x = g_.s(233), y = g_.s(M.y), s = g_.s(M.icon);
     if (A.playing) {
       p.roundRect(x - s * 0.8f, y - s, s * 0.55f, s * 2, s * 0.15f);
       p.roundRect(x + s * 0.25f, y - s, s * 0.55f, s * 2, s * 0.15f);
@@ -900,7 +988,7 @@ void Os::drawMusic(Canvas& cv) {
     }
     face_.raster().fill(cv, p, A.playing ? pal_.on1 : Rgb::hex(0x06231B), fade_);
     p.clear();
-    const float a = g_.s(140), c = g_.s(326), k = g_.s(10);
+    const float a = g_.s(px0), c = g_.s(px1), k = g_.s(M.tri);
     const float pv[] = {a + k * 0.7f, y - k, a - k * 0.6f, y, a + k * 0.7f, y + k};
     const float nx[] = {c - k * 0.7f, y - k, c + k * 0.6f, y, c - k * 0.7f, y + k};
     p.polygon(pv, 3);
@@ -1018,11 +1106,12 @@ void Os::drawGames(Canvas& cv) {
     score = M.score();
   }
   if (over) {
-    pebRect(cv, 92, 170, 374, 372, 34, pal_.peb, A.newBest ? kMint : pal_.pebe, A.newBest ? 3 : 0);
-    textAt(cv, fonts::caption(), 233, 194, R ? "Gata" : "Game over", kCream, kDim);
-    textAt(cv, fonts::digits(), 233, 244, std::to_string(score), A.newBest ? kMint : kCream);
+    // (SOUL S: the card taller and higher, the score's lines clear of the 68 px pills, OsAppsDraw items)
+    pebRect(cv, L(92, 78), L(170, 130), L(374, 388), L(372, 392), 34, pal_.peb, A.newBest ? kMint : pal_.pebe, A.newBest ? 3 : 0);
+    textAt(cv, fonts::caption(), 233, L(194, 158), R ? "Gata" : "Game over", kCream, kDim);
+    textAt(cv, fonts::digits(), 233, L(244, 212), std::to_string(score), A.newBest ? kMint : kCream);
     snprintf(b, sizeof b, A.newBest ? (R ? "record nou!" : "new best!") : (R ? "recordul: %d" : "best: %d"), A.best[A.game]);
-    textAt(cv, fonts::caption(), 233, 290, b, A.newBest ? kMint : kCream, A.newBest ? 1 : kDim);
+    textAt(cv, fonts::caption(), 233, L(290, 266), b, A.newBest ? kMint : kCream, A.newBest ? 1 : kDim);
     buildItems(items_);
     drawItems(cv, items_);
   }
@@ -1134,24 +1223,25 @@ void Os::drawStopwatch(Canvas& cv) {
     const double split = A.sw.laps[i] - (i ? A.sw.laps[i - 1] : 0);
     char b[48];
     snprintf(b, sizeof b, R ? "tura %d   %s" : "lap %d   %s", i + 1, apps::Stopwatch::format(split, true).c_str());
-    textAt(cv, fonts::caption(), 233, 268 + k * 24, b, kCream, kDim);
+    textAt(cv, fonts::caption(), 233, 268 + k * L(24, 34), b, kCream, kDim);
   }
-  // lap / reset: a peb2 disc; start / pause: mint / amber
+  // lap / reset: a peb2 disc; start / pause: mint / amber (S: 72 px discs, 6 px higher, Density.h)
   const bool any = A.sw.acc > 0 || A.sw.run;
-  cv.ellipse(g_.s(170), g_.s(352), g_.s(34), g_.s(34), pal_.peb2, fade_);
-  cv.ring(g_.s(170), g_.s(352), g_.s(32.5f), g_.s(3), pal_.pebe, fade_);
+  const float by = L(352, 346), br = L(34, 36), dy = by - 352;
+  cv.ellipse(g_.s(170), g_.s(by), g_.s(br), g_.s(br), pal_.peb2, fade_);
+  cv.ring(g_.s(170), g_.s(by), g_.s(br - 1.5f), g_.s(3), pal_.pebe, fade_);
   if (A.sw.run) {  // a flag: lap
-    cv.segment(g_.s(163), g_.s(342), g_.s(163), g_.s(364), g_.s(3), kCream, fade_);
-    cv.roundRect(g_.s(163), g_.s(341), g_.s(178), g_.s(352), 2, kCream, fade_);
+    cv.segment(g_.s(163), g_.s(342 + dy), g_.s(163), g_.s(364 + dy), g_.s(3), kCream, fade_);
+    cv.roundRect(g_.s(163), g_.s(341 + dy), g_.s(178), g_.s(352 + dy), 2, kCream, fade_);
   } else {  // ↺ reset
-    cv.arc(g_.s(170), g_.s(352), g_.s(10), -2.4f, 2.0f, g_.s(3), kCream, (any ? 1.0f : 0.5f) * fade_);
-    cv.segment(g_.s(161), g_.s(340), g_.s(162), g_.s(346), g_.s(3), kCream, (any ? 1.0f : 0.5f) * fade_);
+    cv.arc(g_.s(170), g_.s(by), g_.s(10), -2.4f, 2.0f, g_.s(3), kCream, (any ? 1.0f : 0.5f) * fade_);
+    cv.segment(g_.s(161), g_.s(340 + dy), g_.s(162), g_.s(346 + dy), g_.s(3), kCream, (any ? 1.0f : 0.5f) * fade_);
   }
-  cv.ellipse(g_.s(296), g_.s(352), g_.s(34), g_.s(34), A.sw.run ? kAmber : kMint, fade_);
+  cv.ellipse(g_.s(296), g_.s(by), g_.s(br), g_.s(br), A.sw.run ? kAmber : kMint, fade_);
   Path& p = scratchPath();
   if (p.reserve(128)) {
     p.clear();
-    const float x = g_.s(296), y = g_.s(352), k = g_.s(11);
+    const float x = g_.s(296), y = g_.s(by), k = g_.s(11);
     if (A.sw.run) {
       p.roundRect(x - k * 0.8f, y - k, k * 0.55f, k * 2, k * 0.15f);
       p.roundRect(x + k * 0.25f, y - k, k * 0.55f, k * 2, k * 0.15f);
@@ -1183,6 +1273,36 @@ void Os::drawConvert(Canvas& cv) {
   std::vector<Item> pills;
   for (const Item& it : items_)
     if (it.underline) pills.push_back(it);
+  if (sGlass()) {  // SOUL S (ConvertSpec): 72 px fields, the unit pills at their right end, the swap disc on the left
+    const ConvertSpec c = convertSpecFor(dens_);
+    const double r = apps::convert(q, A.from, A.to, A.value, A.rates);
+    float valueX1 = c.x1;
+    for (const Item& it : items_)
+      if (it.id == AFrom) valueX1 = it.x - it.w * 0.5f - 12;
+    const float hh = c.fieldH * 0.5f;
+    pebRect(cv, c.x0, c.fromY - hh, c.x1, c.fromY + hh, hh, pal_.peb2, pal_.pebe, 0);
+    textAt(cv, fonts::title(), valueX1, c.fromY, fit(fonts::title(), apps::formatNumber(A.value), g_.s(valueX1 - c.x0 - 24)), kCream, 1, Align::Right);
+    float resultX1 = c.x1;
+    for (const Item& it : items_)
+      if (it.id == ATo) resultX1 = it.x - it.w * 0.5f - 12;
+    pebRect(cv, c.x0, c.toY - hh, c.x1, c.toY + hh, hh, Rgb::lerp(pal_.peb, kMint, 0.12f), kMint, 3);
+    textAt(cv, fonts::title(), resultX1, c.toY, fit(fonts::title(), apps::formatNumber(r), g_.s(resultX1 - c.x0 - 24)), kMint, 1, Align::Right);
+    const float sx = c.swapX, sy = c.swapY, sr = c.swap * 0.5f - 1, k = 1.35f;
+    cv.ellipse(g_.s(sx), g_.s(sy), g_.s(sr), g_.s(sr), pal_.peb2, fade_);
+    cv.ring(g_.s(sx), g_.s(sy), g_.s(sr - 1.5f), g_.s(3), pal_.pebe, fade_);
+    cv.segment(g_.s(sx - 7 * k), g_.s(sy - 10 * k), g_.s(sx - 7 * k), g_.s(sy + 10 * k), g_.s(3 * k), kCream, fade_);
+    cv.segment(g_.s(sx - 7 * k), g_.s(sy - 10 * k), g_.s(sx - 12 * k), g_.s(sy - 4 * k), g_.s(3 * k), kCream, fade_);
+    cv.segment(g_.s(sx + 7 * k), g_.s(sy - 10 * k), g_.s(sx + 7 * k), g_.s(sy + 10 * k), g_.s(3 * k), kCream, fade_);
+    cv.segment(g_.s(sx + 7 * k), g_.s(sy + 10 * k), g_.s(sx + 12 * k), g_.s(sy + 4 * k), g_.s(3 * k), kCream, fade_);
+    drawItems(cv, pills);
+    std::string foot;
+    if (q == apps::Quantity::Currency)
+      foot = A.rates.fromCloud ? (R ? "curs BCE " : "ECB ") + A.rates.date : (R ? "curs aproximativ" : "approximate rates");
+    else
+      foot = std::string("1 ") + u[A.from].label + " = " + apps::formatNumber(apps::convert(q, A.from, A.to, 1, A.rates)) + " " + u[A.to].label;
+    textAt(cv, fonts::caption(), 233, c.footY, fit(fonts::caption(), foot, g_.s(280)), kCream, kDim);
+    return;
+  }
   // the number you type (a tap: the keyboard), then the result on a mint-edged field
   pebRect(cv, 74, 206, 392, 258, 26, pal_.peb2, pal_.pebe, 0);
   textAt(cv, fonts::title(), 296, 232, fit(fonts::title(), apps::formatNumber(A.value), g_.s(200)), kCream, 1, Align::Right);
@@ -1230,10 +1350,10 @@ void Os::drawFindPhone(Canvas& cv) {
     case 5: s = R ? "Nu pot acum" : "Can't right now"; sub = cloudOk(net_) ? (R ? "fără internet?" : "no internet?") : (R ? "are nevoie de SOUL Cloud" : "needs SOUL Cloud"); break;
     default: s = R ? "Atinge ca să-l sun" : "Tap to ring it"; sub = R ? "chiar și pe silențios, dacă /me/where e deschis" : "even on silent, if /me/where is open"; break;
   }
-  textAt(cv, fonts::body(), 233, 168, fit(fonts::body(), s, g_.s(320)), A.findState >= 4 ? kAmber : kCream);
+  textAt(cv, fonts::body(), 233, L(168, 156), fit(fonts::body(), s, g_.s(320)), A.findState >= 4 ? kAmber : kCream);
   std::string sl[2];
-  const int ns = sub.empty() ? 0 : wrapLines(fonts::caption(), sub, g_.s(280), sl, 2);
-  for (int i = 0; i < ns; ++i) textAt(cv, fonts::caption(), 233, 198 + i * 24, sl[i], kCream, kDim);
+  const int ns = sub.empty() ? 0 : wrapLines(fonts::caption(), sub, g_.s(L(280, 340)), sl, 2);
+  for (int i = 0; i < ns; ++i) textAt(cv, fonts::caption(), 233, L(198, 192) + i * L(24, 33), sl[i], kCream, kDim);
 }
 
 // ----------------------------------------------------------------- device ---
@@ -1251,10 +1371,10 @@ void Os::drawDevice(Canvas& cv) {
   char b[96];
   if (power_.batPct >= 0) snprintf(b, sizeof b, "%d%%", power_.batPct);
   else snprintf(b, sizeof b, "USB");
-  textAt(cv, fonts::name(), 233, 176, b, power_.charging ? kMint : kCream);
-  textAt(cv, fonts::caption(), 233, 206, power_.charging ? (R ? "se încarcă" : "charging") : power_.batPct >= 0 ? (R ? "pe baterie" : "on battery") : (R ? "prin USB" : "powered by USB"),
+  textAt(cv, fonts::name(), 233, L(176, 154), b, power_.charging ? kMint : kCream);
+  textAt(cv, fonts::caption(), 233, L(206, 188), power_.charging ? (R ? "se încarcă" : "charging") : power_.batPct >= 0 ? (R ? "pe baterie" : "on battery") : (R ? "prin USB" : "powered by USB"),
          kCream, kDim);
-  pebRect(cv, 86, 230, 380, 382, 28, pal_.peb, pal_.pebe, 0);
+  pebRect(cv, L(86, 70), L(230, 210), L(380, 396), L(382, 396), 28, pal_.peb, pal_.pebe, 0);
   std::string rows[5];
   snprintf(b, sizeof b, R ? "%d notițe · %d alarme" : "%d notes · %d alarms", (int)notes_.size(), alarms_ ? alarms_->count() : 0);
   rows[0] = b;
@@ -1268,7 +1388,10 @@ void Os::drawDevice(Canvas& cv) {
   else snprintf(b, sizeof b, "SoulOS %s", S.fw.c_str());
   rows[3] = b;
   rows[4] = "SoulOS " + S.fw + (S.board.empty() ? std::string() : " \xC2\xB7 " + S.board);
-  for (int i = 0; i < 5; ++i) textAt(cv, fonts::caption(), 233, 254 + i * 26, fit(fonts::caption(), rows[i], g_.s(i == 0 || i == 4 ? 256 : 286)), kCream, i ? kDim : 1.0f);
+  // (S: 34 px a line, as wide as the circle allows at each line)
+  for (int i = 0; i < 5; ++i)
+    textAt(cv, fonts::caption(), 233, L(254, 236) + i * L(26, 34),
+           fit(fonts::caption(), rows[i], g_.s(sGlass() ? (i == 0 || i == 4 ? 290 : 320) : (i == 0 || i == 4 ? 256 : 286))), kCream, i ? kDim : 1.0f);
 }
 
 // ------------------------------------------------------- settings › apps ---

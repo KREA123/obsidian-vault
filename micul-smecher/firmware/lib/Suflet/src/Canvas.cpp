@@ -241,6 +241,7 @@ int Canvas::drawText(const Font& f, float x, int y, const char* s, Rgb c, float 
                      const Rgb* accent, int nBytes) {
   if (!s || alpha <= 0.004f) return 0;
   const int width = measureText(f, s, nBytes);
+  if (probe) ++probe->run;
   if (align == Align::Center) x -= width * 0.5f;
   else if (align == Align::Right) x -= (float)width;
   const char* end = nBytes < 0 ? nullptr : s + nBytes;
@@ -255,6 +256,7 @@ int Canvas::drawText(const Font& f, float x, int y, const char* s, Rgb c, float 
     pen16 += g->adv16;
     if (!g->w || !g->h) continue;
     if (probe) {
+      probe->cp = cp;
       const float q[8] = {(float)gx, (float)gy, (float)(gx + g->w), (float)gy, (float)(gx + g->w), (float)(gy + g->h), (float)gx, (float)(gy + g->h)};
       probe->glyph(f, q, alpha, false, (accent && utf8::isRoDiacritic(cp)) ? *accent : c);
       if (probeOnly) continue;
@@ -291,6 +293,7 @@ void Canvas::drawTextArc(const Font& f, float cx, float cy, float r, float a, co
                          bool bottom, float tracking) {
   if (!s || alpha <= 0.004f || r <= 1) return;
   const float span = arcTextSpan(f, r, s, tracking);
+  if (probe) ++probe->run;
   // pen position along the arc (px from the start of the run)
   float pen = 0;
   const float mid = (f.ascent - f.descent) * 0.5f;  // baseline offset so the text's middle sits on r
@@ -335,6 +338,7 @@ void Canvas::drawTextArc(const Font& f, float cx, float cy, float r, float a, co
       if (sy > by1) by1 = sy;
     }
     if (probe) {
+      probe->cp = cp;
       probe->glyph(f, quad, alpha, true, c);
       if (probeOnly) continue;
     }
