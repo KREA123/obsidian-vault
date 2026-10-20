@@ -37,3 +37,42 @@ int screensMode(const std::string& dir) {
   if (manifest) fclose(manifest);
   return 0;
 }
+
+// SOUL S (the product, decision 2026-10-20): the core screens on the AMOLED-1.75's 466 px glass, drawn with the
+// density layer (Density.h), and the same states on SOUL M's 2.8C for the side-by-side sheet.
+//
+//   .pio/build/sim/program <out_dir> alive-s     <out_dir>/s-NN-name.ppm, m-NN-name.ppm + shots.txt
+//   python3 tools/alive_s_sheet.py <out_dir> sim/shots/alive-s     PNGs + the S-vs-M sheet at true size
+static const char* const kSStates[] = {"standby", "home-peek", "apps", "settings", "alarms", "worldclock",
+                                       "voice-answer", "claude-ask"};
+
+int sScreensMode(const std::string& dir) {
+  FILE* manifest = fopen((dir + "/shots.txt").c_str(), "wb");
+  const int n = (int)(sizeof kSStates / sizeof kSStates[0]);
+  for (int glass = 0; glass < 2; ++glass) {
+    const DisplayGeometry& g = glass == 0 ? displays::kAmoled175 : displays::kLcd28;
+    for (int i = 0; i < n; ++i) {
+      alive_states::Rig s(true, -1, g);
+      if (!alive_states::setup(s, kSStates[i])) {
+        fprintf(stderr, "unknown state %s\n", kSStates[i]);
+        continue;
+      }
+      char fn[512];
+      snprintf(fn, sizeof fn, "%s/%c-%02d-%s.ppm", dir.c_str(), glass == 0 ? 's' : 'm', i + 1, kSStates[i]);
+      FILE* f = fopen(fn, "wb");
+      if (!f) return 1;
+      fprintf(f, "P6\n%d %d\n255\n", s.W, s.H);
+      for (int k = 0; k < s.W * s.H; ++k) {
+        const Rgb c = Rgb::from565(s.fb[(size_t)k]);
+        fputc(c.r, f);
+        fputc(c.g, f);
+        fputc(c.b, f);
+      }
+      fclose(f);
+      if (manifest) fprintf(manifest, "%c-%02d-%s %s %.3f\n", glass == 0 ? 's' : 'm', i + 1, kSStates[i], viewName(s.os.view()), g.activeMm);
+      printf("  %c %02d %-14s view %s\n", glass == 0 ? 'S' : 'M', i + 1, kSStates[i], viewName(s.os.view()));
+    }
+  }
+  if (manifest) fclose(manifest);
+  return 0;
+}

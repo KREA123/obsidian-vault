@@ -67,6 +67,11 @@ const char* viewName(View v) {
 void Os::begin(const DisplayGeometry& g, const BirthInfo& b) {
   g_ = g;
   birth_ = b;
+  // the glass's density (Density.h): its type ramp, the dial's and the wheels' sizes, the eye slots
+  dens_ = Density::forGlass(g);
+  fonts::setRamp(dens_.ramp);
+  dial_.setSpec(dens_.dial);
+  wheel_.setSpec(dens_.wheel);
   kb_.setGeometry(g);
   tp_.setGeometry(g);
   // SoulOS Alive (1.9): flat pebbles on pure black; the frosted glass and its ~2 MB of aura buffers are retired
@@ -102,19 +107,24 @@ FaceLayoutT Os::layoutFor(View v) const {
   if (lids_.closing() && lidsShown_ && v == view_ && wipeFrom_ != v) return layoutFor(wipeFrom_);  // they blink in place
   switch (v) {
     case View::Home:
-      if (peekT_ > 0 && !claude_.passkey && !asleep_) return slot(alive::kPeek);  // a touch: the eyes glide up
+      if (peekT_ > 0 && !claude_.passkey && !asleep_) return slot(dens_.peek);  // a touch: the eyes glide up
+      if (dens_.emissive) {  // AMOLED standby: the eyes alone, wandering a few px over minutes (burn-in care)
+        FaceLayoutT l = slot(alive::kStandby);
+        burnin::drift(t_, (float)g_.w, true, l.cx, l.cy);
+        return l;
+      }
       return slot(alive::kStandby);
-    case View::Launcher: return slot(alive::kApps);
-    case View::Keyboard: return slot(alive::kKeyboard);
+    case View::Launcher: return slot(dens_.apps);
+    case View::Keyboard: return slot(dens_.keyboard);
     case View::Talk:
-      if (thinking_ || voiceWait_) return slot(alive::kThink);
+      if (thinking_ || voiceWait_) return slot(dens_.think);
       break;
     case View::MySoul: return FaceLayoutT{0.40f, 0, -0.2f};  // Look: the eyes big at the top
     case View::Answer:
-      if (thinking_) return slot(alive::kThink);  // thinking is a face moment: the eyes squint, big
+      if (thinking_) return slot(dens_.think);  // thinking is a face moment: the eyes squint, big
       break;
     default:
-      if (appScreen(v)) return slot(alive::kCard);
+      if (appScreen(v)) return slot(dens_.card);
       break;
   }
   if (appsLayout(v, l)) return l;
@@ -1937,11 +1947,19 @@ float Os::backlight(float hour, const Brain& b) const {
     case 3: level = 1.0f; break;
     default: level = night ? 0.35f : (hour >= 0 && (hour < 8.5f || hour >= 20.5f) ? 0.7f : 1.0f); break;
   }
-  if (b.mode() == Mode::Asleep) level = night ? 0.06f : 0.18f;  // always-on, but only a glow
+  if (b.mode() == Mode::Asleep) level = backlightAsleep(hour, b.asleepFor());  // always-on, but only a glow
   else if (b.mode() == Mode::Drowsy) level *= 0.6f;
   if (view_ == View::Keyboard || view_ == View::Dial) level = fmaxf(level, 0.6f);  // typing needs light
   if (view_ == View::Ringing || claude_.prompt) level = 1.0f;
   return level;
+}
+
+float Os::backlightAsleep(float hour, float asleepFor) const {
+  const bool night = hour >= 0 && (hour >= 22.0f || hour < 7.0f);
+  // AMOLED burn-in care (Density.h): the sleeping eyes are the only lit pixels; after a while they go dark
+  // (a touch, a pick-up or a voice wakes SOUL as before). An LCD keeps its glow: its backlight does not burn in.
+  if (dens_.emissive && asleepFor >= (night ? burnin::kOffAfterS : burnin::kOffAfterDayS)) return 0;
+  return night ? 0.06f : 0.18f;
 }
 
 Rect Os::takeDirty() {

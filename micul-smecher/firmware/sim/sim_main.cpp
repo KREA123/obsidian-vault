@@ -1624,6 +1624,7 @@ static int aliveMode(const std::string& dir) {
 int appsMode(const std::string& dir, const std::string& which, int px);  // sim_apps.cpp
 int microBench(const std::string& which);                                // sim_bench.cpp
 int screensMode(const std::string& dir);                                 // sim_screens.cpp
+int sScreensMode(const std::string& dir);                                // sim_screens.cpp: SOUL S
 
 int main(int argc, char** argv) {
   setvbuf(stdout, nullptr, _IOLBF, 0);  // cloud mode is driven line by line through a pipe
@@ -1659,6 +1660,7 @@ int main(int argc, char** argv) {
     return microBench(which);  // sim_bench.cpp: the non-frame work (callgrind: --toggle-collect='suflet_bench_*')
   if (which == "alive") return aliveMode(dir);  // SoulOS Alive stills (see aliveMode)
   if (which == "screens") return screensMode(dir);  // SoulOS Alive: every screen (sim_screens.cpp)
+  if (which == "alive-s") return sScreensMode(dir);  // SOUL S: the core screens on the 1.75" glass (sim_screens.cpp)
   if (which == "lan") return lanMode(dir, argc > 3 ? atoi(argv[3]) : 0);  // SOUL Bridge on the LAN (see lanMode)
   if (which == "keys") {  // drive it by hand (see keysMode)
     Recorder rec;

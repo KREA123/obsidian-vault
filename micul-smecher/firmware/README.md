@@ -6,7 +6,7 @@ Ochii vii, dispoziția, cele 24 de reacții, personalitatea născută din cip ș
 | Placă | Mediu PlatformIO | Ce are |
 |---|---|---|
 | ESP32-S3-Touch-AMOLED-1.43 | `amoled143` | ecran, touch FT3168, IMU, RTC — fără sunet |
-| ESP32-S3-Touch-AMOLED-1.75 | `amoled175` | + 2 microfoane, difuzor, PMU AXP2101, buton de pornire |
+| ESP32-S3-Touch-AMOLED-1.75 (**SOUL S, produsul**) | `amoled175` | + 2 microfoane, difuzor, PMU AXP2101, buton de pornire. SoulOS Alive cu densitatea S (litere și ținte în mm, grijă de burn-in): [SOUL-S.md](SOUL-S.md) |
 | ESP32-S3-Touch-LCD-2.8C (SOUL M) | `lcd28` | IPS 2,8″ 480×480, touch GT911, IMU, RTC, buzzer — vezi secțiunea „SOUL M” (engleză) |
 
 ```bash

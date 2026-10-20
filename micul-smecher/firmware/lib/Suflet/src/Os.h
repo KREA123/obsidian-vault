@@ -28,6 +28,7 @@
 #include "Alarms.h"
 #include "CloudLink.h"
 #include "Brain.h"
+#include "Density.h"
 #include "Canvas.h"
 #include "Events.h"
 #include "EyeTables.h"
@@ -305,6 +306,8 @@ class Os {
   bool wantsTextTouch() const { return true; }
   float fpsHint(const Brain& b) const;
   float backlight(float hour, const Brain& b) const;  // 0..1
+  // asleep: the night / day glow; on an AMOLED, dark after burnin::kOffAfterS (night) / kOffAfterDayS (Density.h)
+  float backlightAsleep(float hour, float asleepFor) const;
   bool ringing() const { return view_ == View::Ringing || timerRinging_; }
   bool silenceRequested() { bool r = silence_; silence_ = false; return r; }
 
@@ -347,6 +350,8 @@ class Os {
   int shownDesign() const { return lookDesign_ >= 0 ? lookDesign_ : birth_.design; }
   bool reducedMotion() const { return set_.reduceMotion != 0; }
   const alive::Dial& dial() const { return dial_; }
+  // the glass's tokens (Density.h): SOUL M's 1.9.0 numbers on the 2.8C, millimetre-true ones on SOUL S
+  const Density& density() const { return dens_; }
   uint32_t spriteBuilds() const { return spriteBuilds_; }
   uint32_t wheelRowsBuilt() const { return rowsBuilt_; }  // times a wheel's rows were built (tests, perf)
   double uptime() const { return t_; }                   // s since begin()
@@ -616,6 +621,7 @@ class Os {
 
   Alarms* alarms_;
   DisplayGeometry g_;
+  Density dens_;
   BirthInfo birth_;
   SoulFace face_{};
   Keyboard kb_;

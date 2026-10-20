@@ -92,12 +92,12 @@ Os::PillStyle Os::pillOf(const Item& it) const {
 }
 
 void Os::toggleAt(Canvas& cv, float cx, float cy, bool on, float alpha) {
-  // 76 x 48 design px (78 x 50 on the glass): the track, the knob
-  const float w = 76, h = 48;
+  // 76 x 48 design px (78 x 50 on the glass): the track, the knob (S: a 6.4 mm target, Density.h)
+  const float w = dens_.toggleW, h = dens_.toggleH;
   pebRect(cv, cx - w * 0.5f, cy - h * 0.5f, cx + w * 0.5f, cy + h * 0.5f, h * 0.5f, on ? pal_.e1 : pal_.peb2, pal_.pebe,
           on ? 0 : 3, alpha);
   const float kx = on ? cx + w * 0.5f - h * 0.5f : cx - w * 0.5f + h * 0.5f;
-  cv.ellipse(g_.s(kx), g_.s(cy), g_.s(17), g_.s(17), on ? pal_.on1 : kInk.scaled(0.55f), alpha * fade_);
+  cv.ellipse(g_.s(kx), g_.s(cy), g_.s(dens_.knobR), g_.s(dens_.knobR), on ? pal_.on1 : kInk.scaled(0.55f), alpha * fade_);
 }
 
 void Os::rimRing(Canvas& cv, float r, float a0, float a1, Rgb c, float alpha, float w) {
@@ -219,7 +219,7 @@ const std::vector<Os::WheelRow>& Os::wheelRows() const {
 
 int Os::wheelCount() const { return (int)wheelRows().size(); }
 
-float Os::wheelY() const { return alive::Wheel::kY; }
+float Os::wheelY() const { return wheel_.spec().y; }
 
 // the row in focus when a wheel opens: the chosen one (Your AI), else the second (the web's min(1, n - 1))
 int Os::wheelDefault() const {
@@ -257,7 +257,7 @@ void Os::wheelSync() {
 
 void Os::invalidateWheel() {
   // the wheel's band: every place a row can be while it turns (|d| <= 1.6 rows from the focus) and the scroll arc
-  invalidate(g_.rect(0, 128, 466, 452));
+  invalidate(g_.rect(0, (int)wheel_.spec().band0, 466, (int)wheel_.spec().band1));
 }
 
 void Os::wheelUpdate(float dt) {
@@ -326,10 +326,11 @@ void Os::wheelItems(std::vector<Item>& out) const {
     Item it;
     it.font = kWheelItem;
     if (r.id2 >= 0) {  // the row's second control (↑): a 48 px disc on its left, hit first
+      const float ts = dens_.ts;
       it.id = r.id2;
-      it.x = 233 - p.w * 0.5f + 10 + 24 * p.scale;
+      it.x = 233 - p.w * 0.5f + 10 * ts + 24 * ts * p.scale;
       it.y = p.y;
-      it.w = it.h = 48 * p.scale;
+      it.w = it.h = 48 * ts * p.scale;
       out.push_back(it);
     }
     it.id = r.id;
@@ -382,7 +383,7 @@ bool Os::wheelTouch(const TouchEv& e) {
       const float dx = (e.x - dx0_) / k, dy = (e.y - dy0_) / k;
       if (!wheelDragged_ && fabsf(dy) > 14 && fabsf(dy) > fabsf(dx) * 1.2f) wheelDragged_ = true;
       if (wheelDragged_) {
-        const int t = wheelGrab_ + (int)lroundf(-dy / alive::Wheel::kDragPx);
+        const int t = wheelGrab_ + (int)lroundf(-dy / wheel_.spec().dragPx);
         if (wheel_.turnTo(t, reducedMotion())) {
           react(alive::Event::ListTurn);
           lookUntil_ = t_ + 0.6f;
@@ -406,54 +407,55 @@ bool Os::wheelTouch(const TouchEv& e) {
 }
 
 void Os::drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& p, bool focus) {
-  const float s = p.scale, a = p.alpha;
+  // (the sizes below are M's; ts = the glass's type scale, 1 on M: Density.h)
+  const float ts = dens_.ts, s = p.scale * ts, a = p.alpha;
   const float x0 = 233 - p.w * 0.5f, x1 = 233 + p.w * 0.5f, y0 = p.y - p.h * 0.5f, y1 = p.y + p.h * 0.5f;
   const bool sel = r.kind == RowSel;
   const bool pressed = holdItem_ == r.id && r.id >= 0;
   Rgb fill = sel ? pal_.e1 : pressed ? pal_.peb2 : pal_.peb;
   const Rgb ink = sel ? pal_.on1 : kInk;
-  pebRect(cv, x0, y0, x1, y1, 22 * s, fill, sel ? pal_.on1 : pal_.e1, focus ? 3 : 0, a);
+  pebRect(cv, x0, y0, x1, y1, 22 * s, fill, sel ? pal_.on1 : pal_.e1, focus ? 3 : 0, a);  // (s includes ts)
   const float pad = 22 * s;
   float tx = x0 + pad, rx = x1 - pad;  // the words between tx and rx
   const float ta = a * r.dim;
   // left: the ↑ disc, a glyph, a check
   if (r.id2 >= 0) {
-    const float cx = x0 + 10 + 24 * s, R = 22 * s;
+    const float cx = x0 + 10 * ts + 24 * s, R = 22 * s;
     cv.ellipse(g_.s(cx), g_.s(p.y), g_.s(R), g_.s(R), pal_.peb2, a * fade_);
     cv.ring(g_.s(cx), g_.s(p.y), g_.s(R - 1.5f), g_.s(3), pal_.pebe, a * fade_);
     const float k = 8 * s;
     cv.segment(g_.s(cx), g_.s(p.y + k), g_.s(cx), g_.s(p.y - k), g_.s(3), kInk, a * fade_);
     cv.segment(g_.s(cx - k * 0.8f), g_.s(p.y - k * 0.2f), g_.s(cx), g_.s(p.y - k), g_.s(3), kInk, a * fade_);
     cv.segment(g_.s(cx + k * 0.8f), g_.s(p.y - k * 0.2f), g_.s(cx), g_.s(p.y - k), g_.s(3), kInk, a * fade_);
-    tx = cx + R + 12;
+    tx = cx + R + 12 * ts;
   }
   if (r.glyph >= 0) {
-    drawGlyph(cv, (AppId)r.glyph, tx + 12, p.y, 22, sel ? pal_.on1 : pal_.e1, ta, g_.s(3));
-    tx += 34;
+    drawGlyph(cv, (AppId)r.glyph, tx + 12 * ts, p.y, 22 * ts, sel ? pal_.on1 : pal_.e1, ta, g_.s(3 * ts));
+    tx += 34 * ts;
   }
   const bool twoLines = !r.sub.empty() || r.dots;
   const float yT = twoLines ? p.y - 11 * s : p.y, yS = p.y + 17 * s;
   if (sel) {  // the chosen one: ✓ in front of it
-    checkMark(cv, tx + 9, yT, 15, pal_.on1, a);
-    tx += 28;
+    checkMark(cv, tx + 9 * ts, yT, 15 * ts, pal_.on1, a);
+    tx += 28 * ts;
   }
   if (r.kind == RowCheck) {
-    const float cx = tx + 12, cy = twoLines ? yT : p.y;
-    cv.ring(g_.s(cx), g_.s(cy), g_.s(11), g_.s(3), r.on ? kMint : pal_.e1, ta * fade_);
-    if (r.on) checkMark(cv, cx, cy, 12, kMint, ta);
-    tx += 34;
+    const float cx = tx + 12 * ts, cy = twoLines ? yT : p.y;
+    cv.ring(g_.s(cx), g_.s(cy), g_.s(11 * ts), g_.s(3 * ts), r.on ? kMint : pal_.e1, ta * fade_);
+    if (r.on) checkMark(cv, cx, cy, 12 * ts, kMint, ta);
+    tx += 34 * ts;
   }
   // right: a toggle, a check (done), or the value
   if (r.kind == RowToggle) {
-    toggleAt(cv, rx - 38, p.y, r.on, a);
-    rx -= 76 + 12;
+    toggleAt(cv, rx - dens_.toggleW * 0.5f, p.y, r.on, a);
+    rx -= dens_.toggleW + 12 * ts;
   }
   const float rxSub = rx;
   if (r.kind != RowToggle && !r.value.empty()) {
     const Font& vf = r.bigTag ? fonts::name() : fonts::caption();
-    const std::string v = fitText(vf, r.value, g_.s(p.w * 0.42f));
+    const std::string v = fitText(vf, r.value, g_.s(p.w * dens_.valueShare));
     textAt(cv, vf, rx, r.bigTag ? p.y : (twoLines ? yT : p.y), v, sel ? pal_.on1 : r.valueC, ta, Align::Right);
-    rx -= (float)Canvas::measureText(vf, v.c_str()) / g_.k() + 12;
+    rx -= (float)Canvas::measureText(vf, v.c_str()) / g_.k() + 12 * ts;
   }
   if (r.kind == RowNew) {  // "+ New": its words in the middle, in e1
     textAt(cv, fonts::body(), 233, p.y, r.title, pal_.e1, a);
@@ -464,7 +466,7 @@ void Os::drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& 
   if (!r.tag.empty()) {
     const Font& tf = r.bigTag ? fonts::name() : fonts::body();
     textAt(cv, tf, tx, yT, r.tag, ink, ta, Align::Left);
-    tx += (float)Canvas::measureText(tf, r.tag.c_str()) / g_.k() + 12;
+    tx += (float)Canvas::measureText(tf, r.tag.c_str()) / g_.k() + 12 * ts;
   }
   if (!r.title.empty()) {
     const std::string t = fitText(fonts::body(), r.title, g_.s(rx - tx));
@@ -479,7 +481,7 @@ void Os::drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& 
   if (r.dots) {  // habits: the last 7 days, today last
     for (int k = 0; k < 7; ++k) {
       const bool on = r.dots >> (6 - k) & 1;
-      cv.ellipse(g_.s(subX + 5 + k * 15), g_.s(yS), g_.s(4.5f), g_.s(4.5f), on ? kMint : pal_.e1, (on ? 1.0f : 0.35f) * ta * fade_);
+      cv.ellipse(g_.s(subX + 5 * ts + k * 15 * ts), g_.s(yS), g_.s(4.5f * ts), g_.s(4.5f * ts), on ? kMint : pal_.e1, (on ? 1.0f : 0.35f) * ta * fade_);
     }
   }
 }
@@ -503,9 +505,9 @@ void Os::drawWheel(Canvas& cv) {
     }
   if (n > 3) {  // where you are: a thick e1 arc on the right rim
     const float d2r = kPi / 180;
-    rimRing(cv, 216, -26 * d2r, 26 * d2r, pal_.peb2, 1, 8);
+    rimRing(cv, dens_.ringR, -26 * d2r, 26 * d2r, pal_.peb2, 1, dens_.ringW);
     const float t = -22 + 44 * (wheel_.pos() / (float)(n - 1));
-    rimRing(cv, 216, (t - 4) * d2r, (t + 4) * d2r, pal_.e1, 1, 8);
+    rimRing(cv, dens_.ringR, (t - 4) * d2r, (t + 4) * d2r, pal_.e1, 1, dens_.ringW);
   }
 }
 
@@ -529,7 +531,7 @@ void Os::controls(std::vector<Control>& out) const {
     for (int i = 0; i < dial_.count(); ++i) {
       const alive::Dial::Pebble p = dial_.place(i);
       if (p.alpha < 0.3f) continue;
-      const float w = alive::Dial::kW * p.scale * k, h = alive::Dial::kH * p.scale * k;
+      const float w = dial_.spec().w * p.scale * k, h = dial_.spec().h * p.scale * k;
       Control c;
       c.id = 1000 + i;
       c.r = Rect{(int)lroundf(p.x * k - w * 0.5f), (int)lroundf(p.y * k - h * 0.5f), (int)lroundf(p.x * k + w * 0.5f),

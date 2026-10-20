@@ -127,6 +127,7 @@ class Brain {
   BodyLight body() const { return body_; }
   bool popCue(Cue& c);
   Mode mode() const { return mode_; }
+  float asleepFor() const { return asleepFor_; }  // s asleep (or off) since the last sleep began
   Reaction reaction() const { return cur_; }
   const Mood& mood() const { return mood_; }
   const Personality& personality() const { return p_; }

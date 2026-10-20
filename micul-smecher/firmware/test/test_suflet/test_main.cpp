@@ -1433,6 +1433,7 @@ void runAppsTests();
 void runPerfTests();
 void runAliveTests();
 void runAuditTests();  // test_audit.cpp: the round audit of every screen
+void runDensityTests();  // test_density.cpp: SOUL M / SOUL S density tokens, AMOLED burn-in care
 
 int main(int, char**) {
   UNITY_BEGIN();
@@ -1514,5 +1515,6 @@ int main(int, char**) {
   runPerfTests();
   runAliveTests();
   runAuditTests();
+  runDensityTests();
   return UNITY_END();
 }

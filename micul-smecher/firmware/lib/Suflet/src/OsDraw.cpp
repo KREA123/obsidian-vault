@@ -188,8 +188,9 @@ void Os::buildItems(std::vector<Item>& out) const {
       break;
     case View::Claude:
       if (claude_.prompt && !claude_.passkey) {  // Claude asks: two big buttons, 68 px
-        add(IdAllow, 164, 322, 132, 66, R ? "Da" : "Allow", kMint, 1, true);
-        add(IdDeny, 302, 322, 132, 66, R ? "Nu" : "Deny", kAmber, 1, true);
+        const Density::Ask& q = dens_.ask;
+        add(IdAllow, 233 - q.btnDx, q.btnY, q.btnW, q.btnH, R ? "Da" : "Allow", kMint, 1, true);
+        add(IdDeny, 233 + q.btnDx, q.btnY, q.btnW, q.btnH, R ? "Nu" : "Deny", kAmber, 1, true);
       } else if (net_.relay && !claude_.passkey) {
         add(IdInbox, 233, 318, 250, 52, R ? "Scrie-i lui Claude" : "Write to Claude", kCream, 0, true);
       }
@@ -214,13 +215,14 @@ void Os::buildItems(std::vector<Item>& out) const {
     default: buildAppsItems(out); break;
   }
   wheelItems(out);  // a list: its rows (OsScreens.cpp)
-  // a pill is as big as its words (+ 22 px a side) and never under 48 px (44 on the glass): its hit box = what is drawn
+  // a pill is as big as its words (+ 22 px a side) and never under 48 px (44 on the glass; S: 68 px = 6.4 mm,
+  // Density.h): its hit box = what is drawn
   for (Item& it : out) {
     if (!it.underline) continue;
     const Font& f = fontOf(it.font, set_.largeText);
     const float tw = (float)Canvas::measureText(f, it.label.c_str()) / g_.k();
-    it.w = fmaxf(it.w, fminf(tw + 44, 330));
-    it.h = fmaxf(it.h, 48);
+    it.w = fmaxf(it.w, fminf(tw + dens_.pillPad, dens_.pillMaxW));
+    it.h = fmaxf(it.h, dens_.pillMinH);
   }
 }
 
@@ -243,30 +245,30 @@ void Os::textAt(Canvas& cv, const Font& f, float x, float y, const std::string& 
 }
 
 static constexpr float kHalfPi = 1.5707963f;
-// the rim's words (titles, hints, the banner) ride r 205: the capsule spans 189-221 (DESIGN-ALIVE.md §2 zones),
-// so no glyph reaches past r 228 on the glass
-static constexpr float kRimR = 205;
+// the rim's words (titles, hints, the banner) ride r 205 on M: the capsule spans 189-221 (DESIGN-ALIVE.md §2
+// zones), so no glyph reaches past r 228 on the glass (Density.h: rimR / rimHalf / rimPad; S: r 200, its words 32 px)
 
 // a glass capsule on the rim, as wide as the words + 15 px each side
-static void rimCapsule(Canvas& cv, const DisplayGeometry& g, const std::string& s, float r, bool top, const GlassStyle& st) {
-  const float span = Canvas::arcTextSpan(fonts::caption(), r, s.c_str(), 1.0f) + g.s(30) / r;
+static void rimCapsule(Canvas& cv, const DisplayGeometry& g, const Density& d, const std::string& s, float r, bool top,
+                       const GlassStyle& st) {
+  const float span = Canvas::arcTextSpan(fonts::caption(), r, s.c_str(), 1.0f) + g.s(d.rimPad) / r;
   const float a = top ? -kHalfPi : kHalfPi;
-  glass().capsuleArc(cv, g.cx(), g.cy(), r, g.s(16), a - span * 0.5f, a + span * 0.5f, st);
+  glass().capsuleArc(cv, g.cx(), g.cy(), r, g.s(d.rimHalf), a - span * 0.5f, a + span * 0.5f, st);
 }
 
 void Os::rimTop(Canvas& cv, const std::string& s, Rgb c, float alpha) {
   if (toastLeft_ > 0 && !toast_.empty()) return;  // the notification capsule has the rim
   if (s.empty()) return;
   alpha = fmaxf(alpha, 0.84f);  // SoulOS Alive: what you must read is >= 80 %
-  rimCapsule(cv, g_, s, g_.s(kRimR), true, gs(alpha));
-  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(kRimR), -kHalfPi, s.c_str(), c, alpha * fade_, false, 1.0f);
+  rimCapsule(cv, g_, dens_, s, g_.s(dens_.rimR), true, gs(alpha));
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(dens_.rimR), -kHalfPi, s.c_str(), c, alpha * fade_, false, 1.0f);
 }
 
 // Rim manners (DESIGN-ALIVE.md §4): a bottom-rim hint is drawn only if none of its glyphs would touch a control
 // of the screen; otherwise it is dropped (the content wins)
 bool Os::rimBottomFits(const std::string& s) const {
-  const float r = kRimR, half = Canvas::arcTextSpan(fonts::caption(), g_.s(r), s.c_str(), 1.0f) * 0.5f + 0.06f;
-  const float inner = r - 16;  // the glyphs' inner edge (design px)
+  const float r = dens_.rimR, half = Canvas::arcTextSpan(fonts::caption(), g_.s(r), s.c_str(), 1.0f) * 0.5f + 0.06f;
+  const float inner = r - dens_.rimHalf;  // the glyphs' inner edge (design px)
   buildItems(items_);
   for (const Item& it : items_) {
     if (it.id < 0 || it.w <= 0) continue;
@@ -285,12 +287,12 @@ bool Os::rimBottomFits(const std::string& s) const {
 void Os::rimBottom(Canvas& cv, const std::string& s, Rgb c, float alpha) {
   alpha = fmaxf(alpha, 0.7f);  // a secondary hint, 22 px
   if (!rimBottomFits(s)) return;
-  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(kRimR), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(dens_.rimR), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
 }
 
 void Os::rimBottomCap(Canvas& cv, const std::string& s, Rgb c, float alpha, bool glow) {
-  rimCapsule(cv, g_, s, g_.s(kRimR), false, glow ? gsAccent(c, 0.4f, 0.1f) : gs(alpha));
-  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(kRimR), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
+  rimCapsule(cv, g_, dens_, s, g_.s(dens_.rimR), false, glow ? gsAccent(c, 0.4f, 0.1f) : gs(alpha));
+  cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), g_.s(dens_.rimR), kHalfPi, s.c_str(), c, alpha * fade_, true, 1.0f);
 }
 
 void Os::glassPanel(Canvas& cv, float x0, float y0, float x1, float y1, float r, const GlassStyle& st) {
@@ -426,13 +428,13 @@ void Os::drawToast(Canvas& cv) {
   if (toastLeft_ <= 0 || toast_.empty()) return;
   // a glass capsule along the top rim (the title steps aside while it shows)
   // SoulOS Alive: a solid banner on the top rim, e1 (or amber / mint / ice), with dark words
-  const std::string s = ellipsize(fonts::caption(), toast_, g_.s(330));
+  const std::string s = ellipsize(fonts::caption(), toast_, g_.s(dens_.toastW));
   const bool tone = toastColor_ == kAmber || toastColor_ == kMint || toastColor_ == kIce;
   const Rgb fill = tone ? toastColor_ : pal_.e1;
   const Rgb ink = toastColor_ == kAmber ? Rgb::hex(0x2A1700) : toastColor_ == kMint ? Rgb::hex(0x06231B)
                   : toastColor_ == kIce ? Rgb::hex(0x071A33) : pal_.on1;
-  const float r = g_.s(kRimR), span = Canvas::arcTextSpan(fonts::caption(), r, s.c_str(), 1.0f) + g_.s(36) / r;
-  glass().flatArc(cv, g_.cx(), g_.cy(), r, g_.s(19), -kHalfPi - span * 0.5f, -kHalfPi + span * 0.5f, fill, 1.0f);
+  const float r = g_.s(dens_.rimR), span = Canvas::arcTextSpan(fonts::caption(), r, s.c_str(), 1.0f) + g_.s(dens_.toastPad) / r;
+  glass().flatArc(cv, g_.cx(), g_.cy(), r, g_.s(dens_.toastHalf), -kHalfPi - span * 0.5f, -kHalfPi + span * 0.5f, fill, 1.0f);
   cv.drawTextArc(fonts::caption(), g_.cx(), g_.cy(), r, -kHalfPi, s.c_str(), ink, 1.0f, false, 1.0f);
 }
 
@@ -613,8 +615,9 @@ void Os::drawAnswer(Canvas& cv) {
     if (acceptMode_) rimBottom(cv, R ? "nu sună până nu accepți" : "it won't ring unless you accept", kCream, kFaint);
     return;
   }
-  // the round pebble (350 x 236 on the glass) under the eyes
-  const float cx = 233, cy = 268, rx = 172, ry = 112;
+  // the round pebble (350 x 236 on the glass) under the eyes (Density.h: S's fills the glass under the slot)
+  const Density::Answer& A = dens_.answer;
+  const float cx = 233, cy = A.cy, rx = A.rx, ry = A.ry;
   const Rgb edge = err && !done ? kAmber : done ? kMint : pal_.pebe;
   cv.ellipse(g_.s(cx), g_.s(cy), g_.s(rx), g_.s(ry), edge, fade_);
   cv.ellipse(g_.s(cx), g_.s(cy), g_.s(rx - 4), g_.s(ry - 4), pal_.peb, fade_);
@@ -628,18 +631,18 @@ void Os::drawAnswer(Canvas& cv) {
     src = aiErrText(lastErr_, R);
     srcC = kAmber;
   }
-  if (!src.empty()) textAt(cv, fonts::caption(), cx, 186, ellipsize(fonts::caption(), src, g_.s(230)), srcC);
+  if (!src.empty()) textAt(cv, fonts::caption(), cx, A.srcY, ellipsize(fonts::caption(), src, g_.s(A.srcW)), srcC);
   const bool big = reply_.say.size() <= 64 && chips_.size() <= 2;
   const Font& f = big ? fonts::name() : fonts::caption();
-  const float lh = big ? 33.0f : 26.0f;
+  const float lh = big ? A.bigLine : A.line;
   const int extra = (int)chips_.size() + (reply_.rejected > 0 ? 1 : 0);
-  const int maxLines = big ? 3 : (extra ? 6 - extra : 6);
+  const int maxLines = big ? 3 : (extra ? A.smallLines - extra : A.smallLines);
   // each line as wide as the pebble at its height
   float widths[7];
-  const float y0 = 218 + (big ? 6 : 0);
+  const float y0 = A.textY + (big ? A.bigShift : 0);
   for (int i = 0; i < 7; ++i) {
     const float yy = y0 + i * lh, dy = fmaxf(fabsf(yy - lh * 0.5f - cy), fabsf(yy + lh * 0.5f - cy)) / ry;
-    widths[i] = g_.s(dy < 1 ? 2 * rx * sqrtf(1 - dy * dy) - 44 : 0);
+    widths[i] = g_.s(dy < 1 ? 2 * rx * sqrtf(1 - dy * dy) - A.pad : 0);
   }
   std::string lines[7];
   const int n = reply_.say.empty() ? 0 : wrapShaped(f, reply_.say, widths, lines, maxLines > 1 ? maxLines : 1);
@@ -648,11 +651,11 @@ void Os::drawAnswer(Canvas& cv) {
   y += 2;
   for (const std::string& c : chips_) {  // ✓ what was done, in mint
     const Font& cf = fonts::caption();
-    const std::string t = ellipsize(cf, c, g_.s(230));
+    const std::string t = ellipsize(cf, c, g_.s(A.chipW));
     const float tw = (float)Canvas::measureText(cf, t.c_str()) / g_.k();
-    checkMark(cv, cx - tw * 0.5f - 12, y, 13, kMint);
-    textAt(cv, cf, cx + 9, y, t, kMint);
-    y += 26;
+    checkMark(cv, cx - tw * 0.5f - A.chipTick, y, 13 * dens_.ts, kMint);
+    textAt(cv, cf, cx + A.chipX, y, t, kMint);
+    y += A.chip;
   }
   if (reply_.rejected > 0) {
     char b[48];
@@ -748,21 +751,23 @@ void Os::drawClaude(Canvas& cv) {
     return;
   }
   if (claude_.prompt) {  // Claude asks: an amber ring, the command on an amber-edged pebble, Allow / Deny
+    const Density::Ask& q = dens_.ask;
     rimRing(cv, 218, 0, 2 * 3.14159265f, kAmber, 0.8f, 8);
     rimTop(cv, R ? "Claude cere voie" : "Claude asks", kAmber, 1);
-    pebRect(cv, 92, 160, 374, 256, 26, pal_.peb, kAmber, 4);
-    textAt(cv, fonts::caption(), 233, 186, ellipsize(fonts::caption(), claude_.tool.empty() ? std::string("Claude") : claude_.tool, g_.s(250)), kCream, kDim);
+    pebRect(cv, q.x0, q.y0, q.x1, q.y1, q.r, pal_.peb, kAmber, 4);
+    textAt(cv, fonts::caption(), 233, q.toolY, ellipsize(fonts::caption(), claude_.tool.empty() ? std::string("Claude") : claude_.tool, g_.s(q.textW)), kCream, kDim);
     std::string lines[2];
-    const int n = wrapLines(fonts::body(), claude_.hint.empty() ? claude_.tool : claude_.hint, g_.s(250), lines, 2);
-    for (int i = 0; i < n; ++i) textAt(cv, fonts::body(), 233, (n == 1 ? 222 : 214) + i * 28, lines[i], kCream);
+    const int n = wrapLines(fonts::body(), claude_.hint.empty() ? claude_.tool : claude_.hint, g_.s(q.textW), lines, 2);
+    for (int i = 0; i < n; ++i) textAt(cv, fonts::body(), 233, (n == 1 ? q.hintY1 : q.hintY2) + i * q.hintLine, lines[i], kCream);
     buildItems(items_);
     drawItems(cv, items_);
     for (const Item& it : items_)  // ✓ on Allow
       if (it.id == IdAllow) {
         const float tw = (float)Canvas::measureText(fonts::body(), it.label.c_str()) / g_.k();
-        checkMark(cv, it.x - tw * 0.5f - 14, it.y, 15, Rgb::hex(0x06231B));
+        // (S: kept inside the pill when the word is wide)
+        checkMark(cv, fmaxf(it.x - tw * 0.5f - q.tick, it.x - it.w * 0.5f + q.tickSize * 1.2f), it.y, q.tickSize, Rgb::hex(0x06231B));
       }
-    textAt(cv, fonts::caption(), 233, 384, R ? "Ține = da · 2× = nu" : "Hold = yes · 2× = no", kCream);
+    textAt(cv, fonts::caption(), 233, q.holdY, R ? "Ține = da · 2× = nu" : "Hold = yes · 2× = no", kCream);
     return;
   }
   rimTop(cv, "Claude", kCream);

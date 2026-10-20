@@ -32,10 +32,10 @@ struct Rig {
   Os os{&alarms};
   SoulMemory mem;
   TouchGestures touch;
-  DisplayGeometry g = displays::kLcd28;
-  int W = 480, H = 480;
-  std::vector<uint16_t> fb = std::vector<uint16_t>((size_t)480 * 480);
-  Canvas cv{480, 480, fb.data()};
+  DisplayGeometry g;  // SOUL M's 2.8C by default; displays::kAmoled175 = SOUL S (Density.h)
+  int W, H;
+  std::vector<uint16_t> fb;
+  Canvas cv;
   FrameComposer comp{&cv};
   bool finger = false;
   float fx = 0, fy = 0;
@@ -53,7 +53,8 @@ struct Rig {
   std::vector<OsCmd> cmds;  // everything the OS asked the device to do
   bool haveFix = true, render = true;
 
-  explicit Rig(bool booted = true, int design = -1) {
+  explicit Rig(bool booted = true, int design = -1, const DisplayGeometry& geo = displays::kLcd28)
+      : g(geo), W(geo.w), H(geo.h), fb((size_t)geo.w * geo.h), cv(geo.w, geo.h, fb.data()) {
     os.settings().booted = booted ? 1 : 0;
     os.settings().ai = (uint8_t)AiMode::Cloud;
     snprintf(os.settings().name, sizeof os.settings().name, "Miso");
@@ -78,7 +79,7 @@ struct Rig {
     os.setPower(pw);
     StorageInfo si;
     si.fw = "1.9.0";
-    si.board = "lcd28";
+    si.board = geo.w == 480 ? "lcd28" : "amoled175";
     si.appKb = 2570;
     si.appMaxKb = 6400;
     si.flashKb = 16384;
@@ -171,7 +172,7 @@ struct Rig {
   void tapRow(int row, float gap = 0.6f) {
     os.wheelFocusRow(row);
     run(0.05f);
-    tap(233, 290, gap);
+    tap(233, os.wheel().spec().y, gap);  // the focused row (y 290 on M)
   }
   void swipe(float x0, float y0, float x1, float y1, float gap = 0.6f) {
     finger = true;
@@ -255,7 +256,8 @@ inline bool setup(Rig& s, const std::string& n) {
     os.openApp(a);
     s.run(t);
   };
-  if (n == "home-peek") {
+  if (n == "standby") {  // the eyes alone (nothing to do: the rig has run 1.2 s)
+  } else if (n == "home-peek") {
     s.tap(233, 300, 0.1f);
     s.run(1.0f);
   } else if (n == "apps") {
@@ -284,7 +286,7 @@ inline bool setup(Rig& s, const std::string& n) {
     open(AppId::Notes);
     os.wheelFocusRow(0);
     s.run(0.6f);
-    if (n == "note") s.tap(233, 290, 1.0f);
+    if (n == "note") s.tap(233, os.wheel().spec().y, 1.0f);
   } else if (n == "focus") {
     open(AppId::Focus);
   } else if (n == "timer") {
@@ -341,7 +343,7 @@ inline bool setup(Rig& s, const std::string& n) {
     os.go(View::Settings);
     s.run(0.4f);
     os.wheelReveal(100 + 11);
-    s.tap(233, 290, 1.2f);
+    s.tap(233, os.wheel().spec().y, 1.2f);
     if (n == "memory-fact") s.tapRow(1, 1.0f);
   } else if (n == "about") {
     os.go(View::About);

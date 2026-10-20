@@ -15,6 +15,7 @@
 // Plus the wheels (§4) and Claude's ask (two 68 px buttons, the "Hold = yes · 2× = no" line at >= 22 px).
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unity.h>
 
 #include <algorithm>
@@ -103,11 +104,28 @@ struct Audit {
   int glyphs = 0, controls = 0;
 };
 
-void auditState(const alive_states::State& st, Audit& out) {
-  alive_states::Rig s(st.booted);
+// the glass audited and its floors: SOUL M (480 px: 18 / 20 px words, 44 px targets, r 228) or SOUL S (466 px:
+// the same millimetres, Density.h: 28 / 31 px words, 68 px targets, r 221)
+struct Glass {
+  DisplayGeometry g = displays::kLcd28;
+  float floorPx = 18, secondaryPx = 20, targetPx = 44, R = 228;
+  static Glass of(const DisplayGeometry& g) {
+    Glass a;
+    a.g = g;
+    const Density d = Density::forGlass(g);
+    a.floorPx = roundf(d.typeFloorPx);
+    a.secondaryPx = floorf(d.secondaryPx);
+    a.targetPx = floorf(d.targetPx);
+    a.R = 0.95f * g.w * 0.5f;
+    return a;
+  }
+};
+
+void auditState(const alive_states::State& st, Audit& out, const Glass& gl = Glass()) {
+  alive_states::Rig s(st.booted, -1, gl.g);
   TEST_ASSERT_TRUE_MESSAGE(alive_states::setup(s, st.name), st.name);
-  const int W = 480, H = 480;
-  const float cx = 240, cy = 240, R = 228;
+  const int W = gl.g.w, H = gl.g.h;
+  const float cx = W * 0.5f, cy = H * 0.5f, R = gl.R;
   std::vector<uint16_t> buf((size_t)W * H, 0);
   Canvas cv(W, H, buf.data());
   Probe probe;
@@ -139,8 +157,8 @@ void auditState(const alive_states::State& st, Audit& out) {
   for (const Quad& g : probe.q) {
     for (int k = 0; k < 4 && !cut; ++k)
       if (hypotf(g.p[2 * k] - cx, g.p[2 * k + 1] - cy) > R) {
-        snprintf(m, sizeof m, "cut: a %d px glyph at (%.0f, %.0f), r %.1f > 228", g.px, g.p[2 * k], g.p[2 * k + 1],
-                 hypotf(g.p[2 * k] - cx, g.p[2 * k + 1] - cy));
+        snprintf(m, sizeof m, "cut: a %d px glyph at (%.0f, %.0f), r %.1f > %.0f", g.px, g.p[2 * k], g.p[2 * k + 1],
+                 hypotf(g.p[2 * k] - cx, g.p[2 * k + 1] - cy), R);
         fail(m);
         ++cut;
       }
@@ -153,16 +171,17 @@ void auditState(const alive_states::State& st, Audit& out) {
         ++faint;
       }
     }
-    if ((g.px < 18 || (g.a < 0.8f && g.px < 20)) && !small) {
-      snprintf(m, sizeof m, "type: a %d px glyph at %.0f%% (floor 18 px, 20 px under 80 %%) at (%.0f, %.0f)", g.px, g.a * 100, g.p[0], g.p[1]);
+    if ((g.px < gl.floorPx || (g.a < 0.8f && g.px < gl.secondaryPx)) && !small) {
+      snprintf(m, sizeof m, "type: a %d px glyph at %.0f%% (floor %.0f px, %.0f px under 80 %%) at (%.0f, %.0f)", g.px, g.a * 100,
+               gl.floorPx, gl.secondaryPx, g.p[0], g.p[1]);
       fail(m);
       ++small;
     }
   }
   for (const Os::Control& c : cs) {
     const float w = (float)c.r.w(), h = (float)c.r.h();
-    if (std::min(w, h) < 44 - 0.5f && !tiny) {
-      snprintf(m, sizeof m, "target: control %d is %.0f x %.0f px (< 44)", c.id, w, h);
+    if (std::min(w, h) < gl.targetPx - 0.5f && !tiny) {
+      snprintf(m, sizeof m, "target: control %d is %.0f x %.0f px (< %.0f)", c.id, w, h, gl.targetPx);
       fail(m);
       ++tiny;
     }
@@ -171,7 +190,7 @@ void auditState(const alive_states::State& st, Audit& out) {
     for (float x : xs)
       for (float y : ys)
         if (hypotf(x - cx, y - cy) > R + 0.5f && !cut) {
-          snprintf(m, sizeof m, "cut: control %d corner (%.0f, %.0f) at r %.1f > 228", c.id, x, y, hypotf(x - cx, y - cy));
+          snprintf(m, sizeof m, "cut: control %d corner (%.0f, %.0f) at r %.1f > %.0f", c.id, x, y, hypotf(x - cx, y - cy), R);
           fail(m);
           ++cut;
         }
@@ -272,6 +291,38 @@ static void test_audit_every_screen_is_round_safe_readable_and_tappable() {
   TEST_ASSERT_GREATER_THAN(40, alive_states::kStateCount);
   TEST_ASSERT_GREATER_THAN(2000, a.glyphs);
   TEST_ASSERT_EQUAL_INT(0, (int)a.fails.size());
+}
+
+// SOUL S (decision 2026-10-20): the core screens on the 1.75" AMOLED pass the same audit at S's floors, which are
+// M's millimetres (Density.h): type >= 28 px (2.63 mm), secondary >= 31 px, targets >= 68 px (6.4 mm), r 221
+static void test_audit_soul_s_core_screens() {
+  static const alive_states::State kCore[] = {
+      {"standby", "", true},  {"home-peek", "", true},    {"apps", "", true},       {"settings", "", true},
+      {"alarms", "", true},   {"worldclock", "", true},   {"voice-answer", "", true}, {"claude-ask", "", true},
+      {"voice-think", "", true}, {"notification", "", true},
+  };
+  const Glass gl = Glass::of(displays::kAmoled175);
+  TEST_ASSERT_EQUAL_FLOAT(28, gl.floorPx);
+  TEST_ASSERT_EQUAL_FLOAT(68, gl.targetPx);
+  Audit a;
+  for (const alive_states::State& st : kCore) auditState(st, a, gl);
+  for (const std::string& f : a.fails) printf("  AUDIT S %s\n", f.c_str());
+  printf("  audit S: %d screens, %d glyphs, %d controls, %d failures\n", (int)(sizeof kCore / sizeof kCore[0]), a.glyphs,
+         a.controls, (int)a.fails.size());
+  TEST_ASSERT_GREATER_THAN(150, a.glyphs);
+  TEST_ASSERT_EQUAL_INT(0, (int)a.fails.size());
+  // AUDIT_S_ALL=1 .pio/build/native/program: every other screen on S too, printed, not asserted (the to-do list of
+  // the S screens step: SOUL-S.md §5)
+  if (getenv("AUDIT_S_ALL")) {
+    Audit all;
+    for (int i = 0; i < alive_states::kStateCount; ++i) {
+      Audit one;
+      auditState(alive_states::kStates[i], one, gl);
+      printf("  S %-16s %s\n", alive_states::kStates[i].name, one.fails.empty() ? "ok" : "");
+      for (const std::string& f : one.fails) printf("      %s\n", f.c_str());
+    }
+  }
+  fonts::setRamp(fonts::TypeRamp::M);  // (the next tests draw SOUL M)
 }
 
 static void test_wheel_rows_fit_the_circle_and_turn_on_the_spring() {
@@ -426,6 +477,7 @@ static void test_today_one_widget_and_the_answer_pebble() {
 
 void runAuditTests() {
   RUN_TEST(test_audit_every_screen_is_round_safe_readable_and_tappable);
+  RUN_TEST(test_audit_soul_s_core_screens);
   RUN_TEST(test_audit_contrast_catches_the_old_time_picker);
   RUN_TEST(test_wheel_rows_fit_the_circle_and_turn_on_the_spring);
   RUN_TEST(test_wheel_lists_turn_act_and_end_with_new);

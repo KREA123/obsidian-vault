@@ -20,6 +20,7 @@ struct DisplayGeometry {
 
   int w = 466, h = 466;     // panel pixels
   float activeMm = 43.76f;  // diameter of the active area in millimetres
+  bool emissive = true;     // AMOLED (black = off, burn-in care: Density.h); false = an LCD with a backlight
 
   float k() const { return (float)w / kDesignPx; }
   float cx() const { return w * 0.5f; }
@@ -33,15 +34,16 @@ struct DisplayGeometry {
   float mm(float px) const { return px / pxPerMm(); }
 };
 
-// Known panels. Active diameters: 1.75" CO5300 from the Waveshare spec
-// (43.76 mm). 1.43": 1.43" x 25.4 = 36.32 mm (diagonal = diameter; not
+// Known panels. Active diameters: 1.75" CO5300 from the Waveshare STEP model
+// (43.76 mm, research/06; Waveshare's wiki and product page give 1.75", 466 x 466, CO5300, QSPI, 700 cd/m2
+// but no active diameter: 1.75" x 25.4 = 44.45 mm is the nominal diagonal, not the lit disc). 1.43": 1.43" x 25.4 = 36.32 mm (diagonal = diameter; not
 // measured). 2.8" ST7701 IPS: 70.13 mm from the bare-panel drawing of the
 // same 480x480 round glass (Twoyas); Waveshare does not state it for the
 // 2.8C. TODO(lcd28): measure the lit disc on the real board.
 namespace displays {
 constexpr DisplayGeometry kAmoled143{466, 466, 36.32f};
 constexpr DisplayGeometry kAmoled175{466, 466, 43.76f};
-constexpr DisplayGeometry kLcd28{480, 480, 70.13f};
+constexpr DisplayGeometry kLcd28{480, 480, 70.13f, false};
 }  // namespace displays
 
 }  // namespace suflet

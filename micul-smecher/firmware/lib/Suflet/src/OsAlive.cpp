@@ -114,7 +114,7 @@ bool Os::appScreen(View v) const {
 void Os::drawSlotDisc(Canvas& cv) {
   if (!appScreen(view_)) return;
   float cx, cy, rx, ry;
-  alive::slotDisc((float)g_.w, cx, cy, rx, ry);
+  alive::slotDisc((float)g_.w, cx, cy, rx, ry, dens_.card);
   const Rect box{(int)(cx - rx - 2), (int)(cy - ry - 2), (int)(cx + rx + 3), (int)(cy + ry + 3)};
   if (!overlaps(box, cv.clipRect())) return;
   cv.ellipse(cx, cy, rx, ry, pal::kBlack);
@@ -173,13 +173,13 @@ bool Os::speechRect(Rect& r) const {
   const bool dial = view_ == View::Launcher;
   const FaceLayoutT l = layoutFor(view_);
   const float S = (float)g_.w;
-  const float top = S * 0.5f + l.cy * S + 0.25f * l.k * S + (dial ? 4 : 12);
-  const float maxW = dial ? 200.0f : 340.0f;
+  const float top = S * 0.5f + l.cy * S + 0.25f * l.k * S + (dial ? dens_.speechDialGap : dens_.speechGap);
+  const float maxW = dial ? dens_.speechDialW : dens_.speechW;
   std::string lines[2];
-  const int n = wrapLines(fonts::caption(), line, maxW - 24, lines, 2);
+  const int n = wrapLines(fonts::caption(), line, maxW - dens_.speechPadX, lines, 2);
   float w = 60;
-  for (int i = 0; i < n; ++i) w = fmaxf(w, (float)Canvas::measureText(fonts::caption(), lines[i].c_str()) + 26);
-  const float h = n * 25.0f + 14;
+  for (int i = 0; i < n; ++i) w = fmaxf(w, (float)Canvas::measureText(fonts::caption(), lines[i].c_str()) + dens_.speechWPad);
+  const float h = n * dens_.speechLine + dens_.speechPadY;
   r = Rect{(int)floorf(S * 0.5f - w * 0.5f), (int)floorf(top), (int)ceilf(S * 0.5f + w * 0.5f), (int)ceilf(top + h)};
   return true;
 }
@@ -203,10 +203,11 @@ void Os::drawSpeech(Canvas& cv) {
     }
   }
   std::string lines[2];
-  const int n = wrapLines(fonts::caption(), speech_.line(), (view_ == View::Launcher ? 200.0f : 340.0f) - 24, lines, 2);
+  const int n = wrapLines(fonts::caption(), speech_.line(), (view_ == View::Launcher ? dens_.speechDialW : dens_.speechW) - dens_.speechPadX, lines, 2);
   const Font& f = fonts::caption();
+  const float lh = dens_.speechLine;
   for (int i = 0; i < n; ++i) {
-    const int base = (int)lroundf(y0 + 7 + i * 25.0f + (25 + f.ascent - f.descent) * 0.5f);
+    const int base = (int)lroundf(y0 + dens_.speechTextY + i * lh + (lh + f.ascent - f.descent) * 0.5f);
     cv.drawText(f, cx, base, lines[i].c_str(), pal_.on1, a, Align::Center);
   }
 }
@@ -279,7 +280,7 @@ void Os::drawPebble(Canvas& cv, float cx, float cy, float w, float h, Rgb edge, 
   contour(w, h);
   ras.fill(cv, p, fill, alpha);  // the stone (black for an outline pebble: it hides the orbit's dots)
   if (edge == fill) return;
-  const float t = g_.s(4) * (w / g_.s(alive::Dial::kW));  // the 4 px edge, grown with the pebble
+  const float t = g_.s(4) * (w / g_.s(alive::Dial::kW));  // the 4 px edge, grown with the pebble (M's pebble: Look too)
   if (w <= 2 * t || h <= 2 * t) return;
   p.clear();
   contour(w, h);
@@ -326,13 +327,14 @@ const Os::PebSprite* Os::pebbleSprite(int i, float scale, bool focus, float alph
       if (sprites_[k].used < sprites_[slot].used) slot = k;
   } else {  // a new slot: its buffers made once at the largest pebble's size, so reusing it never reallocates
     sprites_.emplace_back();
-    const size_t most = (size_t)((((int)ceilf(g_.s(alive::Dial::kW) * 1.6f) + 6) & ~1) * (((int)ceilf(g_.s(alive::Dial::kH) * 1.6f) + 6) & ~1));
+    const size_t most = (size_t)((((int)ceilf(g_.s(dial_.spec().w) * 1.6f) + 6) & ~1) * (((int)ceilf(g_.s(dial_.spec().h) * 1.6f) + 6) & ~1));
     sprites_.back().col.reserve(most);
     sprites_.back().a.reserve(most);
   }
   PebSprite& sp = sprites_[slot];
   // build it: the stone (and its glyph) drawn on black in a small canvas, and the stone's coverage (white)
-  const float sc = q / 32.0f, w = g_.s(alive::Dial::kW) * sc, h = g_.s(alive::Dial::kH) * sc;
+  const float sc = q / 32.0f, w = g_.s(dial_.spec().w) * sc, h = g_.s(dial_.spec().h) * sc;
+  const float gs = dial_.spec().w / alive::Dial::kW;  // the glyph grows with the pebble (1 on M)
   sp.key = key;
   sp.q = q;
   sp.used = spriteTick_;
@@ -348,7 +350,7 @@ const Os::PebSprite* Os::pebbleSprite(int i, float scale, bool focus, float alph
   else drawPebble(tc, cx, cy, w, h, c, pal::kBlack, 1);
   const float f = fade_;
   fade_ = 1;  // (drawGlyph applies the screen's fade: the sprite is drawn whole, the blit fades it)
-  drawGlyph(tc, appAt(i), cx / g_.k(), cy / g_.k(), 24 * sc, focus ? pal_.ink(i) : c, 1, fmaxf(2.6f, g_.s(4) * sc));
+  drawGlyph(tc, appAt(i), cx / g_.k(), cy / g_.k(), 24 * gs * sc, focus ? pal_.ink(i) : c, 1, fmaxf(2.6f, g_.s(4) * gs * sc));
   fade_ = f;
   drawPebble(mc, cx, cy, w, h, pal::kWhite, pal::kWhite, 1);
   sp.a.resize(n);
@@ -391,9 +393,11 @@ void Os::drawDial(Canvas& cv) {
   const Rect clip = cv.clipRect();
   const float cx = g_.cx(), cy = g_.cy();
   // the only track: a dotted e1 orbit (3 px dots, 55 %)
-  const float R = g_.s(alive::Dial::kR), dr = 1.6f;
-  for (int i = 0; i < kOrbitDots; ++i) {
-    const float a = i * 2 * kPi / kOrbitDots, x = cx + R * cosf(a), y = cy + R * sinf(a);
+  const alive::DialSpec& sp = dial_.spec();
+  const float R = g_.s(sp.r), dr = 1.6f;
+  const int dots = sp.dots > 0 ? sp.dots : kOrbitDots;
+  for (int i = 0; i < dots; ++i) {
+    const float a = i * 2 * kPi / dots, x = cx + R * cosf(a), y = cy + R * sinf(a);
     const Rect d{(int)(x - 4), (int)(y - 4), (int)(x + 5), (int)(y + 5)};
     if (overlaps(d, clip)) cv.ellipse(x, y, dr, dr, pal_.e1, 0.55f * fade_);
   }
@@ -405,7 +409,7 @@ void Os::drawDial(Canvas& cv) {
       const alive::Dial::Pebble pb = dial_.place(i);
       const float a = pb.alpha * fade_;
       if (a < 0.02f) continue;
-      const float w = g_.s(alive::Dial::kW) * pb.scale, h = g_.s(alive::Dial::kH) * pb.scale;
+      const float w = g_.s(sp.w) * pb.scale, h = g_.s(sp.h) * pb.scale;
       const float px = g_.s(pb.x), py = g_.s(pb.y);
       const Rect box{(int)(px - w * 0.5f - 3), (int)(py - h * 0.5f - 3), (int)(px + w * 0.5f + 4), (int)(py + h * 0.5f + 4)};
       if (!overlaps(box, clip)) continue;
@@ -414,21 +418,22 @@ void Os::drawDial(Canvas& cv) {
   // the name on the arc above the focused pebble, the fact under the eyes (they step aside for speech)
   if (!speech_.showing()) {
     const std::string name = appName(appAt(f));
-    cv.drawTextArc(fonts::name(), cx, cy, g_.s(120), kPi * 0.5f, name.c_str(), pal_.e1, fade_ * dial_.openness(), true, 0.5f);
+    cv.drawTextArc(fonts::name(), cx, cy, g_.s(sp.nameR), kPi * 0.5f, name.c_str(), pal_.e1, fade_ * dial_.openness(), true, 0.5f);
     std::string fact = appFact(appAt(f));
-    if (Canvas::measureText(fonts::caption(), fact.c_str()) > g_.s(230)) {
+    if (Canvas::measureText(fonts::caption(), fact.c_str()) > g_.s(sp.factW)) {
       std::string l[1];
-      wrapLines(fonts::caption(), fact, g_.s(230), l, 1);
+      wrapLines(fonts::caption(), fact, g_.s(sp.factW), l, 1);
       fact = l[0];
     }
-    textAt(cv, fonts::caption(), 233, 290, fact, kInk, 0.84f * dial_.openness());
+    textAt(cv, fonts::caption(), 233, sp.factY, fact, kInk, 0.84f * dial_.openness());
   }
   rimTop(cv, clockOf(now_) + (previewing() ? (ro() ? " · previzualizare" : " · preview") : ""), kInk, 0.82f);
 }
 
 void Os::invalidateDial() {
   // name + fact (the middle band under the eyes, down to the arc)
-  invalidate(Rect{(int)g_.s(80), (int)g_.s(268), (int)g_.s(386), (int)g_.s(380)});
+  const alive::DialSpec& sp = dial_.spec();
+  invalidate(Rect{(int)g_.s(sp.dmgX0), (int)g_.s(sp.dmgY0), (int)g_.s(sp.dmgX1), (int)g_.s(sp.dmgY1)});
 }
 
 void Os::dialTap(float x, float y) {
@@ -441,7 +446,7 @@ void Os::dialTap(float x, float y) {
     dialIdleT_ = 0;
     return;
   }
-  if (hypotf(px - 233, py - 233) < 140) {  // the middle (the eyes, the fact): the focused one
+  if (hypotf(px - 233, py - 233) < dial_.spec().tapR) {  // the middle (the eyes, the fact): the focused one
     react(alive::Event::Tap);
     openApp(appAt(dial_.focused()));
   }
@@ -621,7 +626,7 @@ void Os::aliveUpdate(float dt) {
     const alive::Dial::Pebble pb = dial_.place(i);
     PebShown s;
     if (pb.alpha * fade_ >= 0.02f) {
-      const float w = g_.s(alive::Dial::kW) * pb.scale * 0.5f + 4, h = g_.s(alive::Dial::kH) * pb.scale * 0.5f + 4;
+      const float w = g_.s(dial_.spec().w) * pb.scale * 0.5f + 4, h = g_.s(dial_.spec().h) * pb.scale * 0.5f + 4;
       const float px = g_.s(pb.x), py = g_.s(pb.y);
       s.r = Rect{(int)floorf(px - w), (int)floorf(py - h), (int)ceilf(px + w), (int)ceilf(py + h)};
       s.a = (uint8_t)lroundf(pb.alpha * fade_ * 255);

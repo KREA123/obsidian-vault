@@ -48,6 +48,14 @@ const Font& body();     // 27 px Bricolage Grotesque 500: rows, body
 const Font& name();     // 30 px Bricolage Grotesque 700: the dial's curved app name, titles
 const Font& title();    // 36 px Bricolage Grotesque 700: big titles
 const Font& bigDigits();  // 104 px Bricolage Grotesque 700, 0-9 and ':' only: the alarm time picker (1.9)
+// The type ramp of the glass (Density.h): M = the sizes above (the 2.8" reference glass); S = the 1.75" AMOLED's,
+// the type floor kept in millimetres: tag 28, caption 32, body 37, name 40, title 45 px (FontAliveSData.h). Set
+// once by Os::begin() from the display's density; tag() .. title() then return that ramp's atlases. A build for
+// the 2.8C does not link the S atlases (S then falls back to M: FontAliveS.cpp).
+enum class TypeRamp : uint8_t { M, S };
+void setRamp(TypeRamp r);
+TypeRamp ramp();
+bool hasRamp(TypeRamp r);  // the atlases are in this build
 }  // namespace fonts
 
 enum class Align : uint8_t { Left, Center, Right };
