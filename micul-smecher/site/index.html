@@ -8,7 +8,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="SOUL · your ai has a brain. give it a soul.">
 <meta property="og:description" content="A palm-sized aluminium stone with two living eyes, born with one of 120 designs. Your own AI, embodied. From €249. Waitlist open.">
-<meta property="og:image" content="media/soul-m-hero.jpg">
+<meta property="og:image" content="media/v10/og-s.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FAF8F3" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0D0D0F" media="(prefers-color-scheme: dark)">
@@ -191,6 +191,9 @@ button,input,select{font:inherit;color:inherit}
 .frame>.tag{position:absolute;left:16px;top:16px;z-index:3;pointer-events:none}
 .side-fig{max-width:520px;justify-self:center;width:100%}
 .side-fig img{display:block;width:100%}
+.size-fig{margin-top:clamp(48px,6vw,88px);background:#E9DCCB}
+.size-fig figcaption{position:absolute;left:16px;right:16px;bottom:14px;z-index:3;font:500 .7rem/1.45 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:#3A2E22;text-align:center;pointer-events:none}
+@media (max-width:600px){.size-fig figcaption{position:static;padding:12px 16px 16px;background:#E9DCCB}}
 .dims{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;color:#16181D}
 .dims text{font:500 13px var(--f-mono);fill:#16181D}
 .dims .ln{stroke:#16181D;stroke-width:1.4;fill:none;stroke-dasharray:var(--len);stroke-dashoffset:var(--len);transition:stroke-dashoffset 1.2s var(--ease)}
@@ -581,7 +584,7 @@ select.input option{background:#121214;color:#F6F3EC}
       </picture>
       <svg class="dims" viewBox="0 0 900 1160" aria-hidden="true" preserveAspectRatio="none">
         <path class="ln" style="--len:900" d="M760 140 V1050 M745 140 H775 M745 1050 H775"/>
-        <text x="782" y="600">70.8 mm</text>
+        <text x="782" y="600" data-i18n="dims.h">70.8 mm</text>
         <path class="ln" style="--len:420" d="M270 1105 H630 M270 1092 V1118 M630 1092 V1118"/>
         <text x="400" y="1092">23 mm</text>
       </svg>
@@ -591,12 +594,24 @@ select.input option{background:#121214;color:#F6F3EC}
       <h2 class="h-l rv" id="obj-title" data-i18n="obj.h2">a stone you<br>want to hold.</h2>
       <p class="lead rv" data-i18n="obj.lead">Its shape is called MĂRGĂRITAR: a pebble with soft shoulders at the crown, cut from aluminium and finished like a river stone. One round black glass. Nothing else on the front: no logo, no buttons.</p>
       <dl class="facts rv">
-        <div><dt data-i18n="obj.k1">size S</dt><dd>63 × 70.8 × 23 mm</dd></div>
+        <div><dt data-i18n="obj.k1">size S</dt><dd data-i18n="obj.v1">63 × 70.8 × 23 mm</dd></div>
         <div><dt data-i18n="obj.k2">glass</dt><dd data-i18n="obj.v2">flat, black, Ø52 mm</dd></div>
         <div><dt data-i18n="obj.k3">body</dt><dd data-i18n="obj.v3">aluminium 6061</dd></div>
         <div><dt data-i18n="obj.k4">finish</dt><dd data-i18n="obj.v4">bead-blasted, anodised</dd></div>
       </dl>
     </div>
+  </div>
+  <div class="wrap">
+    <figure class="frame size-fig rv" id="size-fig">
+      <span class="tag" data-i18n="size.tag">concept render · to scale</span>
+      <div class="shot" data-glass="desk" data-design="original" data-role="desk">
+        <picture>
+          <source type="image/avif" srcset="media/v10/desk-s-800.avif 800w, media/v10/desk-s-1600.avif 1600w" sizes="(max-width:1240px) calc(100vw - 32px), 1144px">
+          <img src="media/v10/desk-s-1600.webp" srcset="media/v10/desk-s-800.webp 800w, media/v10/desk-s-1600.webp 1600w" sizes="(max-width:1240px) calc(100vw - 32px), 1144px" width="1600" height="800" loading="lazy" decoding="async" alt="Concept render of SOUL size S in silver on an oak desk next to a phone, at the same scale: it stands about half as tall as the phone is long." data-i18n-attr="alt:size.alt">
+        </picture>
+      </div>
+      <figcaption data-i18n="size.cap">size S to scale, next to a 71.5 × 147 mm phone · 63 × 70.8 × 23 mm</figcaption>
+    </figure>
   </div>
 </section>
 
@@ -770,7 +785,7 @@ select.input option{background:#121214;color:#F6F3EC}
             <span class="os-lid t" aria-hidden="true"></span><span class="os-lid b" aria-hidden="true"></span>
           </div>
         </div>
-        <figcaption data-i18n="os.fig">Screens from the SoulOS web prototype, 480 × 480</figcaption>
+        <figcaption data-i18n="os.fig">Screens from the SoulOS web prototype, 480 × 480. On SOUL S they run at 466 × 466.</figcaption>
       </figure>
       <div class="rv">
         <ol class="os-caps">
@@ -843,7 +858,7 @@ select.input option{background:#121214;color:#F6F3EC}
     <div class="sb">
       <dl class="specs">
         <div><dt data-i18n="sp.k1">display</dt><dd data-i18n="sp.v1">round 1.75″ AMOLED, 466 × 466, true black, under flat Ø52 glass</dd></div>
-        <div><dt data-i18n="sp.k2">size</dt><dd>≈ 63 × 70.8 × 23 mm</dd></div>
+        <div><dt data-i18n="sp.k2">size</dt><dd data-i18n="sp.v2">≈ 63 × 70.8 × 23 mm</dd></div>
         <div><dt data-i18n="sp.k3">body</dt><dd data-i18n="sp.v3">aluminium 6061, bead-blasted and anodised</dd></div>
         <div><dt data-i18n="sp.k4">colours</dt><dd data-i18n="sp.v4">Silver, Graphite, Midnight, Ember, Champagne</dd></div>
         <div><dt data-i18n="sp.k5">eyes</dt><dd data-i18n="sp.v5">one of 120 designs, decided at birth</dd></div>
@@ -852,6 +867,8 @@ select.input option{background:#121214;color:#F6F3EC}
         <div><dt data-i18n="sp.k8">voice</dt><dd data-i18n="sp.v8">hold the glass to talk; speaker in the side seam</dd></div>
         <div><dt data-i18n="sp.k9">camera</dt><dd data-i18n="sp.v9">none</dd></div>
         <div><dt data-i18n="sp.k10">charging</dt><dd data-i18n="sp.v10">in OU, its egg, through contacts in its foot</dd></div>
+        <div><dt data-i18n="sp.k13">battery</dt><dd data-i18n="sp.v13">750 mAh LiPo · about a day of typical use (our estimate)</dd></div>
+        <div><dt data-i18n="sp.k14">weight</dt><dd data-i18n="sp.v14">≈ 85 g (estimate)</dd></div>
         <div><dt data-i18n="sp.k11">price</dt><dd><span data-i18n="price.from">from</span> <span data-price="from">€249</span></dd></div>
         <div><dt data-i18n="sp.k12">status</dt><dd data-i18n="sp.v12">pre-launch · not CE-certified yet</dd></div>
       </dl>
@@ -862,7 +879,7 @@ select.input option{background:#121214;color:#F6F3EC}
           <li><div><b data-i18n="box.1">SOUL, size S</b><span data-i18n="box.1p">in the colour you choose, with the eyes it chooses</span></div></li>
           <li><div><b data-i18n="box.2">OU, its charging egg</b><span data-i18n="box.2p">where it charges and sleeps</span></div></li>
         </ol>
-        <p class="note" style="margin:0" data-i18n="box.note">The final list, battery life and accessories will be published before reservations open.</p>
+        <p class="note" style="margin:0" data-i18n="box.note">The final list, measured battery life and accessories will be published before reservations open.</p>
       </aside>
     </div>
     <p class="note" data-i18n="sp.note">All product images are concept renders, not photos. Specifications describe the design in development and may change before production.</p>
@@ -884,7 +901,7 @@ select.input option{background:#121214;color:#F6F3EC}
       <details><summary data-i18n="q5">Does it listen all the time? Does it have a camera?</summary><div class="a" data-i18n="a5">No and no. It listens only while your finger is on the glass. There is no wake word and no camera.</div></details>
       <details><summary data-i18n="q6">Can I choose its eyes?</summary><div class="a" data-i18n="a6">No, and that's the fun. You choose the colour of the body. The eyes are decided once, at first power-on, from the chip's unique ID: one of 120 designs, some much rarer than others. The odds are published above.</div></details>
       <details><summary data-i18n="q7">Does it work away from home?</summary><div class="a" data-i18n="a7">Yes. Offline it's always alive. For AI it needs Wi-Fi, and it can roam on your phone's hotspot.</div></details>
-      <details><summary data-i18n="q8">How long does the battery last?</summary><div class="a" data-i18n="a8">We'll publish measured battery life before we ask anyone to pay. It charges in OU, its egg.</div></details>
+      <details><summary data-i18n="q8">How long does the battery last?</summary><div class="a" data-i18n="a8">Our estimate for size S is about a day of typical use (roughly 21 to 34 hours) on its 750 mAh battery. We'll publish measured battery life before we ask anyone to pay. It charges in OU, its egg.</div></details>
       <details><summary data-i18n="q9">Is it a toy?</summary><div class="a" data-i18n="a9">No. SOUL is made for adults and teens 16 and over. It contains small parts and a lithium battery.</div></details>
       <details><summary data-i18n="q10">Who makes it?</summary><div class="a" data-i18n="a10">ARTEMIS DIGITAL S.R.L., in Bucharest, Romania. Designed in Romania. We'll name our manufacturing partners before we ask anyone to pay.</div></details>
     </div>

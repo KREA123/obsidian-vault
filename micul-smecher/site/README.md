@@ -1,6 +1,6 @@
 # Landing SOUL v3
 
-Pagina publică pentru SOUL. Se publică doar ce e în lista de mai jos. Folderul `screenshots/` și `_archive/` nu se publică (`_archive/v2-superseded/` = landing-ul vechi v2, pe mărimea M; e depășit, nu-l republica).
+Pagina publică pentru SOUL. Se publică doar ce e în lista de mai jos. Folderele `screenshots/`, `_archive/` și `_tools/` nu se publică (`_archive/v2-superseded/` = landing-ul vechi v2, pe mărimea M; e depășit, nu-l republica).
 
 ```
 site/
@@ -10,11 +10,15 @@ site/
 ├── os.html           # demo SoulOS (îl întreține alt flux; nu-l edita de aici)
 ├── eyes/             # motorul de ochi (eyes.js) + cele 120 de modele (designs.js)
 ├── fonts/            # Bricolage Grotesque + Martian Mono, găzduite local
-├── media/v10 (S: hand-s, side-s), media/v3, media/v2, media/soul-m-hero.jpg
+├── media/v10 (S: hand-s, side-s, desk-s, og-s.jpg), media/v3, media/v2, media/v4
+├── _tools/site_media_v10.py  # desk-s (sticla golită + harta sticlei) și og-s.jpg din renders/v10; nu se publică
 └── favicon.*, icon-*.png, apple-touch-icon.png, site.webmanifest
 ```
 
 ## Ce e adevărat pe pagină
+
+- Produsul e **mărimea S** (sursa unică: `docs/size-s.json`): 63 × 70,8 × 23 mm, sticlă plată Ø52, AMOLED rotund 1,75″ 466 × 466, LiPo 750 mAh, ≈ 85 g. Bateria (cam o zi, 21–34 h) și greutatea sunt **estimări** și pe pagină scrie asta. Prototipul de lucru e M (2.8C); pe pagină nu apare.
+- Imaginile unde se vede mărimea vin din `renders/v10`: mâna (`hand-s`), profilul (`side-s`) și „la scară, lângă un telefon” (`desk-s`, telefon generic 71,5 × 147 mm). Restul randărilor (față, culori, familie, noapte) au aceeași formă MĂRGĂRITAR și nu arată mărimea.
 
 - Prelansare: doar listă de așteptare. Nu se plătește nimic, nu există precomandă, avans sau ediție „Founders”.
 - Preț: **de la 249 €**, preț final. ARTEMIS DIGITAL S.R.L. e neplătitoare de TVA (ANAF, scpTVA=false, verificat pe 12.10.2026), deci pagina nu scrie „cu TVA”; subsolul spune „Neplătitor de TVA”. Dacă firma devine plătitoare de TVA, adaugă textul înapoi și prefixul RO la CUI.

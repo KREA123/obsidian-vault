@@ -8,7 +8,7 @@
       </picture>
       <svg class="dims" viewBox="0 0 900 1160" aria-hidden="true" preserveAspectRatio="none">
         <path class="ln" style="--len:900" d="M760 140 V1050 M745 140 H775 M745 1050 H775"/>
-        <text x="782" y="600">70.8 mm</text>
+        <text x="782" y="600" data-i18n="dims.h">{{ 'soul.dims_h' | t }}</text>
         <path class="ln" style="--len:420" d="M270 1105 H630 M270 1092 V1118 M630 1092 V1118"/>
         <text x="400" y="1092">23 mm</text>
       </svg>
@@ -18,12 +18,24 @@
       <h2 class="h-l rv" id="obj-title" data-i18n="obj.h2">{{ 'soul.obj_h2_html' | t }}</h2>
       <p class="lead rv" data-i18n="obj.lead">{{ 'soul.obj_lead' | t }}</p>
       <dl class="facts rv">
-        <div><dt data-i18n="obj.k1">{{ 'soul.obj_k1' | t }}</dt><dd>63 × 70.8 × 23 mm</dd></div>
+        <div><dt data-i18n="obj.k1">{{ 'soul.obj_k1' | t }}</dt><dd data-i18n="obj.v1">{{ 'soul.obj_v1' | t }}</dd></div>
         <div><dt data-i18n="obj.k2">{{ 'soul.obj_k2' | t }}</dt><dd data-i18n="obj.v2">{{ 'soul.obj_v2' | t }}</dd></div>
         <div><dt data-i18n="obj.k3">{{ 'soul.obj_k3' | t }}</dt><dd data-i18n="obj.v3">{{ 'soul.obj_v3' | t }}</dd></div>
         <div><dt data-i18n="obj.k4">{{ 'soul.obj_k4' | t }}</dt><dd data-i18n="obj.v4">{{ 'soul.obj_v4' | t }}</dd></div>
       </dl>
     </div>
+  </div>
+  <div class="wrap">
+    <figure class="frame size-fig rv" id="size-fig">
+      <span class="tag" data-i18n="size.tag">{{ 'soul.size_tag' | t }}</span>
+      <div class="shot" data-glass="desk" data-design="original" data-role="desk">
+        <picture>
+          <source type="image/avif" srcset="{{ 'desk-s-800.avif' | asset_url }} 800w, {{ 'desk-s-1600.avif' | asset_url }} 1600w" sizes="(max-width:1240px) calc(100vw - 32px), 1144px">
+          <img src="{{ 'desk-s-1600.webp' | asset_url }}" srcset="{{ 'desk-s-800.webp' | asset_url }} 800w, {{ 'desk-s-1600.webp' | asset_url }} 1600w" sizes="(max-width:1240px) calc(100vw - 32px), 1144px" width="1600" height="800" loading="lazy" decoding="async" alt="{{ 'soul.size_alt' | t }}" data-i18n-attr="alt:size.alt">
+        </picture>
+      </div>
+      <figcaption data-i18n="size.cap">{{ 'soul.size_cap' | t }}</figcaption>
+    </figure>
   </div>
 </section>
 {% schema %}

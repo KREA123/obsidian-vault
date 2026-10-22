@@ -39,7 +39,9 @@ const RO = {
   "obj.alt": "Randare de concept: SOUL din profil, o pietricică subțire de aluminiu, adâncă de 23 mm, cu fața de sticlă neagră ușor înclinată în sus și fanta difuzorului în cusătura laterală.",
   "obj.eyebrow": "obiectul · MĂRGĂRITAR", "obj.h2": "o piatră pe care<br>vrei s-o ții în mână.",
   "obj.lead": "Forma lui se numește MĂRGĂRITAR: o pietricică cu umeri moi la creștet, din aluminiu, finisată ca o piatră de râu. O singură sticlă neagră rotundă. Nimic altceva pe față: fără logo, fără butoane.",
-  "obj.k1": "mărimea S", "obj.k2": "sticla", "obj.v2": "plată, neagră, Ø52 mm", "obj.k3": "corp", "obj.v3": "aluminiu 6061", "obj.k4": "finisaj", "obj.v4": "sablat, anodizat",
+  "obj.k1": "mărimea S", "obj.v1": "63 × 70,8 × 23 mm", "dims.h": "70,8 mm", "obj.k2": "sticla", "obj.v2": "plată, neagră, Ø52 mm", "obj.k3": "corp", "obj.v3": "aluminiu 6061", "obj.k4": "finisaj", "obj.v4": "sablat, anodizat",
+  "size.tag": "randare de concept · la scară", "size.cap": "mărimea S la scară, lângă un telefon de 71,5 × 147 mm · 63 × 70,8 × 23 mm",
+  "size.alt": "Randare de concept: SOUL mărimea S, argintiu, pe un birou de stejar lângă un telefon, la aceeași scară: e cam cât jumătate din lungimea telefonului.",
   "col.eyebrow": "cinci aluminiuri", "col.h2": "tu alegi corpul.<br>ochii se aleg singuri.", "col.legend": "Culoare",
   "col.same": "Toate culorile costă la fel. Aluminiu 6061 sablat și anodizat, cu fața din sticlă neagră.",
   "col.alt": "Randare de concept: cinci SOUL-uri în șir, din aluminiu Grafit, Jar, Argint, Albastru noapte și Șampanie, fiecare cu perechea lui de ochi vii.",
@@ -75,7 +77,7 @@ const RO = {
   "os.a2": "Harta în SoulOS: ochii stau într-un cerc negru, sus, peste hartă, cu un buton Where to? dedesubt.",
   "os.a3": "Cadranul SoulOS în galben și albastru: culorile ochilor galbeni Sunday Toast pe un corp Albastru noapte.",
   "os.a4": "Ecranul Talk din SoulOS imediat după deschidere: ochii sus, Your Claude, Hold, or type și un buton Write to Claude.",
-  "os.fig": "Ecrane din prototipul web SoulOS, 480 × 480",
+  "os.fig": "Ecrane din prototipul web SoulOS, 480 × 480. Pe SOUL S rulează la 466 × 466.",
   "os.c1t": "un cadran făcut pentru cerc", "os.c1": "Aplicațiile stau în jurul ochilor ca niște pietricele. Rotești inelul cu degetul. Marginea rotundă nu taie nimic.",
   "os.c2t": "ochii rămân cu tine", "os.c2": "Deschizi o hartă, o notiță sau AI-ul: ochii urcă în partea de sus a cercului și reacționează în continuare. Nu pleacă niciodată de pe ecran.",
   "os.c3t": "culori din ochii cu care s-a născut", "os.c3": "Ecranele fiecărui SOUL își iau culorile din perechea lui de ochi și din corpul de aluminiu. Aici: ochi Sunday Toast pe Albastru noapte.",
@@ -95,14 +97,15 @@ const RO = {
   "pr5t": "spune mereu că e un AI.", "pr5p": "Nu se dă drept om, fără serii de zile, fără șantaj emoțional, fără bosumflări pentru atenție.",
   "pr6t": "nu devine niciodată o cărămidă.", "pr6p": "Personalitatea lui rulează pe dispozitiv. Dacă dispărem vreodată, publicăm firmware-ul. 16+, nu e o jucărie.",
   "sp.eyebrow": "mărimea S · specificații", "sp.h2": "partea plictisitoare.",
-  "sp.k1": "ecran", "sp.v1": "AMOLED rotund de 1,75″, 466 × 466, negru adevărat, sub sticlă plată Ø52", "sp.k2": "dimensiuni",
+  "sp.k1": "ecran", "sp.v1": "AMOLED rotund de 1,75″, 466 × 466, negru adevărat, sub sticlă plată Ø52", "sp.k2": "dimensiuni", "sp.v2": "≈ 63 × 70,8 × 23 mm",
   "sp.k3": "corp", "sp.v3": "aluminiu 6061, sablat și anodizat", "sp.k4": "culori", "sp.v4": "Argint, Grafit, Albastru noapte, Jar, Șampanie",
   "sp.k5": "ochi", "sp.v5": "unul din 120 de modele, decis la naștere", "sp.k6": "creier", "sp.v6": "ESP32-S3, Bluetooth LE și Wi-Fi",
   "sp.k7": "AI", "sp.v7": "Claude-ul tău, ChatGPT-ul tău sau offline", "sp.k8": "voce", "sp.v8": "ții sticla ca să vorbești; difuzor în cusătura laterală",
   "sp.k9": "cameră", "sp.v9": "niciuna", "sp.k10": "încărcare", "sp.v10": "în OU, oul lui, prin contactele din picior",
+  "sp.k13": "baterie", "sp.v13": "LiPo de 750 mAh · cam o zi de folosire obișnuită (estimarea noastră)", "sp.k14": "greutate", "sp.v14": "≈ 85 g (estimare)",
   "sp.k11": "preț", "sp.k12": "stadiu", "sp.v12": "prelansare · încă fără certificare CE",
   "box.k": "planificat", "box.t": "ce e în cutie", "box.1": "SOUL, mărimea S", "box.1p": "în culoarea aleasă de tine, cu ochii aleși de el", "box.2": "OU, oul lui de încărcare", "box.2p": "unde se încarcă și doarme",
-  "box.note": "Lista finală, autonomia bateriei și accesoriile le publicăm înainte să se deschidă rezervările.",
+  "box.note": "Lista finală, autonomia măsurată a bateriei și accesoriile le publicăm înainte să se deschidă rezervările.",
   "sp.note": "Toate imaginile produsului sunt randări de concept, nu fotografii. Specificațiile descriu designul aflat în dezvoltare și se pot schimba înainte de producție.",
   "faq.eyebrow": "întrebări", "faq.h2": "întrebări bune.",
   "q1": "Îl pot cumpăra acum?", "a1": "Încă nu. SOUL are Bluetooth și Wi-Fi, deci trebuie să treacă testele CE (Directiva UE privind echipamentele radio) într-un laborator acreditat înainte să-l poată vinde cineva. Încă nu are certificare CE. Până atunci există doar o listă de așteptare: fără plată, fără precomenzi, fără avansuri.",
@@ -112,7 +115,7 @@ const RO = {
   "q5": "Ascultă tot timpul? Are cameră?", "a5": "Nu și nu. Ascultă doar cât timp ții degetul pe sticlă. Nu are cuvânt de trezire și nu are cameră.",
   "q6": "Pot să-i aleg ochii?", "a6": "Nu, și tocmai asta e distracția. Tu alegi culoarea corpului. Ochii se decid o singură dată, la prima pornire, din ID-ul unic al cipului: unul din 120 de modele, unele mult mai rare decât altele. Șansele sunt publicate mai sus.",
   "q7": "Merge și departe de casă?", "a7": "Da. Offline e mereu viu. Pentru AI are nevoie de Wi-Fi și poate merge pe hotspotul telefonului tău.",
-  "q8": "Cât ține bateria?", "a8": "Publicăm autonomia măsurată înainte să cerem cuiva să plătească. Se încarcă în OU, oul lui.",
+  "q8": "Cât ține bateria?", "a8": "Estimarea noastră pentru mărimea S e cam o zi de folosire obișnuită (între 21 și 34 de ore, aproximativ) cu bateria de 750 mAh. Publicăm autonomia măsurată înainte să cerem cuiva să plătească. Se încarcă în OU, oul lui.",
   "q9": "E o jucărie?", "a9": "Nu. SOUL e făcut pentru adulți și adolescenți de peste 16 ani. Conține piese mici și o baterie cu litiu.",
   "q10": "Cine îl face?", "a10": "ARTEMIS DIGITAL S.R.L., din București, România. Proiectat în România. Anunțăm partenerii de producție înainte să cerem cuiva să plătească.",
   "res.alt": "SOUL în culoarea aleasă, cu ochii urmărindu-te cum completezi formularul.",
@@ -265,7 +268,7 @@ const rarColor = k => (RAR[k] && RAR[k].color) || "#C9C4B8";
 const numOf = d => d.num || "#" + String(d.n).padStart(3, "0");
 
 /* where the glass sits in each picture: centre (fraction of the image) and the 2×2 map of the unit disc, in image px */
-const GLASS = {"hand":{"w":1600,"h":1200,"glass":[{"c":[0.5035,0.48152],"m":[166.99,8.89,8.89,124.74]}]},"night":{"w":960,"h":1200,"glass":[{"c":[0.49863,0.4907],"m":[140.12,-2.42,-2.42,152.05]}]},"family":{"w":2000,"h":1125,"glass":[{"c":[0.15108,0.49004],"m":[117.63,0,0,117.63]},{"c":[0.31614,0.4937],"m":[119.36,0,0,119.36]},{"c":[0.50151,0.50236],"m":[121.31,0,0,121.31]},{"c":[0.68943,0.49376],"m":[118.72,0,0,118.72]},{"c":[0.85907,0.48349],"m":[115.39,0,0,115.39]}]},"front":{"w":1956,"h":2236,"glass":[{"c":[0.5,0.46868],"m":[671.93,0,0,669.08]}]},"col":{"w":1223,"h":1469,"glass":[{"c":[0.55014,0.46756],"m":[390.82,-18.17,22.56,432.22]}]}};
+const GLASS = {"desk":{"w":1600,"h":800,"glass":[{"c":[0.50558,0.33767],"m":[125.55,-0.96,-0.96,123.0]}]},"hand":{"w":1600,"h":1200,"glass":[{"c":[0.5035,0.48152],"m":[166.99,8.89,8.89,124.74]}]},"night":{"w":960,"h":1200,"glass":[{"c":[0.49863,0.4907],"m":[140.12,-2.42,-2.42,152.05]}]},"family":{"w":2000,"h":1125,"glass":[{"c":[0.15108,0.49004],"m":[117.63,0,0,117.63]},{"c":[0.31614,0.4937],"m":[119.36,0,0,119.36]},{"c":[0.50151,0.50236],"m":[121.31,0,0,121.31]},{"c":[0.68943,0.49376],"m":[118.72,0,0,118.72]},{"c":[0.85907,0.48349],"m":[115.39,0,0,115.39]}]},"front":{"w":1956,"h":2236,"glass":[{"c":[0.5,0.46868],"m":[671.93,0,0,669.08]}]},"col":{"w":1223,"h":1469,"glass":[{"c":[0.55014,0.46756],"m":[390.82,-18.17,22.56,432.22]}]}};
 
 const LIVE = [];   // { inst, cv, role, follow, shot }
 function mountGlass(shot) {
@@ -821,7 +824,7 @@ if ("IntersectionObserver" in window) {
     const io2 = new IntersectionObserver(es => es.forEach(e => {
       if (!e.isIntersecting || seen.has(e.target)) return; seen.add(e.target);
       const r = LIVE.find(x => x.cv === e.target);
-      if (r && ["blink", "follow", "family", "cfg"].includes(r.role)) setTimeout(() => r.inst.react(pick(["hello", "wink", "happy"]), 1.4), 150 + Math.random() * 500);
+      if (r && ["blink", "follow", "family", "cfg", "desk"].includes(r.role)) setTimeout(() => r.inst.react(pick(["hello", "wink", "happy"]), 1.4), 150 + Math.random() * 500);
     }), { threshold: .6 });
     LIVE.forEach(r => io2.observe(r.cv));
   }
