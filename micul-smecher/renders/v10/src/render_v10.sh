@@ -4,6 +4,7 @@
 # Usage:  ./render_v10.sh [shot ...]        default: hero family side hand desk ou_night vs_m
 #         PREVIEW=1 ./render_v10.sh hero    (half resolution, few samples -> $TMP/<shot>_preview.png)
 #         ./render_v10.sh alive             (5 s loop: ../soul_v10_alive.gif + .mp4; each unique eye state rendered once)
+#         vs_m is rendered with --set vs_az=0 (equal camera distance to S and M), then: python3 compose_v10.py vs
 #         extra Blender args after --:  ./render_v10.sh desk -- --set dk_d=820 --samples 64
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)"

@@ -96,6 +96,12 @@ def shot_vs_m():
     pose_soul(m, (xm, 0, 0), yaw=TUNE.get('vs_yaw', -12.0))
     scale_about_foot(m, K_M, (xm, 0))
     level_eyes(m)
+    for nm, par in (('S', s), ('M', m)):                 # world size check: both must read at their true size
+        pts = [ob.matrix_world @ Vector(c) for ob in par.children_recursive if ob.type == 'MESH'
+               and ob.visible_get() for c in ob.bound_box]
+        lo = [min(p[i] for p in pts) / MM for i in range(3)]
+        hi = [max(p[i] for p in pts) / MM for i in range(3)]
+        print('  v10 vs_m %s: x %.1f..%.1f  y %.1f..%.1f  z %.1f..%.1f mm' % (nm, lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]))
     T = V((TUNE.get('vs_tx', 0.0), TUNE.get('vs_ty', 0.0), TUNE.get('vs_tz', 46.0)))
     cam = cam_aed(T, TUNE.get('vs_az', -14.0), TUNE.get('vs_el', 9.0), TUNE.get('vs_d', 640.0),
                   TUNE.get('vs_lens', 75.0), TUNE.get('vs_f', 8.0), focus=T)

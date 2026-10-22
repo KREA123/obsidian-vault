@@ -1,5 +1,12 @@
 # SOUL · planșe tehnice (blueprint), rev A · 2026-09-24
 
+> **Planșele curente sunt în [`final/`](final/)** (generate de `prototip/cad/blueprints_p0.py` și `blueprints_s.py`):
+> - `soul_s_1_general_arrangement[_white]`: **SOUL S, produsul final** (63,0 × 70,8 × 23,0 mm, sticlă Ø52): față, lateral, sus, dedesubt, cu cote;
+> - `soul_s_2_p0_kit`: **S-P0**, kitul de printat în jurul plăcii AMOLED-1.75 (63,0 × 70,8 × 25,65): față, secțiune, sus, listă de piese;
+> - `soul_m_1..4`: prototipul **M** (placa 2.8C).
+>
+> Planșele de mai jos (rev A, 2026-09-24) sunt istoric.
+
 Patru planșe A3 (proiecție în unghiul al treilea, mm), generate din cod: `src/gen_sheets.py` (geometrie + SVG) și `src/render.py` (PNG 2400 px prin Chromium-ul Playwright din `/opt/pw-browsers`).
 
 | planșă | fișiere | ce conține |

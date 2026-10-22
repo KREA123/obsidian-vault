@@ -255,6 +255,7 @@ SEC = {'front_shell': ('o', 'hA'), 'back_shell': ('o', 'hB'), 'chassis': ('o2', 
 def sheet_p0(v='plastic', theme='blue'):
     rp = os.path.join(HERE, f'report_s_{v}.json')
     rs = json.load(open(rp)) if os.path.exists(rp) else {}
+    VAR = {'plastic': (2.0, 0.2, 1.2), 'alu': (1.4, 0.1, 0.8), 'alu_band': (1.4, 0.1, 0.8)}[v]   # soul_p0_s.VARIANTS
     sh = Sheet(theme)
     sh.frame()
     k = 2.0
@@ -263,23 +264,27 @@ def sheet_p0(v='plastic', theme='blue'):
     GL = mesh(v, 'board_glass')
     (x0, y0, z0), (x1, y1, z1) = allm.bounds
     W, D, H = x1 - x0, y1 - y0, z1 - z0
-    VF = View(80, 220, k)
-    VS = View(196, 220, k)
-    VT = View(80, 44, k)
-    TY = 231
+    VF = View(92, 206, k)
+    VS = View(206, 206, k)
+    VT = View(326, 52, k)
+    TY = 226
+    # ---- front
     draw_poly(sh, VF, silhouette(allm, 'front', offset=(0, 0, g.FOOT_H)), 'o')
     if GL is not None:
         draw_poly(sh, VF, silhouette(GL, 'front', offset=(0, 0, g.FOOT_H)), 'gl')
     draw_lines(sh, VF, feature_lines(F, 'front', 30, offset=(0, 0, g.FOOT_H)), 'o2')
     gz = g.G[2] + g.FOOT_H
-    sh.dim_h(*VF.p(x0, gz), *VF.p(x1, gz), VF.p(0, 0)[1] + 9, '%.1f' % W)
-    sh.dim_v(*VF.p(x0, 0), *VF.p(x0, H), VF.p(x0, 0)[0] - 9, '%.1f (incl. foot)' % H)
+    sh.dim_h(*VF.p(x0, 0), *VF.p(x1, 0), VF.p(0, 0)[1] + 9, '%.1f' % W)
+    sh.dim_v(*VF.p(x0, 0), *VF.p(x0, H), VF.p(x0, 0)[0] - 8, '%.1f (incl. foot)' % H)
     ap = 2 * (24.48 - 1.5)
-    sh.leader(VF.p(-ap / 2 * 0.71, gz + ap / 2 * 0.69), (VF.p(x0, 0)[0] - 2, VF.p(0, H + 2)[1]), '',
-              lines=['APERTURE Ø%.2f' % ap, '(lip 1.5 over the stock', ' glass Ø48.96)'], side=-1, size=2.0)
+    sh.leader(VF.p(ap / 2 * 0.71, gz + ap / 2 * 0.69), (VF.p(x1, 0)[0] + 6, VF.p(0, H - 2)[1]), '',
+              lines=['APERTURE Ø%.2f' % ap, '(lip 1.5 over the', ' stock glass Ø48.96)'], side=1, size=2.0)
     sh.text(VF.p(0, 0)[0], TY, 'FRONT', 3.2, 'middle', 'tx', weight='bold')
+    sh.text(VF.p(0, 0)[0], TY + 3.8, 'seam bosses: 4x M2 (2 low, 2 high)', 2.0, 'middle', 'td')
 
-    # section A-A at x = 0.3 (battery centre)
+    # ---- section A-A at x = 0.3 (battery centre); the USB-C cable plug is clipped 6 mm below the foot
+    from shapely.affinity import translate as _tr
+    from shapely.geometry import box as _box
     xc = 0.3
     for n, (cls, hatch) in SEC.items():
         m = mesh(v, n)
@@ -288,39 +293,58 @@ def sheet_p0(v='plastic', theme='blue'):
         p = section(m, (xc, 0, 0), (1, 0, 0), np.array([0, 1.0, 0]), np.array([0, 0, 1.0]))
         if p.is_empty:
             continue
-        p = __import__('shapely.affinity', fromlist=['translate']).translate(p, 0, g.FOOT_H)
+        p = _tr(p, 0, g.FOOT_H)
+        if n == 'usb_plug':
+            p = p.intersection(_box(-100, -3, 100, 200))
         draw_poly(sh, VS, p, cls, extra='style="fill:url(#%s)"' % hatch if hatch else '')
-    sh.dim_h(*VS.p(y0, 10), *VS.p(y1, 10), VS.p(0, 0)[1] + 9, '%.2f' % D)
+    sh.dim_h(*VS.p(y0, 0), *VS.p(y1, 0), VS.p(0, 0)[1] + 9, '%.2f' % D)
     sh.line(*VS.p(g.SEAM_A, -2 + g.FOOT_H), *VS.p(g.SEAM_A + g.SEAM_B * (H + 2), H + 2 + g.FOOT_H), 'cut')
-    sh.text(VS.p(0, 0)[0], TY, 'SECTION A-A (x = 0.3, battery centre)', 3.0, 'middle', 'tx', weight='bold')
-    sh.text(VS.p(0, 0)[0], TY + 3.8, 'board glass, module, battery 503030 (tinted), speaker 1511, chassis', 2.0, 'middle', 'td')
+    sh.text(VS.p(0, 0)[0] + 6, TY, 'SECTION A-A (x = 0.3)', 3.2, 'middle', 'tx', weight='bold')
+    sh.text(VS.p(0, 0)[0] + 6, TY + 3.8, 'glass, module, LiPo (tinted), 1511, chassis;', 2.0, 'middle', 'td')
+    sh.text(VS.p(0, 0)[0] + 6, TY + 7.0, 'USB-C plug in its tunnel (cut 3 below)', 2.0, 'middle', 'td')
 
+    # ---- top
     draw_poly(sh, VT, silhouette(allm, 'top'), 'o')
     sh.line(*VT.p(x0 - 4, g.SEAM_A + g.SEAM_B * g.G[2]), *VT.p(x1 + 4, g.SEAM_A + g.SEAM_B * g.G[2]), 'ph')
-    sh.dim_v(*VT.p(x0, y0), *VT.p(x0, y1), VT.p(x0, 0)[0] - 7, '%.1f' % D)
-    sh.text(VT.p(0, 0)[0], VT.p(0, y0)[1] + 7, 'TOP', 2.8, 'middle', 'tx', weight='bold')
+    sh.text(VT.p(x1 + 5, 0)[0], VT.p(0, g.SEAM_A + g.SEAM_B * g.G[2])[1] + 0.8, 'SEAM', 2.0, 'start', 'td')
+    sh.dim_v(*VT.p(x0, y0), *VT.p(x0, y1), VT.p(x0, 0)[0] - 8, '%.2f' % D)
+    sh.text(VT.p(0, 0)[0], VT.p(0, y0)[1] + 8, 'TOP  (face toward the bottom of the sheet)', 2.8, 'middle', 'tx', weight='bold')
 
     inter = rs.get('interference', {})
     bad = {kk: vv for kk, vv in inter.items() if abs(vv) > 0.01}
     cl = rs.get('clearance', {})
     ms = rs.get('dims', {}).get('mass_g', {})
+    sc = rs.get('screws', [])
+    Lo = [s['screw_len_max'] for s in sc if s['kind'] == 'low']
+    Up = [s['screw_len_max'] for s in sc if s['kind'] == 'up']
+    L_lo = BP.screw_std(min(Lo)) if Lo else 12
+    L_up = BP.screw_std(min(Up)) if Up else 8
     rows = ['Envelope %.1f x %.1f x %.2f' % (W, H, D),
-            '  = S product W x H, uncompressed back',
+            '  = S product W x H, uncompressed back (s_back 1.0)',
             'Board Waveshare ESP32-S3-Touch-AMOLED-1.75',
-            '  stock glass Ø48.96 x 1.10 under a lip',
-            'Battery LiPo 503030 class, ~450 mAh',
-            '  (envelope 30.5 x 31 x 5.55, 6° tilt)',
-            'Speaker 1511, slot 12 x 1.2 in +x seam',
-            'Walls %s, tol %s' % (rs.get('log', ['', ''])[0].split('wall ')[-1].split(' tol')[0] if rs.get('log') else '?',
-                                  rs.get('log', [''])[0].split('tol ')[-1].split(' ')[0] if rs.get('log') else '?'),
-            'Screws 4x M2 from the back',
+            '  stock glass Ø48.96 x 1.10 under a %.1f lip' % VAR[2],
+            'Battery LiPo 503030 class, ~450 mAh [estimare]',
+            '  envelope 30.5 x 31 x 5.55, 6° off the board',
+            'Speaker 1511 (kit), slot 12 x 1.2 in the +x seam',
+            'Walls %.1f, fit clearance %.1f (%s)' % (VAR[0], VAR[1], v),
             'Interference: %d pairs, %d > 0.01 mm3' % (len(inter), len(bad))]
-    if cl.get('battery'):
-        rows.append('  battery to back shell %.2f' % cl['battery'].get('back_shell', float('nan')))
     if ms:
-        rows.append('Masses: front %.0f g, back %.0f g,' % (ms.get('front_shell', 0), ms.get('back_shell', 0)))
-        rows.append('  chassis %.0f g (PLA/PETG 1.24)' % ms.get('chassis', 0))
-    notes(sh, 262, 60, rows, size=2.0, head='S-P0 KIT (%s)' % v)
+        rows.append('Masses: front %.0f g, back %.0f g, chassis %.0f g' % (
+            ms.get('front_shell', 0), ms.get('back_shell', 0), ms.get('chassis', 0)))
+    rows.append('UNVERIFIED (calipers first): USB-C cable overmold')
+    rows.append('  12.4 x 7.0, MX1.25 plug heights, button travel')
+    notes(sh, 262, 98, rows, size=2.0, head='S-P0 KIT (%s)' % v)
+    bom = [('1', 'front shell', 'PLA/PETG, seam down'),
+           ('2', 'back shell', 'PLA/PETG, seam down'),
+           ('3', 'chassis (battery cradle)', 'PETG'),
+           ('4', 'pin PWR + pin BOOT', 'PETG, 2 pcs'),
+           ('5', 'heat-set insert M2 x 3.2', '4 pcs, front shell'),
+           ('6', 'screw M2 x %d' % L_lo, '2 pcs, low (chassis legs)'),
+           ('7', 'screw M2 x %d' % L_up, '2 pcs, high'),
+           ('8', 'LiPo 503030 class + PCM', '2-pin MX1.25, CHECK +/-'),
+           ('9', 'speaker 1511 8 ohm', 'from the board kit'),
+           ('10', 'EVA foam 0.3-0.5 / VHB', 'under cell + speaker')]
+    table(sh, 262, 150, [('#', 7), ('part', 52), ('note', 82)], bom, size=1.9, rh=3.5)
     tb(sh, 'S-P0 KIT, GA + SECTION', 'DIY prototype of SOUL S around the stock AMOLED-1.75 board', '2 : 1', '2 / 2',
        'SOUL-S-P0-01', 'S-P0 - DIY pilot, MARGARITAR S', 'Waveshare ESP32-S3-Touch-AMOLED-1.75',
        'CadQuery model soul_p0_s.py', 'projected/sectioned from the exported STL')

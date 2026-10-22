@@ -13,10 +13,12 @@ FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 FONT_L = '/usr/share/fonts/truetype/dejavu/DejaVuSans-ExtraLight.ttf'
 
 
-def vs(src, xs=0.27, xm=0.73):
+def vs(src, xs=0.367, xm=0.634):          # body centres in the vs_az = 0 frame (render_v10.sh)
     a = Image.open(src).convert('RGB')
+    if a.size[1] > a.size[0] * 9 // 16 + 2:          # already labelled: relabel from the untouched render on top
+        a = a.crop((0, 0, a.size[0], a.size[0] * 9 // 16))
     W, H = a.size
-    bot = 170
+    bot = 200
     im = Image.new('RGB', (W, H + bot), (236, 230, 222))
     im.paste(a, (0, 0))
     d = ImageDraw.Draw(im)
@@ -24,9 +26,9 @@ def vs(src, xs=0.27, xm=0.73):
     f2 = ImageFont.truetype(FONT, 25)
     f3 = ImageFont.truetype(FONT_L, 21)
     col = (60, 56, 52)
-    for x, t1, t2 in ((xs * W, 'S · produsul final', '63,0 × 70,8 × 23,0 mm · sticlă Ø52 · 1,75″ AMOLED'),
-                      (xm * W, 'M · prototipul', '90 × 101 × 31,5 mm · sticlă Ø74,3 · 2,8″ IPS')):
-        for txt, fnt, y in ((t1, f1, H + 26), (t2, f2, H + 82)):
+    for x, t1, t2, t3 in ((xs * W, 'S · produsul final', '63,0 × 70,8 × 23,0 mm', 'sticlă Ø52 · 1,75″ AMOLED'),
+                          (xm * W, 'M · prototipul', '90 × 101 × 31,5 mm', 'sticlă Ø74,3 · 2,8″ IPS')):
+        for txt, fnt, y in ((t1, f1, H + 24), (t2, f2, H + 80), (t3, f2, H + 114)):
             tw = d.textlength(txt, font=fnt)
             d.text((x - tw / 2, y), txt, font=fnt, fill=col)
     note = 'randare / concept (CGI) · aceeași cameră, aceeași scară'

@@ -32,7 +32,7 @@ Ca la v9, adâncimea se obține comprimând **doar spatele** (partea din spatele
 | `soul_v10_hand.png` | În aceeași mână de adult ca în v8/v9, la mărimea reală. Camera e la aceeași distanță reală ca la M (× 0,8), deci S se vede cât e: încape în palmă, degetele rămân libere |
 | `soul_v10_desk.png` | Pe biroul de stejar, lângă telefonul generic (71,5 × 147 mm), camera mai aproape ca la v9 (560 mm) |
 | `soul_v10_ou_night.png` | Noaptea, în capsula OU, cu ochi chihlimbar |
-| `soul_v10_vs_m.png` (2000×1295) | **S lângă M** pe birou, aceeași cameră, aceeași scară (ambele MĂRGĂRITAR, Argint), cu dimensiunile dedesubt |
+| `soul_v10_vs_m.png` (2000×1325) | **S lângă M** pe birou, aceeași cameră, aceeași scară (ambele MĂRGĂRITAR, Argint), cu dimensiunile dedesubt. Camera e frontală (az 0), deci S și M sunt la aceeași distanță de ea; scriptul tipărește cutia fiecăruia: S 70,8 mm înălțime, M 101,2 mm |
 
 Planșele cotate ale lui S sunt în `blueprints/final/soul_s_1_general_arrangement*.svg/png`. Șablonul de printat la scară reală: `prototip/SOUL-marimi-scara-reala.pdf`.
 
@@ -48,7 +48,8 @@ Planșele cotate ale lui S sunt în `blueprints/final/soul_s_1_general_arrangeme
 ```
 cd renders/v10/src
 PREVIEW=1 ./render_v10.sh hero          # previzualizare în /tmp/soul_v10_render
-./render_v10.sh                          # hero family side hand desk ou_night vs_m → ../soul_v10_*.png
+./render_v10.sh hero family side hand desk ou_night   # → ../soul_v10_*.png
+./render_v10.sh vs_m -- --set vs_az=0    # S lângă M, cameră frontală
 python3 compose_v10.py vs                # etichetele de sub soul_v10_vs_m.png
 ```
 Randarea se face în Cycles, pe CPU, cu 4 fire, câte una pe rând, apoi prin `../v5/src/post.py` (OIDN + AgX). Cache-ul mâinii stă în `/tmp/soul_v10_tex` (nu se publică).

@@ -10,7 +10,7 @@
 
 SOUL-P0 M este prototipul „se poate face acasă” al lui SOUL mărimea **M**. Folosește placa Waveshare **ESP32-S3-Touch-LCD-2.8C**, cu ecran rotund IPS de 2,8″ (480 × 480). Carcasa are forma **MĂRGĂRITAR** (v9, `renders/v9/soul_v9_vs_v8.png`), cu CMF-ul v6/v9: sticlă neagră mare, nimic altceva pe față, bază plată cu piciorul oval din polimer și fanta difuzorului în cusătura laterală.
 
-> **Varianta mică (S)**, cu placa AMOLED 1,75″, e oprită la decizia fondatorului. Tot ce era făcut pentru ea (CAD, STL, STEP) e păstrat în [`legacy-S/`](legacy-S/).
+> **Mărimea S e produsul final** (decizia fondatorului, 2026-10-20); M rămâne prototipul de lucru. Kitul de printat pentru S, în jurul plăcii **Waveshare ESP32-S3-Touch-AMOLED-1.75** (63,0 × 70,8 × 25,65 mm), cu nota de asamblare: [`stl/s/README.md`](stl/s/README.md). Modelul: `cad/soul_p0_s.py`; planșele: `../blueprints/final/soul_s_*`. Kitul S vechi (HOPA, 2026-09-25) a rămas în [`legacy-S/`](legacy-S/), ca referință.
 
 ![SOUL-P0 M, randare din CAD-ul real](img/m_alu_assembled_hero.png)
 
@@ -429,7 +429,11 @@ prototip/
   stl/assembly/           piesele în poziția montată (pentru randări și verificări)
   step/plastic, step/alu  STEP arhivate .gz (se dezarhivează înainte de upload)
   img/                    randările
-  legacy-S/               varianta S (1,75″), oprită
+  cad/soul_p0_s.py        kitul S-P0 (placa AMOLED-1.75, MĂRGĂRITAR la scara de design) -> stl/s, step/s, report_s_*.json
+  cad/blueprints_s.py     planșele S din ../blueprints/final/soul_s_*
+  cad/scale_template.py   SOUL-marimi-scara-reala.pdf (S și M la scara 1 : 1)
+  stl/s/, step/s/         kitul S-P0 (plastic) + nota de asamblare stl/s/README.md
+  legacy-S/               primul kit S (HOPA, 2026-09-25), doar referință
 ```
 
 Regenerarea:
