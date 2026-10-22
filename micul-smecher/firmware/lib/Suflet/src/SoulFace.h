@@ -36,6 +36,7 @@ struct FaceInputs {
   bool look = false;          // look at a point (finger, the dial, you)
   float lookX = 0, lookY = 0;
   float level = -1;           // listening / charging level, -1 = synthetic
+  bool rest = false;          // AMOLED standby: a slow rest blink, the lids shut over the whites (Density.h burnin)
   FaceLayoutT layout;
 };
 
@@ -109,6 +110,7 @@ class SoulFace {
   int W_ = 0, H_ = 0;
   Reaction lastReaction_ = Reaction::None;
   FaceState lastState_ = FaceState::Idle;
+  bool lastRest_ = false;
   bool lastAlert_ = false;
   float lay_[3] = {1, 0, 0}, layV_[3] = {0, 0, 0}, layT_[3] = {1, 0, 0};
   float fListen_ = 0, fAlert_ = 0, fThink_ = 0, fFlash_ = 0, progress_ = 0;

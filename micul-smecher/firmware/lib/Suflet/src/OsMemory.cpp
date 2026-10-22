@@ -12,6 +12,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "TextFit.h"
 #include "Os.h"
 
 namespace suflet {
@@ -26,21 +27,7 @@ enum : int { IdMemSearch = 60, IdMemBackup, IdMemWipe, IdMemForget, IdMemRow = 1
 constexpr int kPerPage = 3;
 constexpr float kBackupEveryS = 30.0f;  // the cloud backup follows changes, at most this often
 
-std::string cutTo(const Font& f, const std::string& s, float maxW) {
-  if (Canvas::measureText(f, s.c_str()) <= maxW) return s;
-  std::string out;
-  const char* p = s.c_str();
-  const char* end = p + s.size();
-  while (p < end) {
-    const char* q = p;
-    utf8::next(q, end);
-    const std::string t = out + std::string(p, q - p) + "\xE2\x80\xA6";
-    if (Canvas::measureText(f, t.c_str()) > maxW) break;
-    out.append(p, q - p);
-    p = q;
-  }
-  return out + "\xE2\x80\xA6";
-}
+std::string cutTo(const Font& f, const std::string& s, float maxW) { return ellipsizeWords(f, s, maxW); }
 
 const char* kindLabel(FactKind k, bool ro) {
   static const char* const en[] = {"person", "preference", "plan", "place", "note", "summary", "other"};

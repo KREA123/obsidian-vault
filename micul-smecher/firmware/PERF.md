@@ -1,47 +1,54 @@
-# SOUL firmware performance: 1.7.0 → 1.8.0 → 1.9.0 (SoulOS Alive) → SOUL S
+# SOUL firmware performance: 1.7.0 → 1.8.0 → 1.9.0 (SoulOS Alive) → SOUL S (1.9.1)
 
 *Measured 2026-10-04 on the PC (the simulator runs the device's own `lib/Suflet`). Nothing here has run on a
 board yet: the ESP32-S3 milliseconds and milliamps are estimates from instruction counts and datasheet
 currents. [`BRINGUP.md`](BRINGUP.md) §5 measures them on the 2.8C; write the real numbers there.*
 
-## SOUL S: the QSPI push (2026-10-20)
+## SOUL S: the QSPI push (1.9.1, 2026-10-22)
 
 *SOUL S (the product, `SOUL-S.md`) on the AMOLED-1.75: every frame scenario at 466 px with the S screens, density
-and keyboard (`python3 tools/perf_bench.py --glass s --json perf/1.9-s-screens.json`). The render is the same model
-as above (the same S3, 2.3 ns / instruction). The push is not the 2.8C's: the CO5300 keeps its frame, so only the
-changed rectangles go out (even-aligned, `src/main.cpp displayPresent`), each copied into a PSRAM push buffer
-(50 MB/s) and sent over QSPI at `panel->begin(40000000)`, 4 lines × 40 MHz = 20 MB/s raw, **16 MB/s payload
-[estimare]** (Waveshare states no QSPI clock or frame rate with conditions). A whole frame: 217,156 px ≈ 36 ms.
-Estimates until BRINGUP measures `push ms` (`F`) on the board.*
+and keyboard (`python3 tools/perf_bench.py --glass s --json perf/1.9.1-s.json`; 1.9.0: `perf/1.9-s-screens.json`).
+The render is the same model as above (the same S3, 2.3 ns / instruction). The push is not the 2.8C's: the CO5300
+keeps its frame, so only the changed rectangles go out (even-aligned, `src/board_amoled.cpp`). 1.9.1 sends them in
+row strips straight from the canvas through a 16 KB internal-RAM bounce buffer (**80 MB/s [estimare]**: a PSRAM read
+into SRAM; 1.9.0 copied each rectangle PSRAM → PSRAM into a 434 KB push buffer first, 50 MB/s), then over QSPI at
+`panel->begin(40000000)`, 4 lines × 40 MHz = 20 MB/s raw, **16 MB/s payload [estimare]** (Waveshare states no QSPI
+clock or frame rate with conditions). A whole frame: 217,156 px ≈ 33 ms (1.9.0: 36 ms). **Not in the table: the
+tear-sync waits** (`TearSync.h`: a band waits for its window in the scan, at most one refresh, often none),
+measured on the board with `E`. Estimates until BRINGUP §S measures `push ms` and the write rate.*
 
-| Scenario (466 px) | M instr / frame | est. render ms | px pushed / frame | est. push ms | est. fps (asked) |
+| Scenario (466 px) | M instr / frame | est. render ms | px pushed / frame | est. push ms (1.9.0) | est. fps (1.9.0) / asked |
 |---|---:|---:|---:|---:|---:|
-| Standby (the eyes alone) (`bench_standby`) | 3.47 | 8.0 | 52,191 | 8.6 | 24 (24) |
-| Home: boop, laugh, look (`home`) | 1.71 | 3.9 | 27,008 | 4.5 | 30 (30) |
-| All 31 expressions (`expressions`) | 3.35 | 7.7 | 56,824 | 9.4 | 30 (30) |
-| IMU motion (`motion`) | 4.61 | 10.6 | 82,931 | 13.7 | 25 (30) |
-| Notifications on standby (`bench_notify`) | 3.17 | 7.3 | 66,382 | 11.0 | 30 (30) |
-| Launcher: open Alarms, set one (`launcher`) | 2.30 | 5.3 | 41,638 | 6.9 | 30 (30) |
-| Typing (the S keyboard) (`bench_typing`) | 1.67 | 3.8 | 26,722 | 4.4 | 30 (30) |
-| A screen open, idle (`bench_screen`) | 2.31 | 5.3 | 13,071 | 2.2 | 30 (30) |
-| A screen, device tilted (`bench_drift`) | 2.18 | 5.0 | 13,338 | 2.2 | 30 (30) |
-| Screens opened / closed (`bench_nav`) | 3.21 | 7.4 | 80,982 | 13.4 | 29 (30) |
-| Talk: keyboard, thinking, answer (`talk`) | 4.41 | 10.2 | 66,344 | 10.9 | 28 (30) |
-| Claude asks (`claude`) | 6.08 | 14.0 | 98,244 | 16.2 | 20 (30) |
-| Maps (`bench_maps`) | 5.22 | 12.0 | 80,120 | 13.2 | 24 (30) |
-| Games (`bench_games`) | 2.59 | 6.0 | 114,274 | 18.9 | 24 (30) |
-| The home dial + the lid wipe (`bench_alive`) | 3.15 | 7.2 | 82,796 | 13.7 | 29 (30) |
-| The lists' wheels (`bench_wheel`) | 4.53 | 10.4 | 114,078 | 18.8 | 21 (30) |
-| SOUL Memory's wheel (+ Os::update) (`bench_memwheel`) | 4.84 | 11.1 | 91,530 | 15.1 | 23 (30) |
+| Standby (the eyes alone) (`bench_standby`) | 3.53 | 8.1 | 54,124 | 8.1 (8.6) | 24 (24) / 24 |
+| Home: boop, laugh, look (`home`) | 1.72 | 4.0 | 27,159 | 4.1 (4.5) | 30 (30) / 30 |
+| All 31 expressions (`expressions`) | 3.49 | 8.0 | 61,845 | 9.3 (9.4) | 30 (30) / 30 |
+| IMU motion (`motion`) | 4.76 | 10.9 | 87,317 | 13.1 (13.7) | 25 (25) / 30 |
+| Notifications on standby (`bench_notify`) | 3.23 | 7.4 | 68,443 | 10.3 (11.0) | 30 (30) / 30 |
+| Launcher: open Alarms, set one (`launcher`) | 2.27 | 5.2 | 43,752 | 6.6 (6.9) | 30 (30) / 30 |
+| Typing (the S keyboard) (`bench_typing`) | 1.67 | 3.8 | 26,722 | 4.0 (4.4) | 30 (30) / 30 |
+| A screen open, idle (`bench_screen`) | 2.31 | 5.3 | 13,071 | 2.0 (2.2) | 30 (30) / 30 |
+| A screen, device tilted (`bench_drift`) | 2.18 | 5.0 | 13,338 | 2.0 (2.2) | 30 (30) / 30 |
+| Screens opened / closed (`bench_nav`) | 3.24 | 7.4 | 81,768 | 12.3 (13.4) | 30 (29) / 30 |
+| Talk: keyboard, thinking, answer (`talk`) | 4.41 | 10.2 | 66,344 | 10.0 (10.9) | 30 (28) / 30 |
+| Claude asks (`claude`) | 6.11 | 14.1 | 98,823 | 14.8 (16.2) | 21 (20) / 30 |
+| Maps (`bench_maps`) | 5.22 | 12.0 | 80,120 | 12.0 (13.2) | 25 (24) / 30 |
+| Games (`bench_games`) | 2.59 | 6.0 | 114,274 | 17.1 (18.9) | 26 (24) / 30 |
+| The home dial + the lid wipe (`bench_alive`) | 3.12 | 7.2 | 83,598 | 12.5 (13.7) | 30 (29) / 30 |
+| The lists' wheels (`bench_wheel`) | 4.54 | 10.5 | 114,309 | 17.1 (18.8) | 22 (21) / 30 |
+| SOUL Memory's wheel (+ Os::update) (`bench_memwheel`) | 4.84 | 11.1 | 91,530 | 13.7 (15.1) | 24 (23) / 30 |
 
-- **Partial updates carry S.** Standby pushes 52 K px a frame (the eyes), a screen at rest 13 K; a screen change
-  (the lid wipe, a full redraw) is one ~36 ms frame.
-- **Six scenarios are push-bound** below their asked 30 fps (est.): Claude asks 20, the wheels 21, SOUL Memory's
-  wheel 23, maps and games 24, IMU motion 25. The adaptive cap holds the loop at ≤ 60 % of a core (floor 12 fps).
-- **Next, on the board** (in this order): measure the real payload rate; try the QSPI clock at 80 MHz (est. a whole
-  frame ~22 ms; only if the CO5300 and the board take it: not stated, so tested, not assumed); an asynchronous DMA
-  push (ESP-IDF `esp_lcd` panel IO) that sends one frame while the next renders.
-- **SOUL M** with this step: the same instructions (±1 %) and pixels except the fixes listed in `SOUL-S.md` §5.
+- **Partial updates carry S.** Standby pushes 54 K px a frame (the eyes; the burn-in breathing of 1.9.1 adds ~2 K),
+  a screen at rest 13 K; a screen change (the lid wipe, a full redraw) is one ~33 ms frame.
+- **Six scenarios are push-bound** below their asked 30 fps (est.), most a frame or two faster than in 1.9.0: Claude
+  asks 21, the wheels 22, SOUL Memory's wheel 24, maps 25, IMU motion 25, games 26. The adaptive cap holds the loop at
+  ≤ 60 % of a core (floor 12 fps).
+- **The standby frame** (the battery model, `SOUL-S.md` §8): 8.1 ms render + 8.1 ms push + 1 ms loop = 17.2 ms at
+  24 fps = 41 % of a core (1.9.0: 17.6 ms, 42 %).
+- **Next, on the board** (in this order): measure the real write rate (`E`: px/µs) and the TE waits; then the
+  asynchronous DMA push (ESP-IDF `esp_lcd` panel IO, a transfer queue, the next frame rendered while the last one is
+  sent: it replaces Arduino_GFX's bus, so it waits for those numbers); the QSPI clock at 80 MHz only after that
+  (not stated by Waveshare: tested, not assumed).
+- **SOUL M** with 1.9.1: the same instructions (±1 %) and pixels except the number-safe "…" (`SOUL-S.md` §9).
 
 ## 1.9.0: the release (critic fixes, 2026-10-12)
 

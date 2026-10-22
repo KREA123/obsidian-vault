@@ -1,6 +1,8 @@
 // Sound in and out for the boards that can: the optional I2S parts on the
 // 2.8C (INMP441 mic, MAX98357A amp; build flags in board.h) and its
-// buzzer. The AMOLED-1.75's ES8311/ES7210 codecs are not driven yet.
+// buzzer; SOUL S (AMOLED-1.75): the ES8311 DAC and the speaker amplifier
+// (1.9.1, not yet heard on the board); its ES7210 microphones are not
+// driven yet.
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
@@ -11,7 +13,8 @@ void audioTick(bool alarmOn);
 // Microphone loudness 0..1 (0 without a mic), for Brain Inputs.audioLevel.
 float audioLevel();
 bool audioHasMic();
-bool audioHasSpeaker();  // an I2S amp; otherwise the alarm uses the buzzer (if any)
+bool audioHasSpeaker();  // an I2S amp / the ES8311 answered; otherwise the alarm uses the buzzer (if any)
+void audioTestTone(uint32_t ms);  // serial `A`: a 1 kHz tone through the speaker (BRINGUP §S)
 
 // SoulOS Music (os/APPS.md): focus sounds through the I2S amp while `g` is set (null = silence); an alarm wins
 namespace suflet {

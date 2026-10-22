@@ -825,7 +825,7 @@ bool Os::appsTouch(const TouchEv& e) {
         invalidate();
         return true;
       }
-      if (A.rimArmed && !A.rimDrag && hypotf(x - A.downX, y - A.downY) > 7) A.rimDrag = true;
+      if (A.rimArmed && !A.rimDrag && hypotf(x - A.downX, y - A.downY) > 7 * dens_.sigma) A.rimDrag = true;
       if (A.rimDrag && view_ == View::Maps) {
         const float a = angleOf(x, y, 233, 233);
         float d = a - A.rimA;
@@ -839,7 +839,7 @@ bool Os::appsTouch(const TouchEv& e) {
         return true;
       }
       if (view_ == View::Maps && !A.sendSheet && !A.rimArmed) {
-        if (!A.dragging && hypotf(x - A.downX, y - A.downY) > 9 && A.downY > 70) A.dragging = true;
+        if (!A.dragging && hypotf(x - A.downX, y - A.downY) > 9 * dens_.sigma && A.downY > 70) A.dragging = true;
         if (A.dragging) {
           A.view.pan(dx * k, dy * k);
           A.followMe = false;
@@ -862,16 +862,16 @@ bool Os::appsTouch(const TouchEv& e) {
         else pushCmd(OsCmd::SaveSettings);
         return true;
       }
-      if (A.downY < 80 && y - A.downY > 80 && dur < 0.8f) {  // from the top edge, down: back
+      if (A.downY < 80 && y - A.downY > 80 * dens_.sigma && dur < 0.8f) {  // from the top edge, down: back
         back();
         return true;
       }
-      if (view_ == View::Control && A.downY > 330 && A.downY - y > 80) {  // Control: push it back up
+      if (view_ == View::Control && A.downY > 330 && A.downY - y > 80 * dens_.sigma) {  // Control: push it back up
         back();
         return true;
       }
-      if (dist < 24 && dur < 0.45f) {
-        if (t_ - lastTapT_ < 0.38f && hypotf(e.x - lastTapX_, e.y - lastTapY_) < g_.s(50) && view_ == View::Maps) {
+      if (dist < dens_.tapSlop && dur < 0.45f) {
+        if (t_ - lastTapT_ < 0.38f && hypotf(e.x - lastTapX_, e.y - lastTapY_) < g_.s(dens_.doubleTapR) && view_ == View::Maps) {
           lastTapT_ = -10;
           A.view.zoomBy(2.0f);  // double tap: in
           A.followMe = false;

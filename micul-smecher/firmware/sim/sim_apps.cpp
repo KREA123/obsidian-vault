@@ -101,6 +101,7 @@ struct AppSim {
     si.rssi = -54;
     os.setStorage(si);
     os.setAudio(true, false);
+    os.density().tuneTouch(touch);  // the glass's gesture thresholds in mm (SOUL M: the defaults)
     touch.setMode(TouchMode::Text);
     in.hour = 18.6f;
     manifest = fopen((dir + "/shots.txt").c_str(), "wb");

@@ -1,13 +1,64 @@
-# SOUL M install image
+# SOUL install images
 
-`SOUL-2.8C-install.bin` — SoulOS firmware **1.9.0** (SoulOS Alive) for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
-(ESP32-S3R8, 16 MB flash, 8 MB PSRAM). One merged image: bootloader at 0x0, partition table
-(`partitions.csv`: Arduino's `default_16MB` with the unused `spiffs` split into `soulmem` (128 KB, SOUL Memory) and `model` (3.2 MB, the optional speech models), + a 64 KB `soulid` NVS partition for the device key) at 0x8000, `boot_app0` at 0xe000, the app at 0x10000. Flash it at **0x0**.
+Two boards, one merged image each (bootloader at 0x0, partition table at 0x8000, `boot_app0` at 0xe000, the app at
+0x10000): **flash it at 0x0**. Partition table `partitions.csv`: Arduino's `default_16MB` with the unused `spiffs`
+split into `soulmem` (128 KB, SOUL Memory) and `model` (3.2 MB, the optional speech models), + a 64 KB `soulid` NVS
+partition for the device key. Each image is byte-identical to PlatformIO's own `firmware.factory.bin` for its build
+and to the `esptool merge-bin` below (checked with `cmp` for 1.9.1). No key, token or cloud address is compiled in:
+SOUL Cloud is off until you set its address.
 
-- built 2026-10-12 from a clean `pio run -e lcd28` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino), zero compiler
-  warnings, `pio check -e lcd28` clean, 226 native tests green; app 2,572,655 B of 6.25 MB (3.8 MB headroom), static
-  RAM 85,604 B of 320 KB
-- size **2,643,088 B** · sha256 `a3de844d64bcd44c6f1d46384dc84bb2e5f5a922743eb9107fdb1372aa02e152`
+| Image | Board | Version | Size | sha256 |
+|---|---|---|---:|---|
+| `SOUL-1.75-install.bin` | **SOUL S** (the product): Waveshare ESP32-S3-Touch-AMOLED-1.75 | 1.9.1 | 2,932,016 B | `b208fbbb2181faba517897a1b3a4a8f503817b072d0b43ab4c6d5c50b3e358bf` |
+| `SOUL-2.8C-install.bin` | **SOUL M** (the prototype): Waveshare ESP32-S3-Touch-LCD-2.8C | 1.9.1 | 2,671,520 B | `62c2838cbdbaa4709e839b0da46b790c3e6d5839ac5a90271f9f4517a527205f` |
+
+Romanian, step by step: `1-INSTALEAZA-S-RO.md` (S), `1-INSTALEAZA-RO.md` (M), then `2-PRIMA-PORNIRE-RO.md`.
+
+## SOUL S image (`SOUL-1.75-install.bin`)
+
+`SOUL-1.75-install.bin` — SoulOS **1.9.1** (SoulOS Alive, the S density: `../SOUL-S.md`) for the **Waveshare
+ESP32-S3-Touch-AMOLED-1.75** (ESP32-S3R8, 16 MB flash, 8 MB PSRAM, 1.75" AMOLED 466 × 466 CO5300 over QSPI, CST9217
+touch, QMI8658, AXP2101, ES8311 + ES7210). The first S image.
+
+- built 2026-10-22 from `pio run -e amoled175` (Arduino-ESP32 3.3 / ESP-IDF 5.5, pioarduino; a clean build), zero
+  compiler warnings, `pio check -e amoled175` no defects, 245 native tests green; app 2,861,591 B of 6.25 MB, static
+  RAM 87,140 B of 320 KB
+- size **2,932,016 B** · sha256 `b208fbbb2181faba517897a1b3a4a8f503817b072d0b43ab4c6d5c50b3e358bf`
+- what is in it: every SoulOS Alive screen at S's density (type and targets in millimetres, the round audit passed on
+  every screen), and the S firmware critic's eight fixes (`../SOUL-S.md` §9): **the speaker** (ES8311 + amplifier on
+  GPIO 46: alarms and Music's focus sounds; "Alarms · silent" if the codec does not answer), **tear-free writes**
+  (TE on GPIO 13, banded writes timed to the scan), **burn-in care** (standby capped at 0.6, the eyes breathing ±6 %,
+  rest blinks, lit hours per region in NVS), a **non-blocking panel sleep / wake**, **gestures in millimetres**, the
+  **AXP2101** set up register by register (4.2 V charge, gauge and battery detection on, low-battery save + power
+  off), **strips through 16 KB of SRAM** instead of a 434 KB PSRAM push buffer, and **no number cut by "…"**
+- **not yet run on the board.** First boot, in order: [`../BRINGUP.md`](../BRINGUP.md) §S — the boot log, TE period
+  and tearing (`E`, `X`, a slow-motion video), touch, IMU axes (`i`; `IMU_MAP` may need setting for this board), the
+  speaker (`A`), the panel's wake (`E`), the PMU registers and the charge voltage (`G`, a multimeter), mA per state,
+  the burn-in settings (`b`) and the 72 h soak (`R`: grey field) before EVT. The ES7210 microphones are not driven:
+  holding the glass opens the keyboard
+- serial commands new in 1.9.1: `A` test tone, `b` burn map, `E` TE / write rate / waits / last wake, `X` tear sync
+  on/off, `G` PMU registers, `R` grey field
+
+## SOUL M image (`SOUL-2.8C-install.bin`)
+
+`SOUL-2.8C-install.bin` — SoulOS firmware **1.9.1** (SoulOS Alive) for the **Waveshare ESP32-S3-Touch-LCD-2.8C**
+(ESP32-S3R8, 16 MB flash, 8 MB PSRAM), the working prototype (testing, the PoC TRL 3 proof).
+
+- 1.9.1 (2026-10-22): rebuilt because the shared SoulOS code changed with the S fixes. Built from a clean
+  `pio run -e lcd28`, zero compiler warnings, `pio check -e lcd28` no defects, 245 native tests green; app 2,601,095 B
+  of 6.25 MB, static RAM 86,212 B. Size **2,671,520 B** · sha256
+  `62c2838cbdbaa4709e839b0da46b790c3e6d5839ac5a90271f9f4517a527205f`. **What changes on the 2.8C:** only the
+  number-safe "…" (the S critic's audit rule, now on both glasses): *Device* shows "RAM 186K · PSRAM 5.8M" instead of
+  "PSRAM 5.8 …", a SOUL Memory fact's cut date is left out instead of "25.09…", the walking nav card shows
+  "Str. Academiei" instead of "Strada Acade…". Proven with `tools/perf_bench.py --hashes` against 1.9.0: of 25,954
+  frames on M, 307 differ, all in the maps, SOUL Memory's wheel and the apps stills that show those lines; the 30
+  `alive` stills identical, 3 of the 59 `screens` stills differ (Device, the fact, the nav card); instructions per frame
+  unchanged (±1 %, `../PERF.md`). Gestures (now Density tokens), the burn-in care (AMOLED only) and the silent-alarm
+  words (the 2.8C has its buzzer) are bit-identical on M. The serial `A` command beeps the buzzer. Same partition
+  table as 1.6–1.9.0 (settings, alarms, notes, SOUL Memory and the device key survive). Previous image: 1.9.0,
+  2,643,088 B, sha256 `a3de844d64bcd44c6f1d46384dc84bb2e5f5a922743eb9107fdb1372aa02e152`.
+### Earlier 2.8C versions
+
 - 1.9.0: **SoulOS Alive** (`../../os/DESIGN-ALIVE.md`, the design approved on 2026-10-11): standby is the eyes alone on
   black; a touch wakes them and they glide up into one slot above every screen; the home is a dial of MĂRGĂRITAR
   pebbles around the eyes (drag, fling, a lean); every list is a wheel; opening an app is a blink of the whole glass
@@ -111,21 +162,21 @@
 - 1.1.0: the eyes feel the IMU (gyro + accel): level keeping, marble pupils, spin → dizzy → ufff,
   on its back / face down / upside down / calm in a hand, double tap on the case, nod yes / shake no
   (answers a Claude request). Check the IMU axes first: [`../BRINGUP.md`](../BRINGUP.md) §3b
-- byte-identical to PlatformIO's own `firmware.factory.bin` for the same build
-- no key, token or cloud address is compiled in: SOUL Cloud is off until you set its address
 
 ## Flash from the browser (no tools)
 
 1. Chrome or Edge on a computer → <https://espressif.github.io/esptool-js/>
 2. Plug the board in with a USB-C **data** cable → **Connect** → pick the USB JTAG/serial port
    (if none appears: hold **BOOT**, tap **RESET**, release BOOT, try again)
-3. **Flash Address** `0x0`, **File** `SOUL-2.8C-install.bin` → **Program** (about 1 minute)
+3. **Flash Address** `0x0`, **File** `SOUL-1.75-install.bin` (SOUL S) or `SOUL-2.8C-install.bin` (SOUL M) →
+   **Program** (about 1 minute)
 4. Press **RESET**. The chip id types out on the rim and the eyes open.
 
 ## Flash from a terminal
 
 ```bash
-esptool --chip esp32s3 write-flash 0x0 SOUL-2.8C-install.bin
+esptool --chip esp32s3 write-flash 0x0 SOUL-1.75-install.bin   # SOUL S
+esptool --chip esp32s3 write-flash 0x0 SOUL-2.8C-install.bin   # SOUL M
 ```
 
 ## After flashing
@@ -136,15 +187,16 @@ re-flashing this image (`nvs` did not move; 1.2.0 only added `soulid` at the end
 `spiffs`; 1.3.0 changes no partition, its paired computers live in NVS `soulbridge`; 1.5.0 keeps the saved networks in NVS `soulkey` `wifis`; 1.6.0 takes the unused `spiffs` for `soulmem` + `model`); *Settings › Start over* re-runs
 the first boot and keeps the device key.
 
-## Rebuild this image
+## Rebuild these images
 
 ```bash
-pio run -e lcd28
-cp .pio/build/lcd28/firmware.factory.bin release/SOUL-2.8C-install.bin   # the same bytes as the merge below
-esptool --chip esp32s3 merge-bin -o release/SOUL-2.8C-install.bin --flash-mode dio --flash-freq 80m --flash-size 16MB \
-  0x0 .pio/build/lcd28/bootloader.bin 0x8000 .pio/build/lcd28/partitions.bin \
+# ENV=amoled175 OUT=SOUL-1.75-install.bin   (SOUL S)   |   ENV=lcd28 OUT=SOUL-2.8C-install.bin   (SOUL M)
+pio run -e $ENV
+cp .pio/build/$ENV/firmware.factory.bin release/$OUT   # the same bytes as the merge below
+esptool --chip esp32s3 merge-bin -o release/$OUT --flash-mode dio --flash-freq 80m --flash-size 16MB \
+  0x0 .pio/build/$ENV/bootloader.bin 0x8000 .pio/build/$ENV/partitions.bin \
   0xe000 ~/.platformio/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin \
-  0x10000 .pio/build/lcd28/firmware.bin
+  0x10000 .pio/build/$ENV/firmware.bin
 ```
 
 Offline voice commands (1.6, optional): `pio run -e lcd28_voice -t upload`, then the speech models once:

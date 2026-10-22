@@ -8,6 +8,7 @@
 
 #include <new>
 
+#include "TextFit.h"
 #include "Os.h"
 #include "QrImage.h"
 #include "Raster.h"
@@ -29,19 +30,34 @@ enum : int {
   AGame = 260, AReply = 280, ATile = 300, ARow = 400, AUp = 500,
 };
 
-static std::string fit(const Font& f, const std::string& s, float maxW) {
-  if (Canvas::measureText(f, s.c_str()) <= maxW) return s;
-  std::string out;
-  const char* p = s.c_str();
-  const char* end = p + s.size();
-  while (p < end) {
-    const char* q = p;
-    utf8::next(q, end);
-    if (Canvas::measureText(f, (out + std::string(p, q - p) + "\xE2\x80\xA6").c_str()) > maxW) break;
-    out.append(p, q - p);
-    p = q;
+static std::string fit(const Font& f, const std::string& s, float maxW) { return ellipsizeWords(f, s, maxW); }
+
+// the sky in one line that never loses a number (the S critic, 2026-10-22: "Partly cloudy · ↑2…" read as a high of
+// 2°): the whole line, then the two temperatures as hi°/lo°, then the sky's last word ("Cloudy 24°/13°"), then the
+// numbers alone
+static std::string skyLine(const Font& f, const std::string& word, int hi, int lo, float maxW) {
+  char full[96], two[24];
+  snprintf(full, sizeof full, "%s \xC2\xB7 \xE2\x86\x91%d\xC2\xB0 \xE2\x86\x93%d\xC2\xB0", word.c_str(), hi, lo);
+  snprintf(two, sizeof two, "%d\xC2\xB0/%d\xC2\xB0", hi, lo);
+  const size_t sp = word.rfind(' ');
+  std::string last = sp == std::string::npos ? word : word.substr(sp + 1);
+  if (!last.empty() && last[0] >= 'a' && last[0] <= 'z') last[0] = (char)(last[0] - 32);
+  return firstThatFits(f, {full, word + " " + two, last + " " + two, two}, maxW);
+}
+
+// a street's name in fewer letters when it does not fit (Str., Bd., Șos., …; St, Ave, Blvd)
+static std::string streetShort(const std::string& s) {
+  static const char* const kPre[][2] = {{"Strada ", "Str. "}, {"Bulevardul ", "Bd. "}, {"Bulevard ", "Bd. "}, {"\xC8\x98oseaua ", "\xC8\x98os. "},
+                                        {"Calea ", "Cal. "}, {"Pia\xC8\x9B" "a ", "P-\xC8\x9B" "a "}, {"Splaiul ", "Spl. "}, {"Aleea ", "Al. "},
+                                        {"Intrarea ", "Intr. "}};
+  static const char* const kSuf[][2] = {{" Street", " St"}, {" Avenue", " Ave"}, {" Boulevard", " Blvd"}, {" Road", " Rd"}};
+  for (const auto& p : kPre)
+    if (s.compare(0, strlen(p[0]), p[0]) == 0) return p[1] + s.substr(strlen(p[0]));
+  for (const auto& p : kSuf) {
+    const size_t n = strlen(p[0]);
+    if (s.size() > n && s.compare(s.size() - n, n, p[0]) == 0) return s.substr(0, s.size() - n) + p[1];
   }
-  return out + "\xE2\x80\xA6";
+  return s;
 }
 
 static std::string hm(uint32_t t) {
@@ -582,8 +598,7 @@ void Os::drawTodayStack(Canvas& cv) {
         snprintf(b, sizeof b, "%d", A.weather.t);
         textAt(cv, fonts::digits(), 274, 244, b, kCream);
         cv.ring(g_.s(274) + Canvas::measureText(fonts::digits(), b) * 0.5f + g_.s(10), g_.s(216), g_.s(6), g_.s(3.5f), kCream, fade_);
-        snprintf(b, sizeof b, "%s \xC2\xB7 \xE2\x86\x91%d\xC2\xB0 \xE2\x86\x93%d\xC2\xB0", A.weather.word.c_str(), A.weather.hi, A.weather.lo);
-        textAt(cv, fonts::caption(), 233, 300, fit(fonts::caption(), b, g_.s(280)), kCream, kDim);
+        textAt(cv, fonts::caption(), 233, 300, skyLine(fonts::caption(), A.weather.word, A.weather.hi, A.weather.lo, g_.s(280)), kCream, kDim);
       } else {
         textAt(cv, fonts::body(), 233, 244, A.wxWait ? (R ? "Întreb cerul…" : "Asking the sky…") : (R ? "Atinge pentru vreme" : "Tap for the weather"), kCream, kDim);
       }
@@ -698,8 +713,7 @@ void Os::drawWeather(Canvas& cv) {
     const int tw = Canvas::measureText(fonts::digits(), b);
     textAt(cv, fonts::digits(), 274, ty, b, kCream);
     cv.ring(g_.s(274) + tw * 0.5f + g_.s(10), g_.s(ty - 28), g_.s(6), g_.s(3.5f), kCream, fade_);  // the degree sign
-    snprintf(b, sizeof b, "%s \xC2\xB7 \xE2\x86\x91%d\xC2\xB0 \xE2\x86\x93%d\xC2\xB0", W.word.c_str(), W.hi, W.lo);
-    textAt(cv, fonts::body(), 233, L(270, 240), fit(fonts::body(), b, g_.s(L(320, 380))), kCream);
+    textAt(cv, fonts::body(), 233, L(270, 240), skyLine(fonts::body(), W.word, W.hi, W.lo, g_.s(L(320, 380))), kCream);
     // the next hours on a pebble
     pebRect(cv, L(84, 88), L(296, 264), L(382, 378), L(392, 360), 30, pal_.peb, pal_.pebe, 0);
     const int n = (int)W.hours.size() < 5 ? (int)W.hours.size() : 5;
@@ -835,8 +849,18 @@ void Os::drawMaps(Canvas& cv) {
       if (d >= 1000) snprintf(b, sizeof b, "%.1f km", d / 1000.0);
       else snprintf(b, sizeof b, "%d m", (d + 5) / 10 * 10);
       textAt(cv, fonts::title(), tx, L(190, 172), b, kCream);
-      textAt(cv, fonts::caption(), tx, L(222, 214), fit(fonts::caption(), maps::turnWord(st.turn, R), g_.s(tw)), kCream, kDim);
-      if (!st.street.empty()) textAt(cv, fonts::caption(), tx, L(246, 248), fit(fonts::caption(), st.street, g_.s(tw)), kCream, kDim);
+      // the street (Str., Bd. when long). SOUL S: a street that still does not fit takes the turn word's line too
+      // (the arrow already says the turn; the critic, 2026-10-22: "Strada Aca…")
+      const std::string street = st.street.empty() ? std::string() : firstThatFits(fonts::caption(), {st.street, streetShort(st.street)}, g_.s(tw));
+      std::string two[2];
+      if (sGlass() && street.size() >= 3 && street.compare(street.size() - 3, 3, "\xE2\x80\xA6") == 0 &&
+          wrapLines(fonts::caption(), streetShort(st.street), g_.s(tw), two, 2) == 2) {
+        textAt(cv, fonts::caption(), tx, L(222, 214), two[0], kCream, kDim);
+        textAt(cv, fonts::caption(), tx, L(246, 248), fit(fonts::caption(), two[1], g_.s(tw)), kCream, kDim);
+      } else {
+        textAt(cv, fonts::caption(), tx, L(222, 214), fit(fonts::caption(), maps::turnWord(st.turn, R), g_.s(tw)), kCream, kDim);
+        if (!street.empty()) textAt(cv, fonts::caption(), tx, L(246, 248), street, kCream, kDim);
+      }
     }
     buildItems(items_);
     std::vector<Item> pills;
@@ -1388,10 +1412,31 @@ void Os::drawDevice(Canvas& cv) {
   else snprintf(b, sizeof b, "SoulOS %s", S.fw.c_str());
   rows[3] = b;
   rows[4] = "SoulOS " + S.fw + (S.board.empty() ? std::string() : " \xC2\xB7 " + S.board);
+  // shorter forms for a line that does not fit (the S critic, 2026-10-22: "PSRAM 5.8 …", "firmware 2.5 of 6.2 …")
+  std::string alt[5], alt2[5];
+  if (S.appMaxKb) {
+    snprintf(b, sizeof b, R ? "aplica\xC8\x9Bie %.1f / %.1f MB" : "app %.1f / %.1f MB", S.appKb / 1024.0, S.appMaxKb / 1024.0);
+    alt[1] = b;
+  }
+  snprintf(b, sizeof b, R ? "%d mementouri" : "%d reminders", (int)rems_.size());
+  alt[2] = b;
+  if (S.heapKb) {
+    snprintf(b, sizeof b, "RAM %uK \xC2\xB7 PSRAM %.1fM", (unsigned)S.heapKb, S.psramKb / 1024.0);
+    alt[3] = b;
+    snprintf(b, sizeof b, "RAM %u KB", (unsigned)S.heapKb);
+    alt2[3] = b;
+  }
+  const char* glass = S.board == "lcd28" ? "M" : S.board == "amoled175" ? "S" : S.board.c_str();
+  alt[4] = "SoulOS " + S.fw + (S.board.empty() ? std::string() : std::string(" \xC2\xB7 ") + glass);
+  alt2[4] = "SoulOS " + S.fw;
   // (S: 34 px a line, as wide as the circle allows at each line)
-  for (int i = 0; i < 5; ++i)
-    textAt(cv, fonts::caption(), 233, L(254, 236) + i * L(26, 34),
-           fit(fonts::caption(), rows[i], g_.s(sGlass() ? (i == 0 || i == 4 ? 290 : 320) : (i == 0 || i == 4 ? 256 : 286))), kCream, i ? kDim : 1.0f);
+  for (int i = 0; i < 5; ++i) {
+    const float w = g_.s(sGlass() ? (i == 0 || i == 4 ? 290 : 320) : (i == 0 || i == 4 ? 256 : 286));
+    const std::string line = alt[i].empty()    ? fit(fonts::caption(), rows[i], w)
+                             : alt2[i].empty() ? firstThatFits(fonts::caption(), {rows[i], alt[i]}, w)
+                                               : firstThatFits(fonts::caption(), {rows[i], alt[i], alt2[i]}, w);
+    textAt(cv, fonts::caption(), 233, L(254, 236) + i * L(26, 34), line, kCream, i ? kDim : 1.0f);
+  }
 }
 
 // ------------------------------------------------------- settings › apps ---

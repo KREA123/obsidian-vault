@@ -21,9 +21,14 @@
 // pixel-identical frames (tools/perf_bench.py --hashes / --check). Units: design px of the 466 grid unless a name
 // says Px (panel px) or Mm.
 #pragma once
+#include <math.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #include "Alive.h"
 #include "Font.h"
 #include "Geometry.h"
+#include "Gestures.h"
 
 namespace suflet {
 
@@ -81,6 +86,21 @@ struct Density {
   // ---- the wheel's rows (OsScreens.cpp drawWheelRow), the type scale applied ---------------------------------
   float toggleW = 76, toggleH = 48, knobR = 17;
   float valueShare = 0.42f;  // a row's value (on the right) takes at most this share of the row
+  // ---- gestures: about a finger, so kept in millimetres like the targets (SOUL-S.md §2) ------------------------
+  // Os::touch, design px (M: x 480 / 466 / 6.84 px/mm): a tap moves less than tapSlop (3.6 mm), a swipe more than
+  // swipeMin (8.3 mm), petting starts past strokeMin (6.8 mm), a double tap lands within doubleTapR (7.5 mm); the
+  // dial is grabbed past dialGrab (1.2 mm across), a wheel past wheelDrag (2.1 mm down)
+  float tapSlop = 24, swipeMin = 55, strokeMin = 45, doubleTapR = 50, dialGrab = 8, wheelDrag = 14;
+  // TouchGestures, panel px (M: / 6.84 px/mm): Face mode's slop (3.7 mm) and stroke (6.6 mm), Text mode's hold slop
+  // (1.75 mm) and the jump that means a new finger (10.2 mm)
+  float faceSlopPx = 25, faceStrokePx = 45, holdSlopPx = 12, jumpPx = 70;
+  // the glass's gesture thresholds into a recogniser (SOUL M: TouchGestures' own defaults, bit for bit)
+  void tuneTouch(TouchGestures& t) const {
+    t.moveSlopPx = faceSlopPx;
+    t.strokePx = faceStrokePx;
+    t.textSlopPx = holdSlopPx;
+    t.textJumpPx = jumpPx;
+  }
 
   // The tokens for a glass. SOUL M (and any glass within 2 % of its density) gets the reference values.
   static Density forGlass(const DisplayGeometry& g);
@@ -92,17 +112,38 @@ struct Density {
 
 // ---- AMOLED burn-in care (firmware/SOUL-S.md §3) ----------------------------------------------------------
 // Standby on SOUL S is the eyes alone on true black: the black costs nothing (the pixels are off), the eyes'
-// whites are the only lit pixels and they would sit still for hours. Four things keep them moving or dark:
-//   drift       the whole face wanders on a slow Lissajous, ±kDriftPx panel px, periods 7 and 11 min: no pixel
-//               is lit in the same place for long (the eyes' saccades and blinks already move the pupils and lids)
+// whites are the only lit pixels and they would sit still for hours. The drift alone only blurs the whites' edges
+// (±6 px = 0.56 mm): their large inside stays lit (the S firmware critic, 2026-10-22). So:
+//   drift       the whole face wanders on a slow Lissajous, ±kDriftPx panel px, periods 7 and 11 min (the edges)
+//   size        the whole eye breathes ±kScaleAmp (6 %) over kScalePeriodS, in whole 1 % steps: the whites' edge
+//               sweeps ~10 px of their inside, not only 6 (the saccades move the pupils, never the whites)
+//   rest        every kRestEveryS the lids shut for kRestS on standby: the whites black for a moment
+//   cap         standby at most kStandbyCap of the panel's level (0x51 = 255 is up to 700 cd/m², Waveshare); the
+//               whites age with brightness [estimare: OLED emitter wear grows faster than linearly with luminance]
 //   night       the glow levels of Os::backlight (0.35 at night, 0.06 asleep at night)
 //   lights out  asleep for kOffAfterS (night) / kOffAfterDayS (day): the panel goes dark (brightness 0); a touch,
 //               a pick-up or a voice wakes it as before (the Brain wakes on any of them)
 //   no static   nothing else stays on standby (no clock, no rings: DESIGN-ALIVE §1)
+//   counted     the device keeps lit hours per region of the glass (LitMap below, in NVS): the soak test and any
+//               unit back from a user show where the glass has aged (BRINGUP §S)
 namespace burnin {
 constexpr float kDriftPx = 6.0f;
 constexpr float kDriftPeriodX = 420.0f, kDriftPeriodY = 660.0f;  // s
 constexpr float kOffAfterS = 20 * 60.0f, kOffAfterDayS = 60 * 60.0f;
+constexpr float kScaleAmp = 0.06f, kScalePeriodS = 97.0f, kScaleStep = 0.01f;
+constexpr float kRestEveryS = 300.0f, kRestS = 2.5f;  // [estimare] a slow blink every 5 min: 0.8 % of the time dark
+constexpr float kStandbyCap = 0.6f;
+// the eyes' scale on standby (1 on an LCD): whole 1 % steps, so the face repaints a few times a minute, not every frame
+inline float scale(double t, bool emissive) {
+  if (!emissive) return 1.0f;
+  const double s = kScaleAmp * sin(6.283185307179586 * t / kScalePeriodS);
+  return 1.0f + roundf((float)(s / kScaleStep)) * kScaleStep;
+}
+// a rest blink now? (the last kRestS of every kRestEveryS: never in the first minutes after a boot)
+inline bool resting(double t, bool emissive) {
+  if (!emissive || t < kRestEveryS) return false;
+  return fmod(t, (double)kRestEveryS) >= kRestEveryS - kRestS;
+}
 // the face's offset now (fractions of the glass of side S): 0 on an LCD
 inline void drift(double t, float S, bool emissive, float& dx, float& dy) {
   if (!emissive || S <= 0) {
@@ -114,6 +155,23 @@ inline void drift(double t, float S, bool emissive, float& dx, float& dy) {
   dx = roundf((float)(kDriftPx * sin(tw * t / kDriftPeriodX))) / S;
   dy = roundf((float)(kDriftPx * sin(tw * t / kDriftPeriodY + 1.0))) / S;
 }
+
+// Lit hours per region of the glass: a coarse grid (kCells x kCells) of "full-on seconds" per sub-pixel colour
+// (a red, a green and a blue emitter age differently: the eye whites are pink, so red and blue do most of it).
+// add() samples a frame (RGB565, the panel's own pixels) every few seconds: each cell's mean channel level x the
+// panel's level x the seconds. Kept in NVS (save / load: 3 x kCells² uint32), printed by the serial `b` command.
+struct LitMap {
+  static constexpr int kCells = 12;
+  uint32_t sec[3][kCells][kCells] = {};  // full-on seconds, R G B
+  float frac[3][kCells][kCells] = {};    // what has not made a whole second yet
+  void add(const uint16_t* px, int w, int h, float level, float seconds);
+  // the most-aged cell of a channel, in hours (and where)
+  float worstHours(int ch, int* cx = nullptr, int* cy = nullptr) const;
+  size_t save(uint8_t* out, size_t cap) const;  // bytes written (0 = too small)
+  bool load(const uint8_t* in, size_t n);
+  static constexpr size_t kBytes = 4 + sizeof(uint32_t) * 3 * kCells * kCells;
+};
+
 }  // namespace burnin
 
 }  // namespace suflet

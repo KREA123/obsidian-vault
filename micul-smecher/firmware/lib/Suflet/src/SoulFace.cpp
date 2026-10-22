@@ -115,6 +115,8 @@ void SoulFace::update(float dt, const FaceInputs& in) {
   }
   // state edges: Claude needs you -> shocked first; done / error flashes
   const bool leftOffline = lastState_ == FaceState::Offline && in.state != FaceState::Offline;
+  const bool restEnded = lastRest_ && !in.rest;  // the rest blink is over: the mood's own lids again
+  lastRest_ = in.rest;
   if (in.state != lastState_) {
     if (in.state == FaceState::Wait) {
       rig_.react(X_shocked);
@@ -125,8 +127,8 @@ void SoulFace::update(float dt, const FaceInputs& in) {
   }
   const int mood = moodFor(in);
   if (rig_.reacting()) rig_.setBack(mood);
-  else if (rig_.mood() != mood || leftOffline) rig_.setExpression(mood);  // back online: the lids too
-  if (in.mode == Mode::Asleep || in.mode == Mode::Off) {  // asleep: lids shut over the sleepy mood
+  else if (rig_.mood() != mood || leftOffline || restEnded) rig_.setExpression(mood);  // back online: the lids too
+  if (in.mode == Mode::Asleep || in.mode == Mode::Off || in.rest) {  // asleep (or a rest blink): lids shut
     rig_.target(Ch_lidL, 0.96f);
     rig_.target(Ch_lidR, 0.96f);
   }

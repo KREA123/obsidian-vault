@@ -1,5 +1,5 @@
 ---
-SoulOS 1.9.0 (SoulOS Alive) · placa Waveshare ESP32-S3-Touch-LCD-2.8C
+SoulOS 1.9.1 (SoulOS Alive) · placa Waveshare ESP32-S3-Touch-LCD-2.8C (prototipul, SOUL M)
 ---
 
 # 1. Instalează SoulOS pe placă (5 minute)
@@ -9,7 +9,7 @@ SoulOS 1.9.0 (SoulOS Alive) · placa Waveshare ESP32-S3-Touch-LCD-2.8C
 - Placa **Waveshare ESP32-S3-Touch-LCD-2.8C**.
 - Un **cablu USB-C de date**. Unele cabluri sunt doar de încărcare și nu merg. Dacă placa nu apare, schimbă cablul.
 - Un calculator cu **Google Chrome** sau **Microsoft Edge**. Safari și Firefox nu merg.
-- Fișierul **`SOUL-2.8C-install.bin`** din acest pachet.
+- Fișierul **`SOUL-2.8C-install.bin`** din acest pachet. (Placa produsului final, AMOLED-1.75, are fișierul ei și ghidul `1-INSTALEAZA-S-RO.md`.)
 
 ## Pașii
 
@@ -24,7 +24,7 @@ SoulOS 1.9.0 (SoulOS Alive) · placa Waveshare ESP32-S3-Touch-LCD-2.8C
 
 ## Verifică versiunea
 
-Pe placă: glisează pe cerc până la **Setări** → **Device**. Trebuie să scrie **1.9.0**.
+Pe placă: glisează pe cerc până la **Setări** → **Device**. Trebuie să scrie **1.9.1**.
 
 ## Dacă nu merge
 

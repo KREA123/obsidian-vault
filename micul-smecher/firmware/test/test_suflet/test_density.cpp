@@ -11,6 +11,7 @@
 
 #include "../../sim/alive_states.h"
 #include "Density.h"
+#include "Power.h"
 
 using namespace suflet;
 
@@ -386,6 +387,137 @@ static void test_s_screens_still_act() {
   fonts::setRamp(fonts::TypeRamp::M);
 }
 
+// The burn-in plan beyond the drift (the S firmware critic, 2026-10-22: the drift only blurs the whites' edges):
+// the whole eye breathes ±6 % in 1 % steps, a slow rest blink shuts the lids every 5 min, standby is capped at 0.6
+// of the panel's level, and the device counts lit hours per region (LitMap). None of it on the LCD.
+static void test_burn_in_beyond_the_drift() {
+  float lo = 1, hi = 1;
+  for (int t = 0; t < 200; ++t) {
+    const float k = burnin::scale(t, true);
+    lo = fminf(lo, k), hi = fmaxf(hi, k);
+    TEST_ASSERT_FLOAT_WITHIN(1e-4f, roundf((k - 1) * 100) / 100, k - 1);  // whole 1 % steps
+    TEST_ASSERT_EQUAL_FLOAT(1, burnin::scale(t, false));
+  }
+  TEST_ASSERT_FLOAT_WITHIN(0.005f, 0.94f, lo);
+  TEST_ASSERT_FLOAT_WITHIN(0.005f, 1.06f, hi);
+  TEST_ASSERT_FALSE(burnin::resting(298.0, true));  // never in the first 5 minutes
+  TEST_ASSERT_TRUE(burnin::resting(598.5, true));
+  TEST_ASSERT_FALSE(burnin::resting(700.0, true));
+  TEST_ASSERT_FALSE(burnin::resting(598.5, false));
+  int restS = 0;
+  for (int t = 0; t < 36000; ++t) restS += burnin::resting(t, true);
+  TEST_ASSERT_TRUE(restS > 200 && restS < 400);  // ~0.8 % of ten hours
+  // on the glass: S standby is capped by day, M is not; S rests (lids shut), M never does
+  alive_states::Rig s(true, -1, displays::kAmoled175), m;
+  TEST_ASSERT_EQUAL_INT(View::Home, s.os.view());
+  TEST_ASSERT_TRUE(s.os.backlight(14.0f, s.brain) <= burnin::kStandbyCap + 1e-4f);
+  TEST_ASSERT_EQUAL_FLOAT(1.0f, m.os.backlight(14.0f, m.brain));
+  s.os.setUptimeForTest(598.5);
+  m.os.setUptimeForTest(598.5);
+  TEST_ASSERT_TRUE(s.os.faceInputs(s.brain).rest);
+  TEST_ASSERT_FALSE(m.os.faceInputs(m.brain).rest);
+  s.os.setUptimeForTest(1000.0);
+  TEST_ASSERT_FALSE(s.os.faceInputs(s.brain).rest);
+  // a screen is not standby: the full level again
+  TEST_ASSERT_TRUE(alive_states::setup(s, "settings"));
+  TEST_ASSERT_EQUAL_FLOAT(1.0f, s.os.backlight(14.0f, s.brain));
+  // lit hours: a pink disc in the middle of a black glass, an hour at 0.6
+  std::vector<uint16_t> px(466 * 466, 0);
+  const uint16_t pink = Rgb::hex(0xFFB3E6).to565();
+  for (int y = 0; y < 466; ++y)
+    for (int x = 0; x < 466; ++x)
+      if ((x - 233) * (x - 233) + (y - 233) * (y - 233) < 80 * 80) px[(size_t)y * 466 + x] = pink;
+  burnin::LitMap map;
+  for (int i = 0; i < 360; ++i) map.add(px.data(), 466, 466, 0.6f, 10.0f);
+  int cx = -1, cy = -1;
+  TEST_ASSERT_FLOAT_WITHIN(0.02f, 0.6f, map.worstHours(0, &cx, &cy));  // red: full on in the middle
+  TEST_ASSERT_TRUE(cx >= 5 && cx <= 6 && cy >= 5 && cy <= 6);
+  TEST_ASSERT_TRUE(map.worstHours(1) < map.worstHours(2));  // pink: less green than blue
+  TEST_ASSERT_EQUAL_UINT32(0, map.sec[2][0][0]);           // the black corner never ages
+  uint8_t blob[burnin::LitMap::kBytes];
+  TEST_ASSERT_EQUAL_UINT32(burnin::LitMap::kBytes, map.save(blob, sizeof blob));
+  burnin::LitMap back;
+  TEST_ASSERT_TRUE(back.load(blob, sizeof blob));
+  TEST_ASSERT_EQUAL_MEMORY(map.sec, back.sec, sizeof map.sec);
+  TEST_ASSERT_FALSE(back.load(blob, sizeof blob - 1));
+  fonts::setRamp(fonts::TypeRamp::M);
+}
+
+// SOUL S's low-battery shutdown (the S critic, 2026-10-22: the PMU was never asked): three low reads in a row, never
+// on USB, never without a cell, never on one dip
+static void test_low_battery_powers_off_cleanly() {
+  LowBattery g;
+  TEST_ASSERT_FALSE(g.update(true, false, 2, 3300));
+  TEST_ASSERT_FALSE(g.update(true, false, 2, 3300));
+  TEST_ASSERT_TRUE(g.update(true, false, 2, 3300));
+  LowBattery dip;
+  for (int i = 0; i < 10; ++i) TEST_ASSERT_FALSE(dip.update(true, false, i % 2 ? 40 : 2, i % 2 ? 3800 : 3300));
+  LowBattery usb, none, ok;
+  for (int i = 0; i < 10; ++i) {
+    TEST_ASSERT_FALSE(usb.update(true, true, 1, 3200));    // charging: never
+    TEST_ASSERT_FALSE(none.update(false, false, -1, 0));  // no cell (USB only, the gauge says nothing)
+    TEST_ASSERT_FALSE(ok.update(true, false, 50, 3850));
+  }
+  LowBattery volts;  // the gauge not ready yet (-1), the voltage is enough
+  volts.update(true, false, -1, 3300);
+  volts.update(true, false, -1, 3300);
+  TEST_ASSERT_TRUE(volts.update(true, false, -1, 3300));
+}
+
+// ---- gestures in millimetres (the S firmware critic, 2026-10-22) -------------------------------------------------
+// A finger that lands and wanders mm (not px) before it lifts. The thresholds were panel px: on S (10.65 px/mm vs
+// 6.84) a tap's slop shrank from 3.7 to 2.3 mm and more taps read as drags. Now they are Density tokens in mm.
+static void jitterTouch(alive_states::Rig& s, float x, float y, float mmX, float mmY, float secs) {
+  const float pxPerMm = s.os.density().pxPerMm;
+  const int n = (int)(secs * 30 + 0.5f);
+  s.finger = true;
+  for (int i = 0; i <= n; ++i) {  // a fingertip sliding out to (mmX, mmY) mm, lifted there
+    const float u = (float)i / n;
+    s.fx = s.g.s(x) + mmX * pxPerMm * u;
+    s.fy = s.g.s(y) + mmY * pxPerMm * u;
+    s.step();
+  }
+  s.finger = false;
+  s.run(0.6f);
+}
+
+static void test_gestures_tap_vs_drag_in_mm_on_both_glasses() {
+  for (int glass = 0; glass < 2; ++glass) {
+    const DisplayGeometry& g = glass ? displays::kAmoled175 : displays::kLcd28;
+    const Density d = Density::forGlass(g);
+    // the same millimetres on both glasses (design px x 466 / ... / px per mm)
+    const float mmPerDesign = g.k() / d.pxPerMm;
+    TEST_ASSERT_FLOAT_WITHIN(0.15f, 3.6f, d.tapSlop * mmPerDesign);
+    TEST_ASSERT_FLOAT_WITHIN(0.15f, 8.3f, d.swipeMin * mmPerDesign);
+    TEST_ASSERT_FLOAT_WITHIN(0.15f, 2.1f, d.wheelDrag * mmPerDesign);
+    TEST_ASSERT_FLOAT_WITHIN(0.15f, 3.7f, d.faceSlopPx / d.pxPerMm);
+    TEST_ASSERT_FLOAT_WITHIN(0.15f, 6.6f, d.faceStrokePx / d.pxPerMm);
+    TEST_ASSERT_FLOAT_WITHIN(0.15f, 10.2f, d.jumpPx / d.pxPerMm);
+    TouchGestures t;
+    d.tuneTouch(t);
+    TEST_ASSERT_FLOAT_WITHIN(0.15f, 3.7f, t.moveSlopPx / d.pxPerMm);
+    TEST_ASSERT_FLOAT_WITHIN(0.1f, 1.75f, t.textSlopPx / d.pxPerMm);
+    // a tap whose fingertip wanders 2 and 3 mm (mostly sideways: a wheel turns on 2.1 mm down) still opens the row
+    for (float mm : {2.0f, 3.0f}) {
+      alive_states::Rig s(true, -1, g);
+      TEST_ASSERT_TRUE(alive_states::setup(s, "settings"));
+      TEST_ASSERT_EQUAL_INT(View::Settings, s.os.view());
+      jitterTouch(s, 233, s.os.wheel().spec().y, mm * 0.95f, mm * 0.3f, 0.25f);
+      char msg[64];
+      snprintf(msg, sizeof msg, "%s: a tap with %.0f mm of jitter", glass ? "S" : "M", mm);
+      TEST_ASSERT_TRUE_MESSAGE(s.os.view() != View::Settings, msg);
+    }
+    // a 5 mm slide is not a tap (past the slop) and not a swipe (under 8.3 mm): nothing opens
+    {
+      alive_states::Rig s(true, -1, g);
+      TEST_ASSERT_TRUE(alive_states::setup(s, "settings"));
+      jitterTouch(s, 233, s.os.wheel().spec().y, 5.0f, 0.0f, 0.3f);
+      TEST_ASSERT_EQUAL_INT(View::Settings, s.os.view());
+    }
+  }
+  fonts::setRamp(fonts::TypeRamp::M);
+}
+
 void runDensityTests() {
   RUN_TEST(test_density_m_is_the_reference_glass);
   RUN_TEST(test_density_s_keeps_the_millimetres);
@@ -397,4 +529,7 @@ void runDensityTests() {
   RUN_TEST(test_m_keyboard_unchanged);
   RUN_TEST(test_s_rows_of_pills_fit);
   RUN_TEST(test_s_screens_still_act);
+  RUN_TEST(test_gestures_tap_vs_drag_in_mm_on_both_glasses);
+  RUN_TEST(test_burn_in_beyond_the_drift);
+  RUN_TEST(test_low_battery_powers_off_cleanly);
 }

@@ -18,7 +18,8 @@
 //   words   two lines of words touch (glyph boxes of different lines overlap by more than 1 px)
 //   overlap two controls overlap without one holding the other (two pills drawn over each other)
 //   spill   a word straddles a control's edge (a label longer than its pill, a line running into a button)
-//   trunc   a line cut to almost nothing: "…" after fewer than 3 characters ("W…", "T…")
+//   trunc   a line cut to almost nothing: "…" after fewer than 3 characters ("W…", "T…"); and (2026-10-22) a
+//           number or a unit cut by "…" ("↑2…" for ↑24°, "↓…", "12 k…")
 // Plus the wheels (§4) and Claude's ask (two 68 px buttons, the "Hold = yes · 2× = no" line at >= 22 px).
 #include <math.h>
 #include <stdio.h>
@@ -289,6 +290,34 @@ void auditState(const alive_states::State& st, Audit& out, const Glass& gl = Gla
       snprintf(m, sizeof m, "trunc: a line cut to %d character(s) + \u2026 at (%.0f, %.0f)", before, probe.q[i].minX(), probe.q[i].minY());
       fail(m);
       ++trunc;
+      continue;
+    }
+    // (the S firmware critic, 2026-10-22) a number or a unit is never what "…" cuts: "↑2…" for ↑24°, "↓…" for the
+    // low, "12 k…" for 12 km. The cut word is what stands right before "…"; the one before it decides a unit.
+    // the line's glyphs before "…", split into words where a space was (the probe sees no glyph for a space:
+    // a gap wider than 0.15 em between two glyphs is one)
+    std::vector<std::vector<uint32_t>> toks(1);
+    const Quad* last = nullptr;
+    for (size_t j = 0; j < i; ++j) {
+      const Quad& g = probe.q[j];
+      if (g.run != probe.q[i].run) continue;
+      if (g.cp == ' ' || (last && g.minX() - last->maxX() > 0.15f * g.px)) {
+        if (!toks.back().empty()) toks.emplace_back();
+      }
+      if (g.cp != ' ') toks.back().push_back(g.cp);
+      last = &g;
+    }
+    if (last && probe.q[i].minX() - last->maxX() > 0.15f * probe.q[i].px && !toks.back().empty()) toks.emplace_back();
+    const std::vector<uint32_t> cutTok = toks.back();
+    const std::vector<uint32_t> prevTok = toks.size() > 1 ? toks[toks.size() - 2] : std::vector<uint32_t>();
+    auto numeric = [](uint32_t c) { return (c >= '0' && c <= '9') || c == 0xB0 || c == '%' || c == 0x2191 || c == 0x2193; };
+    bool numCut = false, prevNumber = !prevTok.empty();
+    for (uint32_t c : cutTok) numCut |= numeric(c);
+    for (uint32_t c : prevTok) prevNumber &= (c >= '0' && c <= '9') || c == '.' || c == ',';
+    if (numCut || (prevNumber && cutTok.size() < 3)) {  // a cut number, or a number whose unit was cut ("5.8 M…")
+      snprintf(m, sizeof m, "trunc: a number or a unit cut by \u2026 at (%.0f, %.0f)", probe.q[i].minX(), probe.q[i].minY());
+      fail(m);
+      ++trunc;
     }
   }
   // the eyes' pixels never touch a control or a word (the dial's pebbles orbit them: the dial is the eyes' own)
@@ -390,6 +419,81 @@ static void auditGlass(const Glass& gl, int minGlyphs) {
   TEST_ASSERT_GREATER_THAN(minGlyphs, a.glyphs);
   TEST_ASSERT_EQUAL_INT(0, (int)a.fails.size());
   fonts::setRamp(fonts::TypeRamp::M);  // (the next tests draw SOUL M)
+}
+
+// a board with no speaker and no buzzer (SOUL S until its ES8311 path is proven, SOUL-S.md §4): the Alarms list
+// and the ringing screen say so, on both glasses, and still pass the audit
+static std::string wordsOn(alive_states::Rig& s) {
+  std::vector<uint16_t> buf((size_t)s.W * s.H, 0);
+  Canvas cv(s.W, s.H, buf.data());
+  Probe probe;
+  Canvas::probe = &probe;
+  s.os.render(cv);
+  Canvas::probe = nullptr;
+  std::string out;
+  for (const Quad& g : probe.q) {
+    char b[4];
+    out.append(b, (size_t)utf8::encode(g.cp, b));
+  }
+  return out;
+}
+
+static void test_alarms_say_when_they_are_silent() {
+  for (int glass = 0; glass < 2; ++glass) {
+    const Glass gl = glass ? Glass::of(displays::kAmoled175, "S") : Glass::of(displays::kLcd28, "M");
+    for (const char* name : {"alarms", "alarm-ring"}) {
+      const alive_states::State st = {name, "", true};
+      for (int silent = 0; silent < 2; ++silent) {
+        alive_states::Rig::silentAlarms = silent != 0;
+        Audit a;
+        auditState(st, a, gl);
+        for (const std::string& f : a.fails) printf("  AUDIT %s silent %d %s\n", gl.name, silent, f.c_str());
+        TEST_ASSERT_EQUAL_INT(0, (int)a.fails.size());
+        alive_states::Rig s(true, -1, gl.g);
+        TEST_ASSERT_TRUE(alive_states::setup(s, name));
+        const std::string words = wordsOn(s);
+        const bool says = words.find("silent") != std::string::npos;
+        TEST_ASSERT_EQUAL_MESSAGE(silent != 0, says, name);
+      }
+    }
+  }
+  alive_states::Rig::silentAlarms = false;
+  fonts::setRamp(fonts::TypeRamp::M);
+}
+
+// The grey secondary words on the capsules at night (the S critic, 2026-10-22): cream at ink2 (82 %) and ink3 (66 %)
+// on every born palette's capsule (peb, peb2: e1 into black at 14 / 23 %), all 120 designs x 5 bodies, at the
+// panel's level by day (1.0) and at night (Os::backlight 0.35). On an emissive glass dimming scales the words and
+// the capsule alike; what changes the ratio is the room's light reflected off the glass, added to both. Model
+// [estimare, to measure on the board, BRINGUP §S]: 700 cd/m² at 0x51 = 255 (Waveshare), linear in the level;
+// reflected light 1 cd/m² at night (a dim room), 10 cd/m² by day. Floors: ink2 (what you must read) >= 4.5:1,
+// ink3 (hints) >= 3:1, and ink2 itself >= 50 cd/m² at night.
+static void test_secondary_words_on_capsules_at_night() {
+  const Rgb cream = Rgb::hex(0xFBF4E3);
+  double worstDim = 1e9, worstFaint = 1e9, darkest = 1e9;
+  for (int d = 0; d < eyes::kDesignCount; ++d)
+    for (int b = 0; b < (int)Body::Count; ++b) {
+      const BornPalette p = bornPaletteFor(d, (Body)b);
+      for (Rgb bg : {p.peb, p.peb2}) {
+        const double lb = luminance(bg.r, bg.g, bg.b);
+        for (int night = 0; night < 2; ++night) {
+          const double level = night ? 0.35 : 1.0, peak = 700.0 * level, room = night ? 1.0 : 10.0;
+          for (float a : {0.82f, 0.66f}) {
+            const double ir = bg.r + (cream.r - bg.r) * a, ig = bg.g + (cream.g - bg.g) * a, ib = bg.b + (cream.b - bg.b) * a;
+            const double lt = luminance(ir, ig, ib);
+            const double ratio = (lt * peak + room) / (lb * peak + room);
+            if (a > 0.8f) worstDim = std::min(worstDim, ratio);
+            else worstFaint = std::min(worstFaint, ratio);
+            if (a > 0.8f && night) darkest = std::min(darkest, lt * peak);
+          }
+        }
+      }
+    }
+  printf("  secondary words on capsules: ink2 >= %.1f:1, ink3 >= %.1f:1, ink2 at night >= %.0f cd/m2 [estimare]\n", worstDim,
+         worstFaint, darkest);
+  TEST_ASSERT_TRUE(worstDim >= 4.5);
+  TEST_ASSERT_TRUE(worstFaint >= 3.0);
+  TEST_ASSERT_TRUE(darkest >= 50.0);
 }
 
 // SOUL M, the prototype: the 2.8C at 480 px
@@ -572,6 +676,8 @@ void runAuditTests() {
   RUN_TEST(test_audit_every_screen_on_soul_m);
   RUN_TEST(test_audit_every_screen_on_soul_s);
   RUN_TEST(test_audit_contrast_catches_the_old_time_picker);
+  RUN_TEST(test_alarms_say_when_they_are_silent);
+  RUN_TEST(test_secondary_words_on_capsules_at_night);
   RUN_TEST(test_wheel_rows_fit_the_circle_and_turn_on_the_spring);
   RUN_TEST(test_wheel_lists_turn_act_and_end_with_new);
   RUN_TEST(test_claude_asks_with_two_big_buttons);

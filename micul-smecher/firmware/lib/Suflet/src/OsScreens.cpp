@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <functional>
 
+#include "TextFit.h"
 #include "Os.h"
 #include "Raster.h"
 
@@ -38,21 +39,7 @@ const Font& itemFont(int i, bool large) {  // Item::font (the same as OsDraw.cpp
   return i == 0 ? fonts::caption() : i == 1 ? fonts::body() : fonts::title();
 }  // Item::font of a wheel row's hit box (drawn by drawWheel, not drawItems)
 
-std::string fitText(const Font& f, const std::string& s, float maxW) {
-  if (maxW <= 0) return "";
-  if (Canvas::measureText(f, s.c_str()) <= maxW) return s;
-  std::string out;
-  const char* p = s.c_str();
-  const char* end = p + s.size();
-  while (p < end) {
-    const char* q = p;
-    utf8::next(q, end);
-    if (Canvas::measureText(f, (out + std::string(p, q - p) + "\xE2\x80\xA6").c_str()) > maxW) break;
-    out.append(p, q - p);
-    p = q;
-  }
-  return out + "\xE2\x80\xA6";
-}
+std::string fitText(const Font& f, const std::string& s, float maxW) { return maxW <= 0 ? std::string() : ellipsizeWords(f, s, maxW); }
 }  // namespace
 
 // ------------------------------------------------------------- pieces ---
@@ -386,7 +373,7 @@ bool Os::wheelTouch(const TouchEv& e) {
     case Ev::TouchMove: {
       if (!down_ || holding_) return false;
       const float dx = (e.x - dx0_) / k, dy = (e.y - dy0_) / k;
-      if (!wheelDragged_ && fabsf(dy) > 14 && fabsf(dy) > fabsf(dx) * 1.2f) wheelDragged_ = true;
+      if (!wheelDragged_ && fabsf(dy) > dens_.wheelDrag && fabsf(dy) > fabsf(dx) * 1.2f) wheelDragged_ = true;
       if (wheelDragged_) {
         const int t = wheelGrab_ + (int)lroundf(-dy / wheel_.spec().dragPx);
         if (wheel_.turnTo(t, reducedMotion())) {
@@ -505,8 +492,17 @@ void Os::drawWheelRow(Canvas& cv, const WheelRow& r, const alive::Wheel::Place& 
       cv.roundRect(g_.s(tx), g_.s(yT) - 1, g_.s(tx) + w, g_.s(yT) + 1.5f, 1, ink, ta * 0.8f * fade_);
     }
   }
-  if (!r.sub.empty())
-    textAt(cv, fonts::caption(), subX, yS, fitText(fonts::caption(), r.sub, g_.s((r.bigTag ? rx : rxSub) - subX)), ink, ta * 0.72f, Align::Left);
+  if (!r.sub.empty()) {
+    const float subW = g_.s((r.bigTag ? rx : rxSub) - subX);
+    std::string s;
+    if (r.subShort.empty()) {
+      s = fitText(fonts::caption(), r.sub, subW);
+    } else {  // the short form, then its first part alone ("Wake up · Mo–Fr", then "Wake up")
+      const size_t dot = r.subShort.rfind(" \xC2\xB7 ");
+      s = firstThatFits(fonts::caption(), {r.sub, r.subShort, dot == std::string::npos ? r.subShort : r.subShort.substr(0, dot)}, subW);
+    }
+    textAt(cv, fonts::caption(), subX, yS, s, ink, ta * 0.72f, Align::Left);
+  }
   if (r.dots) {  // habits: the last 7 days, today last
     for (int k = 0; k < 7; ++k) {
       const bool on = r.dots >> (6 - k) & 1;

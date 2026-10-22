@@ -190,6 +190,7 @@ struct Sim {
     PowerInfo pw;
     pw.batPct = 78;
     os.setPower(pw);
+    os.density().tuneTouch(touch);  // the glass's gesture thresholds in mm (SOUL M: the defaults)
     touch.setMode(TouchMode::Text);
     aiServer = [](const AiJob&) {
       return std::make_pair(200, claudeBody("{\"say\":\"Hi! I'm here.\",\"face\":\"happy\",\"actions\":[]}"));

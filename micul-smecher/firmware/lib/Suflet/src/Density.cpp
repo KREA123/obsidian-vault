@@ -2,6 +2,7 @@
 #include "Density.h"
 
 #include <math.h>
+#include <string.h>
 
 namespace suflet {
 
@@ -34,6 +35,17 @@ Density Density::forGlass(const DisplayGeometry& g) {
   d.typeFloorPx = 18 * ppmRatio;  // 2.63 mm
   d.secondaryPx = 20 * ppmRatio;  // 2.92 mm
   d.targetPx = 44 * ppmRatio;     // 6.43 mm
+  // ---- gestures: the same millimetres as on M (design px scale by sigma, panel px by ppmRatio) ----
+  d.tapSlop = 24 * d.sigma;     // 3.6 mm
+  d.swipeMin = 55 * d.sigma;    // 8.3 mm
+  d.strokeMin = 45 * d.sigma;   // 6.8 mm
+  d.doubleTapR = 50 * d.sigma;  // 7.5 mm
+  d.dialGrab = 8 * d.sigma;     // 1.2 mm
+  d.wheelDrag = 14 * d.sigma;   // 2.1 mm
+  d.faceSlopPx = 25 * ppmRatio;    // 3.7 mm
+  d.faceStrokePx = 45 * ppmRatio;  // 6.6 mm
+  d.holdSlopPx = 12 * ppmRatio;    // 1.75 mm
+  d.jumpPx = 70 * ppmRatio;        // 10.2 mm
   // ---- the type ramp (the atlases exist for S only: a glass denser than M uses them) ----
   d.ramp = d.sigma > 1.25f && fonts::hasRamp(fonts::TypeRamp::S) ? fonts::TypeRamp::S : fonts::TypeRamp::M;
   if (d.ramp == fonts::TypeRamp::S) {
@@ -175,5 +187,60 @@ Density Density::forGlass(const DisplayGeometry& g) {
   q.tickSize = 15 * ts;
   return d;
 }
+
+// ---- burn-in: lit hours per region ------------------------------------------------------------------------
+namespace burnin {
+
+void LitMap::add(const uint16_t* px, int w, int h, float level, float seconds) {
+  if (!px || w <= 0 || h <= 0 || level <= 0 || seconds <= 0) return;
+  for (int cy = 0; cy < kCells; ++cy)
+    for (int cx = 0; cx < kCells; ++cx) {
+      // a 4 x 4 grid of samples inside the cell
+      float acc[3] = {0, 0, 0};
+      for (int sy = 0; sy < 4; ++sy)
+        for (int sx = 0; sx < 4; ++sx) {
+          const int x = (int)((cx + (sx + 0.5f) / 4) * w / kCells), y = (int)((cy + (sy + 0.5f) / 4) * h / kCells);
+          const uint16_t p = px[(size_t)y * w + x];
+          acc[0] += ((p >> 11) & 31) / 31.0f;
+          acc[1] += ((p >> 5) & 63) / 63.0f;
+          acc[2] += (p & 31) / 31.0f;
+        }
+      for (int ch = 0; ch < 3; ++ch) {
+        float& f = frac[ch][cy][cx];
+        f += acc[ch] / 16.0f * level * seconds;
+        if (f >= 1) {
+          const uint32_t whole = (uint32_t)f;
+          sec[ch][cy][cx] += whole;
+          f -= (float)whole;
+        }
+      }
+    }
+}
+
+float LitMap::worstHours(int ch, int* wx, int* wy) const {
+  uint32_t most = 0;
+  int bx = 0, by = 0;
+  for (int cy = 0; cy < kCells; ++cy)
+    for (int cx = 0; cx < kCells; ++cx)
+      if (sec[ch][cy][cx] > most) most = sec[ch][cy][cx], bx = cx, by = cy;
+  if (wx) *wx = bx;
+  if (wy) *wy = by;
+  return most / 3600.0f;
+}
+
+size_t LitMap::save(uint8_t* out, size_t cap) const {
+  if (cap < kBytes) return 0;
+  out[0] = 'L', out[1] = 'M', out[2] = 1, out[3] = kCells;
+  memcpy(out + 4, sec, sizeof sec);
+  return kBytes;
+}
+
+bool LitMap::load(const uint8_t* in, size_t n) {
+  if (n != kBytes || in[0] != 'L' || in[1] != 'M' || in[2] != 1 || in[3] != kCells) return false;
+  memcpy(sec, in + 4, sizeof sec);
+  return true;
+}
+
+}  // namespace burnin
 
 }  // namespace suflet

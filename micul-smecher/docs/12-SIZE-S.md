@@ -186,8 +186,9 @@ Candidate cells (all 3.7 V, with PCM, 2-pin lead; check polarity vs the board, d
 
 docs/09's model day: 1 h awake, 15 h asleep or screen off, 8 h night deep sleep, 50 questions. The S currents are built bottom-up [E].
 
-- **CPU:** PERF.md's model, ESP32-S3 modem sleep. 33 mA at idle at 240 MHz, plus 29 mA × core-1 duty. Standby is 28 % duty → ≈ 41 mA.
-- **QSPI push:** ≈ 57 k px × 2 B a frame at 40 MHz × 4 lanes (20 MB/s) ≈ 5.7 ms → +≈ 5 mA at 24 fps.
+- **CPU:** PERF.md's model, ESP32-S3 modem sleep. 33 mA at idle at 240 MHz, plus 29 mA × core-1 duty. **Redone 2026-10-22 with PERF.md's "SOUL S" table (firmware 1.9.1):** a standby frame is 8.1 ms render + 8.1 ms push + 1 ms loop = 17.2 ms at 24 fps = **41 % duty** → ≈ 45 mA (the first estimate used 28 % → 41 mA).
+- **QSPI push:** ≈ 54 k px a standby frame, 8.1 ms at the estimated 16 MB/s payload [E] → +≈ 7 mA at 24 fps (first estimate: 5.7 ms at the raw 20 MB/s, +5 mA).
+- **Charge voltage:** firmware 1.9.1 charges to **4.2 V** (the cell's rating; `firmware/SOUL-S.md` §8). At xiaozhi's 4.1 V about 10 % of the capacity would go unused [E] (≈ 23 h instead of ≈ 26 h).
 - **AMOLED:**
   - static (driver + DC-DC) ≈ 10 mW;
   - full white at the 1.75″ size ≈ 250–350 mW [E: watch panels scaled by area, no panel datasheet with a power table found];
@@ -204,6 +205,8 @@ docs/09's model day: 1 h awake, 15 h asleep or screen off, 8 h night deep sleep,
 | Deep sleep | ≈ 0 (docs/09) | dev board ≈ 2 mA [V-s, sibling board]; custom PCB ≤ 0.3 mA target |
 | **mAh per model day** | ≈ 1,130 | **≈ 661** (85 + 15 h × 38 + 2 + 4) |
 | **Battery life** | 1500 mAh → **≈ 32 h** | **750 mAh → ≈ 27 h** (21–34 h); S-P0 500 mAh with a 2 mA deep sleep → ≈ 18 h |
+
+**Redo with the 1.9.1 numbers [E] (`firmware/SOUL-S.md` §8):** awake ≈ 77–87 mA, asleep glow ≈ 45–55 mA, screen off 25–35 mA → ≈ 690 mAh for the model day → **≈ 26 h** (21–33 h). The ≈ 27 h above stays inside that range; both wait for BRINGUP §S-f's meter.
 
 **The AMOLED's other win:** the panel keeps its own frame memory (GRAM), so the S3 may **light-sleep between frames and while the screen is dark**. On the M's RGB panel that is impossible: the DMA must keep scanning [R: PERF.md *Power*]. Two numbers drive the gain:
 

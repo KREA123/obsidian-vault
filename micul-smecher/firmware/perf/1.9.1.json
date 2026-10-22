@@ -1,0 +1,218 @@
+{
+ "frames": {
+  "bench_standby": {
+   "name": "bench_standby",
+   "frames": 300,
+   "mir": 3.562461236666667,
+   "render_ms": 8.193660844333333,
+   "copied_px": 56836,
+   "push_ms": 2.27344,
+   "frame_ms": 11.467100844333334,
+   "fps": 24,
+   "fps_asked": 24
+  },
+  "home": {
+   "name": "home",
+   "frames": 162,
+   "mir": 1.7336535987654322,
+   "render_ms": 3.9874032771604937,
+   "copied_px": 31275,
+   "push_ms": 1.251,
+   "frame_ms": 6.238403277160494,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "expressions": {
+   "name": "expressions",
+   "frames": 1230,
+   "mir": 3.4475350113821137,
+   "render_ms": 7.929330526178861,
+   "copied_px": 61516,
+   "push_ms": 2.46064,
+   "frame_ms": 11.38997052617886,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "motion": {
+   "name": "motion",
+   "frames": 379,
+   "mir": 4.768702501319261,
+   "render_ms": 10.9680157530343,
+   "copied_px": 91527,
+   "push_ms": 3.66108,
+   "frame_ms": 15.6290957530343,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_notify": {
+   "name": "bench_notify",
+   "frames": 285,
+   "mir": 3.1208359964912282,
+   "render_ms": 7.1779227919298245,
+   "copied_px": 80425,
+   "push_ms": 3.2169999999999996,
+   "frame_ms": 11.394922791929824,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "launcher": {
+   "name": "launcher",
+   "frames": 194,
+   "mir": 2.530274994845361,
+   "render_ms": 5.81963248814433,
+   "copied_px": 61054,
+   "push_ms": 2.44216,
+   "frame_ms": 9.26179248814433,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_typing": {
+   "name": "bench_typing",
+   "frames": 402,
+   "mir": 1.7750548457711444,
+   "render_ms": 4.082626145273632,
+   "copied_px": 48958,
+   "push_ms": 1.9583199999999998,
+   "frame_ms": 7.040946145273631,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_screen": {
+   "name": "bench_screen",
+   "frames": 300,
+   "mir": 1.77972482,
+   "render_ms": 4.093367086,
+   "copied_px": 12807,
+   "push_ms": 0.5122800000000001,
+   "frame_ms": 5.605647085999999,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_drift": {
+   "name": "bench_drift",
+   "frames": 258,
+   "mir": 1.7925193449612404,
+   "render_ms": 4.1227944934108525,
+   "copied_px": 13503,
+   "push_ms": 0.54012,
+   "frame_ms": 5.662914493410852,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_nav": {
+   "name": "bench_nav",
+   "frames": 300,
+   "mir": 2.988182796666667,
+   "render_ms": 6.8728204323333335,
+   "copied_px": 92357,
+   "push_ms": 3.69428,
+   "frame_ms": 11.567100432333334,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "talk": {
+   "name": "talk",
+   "frames": 238,
+   "mir": 3.8566112899159664,
+   "render_ms": 8.870205966806722,
+   "copied_px": 110401,
+   "push_ms": 4.416040000000001,
+   "frame_ms": 14.286245966806723,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "claude": {
+   "name": "claude",
+   "frames": 228,
+   "mir": 5.016630701754385,
+   "render_ms": 11.538250614035086,
+   "copied_px": 126914,
+   "push_ms": 5.07656,
+   "frame_ms": 17.614810614035086,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_maps": {
+   "name": "bench_maps",
+   "frames": 326,
+   "mir": 4.7155637361963185,
+   "render_ms": 10.845796593251531,
+   "copied_px": 101788,
+   "push_ms": 4.0715200000000005,
+   "frame_ms": 15.917316593251531,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_games": {
+   "name": "bench_games",
+   "frames": 342,
+   "mir": 2.366078020467836,
+   "render_ms": 5.441979447076023,
+   "copied_px": 127498,
+   "push_ms": 5.09992,
+   "frame_ms": 11.541899447076023,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_alive": {
+   "name": "bench_alive",
+   "frames": 700,
+   "mir": 3.13405808,
+   "render_ms": 7.208333583999999,
+   "copied_px": 103377,
+   "push_ms": 4.13508,
+   "frame_ms": 12.343413584,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_wheel": {
+   "name": "bench_wheel",
+   "frames": 530,
+   "mir": 3.350148983018868,
+   "render_ms": 7.705342660943396,
+   "copied_px": 117955,
+   "push_ms": 4.7181999999999995,
+   "frame_ms": 13.423542660943395,
+   "fps": 30,
+   "fps_asked": 30
+  },
+  "bench_memwheel": {
+   "name": "bench_memwheel",
+   "frames": 368,
+   "mir": 3.3387932364130433,
+   "render_ms": 7.679224443749999,
+   "copied_px": 89606,
+   "push_ms": 3.58424,
+   "frame_ms": 12.26346444375,
+   "fps": 30,
+   "fps_asked": 30
+  }
+ },
+ "micro": {
+  "bench_json": {
+   "name": "bench_json",
+   "ops": 50,
+   "ir": 40818555,
+   "ir_per_op": 816371.1
+  },
+  "bench_memory": {
+   "name": "bench_memory",
+   "ops": 50,
+   "ir": 347939466,
+   "ir_per_op": 6958789.32
+  },
+  "bench_wifi": {
+   "name": "bench_wifi",
+   "ops": 40,
+   "ir": 7042236,
+   "ir_per_op": 176055.9
+  },
+  "bench_boot": {
+   "name": "bench_boot",
+   "ops": 1,
+   "ir": 3735583,
+   "ir_per_op": 3735583.0
+  }
+ },
+ "designs": {}
+}

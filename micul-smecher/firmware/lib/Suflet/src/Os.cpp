@@ -113,6 +113,7 @@ FaceLayoutT Os::layoutFor(View v) const {
       if (dens_.emissive) {  // AMOLED standby: the eyes alone, wandering a few px over minutes (burn-in care)
         FaceLayoutT l = slot(alive::kStandby);
         burnin::drift(t_, (float)g_.w, true, l.cx, l.cy);
+        l.k *= burnin::scale(t_, true);  // the whites' edge sweeps their inside too
         return l;
       }
       return slot(alive::kStandby);
@@ -514,7 +515,7 @@ void Os::touch(const TouchEv& e) {
       const float dist = hypotf(x - dx0_, y - dy0_);
       if (view_ == View::Launcher) dialTouch(e);  // a horizontal drag turns the dial
       // a slow, long touch that moves = petting (the Brain purrs), on the face only
-      if (view_ == View::Home && !holding_ && !stroking_ && dist > g_.s(45) && t_ - downT_ > 0.45f) {
+      if (view_ == View::Home && !holding_ && !stroking_ && dist > g_.s(dens_.strokeMin) && t_ - downT_ > 0.45f) {
         stroking_ = true;
         brainEvents_.push_back(Ev::StrokeStart);
       }
@@ -546,13 +547,13 @@ void Os::touch(const TouchEv& e) {
         brainEvents_.push_back(Ev::StrokeEnd);
         break;
       }
-      if (dist > g_.s(55) && dur < 0.7f) {
+      if (dist > g_.s(dens_.swipeMin) && dur < 0.7f) {
         if (fabsf(ddx) > fabsf(ddy)) onSwipe(ddx < 0 ? 0 : 1);
         else onSwipe(ddy < 0 ? 2 : 3);
         break;
       }
-      if (dist < g_.s(24) && dur < 0.45f) {
-        if (t_ - lastTapT_ < 0.38f && hypotf(x - lastTapX_, y - lastTapY_) < g_.s(50)) {
+      if (dist < g_.s(dens_.tapSlop) && dur < 0.45f) {
+        if (t_ - lastTapT_ < 0.38f && hypotf(x - lastTapX_, y - lastTapY_) < g_.s(dens_.doubleTapR)) {
           lastTapT_ = -10;
           onDoubleTap(x, y);
         } else {
@@ -1898,6 +1899,8 @@ FaceInputs Os::faceInputs(const Brain& b) const {
   }
   // breathing idle (§3): on the face and the dial the eyes swell 1.2 % over 5.5 s
   if (view_ == View::Home || view_ == View::Launcher) in.layout.k *= alive::breath(animT(), reducedMotion());
+  // AMOLED standby: now and then a slow rest blink, the whites black for a moment (burn-in care, Density.h)
+  in.rest = standbyEmissive(b) && burnin::resting(t_, true);
   if (listening_) in.state = FaceState::Listen;
   // a turn handed to the owner's computer: waiting (on its way) until Claude Code has it, then thinking
   else if (thinking_ && aiMode() == AiMode::Bridge && net_.askState == 1) in.state = FaceState::Wait;
@@ -1953,9 +1956,16 @@ float Os::backlight(float hour, const Brain& b) const {
   }
   if (b.mode() == Mode::Asleep) level = backlightAsleep(hour, b.asleepFor());  // always-on, but only a glow
   else if (b.mode() == Mode::Drowsy) level *= 0.6f;
+  // AMOLED standby (the eyes alone, nobody looking at a screen): never the panel's full 700 cd/m² (burn-in care)
+  if (standbyEmissive(b)) level = fminf(level, burnin::kStandbyCap);
   if (view_ == View::Keyboard || view_ == View::Dial) level = fmaxf(level, 0.6f);  // typing needs light
   if (view_ == View::Ringing || claude_.prompt) level = 1.0f;
   return level;
+}
+
+bool Os::standbyEmissive(const Brain& b) const {
+  return dens_.emissive && view_ == View::Home && peekT_ <= 0 && !claude_.prompt && !thinking_ && !listening_ &&
+         (b.mode() == Mode::Awake || b.mode() == Mode::Drowsy);
 }
 
 float Os::backlightAsleep(float hour, float asleepFor) const {

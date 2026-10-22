@@ -52,6 +52,7 @@ struct Rig {
   std::vector<Pending> pending;
   std::vector<OsCmd> cmds;  // everything the OS asked the device to do
   bool haveFix = true, render = true;
+  static inline bool silentAlarms = false;  // a board with no speaker and no buzzer (test_audit.cpp)
 
   explicit Rig(bool booted = true, int design = -1, const DisplayGeometry& geo = displays::kLcd28)
       : g(geo), W(geo.w), H(geo.h), fb((size_t)geo.w * geo.h), cv(geo.w, geo.h, fb.data()) {
@@ -91,6 +92,8 @@ struct Rig {
     si.rssi = -54;
     os.setStorage(si);
     os.setAudio(true, false);
+    os.setAlarmSound(!silentAlarms);
+    os.density().tuneTouch(touch);  // the glass's gesture thresholds, in millimetres (SOUL M: the defaults)
     touch.setMode(TouchMode::Text);
     in.hour = 18.6f;
   }

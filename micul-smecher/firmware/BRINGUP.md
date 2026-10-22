@@ -1,6 +1,6 @@
-# SOUL M bring-up: the first 15 minutes on a real 2.8C
+# SOUL bring-up: the first 15 minutes on a real 2.8C (SOUL M), and §S for the AMOLED-1.75 (SOUL S)
 
-*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0 (§4b: 1.4.x, §4c: 1.5.0, §4d: 1.6, §4e: 1.7, §5: 1.8.0, §5f: 1.9.0 SoulOS Alive). Nothing below has run on a board yet: every line
+*Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.1.0 (§4b: 1.4.x, §4c: 1.5.0, §4d: 1.6, §4e: 1.7, §5: 1.8.0, §5f: 1.9.0 SoulOS Alive). SOUL S, the product, on the Waveshare ESP32-S3-Touch-AMOLED-1.75: **§S** (firmware 1.9.1). Nothing below has run on a board yet: every line
 is either "verified on the PC" (native tests, the simulator) or "expected, check it". This page is the
 checklist that turns the second kind into the first. Write the numbers you measure into the table at
 the end and commit them.*
@@ -19,9 +19,10 @@ the end and commit them.*
 port), set **Flash Address `0x0`**, choose `release/SOUL-2.8C-install.bin`, *Program*. It is one merged
 image (bootloader, partition table, app); erase is not needed. Then press **RESET**.
 
-The image now is **1.9.0** (SoulOS Alive): 2,643,088 B, sha256
-`a3de844d64bcd44c6f1d46384dc84bb2e5f5a922743eb9107fdb1372aa02e152` (`sha256sum` / `certutil -hashfile … SHA256` to
-check the download). After the steps below, do §5f for the new UI.
+The image now is **1.9.1** (SoulOS Alive): 2,671,520 B, sha256
+`62c2838cbdbaa4709e839b0da46b790c3e6d5839ac5a90271f9f4517a527205f` (`sha256sum` / `certutil -hashfile … SHA256` to
+check the download). After the steps below, do §5f for the new UI (1.9.1 = 1.9.0 + the number-safe "…": §5f applies
+as written, the banner says 1.9.1). The SOUL S board (AMOLED-1.75) has its own image and checklist: §S.
 
 **With PlatformIO:** `pio run -e lcd28 -t upload && pio device monitor -b 115200`.
 
@@ -399,7 +400,7 @@ The 1.7 workaround restarts the RGB transfer at the next VSYNC after every NVS /
 wakes them and they glide up; the home is a **dial of pebbles** around the eyes; every list is a **wheel**; opening
 an app is a **lid wipe** (two black lids close in 80 ms, the screen changes behind them, they open in 170 ms). None of
 it has run on a board. Flash `release/SOUL-2.8C-install.bin` (1.9.0) at **0x0**; the serial banner and
-*Settings › Device* must say **1.9.0** (if they say 1.8.0, the old image is still on it). Do §3b (IMU axes) first:
+*Settings › Device* must say **1.9.0** or later (if they say 1.8.0, the old image is still on it). Do §3b (IMU axes) first:
 the dial and the wheels lean on the same axes. The `[perf]` line now ends with
 `int block N K, sprites N (built N), psram fallbacks N, rows built N`.
 
@@ -444,6 +445,90 @@ the dial and the wheels lean on the same axes. The `[perf]` line now ends with
 
 **e · Long uptime** (optional, if a unit can stay on the charger): after ≥ 2 days on, the eyes still blink, a fling on
 the dial still coasts, a double tap still works (1.9.0's clocks are doubles: a float stopped advancing after ~12 days).
+
+## S · SOUL S: first boot on the AMOLED-1.75 (firmware 1.9.1, 40 min + the 72 h soak)
+
+*The product's board, Waveshare ESP32-S3-Touch-AMOLED-1.75 (`env:amoled175`, `release/SOUL-1.75-install.bin`; RO:
+`release/1-INSTALEAZA-S-RO.md`). Nothing of 1.9.1 has run on it: every line here is "expected, check it". What the
+firmware does and why: `SOUL-S.md` §3–§9. Have a LiPo on the MX1.25 (1.25 mm, 2 pins: **check the polarity against
+the board's silkscreen before plugging it in**), a USB power meter, and a phone that films slow motion (120/240 fps).*
+
+**a · Flash and the boot log (3 min).** esptool-js, **0x0**, `SOUL-1.75-install.bin`, RESET. Serial at 115200:
+
+```text
+[pmu] AXP2101 ok: charge 4200 mV (0x64=03), 200 mA, term 25 mA (0x63=11), gauge + detection on
+[board] AMOLED-1.75 466x466  [imu] ok  [rtc] ok  psram ~7xxx KB free
+[soul] chip XX:XX:XX:XX:XX:XX: design #nnn <Name> (<rarity>, 1 in N)
+[boot] eyes on the glass at ~xxx ms (app start)
+[audio] ES8311 id 83 11: set up
+[audio] I2S ok, ES8311 ok: the speaker is driven (check it is heard: `A`)
+[touch] ok
+```
+
+- [ ] `?` lists `A`, `b`, `E`, `X`, `G`; *Settings › Device* says **SoulOS 1.9.1 · S**.
+- [ ] `[pmu] … FAILED` or `[touch] NOT FOUND`: I2C SDA 15 / SCL 14; stop here and report.
+- [ ] `[audio] … ES8311 NOT FOUND`: the Alarms list's title must then read **"Alarms · silent"** in amber (the
+      critic's rule: an alarm never rings in silence unannounced). Report the id line.
+
+**b · The picture and tearing (8 min).**
+- [ ] Orientation: the rim words upright with the USB port at the bottom (else `-DSUFLET_ROTATION=…`), no column
+      offset (a 6 px stripe at one edge: `LCD_COL_OFFSET` in `board.h`), colours right (pink eyes, not cyan).
+- [ ] `E` → `[te] seen, … period ____ us (____ Hz), V-blank ____ us; write ____ px/us (____ MB/s)`. **Write down the
+      TE period, the V-blank and the write rate** (the CO5300's refresh is not published; 16 MB/s = 8 px/µs is the
+      model). `[te] NOT SEEN`: TE is not on GPIO 13 on this board revision; report it (the writes then go out unsynced).
+- [ ] Film the glass in slow motion while you open and close five apps from the dial (the lid wipe), turn a wheel
+      fast and let the eyes saccade on standby: **no diagonal / horizontal shear line**. Then `X` (sync off), film the
+      same, `X` again (on). Keep both clips: the before / after the critic asked for.
+- [ ] `E` again after a minute of use: `bands`, `waited`, `ms waiting` (the price of the sync). `[perf]` now ends with
+      `push N ms (N px), N px/us, te seen N Hz`: note fps and push ms on standby, the dial and a wheel.
+
+**c · Touch in millimetres (4 min).**
+- [ ] Taps land under the finger at the rim's four sides (if mirrored: `TOUCH_MIRROR_X/Y` in `board.h`; xiaozhi has
+      both at 1).
+- [ ] With a normal, slightly sloppy finger: 20 taps on a Settings row, 20 on a dial pebble. Count the taps that turned
+      the wheel / the dial instead of opening (1.9.1: a tap may wander 3.6 mm; 1.9.0 allowed 2.3 mm on S): ____ / 40.
+- [ ] A double tap on the face, a stroke (petting) on standby, a swipe down from the top (back): each works first time.
+
+**d · IMU axes and sound (6 min).**
+- [ ] §3b's checks with `i` (face up ≈ (0, 0, +1), standing on its bottom edge ≈ (0, +1, 0), turning left = +gz). The
+      QMI8658 sits differently on this board than on the 2.8C: set `IMU_MAP` for `amoled175` if the axes differ and
+      report the mapping.
+- [ ] `A` → a 1 kHz tone for 1.5 s from the speaker. Not heard: check the speaker is plugged into the board's speaker
+      header, then report the `[audio]` lines (the ES8311 sequence and the amplifier on GPIO 46 are untested).
+- [ ] Set an alarm 2 minutes ahead: it rings (2 kHz beeps) with the screen; **put SOUL face down 1 minute before**
+      (the panel goes dark): it still rings. Night deep sleep (`nightOff`, 23:00–06:00): an alarm after a deep sleep
+      rings too (set the clock with `T<epoch>` to test it).
+- [ ] Control › the volume rim, then Music › rain: heard, volume follows. The mics (ES7210) are **not** driven yet:
+      holding the glass shows "Let go, then type" (expected).
+
+**e · The panel's power (4 min).**
+- [ ] Face down 5 s, pick up: the eyes are back in < 0.3 s (only the brightness changed). Face down **2 minutes**
+      (the panel goes to sleep-in after 60 s), pick up: `E` → `last wake ____ ms` (expected ~130–170 ms: 120 ms
+      SLPOUT, then the frame), and no stale picture flashes before the eyes.
+- [ ] While waking: touch and the IMU keep working (a tap during the wake is not lost); `[perf]` shows no frame of
+      ~240 ms around the pick-up.
+
+**f · PMU and current (8 min, USB meter, 5 V in).**
+- [ ] `G` → the registers: `64=03` (4.2 V), `62=08` (200 mA), `63=11` (25 mA, termination on), `18` with bits 3 and 1
+      set, `68` bit 0 set, `30` bits 0/2/3 set; battery `yes`, a % that moves with the cell; VBUS `good` on USB.
+- [ ] With a cell at ~3.7 V and USB in: the meter shows the charge current (~200 mA + the board); when charging ends
+      the cell (a multimeter on its pins, USB out, after 10 min rest) reads **4.15–4.20 V** (4.2 V CV). Write it down.
+- [ ] mA on USB with the cell full (charging done), as BRINGUP §5d: standby (eyes, Wi-Fi) ____, a screen open ____,
+      asleep glow ____, face down after 2 min (sleep-in) ____, deep sleep ____. `SOUL-S.md` §8's estimates: 77–87,
+      —, 45–55, 25–35, ≈ 2 mA (dev board).
+- [ ] Low battery (optional, slow): on battery only, let it run down; at ≤ 3 % or < 3.35 V for 6 s the log says
+      `[power] battery empty … saving, then off` and it switches off; the PWR key / USB starts it again with the
+      memories, alarms and the burn map kept.
+
+**g · Burn-in: settings now, the soak before EVT.**
+- [ ] On standby by day the level is capped at 0.6 (the `[perf]` line, or compare with a screen open: the eyes look
+      dimmer on standby than in an app); the eyes slowly grow and shrink a little (±6 % over ~1.5 min); every 5 min
+      the lids close for 2.5 s. `b` → the burn map (lit hours per 12 × 12 cell, red / green / blue).
+- [ ] **The soak (72 h, one unit, before EVT):** charger on, standby on a desk (nobody touching it, room lit by day),
+      night mode as shipped. Then serial `R`: a full 50 % grey field at the panel's full level (`R` again or a touch:
+      back). In a dark room, photograph the glass head-on (phone on a stand, manual exposure and focus, the same
+      settings before and after the soak). Before and after photos + `b`'s map: any ghost of the two eye shapes =
+      raise the size breathing / the rest blinks / lower the cap (`Density.h` `burnin`), and repeat.
 
 ## 6 · Wi-Fi and the AI (4 min)
 
@@ -527,6 +612,12 @@ run a command → SOUL's eyes go wide with an amber rim → hold the glass = app
 | §5f: dial tilt sign OK / flipped? wheel tilt sign? steady hold = no spin? | |
 | §5f: wheel taps on the right row? lid wipe tear-free? | |
 | §5f: internal lowest / largest block after 10 dials + a turn + BLE; psram fallbacks | |
+| §S-b: TE period (Hz), V-blank (µs), write rate (px/µs); shear with / without sync (clips) | |
+| §S-c: taps read as drags (of 40); mirror flags | |
+| §S-d: IMU_MAP for the 1.75; speaker heard (`A`)? alarm after face-down / deep sleep? | |
+| §S-e: wake after sleep-in (ms); short face-down = brightness only? | |
+| §S-f: PMU regs OK; cell after charge (V); mA standby / screen / asleep / sleep-in / deep sleep | |
+| §S-g: soak 72 h: ghost of the eyes? burn map's worst cell (h) | |
 | fps / frame ms Claude prompt | |
 | min free internal heap after a cloud turn + BLE | |
 | mA awake 100 % / night / asleep / off | |

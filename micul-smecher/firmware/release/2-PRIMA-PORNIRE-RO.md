@@ -1,5 +1,5 @@
 ---
-SoulOS 1.9.0 · după instalare
+SoulOS 1.9.1 · după instalare
 ---
 
 # 2. Prima pornire: Wi-Fi și AI-ul tău (10 minute)

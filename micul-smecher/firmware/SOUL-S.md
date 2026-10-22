@@ -2,9 +2,10 @@
 
 Decision 2026-10-20 (`03 Decizii/Jurnal decizii.md`): the product is **SOUL S**. It is the MĂRGĂRITAR at its native
 scale, with a round **1.75" AMOLED, 466 × 466** on the **Waveshare ESP32-S3-Touch-AMOLED-1.75** (`pio run -e amoled175`).
-The working prototype stays **SOUL M**, the Waveshare 2.8C (`env:lcd28`, firmware 1.9.0 "SoulOS Alive"), for testing
-and the PoC TRL 3 proof. This page covers firmware step 1 (the Alive core on S, §1–§4) and step 2 (every SoulOS Alive
-screen on S, the round audit on both glasses, the S keyboard and the QSPI push: §5–§7).
+The working prototype stays **SOUL M**, the Waveshare 2.8C (`env:lcd28`, firmware 1.9.x "SoulOS Alive"), for testing
+and the PoC TRL 3 proof. This page covers firmware step 1 (the Alive core on S, §1–§4), step 2 (every SoulOS Alive
+screen on S, the round audit on both glasses, the S keyboard and the QSPI push: §5–§7) and **1.9.1** (the S firmware
+critic's eight issues fixed, the first S install image: §8–§9, `release/SOUL-1.75-install.bin`).
 
 ## 1 · The glass, verified
 
@@ -58,34 +59,69 @@ compares the structs with `memcmp`). The 2.8C build draws **pixel-identical** fr
 was run before and after on every scenario, all 120 designs at standby, the app stills, the 58 `screens` stills and
 the 30 `alive` stills: **265 hash files, 26 042 frames, IDENTICAL**.
 
+**Gestures in millimetres (1.9.1).** Up to 1.9.0 the gesture thresholds were panel or design pixels, so on S
+(10.65 px/mm vs 6.84) a tap's slop shrank from 3.7 to 2.3 mm and a stroke from 6.6 to 4.2 mm: more taps read as
+drags on the smaller glass (the critic). They are now Density tokens, the same millimetres on both glasses, M's
+values bit for bit: `Os::touch` (design px × σ) tap slop 3.6 mm, swipe 8.3 mm, petting 6.8 mm, double tap within
+7.5 mm, the dial grabbed past 1.2 mm, a wheel past 2.1 mm, the maps' drag / rim / edge swipes; `TouchGestures`
+(panel px × the px/mm ratio, `Density::tuneTouch`) Face slop 3.7 mm, stroke 6.6 mm, Text-mode hold slop 1.75 mm,
+a new finger past 10.2 mm. `test_gestures_tap_vs_drag_in_mm_on_both_glasses`: a tap whose fingertip wanders 2 and
+3 mm still opens a row on M and on S (3 mm failed on S before), a 5 mm slide is neither a tap nor a swipe.
+
 ## 3 · AMOLED: true black and burn-in care
 
 On S, black is pixels off. Standby (the eyes alone on `#000`) lights only the eyes, so it costs little. The eye whites
 are also the only pixels that could burn in. `Geometry.h` marks the AMOLEDs `emissive`. What follows applies only to
 them; the 2.8C's IPS is unchanged.
 
+The 1.9.0 plan protected the eyes' outline, not their inside (the critic, 2026-10-22): a ±6 px drift (0.56 mm) only
+blurs the edges of two ~165 px pink whites, while their inside stayed lit for hours, by day at the panel's full level
+(0x51 = 255, up to 700 cd/m²). 1.9.1 (`Density.h` `burnin`, `Os::layoutFor`, `Os::backlight`, `SoulFace`):
+
 1. **Drift.** On standby and asleep, the whole face wanders on a Lissajous of ±6 px with periods of 7 and 11 min
-   (`burnin::drift`, in `Os::layoutFor`). It moves in whole pixels, one pixel every ≥ 10 s, so there are no extra
-   sub-pixel repaints.
-2. **Life that already moves.** Saccades and glances every 1–4 s (`Brain::updateIdle`), micro-saccades and blinks
-   (`EyeRig`) and the breathing sleep keep the pupils and lids moving.
-3. **Night dimming.** The existing levels in `Os::backlight`: 0.35 at night, a 0.06 glow asleep at night, 0.18 by day.
-4. **Lights out.** After 20 min asleep at night (60 min by day), `Os::backlightAsleep` returns 0 and the panel's
-   brightness goes to 0. A touch, a pick-up or a voice wakes SOUL as before.
-5. **Nothing static.** No clock, rings or hints on standby (DESIGN-ALIVE §1). Rim capsules only show while awake.
+   (`burnin::drift`). Whole pixels, one every ≥ 10 s: no sub-pixel repaints.
+2. **Size.** On standby the whole eye breathes **±6 %** over 97 s in whole 1 % steps (`burnin::scale`): the whites'
+   edge sweeps ~10 px of their inside, not only the 6 px of the drift. A few repaints a minute, no per-frame cost.
+3. **Rest blinks.** Every 5 min on standby the lids shut for 2.5 s (`burnin::resting`, `FaceInputs::rest`): the whites
+   go black for a moment, 0.8 % of the time [estimare: what that buys depends on the panel's recovery, unknown].
+4. **A cap.** Standby on S is at most **0.6** of the panel's level (`burnin::kStandbyCap`), by day too. A screen,
+   a touch, Claude asking or an alarm get the full level as before. [estimare] OLED emitter wear grows faster than
+   linearly with luminance, so the cap does more than its 40 %.
+5. **Night dimming and lights out** as before: 0.35 at night, a 0.06 glow asleep at night, 0.18 asleep by day; after
+   20 min asleep at night (60 min by day) the panel's brightness goes to 0.
+6. **Nothing static.** No clock, rings or hints on standby (DESIGN-ALIVE §1). Rim capsules only show while awake.
+7. **Counted.** The device keeps the **lit hours per region** of the glass (`burnin::LitMap`: 12 × 12 cells, red /
+   green / blue separately, sampled from the canvas every 10 s at the panel's level, NVS `burn`, saved hourly and
+   before deep sleep). Serial `b` prints the most-lit cell per colour and the blue map. A unit from the soak test or
+   back from a user shows where its glass has aged.
 
-[estimare] AMOLED burn-in depends on the panel's emitter mix and its hours at high brightness. The drift is the
-standard mitigation for always-on faces. A soak test (BRINGUP §6, to add: 72 h standby, then a full grey field
-photographed) decides whether the drift amplitude or the lights-out times need tuning.
+The soak test (BRINGUP §S-g: 72 h of standby, then a full grey field photographed) decides whether these are enough,
+**before EVT**. Tests: `test_density_burn_in_care`, `test_burn_in_beyond_the_drift` (the steps, the rest window, the
+cap on S and not on M, the map's sampling and its NVS blob).
 
-## 4 · Voice on S: hold the glass = talk
+## 4 · Sound and voice on S
 
-The S board has two mics (ES7210 ADC) and a speaker (ES8311 DAC + PA on GPIO 46). The firmware does not drive these
-codecs yet (`src/audio.cpp`: the only mic path is the 2.8C's I2S INMP441). `audioHasMic()` is therefore false on
-`amoled175`, and `Os::setVoiceAvailable(false)`. Holding the glass then shows "Let go, then type" and opens the
-keyboard. This is the same path as an M without the mic, and it is tested. To do: an ES8311/ES7210 driver over I2C
-plus I2S (TDM for the ES7210), from Espressif's `esp_codec_dev` register sequences, checked on the board. It feeds the
-existing `audioRecord` / `audioTake` / `netTranscribe` / ESP-SR path, and `SUFLET_VOICE` then turns STT on.
+**The speaker (1.9.1).** In 1.9.0 nothing on S could make a sound: `audioHasSpeaker()` was true only with the 2.8C's
+optional MAX98357, the buzzer exists only on the 2.8C, and the ES8311 was not driven. An alarm on S (also after deep
+sleep) rang in silence and Music said "no speaker", while `HAS_AUDIO 1` suggested otherwise (the critic's one
+critical issue). 1.9.1 drives the **ES8311 DAC and the speaker amplifier** (`src/audio.cpp`, `SUFLET_SPK_ES8311`):
+I2C 0x18, I2S standard mode with the S3 as master (MCLK 42 at 256 × 16 kHz, BCLK 9, WS 45, DOUT 8, 16-bit mono), the
+amplifier enable on GPIO 46 (the pins of xiaozhi's `config.h`; PA_CTRL → GPIO 46 in the Waveshare schematic), the
+register sequence of Espressif's `esp_codec_dev` `es8311.c` (open, 4.096 MHz / 16 kHz sample config, DAC start, 0 dB).
+The alarm tone (2 kHz, −12 dBFS) and Music's focus sounds go through it; the amplifier is on only while there is
+sound. **It has not been heard yet**: `audioHasSpeaker()` means the codec answered on I2C and took its registers.
+BRINGUP §S-d: serial `A` plays a 1 kHz tone for 1.5 s.
+
+**When there is no sound.** A board with no speaker and no buzzer (an S whose ES8311 does not answer, an M without
+the buzzer) now says so: the Alarms list's title is **"Alarms · silent"** in amber (and "no speaker: alarms are
+silent" on the rim when the list leaves room), the ringing screen's title **"Alarm · silent"** (`Os::setAlarmSound`,
+set by `main.cpp` from `audioHasSpeaker() || HAS_BUZZER`). Tested on both glasses (`test_alarms_say_when_they_are_silent`:
+the words are there when silent, absent otherwise, and both screens still pass the round audit).
+
+**Voice: hold the glass = talk.** The two mics (ES7210, TDM) are still not driven. `audioHasMic()` is false on
+`amoled175`, so holding the glass shows "Let go, then type" and opens the keyboard (the same path as an M without the
+mic, tested). Next: the ES7210 on the same I2S port (TDM in, `esp_codec_dev` `es7210.c`), feeding the existing
+`audioRecord` / `audioTake` / `netTranscribe` / ESP-SR path; `SUFLET_VOICE` then turns STT on.
 
 ## 5 · Every screen on S (step 2, 2026-10-20)
 
@@ -94,7 +130,8 @@ existing `audioRecord` / `audioTake` / `netTranscribe` / ESP-SR path, and `SUFLE
 44 px targets, r 228) and `test_audit_every_screen_on_soul_s` (466 px: 28 px type, 68 px targets, r 221), 0 failures
 each. The audit grew four checks the first S stills showed were missing (`test_audit.cpp`): **words** (two lines of
 words touching), **overlap** (two controls overlapping), **spill** (a word across a control's edge), **trunc** (a
-line cut to under 3 characters + "…"); and a key floor of **5 mm** for keyboard keys. Design rules and the keyboard
+line cut to under 3 characters + "…"; 1.9.1: **or a number or a unit cut by "…"**, §9); and a key floor of **5 mm**
+for keyboard keys. Design rules and the keyboard
 decision: `os/DESIGN-ALIVE.md` §S.
 
 How S's screens are laid out (M keeps every 1.9.0 number: `Os::L(m, s)` returns M's literal on the 2.8C):
@@ -138,35 +175,121 @@ Control's Quiet, Convert's swap, the boot to "hold the glass" with No AI).
 Stills: `sim/shots/alive-s/s-NN-name.png` (every S screen, pixel for pixel) and `soulos-alive-S-sheet.png` (each
 next to M at true size, 5 px/mm): `.pio/build/sim/program DIR alive-s; python3 tools/alive_s_sheet.py DIR sim/shots/alive-s`.
 
-**Still open on S**: the codecs (§4: voice is the better input on a 44 mm glass); the keyboard's speed and errors
+**Still open on S**: the microphones (ES7210, §4: voice is the better input on a 44 mm glass); the keyboard's speed and errors
 measured with people (DESIGN-ALIVE §S); the map's own street labels can sit under the nav card (as on M); the
 dial's speech is two lines (a long line ends in "…", as on M).
 
-## 6 · Perf on S: the QSPI push
+## 6 · Perf on S: the QSPI push, without tearing
 
 The S3 and the render are the same as on M; what differs is the push. The 2.8C copies each frame's changed
 rectangles (and the previous frame's) into its RGB back buffer in PSRAM; the AMOLED-1.75's CO5300 keeps its own
-frame, so `displayPresent` (`src/main.cpp`) sends **only the changed rectangles** (even-aligned), each copied into a
-PSRAM push buffer and sent through Arduino_GFX's `ESP32QSPI` at `panel->begin(40000000)`: 4 lines × 40 MHz =
-20 MB/s raw. Waveshare's wiki and product page give no QSPI clock and no frame rate under stated conditions (the
-wiki quotes LVGL demos at "50~60" and "200~300" frames, no conditions). The model [estimare]: 16 MB/s payload +
-the 50 MB/s copy → **a whole frame (466 × 466) ≈ 36 ms**; partial updates are what keep S fast.
+frame, so only **the changed rectangles** go out (even-aligned) through Arduino_GFX's `ESP32QSPI` at
+`panel->begin(40000000)`: 4 lines × 40 MHz = 20 MB/s raw. Waveshare's wiki and product page give no QSPI clock and no
+frame rate under stated conditions. All of it is in `src/board_amoled.cpp` since 1.9.1.
 
-`python3 tools/perf_bench.py --glass s` (new: every frame scenario at 466 px under callgrind, the QSPI cost from the
-simulator's `qspi_px` / `qspi_max`; table in `PERF.md` "SOUL S"; numbers in `perf/1.9-s-screens.json`):
-11 of 17 scenarios at their asked fps (est.); six are push-bound: Claude asks 20 fps, the wheels 21, SOUL Memory's
-wheel 23, maps and games 24, IMU motion 25 (asked 30; the adaptive cap keeps the loop ≤ 60 % of a core, floor 12).
-A screen change (the lid wipe, a full redraw) is one ~36 ms frame. To try on the board, in this order:
-1. measure the push (`F` serial command: `push ms`) and the real payload rate;
-2. the QSPI clock at 80 MHz if the CO5300 and the board's traces take it (not stated by Waveshare: test, do not
-   assume) — the model then gives ~22 ms a whole frame;
-3. an asynchronous push (ESP-IDF `esp_lcd` panel IO with DMA, the next frame rendered while the last one is sent),
-   which hides most of the push behind the render.
+**Strips, not a second frame (1.9.1).** 1.9.0 copied every rectangle PSRAM → PSRAM into a full-frame push buffer
+(434 KB of PSRAM) that the bus then copied and byte-swapped again. 1.9.1 sends row strips (even, ≤ 8,192 px) straight
+from the canvas through a **16 KB internal-RAM bounce buffer**: one PSRAM read per pixel instead of a read and a write,
+and 434 KB of PSRAM back. The model [estimare]: 16 MB/s payload + an 80 MB/s strip copy → **a whole frame ≈ 33 ms**
+(1.9.0: 36 ms). Not done, on purpose: the asynchronous DMA push (ESP-IDF `esp_lcd` panel IO, a queue of 10, the next
+frame rendered while the last one is sent, as xiaozhi does). It replaces Arduino_GFX's bus and the CO5300 init, and
+nothing in it can be checked without the board: measure first (BRINGUP §S-b: `E` prints the write rate, `[perf]` the
+push ms), then decide; 80 MHz only after that.
+
+**Tear-free (1.9.1).** 1.9.0 wrote into the panel's frame memory with no sync: a saccade, a blink, the lid wipe or a
+wheel scroll could shear wherever the scan crossed a write. 1.9.1 sends **0x35 0x00** (tearing effect on, V-blank)
+after the panel's init and reads the **TE line on GPIO 13** (`LCD_TE`, Waveshare schematic p.1) with an edge
+interrupt: the refresh period and the V-blank are measured, not assumed (the CO5300's refresh rate is not published).
+Each rectangle goes out in bands planned by `lib/Suflet/src/TearSync.h`: a band starts only when every one of its rows
+will be written between two scans of that row (500 µs clear of both), bands that drift against the scan by more than a
+period are split, and the write rate the plan uses is measured on every band. Tested on the PC against a brute-force
+panel: 19,440 rectangles of every size at every phase of 55–70 Hz scans and 10–24 MB/s writes, every band clear of
+the scan, every wait under one period (`test_tear.cpp`). No TE edges (a board without the line): the writes go out as
+in 1.9.0. Serial `X` turns the sync off to film the difference (BRINGUP §S-b). The waits are the price: at most one
+refresh per band, measured with `E`; not in the table below.
+
+**The panel's power (1.9.1).** `Arduino_CO5300::displayOn/Off` block the loop ~240 ms (`delay()` around SLPOUT /
+SLPIN), so every face-down, pick-up and night switch stalled touch, the IMU, the alarm tick and the first frame of
+the wake, exactly the pick-up the eyes should answer. 1.9.1: Mode Off first only darkens the panel (0x51 = 0); after
+60 s dark it goes to sleep-in (DISPOFF, SLPIN, no wait); a wake sends SLPOUT, the loop keeps running, and ≥ 120 ms
+later the frame is written and DISPON + the level follow (`amoled::displayTick`). A pick-up within a minute is a
+brightness change only. Deep sleep and the low-battery power-off still use the blocking sequence (nothing runs after
+them). BRINGUP §S-e measures the wake (`E`: last wake ms).
+
+`python3 tools/perf_bench.py --glass s --json perf/1.9.1-s.json` (table in `PERF.md` "SOUL S"): 11 of 17 scenarios at
+their asked fps (est.; 1.9.0: 11); six push-bound, most a little faster than in 1.9.0: Claude asks 21 (20), the
+wheels 22 (21), SOUL Memory's wheel 24 (23), maps 25 (24), IMU motion 25 (25), games 26 (24) (asked 30). Standby: 54 K px, 8.1 ms render + 8.1 ms push a frame (the burn-in breathing adds ~2 K px).
 
 ## 7 · Builds and checks
 
-- `pio test -e native`: **237 / 237** (step 1: 233; the two audits now run every state on M and on S; +4 S tests).
-  `SUFLET_ONLY_AUDIT=1 AUDIT_ALL=1 .pio/build/native/program` runs only the audits and prints every screen.
-- `pio run -e lcd28` and `pio run -e amoled175`: zero warnings. Flash: lcd28 2.60 MB (2,595,227 B), amoled175
-  2.82 MB (2,815,475 B). Static RAM: 86,156 / 85,924 B.
+- `pio test -e native`: **245 / 245** (1.9.0 S step: 237; 1.9.1 adds the gestures in mm, the burn-in beyond the
+  drift, the low-battery shutdown, the silent alarms on both glasses, the grey words at night and three tear-sync
+  tests in `test_tear.cpp`). `SUFLET_ONLY_AUDIT=1 AUDIT_ALL=1 .pio/build/native/program` runs only the audits.
+- `pio run -e lcd28` and `pio run -e amoled175` (clean): zero warnings. Flash: lcd28 2,601,095 B, amoled175
+  2,861,591 B. Static RAM: 86,212 / 87,140 B (the burn map lives in PSRAM, AMOLEDs only).
 - `pio check -e lcd28` and `pio check -e amoled175`: no defects.
+- `tools/perf_bench.py`: M per frame ±1 % vs 1.9.0 (`perf/1.9.1.json`), S in `perf/1.9.1-s.json` (§6); M frames vs
+  1.9.0 (`--hashes`): §9.
+- Images: `release/SOUL-1.75-install.bin` (S) and `release/SOUL-2.8C-install.bin` (M), both 1.9.1, sizes and sha256
+  in `release/README.md`.
+
+## 8 · Power on S: the AXP2101 (1.9.1)
+
+1.9.0 set the AXP2101 with xiaozhi's raw register writes and nothing else: the charge voltage 4.1 V while the 603040
+cell is rated 4.2 V (≈ 10 % of the capacity unused [estimare]), the fuel gauge and battery detection never enabled
+before 0xA4 was read, no VBUS or charger state, no low-battery shutdown, AXP_IRQ unused. 1.9.1 (`src/pmu.cpp`, each
+register named and explained in the code; `G` prints them):
+
+| Register | Value | Why |
+|---|---|---|
+| 0x64 CV | **4.2 V** (`SUFLET_PMU_CV_MV`, default 4200) | **decided:** the cell's rated charge voltage (docs/12 §2.4), the capacity the runtime estimate counts on. 4.1 V (xiaozhi's) trades ~10 % [estimare] for cycle life: `-DSUFLET_PMU_CV_MV=4100` |
+| 0x62 ICC | 200 mA (kept) | 0.27 C for 750 mAh; the dev board takes whatever LiPo is plugged in, so it stays ≤ 0.5 C for any cell ≥ 400 mAh; ~4 h to full [estimare] |
+| 0x61 / 0x63 | 50 mA pre-charge; **25 mA termination, enabled** | xiaozhi wrote 0x01 to 0x63, which also cleared its termination-enable bit (4) |
+| 0x18 bits 3, 1 | fuel gauge on, charger on | 0xA4 (%) is meaningful only with the gauge on |
+| 0x68 bit 0 | battery detection on | STATUS1 bit 3 (a cell present) is meaningful only with it |
+| 0x30 bits 0, 2, 3 | ADC: VBAT, VBUS, VSYS | the cell's mV (`[perf]` and Claude's status), USB power |
+| 0x22, 0x27, 0x80, 0x82, 0x90–0x92 | as xiaozhi | PWR key: off after 4 s held; DCDC1 3.3 V; ALDO1 3.3 V |
+
+**Low battery.** Every 2 s the loop reads the PMU (status, gauge, VBAT, VBUS). Three reads in a row at ≤ 3 % or
+< 3,350 mV [estimare], on battery, with a cell present (`suflet::LowBattery`, tested): SOUL saves its memory, alarms,
+SOUL Memory and the burn map, puts the panel to sleep and asks the PMU to cut the power (COMMON_CONFIG bit 0). The PWR
+key or USB power starts it again. An alarm cannot ring while it is off (the M has the same limit with a flat cell).
+**AXP_IRQ** reaches the S3 only through the board's TCA9554 (EXIO5, Waveshare schematic): not wired up; polling every
+2 s covers VBUS in / out and the shutdown.
+
+**Runtime, redone with the PERF S numbers [estimare].** docs/12 §2.5 used 28 % CPU duty and a 5.7 ms push; 1.9.1's
+standby frame is 8.1 ms render + 8.1 ms push + 1 ms loop = 17.2 ms at 24 fps = **41 % duty** (1.9.0: 17.6 ms, 42 %).
+CPU ≈ 33 + 29 × 0.41 ≈ 45 mA, the push's bus ≈ 7 mA (5 mA × 8.1 / 5.7), the panel 10–20 mA, Wi-Fi + touch + IMU +
+PMU ~15 mA → **awake ≈ 77–87 mA** (inside docs/12's 70–100). Asleep glow (10 fps, ~17 % duty) ≈ 45–55 mA (was 40–50);
+screen off 25–35 mA (the panel in sleep-in after 60 s). docs/09's day: 1 h awake ≈ 85 mAh + 15 h asleep / off at
+≈ 40 mA ≈ 600 mAh + deep sleep 2 + questions 4 ≈ **690 mAh → ≈ 26 h on 750 mAh** (range 21–33 h; docs/12 said 27).
+With the 4.1 V charge voltage (~675 mAh usable): ≈ 23 h. The light-sleep plan of docs/12 §2.5 is unchanged. Measure
+on the board (BRINGUP §S-f) before promising either.
+
+## 9 · 1.9.1: the S firmware critic's issues (2026-10-22)
+
+| # | Severity | Issue | Fixed in 1.9.1 | Still to prove on the board |
+|---|---|---|---|---|
+| 1 | critical | no sound at all on S; alarms rang silently | ES8311 + amplifier driven (§4); "Alarms · silent" when there is no speaker or buzzer; native test | the tone heard (`A`), the alarm after deep sleep |
+| 2 | high | no tearing sync | 0x35 0x00, TE on GPIO 13, banded writes planned against the measured scan (§6); `test_tear.cpp` | TE period and V-blank (`E`); shear before / after on a slow-motion phone video (`X`) |
+| 3 | high | burn-in plan kept the whites' inside lit | size breathing, rest blinks, standby cap 0.6, lit-hours map (§3); tests | the 72 h soak (BRINGUP §S-g) before EVT |
+| 4 | high | panel on / off blocked the loop ~240 ms | dark first, sleep-in after 60 s, SLPOUT → DISPON without `delay()` (§6) | wake latency (`E`, last wake) |
+| 5 | medium | gesture thresholds in pixels | Density tokens in mm, M bit-identical (§2); tap vs drag test on both glasses | taps on the real glass |
+| 6 | medium | PMU: CV 4.1 V, gauge off, no low-battery shutdown | §8; 4.2 V decided; runtime redone (≈ 26 h) | charge current and voltage with a meter; mA per state |
+| 7 | medium | push model optimistic, a second frame in PSRAM | strips through 16 KB of SRAM, pushBuf gone (−434 KB PSRAM) (§6) | the real write rate (`E`); then the DMA push |
+| 8 | medium | numbers and labels cut on S screens | the audit fails a cut number or unit (both glasses); Weather / Today "Partly cloudy 24°/13°" or "Cloudy 24°/13°"; alarm rows label first ("Wake up · Mo–Fr", then "Wake up"); the nav card's street as Str. / Bd. and on two lines; Device's short rows; every "…" in SoulOS number-safe (`TextFit.h`); grey-on-capsule contrast at night tested | reading at arm's length (§9 note) |
+
+**Type at a distance.** The S type floor (28 px = 2.63 mm em, cap height ~1.85 mm) is ~10.6 arcmin at 60 cm
+[estimare], under the usual ~16 arcmin for reading at arm's length. So on S, 28 px is for **tags only** (the rarity,
+"NO AI", a command name: the five uses of `fonts::tag()`); anything to read from a desk is body (37 px) or bigger;
+captions (32 px) carry secondary lines only. The grey secondary words on capsules (cream at 82 % / 66 % on e1 mixed into
+black at 14 / 23 %) keep ≥ 11.8:1 / ≥ 8.5:1 over all 120 designs × 5 bodies by day and at the 0.35 night level with
+the room's reflection added (`test_secondary_words_on_capsules_at_night`; the model's 700 cd/m², linear level and
+1 / 10 cd/m² of reflected light are [estimare]).
+
+**SOUL M in 1.9.1.** The shared code changed in three visible places only, all of them the same number-safe "…"
+(`perf_bench.py --hashes` vs 1.9.0: 25,954 M frames, **307 differ**, all in `bench_maps` 126, `bench_memwheel` 94,
+the apps stills 85 + 2; the 59 `screens` stills: 3 differ; the 30 `alive` stills: identical): Device's "PSRAM 5.8 …"
+is now "RAM 186K · PSRAM 5.8M"; a fact's "25.09…" date that did not fit is left out ("from you…"); the nav card's
+"Strada Acade…" is "Str. Academiei". Everything else (gestures, burn-in, the silent-alarm words with the buzzer
+present) is identical on the 2.8C.

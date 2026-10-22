@@ -24,6 +24,7 @@
 #include <esp_sleep.h>
 #include <esp_timer.h>
 
+#include <new>
 #include <string>
 #include <vector>
 
@@ -50,8 +51,11 @@
 #if defined(SUFLET_BOARD_LCD28)
 #include "board_lcd28.h"
 #else
-#include <Arduino_GFX_Library.h>
+#include "board_amoled.h"
 #endif
+#include "Density.h"
+#include "Power.h"
+#include "pmu.h"
 #if TOUCH_CST9217
 #include <touch/TouchDrvCST92xx.h>
 #endif
@@ -62,7 +66,7 @@
 #ifndef SUFLET_LCD_XIP
 #define SUFLET_LCD_XIP 0  // env lcd28_xip: code + rodata run from PSRAM, flash writes no longer stall the panel
 #endif
-#define FW_VERSION "1.9.0"
+#define FW_VERSION "1.9.1"
 
 using namespace suflet;
 
@@ -102,6 +106,7 @@ static float imuAcc = 0;
 static bool rtcSynced = false;
 static uint32_t bornDay = 0, naps = 0, lastNtpSync = 0;
 static bool demo = false;
+static bool greyField = false;  // serial `R` (BRINGUP §S-g)
 static float demoT = 0;
 static int demoIdx = 0;
 static uint32_t offSinceMs = 0;
@@ -132,21 +137,7 @@ static int64_t perfWallStartUs = 0;
 }
 
 #if HAS_PMU
-// AXP2101 set-up, same values as the xiaozhi-esp32 board support (MIT).
-static void pmuInit() {
-  i2cWrite(PMU_ADDR, 0x22, 0b110);
-  i2cWrite(PMU_ADDR, 0x27, 0x10);
-  i2cWrite(PMU_ADDR, 0x80, 0x01);
-  i2cWrite(PMU_ADDR, 0x90, 0x00);
-  i2cWrite(PMU_ADDR, 0x91, 0x00);
-  i2cWrite(PMU_ADDR, 0x82, (3300 - 1500) / 100);
-  i2cWrite(PMU_ADDR, 0x92, (3300 - 500) / 100);
-  i2cWrite(PMU_ADDR, 0x90, 0x01);
-  i2cWrite(PMU_ADDR, 0x64, 0x02);
-  i2cWrite(PMU_ADDR, 0x61, 0x02);
-  i2cWrite(PMU_ADDR, 0x62, 0x08);
-  i2cWrite(PMU_ADDR, 0x63, 0x01);
-}
+static void powerOffSaved();  // (below: save everything, then the PMU cuts the power)
 #endif
 
 static void readBattery(int& pct, int& mv, bool& usb) {
@@ -154,10 +145,18 @@ static void readBattery(int& pct, int& mv, bool& usb) {
   mv = 0;
   usb = false;
 #if HAS_PMU
-  uint8_t v = 0;
-  if (i2cRead(PMU_ADDR, 0xA4, &v, 1) && v <= 100) pct = v;
-  uint8_t st = 0;
-  if (i2cRead(PMU_ADDR, 0x00, &st, 1)) usb = st & 0x20;
+  // the AXP2101 (src/pmu.cpp): the fuel gauge, the cell's voltage, VBUS; and the low-battery shutdown
+  static LowBattery low;
+  pmu::State s;
+  if (pmu::read(s)) {
+    pct = s.pct;
+    mv = s.vbatMv;
+    usb = s.vbus;
+    if (low.update(s.battery, s.vbus, s.pct, s.vbatMv)) {
+      Serial.printf("[power] battery empty (%d%%, %d mV): saving, then off\n", s.pct, s.vbatMv);
+      powerOffSaved();
+    }
+  }
 #elif BAT_ADC_PIN >= 0
   mv = analogReadMilliVolts(BAT_ADC_PIN) * 3;  // 200k/100k divider
 #if BAT_USB_SENSE
@@ -172,44 +171,18 @@ static void readBattery(int& pct, int& mv, bool& usb) {
 // --------------------------------------------------------------- display ---
 
 #if !LCD_IS_RGB
-// AMOLED (QSPI): our canvas in PSRAM, the changed rectangle pushed through Arduino_GFX.
-static Arduino_DataBus* bus = nullptr;
-static Arduino_OLED* panel = nullptr;
-static uint16_t* canvasBuf = nullptr;
-static uint16_t* pushBuf = nullptr;
-static void displayInit() {
-  bus = new Arduino_ESP32QSPI(LCD_CS, LCD_SCLK, LCD_D0, LCD_D1, LCD_D2, LCD_D3);
-#if defined(SUFLET_PANEL_SH8601)
-  panel = new Arduino_SH8601(bus, LCD_RST, 0, LCD_W, LCD_H);
-#else
-  panel = new Arduino_CO5300(bus, LCD_RST, 0, LCD_W, LCD_H, LCD_COL_OFFSET, 0, LCD_COL_OFFSET, 0);
-#endif
-  panel->begin(40000000);
-  panel->fillScreen(0);
-  panel->setBrightness(255);
-  canvasBuf = (uint16_t*)heap_caps_calloc(LCD_W * LCD_H, 2, MALLOC_CAP_SPIRAM);
-  pushBuf = (uint16_t*)heap_caps_malloc(LCD_W * LCD_H * 2, MALLOC_CAP_SPIRAM);
-  cv = new Canvas(LCD_W, LCD_H, canvasBuf);
+// AMOLED (QSPI, SOUL S): src/board_amoled.cpp: tear-free strips from the canvas, the TE line, a non-blocking
+// sleep / wake of the panel
+static void displayInitStart() {
+  if (!amoled::displayInit()) Serial.println("[lcd] display init FAILED");
+  cv = new Canvas(LCD_W, LCD_H, amoled::displayCanvas());
 }
-static void displayPresent(const RectList& list) {
-  for (int i = 0; i < list.n; ++i) {  // each changed rectangle on its own (the panel keeps the rest)
-    Rect r = list.r[i];
-    r.x0 &= ~1;  // CO5300 wants even start/size
-    r.y0 &= ~1;
-    r.x1 = min((r.x1 + 1) & ~1, LCD_W);
-    r.y1 = min((r.y1 + 1) & ~1, LCD_H);
-    if (r.empty()) continue;
-    for (int y = r.y0; y < r.y1; ++y) memcpy(pushBuf + (y - r.y0) * r.w(), canvasBuf + y * LCD_W + r.x0, r.w() * 2);
-    panel->draw16bitRGBBitmap(r.x0, r.y0, pushBuf, r.w(), r.h());
-  }
-}
-static void backlight(float v) { panel->setBrightness((uint8_t)(v * 255)); }
-static void displayPower(bool on) {
-  if (on) panel->displayOn();
-  else panel->displayOff();
-}
-static void displayInitStart() { displayInit(); }
 static void displayInitWait() {}
+static void displayPresent(const RectList& list) { amoled::displayPresent(list); }
+static void backlight(float v) { amoled::backlight(v); }
+static void displayPower(bool on) { amoled::displayPower(on); }
+static void displayTick(uint32_t nowMs) { amoled::displayTick(nowMs); }
+static void displaySleepNow() { amoled::displaySleepNow(); }
 #else
 // 1.8: the ST7701 bring-up (~370 ms of reset / sleep-out waits) runs in a task on core 0 while setup() reads
 // the RTC, the IMU and NVS and builds SoulOS on core 1; displayInitWait() joins before the first frame.
@@ -235,6 +208,8 @@ static void displayInitWait() {
 static void displayPresent(const RectList& r) { lcd28::displayPresent(r); }
 static void backlight(float v) { lcd28::backlight(v); }
 static void displayPower(bool on) { lcd28::displayPower(on); }
+static void displayTick(uint32_t) {}
+static void displaySleepNow() { lcd28::displayPower(false); }
 #endif
 
 // ----------------------------------------------------------------- touch ---
@@ -345,6 +320,54 @@ static void updateCalendar() {
   brain->setDay((int32_t)day, day != bornDay && tb.tm_mon == tn.tm_mon && tb.tm_mday == tn.tm_mday);
 }
 
+// AMOLED burn-in (Density.h burnin::LitMap): lit hours per region of the glass, sampled from the canvas every
+// 10 s at the panel's level, kept in NVS `burn` (saved hourly, before deep sleep and power-off); serial `b`
+static burnin::LitMap* litMap = nullptr;  // in PSRAM, AMOLEDs only (the 2.8C's static RAM stays as it was)
+static uint32_t litAtMs = 0, litSavedMs = 0;
+static void litBegin() {
+  if (!kGeom.emissive || litMap) return;
+  void* p = heap_caps_calloc(1, sizeof(burnin::LitMap), MALLOC_CAP_SPIRAM);
+  if (p) litMap = new (p) burnin::LitMap();
+}
+static void litSave() {
+  if (!litMap) return;
+  uint8_t blob[burnin::LitMap::kBytes];
+  if (litMap->save(blob, sizeof blob)) prefs.putBytes("burn", blob, sizeof blob);
+  soulFlashWritten();
+}
+static void litTick(uint32_t nowMs) {
+  if (!litMap || !displayOn || !cv) {
+    litAtMs = nowMs;
+    return;
+  }
+  if (nowMs - litAtMs < 10000) return;
+  litMap->add(cv->data(), LCD_W, LCD_H, backlightNow, (nowMs - litAtMs) / 1000.0f);
+  litAtMs = nowMs;
+  if (nowMs - litSavedMs > 3600u * 1000u) {
+    litSavedMs = nowMs;
+    litSave();
+  }
+}
+static void litReport() {
+  if (!litMap) {
+    Serial.println("[burn] an LCD: no burn-in map");
+    return;
+  }
+  static const char* const ch = "RGB";
+  for (int c = 0; c < 3; ++c) {
+    int x = 0, y = 0;
+    const float h = litMap->worstHours(c, &x, &y);
+    Serial.printf("[burn] %c: most-lit cell (%d, %d) of %dx%d: %.2f full-on hours\n", ch[c], x, y, burnin::LitMap::kCells,
+                  burnin::LitMap::kCells, h);
+  }
+  Serial.println("[burn] blue, full-on hours per cell (rows top to bottom):");
+  for (int y = 0; y < burnin::LitMap::kCells; ++y) {
+    Serial.print("  ");
+    for (int x = 0; x < burnin::LitMap::kCells; ++x) Serial.printf("%6.1f", litMap->sec[2][y][x] / 3600.0f);
+    Serial.println();
+  }
+}
+
 // ----------------------------------------------------------- persistence ---
 
 static void saveAlarms() {
@@ -383,6 +406,12 @@ static void loadAll() {
   Memory m;
   if (prefs.getBytes("mem", &m, sizeof m) == sizeof m) brain->memory() = m;
   bornDay = prefs.getUInt("born", 0);
+  litBegin();
+  if (litMap) {
+    uint8_t blob[burnin::LitMap::kBytes];
+    if (prefs.getBytes("burn", blob, sizeof blob) == sizeof blob && !litMap->load(blob, sizeof blob))
+      Serial.println("[burn] stored map unreadable, started again");
+  }
   naps = prefs.getUInt("naps", 0);
   Serial.printf("[store] %d alarms, %d notes, %d reminders\n", alarms.count(), (int)os.notes().size(),
                 (int)os.reminders().size());
@@ -433,7 +462,9 @@ static void help() {
       "  W   Wi-Fi setup portal       w   stop the portal      B  re-run first boot\n"
       "  e<name>  play an expression (e.g. elaugh)              D  demo loop on/off\n"
       "  a<text>  ask the AI (like typing on the glass)         h  home    ?  help\n"
-      "  V   offline voice commands (ESP-SR) status\n"
+      "  V   offline voice commands (ESP-SR) status   A  test tone (speaker / buzzer)   b  burn-in map (lit hours)\n"
+      "  E   AMOLED: TE period, V-blank, write rate    X  tear sync on/off           G  PMU (AXP2101) registers\n"
+      "  R   a full grey field (burn-in photos; R or a touch: back)\n"
       "  Y   SOUL Memory: facts + flash writes   Yexport  the memory as JSON   Ysave  write it now\n"
       "  K   SOULKEY PUB: this SOUL's public device key (for the factory list; never the private key)\n"
       "  SOULKEY GEN / SOULKEY PUB   the factory station (tools/factory_enrol.py): make the device key once\n"
@@ -536,6 +567,26 @@ static void serialCommands() {
         break;
       }
       case 'V': Serial.printf("[voice] offline commands: %s\n", voiceSrStatus()); break;
+      case 'A':  // BRINGUP §S: a 1 kHz tone for 1.5 s through the speaker (the buzzer on the 2.8C)
+        audioTestTone(1500);
+        Serial.printf("[audio] test tone: speaker %s\n", audioHasSpeaker() ? "driven" : "none (buzzer if fitted)");
+        break;
+      case 'b': litReport(); break;
+      case 'R':  // BRINGUP §S-g: a full 50 % grey field at the full level, to photograph burn-in (R / a touch: back)
+        greyField = !greyField;
+        if (!greyField) composer.invalidateAll();
+        Serial.printf("[burn] grey field %s\n", greyField ? "on (R or a touch: off)" : "off");
+        break;
+#if HAS_PMU
+      case 'G': pmu::report(); break;
+#endif
+#if !LCD_IS_RGB
+      case 'E': amoled::displayReport(); break;  // BRINGUP §S: the TE period, V-blank, write rate, waits
+      case 'X':
+        amoled::setTearSync(!amoled::displayStats().sync);
+        Serial.printf("[te] tear sync %s\n", amoled::displayStats().sync ? "on" : "off (1.9.0's writes)");
+        break;
+#endif
       case 'Y': {  // SOUL Memory
         const std::string rest = readLine();
         if (rest == "export") {
@@ -599,8 +650,9 @@ static void deepSleepNow(uint32_t wakeIn, bool poll) {
   saveMemory();
   if (soulMem.dirty()) memoryStoreSaveNow(soulMem);  // SOUL Memory: nothing learnt is lost to deep sleep
   saveAlarms();
+  litSave();
   backlight(0);
-  displayPower(false);
+  displaySleepNow();
   esp_sleep_enable_timer_wakeup((uint64_t)wakeIn * 1000000ULL);
   uint64_t mask = 1ULL << BOOT_BUTTON;
 #if TOUCH_INT >= 0
@@ -610,6 +662,22 @@ static void deepSleepNow(uint32_t wakeIn, bool poll) {
   Serial.flush();
   esp_deep_sleep_start();
 }
+
+#if HAS_PMU
+// the cell is empty (HAS_PMU, readBattery): what SOUL knows is saved, the panel sleeps, the PMU cuts the power.
+// The next press of the PWR key (or USB power) starts SOUL again; an alarm cannot ring while it is off.
+static void powerOffSaved() {
+  saveMemory();
+  if (soulMem.dirty()) memoryStoreSaveNow(soulMem);
+  saveAlarms();
+  litSave();
+  backlight(0);
+  displaySleepNow();
+  pmu::powerOff();
+  delay(1000);             // (the rails drop here)
+  esp_deep_sleep_start();  // a PMU that did not cut: at least nothing runs
+}
+#endif
 
 // §6.11: woken by the timer for a wake-poll. The screen stays off; when the poll is done (or 12 s passed) SOUL
 // sleeps again, unless an alarm is due within 15 minutes or someone touched it.
@@ -672,7 +740,7 @@ void setup() {
   Serial.begin(115200);
   Wire.begin(I2C_SDA, I2C_SCL, 400000);
 #if HAS_PMU
-  pmuInit();
+  pmu::begin();
 #endif
 #if defined(SUFLET_BOARD_LCD28)
   if (!lcd28::exioInit()) Serial.println("[exio] TCA9554 NOT FOUND (display/touch will fail)");
@@ -740,6 +808,8 @@ void setup() {
 
   xTaskCreatePinnedToCore(touchInitTask, "touch-init", 4096, nullptr, 3, nullptr, 0);
   audioInit();
+  // no speaker and no buzzer: the Alarms list and the ringing screen say alarms are silent (SOUL-S.md §4)
+  os.setAlarmSound(audioHasSpeaker() || HAS_BUZZER);
   os.setVoiceAvailable(SUFLET_VOICE && audioHasMic());
   // offline voice commands (ESP-SR MultiNet, SUFLET_VOICE_SR builds): after the glass took its PSRAM
   if (voiceSrBegin()) {
@@ -747,6 +817,7 @@ void setup() {
     os.setVoiceAvailable(audioHasMic());
   }
   Serial.printf("[voice] offline commands: %s\n", voiceSrStatus());
+  os.density().tuneTouch(touch);  // the glass's gesture thresholds in mm (SOUL M: the defaults)
   touch.setMode(TouchMode::Text);
 
   char name[32];
@@ -1171,9 +1242,27 @@ void loop() {
     if (wantOn) composer.invalidateAll();
     else powerScreenOff();
   }
+  displayTick(nowMs);
+  litTick(nowMs);
+  if (greyField && down) {  // a touch ends the grey field
+    greyField = false;
+    composer.invalidateAll();
+  }
   const int64_t r0 = esp_timer_get_time();
   int64_t r1 = r0, r2 = r0;
-  if (displayOn) {
+  static bool greyShown = false;
+  if (greyField && displayOn) {  // pushed once, then held at the full level
+    backlight(1.0f);
+    if (!greyShown) {
+      cv->fill(Rgb::hex(0x808080));
+      RectList all;
+      all.r[0] = Rect{0, 0, LCD_W, LCD_H};
+      all.n = 1;
+      displayPresent(all);
+      greyShown = true;
+    }
+  } else if (displayOn) {
+    greyShown = false;
     composer.compose(os);
     r1 = esp_timer_get_time();
     displayPresent(composer.changedList());
@@ -1217,6 +1306,13 @@ void loop() {
     Serial.printf(", int block %u K, sprites %u (built %u), psram fallbacks %u, rows built %u",
                   (unsigned)(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) / 1024), (unsigned)os.spriteCount(),
                   (unsigned)os.spriteBuilds(), (unsigned)suflet::psramStats().fallbacks, (unsigned)os.wheelRowsBuilt());
+#if !LCD_IS_RGB
+    {  // 1.9.1: the last QSPI present, the scan waits, the measured write rate (BRINGUP §S)
+      const amoled::DisplayStats& ds = amoled::displayStats();
+      Serial.printf(", push %.1f ms (%u px), %.2f px/us, te %s %.1f Hz", ds.pushMs, (unsigned)ds.pushedPx, ds.pxPerUs,
+                    ds.teSeen ? "seen" : "none", ds.periodUs > 0 ? 1e6f / ds.periodUs : 0.0f);
+    }
+#endif
 #if defined(SUFLET_BOARD_LCD28)
     {  // 1.8: the last present (copy into the back buffer, the wait for the panel) and the clock
       const lcd28::DisplayStats& ds = lcd28::displayStats();

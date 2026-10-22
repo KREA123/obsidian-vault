@@ -34,11 +34,15 @@ PROGRAM = FW / ".pio" / "build" / "sim" / "program"
 NS_PER_IR = 2.3        # ESP32-S3 ns per x86 instruction of the sim (BRINGUP §4b calibration, mid-range)
 PSRAM_MBPS = 50.0      # canvas -> back frame buffer memcpy, PSRAM to PSRAM (payload MB/s; measure: `F`, push ms)
 LOOP_MS = 1.0          # touch, IMU, BLE, the Brain and SoulOS update per frame (outside compose)
-# SOUL S (the AMOLED-1.75, CO5300 over QSPI, src/main.cpp displayPresent): each changed rectangle is copied into a
-# PSRAM push buffer (PSRAM_MBPS) and sent with Arduino_GFX's ESP32QSPI at panel->begin(40000000): 4 lines x 40 MHz
-# = 20 MB/s raw. QSPI_MBPS is the payload rate after the per-chunk commands and byte swaps [estimare: ~80 % of raw;
-# BRINGUP measures it with `F`]. There is no back buffer: the panel keeps what did not change.
+# SOUL S (the AMOLED-1.75, CO5300 over QSPI, src/board_amoled.cpp): 1.9.1 sends each changed rectangle in row
+# strips straight from the canvas through a 16 KB internal-RAM bounce buffer (BOUNCE_MBPS: PSRAM read into SRAM
+# [estimare: ~1.6x the PSRAM-to-PSRAM copy]; 1.9.0 copied every rectangle PSRAM to PSRAM first at PSRAM_MBPS), then
+# Arduino_GFX's ESP32QSPI at panel->begin(40000000): 4 lines x 40 MHz = 20 MB/s raw. QSPI_MBPS is the payload rate
+# after the per-chunk commands and byte swaps [estimare: ~80 % of raw; BRINGUP §S measures it: `E`, px/us].
+# Not modelled: the tear-sync waits (TearSync.h), at most one panel refresh per band, measured on the board (`E`).
+# There is no back buffer: the panel keeps what did not change.
 QSPI_MBPS = 16.0
+BOUNCE_MBPS = 80.0
 S_ARGS = ["c0ffee123456", "466"]  # the sim's own chip id (the same design as at 480 px), the 466 px glass
 COMPOSE = "suflet::FrameComposer::compose*"
 MICRO = "suflet_bench_*"
@@ -119,7 +123,7 @@ def frame_row_s(name: str, r: dict, fps_asked: int) -> dict:
     n = max(1, r.get("frames", 1))
     mir = r["ir"] / n / 1e6
     render = mir * NS_PER_IR
-    per_px = 2 / (QSPI_MBPS * 1e6) * 1e3 + 2 / (PSRAM_MBPS * 1e6) * 1e3  # ms per pixel: the copy + the QSPI send
+    per_px = 2 / (QSPI_MBPS * 1e6) * 1e3 + 2 / (BOUNCE_MBPS * 1e6) * 1e3  # ms per pixel: the strip copy + the QSPI send
     push = r.get("qspi_px", 0) * per_px
     worst = r.get("qspi_max", 0) * per_px
     frame = render + push + LOOP_MS
@@ -139,9 +143,9 @@ def run_s(jobs: int) -> dict:
 
 def table_s(res: dict) -> str:
     full = 466 * 466
-    per_px = 2 / (QSPI_MBPS * 1e6) * 1e3 + 2 / (PSRAM_MBPS * 1e6) * 1e3
+    per_px = 2 / (QSPI_MBPS * 1e6) * 1e3 + 2 / (BOUNCE_MBPS * 1e6) * 1e3
     out = [f"SOUL S, 466 px: a whole frame ({full:,} px) is {full * per_px:.1f} ms of push [estimare: {QSPI_MBPS:.0f} MB/s QSPI "
-           f"+ the {PSRAM_MBPS:.0f} MB/s copy].", "",
+           f"+ the {BOUNCE_MBPS:.0f} MB/s strip copy; tear-sync waits not included].", "",
            "| Scenario | M instr / frame | est. render ms | px pushed / frame | est. push ms | worst frame px | worst push ms | est. fps (asked) |",
            "|---|---:|---:|---:|---:|---:|---:|---:|"]
     for name, what, _fps in FRAMES:

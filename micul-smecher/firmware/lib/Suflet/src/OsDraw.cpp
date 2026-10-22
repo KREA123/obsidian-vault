@@ -9,6 +9,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "TextFit.h"
 #include "Os.h"
 #include "QrImage.h"
 
@@ -57,21 +58,7 @@ static const Font& fontOf(int i, bool large) {
   }
 }
 
-static std::string ellipsize(const Font& f, const std::string& s, float maxW) {
-  if (Canvas::measureText(f, s.c_str()) <= maxW) return s;
-  std::string out;
-  const char* p = s.c_str();
-  const char* end = p + s.size();
-  while (p < end) {
-    const char* q = p;
-    utf8::next(q, end);
-    std::string t = out + std::string(p, q - p) + "\xE2\x80\xA6";
-    if (Canvas::measureText(f, t.c_str()) > maxW) break;
-    out.append(p, q - p);
-    p = q;
-  }
-  return out + "\xE2\x80\xA6";
-}
+static std::string ellipsize(const Font& f, const std::string& s, float maxW) { return ellipsizeWords(f, s, maxW); }
 
 static std::string upperAscii(const std::string& s) {  // Martian Mono tags: RARE · #098 / 120
   std::string o = s;
@@ -91,6 +78,13 @@ static std::string daysText(uint8_t d, bool ro) {
   for (int i = 0; i < 7; ++i)
     if (d & (1 << i)) s += std::string(s.empty() ? "" : " ") + (ro ? r[i] : en[i]);
   return s;
+}
+
+// the days in as few letters as they can be said (SOUL S's alarm rows): Mo–Fr, Sa–Su, daily, once, Mo We Fr
+static std::string daysShort(uint8_t d, bool ro) {
+  if (d == 0x1F) return ro ? "L\xE2\x80\x93V" : "Mo\xE2\x80\x93" "Fr";
+  if (d == 0x60) return ro ? "S\xE2\x80\x93" "D" : "Sa\xE2\x80\x93Su";
+  return daysText(d, ro);
 }
 
 // ---------------------------------------------------------------- items ---
@@ -695,9 +689,12 @@ void Os::drawAnswer(Canvas& cv) {
 void Os::drawAlarms(Canvas& cv) {
   const bool R = ro();
   const int n = alarms_ ? alarms_->count() : 0;
-  rimTop(cv, n ? (R ? "Alarme · " : "Alarms · ") + std::to_string(n) : std::string(R ? "Alarme" : "Alarms"), kCream);
+  // no speaker and no buzzer: said where alarms are set (amber title), never an alarm ringing in silence unannounced
+  if (!alarmAudible_) rimTop(cv, R ? "Alarme · fără sunet" : "Alarms · silent", kAmber);
+  else rimTop(cv, n ? (R ? "Alarme · " : "Alarms · ") + std::to_string(n) : std::string(R ? "Alarme" : "Alarms"), kCream);
   if (!n && wheel_.focused() == 0) textAt(cv, fonts::caption(), 233, 200, R ? "Nicio alarmă încă" : "No alarms yet", kCream, kDim);
   drawWheel(cv);
+  if (!alarmAudible_) rimBottom(cv, R ? "fără difuzor: alarmele nu sună" : "no speaker: alarms are silent", kAmber);  // (when it fits)
 }
 
 void Os::drawRinging(Canvas& cv) {
@@ -707,7 +704,8 @@ void Os::drawRinging(Canvas& cv) {
   else if (ringingAlarm_ >= 0 && alarms_ && ringingAlarm_ < alarms_->count()) label = alarms_->at(ringingAlarm_).label;
   const Rgb c = timerRinging_ ? kMint : kAmber;
   rimRing(cv, 218, 0, 2 * 3.14159265f, c, 0.8f, 8);  // (the eyes and the tone are what pulse)
-  rimTop(cv, timerRinging_ ? (R ? "Minutar" : "Timer") : (R ? "Alarmă" : "Alarm"), c, 1);
+  if (!alarmAudible_) rimTop(cv, timerRinging_ ? (R ? "Minutar · fără sunet" : "Timer · silent") : (R ? "Alarmă · fără sunet" : "Alarm · silent"), c, 1);
+  else rimTop(cv, timerRinging_ ? (R ? "Minutar" : "Timer") : (R ? "Alarmă" : "Alarm"), c, 1);
   textAt(cv, fonts::digits(), 233, L(254, 218), clockText(now_), kCream);
   if (!label.empty()) textAt(cv, fonts::body(), 233, L(318, 276), ellipsize(fonts::body(), label, g_.s(300)), kCream);
   buildItems(items_);
@@ -1210,6 +1208,9 @@ bool Os::buildCoreWheel(std::vector<WheelRow>& out) const {
         r.on = a.enabled;
         r.dim = a.enabled ? 1.0f : 0.55f;
         r.sub = daysText(a.days, R) + (a.label[0] ? std::string(" · ") + a.label : std::string());
+        // SOUL S (the critic, 2026-10-22: "weekdays …" lost the label): when that does not fit, the label first and
+        // the days in their short form ("Wake up · Mo–Fr"); the label alone if even that is too long
+        if (sGlass() && a.label[0]) r.subShort = std::string(a.label) + " \xC2\xB7 " + daysShort(a.days, R);
       }
       addNew(IdNew, "+ New", "+ Nouă");
       return true;

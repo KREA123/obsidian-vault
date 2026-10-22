@@ -473,7 +473,7 @@ void Os::dialTouch(const TouchEv& e) {
       break;
     case Ev::TouchMove: {
       const float ddx = x - dx0_, ddy = e.y - dy0_;
-      if (!dialGrab_ && fabsf(ddx) > g_.s(8) && fabsf(ddx) > fabsf(ddy)) {
+      if (!dialGrab_ && fabsf(ddx) > g_.s(dens_.dialGrab) && fabsf(ddx) > fabsf(ddy)) {
         dialGrab_ = true;
         dial_.grab();
       }

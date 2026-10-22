@@ -34,7 +34,8 @@
 
 #elif defined(SUFLET_BOARD_AMOLED175)
 // Waveshare ESP32-S3-Touch-AMOLED-1.75: CST9217 touch, QMI8658, AXP2101 PMU,
-// ES8311 + ES7210 codecs with two mics and a speaker (audio used in v1).
+// ES8311 + ES7210 codecs with two mics and a speaker (1.9.1: the ES8311
+// speaker path; the ES7210 mics are not driven yet).
 #define BOARD_NAME "AMOLED-1.75"
 #define LCD_CS 12
 #define LCD_SCLK 38
@@ -56,7 +57,7 @@
 #define IMU_INT -1
 #define RTC_INT -1
 #define BAT_ADC_PIN -1
-#define HAS_AUDIO 1
+#define HAS_AUDIO 1  // the codecs are on the board; driven: the ES8311 speaker (SUFLET_SPK_ES8311), not the ES7210 mics
 #define HAS_PMU 1
 #define PMU_ADDR 0x34
 #define AUDIO_I2S_MCLK 42
@@ -65,6 +66,9 @@
 #define AUDIO_I2S_DIN 10
 #define AUDIO_I2S_DOUT 8
 #define AUDIO_PA_PIN 46
+#define AUDIO_CODEC_ES8311_ADDR 0x18  // 7-bit (xiaozhi: ES8311_CODEC_DEFAULT_ADDR 0x30, 8-bit)
+#define SUFLET_SPK_ES8311 1           // 1.9.1: the ES8311 DAC + amplifier drive the speaker (audio.cpp)
+#define LCD_TE 13                     // the CO5300's tearing-effect line (Waveshare schematic p.1: LCD_TE)
 #define DISPLAY_GEOMETRY suflet::displays::kAmoled175
 
 #elif defined(SUFLET_BOARD_LCD28)
@@ -189,6 +193,12 @@
 #endif
 #ifndef SUFLET_SPK_MAX98357
 #define SUFLET_SPK_MAX98357 0
+#endif
+#ifndef SUFLET_SPK_ES8311
+#define SUFLET_SPK_ES8311 0
+#endif
+#ifndef LCD_TE
+#define LCD_TE -1
 #endif
 #define BOOT_BUTTON 0
 

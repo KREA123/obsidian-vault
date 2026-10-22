@@ -272,6 +272,10 @@ class Os {
   void setTz(const std::string& posix) { apps_.tz = posix; }    // the device's zone (the world clock)
   void setStorage(const StorageInfo& s) { apps_.storage = s; }  // the Device app
   void setAudio(bool speaker, bool mic) { apps_.speaker = speaker, apps_.mic = mic; }
+  // can an alarm be heard at all (a speaker or a buzzer)? false: the Alarms list and the ringing screen say that
+  // alarms are silent (SOUL S until its ES8311 speaker path is proven on the board, firmware/SOUL-S.md §4)
+  void setAlarmSound(bool audible) { alarmAudible_ = audible; }
+  bool alarmSound() const { return alarmAudible_; }
   // what the speaker should play now (focus sounds): false = nothing; the device calls fill() itself
   bool soundOn() const { return apps_.playing && apps_.speaker; }
   SoundGen& sound() { return apps_.sound; }
@@ -514,6 +518,7 @@ class Os {
     int id = -1;          // the control (activate(id) on a tap; holdItem_ on a hold)
     int id2 = -1;         // a second control in the row (Settings › Apps: the ↑ disc on the left)
     std::string title, sub, tag, value;  // tag: a time on the left; value: words on the right
+    std::string subShort;  // shown instead of `sub` when that does not fit (SOUL S: an alarm's label first)
     Rgb valueC;
     uint8_t kind = 0;     // RowPlain, RowToggle, RowCheck, RowNew, RowSel
     bool on = false;      // a toggle / a check
@@ -635,6 +640,8 @@ class Os {
   Alarms* alarms_;
   DisplayGeometry g_;
   Density dens_;
+  bool alarmAudible_ = true;
+  bool standbyEmissive(const Brain& b) const;  // SOUL S standby: the eyes alone on the AMOLED, awake (burn-in care)
   BirthInfo birth_;
   SoulFace face_{};
   Keyboard kb_;
