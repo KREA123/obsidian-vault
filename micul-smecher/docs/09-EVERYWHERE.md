@@ -5,6 +5,12 @@ everywhere."** Scope: how SOUL M (Waveshare ESP32-S3-Touch-LCD-2.8C, LiPo 803450
 polymer base) reaches the internet away from home Wi-Fi. Built today: firmware 1.5.0 (§1–2). Studied: the phone app
 BLE tether (§4) and built-in LTE (§5). Recommendation and roadmap: §7.*
 
+> **Note (22 Oct 2026): the product is SOUL S**, not M (decision 20 Oct 2026). SOUL S = the 1.75" AMOLED on the
+> Waveshare ESP32-S3-Touch-AMOLED-1.75, a **750 mAh** LiPo 603040, about **27 h** on this page's model day [estimare]
+> (21–34 h; ~55 h with light-sleep firmware), mics and speaker on the board: `docs/12-SIZE-S.md` §2.5 and
+> `docs/size-s.json`. Everything below is the **M prototype baseline** (Waveshare 2.8C, 1500 mAh), which docs/12
+> reuses for the S estimate. The connectivity findings (tether, LTE, antenna placement) apply to both sizes.
+
 Markers: **[V]** checked today against the source listed, **[E]** our estimate (method given), **[U]** unknown or
 unverified, to measure or confirm, **[R]** read in our own code.
 
@@ -164,7 +170,7 @@ Throughput is never the limit for text: Cat-1 bis gives up to 10 Mb/s down / 5 M
 
 ---
 
-## 3 · Battery model (SOUL M, LiPo 803450, 1500 mAh, 3.7 V ≈ 5.6 Wh)
+## 3 · Battery model (SOUL M prototype, LiPo 803450, 1500 mAh, 3.7 V ≈ 5.6 Wh; SOUL S: 750 mAh, ≈ 27 h [E], docs/12 §2.5)
 
 Board currents are the BRINGUP §4 estimates (not measured yet): awake ≈ 180–230 mA, asleep glow 70–100 mA, screen
 off 45–70 mA, a Wi-Fi TLS turn +80–120 mA for < 3 s. **A carried day [E]**: 1 h awake, 15 h asleep/screen off at
@@ -323,7 +329,7 @@ SGP.32 capable so the profile can be changed later. iSIM (SIM inside the modem) 
    aluminium seam and from the battery; no metal (magnets, steel washers, laser-mark ground spot) within 10 mm.
 2. **Module placement**: the carrier PCB (25 × 30 × ~4 mm with the module) in the base, next to the battery, with a
    short U.FL run to the antenna; a thermal pad to the base, not to the aluminium (keep the RF ground short).
-3. **Battery bay**: keep the 803450 (1500 mAh); if the base grows by ~3 mm, an 1800–2000 mAh cell becomes possible
+3. **Battery bay** (M prototype; on S the bay is the 603040, 750 mAh, docs/12 §2.4): keep the 803450 (1500 mAh); if the base grows by ~3 mm, an 1800–2000 mAh cell becomes possible
    [U: check the 8.6 × 34.5 × 50.5 mm bay in `prototip/README.md`].
 4. **No SIM door** (soldered eUICC); a test-point pad for the module's USB (firmware updates, RF tests).
 5. Keep ≥ 20 mm between the LTE antenna and the ESP32 module's 2.4 GHz antenna.
@@ -332,7 +338,7 @@ SGP.32 capable so the profile can be changed later. iSIM (SIM inside the modem) 
 
 ## 6 · Microphone and speaker: make them standard
 
-On the go people talk, they do not type on a 2.8″ round keyboard. Today both are **optional build flags** on SOUL M
+On the go people talk, they do not type on a round keyboard (2.8″ on M, 1.75″ on S). Today both are **optional build flags** on SOUL M
 (`-DSUFLET_MIC_INMP441=1`, `-DSUFLET_SPK_MAX98357=1`, voice behind `-DSUFLET_VOICE=1`) [R: `platformio.ini`,
 `src/audio.cpp`]. What exists:
 

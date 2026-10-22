@@ -1,6 +1,6 @@
 # Landing SOUL v3
 
-Pagina publică pentru SOUL. Se publică doar ce e în lista de mai jos. Folderul `screenshots/` și subfolderul `v2/` nu se publică.
+Pagina publică pentru SOUL. Se publică doar ce e în lista de mai jos. Folderul `screenshots/` și `_archive/` nu se publică (`_archive/v2-superseded/` = landing-ul vechi v2, pe mărimea M; e depășit, nu-l republica).
 
 ```
 site/
@@ -10,7 +10,7 @@ site/
 ├── os.html           # demo SoulOS (îl întreține alt flux; nu-l edita de aici)
 ├── eyes/             # motorul de ochi (eyes.js) + cele 120 de modele (designs.js)
 ├── fonts/            # Bricolage Grotesque + Martian Mono, găzduite local
-├── media/v3, media/v2, media/soul-m-hero.jpg
+├── media/v10 (S: hand-s, side-s), media/v3, media/v2, media/soul-m-hero.jpg
 └── favicon.*, icon-*.png, apple-touch-icon.png, site.webmanifest
 ```
 

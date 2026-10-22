@@ -65,7 +65,7 @@ Gratuit, în paralel: o cerere pe [BrokerMap UEFISCDI](https://www.brainmap.ro/b
 | **Lun 26.10** | Dacă ai sub 10 aplicanți, postezi pe Undelucram (50 €) și ceri prețul de la POLIJobs. Faci cont pe Brainmap și publici cererea pe BrokerMap |
 | **Mar 27.10** | Dacă academicii n-au răspuns, le scrii din nou sau suni la secretariatul PRECIS. Faci primele interviuri de 30 de minute și verifici actele pentru a) și c) |
 | **Mie 28.10** | Discuția cu academicul (onorariul, termenul, actele: CV, publicații, diplomă) |
-| **Joi 29.10** | Proba practică pe placa 2.8C cu 1–2 candidați |
+| **Joi 29.10** | Proba practică pe placa 2.8C (prototipul M) cu 1–2 candidați |
 | **Vin 30.10** | Decizia: oferta scrisă pentru inginer, plus academicul sau firma care aduce un expert numit |
 | **Lun 2.11** | Cu contabilul: CIM part-time (normă, REVISAL cel târziu în ziua dinainte de început, limita de 48 h) și contractul de servicii cu expertul extern |
 
@@ -134,7 +134,7 @@ Rezervă pentru partea radio (Bluetooth prin aluminiu): prof. Dan Neculoiu, UPB 
 >
 > Mă numesc [Prenume Nume] și reprezint ARTEMIS DIGITAL S.R.L., o microîntreprindere din București. Vă scriu pentru că lucrările dumneavoastră despre [sisteme embedded / sisteme de operare pe microcontrolere / recunoaștere vocală pe dispozitive edge] sunt foarte apropiate de proiectul nostru.
 >
-> Dezvoltăm **SOUL**, un dispozitiv AI de buzunar, din aluminiu, bazat pe ESP32-S3: ecran rotund de 2,8", touch, IMU și audio. Rulează un sistem de operare embedded propriu (SoulOS) și un motor grafic de „ochi vii” expresivi. Printr-o punte cloud (MCP), utilizatorul își folosește propriul asistent AI (Claude sau ChatGPT). Are memorie portabilă pe dispozitiv și comenzi vocale offline. Avem firmware, serviciul cloud și demonstratoarele web funcționale, iar prototipul fizic este în asamblare.
+> Dezvoltăm **SOUL**, un dispozitiv AI de buzunar, din aluminiu (~63 × 71 mm), bazat pe ESP32-S3: ecran rotund AMOLED de 1,75″ (466×466) cu touch, IMU, 2 microfoane și difuzor. Prototipul de banc pentru dovada TRL 3 rulează pe o placă cu ecran de 2,8″. Rulează un sistem de operare embedded propriu (SoulOS) și un motor grafic de „ochi vii” expresivi. Printr-o punte cloud (MCP), utilizatorul își folosește propriul asistent AI (Claude sau ChatGPT). Are memorie portabilă pe dispozitiv și comenzi vocale offline. Avem firmware, serviciul cloud și demonstratoarele web funcționale, iar prototipul fizic este în asamblare.
 >
 > Pregătim o cerere pentru apelul **PR București-Ilfov 1.1 „Proof of Concept”** (TRL 3 → TRL 5). Ghidul cere un raport științific (Anexa 16) care atestă nivelul TRL 3, validat și semnat de un expert științific.
 >

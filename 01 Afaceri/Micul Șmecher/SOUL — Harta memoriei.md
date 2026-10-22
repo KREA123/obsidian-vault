@@ -1,7 +1,7 @@
 ---
 tip: hub
 afacere: Micul Șmecher
-actualizat: 2026-10-03
+actualizat: 2026-10-22
 ---
 
 # SOUL — Harta memoriei
@@ -9,10 +9,13 @@ actualizat: 2026-10-03
 > Tot ce există despre SOUL, legat într-un singur loc: note, cercetare, cod, planuri, randări, brand, film, finanțare. **Pornește de aici.** Hub-ul afacerii: [[Micul Șmecher]] · decizii: [[Jurnal decizii]] · ce urmează: **[[De continuat — SOUL]]** · finanțare: [[Finanțare — PR BI PoC 1.1 pentru SOUL]] · cereri Anthropic/OpenAI: [[SOUL — Cereri parteneriat Anthropic și OpenAI]] · acasă: [[Acasă]].
 > Fișierele proiectului sunt în `micul-smecher/` (căile de mai jos sunt relative la acest folder). Tot ce e marcat **[neverificat]** nu a fost confirmat în repo sau pe hardware.
 
-## Starea pe scurt (2026-10-03)
+## Starea pe scurt (2026-10-03; mărimea actualizată 2026-10-22)
+
+> **Decizia din 2026-10-20** ([[Jurnal decizii]]): **produsul final e mărimea S** — MĂRGĂRITAR la scara lui de design, **63 × 70,8 × 23 mm**, sticlă neagră plată **Ø52**, ecran rotund **AMOLED 1,75″ 466×466** (negru adevărat), placa de dezvoltare Waveshare ESP32-S3-Touch-AMOLED-1.75, LiPo 750 mAh, randări `renders/v10/` (CGI). **Mărimea M** (≈ 90 × 101 × 31,5 mm, placa 2.8C, ecran 2,8″, firmware 1.9.0) rămâne **prototipul** pentru teste și dovada TRL 3. Cifrele: `micul-smecher/docs/size-s.json`, `docs/12-SIZE-S.md`.
+
 | Parte | Stare | Unde |
 |---|---|---|
-| **Designul final** | **MĂRGĂRITAR**, mărimea M ≈ 90 × 101 × 31,5 mm, aluminiu 6061 sablat + anodizat, 5 culori (Argint, Grafit, Albastru noapte / Midnight, Jar / Ember, Șampanie); sticlă neagră Ø74,3, nimic altceva pe față | randări `renders/v9/` (CGI, nu poze) |
+| **Designul final** | **MĂRGĂRITAR, mărimea S** (decizia din 2026-10-20) ≈ 63 × 70,8 × 23 mm, aluminiu 6061 sablat + anodizat, 5 culori (Argint, Grafit, Albastru noapte / Midnight, Jar / Ember, Șampanie); sticlă neagră plată Ø52, ecran AMOLED 1,75″ 466×466, nimic altceva pe față. **Mărimea M** (≈ 90 × 101 × 31,5 mm, sticlă Ø74,3, ecran 2,8″) = prototipul | randări `renders/v10/` (S) și `renders/v9/` (M), CGI, nu poze; `docs/size-s.json`, `docs/12-SIZE-S.md`, planșe `blueprints/final/soul_s_*` |
 | **Prototipul P0** (de făcut acasă) | corp printat 3D ≈ 112 × 125 (cu piciorul) × 31,6 mm după STL-uri (placa 2.8C are sticla Ø95,9 lipită, de aceea e mai mare); `docs/00-START-HERE.md` dă încă 112 × 128 × 34 (cifră HOPA mai veche) — **de măsurat pe print** | `prototip/stl/plastic/` (6 STL-uri), `prototip/COMANDA.md`, planșe `blueprints/final/` |
 | **Electronica P0** | Waveshare ESP32-S3-Touch-LCD-2.8C (de pe Alibaba, ~140 lei — preț de la fondator, **[neverificat]**; `COMANDA.md` dă ~190 lei Waveshare/AliExpress) + LiPo **803450** 1500 mAh de pe eMAG (~35 lei) | `prototip/COMANDA.md` |
 | **Firmware** | **SoulOS 1.2.0** pe ESP32-S3: ochii v2 portați în C++, IMU (giroscop), portal Wi-Fi, Claude/OpenAI direct cu cheia omului, protocolul SOUL Cloud rev. 2, BLE Hardware Buddy. Compilat fără avertismente + teste pe PC + simulator end-to-end; **încă neîncărcat pe o placă** | `firmware/`, imaginea `firmware/release/SOUL-2.8C-install.bin`, checklist `firmware/BRINGUP.md` |
@@ -62,7 +65,8 @@ actualizat: 2026-10-03
 - [[micul-smecher/cad/README|Carcasa SUFLET / Micul Șmecher: CAD parametric (OpenSCAD)]] — `cad/README.md` (istoric)
 
 ## Randări (istoric design → final)
-- [[micul-smecher/renders/v9/README|SOUL v9: MĂRGĂRITAR, mărimea M — DESIGNUL FINAL]] — `renders/v9/README.md` (hero, family, side, hand, desk, typing, ou_night, vs v8, alive gif/mp4)
+- [[micul-smecher/renders/v10/README|SOUL v10: MĂRGĂRITAR, mărimea S — PRODUSUL FINAL (2026-10-20)]] — `renders/v10/README.md` (hero, family, side, hand, desk)
+- [[micul-smecher/renders/v9/README|SOUL v9: MĂRGĂRITAR, mărimea M — prototipul (a fost designul final până la 2026-10-20)]] — `renders/v9/README.md` (hero, family, side, hand, desk, typing, ou_night, vs v8, alive gif/mp4)
 - [[micul-smecher/renders/v8/README|SOUL v8: HOPA mărimea M (înlocuit de v9)]] — `renders/v8/README.md`
 - [[micul-smecher/renders/README|Randări produs — SUFLET („Micul Șmecher”)]] — `renders/README.md`
 - [[micul-smecher/renders/v2/README|v2 („piatra de buzunar”)]] · [[micul-smecher/renders/v3/README|v3]] · [[micul-smecher/renders/v4/README|v4 familia]] · [[micul-smecher/renders/v5/README|v5 HOPA + ALT A/B (MĂRGĂRITAR vine de aici)]] · [[micul-smecher/renders/v6/README|v6 aluminiu + culori]] · [[micul-smecher/renders/v7/README|v7 studiu de mărime]]

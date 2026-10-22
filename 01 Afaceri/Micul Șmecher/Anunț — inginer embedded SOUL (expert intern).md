@@ -11,7 +11,7 @@ actualizat: 2026-10-22
 ## RO: Inginer embedded senior / Coordonator tehnic (part-time, CIM), proiect de cercetare SOUL
 
 **ARTEMIS DIGITAL S.R.L.** (București) dezvoltă **SOUL**, un dispozitiv AI de buzunar pe **ESP32-S3**, în carcasă de aluminiu. Are:
-- ecran rotund de 2,8″ cu touch, IMU, audio I²S, BLE și Wi-Fi;
+- ecran rotund AMOLED de 1,75″ (466×466) cu touch, IMU, 2 microfoane și difuzor, BLE și Wi-Fi, într-un corp de ~63 × 71 × 23 mm (prototipul de banc folosește o placă cu ecran de 2,8″);
 - un sistem de operare embedded propriu (SoulOS) și un motor grafic de „ochi vii”;
 - o punte cloud/MCP prin care proprietarul își folosește propriul asistent AI.
 
@@ -41,14 +41,14 @@ Pregătim un proiect de cercetare **PR București-Ilfov 1.1 „Proof of Concept�
 - diploma de studii cu suplimentul;
 - certificări sau dovezi ale contribuției la produse.
 
-**Cum aplici:** trimiți CV-ul și un link către un proiect embedded de care ești mândru (repo, articol, produs) la **[email]**. Un interviu de 30 de minute, apoi o probă practică scurtă pe placa SOUL (ESP32-S3 2,8″).
+**Cum aplici:** trimiți CV-ul și un link către un proiect embedded de care ești mândru (repo, articol, produs) la **[email]**. Un interviu de 30 de minute, apoi o probă practică scurtă pe placa prototipului SOUL (ESP32-S3, ecran de 2,8″).
 
 ---
 
 ## EN: Senior Embedded Engineer / Technical Lead (part-time, employment contract), SOUL research project
 
 **ARTEMIS DIGITAL S.R.L.** (Bucharest) is building **SOUL**, a pocket AI companion device on the **ESP32-S3** in an aluminium enclosure. It has:
-- a round 2.8″ touch display, IMU, I²S audio, BLE and Wi-Fi;
+- a round 1.75″ AMOLED touch display (466 × 466), IMU, two microphones and a speaker, BLE and Wi-Fi, in a body of about 63 × 71 × 23 mm (the bench prototype uses a board with a 2.8″ screen);
 - its own embedded OS (SoulOS) and a "living eyes" graphics engine;
 - a cloud/MCP bridge that lets owners use their own AI assistant.
 
@@ -78,4 +78,4 @@ We are preparing a **PR București-Ilfov 1.1 "Proof of Concept"** research proje
 - degree diploma with its supplement;
 - certifications or evidence of product contributions.
 
-**How to apply:** send your CV and a link to an embedded project you are proud of (repo, article, product) to **[email]**. One 30-minute interview, then a short hands-on task on the SOUL board (ESP32-S3 2.8″).
+**How to apply:** send your CV and a link to an embedded project you are proud of (repo, article, product) to **[email]**. One 30-minute interview, then a short hands-on task on the SOUL prototype board (ESP32-S3, 2.8″ screen).

@@ -1,7 +1,8 @@
 // Pin maps for the supported dev boards. Values come from Waveshare's
 // schematics / demo code (1.43, 2.8C) and the MIT-licensed xiaozhi-esp32
-// board config (1.75). See ../research/02-hardware-2026-09-24.md and
-// ../research/12-ecran-mai-mare.md (size M).
+// board config (1.75). SOUL S (product) = AMOLED-1.75 (amoled175); SOUL M
+// (prototype) = LCD-2.8C (lcd28). See ../research/02-hardware-2026-09-24.md,
+// ../research/12-ecran-mai-mare.md (the 2.8C) and ../docs/12-SIZE-S.md (S).
 #pragma once
 
 #if defined(SUFLET_BOARD_AMOLED143)

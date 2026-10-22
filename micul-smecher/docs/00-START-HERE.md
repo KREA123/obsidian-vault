@@ -1,22 +1,22 @@
 # SOUL: start here
 
-*The complete SOUL package · 25 Sep 2026 · ARTEMIS DIGITAL S.R.L., Bucharest · assembled from the vault `micul-smecher/` + the notes in `01 Afaceri/Micul Șmecher/`.*
+*The complete SOUL package · 25 Sep 2026, size updated 22 Oct 2026 (S = product, M = prototype) · ARTEMIS DIGITAL S.R.L., Bucharest · assembled from the vault `micul-smecher/` + the notes in `01 Afaceri/Micul Șmecher/`.*
 
 ## Pe scurt (RO, pentru Andu)
-- **SOUL** (mărimea **M**, decizia din 25 sep.) e o pietricică din aluminiu, în picioare, de **90 × 103 × 31,5 mm**, cu ecran rotund de **2,8″ (480 × 480)** sub sticlă neagră și doi ochi vii. Forma e v6 (HOPA), mărită uniform.
+- **SOUL S = produsul** (decizia din **20.10.2026**, `03 Decizii/Jurnal decizii.md`): o pietricică din aluminiu în forma **MĂRGĂRITAR**, în picioare, de **63 × 70,8 × 23 mm**, cu ecran rotund **AMOLED de 1,75″ (466 × 466)**, negru adevărat, sub sticlă neagră plată **Ø52**, și doi ochi vii. Placa de dezvoltare: **Waveshare ESP32-S3-Touch-AMOLED-1.75** (`pio run -e amoled175`). Baterie LiPo **750 mAh**, ~27 h [estimare]. Cifrele: [`size-s.json`](size-s.json) (sursa unică) și [`12-SIZE-S.md`](12-SIZE-S.md).
   - Funcționează **fără AI**, cu **Claude-ul tău**, cu **ChatGPT-ul tău** sau cu cheia ta API.
-  - Are **SoulOS** cu tastatură (scrii lui Claude, notițe, alarme).
+  - Are **SoulOS** (designul „Alive”, `os/DESIGN-ALIVE.md`) cu tastatură (scrii lui Claude, notițe, alarme).
   - Doarme în capsula **OU**.
+- **SOUL M = prototipul de lucru** (≈ 90 × 101 × 31,5 mm, placa **Waveshare ESP32-S3-Touch-LCD-2.8C**, 2,8″ 480 × 480, firmware 1.9.0, `release/SOUL-2.8C-install.bin`): pentru teste și dovada TRL 3 a dosarului PoC.
 - **Ce e gata:**
-  - designul final M (randări **v8**) + logo-ul „The Glass O” (`brand/logo/`);
-  - firmware-ul: 61/61 de teste, compilează și pentru placa **Waveshare ESP32-S3-Touch-LCD-2.8C** (`lcd28`);
-  - serviciul AI: 49/49 de teste (fără AI / Claude / ChatGPT, cheie proprie criptată, conector MCP);
-  - SoulOS pe web (limbajul „Orbit”, 162 de teste), pagina de lansare în engleză;
-  - kitul P0 (CAD, STL, STEP), planurile tehnice M, dosarul PR BI PoC 1.1.
-- **Ce urmează:** comanzi placa 2.8C + piesele ([`prototip/COMANDA.md`](../prototip/COMANDA.md)), printezi P0, flash-uiești, filmezi (= dovada TRL 3), apoi CNC.
+  - designul final S (randări **v10**, planșa `blueprints/final/soul_s_1_general_arrangement*`) + logo-ul „The Glass O” (`brand/logo/`); M în randările v9;
+  - firmware-ul: compilează pentru **AMOLED-1.75** (`amoled175`, SOUL S) și pentru **2.8C** (`lcd28`, SOUL M);
+  - serviciul AI, SoulOS pe web, pagina de lansare;
+  - kitul S-P0 (`prototip/stl/s/`, `prototip/step/s/`), kitul P0-M, dosarul PR BI PoC 1.1.
+- **Ce urmează:** flash pe placa 2.8C și filmare (= dovada TRL 3), comanda plăcilor AMOLED-1.75 (`12-SIZE-S.md` §1.1), CAD-ul de producție al lui S la 23 mm, apoi CNC.
 - **Bani:** **PR BI 1.1 Proof of Concept** prin ARTEMIS DIGITAL (€191k, 24 luni) — [`investors/poc-1.1/`](../investors/poc-1.1/).
 
-> Notă: 01-BOM, 02-MANUFACTURING și 05-LAUNCH-PLAN au fost scrise pentru mărimea S (1,75″). Diferențele pentru M sunt în tabelul de mai jos; restul (procese, furnizori, conformitate, calendar) rămâne valabil.
+> Notă: 01-BOM și 02-MANUFACTURING au fost scrise inițial pentru vechiul S (HOPA). Cifrele lor de mărime sunt acum aliniate la `size-s.json`; pentru S, `12-SIZE-S.md` are stiva internă, bateria și diferența de cost față de M.
 
 ---
 
@@ -24,38 +24,44 @@
 
 SOUL is a personal AI object you keep on your desk and hold in your hand. The pitch: "The labs make the brain. We make the body and the soul."
 
-**Final design: v6 "HOPA", size M** (renders: `renders/v8/`)
-- An **upright aluminium pebble, 90.0 × 103.1 × 31.5 mm**, black glass Ø74.3 mm.
+**Final design: MĂRGĂRITAR, size S** (decision 20 Oct 2026; renders: `renders/v10/`, CGI)
+- An **upright aluminium pebble, 63 × 70.8 × 23 mm** (62.96 × 70.8 incl. the 1.2 mm foot; 23.0 mm target depth), flat black glass **Ø52 mm**.
 - **6061-T6**, fine bead-blasted, colour-anodised: Silver, Graphite, Midnight, Ember, Champagne.
-- **2.8" round IPS (480 × 480)** behind black glass. **Nothing else on the face.**
-- Flat foot, speaker in the side seam, charging from the bottom in **OU**, the egg capsule. No loop: hanging comes from a case accessory.
+- **1.75" round AMOLED (466 × 466)**, true black, behind black glass. **Nothing else on the face.**
+- Flat foot, speaker in the side seam, two mic holes, charging from the bottom in **OU**, the egg capsule.
+- Battery **750 mAh** (LiPo 603040), about **27 h** on the model day [E]. Numbers: `docs/size-s.json`; method: `docs/12-SIZE-S.md`.
 
 **What it does**
-- **Live eyes**, a round keyboard (≈ 6.7 mm keys), notes, alarms, timers, all **offline**.
+- **Live eyes**, a round keyboard (S: 5.1 mm keys, alphabetical, `os/DESIGN-ALIVE.md`; M: ≈ 6.7 mm QWERTY), notes, alarms, timers, all **offline**.
 - AI modes: **none / your Claude / your ChatGPT / your own API key**; approve Claude Code requests by holding the glass.
 
-**Hardware today:** Waveshare **ESP32-S3-Touch-LCD-2.8C** (ST7701 RGB, GT911 touch, IMU, RTC, charger, buzzer). Voice needs an INMP441 mic + MAX98357 amp (I2S), see `firmware/README.md`.
+**Hardware:** the product dev board is the Waveshare **ESP32-S3-Touch-AMOLED-1.75** (CO5300 QSPI, CST9217 touch, QMI8658, PCF85063, AXP2101, 2 mics + ES7210/ES8311 + speaker); the product itself gets a custom round PCB [E]. The working prototype is the Waveshare **ESP32-S3-Touch-LCD-2.8C** (ST7701 RGB, GT911, IMU, RTC, buzzer; voice needs an INMP441 + MAX98357). See `firmware/README.md`.
 
-**First sale: Founders 00** — 25 numbered units at **€349**, only after CE radio tests. Standard from €249 later.
+**Sale:** pre-launch waitlist only, **from €249**, no Founders edition, nothing charged before CE (`site/README.md`). The Founders 00 plan in 01-BOM / 05-LAUNCH-PLAN is history.
 
-### What changed from S to M
-| | S (old) | **M (now)** |
+### M (prototype) vs S (product, now)
+Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026).
+
+| | M (prototype) | **S (product, now)** |
 |---|---|---|
-| Body | 63 × 72 × 27 mm | **90 × 103 × 31.5 mm** |
-| Screen | 1.75" AMOLED 466² | **2.8" IPS 480²** (grey blacks; hidden by black glass + dark UI) |
-| Board | ESP32-S3-Touch-AMOLED-1.75 (~€33) | **ESP32-S3-Touch-LCD-2.8C (~€35–40)** + optional mic/amp (~€6) |
-| P0 DIY body | 63 × 75 × 29.5 | **112 × 128 × 34 mm** (the 2.8C glass Ø95.9 is glued; the 90 × 103 body needs the bare panel + own PCB, EVT) |
-| CNC shell cost | [E] | ≈ +30–40 % material/time vs S [E] |
-| Renders / drawings | `renders/v6`, `blueprints/` rev A | **`renders/v8`, `blueprints/final/`** |
+| Body | 90 × 101 × 31.5 mm (MĂRGĂRITAR v9) | **63 × 70.8 × 23.0 mm** (MĂRGĂRITAR at its design scale, back compressed s_back 0.807) |
+| Glass | black Ø74.3 | **flat black Ø52**, 0.7 mm [E] |
+| Screen | 2.8" IPS 480² (grey blacks) | **1.75" AMOLED 466²**, true black, CO5300 / QSPI |
+| Board | ESP32-S3-Touch-LCD-2.8C + optional mic/amp | **ESP32-S3-Touch-AMOLED-1.75** (dev, $29.99–39.99, mics + codec + speaker on board); product: custom PCB [E] |
+| Battery | 1500 mAh (803450), ≈ 32 h [E] | **750 mAh (603040), ≈ 27 h [E]** |
+| DIY prototype body | P0-M kit 112.1 × 125.1 × 31.6 mm (stock 2.8C glass Ø95.86) | **S-P0 63 × 70.8 × 25.65 mm** (stock AMOLED-1.75 glass, 500 mAh 503035) |
+| CNC shell | billet 1.0 kg, ~45 min/set [E] | **billet 0.4 kg, ~24 min/set** [E] |
+| Role | tests + PoC TRL 3 proof (firmware 1.9.0) | the product, from €249 |
+| Renders / drawings | `renders/v9/`, `blueprints/final/soul_m_*` | **`renders/v10/`, `blueprints/final/soul_s_*`**, `prototip/stl/s/`, `prototip/step/s/` |
 
 ## State of every part
 
 | Part | State | Where | Next step |
 |---|---|---|---|
-| Industrial design (v6 HOPA, size M) | ✅ **done** (CGI renders, not photos) | `renders/v8/` (+ `renders/v6/README.md` for CMF/hex) | Validate with the P0 in hand |
+| Industrial design (MĂRGĂRITAR, size S; M = prototype) | ✅ **done** (CGI renders, not photos) | `renders/v10/` (S), `renders/v9/` (M) (+ `renders/v6/README.md` for CMF/hex) | Validate with the S-P0 in hand |
 | Logo „The Glass O” | ✅ done | `brand/logo/` | Trademark search |
-| Size study (v7 S/M/L) | ✅ **decided: M** (25 Sep) | `renders/v7/`, `research/12` | – |
-| Production CAD of v6 (Ø52 custom glass, 27 mm) | ❌ **to do** | only the Blender mesh `renders/v6/src/` | After P0 rev C; needs the custom PCB |
+| Size study (v7 S/M/L) | ✅ **decided: S is the product** (20 Oct; M on 25 Sep, now the prototype) | `renders/v7/`, `research/12`, `docs/12-SIZE-S.md` | – |
+| Production CAD of S (Ø52 custom glass, 23.0 mm) | ❌ **to do** | `renders/v9/src/marg_geo.py` (MargaritarV9, s_back 0.807); S-P0 shells in `prototip/step/s/` | Needs the custom PCB (docs/12 §4) |
 | DIY prototype P0 (CAD, STL, STEP) | 🟡 **prototype, in progress** (another agent is finishing it) | `prototip/cad/soul_p0.py`, `prototip/stl/`, `prototip/step/` | Plastic variant exported; alu has only the front shell; README/COMANDA not written yet (see gaps) |
 | Technical drawings of the final design (M) | ✅ `blueprints/final/` | older: `blueprints/` rev A + `v3` | Update after P0 rev B |
 | Older parametric shells (coin/drop/gem/cloud) | ✅ done, legacy | `cad/` | Reference only |
@@ -66,7 +72,7 @@ SOUL is a personal AI object you keep on your desk and hold in your hand. The pi
 | AI service (companion, 3 modes, BYO key, MCP) | ✅ **49/49 tests pass**; no production deploy, no OAuth | `ai/` | OAuth + EU hosting + voice |
 | Phone app | ❌ to do | spec in `os/ARCHITECTURE.md` §5 | SoulOS 0.4 |
 | Voice | ❌ to do | plan in `ai/README.md` | SoulOS 0.5 (xiaozhi-esp32) |
-| Landing page | ✅ done (SOUL M v8 renders, logo, English default + RO toggle, €349); waitlist in demo mode | `site/` + https://claude.ai/artifact/BUAPPdP1W5xnCvSVcsQXoX | Set `WAITLIST_ENDPOINT`, legal footer |
+| Landing page | ✅ done (landing v3, size S, MĂRGĂRITAR renders, logo, English default + RO toggle, from €249); waitlist in demo mode | `site/` + https://claude.ai/artifact/WZtQ7JpCjpj6M3sfgJugHC | Set `WAITLIST_ENDPOINT`, legal footer |
 | Media (simulator clips, keyboard/time-picker frames) | ✅ done | `media/` | Real-device clips after P0 |
 | Research (market, hardware, compliance, AI, brand, design, aluminium, competitors, screen) | ✅ done (01–12 + design-max) | `research/` | – |
 | Investor pack, funding | ✅ done | `investors/` (DECK, INVESTORS, FINANTARE-ROMANIA, **poc-1.1/** official PR BI PoC 1.1 annexes) | PoC application, Nov 2026 |
@@ -91,7 +97,9 @@ SOUL is a personal AI object you keep on your desk and hold in your hand. The pi
 | Folder | Contents |
 |---|---|
 | `docs/` | This package. `_tools/bom.py` regenerates `BOM.csv` and the BOM tables' numbers. |
-| `renders/v8/` | **Final design, size M**: hero, family, side, hand, desk, typing, OU at night, alive gif/mp4, README, `src/` |
+| `renders/v10/` | **Final design, MĂRGĂRITAR size S** (20 Oct 2026): hero, family, side, hand, desk, README, `src/` |
+| `renders/v9/` | MĂRGĂRITAR **size M, the prototype**: hero, family, side, hand, desk, typing, OU at night, alive gif/mp4 |
+| `renders/v8/` | HOPA size M (replaced by v9) |
 | `brand/logo/` | Logo kit „The Glass O”: SVG/PNG, favicon, app icons, mockups |
 | `renders/v6/` | Same look at size S: hero, family (5 colours), side, back, bottom, hand, macro, OU at night, `alive.mp4/.gif`; `README.md` (CMF, hex, geometry); `src/` (Blender) |
 | `renders/v7/` | Size study S/M/L: `soul_v7_hands.png`, `soul_v7_lineup.png`, `soul_v7_typing.png`, README |
@@ -122,8 +130,8 @@ Vault notes (`01 Afaceri/Micul Șmecher/`):
 ## Known gaps (25 Sep 2026)
 
 1. **Nothing has run on real hardware yet.** First job: flash the 2.8C board, film it (TRL 3 evidence for the grant).
-2. **No production CAD for the final M body** (custom glass Ø74, custom PCB). P0 is the buildable pilot around the stock board.
+2. **No production CAD for the final S body** (23.0 mm, custom glass Ø52, custom PCB). S-P0 (25.65 mm) and P0-M are the buildable pilots around the stock boards.
 3. **No OU capsule CAD** (renders only).
-4. Every price is [E] until real quotes arrive; 01-BOM/02-MANUFACTURING numbers are for S, adjust per the S→M table.
+4. Every price is [E] until real quotes arrive; the S cost delta vs M is in `12-SIZE-S.md` §3.
 5. Trademark "SOUL" is unchecked (**high conflict risk**).
 6. PoC 1.1: expert for the scientific report, technical coordinator, 2 letters of intent, ARTEMIS eligibility checks (see `investors/poc-1.1/REVIEW.md`).

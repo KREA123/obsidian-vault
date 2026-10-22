@@ -23,7 +23,7 @@ const RO = {
   "nav.object": "obiectul", "nav.colours": "culori", "nav.born": "născut", "nav.ai": "AI-ul tău", "nav.os": "SoulOS", "nav.privacy": "intimitate", "nav.faq": "întrebări", "nav.cta": "listă", "nav.sound": "Efecte sonore", "nav.soundL": "sunet",
   "hero.alt": "Randare de concept: SOUL din aluminiu argintiu, din față, o pietricică moale cu fața dintr-o singură sticlă neagră rotundă și doi ochi vii care se uită la tine.",
   "hero.hint": "psst. mișcă mouse-ul.",
-  "hero.sayK": "SOUL · mărimea M · MĂRGĂRITAR", "hero.say": "cât palma. din aluminiu. viu.",
+  "hero.sayK": "SOUL · mărimea S · MĂRGĂRITAR", "hero.say": "cât palma. din aluminiu. viu.",
   "hero.h1": "AI-ul tău are creier.<br><em>dă-i un suflet.</em>",
   "hero.lead": "O piatră de aluminiu cât palma, cu doi ochi vii. Clipește, îți urmărește degetul pe sticlă, ațipește când e lăsată în pace. Și vorbește cu AI-ul pe care îl ai deja.",
   "hero.pos": "AI-ul tău · fără cameră · memoria stă pe dispozitiv",
@@ -35,11 +35,11 @@ const RO = {
   "alive.c1t": "clipește.", "alive.c1p": "La întâmplare, niciodată după ceas. Uneori de două ori, când e curios.",
   "alive.c2t": "îți urmărește degetul.", "alive.c2p": "Îți urmărește degetul pe sticlă (și mouse-ul, aici) și ațipește când e lăsată în pace.",
   "alive.c3t": "are toane.", "alive.c3p": "Vesel, somnoros, bănuitor, <i>șmecher</i>. Atinge-l și vezi ce-ți iese.",
-  "fig.render": "randare de concept",
-  "obj.alt": "Randare de concept: SOUL din profil, o pietricică subțire de aluminiu, adâncă de 31,5 mm, cu fața de sticlă neagră ușor înclinată în sus și fanta difuzorului în cusătura laterală.",
+  "fig.render": "randare de concept", "fig.cgi": "randare (CGI)",
+  "obj.alt": "Randare de concept: SOUL din profil, o pietricică subțire de aluminiu, adâncă de 23 mm, cu fața de sticlă neagră ușor înclinată în sus și fanta difuzorului în cusătura laterală.",
   "obj.eyebrow": "obiectul · MĂRGĂRITAR", "obj.h2": "o piatră pe care<br>vrei s-o ții în mână.",
   "obj.lead": "Forma lui se numește MĂRGĂRITAR: o pietricică cu umeri moi la creștet, din aluminiu, finisată ca o piatră de râu. O singură sticlă neagră rotundă. Nimic altceva pe față: fără logo, fără butoane.",
-  "obj.k1": "mărimea M", "obj.k2": "sticla", "obj.v2": "2,8″ rotundă, neagră", "obj.k3": "corp", "obj.v3": "aluminiu 6061", "obj.k4": "finisaj", "obj.v4": "sablat, anodizat",
+  "obj.k1": "mărimea S", "obj.k2": "sticla", "obj.v2": "plată, neagră, Ø52 mm", "obj.k3": "corp", "obj.v3": "aluminiu 6061", "obj.k4": "finisaj", "obj.v4": "sablat, anodizat",
   "col.eyebrow": "cinci aluminiuri", "col.h2": "tu alegi corpul.<br>ochii se aleg singuri.", "col.legend": "Culoare",
   "col.same": "Toate culorile costă la fel. Aluminiu 6061 sablat și anodizat, cu fața din sticlă neagră.",
   "col.alt": "Randare de concept: cinci SOUL-uri în șir, din aluminiu Grafit, Jar, Argint, Albastru noapte și Șampanie, fiecare cu perechea lui de ochi vii.",
@@ -63,7 +63,7 @@ const RO = {
   "ai.m.t": "SOUL Memory stă pe dispozitiv.", "ai.m.p": "Ce ține minte despre tine rămâne în piatră, în cuvinte simple pe care le poți citi și șterge. Când vorbești, merge cu tine la AI-ul pe care l-ai conectat, așa că poți schimba AI-ul fără s-o iei de la capăt.",
   "ai.m.k": "schimbi AI-ul, păstrezi sufletul",
   "ai.note": "SOUL e în dezvoltare, iar aceste conexiuni sunt în lucru. Claude e marcă Anthropic; ChatGPT e marcă OpenAI. SOUL e independent și nu e afiliat cu niciuna și nici susținut de ele.",
-  "hold.alt": "Randare de concept: SOUL argintiu pe o palmă deschisă. Acoperă palma ca o piatră mare și netedă, iar ochii lui se uită în sus, la tine.",
+  "hold.alt": "Randare (CGI): SOUL argintiu, mărimea S, pe o palmă deschisă de adult. Stă în mijlocul palmei și lasă degetele libere, iar ochii lui se uită în sus, la tine.",
   "hold.hint": "ține apăsat pe sticlă", "hold.eyebrow": "ține sticla · demo scriptat", "hold.h2": "ține sticla.<br>te ascultă.",
   "hold.which": "Care AI", "hold.off": "offline",
   "hold.idle": "Ține apăsat pe sticlă (sau pe buton) și SOUL ascultă. Dai drumul și îți răspunde.",
@@ -94,14 +94,14 @@ const RO = {
   "pr4t": "doar la AI-ul ales de tine.", "pr4p": "Cuvintele tale merg la AI-ul pe care l-ai conectat, pe contul tău. Offline, nimic nu pleacă de pe piatră. Fără reclame și nu îți vindem niciodată datele.",
   "pr5t": "spune mereu că e un AI.", "pr5p": "Nu se dă drept om, fără serii de zile, fără șantaj emoțional, fără bosumflări pentru atenție.",
   "pr6t": "nu devine niciodată o cărămidă.", "pr6p": "Personalitatea lui rulează pe dispozitiv. Dacă dispărem vreodată, publicăm firmware-ul. 16+, nu e o jucărie.",
-  "sp.eyebrow": "mărimea M · specificații", "sp.h2": "partea plictisitoare.",
-  "sp.k1": "ecran", "sp.v1": "rotund, 2,8″, 480 × 480, sub sticlă neagră", "sp.k2": "dimensiuni",
+  "sp.eyebrow": "mărimea S · specificații", "sp.h2": "partea plictisitoare.",
+  "sp.k1": "ecran", "sp.v1": "AMOLED rotund de 1,75″, 466 × 466, negru adevărat, sub sticlă plată Ø52", "sp.k2": "dimensiuni",
   "sp.k3": "corp", "sp.v3": "aluminiu 6061, sablat și anodizat", "sp.k4": "culori", "sp.v4": "Argint, Grafit, Albastru noapte, Jar, Șampanie",
   "sp.k5": "ochi", "sp.v5": "unul din 120 de modele, decis la naștere", "sp.k6": "creier", "sp.v6": "ESP32-S3, Bluetooth LE și Wi-Fi",
   "sp.k7": "AI", "sp.v7": "Claude-ul tău, ChatGPT-ul tău sau offline", "sp.k8": "voce", "sp.v8": "ții sticla ca să vorbești; difuzor în cusătura laterală",
   "sp.k9": "cameră", "sp.v9": "niciuna", "sp.k10": "încărcare", "sp.v10": "în OU, oul lui, prin contactele din picior",
   "sp.k11": "preț", "sp.k12": "stadiu", "sp.v12": "prelansare · încă fără certificare CE",
-  "box.k": "planificat", "box.t": "ce e în cutie", "box.1": "SOUL, mărimea M", "box.1p": "în culoarea aleasă de tine, cu ochii aleși de el", "box.2": "OU, oul lui de încărcare", "box.2p": "unde se încarcă și doarme",
+  "box.k": "planificat", "box.t": "ce e în cutie", "box.1": "SOUL, mărimea S", "box.1p": "în culoarea aleasă de tine, cu ochii aleși de el", "box.2": "OU, oul lui de încărcare", "box.2p": "unde se încarcă și doarme",
   "box.note": "Lista finală, autonomia bateriei și accesoriile le publicăm înainte să se deschidă rezervările.",
   "sp.note": "Toate imaginile produsului sunt randări de concept, nu fotografii. Specificațiile descriu designul aflat în dezvoltare și se pot schimba înainte de producție.",
   "faq.eyebrow": "întrebări", "faq.h2": "întrebări bune.",
@@ -263,7 +263,7 @@ const rarColor = k => (RAR[k] && RAR[k].color) || "#C9C4B8";
 const numOf = d => d.num || "#" + String(d.n).padStart(3, "0");
 
 /* where the glass sits in each picture: centre (fraction of the image) and the 2×2 map of the unit disc, in image px */
-const GLASS = {"hand":{"w":1400,"h":1200,"glass":[{"c":[0.50417,0.48276],"m":[216.88,10.21,10.21,162.25]}]},"night":{"w":960,"h":1200,"glass":[{"c":[0.49863,0.4907],"m":[140.12,-2.42,-2.42,152.05]}]},"family":{"w":2000,"h":1125,"glass":[{"c":[0.15108,0.49004],"m":[117.63,0,0,117.63]},{"c":[0.31614,0.4937],"m":[119.36,0,0,119.36]},{"c":[0.50151,0.50236],"m":[121.31,0,0,121.31]},{"c":[0.68943,0.49376],"m":[118.72,0,0,118.72]},{"c":[0.85907,0.48349],"m":[115.39,0,0,115.39]}]},"front":{"w":1956,"h":2236,"glass":[{"c":[0.5,0.46868],"m":[671.93,0,0,669.08]}]},"col":{"w":1223,"h":1469,"glass":[{"c":[0.55014,0.46756],"m":[390.82,-18.17,22.56,432.22]}]}};
+const GLASS = {"hand":{"w":1600,"h":1200,"glass":[{"c":[0.5035,0.48152],"m":[166.99,8.89,8.89,124.74]}]},"night":{"w":960,"h":1200,"glass":[{"c":[0.49863,0.4907],"m":[140.12,-2.42,-2.42,152.05]}]},"family":{"w":2000,"h":1125,"glass":[{"c":[0.15108,0.49004],"m":[117.63,0,0,117.63]},{"c":[0.31614,0.4937],"m":[119.36,0,0,119.36]},{"c":[0.50151,0.50236],"m":[121.31,0,0,121.31]},{"c":[0.68943,0.49376],"m":[118.72,0,0,118.72]},{"c":[0.85907,0.48349],"m":[115.39,0,0,115.39]}]},"front":{"w":1956,"h":2236,"glass":[{"c":[0.5,0.46868],"m":[671.93,0,0,669.08]}]},"col":{"w":1223,"h":1469,"glass":[{"c":[0.55014,0.46756],"m":[390.82,-18.17,22.56,432.22]}]}};
 
 const LIVE = [];   // { inst, cv, role, follow, shot }
 function mountGlass(shot) {

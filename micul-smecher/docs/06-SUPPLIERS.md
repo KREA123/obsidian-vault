@@ -4,9 +4,9 @@
 
 | Category | Supplier | What for | Where | URL | Tag |
 |---|---|---|---|---|---|
-| **Board** | Waveshare: ESP32-S3-Touch-AMOLED-1.75 | The SOUL board (S) | CN (ships worldwide) | https://www.waveshare.com/esp32-s3-touch-amoled-1.75.htm | [V] |
+| **Board** | Waveshare: ESP32-S3-Touch-AMOLED-1.75 | The SOUL board: **SOUL S, the product** (decided 20 Oct 2026) | CN (ships worldwide) | https://www.waveshare.com/esp32-s3-touch-amoled-1.75.htm | [V] |
 | Board | Waveshare: AMOLED-1.75C (factory CNC Al case) | RF reference, 2 units | CN | https://www.waveshare.com/esp32-s3-touch-amoled-1.75c.htm · docs https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75C | [V] |
-| Board (option M) | Waveshare: ESP32-S3-Touch-LCD-2.8C (2.8" IPS 480²) | Bigger-screen prototype (research/12) | CN | https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm | [V] |
+| Board (M prototype) | Waveshare: ESP32-S3-Touch-LCD-2.8C (2.8" IPS 480²) | **SOUL M, the working prototype** for tests and the PoC TRL 3 proof (decided 20 Oct 2026; research/12) | CN | https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm | [V] |
 | Board (option L) | Waveshare: ESP32-P4-WIFI6-Touch-LCD-3.4C | Desk SOUL study | CN | https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-3.4c.htm | [V] |
 | Board (other) | Waveshare AMOLED-2.16 (square) · LCD-2.1 · LilyGO T-RGB · Makerfabs MaTouch 2.1 · Elecrow rotary · Twoyas 2.8" bare panel · Viewe 1.75" panel | Alternatives compared in research/12 | CN | waveshare.com/esp32-s3-touch-amoled-2.16.htm · waveshare.com/esp32-s3-touch-lcd-2.1.htm · https://lilygo.cc/products/t-rgb · makerfabs.com · elecrow.com · twoyas.com · https://viewedisplay.com | [V] |
 | Board (EU stock) | Eckstein (DE) · Botland (PL) | Waveshare boards without China shipping | EU | https://eckstein-shop.de · https://botland.store | [V price for Eckstein]/[K] |

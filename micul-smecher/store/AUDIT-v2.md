@@ -29,7 +29,7 @@ Measured locally: 17,272 px tall at 1440, 18,418 px at 390. About 0.7 MB transfe
 ## Top 15 upgrades for v3
 1. **Scroll-driven hero.** A sticky stage where scrolling wakes SOUL, parts the letters, lifts and turns the stone, then hands over to the headline. Static when reduced motion is on.
 2. **Pre-launch bar.** "Pre-launch · not CE-certified yet · waitlist only, nothing is charged", up top and honest.
-3. **"The object" section.** Side render with dimension callouts (90 × 101 × 31.5 mm, 2.8″ round glass) plus the material story.
+3. **"The object" section.** Side render with dimension callouts (90 × 101 × 31.5 mm, 2.8″ round glass) plus the material story. *(Then size M. Since 2026-10-20 the product is size S: 63 × 70.8 × 23 mm, 1.75″ AMOLED 466 × 466, flat Ø52 glass; the live site shows S.)*
 4. **A real 5-colour configurator.** One big transparent cut-out with live eyes, a swatch radiogroup with arrow keys, instant swap via a preloaded crossfade, and a background tint per colour. The choice carries into the waitlist.
 5. **A better birth ritual.** Roll a sample, *or type a chip id* to see exactly what that chip would be born as (the same `rollFromChipId` as the firmware). Shareable deep link `#born=<chip>`, rarity filters on the collection, and an honest odds table.
 6. **"Your AI, embodied", rewritten exactly.** Your own Claude (account/API key + the Claude app connector), your own ChatGPT (own key now; Sign in with ChatGPT pending OpenAI approval), or offline. SOUL Memory on the device. We never sell or include AI.

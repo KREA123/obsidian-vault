@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Single source of truth for the generated drafts (Anexa 3, Anexa 16, models). Mirrors dosar/03-NUCLEU-PROIECT.md.
 Updated 2026-10-12 to the current facts (Jurnal decizii, SOUL — Harta memoriei, docs/00, 07, 10, firmware/PERF.md, os/DESIGN-ALIVE.md).
+2026-10-22: product = size S (decision 2026-10-20; docs/size-s.json, docs/12-SIZE-S.md, firmware/SOUL-S.md). Size M (Waveshare 2.8C) stays
+ONLY as the TRL 3 bench prototype (D8, X1–X8).
 Change here AND in 03-NUCLEU, then rebuild (see README in this folder)."""
 
 # ---- applicant (certificat ONRC + ANAF, verificat de fondator 12.10.2026)
@@ -14,7 +16,11 @@ CAEN_DE_ADAUGAT = ('2640 (electronice de larg consum), 6210 (programare), 7210 (
                    '7411 (design industrial), 4740 (comerț cu echipamente TIC) [[Ct: de adăugat la ONRC înainte de depunere; '
                    'lista nu e reverificată pe CAEN Rev.3; 4791 „vânzare online” e de verificat, în Rev.3 se pare că nu mai descrie canalul online]]')
 TVA = 'neplătitoare de TVA (ANAF, 12.10.2026)'
-DIMS = '~90 × 101 × 31,5 mm'
+DIMS = '~63 × 70,8 × 23 mm'        # SOUL S, the product (docs/size-s.json; 23,0 mm = ținta de adâncime aleasă în docs/12 §2.4)
+DIMS_M = '~90 × 101 × 31,5 mm'     # SOUL M = DOAR prototipul de banc TRL 3 (placa 2.8C, D8, X1–X8)
+SCREEN_S = 'afișaj rotund AMOLED 1,75″ 466×466'
+BATT_S = 'LiPo 750 mAh (603040)'
+LIFE_S = '~27 h [estimare] (interval 21–34 h; docs/12 §2.5)'
 PRET = 'de la 249 €'
 FW = 'SoulOS 1.8.0'
 FW_TESTS = '198'
@@ -62,7 +68,7 @@ OBJ_GENERAL = ('validarea modelului conceptual SOUL (dispozitiv AI tangibil, loc
 
 # code, objective, indicator, deadline, activities, result
 OBJECTIVES = [
-    ('O1', 'Realizarea și validarea în laborator (TRL 4) a modelului integrat SOUL M (afișaj rotund 2,8″ + touch + IMU + audio opțional + baterie + AI la alegerea proprietarului)',
+    ('O1', 'Realizarea și validarea în laborator (TRL 4) a modelului integrat SOUL S (afișaj rotund AMOLED 1,75″ 466×466 + touch + IMU + audio cu 2 microfoane și difuzor + baterie LiPo 750 mAh + AI la alegerea proprietarului)',
      'fps median ≥ 30 · precizie touch ≥ 97 % · WPM ≥ 15 (N = 6) · succes offline ≥ 90 % · latența unui tur AI p50 ≤ 1,8 s · 8/8 protocoale rulate',
      'L14', 'A1, A2, A3 (CDI I.3)', 'R1 Raport TRL 4'),
     ('O2', 'Proiectarea și realizarea a 15 prototipuri pre-serie cu PCB propriu și carcasă CNC din aluminiu (forma MĂRGĂRITAR) cu baterie înlocuibilă',
@@ -77,8 +83,8 @@ OBJECTIVES = [
 ]
 
 RESULTS = [
-    ('R1', 'Model de laborator SOUL M validat la TRL 4 + Raport de validare TRL 4', 'L14'),
-    ('R2', '15 prototipuri SOUL M pre-serie validate la TRL 5 în mediu relevant + Raport TRL 5 + raport de pre-testare EMC/RF', 'L22'),
+    ('R1', 'Model de laborator SOUL S validat la TRL 4 + Raport de validare TRL 4', 'L14'),
+    ('R2', '15 prototipuri SOUL S pre-serie validate la TRL 5 în mediu relevant + Raport TRL 5 + raport de pre-testare EMC/RF', 'L22'),
     ('R3', '2 cereri de protecție IP depuse în proiect (marcă UE; desen/model industrial UE pentru elementele noi din proiect) + raport de brevetabilitate limitat la soluțiile nepublicate', 'L18'),
     ('R4', '1 articol științific trimis la o revistă open-access peer-review + 1 comunicare la o conferință', 'L20–L24'),
     ('R5', 'Plan de valorificare comercială + ≥ 2 acorduri de pilot/distribuție semnate', 'L24'),
@@ -89,16 +95,16 @@ ACTIVITIES = [
     ('A0', 'Pregătirea CF, a Planului de afaceri, a Raportului științific + validarea de către expert', 'Conex II.2, precontractuală',
      'înainte de depunere', '–', 'CF, Anexa 3, Anexa 16 semnată'),
     ('A1', 'Specificații, protocoale experimentale, setup de laborator', 'CDI I.3 (+ I.1 echipamente)', 'L1–L3',
-     '1.1 specificația sistemului M; 1.2 protocoalele P1–P10 cu praguri; 1.3 achiziția aparatelor de măsură și a PC-ului; 1.4 bancul de test (cutie ecranată, analizor de consum)',
+     '1.1 specificația sistemului S; 1.2 protocoalele P1–P10 cu praguri; 1.3 achiziția aparatelor de măsură și a PC-ului; 1.4 bancul de test (cutie ecranată, analizor de consum)',
      'L1.1 Specificație; L1.2 Protocoale; M1 Banc de test validat (L3)'),
-    ('A2', 'Modelul de laborator M integrat: SoulOS pe ESP32-S3 (panou RGB ST7701 480×480, touch GT911, IMU QMI8658, RTC), audio I²S opțional (microfon MEMS + amplificator + difuzor), baterie LiPo 1500 mAh, carcasă SLA la scara M, comenzi vocale offline EN (ESP-SR), conectarea AI-ului proprietarului (cheie proprie, conectorul Claude prin SOUL Cloud în UE, SOUL Bridge), memoria SOUL Memory pe dispozitiv',
+    ('A2', 'Modelul de laborator S integrat: SoulOS pe ESP32-S3 (placa Waveshare ESP32-S3-Touch-AMOLED-1.75: AMOLED rotund 1,75″ 466×466 CO5300 pe QSPI, touch CST9217, IMU QMI8658, RTC PCF85063, PMU AXP2101), audio pe placă (2 microfoane MEMS, codecuri ES7210 + ES8311, difuzor), baterie LiPo 750 mAh (603040), carcasă SLA la scara S (~63 × 70,8 × 23 mm), comenzi vocale offline EN (ESP-SR), conectarea AI-ului proprietarului (cheie proprie, conectorul Claude prin SOUL Cloud în UE, SOUL Bridge), memoria SOUL Memory pe dispozitiv',
      'CDI I.3 + materiale', 'L2–L8',
-     '2.1 firmware afișaj/touch/IMU pe placă; 2.2 subsistem audio I²S + comenzi vocale offline; 2.3 alimentare, încărcare, consum; 2.4 carcasă SLA; 2.5 SOUL Cloud în UE (pairing, gateway, conector MCP) + SOUL Memory; 2.6 integrare',
+     '2.1 firmware afișaj/touch/IMU pe placa AMOLED-1.75; 2.2 subsistem audio ES8311/ES7210 + comenzi vocale offline; 2.3 alimentare, încărcare, consum; 2.4 carcasă SLA; 2.5 SOUL Cloud în UE (pairing, gateway, conector MCP) + SOUL Memory; 2.6 integrare',
      'L2.1 Model de laborator funcțional; IE1 (L6): raport intermediar CDI'),
     ('A3', 'Validarea TRL 4 în laborator (protocoalele P1–P8) + analiza rezultatelor + raportul de etapă TRL 4', 'CDI I.3', 'L6–L14',
      '3.1 teste de componente; 3.2 teste de sistem; 3.3 studiu de tastare N = 6; 3.4 analiză + decizie de poartă',
      'R1 Raport TRL 4 (L14) = IE2; decizia go/no-go TRL 5'),
-    ('A4', 'Prototipul pre-serie: PCB propriu (ESP32-S3 cu 8 MB PSRAM, ST7701, GT911, QMI8658, RTC, microfon + amplificator I²S, încărcare, pini pentru capsula OU), antenă prin fereastră polimerică, carcasă CNC Al 6061 anodizată, forma MĂRGĂRITAR, rev A (3 seturi) și rev B (5 + 15 seturi), baterie înlocuibilă, capsula OU; securitatea EN 18031 (secure boot, OTA semnat)',
+    ('A4', 'Prototipul pre-serie SOUL S: PCB propriu rotund ~46 mm (ESP32-S3-WROOM-1-N16R8, panou AMOLED 1,75″ 466×466 gol, CO5300/QSPI, touch, QMI8658, RTC, PMU clasa AXP2101, codecuri ES8311 + ES7210, 2 microfoane MEMS, difuzor, încărcare, pini pentru capsula OU) [estimare: arhitectura EVT din docs/12 §1.2], antenă prin fereastră polimerică, carcasă CNC Al 6061 anodizată, forma MĂRGĂRITAR, rev A (3 seturi) și rev B (5 + 15 seturi), baterie înlocuibilă, capsula OU; securitatea EN 18031 (secure boot, OTA semnat)',
      'CDI I.3/I.4 + servicii', 'L9–L17',
      '4.1 schema și layout rev A (L9–L11); 4.2 fabricare + test rev A (L11–L13); 4.3 antenă + RF (serviciu extern); 4.4 după poarta L14: rev B + lotul de 15 carcase; 4.5 asamblare și QC',
      'L4.1 PCB rev A testat; M3 15 prototipuri (L17)'),
@@ -116,7 +122,7 @@ ACTIVITIES = [
 
 GANTT = [
     ('A1 Specificații, protocoale, setup laborator', range(1, 4)),
-    ('A2 Model de laborator M integrat', range(2, 9)),
+    ('A2 Model de laborator S integrat', range(2, 9)),
     ('A3 Validare TRL 4 + raport TRL 4', range(6, 15)),
     ('A4 PCB propriu + carcasă Al, pre-serie', range(9, 18)),
     ('A5 Validare TRL 5 în mediu relevant + pre-scan', range(16, 23)),
@@ -137,29 +143,29 @@ MILESTONES = [
 ]
 
 HYP = [
-    ('H1', 'Randare', 'Dacă motorul de randare SDF anti-aliased rulează pe ESP32-S3 cu framebuffer în PSRAM și bounce-buffers pe magistrala RGB a panoului ST7701 480×480, atunci animația ochilor (31 de expresii) menține median ≥ 30 fps (p5 ≥ 24) cu Wi-Fi și BLE active, fără artefacte de drift.',
+    ('H1', 'Randare', 'Dacă motorul de randare SDF anti-aliased rulează pe ESP32-S3 cu framebuffer în PSRAM și trimite doar regiunile modificate pe QSPI către AMOLED-ul 1,75″ 466×466 (CO5300, cu memorie de cadru proprie), atunci animația ochilor (31 de expresii) menține median ≥ 30 fps (p5 ≥ 24) cu Wi-Fi și BLE active, fără artefacte de drift. Baseline-ul TRL 3 se măsoară pe prototipul M (panou RGB ST7701 480×480, bounce-buffers; X2), iar estimarea pe S e în firmware/PERF.md [estimare].',
      'Poate un MCU de ~10 € să randeze procedural, fluid, o interfață expresivă pe un panou RGB fără memorie proprie, în paralel cu radioul?'),
-    ('H2', 'Tastare/touch', 'Dacă tastatura QWERTY circulară (pas ≈ 0,0944·D → 6,7 mm pe Ø70, taste de margine „stăpâne” pe bordură) este combinată cu decodare probabilistică și diacritice RO automate, atunci utilizatorii ating ≥ 20 WPM cu UER ≤ 3 % și ≥ 97 % precizie touch.',
-     'Este introducerea de text direct pe un ecran rotund de 2,8″ suficient de rapidă și precisă pentru notițe și comenzi reale, în română și engleză?'),
+    ('H2', 'Tastare/touch', 'Dacă tastatura circulară (pe S: 5 rânduri de taste de 5,1 mm, alfabetică, fiecare rând cât încape în cerc — decizia din os/DESIGN-ALIVE.md; reperul de pe prototipul M: QWERTY circular, pas ≈ 0,0944·D → 6,7 mm pe Ø70, taste de margine „stăpâne” pe bordură) este combinată cu decodare probabilistică și diacritice RO automate, atunci utilizatorii ating ≥ 20 WPM cu UER ≤ 3 % și ≥ 97 % precizie touch.',
+     'Este introducerea de text direct pe un ecran rotund de 1,75″ suficient de rapidă și precisă pentru notițe și comenzi reale, în română și engleză?'),
     ('H3', 'AI la alegerea proprietarului, offline-first', 'Dacă acțiunile utilizatorului sunt descrise printr-un singur set de scheme JSON, executate offline (parser local RO/EN și comenzi vocale offline EN, ESP-SR) sau de AI-ul conectat de proprietar (Claude, cu cheia lui sau prin conectorul din aplicația Claude; ChatGPT, cu cheia lui), cu degradare controlată și cu o memorie portabilă păstrată pe dispozitiv (SOUL Memory), atunci ≥ 90 % din comenzi se execută corect fără internet, un tur AI are latența p50 ≤ 1,5 s (p90 ≤ 2,5 s), 100 % din căderile de rețea/cheie sunt tratate fără blocare și memoria se păstrează integral la schimbarea AI-ului.',
      'Poate un dispozitiv să rămână util offline și rapid online, independent de un singur furnizor de AI și fără să includă sau să revândă AI?'),
     ('H4', 'RF prin aluminiu', 'Dacă antena BLE/Wi-Fi 2,4 GHz radiază printr-o fereastră polimerică în talpa unei carcase CNC din Al 6061, atunci atenuarea față de placa neîncasetată este ≤ 6 dB, legătura BLE rămâne stabilă ≥ 10 m în interior (PDR ≥ 99 %, reconectare ≤ 3 s) și pre-scanul EMC/RF nu are depășiri (marjă ≥ 3 dB).',
      'Se poate folosi o carcasă monomaterial din aluminiu (premium, reciclabilă) fără a compromite legătura radio?'),
-    ('H5', 'Energie și reparabilitate', 'Dacă managementul luminii de fundal, somnul radioului și CPU-ului și bateria LiPo de 1500 mAh sunt integrate într-o arhitectură cu baterie înlocuibilă de utilizator (conector MX1.25, Torx, fără adeziv), atunci autonomia în profil tipic este ≥ 24 h, iar utilizatori neexperți înlocuiesc bateria în ≤ 5 min cu 100 % reușită și SUS ≥ 75.',
-     'Poate un obiect premium, cu ecran IPS rotund de 2,8″, să aibă o zi întreagă de autonomie și baterie schimbabilă de utilizator (Reg. (UE) 2023/1542 art. 11)?'),
+    ('H5', 'Energie și reparabilitate', 'Dacă afișajul AMOLED (negru adevărat, fără lumină de fundal; ochii stau pe negru, iar memoria de cadru a panoului permite somnul ușor al CPU-ului între cadre), somnul radioului și CPU-ului și bateria LiPo de 750 mAh (603040) sunt integrate într-o arhitectură cu baterie înlocuibilă de utilizator (conector MX1.25, Torx, fără adeziv), atunci autonomia în profil tipic este ≥ 24 h (estimarea de pornire: ~27 h [estimare], interval 21–34 h; docs/12 §2.5), iar utilizatori neexperți înlocuiesc bateria în ≤ 5 min cu 100 % reușită și SUS ≥ 75.',
+     'Poate un obiect premium de ~63 × 71 × 23 mm, cu ecran AMOLED rotund de 1,75″ și o baterie de 750 mAh, să aibă o zi întreagă de autonomie și baterie schimbabilă de utilizator (Reg. (UE) 2023/1542 art. 11)?'),
 ]
 
 # code, protocol, hyp, method, baseline, trl4, trl5
 PROTOCOLS = [
     ('P1', 'fps la animația ochilor', 'H1', 'contor de cadre în firmware, log serial/telemetrie; 60 min; Wi-Fi + BLE active; toate cele 31 de expresii', 'X2', 'median ≥ 30 fps, p5 ≥ 24', 'median ≥ 30, p5 ≥ 24 pe 15 unități; 0 artefacte de drift raportate'),
-    ('P2', 'Precizia touch', 'H2', 'grilă de ținte de 6,7 mm pe tot discul (inclusiv bordura), 200 de atingeri/persoană', 'X3', '≥ 97 % (N = 6)', '≥ 97 % (N ≥ 12)'),
+    ('P2', 'Precizia touch', 'H2', 'grilă de ținte de 5,1 mm (tasta S) pe tot discul, inclusiv bordura, pe SOUL S; 200 de atingeri/persoană (baseline TRL 3: ținte de 6,7 mm pe prototipul M, X3)', 'X3', '≥ 97 % (N = 6)', '≥ 97 % (N ≥ 12)'),
     ('P3', 'Viteza și acuratețea tastării', 'H2', 'set de fraze MacKenzie–Soukoreff (EN) + set RO; 15 min de acomodare; WPM, UER, CER', 'X4', '≥ 15 WPM, UER ≤ 5 % (N = 6)', '≥ 20 WPM, UER ≤ 3 % (N ≥ 12)'),
     ('P4', 'Diacritice RO automate', 'H2', 'corpus de 300 de cuvinte RO', '–', '≥ 90 % corecte', '≥ 95 % corecte'),
     ('P5', 'Succesul offline (text și voce)', 'H3', 'corpus de 200 de comenzi RO/EN scrise (alarme, mementouri, notițe, cronometre, liste) + 100 de comenzi vocale EN (ESP-SR, pe unitățile cu microfon), fără internet', 'X5', '≥ 90 %', '≥ 90 % pe comenzile reale din teren'),
     ('P6', 'Latența unui tur AI end-to-end', 'H3', 'de la trimiterea întrebării pe SOUL la începutul răspunsului pe ecran; 100 de ture; Wi-Fi casnic; AI-ul proprietarului (Claude/ChatGPT), direct cu cheia proprie sau prin SOUL Cloud (UE)', 'X6', 'p50 ≤ 1,8 s, p90 ≤ 3 s', 'p50 ≤ 1,5 s, p90 ≤ 2,5 s'),
     ('P7', 'Degradarea controlată + portabilitatea memoriei', 'H3', 'se taie rețeaua sau cheia API în 50 de scenarii; se schimbă AI-ul conectat în 10 scenarii (Claude ↔ ChatGPT ↔ offline)', '–', '100 % fără blocare; răspuns local; 100 % din memorie păstrată', '100 %; ≥ 99 % sesiuni fără crash (telemetrie); 100 % din memorie păstrată'),
     ('P8', 'RF prin carcasă', 'H4', 'RSSI în cutia ecranată și la 1/3/5/10 m: placă goală vs. SLA vs. Al rev A/B; pachete pierdute BLE', 'X7', 'atenuare ≤ 8 dB (rev A)', '≤ 6 dB (rev B); legătură stabilă ≥ 10 m în interior; PDR ≥ 99 %; reconectare ≤ 3 s'),
-    ('P9', 'Autonomie și consum', 'H5', 'analizor de consum; profil tipic definit (ecran activ ~1 h/zi, ecran stins/somn restul zilei, 50 de întrebări AI, BLE conectat); baterie LiPo 1500 mAh', 'X8', 'modelul de consum validat ± 15 %', '≥ 24 h în profil tipic'),
+    ('P9', 'Autonomie și consum', 'H5', 'analizor de consum; profil tipic definit (ecran activ ~1 h/zi, ecran stins/somn restul zilei, 50 de întrebări AI, BLE conectat); baterie LiPo 750 mAh (603040) pe S, estimare ~27 h [estimare]; baseline TRL 3: consumul prototipului M (2.8C, 1500 mAh) din X8', 'X8', 'modelul de consum validat ± 15 %', '≥ 24 h în profil tipic'),
     ('P10', 'Reparabilitate + utilizabilitate', 'H5', 'cronometrarea înlocuirii bateriei (Torx) de către utilizatori neexperți; chestionar SUS; test de accesibilitate (voce, modul „taste mari”, contrast)', '–', 'procedura documentată; ≤ 10 min (N = 3)', '≤ 5 min, 100 % reușită (N ≥ 10); SUS ≥ 75'),
     ('P11', 'Pre-scan EMC/RF (EN 300 328, EN 301 489-1/-17)', '–', 'laborator acreditat, 2 sesiuni (rev A, rev B)', '–', '–', '0 depășiri, marjă ≥ 3 dB (rev B)'),
 ]
@@ -174,7 +180,7 @@ ETHICS = ('Etică și date: consimțământ informat, telemetrie opt-in, pseudon
           'Informare AI Act art. 50 la prima pornire. Participanții își folosesc propriul AI; produsul nu include AI.')
 
 DELIVERABLES = [
-    ('L1.1', 'Specificația sistemului SOUL M', 'A1', 'L2', 'coordonator tehnic'),
+    ('L1.1', 'Specificația sistemului SOUL S', 'A1', 'L2', 'coordonator tehnic'),
     ('L1.2', 'Protocoalele experimentale P1–P11 cu praguri', 'A1', 'L3', 'coordonator tehnic'),
     ('L2.1', 'Modelul de laborator integrat + raportul IE1', 'A2', 'L6', 'inginer embedded'),
     ('R1', 'Raportul de validare TRL 4', 'A3', 'L14', 'coordonator tehnic'),
@@ -208,7 +214,7 @@ _LINES = [
     (_SEC_I, '8', 'Cutie ecranată RF ≥ 60 dB (900 + TVA)', 'Active corporale (2.2)', 'A3, A5', 1089),
     (_SEC_I, '9', 'Stație de lucru PC (2.000 + TVA)', 'Active corporale (grupa 3, echipamente informatice)', 'A2–A5', 2420),
     (_SEC_I, '10', 'Imprimantă 3D SLA (3.900 + TVA)', 'Active corporale (2.1)', 'A2, A4', 4719),
-    (_SEC_I, '11', 'Materiale: 8 plăci 2.8C, 20 de panouri de 2,8″, 25 de seturi audio I²S (microfon + amplificator + difuzor), 30 de celule LiPo 1500 mAh, componente, rășină, obiecte de inventar (3.725 + TVA)', 'Materiale, consumabile, obiecte de inventar', 'A2, A4', 4507),
+    (_SEC_I, '11', 'Materiale: 8 plăci de dezvoltare Waveshare ESP32-S3-Touch-AMOLED-1.75, 20 de panouri AMOLED 1,75″ goale, 25 de seturi audio (2 microfoane MEMS + difuzor), 30 de celule LiPo 603040 de 750 mAh, componente, rășină, obiecte de inventar (3.725 + TVA)', 'Materiale, consumabile, obiecte de inventar', 'A2, A4', 4507),
     (_SEC_I, '12', 'CNC + anodizare carcase Al 6061 (3 + 5 + 15 seturi) (5.550 + TVA)', 'Servicii (echivalente) pentru dezvoltare experimentală', 'A4', 6716),
     (_SEC_I, '13', 'Fabricare + asamblare PCB propriu rev A/B (3.000 + TVA)', 'Servicii pentru dezvoltare experimentală', 'A4', 3630),
     (_SEC_I, '14', 'Pre-testare EMC/RF, 2 sesiuni: EMC EN 301 489-1/-17 (≈ 4.610) + radio EN 300 328 (≈ 2.390, [E]) (7.000 + TVA)', 'Servicii de sprijinire a inovării (testare)', 'A5', 8470),
@@ -287,7 +293,7 @@ BUDGET_CHECKS = [
 
 # risk, desc, prob, impact, measures
 RISKS = [
-    ('R1', 'Eșec de cercetare: H1/H3/H4/H5 nu se validează (fps < 30 pe RGB, atenuare RF > 6 dB, latență > prag, autonomie < 24 h cu 1500 mAh)', 'Medie', 'Mare',
+    ('R1', 'Eșec de cercetare: H1/H3/H4/H5 nu se validează (fps < 30 pe QSPI, atenuare RF > 6 dB, latență > prag, autonomie < 24 h cu 750 mAh)', 'Medie', 'Mare',
      'poarta IE2 la L14 (≤ 2/3); alternative tehnice pregătite (randare parțială, bounce-buffers, fereastră radio mai mare, antenă externă în talpă, alt model AI ales de proprietar, mai mult somn al ecranului/celulă mai mare dacă încape); dacă tot nu merge → Anexa 17, se decontează max. 50 % și nu cumpărăm activele pentru TRL 5 înainte de poartă'),
     ('R2', 'Recrutarea coordonatorului/inginerului întârzie', 'Medie', 'Mare',
      'declarații de disponibilitate semnate înainte de depunere; detașare de la o organizație de cercetare ca variantă'),
@@ -320,7 +326,7 @@ POSTPOC = [
 IPPLAN = [
     ('0', 'Ce e deja public: depozitul ' + REPO_PUBLIC + ' e public din ' + PUBLIC_SINCE + ' (API GitHub, 12.10.2026) și conține ' + FIRST_PUB + '. Tot ce e acolo se tratează ca divulgat la data primului commit. [[A: decide dacă depozitul, inclusiv dosarul, devine privat; nu anulează divulgarea de până acum]]', 'acum', '0 €'),
     ('0a', 'Căutare TMview + DesignView pentru „SOUL” (clasele 9, 42, 14, 28) — risc mare de conflict (SOUL Electronics etc.)', 'acum, înainte de depunere', '0 €'),
-    ('0b', 'Desen/model industrial UE pentru forma MĂRGĂRITAR (corpul SOUL M; + capsula OU și ochii, dacă apar în materialele publice). Grația de 12 luni curge de la prima divulgare (randările din 24.09.2026; MĂRGĂRITAR v9 din 26.09.2026) și expiră pe ~' + DESIGN_DEADLINE + ', înainte de contractul estimat (aug.–oct. 2027). Se depune acum prin EUIPO SME Fund (voucher, până la 04.12.2026) sau imediat după depunerea CF, din fonduri proprii; nu intră în bugetul PoC (fără dublă finanțare, §5.2.1 V)', 'T−8 săpt. … imediat după depunerea CF; în orice caz înainte de ' + DESIGN_DEADLINE, 'în afara proiectului'),
+    ('0b', 'Desen/model industrial UE pentru forma MĂRGĂRITAR (corpul SOUL: mărimea S, produsul final, randări v10; mărimea M, prototipul, randări v9; + capsula OU și ochii, dacă apar în materialele publice). Grația de 12 luni curge de la prima divulgare (randările din 24.09.2026; MĂRGĂRITAR v9 din 26.09.2026) și expiră pe ~' + DESIGN_DEADLINE + ', înainte de contractul estimat (aug.–oct. 2027). Se depune acum prin EUIPO SME Fund (voucher, până la 04.12.2026) sau imediat după depunerea CF, din fonduri proprii; nu intră în bugetul PoC (fără dublă finanțare, §5.2.1 V)', 'T−8 săpt. … imediat după depunerea CF; în orice caz înainte de ' + DESIGN_DEADLINE, 'în afara proiectului'),
     ('0c', 'Dacă marca verbală e liberă: poate fi depusă înainte de proiect prin același voucher SME Fund. Atunci nu mai apare în bugetul PoC, iar linia 19 se folosește pentru marca figurativă/clase suplimentare și designul elementelor noi', 'T−8 săpt.', 'în afara proiectului'),
     ('1', 'Consilier PI: anterioritate (inclusiv propriile publicări din depozitul public) + strategie (design / model de utilitate OSIM / brevet)', 'L1–L3', 'linia 20'),
     ('2', 'Desen/model industrial UE pentru elementele noi, nepublicate, rezultate în proiect (forma rev B a carcasei și a capsulei OU, dacă diferă de cele publice; interfața grafică finală) — depus înainte de orice publicare a lor', '≤ L18', 'linia 19'),
@@ -332,7 +338,7 @@ IPPLAN = [
 ]
 
 CIRCULAR = [
-    ('Prelungirea duratei de viață / reparabilitate', 'baterie LiPo 1500 mAh înlocuibilă de utilizator (conector MX1.25, spumă, nu adeziv; Reg. 2023/1542 art. 11); închidere cu șuruburi Torx standard; module înlocuibile (panou, placă, difuzor)', 'P10: înlocuire ≤ 5 min; ghid de reparare publicat'),
+    ('Prelungirea duratei de viață / reparabilitate', 'baterie LiPo 750 mAh (603040) înlocuibilă de utilizator (conector MX1.25, spumă, nu adeziv; Reg. 2023/1542 art. 11); închidere cu șuruburi Torx standard; module înlocuibile (panou, placă, difuzor)', 'P10: înlocuire ≤ 5 min; ghid de reparare publicat'),
     ('Design pentru dezasamblare și reciclare', 'carcasă monomaterial Al 6061 (reciclabil nelimitat), fără adezivi structurali; talpă polimerică detașabilă; marcarea materialelor', 'raport de dezasamblare: ≥ 90 % din masă separabilă pe fracții'),
     ('Actualizare software (OTA) în loc de înlocuire hardware', 'funcții noi livrate prin OTA semnat; hardware-ul nu se învechește la schimbarea modelului AI (proprietarul își alege AI-ul; memoria rămâne pe dispozitiv)', 'OTA semnat demonstrat la TRL 5'),
     ('Independența de server (evită „bricking”-ul de tip Humane)', 'modul offline complet; memoria SOUL Memory pe dispozitiv; SOUL Cloud doar transmite mesajele; SOUL Bridge open source (MIT)', 'P5, P7'),
@@ -341,7 +347,7 @@ CIRCULAR = [
 ]
 
 NOVELTY = [
-    ('N1', 'Randare SDF anti-aliased a „ochilor” parametrici pe MCU, pe un panou RGB 480×480 fără memorie proprie (framebuffer în PSRAM)', 'competitorii folosesc animații pre-randate (sprite-uri) sau SoC-uri scumpe', '≥ 30 fps cu Wi-Fi + BLE active; 120 de designuri de ochi și 31 de expresii; fiecare unitate „se naște” cu o pereche de ochi derivată din ID-ul cipului'),
+    ('N1', 'Randare SDF anti-aliased a „ochilor” parametrici pe MCU, cu framebuffer în PSRAM și push pe regiuni modificate prin QSPI către un AMOLED 466×466 (validată întâi pe panoul RGB 480×480 fără memorie proprie al prototipului M)', 'competitorii folosesc animații pre-randate (sprite-uri) sau SoC-uri scumpe', '≥ 30 fps cu Wi-Fi + BLE active; 120 de designuri de ochi și 31 de expresii; fiecare unitate „se naște” cu o pereche de ochi derivată din ID-ul cipului'),
     ('N2', 'Round QWERTY cu tastele de la margine „stăpâne” pe bordură, decodare probabilistică, diacritice RO automate', 'smartwatch-uri: 10–30 WPM în literatură; fără suport RO', '≥ 20 WPM, UER ≤ 3 %, diacritice automate'),
     ('N3', 'Arhitectură „un singur set de acțiuni, AI-ul proprietarului”: offline / Claude (cheia proprie sau conectorul din aplicația Claude, OAuth 2.1 MCP) / ChatGPT (cheie proprie); memorie portabilă pe dispozitiv (SOUL Memory), dată oricărui AI conectat', 'dispozitivele au un singur furnizor, cloud obligatoriu sau abonament la AI-ul producătorului', '≥ 90 % succes offline; continuitate 100 % la căderea rețelei; 100 % din memorie păstrată la schimbarea AI-ului'),
     ('N4', 'Carcasă CNC din aluminiu cu antenă prin fereastră polimerică în talpă + încărcare prin pini în capsula OU', 'carcasele metalice blochează RF; obiectele premium nu au AI', 'atenuare ≤ 6 dB; legătură BLE ≥ 10 m'),
@@ -350,14 +356,14 @@ NOVELTY = [
 
 # existing evidence (TRL 3); state verified 12.10.2026 in the vault (git log, firmware/README.md, docs/07, docs/10, firmware/PERF.md)
 EVIDENCE = [
-    ('D1', 'Rezultat experimental (teste automate) + cod sursă', 'Firmware SoulOS 1.8.0 (lansat 04.10.2026, compilat fără avertismente): motorul ochilor (randare SDF, 120 de designuri, 31 de expresii, fiecare unitate primește o pereche din ID-ul cipului), IMU/giroscop, tastatura circulară, alarme, notițe, hărți/vreme/aplicații, SOUL Memory, comenzi vocale offline EN (ESP-SR), legătura Claude Hardware Buddy (BLE), protocolul SOUL Cloud; 198+ teste native trec pe PC (`pio test -e native`); build-uri `lcd28` (placa 2.8C, SOUL M), `lcd28_voice` și `sim`. Reproiectarea „SoulOS Alive” (aprobată 12.10.2026) e în lucru (1.9.0)', '2026-10', 'depozit git, `firmware/` (README, PERF.md, BRINGUP.md); commit 95d8465 (1.8.0) [[A: export log + hash la data depunerii]]'),
+    ('D1', 'Rezultat experimental (teste automate) + cod sursă', 'Firmware SoulOS 1.8.0 (lansat 04.10.2026, compilat fără avertismente): motorul ochilor (randare SDF, 120 de designuri, 31 de expresii, fiecare unitate primește o pereche din ID-ul cipului), IMU/giroscop, tastatura circulară, alarme, notițe, hărți/vreme/aplicații, SOUL Memory, comenzi vocale offline EN (ESP-SR), legătura Claude Hardware Buddy (BLE), protocolul SOUL Cloud; 198+ teste native trec pe PC (`pio test -e native`); build-uri `lcd28` (placa 2.8C, prototipul SOUL M), `lcd28_voice`, `amoled175` (placa AMOLED-1.75, SOUL S) și `sim`. Reproiectarea „SoulOS Alive” (aprobată 12.10.2026) e în lucru (1.9.0)', '2026-10', 'depozit git, `firmware/` (README, PERF.md, BRINGUP.md); commit 95d8465 (1.8.0) [[A: export log + hash la data depunerii]]'),
     ('D2', 'Simulator / model software', 'Simulator pe PC care rulează aceeași bibliotecă `lib/Suflet` ca placa și produce cadrele reale (clipuri: idle, boop, purr, dizzy, sleep…, tastatura, ecranele SoulOS la 480 px) + banc de performanță (`tools/perf_bench.py`: ≈ 30 fps estimat pe toate scenariile [E], de măsurat pe placă)', '2026-10', '`firmware/sim`, `firmware/PERF.md`, `media/` (clipuri MP4/GIF anexate)'),
     ('D3', 'Rezultat experimental (teste automate) + cod sursă', 'SOUL Cloud: împerechere cu chei de dispozitiv, gateway WebSocket, conector MCP cu OAuth 2.1 (Claude), cheie API proprie criptată, export și ștergere date (GDPR), backup criptat opțional al memoriei; 283 de teste trec; rulat cap-coadă cu simulatorul firmware-ului ca dispozitiv (fără claude.ai real încă). SOUL Bridge: canalul Claude Code de pe computerul proprietarului, open source (MIT). Fără AI inclus (decizia din 03.10.2026)', '2026-10', '`ai/` (README, tests/), `bridge/`, `docs/07-CONNECT-AI.md`, `docs/10-SOUL-MEMORY.md`'),
     ('D4', 'Prototip interactiv (software)', 'SoulOS pe web: ochii ca interfață, tastatura rotundă interactivă testabilă la scara reală, demo public; reproiectarea „Alive” aprobată 12.10.2026', '2026-10', '`os/index.html`, `os/DESIGN-ALIVE.md`, `os/ARCHITECTURE.md`'),
-    ('D5', 'Studiu analitic', 'Geometria tastaturii pe diametre (pas = 0,0944·D → 6,7 mm pe Ø70) și analiza panoului: justificarea analitică a alegerii 2,8″ IPS 480×480', '2026-09', '`research/12` §1–2'),
-    ('D6', 'Prototip virtual (CAD)', 'Forma finală MĂRGĂRITAR, mărimea M (~90 × 101 × 31,5 mm, aluminiu anodizat, 5 culori): randări v9, planșe tehnice, STL-urile prototipului P0 printabil', '2026-09', '`renders/v9/`, `blueprints/final/`, `prototip/`'),
+    ('D5', 'Studiu analitic', 'Geometria tastaturii pe diametre (pas = 0,0944·D → 6,7 mm pe Ø70 la M; 4,1 mm la S, de aceea tastatura S cu taste de 5,1 mm) și analiza panoului și a mărimii: justificarea alegerii AMOLED 1,75″ 466×466 pentru produsul S (stiva internă, bateria de 750 mAh, autonomia [estimare], costul), cu IPS 2,8″ 480×480 păstrat pe prototipul M', '2026-09 / 2026-10', '`research/12` §1–2, `docs/12-SIZE-S.md`, `firmware/SOUL-S.md`'),
+    ('D6', 'Prototip virtual (CAD)', 'Forma finală MĂRGĂRITAR, mărimea S (~63 × 70,8 × 23 mm, sticlă plată Ø52, aluminiu anodizat, 5 culori; decizia din 20.10.2026): randări v10, planșe tehnice S, STL/STEP-urile prototipului S-P0 printabil; mărimea M (~90 × 101 × 31,5 mm, randări v9) rămâne prototipul de test', '2026-09 / 2026-10', '`renders/v10/`, `renders/v9/`, `blueprints/final/soul_s_*`, `prototip/stl/s/`, `prototip/step/s/`'),
     ('D7', 'Documentare cronologică', 'Istoricul git cu commit-uri datate (primul commit SOUL: 24.09.2026)', '2026-09', 'depozitul vault (export `git log` anexat)'),
-    ('D8', 'Raport de laborator TRL 3 pe hardware (ÎN CURS — de finalizat înainte de depunere)', 'Experimentele X1–X8 pe placa Waveshare ESP32-S3-Touch-LCD-2.8C (ESP32-S3R8, 8 MB PSRAM, 16 MB flash; comandată din fonduri proprii, în afara bugetului; încă netestată): bring-up, fps, precizie touch, tastare pilot, comenzi offline, latență AI, RSSI prin aluminiu, consum', '[[A+Cl: T−6 … T−2 săpt.]]', '„Raport de laborator TRL 3 — SOUL M (2.8C)”, datat și semnat, cu loguri, fotografii, video cu marcaj de timp pe placa reală și hash git [[de anexat]]'),
+    ('D8', 'Raport de laborator TRL 3 pe hardware (ÎN CURS — de finalizat înainte de depunere)', 'Experimentele X1–X8 pe prototipul de banc SOUL M (nu produsul; produsul e mărimea S), placa Waveshare ESP32-S3-Touch-LCD-2.8C (ESP32-S3R8, 8 MB PSRAM, 16 MB flash; comandată din fonduri proprii, în afara bugetului; încă netestată): bring-up, fps, precizie touch, tastare pilot, comenzi offline, latență AI, RSSI prin aluminiu, consum', '[[A+Cl: T−6 … T−2 săpt.]]', '„Raport de laborator TRL 3 — SOUL M (2.8C)”, datat și semnat, cu loguri, fotografii, video cu marcaj de timp pe placa reală și hash git [[de anexat]]'),
 ]
 
 XTESTS = [
@@ -368,7 +374,7 @@ XTESTS = [
     ('X5', 'Comenzile offline: parserul pe un corpus de 200 de comenzi RO/EN + comenzile vocale EN (ESP-SR, build `lcd28_voice`, dacă modulul audio e montat)', 'teste automate + script de corpus; citire cu voce, cameră liniștită', '% comenzi corecte (baseline pentru H3)'),
     ('X6', 'Latența unui tur AI (text) cu cheia proprie Claude (cont de test cu limită de cost); ChatGPT doar dacă integrarea cu cheie proprie e gata', '50 de tururi, cronometrare pe dispozitiv', 'p50/p90 în secunde'),
     ('X7', 'Împerecherea BLE cu Claude Desktop (Hardware Buddy) + RSSI prin plăci de aluminiu (tablă 1,5 mm)', 'telefon cu nRF Connect, 1/3/5 m', 'atenuare orientativă în dB'),
-    ('X8', 'Consumul plăcii cu LiPo 1500 mAh (ecran aprins/stins)', 'multimetru USB (BRINGUP §5d)', 'mA (baseline pentru H5; estimarea de pornire: ≈ 177–227 mA treaz, ≈ 35–60 mA cu ecranul stins [E])'),
+    ('X8', 'Consumul plăcii M (prototipul 2.8C) cu LiPo 1500 mAh (ecran aprins/stins)', 'multimetru USB (BRINGUP §5d)', 'mA (baseline pentru H5; estimarea de pornire: ≈ 177–227 mA treaz, ≈ 35–60 mA cu ecranul stins [E])'),
 ]
 
 # verified 25.09.2026 via Crossref API / arXiv

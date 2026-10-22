@@ -194,7 +194,7 @@ Fișierele sunt în **`step/alu/`**, arhivate **`.step.gz`** (au fost prea mari 
 - Muchii: „break sharp edges 0.2”. **Teșitura de 45° de la sticlă e deja în model.**
 - Cosmetic: „cosmetic part, no tool marks on the outside, same anodizing batch for both halves”.
 
-**Preț și termen** [E, estimare pentru mărimea M, ~2,4 × suprafața lui S; cotația reală o ai în câteva minute după upload]:
+**Preț și termen** [E, estimare pentru mărimea M, ~2,0 × suprafața lui S (195,8 vs 97,2 cm², `docs/12-SIZE-S.md` §3.2); cotația reală o ai în câteva minute după upload]:
 
 | | 1 set | 3 seturi |
 |---|---|---|

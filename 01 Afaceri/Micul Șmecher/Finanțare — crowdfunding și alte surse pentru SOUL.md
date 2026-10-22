@@ -1,7 +1,7 @@
 ---
 tip: finanțare
 afacere: Micul Șmecher
-actualizat: 2026-10-20
+actualizat: 2026-10-22
 ---
 
 # Finanțare — crowdfunding și alte surse pentru SOUL
@@ -71,7 +71,7 @@ Contribuție medie ~€220 [estimare]. Conversie listă → susținător 1,5% / 
 | 20.000 | 300 / 600 / 1.000 | €66k / €132k / €220k |
 
 - Cu traficul platformei și presă: de obicei ~1,5–2,5× suma din listă [estimare].
-- **Ținta realistă: €20–60k** [estimare]. Ajunge pentru ~150–300 buc. la ~€121/buc. plus CE și ambalaj. Nu ajunge pentru mii.
+- **Ținta realistă: €20–60k** [estimare]. Ajunge pentru ~150–300 buc. de SOUL S la ~€136/buc. [estimare] (lot de ~270, placa AMOLED-1.75; `micul-smecher/crowdfunding/tools/goal_model.out.json`) plus CE și ambalaj. Nu ajunge pentru mii.
 - Ținta afișată: mică, ~€15–25k, ca să fie „funded” repede.
 
 **Repere reale:**
@@ -149,7 +149,7 @@ Modelul Starboy: loturi mici, „made to order”, de la $249, livrare promisă 
 **SeedBlink, costuri:** €250 la 6 luni + 1,5% la închidere (min. €3k, max. €15k). Componenta publică: €3.000 + 5–7%.
 **Sparking Capital** are bani PNRR. Întrebăm ADR dacă se cumulează cu grantul ca finanțare publică [de confirmat].
 
-**Ce cer toți:** deck, prototip filmat, cifre de waitlist, unit economics (~€121 cost vs. €249 preț), cap table curat, planul CE.
+**Ce cer toți:** deck, prototip filmat, cifre de waitlist, unit economics pe mărimea S (~€136/buc. la un lot de ~270 și ~€97/buc. la 1.000/an [estimare], vs. €249 preț; goal_model + [[SOUL — Fabrică și lanț de producție]]), cap table curat, planul CE.
 
 ## 5. Credite și alte surse
 

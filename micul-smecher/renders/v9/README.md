@@ -1,5 +1,7 @@
 # SOUL v9: MĂRGĂRITAR, mărimea M (randări / concept CGI)
 
+> **2026-10-20: produsul final e S (`renders/v10/`); v9 = mărimea M, prototipul.** Decizia fondatorului e în `03 Decizii/Jurnal decizii.md`; cifrele lui S sunt în `docs/size-s.json`. Tot ce scrie mai jos despre „forma finală” rămâne adevărat pentru formă (MĂRGĂRITAR), nu pentru mărime.
+
 **Toate imaginile din acest folder sunt randări / concept (CGI), nu fotografii.** Oriunde le folosești, etichetează-le „randare / concept (CGI)".
 
 Decizia fondatorului (2026-09-26): forma finală a lui SOUL e **MĂRGĂRITAR** (ALT B din `v5/`, `v5/soul_v5_altB_margaritar.png`), nu HOPA. A ales-o pentru colțurile mai geometrice și „umerii” discreți de la creștet. Restul rămâne ca în v8:

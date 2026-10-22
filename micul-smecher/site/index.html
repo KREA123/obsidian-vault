@@ -24,7 +24,7 @@
 window.SOUL_CONFIG = {
   WAITLIST_ENDPOINT: "",            // "" = demo mode (sign-ups stay in this browser). Shopify: the theme posts the native customer form instead.
   CURRENCY: "EUR",
-  PRICES: { from: 249 },            // SOUL size M, aluminium, "from" price. Final price: ARTEMIS DIGITAL is not VAT-registered (ANAF, scpTVA=false, checked 2026-10-12), so no "incl. VAT" text.
+  PRICES: { from: 249 },            // SOUL size S (the product; M is the prototype), aluminium, "from" price. Final price: ARTEMIS DIGITAL is not VAT-registered (ANAF, scpTVA=false, checked 2026-10-12), so no "incl. VAT" text.
   SHIP: { en: "after CE testing", ro: "după testele CE" },
   CONTACT_EMAIL: "office@krea.ro",
   // Legea 365/2002 art. 5. From the ONRC registration certificate, checked against ANAF on 2026-10-12.
@@ -513,7 +513,7 @@ select.input option{background:#121214;color:#F6F3EC}
         </div>
         <p class="hint" id="hint" data-i18n="hero.hint">psst. move your cursor.</p>
         <div class="say" aria-hidden="true">
-          <small data-i18n="hero.sayK">SOUL · size M · MĂRGĂRITAR</small>
+          <small data-i18n="hero.sayK">SOUL · size S · MĂRGĂRITAR</small>
           <p data-i18n="hero.say">palm-sized. aluminium. alive.</p>
         </div>
       </div>
@@ -576,14 +576,14 @@ select.input option{background:#121214;color:#F6F3EC}
     <figure class="frame side-fig rv" id="side-fig">
       <span class="tag" data-i18n="fig.render">concept render</span>
       <picture>
-        <source type="image/avif" srcset="media/v3/side-560.avif 560w, media/v3/side-900.avif 900w" sizes="(max-width:860px) calc(100vw - 32px), 520px">
-        <img src="media/v3/side-900.webp" srcset="media/v3/side-560.webp 560w, media/v3/side-900.webp 900w" sizes="(max-width:860px) calc(100vw - 32px), 520px" width="900" height="1160" loading="lazy" decoding="async" alt="Concept render of SOUL from the side: a thin aluminium pebble, 31.5 mm deep, its black glass face tilted slightly up, a speaker slot in the side seam." data-i18n-attr="alt:obj.alt">
+        <source type="image/avif" srcset="media/v10/side-s-560.avif 560w, media/v10/side-s-900.avif 900w" sizes="(max-width:860px) calc(100vw - 32px), 520px">
+        <img src="media/v10/side-s-900.webp" srcset="media/v10/side-s-560.webp 560w, media/v10/side-s-900.webp 900w" sizes="(max-width:860px) calc(100vw - 32px), 520px" width="900" height="1160" loading="lazy" decoding="async" alt="Concept render of SOUL from the side: a thin aluminium pebble, 23 mm deep, its black glass face tilted slightly up, a speaker slot in the side seam." data-i18n-attr="alt:obj.alt">
       </picture>
       <svg class="dims" viewBox="0 0 900 1160" aria-hidden="true" preserveAspectRatio="none">
         <path class="ln" style="--len:900" d="M760 140 V1050 M745 140 H775 M745 1050 H775"/>
-        <text x="782" y="600">101 mm</text>
+        <text x="782" y="600">70.8 mm</text>
         <path class="ln" style="--len:420" d="M270 1105 H630 M270 1092 V1118 M630 1092 V1118"/>
-        <text x="390" y="1092">31.5 mm</text>
+        <text x="400" y="1092">23 mm</text>
       </svg>
     </figure>
     <div class="stack">
@@ -591,8 +591,8 @@ select.input option{background:#121214;color:#F6F3EC}
       <h2 class="h-l rv" id="obj-title" data-i18n="obj.h2">a stone you<br>want to hold.</h2>
       <p class="lead rv" data-i18n="obj.lead">Its shape is called MĂRGĂRITAR: a pebble with soft shoulders at the crown, cut from aluminium and finished like a river stone. One round black glass. Nothing else on the front: no logo, no buttons.</p>
       <dl class="facts rv">
-        <div><dt data-i18n="obj.k1">size M</dt><dd>90 × 101 × 31.5 mm</dd></div>
-        <div><dt data-i18n="obj.k2">glass</dt><dd data-i18n="obj.v2">2.8″ round, black</dd></div>
+        <div><dt data-i18n="obj.k1">size S</dt><dd>63 × 70.8 × 23 mm</dd></div>
+        <div><dt data-i18n="obj.k2">glass</dt><dd data-i18n="obj.v2">flat, black, Ø52 mm</dd></div>
         <div><dt data-i18n="obj.k3">body</dt><dd data-i18n="obj.v3">aluminium 6061</dd></div>
         <div><dt data-i18n="obj.k4">finish</dt><dd data-i18n="obj.v4">bead-blasted, anodised</dd></div>
       </dl>
@@ -726,9 +726,9 @@ select.input option{background:#121214;color:#F6F3EC}
     <!-- section: hold-demo -->
     <div class="demo" id="hold">
       <figure class="frame rv">
-        <span class="tag" data-i18n="fig.render">concept render</span>
+        <span class="tag" data-i18n="fig.cgi">render (CGI)</span>
         <div class="shot" data-glass="hand" data-design="original" data-role="hand" id="hand-shot">
-          <img src="media/v2/hand.webp" srcset="media/v2/hand-sm.webp 760w, media/v2/hand.webp 1400w" sizes="(max-width:860px) calc(100vw - 32px), 620px" width="1400" height="1200" loading="lazy" decoding="async" alt="Concept render of SOUL in silver resting on an open hand. It covers the palm like a big smooth stone, and its eyes look up at you." data-i18n-attr="alt:hold.alt">
+          <img src="media/v10/hand-s.webp" srcset="media/v10/hand-s-sm.webp 760w, media/v10/hand-s.webp 1600w" sizes="(max-width:860px) calc(100vw - 32px), 620px" width="1600" height="1200" loading="lazy" decoding="async" alt="Render (CGI) of SOUL in silver, size S, resting on an open adult hand. It sits in the middle of the palm and leaves the fingers free, and its eyes look up at you." data-i18n-attr="alt:hold.alt">
         </div>
         <span class="tag hold-hint" data-i18n="hold.hint">press and hold the glass</span>
       </figure>
@@ -837,13 +837,13 @@ select.input option{background:#121214;color:#F6F3EC}
 <section class="sec band" id="specs" aria-labelledby="sp-title">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow rv" data-i18n="sp.eyebrow">size M · specifications</p>
+      <p class="eyebrow rv" data-i18n="sp.eyebrow">size S · specifications</p>
       <h2 class="h-l rv" id="sp-title" data-i18n="sp.h2">the boring bits.</h2>
     </div>
     <div class="sb">
       <dl class="specs">
-        <div><dt data-i18n="sp.k1">display</dt><dd data-i18n="sp.v1">round 2.8″, 480 × 480, under black glass</dd></div>
-        <div><dt data-i18n="sp.k2">size</dt><dd>≈ 90 × 101 × 31.5 mm</dd></div>
+        <div><dt data-i18n="sp.k1">display</dt><dd data-i18n="sp.v1">round 1.75″ AMOLED, 466 × 466, true black, under flat Ø52 glass</dd></div>
+        <div><dt data-i18n="sp.k2">size</dt><dd>≈ 63 × 70.8 × 23 mm</dd></div>
         <div><dt data-i18n="sp.k3">body</dt><dd data-i18n="sp.v3">aluminium 6061, bead-blasted and anodised</dd></div>
         <div><dt data-i18n="sp.k4">colours</dt><dd data-i18n="sp.v4">Silver, Graphite, Midnight, Ember, Champagne</dd></div>
         <div><dt data-i18n="sp.k5">eyes</dt><dd data-i18n="sp.v5">one of 120 designs, decided at birth</dd></div>
@@ -859,7 +859,7 @@ select.input option{background:#121214;color:#F6F3EC}
         <p class="eyebrow" data-i18n="box.k">planned</p>
         <h3 id="box-title" data-i18n="box.t">what's in the box</h3>
         <ol>
-          <li><div><b data-i18n="box.1">SOUL, size M</b><span data-i18n="box.1p">in the colour you choose, with the eyes it chooses</span></div></li>
+          <li><div><b data-i18n="box.1">SOUL, size S</b><span data-i18n="box.1p">in the colour you choose, with the eyes it chooses</span></div></li>
           <li><div><b data-i18n="box.2">OU, its charging egg</b><span data-i18n="box.2p">where it charges and sleeps</span></div></li>
         </ol>
         <p class="note" style="margin:0" data-i18n="box.note">The final list, battery life and accessories will be published before reservations open.</p>

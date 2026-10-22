@@ -34,7 +34,8 @@ SPEC = [
     ('prototip/cad', ['*.py', '*.json', '*.txt'], False),
     ('prototip/img', ['*.png'], True),
     ('blueprints', ['*.png', '*.svg', 'README.md'], True),
-    ('renders/v9', ['*.png', '*.gif', '*.mp4', 'README.md'], False),   # final design MĂRGĂRITAR, size M
+    ('renders/v10', ['*.png', 'README.md'], False),  # FINAL design: MĂRGĂRITAR size S (product, decision 2026-10-20)
+    ('renders/v9', ['*.png', '*.gif', '*.mp4', 'README.md'], False),   # MĂRGĂRITAR size M = the prototype
     ('renders/v8', ['README.md'], False),
     ('renders/v6', ['README.md'], False),          # CMF + hex colours
     ('brand/logo', ['README.md'], False),           # superseded by the Brand Package below
@@ -42,7 +43,7 @@ SPEC = [
     ('research', ['*.md'], True),                  # so the links in docs/ work
     ('investors', ['*'], True),                    # incl. poc-1.1 official annexes
 ]
-EXCLUDE = ['prototip/stl/assembly/*', 'prototip/step/plastic/*', 'site/screenshots/*', 'docs/_tools/*.pyc']
+EXCLUDE = ['prototip/stl/assembly/*', 'prototip/step/plastic/*', 'site/screenshots/*', 'site/_archive/*', 'docs/_tools/*.pyc']
 
 README = """# SOUL: complete package
 
@@ -60,8 +61,9 @@ Folders:
 - os/ (SoulOS web prototype + spec + architecture)
 - site/ (landing page)
 - prototip/ (DIY P0: STL, STEP, CAD sources)
-- blueprints/final (SOUL M drawings) + older sheets
-- renders/v9 (final design MĂRGĂRITAR, size M; CGI, not photos) · brand/SOUL-Brand-Package (The Glass O, brand book)
+- blueprints/final (SOUL S drawings soul_s_*, SOUL M prototype drawings soul_m_*) + older sheets
+- renders/v10 (FINAL design MĂRGĂRITAR, size S, the product; CGI, not photos) · renders/v9 (size M, the prototype; CGI) · brand/SOUL-Brand-Package (The Glass O, brand book)
+- docs/12-SIZE-S.md + docs/size-s.json: SOUL S numbers (decision 2026-10-20: S = product, M = prototype)
 - eyes/ (SOUL eyes v2 engine, 120 designs, 31 expressions) · bridge/ (SOUL Bridge, Node) · tools/ (repo sync)
 - research/ and investors/ (background)
 

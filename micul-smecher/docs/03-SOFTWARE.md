@@ -87,7 +87,7 @@ python3 tools/gen_font.py && python3 tools/gen_words.py               # regenera
 - If the image is rotated, add `-DSUFLET_ROTATION=90|180|270`.
 - If touch is mirrored, set `TOUCH_MIRROR_X/Y` in `src/board.h`.
 - If the IMU axes are wrong, fix `IMU_MAP` in `src/board.h` and check with `i`.
-- On the 1.75, firmware sets the charge current to 200 mA. Raise it to ~500 mA for a 1000 mAh cell only.
+- On the 1.75 (AXP2101 charger), keep the charge current at or below ~0.5 C: **≤ 250 mA for the S-P0 cell (500 mAh, 503035)** and **≤ 375 mA for the product cell (750 mAh, 603040**; its listing allows 750 mA max) [E]. There is no 1000 mAh S cell (`docs/size-s.json`). `src/` does not set the charge current explicitly today, so check the PMU value on the first flash.
 
 **Works with Claude (Hardware Buddy BLE protocol):**
 1. In Claude Desktop, go to Help → Troubleshooting → **Enable Developer Mode**.

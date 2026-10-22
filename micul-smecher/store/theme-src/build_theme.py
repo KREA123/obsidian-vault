@@ -503,7 +503,7 @@ main_product = """{%- liquid
       <div class="pdp-desc rte">{{ product.description }}</div>
       {%- endif -%}
       <dl class="facts">
-        <div><dt data-i18n="obj.k1">{{ 'soul.obj_k1' | t }}</dt><dd>90 × 101 × 31.5 mm</dd></div>
+        <div><dt data-i18n="obj.k1">{{ 'soul.obj_k1' | t }}</dt><dd>63 × 70.8 × 23 mm</dd></div>
         <div><dt data-i18n="obj.k2">{{ 'soul.obj_k2' | t }}</dt><dd data-i18n="obj.v2">{{ 'soul.obj_v2' | t }}</dd></div>
         <div><dt data-i18n="obj.k3">{{ 'soul.obj_k3' | t }}</dt><dd data-i18n="obj.v3">{{ 'soul.obj_v3' | t }}</dd></div>
         <div><dt data-i18n="obj.k4">{{ 'soul.obj_k4' | t }}</dt><dd data-i18n="obj.v4">{{ 'soul.obj_v4' | t }}</dd></div>

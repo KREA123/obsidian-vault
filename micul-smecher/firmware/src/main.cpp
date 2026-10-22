@@ -1,5 +1,6 @@
-// SOUL firmware: SoulOS on the Waveshare round boards — the 2.8" IPS
-// LCD-2.8C ("SOUL M", the main target) and the AMOLED-1.43 / 1.75 (size S).
+// SOUL firmware: SoulOS on the Waveshare round boards — SOUL S (the product,
+// env amoled175: AMOLED-1.75), SOUL M (the prototype, env lcd28: the 2.8" IPS
+// LCD-2.8C) and the AMOLED-1.43.
 //
 // Two tasks:
 //   core 1  this loop: touch, IMU, the Claude Desktop link (BLE), the Brain,

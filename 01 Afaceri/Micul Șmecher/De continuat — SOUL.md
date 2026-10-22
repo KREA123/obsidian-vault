@@ -12,7 +12,7 @@ actualizat: 2026-10-12
 
 ## Regulile lui Andu (valabile pentru tot)
 - Numele: **SOUL** (un cuvânt). Sistemul: **SoulOS**. **Engleza e limba implicită** a produsului; notele interne rămân în română.
-- Forma finală: **MĂRGĂRITAR**, mărimea M (≈ 90 × 101 × 31,5 mm), aluminiu, 5 culori (Argint, Grafit, Albastru noapte, Jar, Șampanie). Pe față doar sticla neagră.
+- Forma finală: **MĂRGĂRITAR**, **mărimea S** (decizia din 2026-10-20: ≈ 63 × 70,8 × 23 mm, sticlă plată Ø52, ecran AMOLED 1,75″ 466×466, randări v10), aluminiu, 5 culori (Argint, Grafit, Albastru noapte, Jar, Șampanie). Pe față doar sticla neagră. **Mărimea M** (≈ 90 × 101 × 31,5 mm, placa 2.8C) rămâne prototipul pentru teste și dovada TRL 3.
 - **Fără Founders 00**: pe site doar listă de așteptare, nicio rezervare/plată înainte de grant și CE.
 - **Fără AI inclus plătit de noi**: fiecare om își conectează propriul AI (cheia lui de Anthropic/OpenAI, conectorul din aplicația Claude, „Sign in with ChatGPT” după aprobarea OpenAI) sau folosește modul offline.
 - Abonamentul **Claude Pro/Max nu poate fi folosit de un dispozitiv terț** (regula Anthropic, verificată în `docs/08-OWN-CLAUDE.md` §1) — nu construim niciodată login claude.ai în SOUL.

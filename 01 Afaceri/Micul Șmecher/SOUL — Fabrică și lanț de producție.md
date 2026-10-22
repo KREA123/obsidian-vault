@@ -1,7 +1,7 @@
 ---
 tip: plan
 afacere: Micul Șmecher
-actualizat: 2026-10-15
+actualizat: 2026-10-22
 ---
 
 # SOUL — Fabrică și lanț de producție
@@ -9,26 +9,27 @@ actualizat: 2026-10-15
 > Întrebarea lui Andu: „ce ar însemna să facem efectiv o fabrică? mică, pentru asta, sau un lanț de producție măcar”.
 > Hub: [[Micul Șmecher]] · harta: [[SOUL — Harta memoriei]] · bani: [[Finanțare — toate sursele pentru SOUL]] · pași: [[De continuat — SOUL]].
 > Modelul de calcul: `micul-smecher/docs/factory/SOUL-fabrica-model.xlsx` (foi: Rezultate, Ipoteze, Scenarii, Break-even, Capacitate). PDF de printat: `micul-smecher/docs/factory/SOUL-fabrica.pdf`.
-> **[estimare]** = calculul meu, fără ofertă. **[neverificat]** = o singură sursă sau o sursă pe care n-am putut-o redeschide. Toate cifrele sunt în EUR fără TVA, mărimea M, dacă nu scrie altfel.
+> **[estimare]** = calculul meu, fără ofertă. **[neverificat]** = o singură sursă sau o sursă pe care n-am putut-o redeschide. Toate cifrele sunt în EUR fără TVA, **mărimea S**, dacă nu scrie altfel.
+> **Actualizare 2026-10-22:** modelul e refăcut pe **mărimea S**, produsul final din decizia de pe 20.10.2026 (AMOLED 1,75″ 466×466, 63 × 70,8 × 23 mm, LiPo 603040 de 750 mAh, placa Waveshare ESP32-S3-Touch-AMOLED-1.75 la volume mici; `micul-smecher/docs/size-s.json`, `docs/12-SIZE-S.md` §3). CNC: semifabricat **0,4 kg/set** și ciclu **24 min/set** [estimare], față de 1,0 kg și 45 min la M. Carcasa externă, sablarea și anodizarea pe set = M × 0,65 [estimare]. **M** (placa 2.8C) rămâne prototipul și apare doar ca termen de comparație în foaia Break-even. Varianta veche pe M (121 €/buc. la 1.000) e înlocuită. Constructorul modelului: `micul-smecher/docs/factory/_tools/build_model.py`.
 
 ## 1. Răspunsul pe scurt
 
 **O „fabrică mică” SOUL înseamnă 3 trepte. Fiecare se adaugă peste cea dinainte:**
 - **T0 – atelier de asamblare și test.** Primești piese gata făcute. Tu montezi, încarci firmware-ul, calibrezi, testezi, gravezi seria și ambalezi. Costă ~€23k (configurat pentru 1.000/an) până la ~€39k (pentru 20.000/an) [estimare din model]. Îți trebuie 40–60 m² și 1–4 oameni.
-- **T1 – plus celulă CNC proprie (carcasele).** Prima mașină cu tot ce trebuie pe lângă costă ~€104k [estimare]. Fiecare mașină în plus costă ~€92k.
+- **T1 – plus celulă CNC proprie (carcasele).** Prima mașină cu tot ce trebuie pe lângă costă ~€104k [estimare]. Fiecare mașină în plus costă ~€92k. O mașină face ~17 seturi S pe schimb (la M erau ~9).
 - **T2 – plus linie SMT proprie (plăcile).** O linie costă ~€36k [estimare]. Dar PCB-ul custom nici nu există încă.
 - **Anodizarea rămâne externă în orice variantă.** Chimicale periculoase, ape uzate, autorizații. Iar culoarea pe 5 nuanțe e greu de ținut constantă.
 
 **Când merită (după model):**
 - Sub ~5.000 de unități/an, cel mai ieftin e **lanțul externalizat (A)**.
 - Atelierul T0 costă cam cât box build-ul la un EMS. Îl faci pentru **control** (flash, calibrare, test, QC, serie), nu pentru bani.
-- CNC-ul propriu iese **la egalitate** abia pe la ~5.000 de seturi/an. Câștigă clar doar la ~10–20k/an.
+- CNC-ul propriu iese **la egalitate** pe la ~3.800–5.000 de seturi S/an (la M: ~5.000). Câștigă clar doar la ~10–20k/an.
 - SMT-ul propriu **nu câștigă clar niciodată**. Iese egal cu un EMS din România pe la 20.000 de plăci/an și pierde în fața JLCPCB la orice volum calculat.
 
 **Recomandarea:**
 - **25 de bucăți (pilot):** fără fabrică. Asamblezi tu, la birou. Carcasele și anodizarea le comanzi afară. Placa rămâne Waveshare. Faci un jig de test simplu. Investiție ~€2k [estimare din model].
 - **1.000/an:** **lanț de producție**, nu fabrică. Alegi între un atelier T0 de 40–60 m² cu 1 operator part-time și box build la Felix EMS sau EMS-Electra. Decide oferta: dacă EMS-ul cere peste ~16,5 €/buc. pentru box build, atelierul tău e mai ieftin.
-- **10.000/an:** atelier T0 cu 3–4 oameni pe ~150–200 m². Plăcile le face un EMS sau JLCPCB, carcasele un atelier extern. CNC propriu doar dacă ofertele pentru carcasă trec de ~30 €/set și simularea CAM confirmă ≤45 min/set.
+- **10.000/an:** atelier T0 cu 3–4 oameni pe ~150–200 m². Plăcile le face un EMS sau JLCPCB, carcasele un atelier extern. CNC propriu doar dacă ofertele pentru carcasa S trec de ~22 €/set la 5.000/an (ipoteza: ~23,5 €) și simularea CAM confirmă ≤ 24 min/set.
 
 ## 2. Cele 4 variante
 
@@ -36,39 +37,41 @@ actualizat: 2026-10-15
 |---|---|---|---|---|
 | **Ce faci tu** | Design, firmware, comenzi, QC la recepție, vânzare | + asamblare, flash, calibrare, test, laser, ambalare | + frezezi carcasele, sablare, șanfren | + plantezi plăcile (SMT, reflow, AOI) |
 | **Ce fac partenerii** | Tot: CNC, anodizare, PCBA, box build, ambalare | CNC, anodizare, PCBA, cutia | Anodizare, PCBA, cutia | Anodizare, cutia |
-| **Investiție** | ~€2–7k (jig de test dat la EMS + mostre-etalon) | ~€23–39k | ~€128k la 1.000/an; ~€222k la 5.000/an | ~€164k la 1.000/an; ~€259k la 5.000/an |
+| **Investiție** | ~€2–7k (jig de test dat la EMS + mostre-etalon) | ~€23–39k | ~€128k la 1.000/an; ~€131k la 5.000/an (o singură mașină ajunge) | ~€164k la 1.000/an; ~€167k la 5.000/an |
 | **Oameni** | Fondatorul | + 0,5–3,5 operatori + QC | + 1 programator CNC + operatori CNC | + 1 tehnician SMT |
 | **Spațiu** | Biroul | 40–60 m² (T0), până la ~200 m² | + 60–100 m², curent trifazat 25–40 kVA, pardoseală pentru 2–3,5 t | + 40–60 m² |
-| **Cost/buc. la 1.000** | **121 €** | 128 € | 153 € | 178 € |
-| **Cost/buc. la 10.000** [interpolat] | ~79 € | ~79 € | ~77 € | ~79 € |
+| **Cost/buc. la 1.000** | **97 €** | 104 € | 138 € | 163 € |
+| **Cost/buc. la 10.000** [interpolat] | ~64 € | ~64 € | ~61 € | ~63 € |
 | **Când merită** | Acum, până la ~5k/an | De la pilot, pentru control | Clar abia la ~10–20k seturi/an | Practic niciodată |
 
-- Cifrele de cost nu includ NRE-ul produsului (PCB, sticlă, matrițe pentru OU). Cu NRE, A costă 132 € la 1.000.
+- Cifrele de cost nu includ NRE-ul produsului (PCB, sticlă, matrițe pentru OU). Cu NRE, A costă 109 € la 1.000 (la M: 132 €).
 - Modelul a calculat 100 / 1.000 / 5.000 / 20.000. Pentru 10.000 am luat media între 5.000 și 20.000 [estimare]. Diferențele de 2–3 € sunt sub eroarea estimărilor.
 - Valorile exacte din model:
 
 | €/buc. | 100 | 1.000 | 5.000 | 20.000 |
 |---|---|---|---|---|
-| A | 311,68 | **121,09** | **87,77** | 71,23 |
-| B | 342,75 | 127,64 | 90,17 | 68,45 |
-| C | 853,81 | 152,70 | 88,17 | 66,21 |
-| D | 1.172,35 | 178,22 | 91,78 | **66,13** |
+| A | 224,83 | **97,46** | **70,79** | 57,95 |
+| B | 255,90 | 104,01 | 73,19 | 55,17 |
+| C | 804,89 | 137,87 | 71,80 | 51,10 |
+| D | 1.123,42 | 163,39 | 75,41 | **51,01** |
 
-- La 100 de bucăți marja e negativă în toate variantele, la prețul de €249. Cifrele de la 100 includ TVA-ul de 21%, pe care ARTEMIS nu-l poate recupera cât e sub plafonul de 395.000 lei.
+- Pentru comparație, aceleași scenarii pe M (modelul din 15.10.2026): A 311,68 / 121,09 / 87,77 / 71,23 €. S e cu ~24 €/buc. mai ieftin la 1.000 (−20 %), mai ales din carcasă (31,84 € vs 47,46 € livrată) și din placă.
+
+- La 100 de bucăți marja (cu NRE) e negativă în toate variantele, la prețul de €249: A ajunge la −4,83 €/buc. La 100 de bucăți placa e Waveshare AMOLED-1.75, deci corpul e S-P0 (25,65 mm, 500 mAh), nu produsul de 23 mm. Cifrele de la 100 includ TVA-ul de 21%, pe care ARTEMIS nu-l poate recupera cât e sub plafonul de 395.000 lei.
 - **Corecții după verificare:**
-  - Timpul de 45 min/set M e optimist pentru un Haas VF-2, cu axul de 8.100 rpm. Pe VF-2 calculează 60–90 min/set [estimare]. Cele 45 min se potrivesc unei mașini rapide BT30 (Brother Speedio), care costă ~$100–150k [estimare MachineToolIndex]. În ambele cazuri, CNC-ul propriu iese la egalitate abia pe la 7.500–10.000 de seturi/an.
+  - Timpul de 24 min/set S e scalat din cele 45 min ale lui M (× 0,53, docs/12 §3.2), iar 45 min era deja optimist pentru un Haas VF-2 cu axul de 8.100 rpm: acolo calcula 60–90 min/set M, adică ~32–48 min/set S [estimare]. Cele 24 min se potrivesc unei mașini rapide BT30 (Brother Speedio), care costă ~$100–150k [estimare MachineToolIndex]. Verifică prin simulare CAM pe STEP-ul S de 23 mm, care încă nu există.
   - Consumul de curent al atelierului T0 (1.000 kWh/lună la 1.000 buc.) pare mare. Cu 300–500 kWh, atelierul T0 bate box build-ul mai devreme de 1.554 buc./an.
 
 ## 3. Pașii fabricii, de la piesă la cutie
 
-1. **Componente din Asia:** display rotund, modul ESP32-S3, celulă LiPo certificată, sticlă 2.5D. *(extern)*
+1. **Componente din Asia:** display rotund AMOLED 1,75″, modul ESP32-S3, celulă LiPo 603040 certificată, sticlă 2.5D Ø52. *(extern)*
 2. **CNC carcasă**, cele 2 jumătăți, din aluminiu 6061. *(extern; T1 = tu)*
 3. **Debavurare + degresare** în baie cu ultrasunete. *(extern; T1 = tu)*
 4. **Sablare cu bile de sticlă** pentru textura mată. *(extern; T1 = tu)*
 5. **Re-tăierea șanfrenului de 45°** după sablare, ca să lucească. *(extern; T1 = tu)*
 6. **Anodizare în 5 culori.** *(mereu extern)*
 7. **Recepție:** compari culoarea cu mostra-etalon (golden sample) și verifici cotele. *(tu)*
-8. **Placa (PCBA):** azi Waveshare, mai târziu PCB-ul propriu. *(EMS / JLCPCB; T2 = tu)*
+8. **Placa (PCBA):** la început Waveshare ESP32-S3-Touch-AMOLED-1.75, mai târziu PCB-ul propriu rotund (~Ø46 mm). *(EMS / JLCPCB; T2 = tu)*
 9. **Flash firmware** pe 4–8 porturi în paralel. *(tu)*
 10. **Lipești sticla și display-ul** cu inel de adeziv PSA decupat. *(tu)*
 11. **Montaj:** placa, bateria, microfonul, difuzorul, șuruburile, închiderea. *(tu)*
@@ -79,7 +82,7 @@ actualizat: 2026-10-15
 16. **Bateria adusă la ≤30%**, apoi ambalare cu OU-ul în cutie. *(tu)*
 17. **Depozitare** în dulap pentru Li-ion, apoi livrare (tu sau un 3PL). *(tu / 3PL)*
 
-Manoperă: ~15–25 min/buc. cu fixturi [estimare]. Modelul folosește 25 min, adică ~16 buc. pe operator într-un schimb. Gâtuirea în T0 sunt oamenii. În C și D e mașina CNC: ~9 seturi M pe schimb.
+Manoperă: ~15–25 min/buc. cu fixturi [estimare]. Modelul folosește 25 min, adică ~16 buc. pe operator într-un schimb. Gâtuirea în T0 sunt oamenii. În C și D e mașina CNC: ~17 seturi S pe schimb (M: ~9).
 
 ## 4. Echipamente cu prețuri
 
@@ -129,9 +132,9 @@ Lipsesc prețuri pentru dulap de uscare MSL și X-ray.
 **Atenție:** pcbpret.com e în română, dar producția e la WellPCB în Shenzhen. Se plătesc vamă și TVA la import.
 
 **Din Asia (nu există alternativă la preț bun în RO/UE):**
-- Display rotund 2,8″ 480×480: $8–10 fără touch (oferta din vault).
+- Display rotund AMOLED 1,75″ 466×466 (CO5300, QSPI): $9–17 la eșantion la Tailor-Pixels; NoseDisplay și Lianxun doar la cerere (`docs/12` §1.2). Modelul folosește $10 la 1.000 [estimare].
 - ESP32-S3-WROOM-1-N16R8: ~$3,46 la 650+ buc. ([LCSC](https://www.lcsc.com/product-detail/WiFi-Modules_Espressif-Systems-ESP32-S3-WROOM-1-N16R8_C2913202.html)).
-- LiPo 803450 1500 mAh: $1,85–2,10 la 1–2k buc. [neverificat, listări vechi]. Cere certificatul UN38.3 și IEC 62133.
+- LiPo 603040 750 mAh: ~$1,5 la 1.000 buc. [estimare]; listare A&S Power (HKTDC) [neverificat]. Cere certificatul UN38.3 și IEC 62133.
 - Sticlă 2.5D: $0,20–8/buc. la MOQ 100 [listări vechi]. Alternativă UE: Mirit Glas (Danemarca), fără preț public.
 - Benchmark: JLCPCB PCBA = setup $8–51 + $0,0016/punct de lipire ([jlcpcb](https://jlcpcb.com/help/article/pcb-assembly-price)). PCBWay face și box build complet.
 
@@ -209,7 +212,7 @@ Detalii: [[Finanțare — toate sursele pentru SOUL]].
 - **Oamenii:** un programator CNC/CAM e greu de găsit. Dacă pleacă, se oprește tot.
 - **Bateriile:** stocul de Li-ion cere dulap ignifug și reguli de transport (SoC, UN38.3).
 - **Autorizații:** autorizația de mediu pentru asamblare e neclară. CNC-ul și SMT-ul cer sigur una. Poate dura până la ~90 de zile lucrătoare.
-- **Dependența de Asia:** display, modul, celulă, sticlă. Cam 30–45% din valoarea BOM-ului [estimare].
+- **Dependența de Asia:** display AMOLED (deocamdată un singur furnizor calificat), modul, celulă, sticlă. Cam 30–45% din valoarea BOM-ului [estimare].
 - **Banii:** niciun grant nu plătește azi utilaje de producție. T1 și T2 ar fi pe credit, leasing sau investitori.
 - **Furnizori mari:** sub ~5–10k/an, un client mic e prioritate mică la Cicor, HELBAKO sau Kimball.
 

@@ -155,10 +155,11 @@ On device `localAct` / `localReply` [R]; in the cloud `providers/rules.py` [R]. 
 
 ### 1.9 Capabilities per SKU
 
-| SKU | Screen | Mic (INMP441) | Speaker (MAX98357A) | `caps` | What "talks back" means |
+| SKU | Screen | Mic | Speaker | `caps` | What "talks back" means |
 |---|---|---|---|---|---|
-| SOUL M (2.8C), base | 480×480 round touch | no | no | `text cards alarms reminders notes timers focus inbox confirm` | text on screen + faces only; alarms are visual only unless the board has a buzzer [U: check board] |
-| SOUL M + audio build | same | yes | yes | base + `mic speaker` | spoken answers (`say`), hold-to-talk STT (B1 OpenAI key, or brain A in Phase 2) |
+| **SOUL S (the product; dev board AMOLED-1.75, env `amoled175`)** | 466×466 round AMOLED touch | yes (2 MEMS mics, ES7210) | yes (ES8311 codec + speaker) | base + `mic speaker` | spoken answers (`say`) and hold-to-talk, once the ES8311/ES7210 audio driver lands (not driven yet: `firmware/SOUL-S.md` §4); until then it reports base `caps` only |
+| SOUL M (2.8C) prototype, base | 480×480 round touch | no | no | `text cards alarms reminders notes timers focus inbox confirm` | text on screen + faces only; alarms are visual only unless the board has a buzzer [U: check board] |
+| SOUL M prototype + audio build (INMP441 + MAX98357A) | same | yes | yes | base + `mic speaker` | spoken answers (`say`), hold-to-talk STT (B1 OpenAI key, or brain A in Phase 2) |
 
 All spoken wording in UI, docs and marketing is gated on `speaker` / `mic`.
 

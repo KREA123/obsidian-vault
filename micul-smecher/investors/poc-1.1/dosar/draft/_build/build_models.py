@@ -124,7 +124,7 @@ table(d, ['Element obligatoriu (Grila 4.2)', 'Unde apare în model'], [
 ], [8.5, 8.1])
 
 SOL = ('SOUL este un dispozitiv tangibil de interacțiune om–mașină / asistent personal AI dezvoltat de ARTEMIS DIGITAL S.R.L.: '
-       f'un obiect de {DIMS}, cu carcasă din aluminiu reciclabil anodizat și afișaj rotund de 2,8″ cu touch, care arată doi ochi vii și '
+       'un obiect de ~63 × 71 × 23 mm, cu carcasă din aluminiu reciclabil anodizat și afișaj rotund AMOLED de 1,75″ (466×466) cu touch, care arată doi ochi vii și '
        'are o tastatură circulară. Funcționează offline (notițe, alarme, mementouri, liste, comenzi vocale în engleză) sau cu AI-ul '
        f'conectat de proprietar ({AI_OWN}; SOUL nu include AI), inclusiv pentru aprobarea cererilor '
        'Claude Code; serviciul SOUL Cloud e găzduit în UE, memoria rămâne pe dispozitiv, iar bateria poate fi înlocuită de utilizator. Proiectul validează SOUL de la TRL 3 la TRL 5: 15 prototipuri pre-serie testate '
@@ -187,7 +187,7 @@ P(d, 'Temei legal: Legea nr. 8/1996 privind dreptul de autor și drepturile cone
 d.add_heading('2. Obiectul cesiunii', level=2)
 P(d, '2.1. Cedentul cesionează Cesionarului, **exclusiv**, **cu titlu gratuit**, **pe întreaga durată de protecție** și **pentru teritoriul întregii lumi**, toate drepturile patrimoniale de proprietate intelectuală pe care le deține, în măsura în care există, asupra rezultatelor enumerate în **Anexa 1** („Rezultatele SOUL”), create până la data prezentului contract, și anume:', 'j')
 for x in ['codul sursă și obiect al firmware-ului SoulOS (inclusiv biblioteca „Suflet”), al serviciului SOUL Cloud (`ai/`), al SOUL Bridge (`bridge/`), al simulatorului, al SoulOS pe web și al instrumentelor asociate (programe pentru calculator), inclusiv documentația;',
-          'designul industrial al produsului SOUL (corpul SOUL în forma MĂRGĂRITAR, mărimea M, și variantele anterioare HOPA/v6–v8, capsula de încărcare „OU”, interfața grafică a „ochilor” — cele 120 de designuri și expresiile lor), modelele CAD (CadQuery/OpenSCAD, STL/STEP), randările și desenele, inclusiv dreptul de a solicita înregistrarea ca desen/model industrial în orice țară și la EUIPO și dreptul de prioritate aferent;',
+          'designul industrial al produsului SOUL (corpul SOUL în forma MĂRGĂRITAR: mărimea S (produsul final, randări v10) și mărimea M (prototipul, randări v9), și variantele anterioare HOPA/v6–v8, capsula de încărcare „OU”, interfața grafică a „ochilor” — cele 120 de designuri și expresiile lor), modelele CAD (CadQuery/OpenSCAD, STL/STEP), randările și desenele, inclusiv dreptul de a solicita înregistrarea ca desen/model industrial în orice țară și la EUIPO și dreptul de prioritate aferent;',
           'soluțiile tehnice, know-how-ul și rezultatele de cercetare (studii, specificații, protocoale, date de test), inclusiv dreptul de a solicita brevete sau modele de utilitate;',
           'semnul/denumirea „SOUL” și elementele de identitate vizuală (logo „The Glass O”, brand book, trailer, nume de produs), inclusiv dreptul de a depune cereri de înregistrare ca marcă, precum și orice nume de domeniu și cont asociat [[de enumerat în Anexa 1]].']:
     P(d, x, bullet=True)
@@ -220,7 +220,7 @@ table(d, ['Nr.', 'Rezultat', 'Locație / identificare', 'Data / versiune'], [
     ['4', 'SoulOS pe web și specificațiile SoulOS', '`micul-smecher/os/` (index.html, SPEC.md, ARCHITECTURE.md, DESIGN-ALIVE.md)', '[[hash commit]]'],
     ['5', 'Ochii SOUL (120 de designuri, 31 de expresii)', '`micul-smecher/eyes/`', '[[hash commit]]'],
     ['6', 'Modele CAD, STL/STEP, prototip P0, planșe', '`micul-smecher/cad/`, `prototip/`, `blueprints/`', '[[hash commit]]'],
-    ['7', 'Randări și design industrial (MĂRGĂRITAR v9 și variantele anterioare, capsula OU)', '`micul-smecher/renders/`, `media/`', '[[hash commit]]'],
+    ['7', 'Randări și design industrial (MĂRGĂRITAR: mărimea S v10 = produsul final, mărimea M v9 = prototipul, și variantele anterioare; capsula OU; planșele S din blueprints/final/soul_s_*)', '`micul-smecher/renders/`, `blueprints/`, `media/`', '[[hash commit]]'],
     ['8', 'Identitate vizuală și denumirea „SOUL” (logo, brand book, trailer, site, temă Shopify)', '`micul-smecher/brand/`, `trailer/`, `site/`', '[[hash commit]]'],
     ['9', 'Studii, specificații, protocoale, date', '`micul-smecher/research/`, `docs/`', '[[hash commit]]'],
     ['10', 'Nume de domeniu / conturi', '[[de completat]]', '[[…]]'],

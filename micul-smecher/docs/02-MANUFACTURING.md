@@ -6,17 +6,13 @@
 
 | Design | What | Size | Status |
 |---|---|---|---|
-| **SOUL v6** (final look, design code HOPA) | Aluminium upright pebble, flat foot, 1.75" AMOLED behind black glass | ≈ 63 × 72.2 × 27 mm | **Renders only** (`renders/v6/`). There is no v6 production CAD yet: v6 exists as the Blender mesh (`renders/v6/src/soul_v6.py`). |
-| **SOUL-P0** (DIY pilot) | The v6 silhouette, adapted around the **stock Waveshare 1.75 board** and its stock glass | ≈ 63 × 75 × 29.5 mm (+3 mm tall, +2.5 mm deep, because the Waveshare stack is 8.9 mm) | **CAD in progress** (`prototip/cad/soul_p0.py`, CadQuery). Another agent is still exporting parts. See §2. |
-| Founders 00 (25 units) | **= P0 in aluminium** (the `alu` or `alu_band` variant), anodised, with a printed chassis | as P0 | Waits for P0 rev B, after a fit print and an RF test |
-| Older concepts | `cad/` (OpenSCAD: coin, drop, gem and cloud for the 1.43/1.75 boards), `blueprints/` rev A (the oval v2), `blueprints/v3` | – | **Reference only. Do not send these to a supplier.** |
+| **SOUL S** (the product; decision 20 Oct 2026) | MĂRGĂRITAR at its design scale: aluminium upright pebble, flat foot, 1.75" AMOLED 466² behind flat black glass Ø52 | **63 × 70.8 × 23.0 mm** (`size-s.json`) | **Renders** (`renders/v10/`) + GA drawing (`blueprints/final/soul_s_1_general_arrangement*`). No production CAD at 23.0 mm yet: the shape is `renders/v9/src/marg_geo.py` (MargaritarV9, s_back 0.807); stack-up and battery in `12-SIZE-S.md` §2. |
+| **SOUL S-P0** (DIY pilot of S) | The MĂRGĂRITAR S outline around the **stock Waveshare ESP32-S3-Touch-AMOLED-1.75** and its stock glass (Ø48.96) | **63 × 70.8 × 25.65 mm** (uncompressed back: the stock 8.7 mm board stack + a cell only fit at that depth) | **CAD exported** (`prototip/cad/soul_p0_s.py`; `prototip/stl/s/`, `prototip/step/s/`, plastic shells). `size-s.json` plans a 500 mAh 503035; the current CAD fits a 503030-class cell (~450 mAh), see the script header. |
+| **SOUL M** (the working prototype) | MĂRGĂRITAR × 1.43 around the Waveshare 2.8C (2.8" IPS 480²) | design 90 × 101 × 31.5; DIY P0-M kit 112.1 × 125.1 × 31.6 mm | For tests and the PoC TRL 3 proof only (`prototip/README.md`, `renders/v9/`). |
+| Founders 00 (25 units) | Historical plan (= P0 in aluminium). The current sale is a waitlist from €249, no Founders edition (`site/README.md`) | – | Not planned |
+| Older concepts | `prototip/legacy-S/` (the HOPA S P0: ≈ 63 × 75 × 29.5 mm), `cad/` (OpenSCAD: coin, drop, gem and cloud for the 1.43/1.75 boards), `blueprints/` rev A (the oval v2), `blueprints/v3`, `renders/v6` (HOPA S, ≈ 63 × 72.2 × 27) | – | **Reference only. Do not send these to a supplier.** |
 
-**Pending decision: a bigger screen** ([`research/12-ecran-mai-mare.md`](../research/12-ecran-mai-mare.md), renders in `renders/v7/`). The study compares three sizes:
-- **S** = today's 1.75" AMOLED, body 63 × 72 × 27.
-- **M** = 2.8" IPS 480², Waveshare ESP32-S3-Touch-LCD-2.8C, body ≈ 93 × 106 × 31.
-- **L** = 3.4" IPS 800², ESP32-P4, body ≈ 113 × 129 × 34.
-
-research/12 found that no round AMOLED larger than 1.75" can be bought in small quantities, so a bigger screen means IPS, and IPS has no true black. It recommends **S** as the hero product, with writing done on the phone or by voice, and **M** as a parallel prototype (~$40 board). **Everything in this dossier assumes S (1.75").** Choosing M or L means a new board, new CAD and new costs. Decide before any CNC order.
+**Size: decided (20 Oct 2026, `03 Decizii/Jurnal decizii.md`).** S (1.75" AMOLED) is the product; M (2.8" IPS, Waveshare 2.8C) stays the prototype. The size study is in [`research/12-ecran-mai-mare.md`](../research/12-ecran-mai-mare.md) and `renders/v7/`; the S numbers (stack-up, battery, CNC, cost delta vs M) are in [`12-SIZE-S.md`](12-SIZE-S.md). The process sections below were written for the old HOPA S and still apply to S; where a number is size-specific, `size-s.json` wins.
 
 ## 2. CAD / STL / STEP files, and which to send where
 
@@ -191,7 +187,7 @@ Rules:
 | Body | CNC 6061, 2 shells, China/EU | CNC 6061 in China, $25–45/set, fixtures only | **Deep-drawn 5052 shells + CNC finish + blast + anodise**, $9–14/set; tools $20–45k (research/10 §2) |
 | Board | Waveshare 1.75 stock | **Custom PCB with ESP32-S3-WROOM-1** (reuses Espressif radio evidence), PCBA design $15–30k | same, at an EMS (Seeed Fusion / PCBWay, or final assembly in RO: Kimball, Helbako, Etron) |
 | Glass | stock Ø48.96 | custom Ø52 cover lens + lamination ($5–15k NRE) | same |
-| Cell | stock 503035 | custom ~1000 mAh pouch, IEC 62133-2 + UN38.3 | same |
+| Cell | S-P0: stock-class 503035, 500 mAh (`size-s.json`) | **LiPo 603040, 750 mAh** (EVT), then a custom pouch of the same envelope (≤ 6.2 × 31 × 43 mm, 750–800 mAh [E]) at DVT, IEC 62133-2 + UN38.3 (`12-SIZE-S.md` §2.4) | same |
 | Base and foot | SLA/MJF painted | PC/ABS injection moulded | same |
 | OU | SLA | aluminium bridge tools | steel tools $16–26k |
 | Compliance | €5–12k (RO/PL lab, RO only) | €30–80k (full RED at an EU lab, EN 18031, EPR in 3–5 countries) | + CRA from 11 Dec 2027 |

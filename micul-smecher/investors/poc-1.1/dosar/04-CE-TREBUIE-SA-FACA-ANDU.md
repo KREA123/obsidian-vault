@@ -77,12 +77,12 @@ Modelul e gata: `draft/Scrisoare_de_intentie_MODEL.docx` (variante A, B, C). Con
 - [ ] o **firmă de software** din București care folosește Claude Code (varianta C, pilot cu 3–5 oameni) — **[de completat]**;
 - [ ] (rezervă) un hub de inovare / living lab sau o asociație a persoanelor cu dizabilități — **[de completat]**.
 
-Ce scrie despre SOUL în scrisoare (deja în model): obiect de ~90 × 101 × 31,5 mm din aluminiu, ecran rotund de 2,8″, ochi vii, tastatură rotundă; merge offline sau cu AI-ul conectat de proprietar (Claude, cu contul/cheia proprie; în curând ChatGPT, cu cheie proprie — în lucru); **SOUL nu include AI**; baterie înlocuibilă.
+Ce scrie despre SOUL în scrisoare (deja în model): obiect de ~63 × 71 × 23 mm din aluminiu (SOUL S), ecran rotund AMOLED de 1,75″ (466×466), ochi vii, tastatură rotundă; merge offline sau cu AI-ul conectat de proprietar (Claude, cu contul/cheia proprie; în curând ChatGPT, cu cheie proprie — în lucru); **SOUL nu include AI**; baterie înlocuibilă.
 
 ## Pasul 7 — Ofertele (2 pe fiecare linie) · **cereri la T−5 săpt., toate la T−2 săpt.**
 **Doar cereri de ofertă, fără comandă.** Eu scriu e-mailurile. Tu le trimiți și îmi dai PDF-urile. Lista liniilor e în `01-DOCUMENTE.md` §C:
 - [ ] aparate de măsură: osciloscop, analizor de spectru, analizor de consum, cutie ecranată, PC, imprimantă SLA (câte 2);
-- [ ] materiale: plăci 2.8C, panouri 2,8″, audio I²S, baterii LiPo 1500 mAh, componente (capturi din 2 magazine);
+- [ ] materiale (SOUL S, `docs/12-SIZE-S.md` §3): plăci de dezvoltare Waveshare ESP32-S3-Touch-AMOLED-1.75, panouri AMOLED 1,75″ goale (Tailor-Pixels / NoseDisplay / Lianxun), microfoane MEMS + difuzoare, celule LiPo 603040 de 750 mAh, componente (capturi din 2 magazine). Plăcile 2.8C nu intră în buget: sunt prototipul M, din bani proprii;
 - [ ] **CNC + anodizare** carcase MĂRGĂRITAR (3 / 5 / 15 seturi; trimitem STEP-ul);
 - [ ] **PCB propriu** fabricare + asamblare (2 firme);
 - [ ] **pre-testare EMC/RF** (un laborator RO + unul UE) și **evaluare EN 18031** (2);

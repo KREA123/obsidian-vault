@@ -26,7 +26,7 @@ Model-neutral · private by design · alive without the cloud.
 **Notes:** "Meta, OpenAI, Amazon and Google structurally cannot say 'bring your own AI'; their device exists to sell their model. That's a business-model moat, not a code moat [E, 11]. Anthropic has no consumer device and has opened a Bluetooth hardware API for Claude (claude-desktop-buddy, MIT) [V]. We are building the best body for it, and for every other brain."
 
 ## 4. Product
-**On screen:** 63 × 74 × 27 mm · machined 6061 aluminium, bead-blasted, anodised · round AMOLED face with living eyes · nothing else on the front · no camera · OU: the charging egg that cuts the mic in hardware.
+**On screen:** 63 × 71 × 23 mm (size S, `docs/size-s.json`) · machined 6061 aluminium, bead-blasted, anodised · round AMOLED face with living eyes · nothing else on the front · no camera · OU: the charging egg that cuts the mic in hardware.
 **Visual:** left `renders/v6/soul_v6_family.png` (5 colourways); right-top `renders/v5/soul_v5_ou_night.png` (asleep in OU); right-bottom `renders/v6/soul_v6_macro.png` (bead-blast + chamfer). Optional scale: `renders/v5/soul_v5_hand.png`.
 **Notes:** "One object you want to hold. Every day it hatches from OU, its charging egg; at night OU cuts the microphone's power in hardware, so in the egg it is physically deaf [V-vault 09]. In the hand it's hold-to-talk. Five anodised colours. Designed in Romania." Be explicit: these are renders; the pilot shell is CNC-machined (10).
 

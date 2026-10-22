@@ -9,7 +9,9 @@ actualizat: 2026-10-03
 
 # Micul Șmecher — produsul SOUL
 
-> **Starea la 2026-10-03:** SOUL = obiect din **aluminiu** în forma **MĂRGĂRITAR**, mărimea **M** (≈ 90 × 101 × 31,5 mm, ecran rotund 2,8″, 5 culori), cu doi ochi vii (eyes v2) și **SoulOS**. Fiecare om își conectează **propriul AI** (nu plătim noi AI); merge și offline. Harta completă: **[[SOUL — Harta memoriei]]** · pașii următori: **[[De continuat — SOUL]]**.
+> **Decizia din 2026-10-20** ([[Jurnal decizii]]): **produsul final e mărimea S** — MĂRGĂRITAR la scara lui de design, **63 × 70,8 × 23 mm**, sticlă neagră plată **Ø52**, ecran rotund **AMOLED 1,75″ 466×466** (negru adevărat), placa de dezvoltare Waveshare ESP32-S3-Touch-AMOLED-1.75, LiPo 750 mAh, randări `renders/v10/` (CGI). **Mărimea M** (≈ 90 × 101 × 31,5 mm, placa 2.8C, ecran 2,8″, firmware 1.9.0) rămâne **prototipul** pentru teste și dovada TRL 3. Cifrele: `micul-smecher/docs/size-s.json`, `docs/12-SIZE-S.md`.
+>
+> **Starea la 2026-10-03** (mărimea corectată la 2026-10-22): SOUL = obiect din **aluminiu** în forma **MĂRGĂRITAR**, mărimea **S** (≈ 63 × 70,8 × 23 mm, ecran rotund AMOLED 1,75″, 5 culori; prototipul de lucru e mărimea M, ≈ 90 × 101 × 31,5 mm, ecran 2,8″), cu doi ochi vii (eyes v2) și **SoulOS**. Fiecare om își conectează **propriul AI** (nu plătim noi AI); merge și offline. Harta completă: **[[SOUL — Harta memoriei]]** · pașii următori: **[[De continuat — SOUL]]**.
 >
 > *Paragraful de mai jos e descrierea inițială (2026-09-24), păstrată ca istoric.*
 > **Pe scurt (24 sep.):** o amuletă din sticlă mată cu doi ochi vii pe un ecran AMOLED rotund. E **vie și fără internet**, devine **AI-ul tău personal** când ții degetul pe „piatră” (Claude sau ChatGPT în spate) și **se leagă deja de Claude Code / Cowork** pe calculator. „Laboratoarele fac creierul. Noi facem corpul și sufletul.”
@@ -19,7 +21,7 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 ## Ce există acum (2026-10-03)
 | Piesă | Stare | Unde |
 |---|---|---|
-| Designul final MĂRGĂRITAR, mărimea M, aluminiu, 5 culori | ✅ randări v9 (CGI, nu poze) | `micul-smecher/renders/v9/` |
+| Designul final MĂRGĂRITAR, **mărimea S** (din 2026-10-20), aluminiu, 5 culori | ✅ randări v10 (CGI, nu poze); M = prototipul, randări v9 | `micul-smecher/renders/v10/`, `renders/v9/`, `docs/size-s.json` |
 | Prototipul P0 (printat 3D, ≈ 112 × 125 × 31,6 mm după STL [de măsurat]) | ✅ STL-uri de print + planșe; ⏳ de comandat și printat | `prototip/stl/plastic/`, `prototip/COMANDA.md`, `blueprints/final/` |
 | Electronica P0: Waveshare 2.8C (Alibaba ~140 lei [neverificat]) + LiPo 803450 (eMAG) | ⏳ de cumpărat | `prototip/COMANDA.md` |
 | Firmware **SoulOS 1.2.0** (ochii, IMU, portal Wi-Fi, Claude/OpenAI cu cheia omului, SOUL Cloud, BLE Hardware Buddy) | ✅ compilat + testat pe PC/simulator; ⏳ neîncărcat pe placă | `firmware/`, `firmware/BRINGUP.md`, `firmware/release/` |

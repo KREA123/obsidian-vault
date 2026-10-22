@@ -26,7 +26,7 @@ Not included:
 P0 ("SOUL-P0") is the DIY pilot enclosure from `prototip/cad/soul_p0.py`. It is **not** the final v6 body.
 - **Parts:** front shell, back shell, a printed chassis, PWR/BOOT key pins and an optional seam band (the RF window).
 - **Board:** the stock Waveshare board with its stock Ø48.96 glass.
-- **Body:** about 63 × 75 × 29.5 mm, 2.5 mm deeper than v6 because the Waveshare stack is 8.9 mm deep.
+- **Body:** this section describes the old HOPA S P0 (`prototip/legacy-S/`, about 63 × 75 × 29.5 mm). The current S pilot is **S-P0, 63 × 70.8 × 25.65 mm** in the MĂRGĂRITAR shape (`size-s.json`, `prototip/cad/soul_p0_s.py`); the product SOUL S is **63 × 70.8 × 23.0 mm** with a **750 mAh** LiPo 603040 (`12-SIZE-S.md`).
 - **Closure:** 4 × M2 screws from the back.
 - **Charging:** over the board's own USB-C. Pogo contacts and the OU dock are optional in P0.
 

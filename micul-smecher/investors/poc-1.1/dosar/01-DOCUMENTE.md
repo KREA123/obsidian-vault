@@ -72,7 +72,7 @@ Pe fiecare linie: **2 oferte sau 1 ofertă + 1 catalog/captură de website**. Ca
 | Cutie ecranată RF | furnizor UE (ex. Ramsey, tescom — captură) | a doua sursă | Cl |
 | Stație de lucru PC | 2 magazine RO (captură) | – | Cl |
 | Imprimantă 3D SLA | reseller Formlabs RO/UE | alt model echivalent (Elegoo/Prusa SL1S) | A / Cl |
-| Materiale: plăci Waveshare 2.8C, panouri 2,8", audio, celule, componente, rășină | Waveshare/distribuitor + AliExpress/TME (capturi) | Optimus Digital / Robofun (RO) | Cl |
+| Materiale (SOUL S, `docs/12-SIZE-S.md` §3): plăci de dezvoltare Waveshare ESP32-S3-Touch-AMOLED-1.75, panouri AMOLED 1,75″ 466×466 goale (CO5300, QSPI), audio (microfoane MEMS + difuzor), celule LiPo 603040 de 750 mAh, componente, rășină. Placa 2.8C a prototipului M se cumpără din bani proprii, în afara bugetului | Waveshare/distribuitor + AliExpress/TME (capturi) | Optimus Digital / Robofun (RO) | Cl |
 | CNC + anodizare carcase (3 + 5 + 15 seturi) | JLCCNC / PCBWay / RapidDirect (RFQ cu STEP-ul M) | atelier UE/RO (Weerg, Xometry, ARSAT, Alvi) | A trimite STEP-ul; Cl redactează RFQ-ul |
 | PCB propriu rev A/B (fabricare + asamblare) | JLCPCB (calculator online, captură) | PCBWay sau un asamblator RO/UE | Cl |
 | Pre-testare EMC/RF (2 sesiuni) | laborator RO (ICPE-CA — de verificat dacă are EMC acreditat, ICMET Craiova) | laborator UE (PL: Instytut Łączności; DE: Phoenix Testlab / Nemko) | A trimite RFQ-ul (Cl redactează) |

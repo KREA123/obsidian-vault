@@ -1,7 +1,7 @@
 ---
 tip: finanțare
 afacere: Micul Șmecher
-actualizat: 2026-10-12
+actualizat: 2026-10-22
 ---
 
 # Oferte de preț pentru PoC 1.1 (fiecare linie de buget)
@@ -9,6 +9,7 @@ actualizat: 2026-10-12
 > Dosarul: [[Finanțare — PR BI PoC 1.1 pentru SOUL]] · expertul: [[Finanțare — expertul științific pentru PoC 1.1]] · pași: [[De continuat — SOUL]] · harta: [[SOUL — Harta memoriei]].
 > Prețuri citite pe paginile publice pe **12.10.2026**. Nu am contactat pe nimeni și nu am trimis niciun formular.
 > **[neverificat]** = pagina ne-a blocat sau prețul nu s-a putut confirma. Faci tu printscreen manual.
+> **Actualizare 2026-10-22 — produsul e mărimea S** (decizia din 20.10.2026, `micul-smecher/docs/size-s.json`, `docs/12-SIZE-S.md`): ~63 × 70,8 × 23 mm, sticlă plată Ø52, AMOLED rotund 1,75″ 466×466 (CO5300, QSPI), baterie LiPo 750 mAh (603040). Liniile L11, CNC (§4.3), PCBA (§4.4) și laboratorul (§4.5) cer acum piese și oferte pentru S. Placa 2.8C, panourile 2,8″ și celulele 1500 mAh rămân doar pentru **prototipul M** (dovada TRL 3, din bani proprii, în afara bugetului).
 > Cursuri folosite doar pentru estimare: 1 € ≈ 5,10 lei ≈ 4,25 PLN; 1 $ ≈ 0,87 €; 1 CHF ≈ 1,07 €. În MySMIS se folosește cursul InforEuro din ghid.
 
 ## 1. Pe scurt
@@ -89,11 +90,17 @@ Legendă: ✔ = verificat pe pagină · ✎ = corectat la verificare · **[never
 
 | Sub-articol | Furnizor | Preț | Termen | Link | Cum ceri oferta |
 |---|---|---|---|---|---|
-| L11a Placa 2.8C (8 buc) | ✔ Waveshare, CN | $39,99 net (cu touch, SKU 29086; de confirmat) | din CN | https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm | sales@waveshare.com |
+| **L11a Placa AMOLED-1.75 (8 buc), SOUL S** | ✔ Waveshare, CN (verificat 20.10.2026, docs/12 §1.1) | $29,99–39,99 (split pe variante nepublicat) | „Add to Cart”, din CN | https://www.waveshare.com/esp32-s3-touch-amoled-1.75.htm | sales@waveshare.com |
+| L11a | ✔ The Pi Hut, UK (verificat 20.10.2026) | £28,80 cu TVA (Standard) | **epuizat** | https://thepihut.com/products/esp32-s3-1-75-amoled-round-touch-display-dev-board-466x466 | contactul de pe site |
+| L11a | openelab, EU **[neverificat]** | -B 39,85 € | epuizat | https://openelab.io/a/s/products/waveshare-esp32-s3-1-75inch-amoled-round-touch-display-with-case | info@openelab.io |
+| L11a-M Placa 2.8C (prototipul M; din bani proprii, în afara bugetului) | ✔ Waveshare, CN | $39,99 net (cu touch, SKU 29086; de confirmat) | din CN | https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm | sales@waveshare.com |
 | L11a | ✔ Kamami, PL | 192,57 PLN cu TVA (156,56 net) | stoc contradictoriu, întreabă | https://kamami.pl/en/esp32/1197479-esp32-s3-2-8inch-round-display-development-board-480-480-32-bit-lx7-dual-core-processor-supports-5902186321694.html | sprzedaz@kamami.pl |
 | L11a | ✎ OpenELAB Technology Ltd. (depozit München) | **47,25 € cu TVA** → 8 buc = 378 € | în stoc | https://openelab.io/products/waveshare-esp32-s3-round-display-2-8inch | info@openelab.io |
 | L11a | Sigmanortec, RO **[neverificat]** | 386,10 lei (din căutare), fără stoc | – | https://sigmanortec.ro/en/waveshare-esp32-s3-development-board-capacitive-touch-round-ips-lcd-28-inch-480x480-wifi-and-bluetooth | formularul de contact |
-| L11b Panouri 2,8″ (20 buc) | ✔ Shenzhen Zhuohong, CN | $8–10, **fără touch** | răspuns RFQ ~12 h | https://www.tft-displaylcd.com/sale-53843821-2-8-inch-ips-round-lcd-display-480x480-with-st7701s-driver-ic.html | „Request A Quote”: ST7701S RGB18 + CTP GT911 |
+| **L11b Panouri AMOLED 1,75″ 466×466 goale (20 buc), SOUL S** | ✔ Tailor-Pixels TOH175XRT-02CG (docs/12 §1.2) | $9–17, MOQ nedeclarat | la cerere | https://tailorpixels.com/product/1-75-inch-amoled-round-on-cell-touch-466x466-mipi-qspi/ | RFQ: CO5300, QSPI, touch on-cell, desenul FPC |
+| L11b | NoseDisplay ND018ECG466466-A02 **[neverificat]** (CO5300 + CST9217, perechea Waveshare) | la cerere | – | https://www.nosedisplay.com/products/amoled-1-75-inch-round-display-466x466-resolution-700nits-qspi-interface/ | aceeași specificație |
+| L11b | Lianxun LX175A3101CTP01 **[neverificat]** | la cerere | – | https://www.lxdisplay.com/Product_details/1349774513965064192.html | aceeași specificație |
+| L11b-M Panouri 2,8″ (doar prototipul M, nu intră în buget) | ✔ Shenzhen Zhuohong, CN | $8–10, **fără touch** | răspuns RFQ ~12 h | https://www.tft-displaylcd.com/sale-53843821-2-8-inch-ips-round-lcd-display-480x480-with-st7701s-driver-ic.html | „Request A Quote”: ST7701S RGB18 + CTP GT911 |
 | L11b | ✔ Twoyas, CN | $11,50, **fără touch** | în stoc | https://www.twoyas.com/products/2-8-inch-round-tft-lcd-module-screen-480-480-rgb-ic-st7701s | formularul: aceeași specificație |
 | L11b | ✘ BuyDisplay ER-TFT028-2 | MIPI, nu RGB: incompatibil | – | – | nu folosi |
 | L11c Microfon INMP441 (25) | ✔ ArduShop, RO | 25,64 lei cu TVA | stoc mic, întreabă de 25 | https://ardushop.ro/en/modules/1944-omnidirectional-microphone-module-i2s-interface-inmp441-mems-high-precision-low-power-ultra-small-volume-for-esp32-6427854029614.html | office@ardushop.ro |
@@ -103,7 +110,9 @@ Legendă: ✔ = verificat pe pagină · ✎ = corectat la verificare · **[never
 | L11c Difuzor 20×30 8 Ω (25) | ✔ Drot, RO | 6,61 lei cu TVA | în stoc | https://www.drot.ro/platforma-arduino/121355-difuzor-1w-8-ohm-20-x-30-mm.html | info@drot.ro |
 | L11c | ✔ electronicmarket.ro, RO | 5,06 lei cu TVA | fără stoc | https://electronicmarket.ro/mini-difuzor-1w-8ohm-20x30mm | contactul de pe site |
 | L11c | ✔ Eckstein, DE | 2,65 € cu TVA (2 W, cu cavitate) | în stoc | https://eckstein-shop.de/Waveshare-2030-8ohm-2w-cavity-speaker-en | formularul de contact |
-| L11d LiPo 803450 (30) | ✔ Conex Electronic, RO | 52 lei cu TVA (Akyga) | în stoc | https://www.conexelectronic.ro/cumpara/acumulator-li-po-3-7v-1500mah-aky-lp803450-16115 | contact@conexelectronic.ro |
+| **L11d LiPo 603040, 750 mAh (30), SOUL S** | A&S Power (HKTDC) **[neverificat: listare, nu ofertă]** | – | – | https://www.hktdc.com/event/hkelectronicsfairae/en/product/1X24UT0L | RFQ: 6,2 × 30,5 × 42 mm, PCM, MX1.25 |
+| L11d | eBay.de, clasa 603040 (800 mAh) **[neverificat]** | – | – | căutare „603040 lipo” | – |
+| L11d-M LiPo 803450 (prototipul M, în afara bugetului) | ✔ Conex Electronic, RO | 52 lei cu TVA (Akyga) | în stoc | https://www.conexelectronic.ro/cumpara/acumulator-li-po-3-7v-1500mah-aky-lp803450-16115 | contact@conexelectronic.ro |
 | L11d | ✔ AMPUL SYSTEM, CZ | 8,28 € net (3 fire, protecție) | la furnizor | https://ampul.eu/en/battery/5249-li-pol-battery-1500mah-37v-803450-3-wires | info@ampul.eu |
 | L11d | eMAG (Liter Energy) **[neverificat]** | 50,84 lei (din căutare) | – | https://www.emag.ro/acumulator-li-polymer-1500mah-3-7v-ntc-jst-803450-216/pd/DC94SSMBM/ | mesaj către vânzător |
 | L11e Inserții M2 | ✔ ruthex, DE | 8,99 € / 70 buc | în stoc | https://www.ruthex.de/en/products/ruthex-gewindeeinsatz-m2-70-stuck-rx-m2x4-messing-gewindebuchsen | contactul de pe site |
@@ -197,11 +206,12 @@ Perechi independente: JLCPCB, JLCCNC și JLC3DP sunt **același grup**. Hubs și
 ### Ce lipsește (gap-uri)
 - **Fără niciun preț:** L9 PC, L10 imprimantă SLA, L11f rășină, L12 CNC, L13 PCBA (doar tabele de taxe), L15, L16, L24 expert, L26 audit, L27 afiș.
 - **O singură sursă bună:** L8 (doar Ramsey are preț), amplificatorul MAX98357A (Optimus mort), magneții, TP4056, unitățile RF de referință, CAD (Fusion neverificat).
-- **L11b panouri:** nimeni nu dă preț pentru varianta cu touch GT911. Trebuie 2–3 RFQ identice.
+- **L11b panouri (S):** doar Tailor-Pixels publică un interval de preț ($9–17); MOQ-ul se află prin RFQ la toți trei. (Pentru prototipul M: nimeni nu dă preț pentru 2,8″ cu touch GT911.)
+- **L11c audio (S):** placa AMOLED-1.75 are deja 2 microfoane, codecurile ES7210 + ES8311 și ieșire de difuzor. Pentru PCB-ul propriu se cer microfoane MEMS și difuzoare 15 × 11 mm; INMP441 + MAX98357A de mai sus sunt pentru prototipul M.
 - **L14:** partea radio EN 300 328 nu are preț nicăieri. ZUT face doar EMC.
 - **L22:** taxele de conferință 2027 nu sunt publicate.
 - **Oul OU:** nu există încă STL/CAD, deci nimeni nu poate da preț.
-- **STEP-ul de aluminiu** (`prototip/step/alu/`) e încă geometria veche 112 × 125 × 31,6 mm, nu MĂRGĂRITAR 90 × 101. RFQ-ul trebuie să spună asta.
+- **STEP-ul:** produsul e S (~63 × 70,8 × 23 mm). STEP-ul de producție S la 23 mm **nu există încă** (`docs/12` §3.2). Există S-P0 (`prototip/step/s/`, 63 × 70,8 × 25,65 mm, varianta din plastic) și planșa `blueprints/final/soul_s_1_general_arrangement`. `prototip/step/alu/` e geometria veche a kitului M (112 × 125 × 31,6 mm). RFQ-ul trebuie să spună asta.
 
 ## 3. Ce faci tu, pas cu pas
 
@@ -300,7 +310,7 @@ Dear Sir or Madam,
 
 ARTEMIS DIGITAL S.R.L. (Bucharest, Romania, ID 53145290) is preparing a grant application. **This is a request for quotation only, not an order.**
 
-Parts per set: front shell, back shell, base plate, chassis, 2 small pins. STEP files attached (`micul-smecher/prototip/step/alu/*.step.gz`; drawings in `micul-smecher/blueprints/final/`). Note: the attached geometry is 112 × 125 × 31.6 mm. The final shape will be about 90 × 101 × 31.5 mm with the same features. Please quote the attached files.
+Parts per set: front shell, back shell, base plate, chassis, 2 small pins. Reference files attached: the S-P0 shells (`micul-smecher/prototip/step/s/*.step.gz`, 63 × 70.8 × 25.65 mm) and the dimensioned drawing `micul-smecher/blueprints/final/soul_s_1_general_arrangement.png`. The production shape will be about **63 × 71 × 23 mm**, with a **Ø52 mm** flat glass seat and the same features; its STEP will follow. Please quote the attached S-P0 geometry and tell us how the price changes for the 23 mm version.
 
 - Material: Al 6061-T6 or equivalent 6082-T6.
 - Finish: bead or shot blast, type II anodise, dyed and sealed, 5 colours (or the closest from your standard palette). Please list your colours.
@@ -321,8 +331,8 @@ Dear Sir or Madam,
 
 ARTEMIS DIGITAL S.R.L. (Bucharest, Romania, ID 53145290) requests a **quotation only, not an order**, for a grant application.
 
-- Board: ESP32-S3 module (8 MB PSRAM, 16 MB flash), RGB connector for a 2.8" round display, touch, IMU, I2S microphone + amplifier, LiPo charger, USB-C, pogo pads, PCB antenna.
-- 4-layer FR4, 1.6 mm, ENIG. SMT on both sides, stencil included. Components sourced by you.
+- Board: round, about Ø46 mm. ESP32-S3-WROOM-1-N16R8 module (8 MB PSRAM, 16 MB flash), QSPI FPC connector for a 1.75" round AMOLED (CO5300, 466 × 466) with touch, IMU (QMI8658), RTC, PMU / LiPo charger (AXP2101 class), audio codecs ES8311 + ES7210 with 2 MEMS microphones and a speaker output, USB-C, pogo pads, module antenna.
+- 4-layer FR4, 0.8 mm target (from our stack-up), ENIG. SMT on both sides, stencil included. Components sourced by you.
 - Quantity: 2 revisions × 10 assembled boards (rev A now, rev B about 4 months later).
 - Gerber/BOM/CPL: [will follow / attached]. If not ready, please quote from this description and your price table.
 
@@ -338,7 +348,7 @@ Dear Sir or Madam,
 
 ARTEMIS DIGITAL S.R.L. (Bucharest, Romania, ID 53145290) requests a **quotation only, not an order**, for a grant application.
 
-- Device: handheld device in an aluminium enclosure, about 90 × 101 × 32 mm. ESP32-S3, Wi-Fi 2.4 GHz + Bluetooth LE, 1500 mAh LiPo, USB-C 5 V charging.
+- Device: handheld device in an aluminium enclosure, about 63 × 71 × 23 mm. ESP32-S3, Wi-Fi 2.4 GHz + Bluetooth LE, 1.75" AMOLED, 750 mAh LiPo, USB-C 5 V charging.
 - **Pre-compliance (not certification), 2 sessions:** prototype rev A, then rev B about 4–6 months later.
 - Scope: EN 301 489-1 / -17 (radiated + conducted emissions, ESD and immunity spot checks); EN 300 328 (2.4 GHz output power, occupied bandwidth, spurious emissions); optional EN 62479. Test report per session.
 - Please say if your lab is accredited (RENAR / DAkkS / PCA) for these standards.
