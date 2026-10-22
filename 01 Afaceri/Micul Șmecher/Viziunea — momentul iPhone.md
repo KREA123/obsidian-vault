@@ -31,9 +31,9 @@ Toată lumea vinde un AI nou, cu abonament nou. Noi spunem: *„You already have
 8. Text: “No new AI. No new subscription. Just yours — with a soul.” · Logo „The Glass O” · “SOUL. Designed in Romania.” · “Founders 00 — 25 numbered pieces.”
 
 ## Keynote (8–10 min, filmat)
-Problema → „labs make the brain, we make the body” → dezvăluirea (familia în 5 culori, v8) → **demo netăiat pe placa reală** (asta e și dovada TRL 3 pentru PR BI) → povestea aluminiului și a capsulei OU → „one more thing”: merge cu Claude/ChatGPT-ul tău + aprobarea live → **Founders 00, 25 de bucăți numerotate, după CE.**
+Problema → „labs make the brain, we make the body” → dezvăluirea (familia în 5 culori, `renders/v10/soul_v10_family.png`, mărimea S) → **demo netăiat pe placa reală** (asta e și dovada TRL 3 pentru PR BI) → povestea aluminiului și a capsulei OU → „one more thing”: merge cu Claude/ChatGPT-ul tău + aprobarea live → **Founders 00, 25 de bucăți numerotate, după CE.**
 
-Randări pentru film: `micul-smecher/renders/v8/` (hero, hand, desk, typing, ou_night, alive.mp4). Pagina: https://claude.ai/artifact/BUAPPdP1W5xnCvSVcsQXoX
+Randări pentru film (mărimea S, CGI): `micul-smecher/renders/v10/` (hero, family, hand, desk, ou_night, vs_m = S lângă M). Fără `typing` pe S încă (tastatura S există în firmware, randarea nu). `renders/v8/` (HOPA, scara M, cu alive.mp4) e istoric. Pagina: https://claude.ai/artifact/BUAPPdP1W5xnCvSVcsQXoX
 
 ---
 

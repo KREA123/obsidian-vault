@@ -5,12 +5,12 @@
  "route": "B",
  "colours": 3,
  "goal_eur": 70000,
- "devices": 270,
- "pledges": 275,
- "device_pledges": 262,
- "unit_cost_eur": 136.35,
- "avg_pledge_eur": 254.18,
- "avg_device_eur": 258.88,
+ "devices": 260,
+ "pledges": 265,
+ "device_pledges": 252,
+ "unit_cost_eur": 136.47,
+ "avg_pledge_eur": 253.55,
+ "avg_device_eur": 258.43,
  "day1_eur": 21000,
  "day1_pledges": 83,
  "list_needed": 3300,
@@ -20,8 +20,8 @@
    "k": "make",
    "label": "Making every SOUL",
    "note": "parts, aluminium shells in 3 colours, OU eggs, assembly, testing, packaging, 2 % spares",
-   "eur": 37753,
-   "pct": 0.5393295992216651
+   "eur": 36388,
+   "pct": 0.5198309419943963
   },
   {
    "k": "setup",
@@ -34,36 +34,36 @@
    "k": "cont",
    "label": "Contingency",
    "note": "15 % on every cost until supplier quotes are in writing, plus the rest up to a round goal",
-   "eur": 6702,
-   "pct": 0.09574174899557214
+   "eur": 8924,
+   "pct": 0.12749255699025547
   },
   {
    "k": "vat",
    "label": "VAT",
    "note": "VAT we expect to owe on the pledges (paid from the money raised, never added to your price)",
-   "eur": 11767,
-   "pct": 0.1681030041322314
+   "eur": 11311,
+   "pct": 0.1615915785123967
   },
   {
    "k": "fees",
    "label": "Indiegogo and payment fees",
    "note": "5 % platform + 3 % + €0.20 per payment",
-   "eur": 5479,
-   "pct": 0.07827319428571429
+   "eur": 5267,
+   "pct": 0.07524316571428571
   },
   {
    "k": "fail",
    "label": "Pledges that fail to collect",
    "note": "about 3 %, after three retries",
-   "eur": 2097,
-   "pct": 0.029956500000000025
+   "eur": 2016,
+   "pct": 0.028796142857142902
   },
   {
    "k": "refund",
    "label": "Refund reserve (5 %)",
    "note": "so anyone who cancels before shipping gets a full refund",
-   "eur": 2802,
-   "pct": 0.04002452479338843
+   "eur": 2693,
+   "pct": 0.038474185360094455
   }
  ],
  "one_offs_in_goal": [
@@ -126,10 +126,10 @@
  "marketing_eur": 17500,
  "cash_before_first_payout_eur": 59500,
  "contribution_per_device_eur": {
-  "launch": 49.31,
-  "campaign": 64.24,
-  "two": 49.41,
-  "late": 86.64
+  "launch": 49.19,
+  "campaign": 64.12,
+  "two": 49.29,
+  "late": 86.51
  },
  "stretch_goals": [
   {
@@ -159,9 +159,9 @@
    "scenario": "after_ce",
    "ladder": "A",
    "route": "A",
-   "devices": 470,
+   "devices": 460,
    "goal_eur": 100000,
-   "unit_cost": 112.5,
+   "unit_cost": 112.2,
    "before_campaign_eur": 63000,
    "list_needed": 5900
   },
@@ -169,19 +169,19 @@
    "scenario": "after_ce",
    "ladder": "A",
    "route": "B",
-   "devices": 560,
-   "goal_eur": 120000,
-   "unit_cost": 115.1,
+   "devices": 540,
+   "goal_eur": 115000,
+   "unit_cost": 115.11,
    "before_campaign_eur": 42000,
-   "list_needed": 7000
+   "list_needed": 6700
   },
   {
    "scenario": "after_ce",
    "ladder": "B",
    "route": "A",
-   "devices": 250,
+   "devices": 240,
    "goal_eur": 65000,
-   "unit_cost": 134.39,
+   "unit_cost": 134.83,
    "before_campaign_eur": 63000,
    "list_needed": 3100
   },
@@ -189,9 +189,9 @@
    "scenario": "after_ce",
    "ladder": "B",
    "route": "B",
-   "devices": 270,
+   "devices": 260,
    "goal_eur": 70000,
-   "unit_cost": 136.35,
+   "unit_cost": 136.47,
    "before_campaign_eur": 42000,
    "list_needed": 3300
   },
@@ -199,9 +199,9 @@
    "scenario": "before_ce",
    "ladder": "A",
    "route": "A",
-   "devices": 770,
+   "devices": 760,
    "goal_eur": 165000,
-   "unit_cost": 98.31,
+   "unit_cost": 97.8,
    "before_campaign_eur": 46800,
    "list_needed": 9500
   },
@@ -209,29 +209,29 @@
    "scenario": "before_ce",
    "ladder": "A",
    "route": "B",
-   "devices": 1030,
-   "goal_eur": 225000,
-   "unit_cost": 100.94,
+   "devices": 1010,
+   "goal_eur": 220000,
+   "unit_cost": 100.47,
    "before_campaign_eur": 20800,
-   "list_needed": 12800
+   "list_needed": 12500
   },
   {
    "scenario": "before_ce",
    "ladder": "B",
    "route": "A",
-   "devices": 480,
-   "goal_eur": 130000,
-   "unit_cost": 111.85,
+   "devices": 470,
+   "goal_eur": 125000,
+   "unit_cost": 111.54,
    "before_campaign_eur": 46800,
-   "list_needed": 6100
+   "list_needed": 5800
   },
   {
    "scenario": "before_ce",
    "ladder": "B",
    "route": "B",
-   "devices": 600,
+   "devices": 590,
    "goal_eur": 160000,
-   "unit_cost": 113.34,
+   "unit_cost": 112.86,
    "before_campaign_eur": 20800,
    "list_needed": 7500
   }
@@ -239,8 +239,8 @@
  "sensitivity": [
   {
    "case": "unit costs +15 %",
-   "devices": 400,
-   "goal_eur": 110000
+   "devices": 390,
+   "goal_eur": 105000
   },
   {
    "case": "unit costs −15 %",
@@ -249,8 +249,8 @@
   },
   {
    "case": "5 colours instead of 3",
-   "devices": 290,
-   "goal_eur": 80000
+   "devices": 280,
+   "goal_eur": 75000
   },
   {
    "case": "marketing recovered inside the goal",
@@ -259,21 +259,21 @@
   }
  ],
  "unit_cost_lines": {
-  "electronics: Waveshare ESP32-S3-Touch-AMOLED-1.75": 31.75,
-  "cell 503035, 500 mAh": 2.46,
-  "front glass Ø52 2.5D black print": 3.19,
-  "speaker": 0.94,
-  "freight + duty on imported parts": 3.84,
-  "shell: CNC 2 halves": 38.26,
-  "shell: blast + anodise + lot fees": 6.47,
-  "shell: duty / transport (6 %)": 2.57,
-  "chassis + foot (polymer)": 4.04,
-  "OU egg (shell + charging board)": 12.84,
-  "packaging (rigid box, guide, label)": 6.95,
-  "USB-C cable": 1.69,
-  "small mechanics": 2.94,
-  "laser mark (serial, CE, WEEE)": 1.6,
-  "box build at EMS (assembly, flash, test, pack)": 12.59,
+  "electronics: Waveshare ESP32-S3-Touch-AMOLED-1.75": 31.83,
+  "cell 503030 class, ~450 mAh": 2.48,
+  "front glass Ø52 2.5D black print": 3.24,
+  "speaker": 0.95,
+  "freight + duty on imported parts": 3.88,
+  "shell: CNC 2 halves": 38.23,
+  "shell: blast + anodise + lot fees": 6.12,
+  "shell: duty / transport (6 %)": 2.54,
+  "chassis + foot (polymer)": 4.08,
+  "OU egg (shell + charging board)": 12.93,
+  "packaging (rigid box, guide, label)": 7.02,
+  "USB-C cable": 1.71,
+  "small mechanics": 2.96,
+  "laser mark (serial, CE, WEEE)": 1.62,
+  "box build at EMS (assembly, flash, test, pack)": 12.68,
   "internal QC (5 min)": 0.6,
   "scrap 3 %": 3.59
  },

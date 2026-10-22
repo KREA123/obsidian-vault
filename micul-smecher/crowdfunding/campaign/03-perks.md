@@ -73,4 +73,4 @@ SOUL contains a lithium battery, so it ships by road or courier as "lithium batt
 - **Two Souls** costs the First Light price per unit (€249 each), so the gift tier has a real pull; its contribution is the same as First Light. Capped at 10 sets in batch 1.
 - **No cut to the single-unit price**: contribution at First Light is only about €49 per device. The price is justified as a machined-aluminium design object: macro footage of the bead-blasted finish is on the G2 shot list (video/script.md).
 - Rarity is never part of pricing.
-- <!--f:internal_contrib-->Contribution per device after unit cost at the goal batch (270 units, €136 each) [estimate, tools/goal_model.py]: First Light €49 · Campaign Price €64 · Two Souls €49 per device · Late Pledge €87.<!--/f-->
+- <!--f:internal_contrib-->Contribution per device after unit cost at the goal batch (260 units, €136 each) [estimate, tools/goal_model.py]: First Light €49 · Campaign Price €64 · Two Souls €49 per device · Late Pledge €87.<!--/f-->

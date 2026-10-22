@@ -233,7 +233,7 @@
 <text class="tx" x="270.8" y="53" font-size="1.9" text-anchor="start" >65.25</text>
 <text class="tx" x="284.8" y="53" font-size="1.9" text-anchor="start" >2.15</text>
 <line class="o3" x1="190" y1="54" x2="300" y2="54" />
-<text class="tx" x="190.8" y="56.6" font-size="1.9" text-anchor="start" >LiPo 604050</text>
+<text class="tx" x="190.8" y="56.6" font-size="1.9" text-anchor="start" >LiPo 803450</text>
 <text class="tx" x="242.8" y="56.6" font-size="1.9" text-anchor="start" >4.37</text>
 <text class="tx" x="256.8" y="56.6" font-size="1.9" text-anchor="start" >1.97</text>
 <text class="tx" x="270.8" y="56.6" font-size="1.9" text-anchor="start" >5.49</text>
@@ -265,7 +265,7 @@
 <text class="td" x="190" y="92.94" font-size="1.9" text-anchor="start" >  back_shell x base_plate = 0.45</text>
 <text class="tx" x="190" y="98.695" font-size="2.6" text-anchor="start" font-weight="bold" >PARTS</text>
 <text class="tx" x="190" y="102.895" font-size="1.9" text-anchor="start" >1 front shell  2 stock lens  3 LCD  4 PCB  5 chassis (printed)</text>
-<text class="tx" x="190" y="105.65" font-size="1.9" text-anchor="start" >6 LiPo 604050  7 back shell  8 base plate + foot (polymer)</text>
+<text class="tx" x="190" y="105.65" font-size="1.9" text-anchor="start" >6 LiPo 803450  7 back shell  8 base plate + foot (polymer)</text>
 <text class="tx" x="190" y="108.405" font-size="1.9" text-anchor="start" >9 USB-C socket (charge)  10 speaker 2030  11 amp</text>
 <rect class="tbf" x="240" y="241" width="170" height="46" rx="0" />
 <line class="fr2t" x1="332" y1="241" x2="332" y2="287" />

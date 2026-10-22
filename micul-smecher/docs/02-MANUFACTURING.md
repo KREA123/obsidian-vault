@@ -7,7 +7,7 @@
 | Design | What | Size | Status |
 |---|---|---|---|
 | **SOUL S** (the product; decision 20 Oct 2026) | MĂRGĂRITAR at its design scale: aluminium upright pebble, flat foot, 1.75" AMOLED 466² behind flat black glass Ø52 | **63 × 70.8 × 23.0 mm** (`size-s.json`) | **Renders** (`renders/v10/`) + GA drawing (`blueprints/final/soul_s_1_general_arrangement*`). No production CAD at 23.0 mm yet: the shape is `renders/v9/src/marg_geo.py` (MargaritarV9, s_back 0.807); stack-up and battery in `12-SIZE-S.md` §2. |
-| **SOUL S-P0** (DIY pilot of S) | The MĂRGĂRITAR S outline around the **stock Waveshare ESP32-S3-Touch-AMOLED-1.75** and its stock glass (Ø48.96) | **63 × 70.8 × 25.65 mm** (uncompressed back: the stock 8.7 mm board stack + a cell only fit at that depth) | **CAD exported** (`prototip/cad/soul_p0_s.py`; `prototip/stl/s/`, `prototip/step/s/`, plastic shells). `size-s.json` plans a 500 mAh 503035; the current CAD fits a 503030-class cell (~450 mAh), see the script header. |
+| **SOUL S-P0** (DIY pilot of S) | The MĂRGĂRITAR S outline around the **stock Waveshare ESP32-S3-Touch-AMOLED-1.75** and its stock glass (Ø48.96) | **63 × 70.8 × 25.65 mm** (uncompressed back: the stock 8.7 mm board stack + a cell only fit at that depth) | **CAD exported** (`prototip/cad/soul_p0_s.py`; `prototip/stl/s/`, `prototip/step/s/`, plastic shells). Cell: a 503030 class, ~450 mAh [E], in both `size-s.json` and the CAD (the 503035 first planned does not fit beside the USB-C tunnel; see the script header). |
 | **SOUL M** (the working prototype) | MĂRGĂRITAR × 1.43 around the Waveshare 2.8C (2.8" IPS 480²) | design 90 × 101 × 31.5; DIY P0-M kit 112.1 × 125.1 × 31.6 mm | For tests and the PoC TRL 3 proof only (`prototip/README.md`, `renders/v9/`). |
 | Founders 00 (25 units) | Historical plan (= P0 in aluminium). The current sale is a waitlist from €249, no Founders edition (`site/README.md`) | – | Not planned |
 | Older concepts | `prototip/legacy-S/` (the HOPA S P0: ≈ 63 × 75 × 29.5 mm), `cad/` (OpenSCAD: coin, drop, gem and cloud for the 1.43/1.75 boards), `blueprints/` rev A (the oval v2), `blueprints/v3`, `renders/v6` (HOPA S, ≈ 63 × 72.2 × 27) | – | **Reference only. Do not send these to a supplier.** |
@@ -82,7 +82,7 @@ Rules:
 **UNVERIFIED — measure with calipers before the final print** (marked in `soul_p0_s.py`):
 - the USB-C cable overmould (12.4 × 7.0 assumed);
 - the mated MX1.25 plug height (SPK plug gap 0.17 mm in the CAD);
-- the real 503030 / 503035 cell with its PCM;
+- the real 503030-class cell with its PCM;
 - the kit speaker (the chassis frame is 15 × 11);
 - the PWR/BOOT key travel.
 
@@ -190,7 +190,7 @@ The step-by-step for the printed S-P0 (RO) is `prototip/stl/s/README.md`; the M 
 | Body | S-P0 alu: CNC 6061, 2 shells, China/EU (25.65 mm) | CNC 6061 in China, $25–45/set, fixtures only | **Deep-drawn 5052 shells + CNC finish + blast + anodise**, $9–14/set; tools $20–45k (research/10 §2) |
 | Board | Waveshare ESP32-S3-Touch-AMOLED-1.75 stock | **Custom PCB with ESP32-S3-WROOM-1** (reuses Espressif radio evidence), PCBA design $15–30k | same, at an EMS (Seeed Fusion / PCBWay, or final assembly in RO: Kimball, Helbako, Etron) |
 | Glass | stock Ø48.96 | custom Ø52 cover lens + lamination ($5–15k NRE) | same |
-| Cell | S-P0: stock-class 503035, 500 mAh (`size-s.json`) | **LiPo 603040, 750 mAh** (EVT), then a custom pouch of the same envelope (≤ 6.2 × 31 × 43 mm, 750–800 mAh [E]) at DVT, IEC 62133-2 + UN38.3 (`12-SIZE-S.md` §2.4) | same |
+| Cell | S-P0: stock-class 503030, ≈ 450 mAh [E] (`size-s.json`; the 503035 first planned does not fit beside the USB-C tunnel) | **LiPo 603040, 750 mAh** (EVT), then a custom pouch of the same envelope (≤ 6.2 × 31 × 43 mm, 750–800 mAh [E]) at DVT, IEC 62133-2 + UN38.3 (`12-SIZE-S.md` §2.4) | same |
 | Base and foot | SLA/MJF painted | PC/ABS injection moulded | same |
 | OU | SLA | aluminium bridge tools | steel tools $16–26k |
 | Compliance | €5–12k (RO/PL lab, RO only) | €30–80k (full RED at an EU lab, EN 18031, EPR in 3–5 countries) | + CRA from 11 Dec 2027 |

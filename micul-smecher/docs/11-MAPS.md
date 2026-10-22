@@ -1,7 +1,12 @@
 # 11 · Maps on SOUL
 
 SOUL M has no GPS and no magnetometer (the QMI8658 is accelerometer + gyro only); it talks to the world over 2.4 GHz
-Wi-Fi. Maps therefore splits the work: **the phone (or Wi-Fi) says where SOUL is, SOUL Cloud does the heavy map work,
+Wi-Fi.
+
+> **SOUL S (the product, `docs/size-s.json`):** the same sensors (QMI8658, no GPS, no magnetometer) and the same
+> Wi-Fi/BLE, so everything below applies unchanged, except that the map layer is **466 × 466** (the 1.75″ AMOLED; on
+> AMOLED the dark map also costs less power). The Waveshare -G board variant with an LC76G GNSS exists (`docs/12` §1.1),
+> but it is not the S plan. Maps therefore splits the work: **the phone (or Wi-Fi) says where SOUL is, SOUL Cloud does the heavy map work,
 SOUL draws a small dark map on glass and walks you through the turns.**
 
 Code: `ai/suflet_ai/maps.py` (geo, tiles, routing, the location book), `ai/suflet_ai/apps_routes.py` (HTTP),
@@ -44,7 +49,7 @@ A fix lives 24 h in the cloud's `LocationBook` (SQLite) and on SOUL (NVS), and i
   u8 class, u8 kind (1 line, 2 polygon, 3 point), u16 points, zig-zag varint deltas; points carry u8 length + UTF-8
   label. Limits: ≤ 24 KB, ≤ 600 features (minor roads and buildings go first). The demo city is 0.2–1.7 KB.
 - **On SOUL**: decoded into flat arrays, projected Web-Mercator, painted dark (water deep blue, parks dark green,
-  roads cream by class, anti-aliased lines, 4× sub-sampled polygons) into a 480 × 480 PSRAM layer that is repainted
+  roads cream by class, anti-aliased lines, 4× sub-sampled polygons) into a 480 × 480 PSRAM layer (466 × 466 on S) that is repainted
   only when the view moves; the route, "you" and the glass are drawn over it each frame. Drag = pan; slide along the
   rim = zoom (zoom between bundle levels scales the layer, a new bundle is asked when the view leaves the area);
   `+`/`-`, *centre*. The last bundle stays in RAM until a restart; the last fix survives one.

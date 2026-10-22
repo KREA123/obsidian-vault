@@ -214,7 +214,7 @@ table(d, ['CEDENT', 'CESIONAR'], [
 page_break(d)
 d.add_heading('Anexa 1 — Rezultatele SOUL cedate (inventar)', level=2)
 table(d, ['Nr.', 'Rezultat', 'Locație / identificare', 'Data / versiune'], [
-    ['1', f'Firmware {FW} (C++17): `lib/Suflet`, `src/`, `sim/`, `test/`, `tools/`', 'depozit git, `micul-smecher/firmware/`', '[[hash commit]] / 1.9.0 = 52689e4 (12.10.2026)'],
+    ['1', f'Firmware {FW} (C++17): `lib/Suflet`, `src/`, `sim/`, `test/`, `tools/`', 'depozit git, `micul-smecher/firmware/`', '[[hash commit]] / 1.9.0 = 52689e4 (12.10.2026); 1.9.1 = fe9fbe4 (22.10.2026)'],
     ['2', 'SOUL Cloud (Python) + teste + instrumente', '`micul-smecher/ai/`', '[[hash commit]]'],
     ['3', 'SOUL Bridge (Node.js; publicat open source, MIT)', '`micul-smecher/bridge/`', '[[hash commit]]'],
     ['4', 'SoulOS pe web și specificațiile SoulOS', '`micul-smecher/os/` (index.html, SPEC.md, ARCHITECTURE.md, DESIGN-ALIVE.md)', '[[hash commit]]'],

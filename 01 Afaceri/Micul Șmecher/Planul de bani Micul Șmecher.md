@@ -1,10 +1,12 @@
 ---
 tip: plan
 afacere: Micul Șmecher
-status: activ
-actualizat: 2026-09-24
+status: istoric
+actualizat: 2026-10-22
 ---
 # Planul de bani — Micul Șmecher
+
+> **Istoric (marcat 2026-10-22):** notă din 24.09.2026, dinainte de MĂRGĂRITAR. Cifrele de produs de aici (ediția Founders pe placa 1.43, prețurile și costurile pe bucată de atunci) nu mai sunt valabile. **Produsul final e SOUL S**: 63 × 70,8 × 23 mm, AMOLED rotund 1,75″ 466×466, sticlă plată Ø52, LiPo 750 mAh, de la 249 €, fără ediție Founders (sursa unică: `micul-smecher/docs/size-s.json`; [[Micul Șmecher]], [[Jurnal decizii]] 2026-10-20). Mărimea M (placa 2.8C) e prototipul de test.
 
 > Cifrele pe bucată sunt calculate (TVA 21% scos din preț, comisioane de plată 2,9% + €0,30). Costurile de piese sunt la prețuri de dev-kit, cantități mici — scad la producție. Ce e estimare scrie „estimare”.
 

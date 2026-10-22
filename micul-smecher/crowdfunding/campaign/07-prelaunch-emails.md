@@ -167,7 +167,7 @@ Hold the glass,
 
 Hi,
 
-when you joined, our page showed SOUL in size M: 90 × 101 mm with a 2.8″ screen. That's still our working prototype.
+when you joined, our page showed SOUL in size M: 90 × 101 mm with a 2.8″ screen. That's still our bench prototype, being built now (the board is ordered, not yet tested).
 
 The SOUL we'll make and ship is **size S**:
 - **63 × 71 mm**, <!--f:depth-->23–26 mm<!--/f--> deep (being finalised)

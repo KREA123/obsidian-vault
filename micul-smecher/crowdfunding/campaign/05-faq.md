@@ -52,7 +52,7 @@ Each SOUL is born with its own eyes, so they rarely match: the chance that two s
 SOUL S is 63 × 71 mm, <!--f:depth-->23–26 mm<!--/f--> deep (the exact depth is being finalised), with a round 1.75″ AMOLED of 466 × 466 pixels under black glass. Weight is <!--f:weight-->~75–95 g<!--/f--> (estimate until we weigh the real S).
 
 **Why do some videos show a bigger SOUL?**
-Our first working prototype is size M (90 × 101 mm, 2.8″ screen). The SOUL you back is S. Anything on the page that shows M says so. Renders of the object alone don't show scale; the size drawing is true scale.
+Our bench prototype is size M (90 × 101 mm, 2.8″ screen), being built now: the board is ordered, not yet tested. The SOUL you back is S. Anything on the page that shows M says so. Renders of the object alone don't show scale; the size drawing is true scale.
 
 **Why AMOLED?**
 On AMOLED, black pixels are off, so black is truly black. The eyes float on the glass and standby shows nothing but the eyes.
@@ -101,7 +101,7 @@ SOUL's personality runs on the device, and it works offline. If we ever disappea
 It's all-or-nothing: nobody is charged, and we don't make the batch.
 
 **Why is the goal <!--f:goal-->€70,000<!--/f-->?**
-It's the smallest batch (about <!--f:devices-->270<!--/f--> SOULs) at which the money covers making and delivering every reward, after VAT and fees, with a 15 % safety margin and a refund reserve. Certification, tooling and test units are paid before the campaign. The breakdown is in "Budget & timeline".
+It's the smallest batch (about <!--f:devices-->260<!--/f--> SOULs) at which the money covers making and delivering every reward, after VAT and fees, with a 15 % safety margin and a refund reserve. Certification, tooling and test units are paid before the campaign. The breakdown is in "Budget & timeline".
 
 **When will I get my SOUL?**
 Batch 1 (First Light, Campaign Price, Two Souls): estimated <!--f:delivery-->May 2028 (EU)<!--/f-->. <!--f:delivery_risk-->CE must pass before launch; if it slips, the launch moves, not your delivery date. What can still move the date: machining and anodising the batch, and parcels around the holidays. We've kept about 10 weeks of buffer.<!--/f--> Campaign Price · batch 2 and Late Pledge: estimated <!--f:delivery_b2-->August 2028<!--/f-->. If anything slips, we tell you in an update the same week.

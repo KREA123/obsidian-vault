@@ -9,7 +9,7 @@ actualizat: 2026-10-22
 
 # Micul Șmecher — produsul SOUL
 
-> **Decizia din 2026-10-20** ([[Jurnal decizii]]): **produsul final e mărimea S** — MĂRGĂRITAR la scara lui de design, **63 × 70,8 × 23 mm**, sticlă neagră plată **Ø52**, ecran rotund **AMOLED 1,75″ 466×466** (negru adevărat), placa de dezvoltare Waveshare ESP32-S3-Touch-AMOLED-1.75, LiPo 750 mAh, randări `renders/v10/` (CGI). **Mărimea M** (≈ 90 × 101 × 31,5 mm, placa 2.8C, ecran 2,8″, firmware 1.9.0) rămâne **prototipul** pentru teste și dovada TRL 3. Cifrele: `micul-smecher/docs/size-s.json`, `docs/12-SIZE-S.md`.
+> **Decizia din 2026-10-20** ([[Jurnal decizii]]): **produsul final e mărimea S** — MĂRGĂRITAR la scara lui de design, **63 × 70,8 × 23 mm**, sticlă neagră plată **Ø52**, ecran rotund **AMOLED 1,75″ 466×466** (negru adevărat), placa de dezvoltare Waveshare ESP32-S3-Touch-AMOLED-1.75, LiPo 750 mAh, randări `renders/v10/` (CGI). **Mărimea M** (≈ 90 × 101 × 31,5 mm, placa 2.8C, ecran 2,8″, SoulOS 1.9.1) rămâne **prototipul** pentru teste și dovada TRL 3. Cifrele: `micul-smecher/docs/size-s.json`, `docs/12-SIZE-S.md`.
 >
 > **Starea la 2026-10-03** (mărimea corectată la 2026-10-22): SOUL = obiect din **aluminiu** în forma **MĂRGĂRITAR**, mărimea **S** (≈ 63 × 70,8 × 23 mm, ecran rotund AMOLED 1,75″, 5 culori; prototipul de lucru e mărimea M, ≈ 90 × 101 × 31,5 mm, ecran 2,8″), cu doi ochi vii (eyes v2) și **SoulOS**. Fiecare om își conectează **propriul AI** (nu plătim noi AI); merge și offline. Harta completă: **[[SOUL — Harta memoriei]]** · pașii următori: **[[De continuat — SOUL]]**.
 >
@@ -24,8 +24,8 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 | Designul final MĂRGĂRITAR, **mărimea S** (din 2026-10-20), aluminiu, 5 culori | ✅ randări v10 (CGI, nu poze); M = prototipul, randări v9 | `micul-smecher/renders/v10/`, `renders/v9/`, `docs/size-s.json` |
 | **S-P0**, pilotul lui S (placa Waveshare AMOLED-1.75, 63 × 70,8 × 25,65 mm) | ✅ STL/STEP plastic + notă de asamblare + planșă; ⏳ placa de cumpărat | `prototip/stl/s/`, `prototip/step/s/`, `blueprints/final/soul_s_2_p0_kit.png` |
 | Prototipul M (P0-M printat, ≈ 112 × 125 × 31,6 mm), pentru teste și TRL 3 | ✅ STL-uri + planșe; ⏳ de comandat și printat | `prototip/stl/plastic/`, `prototip/COMANDA.md`, `blueprints/final/soul_m_*` |
-| Electronica: M = Waveshare 2.8C + LiPo 803450; S = Waveshare AMOLED-1.75 + LiPo 503030/503035 | ⏳ de cumpărat (câte o placă) | `prototip/COMANDA.md`, `docs/01-BOM.md` |
-| Firmware **SoulOS Alive 1.9.0** (M: `lcd28`, imaginea `release/SOUL-2.8C-install.bin`; S: `amoled175`, toate ecranele pe 466 px) | ✅ 237 de teste pe PC/simulator; ⏳ neîncărcat pe placă | `firmware/`, `firmware/SOUL-S.md`, `firmware/BRINGUP.md` |
+| Electronica: M = Waveshare 2.8C + LiPo 803450; S = Waveshare AMOLED-1.75 + LiPo 503030 (~450 mAh [estimare]) | ⏳ de cumpărat (câte o placă) | `prototip/COMANDA.md`, `docs/01-BOM.md` |
+| Firmware **SoulOS Alive 1.9.1** (M: `lcd28`, imaginea `release/SOUL-2.8C-install.bin`; S: `amoled175`, toate ecranele pe 466 px + difuzorul ES8311, imaginea `release/SOUL-1.75-install.bin`) | ✅ 245 de teste pe PC/simulator; ⏳ neîncărcat pe placă | `firmware/`, `firmware/SOUL-S.md`, `firmware/BRINGUP.md` |
 | Cost S pe bucată [estimare] | ≈ 144 € la 100, ≈ 74 € la 1.000 (M: 215 / 98 €) | `docs/01-BOM.md`, `docs/factory/SOUL-fabrica-model.xlsx` |
 | SOUL Cloud (pairing, gateway, conector OAuth MCP, `/pair`, `/me`); AI inclus oprit | ✅ testat cu falsuri; ⏳ nedeployat, netestat cu claude.ai real | `ai/`, `docs/07-CONNECT-AI.md` |
 | SOUL Bridge (Claude Pro/Max prin Claude Code oficial) | 🧪 prototip, zonă gri de politică | `bridge/`, `docs/08-OWN-CLAUDE.md` |

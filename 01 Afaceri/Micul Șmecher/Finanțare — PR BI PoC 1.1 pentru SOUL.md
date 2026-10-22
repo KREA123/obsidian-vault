@@ -2,12 +2,14 @@
 tip: finanțare
 afacere: Micul Șmecher
 program: PR BI P1/1.1/1/2026 — Proof of Concept
-actualizat: 2026-10-12
+actualizat: 2026-10-22
 ---
 
 # PR BI 1.1 „Proof of Concept” — ne încadrăm cu SOUL?
 
-> **Actualizare 2026-10-03:** placa de dovadă TRL 3 e acum **Waveshare ESP32-S3-Touch-LCD-2.8C** (SOUL M), nu 1.75; firmware-ul SoulOS 1.2.0 e gata de încărcat (`micul-smecher/firmware/release/`), iar materialele de arătat sunt randările v9, trailerul v3, site-ul v2 și Brand Package — toate în [[SOUL — Harta memoriei]]. Pașii fondatorului: [[De continuat — SOUL]].
+> **Actualizare 2026-10-20/22 (mărimea S):** **produsul** dezvoltat în proiect e **SOUL S** (63 × 70,8 × 23 mm, AMOLED 1,75″ 466×466, LiPo 750 mAh; sursa unică `micul-smecher/docs/size-s.json`, decizia din [[Jurnal decizii]] 2026-10-20). **Dovada TRL 3** se face pe **prototipul de banc M** (placa Waveshare ESP32-S3-Touch-LCD-2.8C, **SoulOS 1.9.1**, `micul-smecher/firmware/release/SOUL-2.8C-install.bin`; placa e comandată, încă netestată). Placa S (Waveshare ESP32-S3-Touch-AMOLED-1.75, imaginea `SOUL-1.75-install.bin`) e pentru prototipul S-P0 și pentru proiect, nu pentru TRL 3. **Materialele S de arătat**: randările `micul-smecher/renders/v10/`, planșa `blueprints/final/soul_s_1_general_arrangement.png`, foaia la scară reală `prototip/SOUL-marimi-scara-reala.pdf`. Dosarul la zi: `micul-smecher/investors/poc-1.1/`. Actualizarea de mai jos (2026-10-03) e istorică: randările v9 sunt la scara M.
+>
+> **Actualizare 2026-10-03 (istoric):** placa de dovadă TRL 3 e acum **Waveshare ESP32-S3-Touch-LCD-2.8C** (SOUL M), nu 1.75; firmware-ul SoulOS 1.2.0 e gata de încărcat (`micul-smecher/firmware/release/`), iar materialele de arătat sunt randările v9, trailerul v3, site-ul v2 și Brand Package — toate în [[SOUL — Harta memoriei]]. Pașii fondatorului: [[De continuat — SOUL]].
 
 ## Status apel și șanse (verificat 2026-10-12)
 
@@ -74,7 +76,7 @@ Documentele oficiale primite de la Andu (Anexele 3, 10, 16, 18) sunt salvate în
 
 ## Pașii următori (în ordine)
 1. **Andu verifică** cele 4 condiții „❓” de mai sus (acționariat, IMM, datorii, de minimis) și îmi trimite rezultatele.
-2. **Cumpără placa Waveshare 1.75** (fără s-o pună în buget) → rulăm firmware-ul pe ea, filmăm → **dovada TRL 3**.
+2. **Încarcă SoulOS 1.9.1 pe placa 2.8C** (prototipul M, comandată; `firmware/release/SOUL-2.8C-install.bin`), rulăm `firmware/BRINGUP.md`, filmăm → **dovada TRL 3** (D8, X1–X8). Separat, cumpără placa Waveshare AMOLED-1.75 (placa produsului S, pentru S-P0; fără s-o pună în buget).
 3. **Găsim expertul** pentru raportul științific (UPB/IMT/ICI) + un **coordonator tehnic** cu ≥ 5 ani experiență în electronică/embedded.
 4. **Cerem ofertele** (câte 2 pe linie) și **scrisorile de intenție** (minim 2).
 5. **Claude completează** Anexa 3 (plan de afaceri) și draftul pentru Anexa 16 (raport științific) cu toate datele SOUL, corelate între ele.

@@ -1,10 +1,12 @@
 ---
 tip: produs
 afacere: Micul Șmecher
-status: activ
-actualizat: 2026-09-24
+status: istoric
+actualizat: 2026-10-22
 ---
 # Produs și dezvoltare — Micul Șmecher
+
+> **Istoric (marcat 2026-10-22):** notă din 24.09.2026, dinainte de MĂRGĂRITAR. Cifrele de produs de aici (kitul pe placa AMOLED-1.43, ediția Founders, bateriile vechi) nu mai sunt valabile. **Produsul final e SOUL S**: 63 × 70,8 × 23 mm, AMOLED rotund 1,75″ 466×466, sticlă plată Ø52, LiPo 750 mAh, de la 249 €, fără ediție Founders (sursa unică: `micul-smecher/docs/size-s.json`; [[Micul Șmecher]], [[Jurnal decizii]] 2026-10-20). Mărimea M (placa 2.8C) e prototipul de test.
 
 ## Ce cumperi azi (kitul de prototip, ~€120)
 | Piesă | De ce | Preț | Link |

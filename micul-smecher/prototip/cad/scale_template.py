@@ -179,8 +179,9 @@ def page2():
         ('Sticla', 'Ø52, plată, 2.5D, neagră', 'Ø74,3 (design) / Ø95,86 a plăcii 2.8C (kit)'),
         ('Ecran', '1,75″ <b>AMOLED</b> 466×466, CO5300, negru adevărat', '2,8″ IPS 480×480, ST7701'),
         ('Placa', 'dezvoltare: Waveshare ESP32-S3-Touch-AMOLED-1.75 (2 microfoane + difuzor pe placă); produs: PCB propriu [estimare, EVT]',
-         'Waveshare ESP32-S3-Touch-LCD-2.8C, firmware 1.9.0 „SoulOS Alive”'),
-        ('Baterie', '<b>750 mAh</b> LiPo 603040 [estimare]; prototipul S-P0: ~450 mAh (503030)', '1500 mAh (803450)'),
+         'Waveshare ESP32-S3-Touch-LCD-2.8C, SoulOS 1.9.1 („SoulOS Alive”)'),
+        ('Baterie', '<b>%d mAh</b> LiPo 603040 [estimare]; prototipul S-P0: ~%d mAh (503030) [estimare]' % (
+            s['battery_mAh'], s['variants']['S-P0_dev_board']['battery_mAh']), '1500 mAh (803450)'),
         ('Autonomie (ziua-model docs/09)', '≈ %d h (%d–%d h) [estimare]; ≈ %d h cu light sleep' % (
             bl['typical_day_h'], bl['range_h'][0], bl['range_h'][1], bl['with_light_sleep_firmware_h']),
          '≈ %d h' % bl['m_for_comparison_h']),

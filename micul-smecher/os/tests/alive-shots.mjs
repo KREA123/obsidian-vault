@@ -1,6 +1,6 @@
-/* SoulOS Alive: device-size stills (480 x 480, round mask) of the key screens + one contact sheet, and zero console errors.
+/* SoulOS Alive: device-size stills (466 x 466 = SOUL S, the 1.75" AMOLED; round mask) of the key screens + one contact sheet, and zero console errors.
    node os/tests/alive-shots.mjs [outDir]   (default os/screenshots/alive; the sheet: os/screenshots/alive/soulos-alive-sheet.png)
-   Needs a global `playwright` with Chromium, like soulos.test.mjs. The glass is shot at a device scale that makes it 480 px,
+   Needs a global `playwright` with Chromium, like soulos.test.mjs. The glass is shot at a device scale that makes it 466 px (S),
    then os/tools/alive_post.py masks every still to the round screen and builds the sheet. */
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
@@ -26,8 +26,8 @@ async function fonts(page) {
 const results = [];
 const ok = (c, m) => { results.push((c ? "PASS " : "FAIL ") + m); if (!c) console.log("FAIL", m); };
 const browser = await chromium.launch();
-/* the drawn glass is 440 x 0.825 = 363 CSS px wide: this scale makes it 480 device pixels */
-const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 480 / 363 });
+/* the drawn glass is 440 x 0.825 = 363 CSS px wide: this scale makes it 466 device pixels (SOUL S) */
+const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 466 / 363 });
 await ctx.addInitScript(() => { try { localStorage.setItem("soulos-born", "1"); localStorage.setItem("soulos-chip", "C0FFEE123456"); localStorage.setItem("soulos-body", "silver"); } catch (e) {} });
 await ctx.grantPermissions(["geolocation"]); await ctx.setGeolocation({ latitude: 44.4355, longitude: 26.1025 });
 const page = await ctx.newPage(); await fonts(page);

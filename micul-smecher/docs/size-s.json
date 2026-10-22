@@ -39,9 +39,11 @@
       "dims_mm": { "w": 63.0, "h": 70.8, "d": 25.65 },
       "s_back": 1.0,
       "board": "Waveshare ESP32-S3-Touch-AMOLED-1.75 with its stock glass (TP OD 48.96 mm)",
-      "battery_mAh": 500,
-      "battery": "LiPo 503035 (5.05 x 30 x 35.5 mm)",
-      "est_battery_life_h": 18,
+      "battery_mAh": 450,
+      "battery": "LiPo 503030 class (5.0 x 30 x 30 mm, ~450 mAh [E], PCM, 2-pin MX1.25 lead); CAD envelope 30.5 x 31 x 5.55 incl. PCM tape + 0.5 swell",
+      "battery_note": "the exported S-P0 CAD (prototip/cad/soul_p0_s.py, batfit search 2026-10-20) fits a 503030, not the 503035 (500 mAh) first planned in docs/12 section 2.3: with the USB-C plug tunnel under the board a 35 mm cell does not fit the narrower MARGARITAR bottom. Capacity is the listing class [E] until a cell is in hand.",
+      "est_battery_life_h": 16,
+      "est_battery_life_note": "[E] 18 h at 500 mAh scaled by capacity (docs/12 section 2.5, dev board deep sleep ~2 mA)",
       "weight_g_est": 90
     },
     "M_prototype": {
@@ -51,7 +53,7 @@
       "board": "Waveshare ESP32-S3-Touch-LCD-2.8C",
       "display": "2.8\" round IPS 480 x 480",
       "battery_mAh": 1500,
-      "role": "prototype for tests and the PoC TRL 3 proof (firmware 1.9.0)"
+      "role": "prototype for tests and the PoC TRL 3 proof (SoulOS 1.9.1, firmware/release/SOUL-2.8C-install.bin)"
     }
   },
   "cnc": {
@@ -59,7 +61,9 @@
     "shell_volume_cm3_at_1.4mm": 13.6,
     "billet_kg_per_set": 0.4,
     "cycle_min_per_set": 24,
-    "m_reference": { "billet_kg_per_set": 1.0, "cycle_min_per_set": 45 }
+    "m_reference": { "billet_kg_per_set": 1.0, "cycle_min_per_set": 45, "shell_surface_cm2": 195.8 },
+    "external_shell_factor_vs_M": 0.65,
+    "external_shell_factor_note": "[E] one factor for bought-in CNC, bead-blast and anodise per set, S vs M (docs/12 section 3.1): surface x 0.50, billet 0.4 / 1.0 kg = x 0.40, cycle 24 / 45 min = x 0.53, plus fixed set-up, handling and lot shares that do not scale. Used by docs/01-BOM SV-07, the factory model (docs/factory) and the campaign goal model (crowdfunding/facts.json size_S.cost_factors_vs_M)"
   },
   "price_from_eur": 249,
   "company": "ARTEMIS DIGITAL S.R.L."

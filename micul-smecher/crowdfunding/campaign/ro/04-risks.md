@@ -5,7 +5,7 @@
 SOUL e un produs în dezvoltare, făcut de o firmă mică. Să-l susții nu înseamnă să cumperi dintr-un magazin: ne ajuți să construim primul lot, iar unele lucruri pot merge prost. Iată ce știm că poate merge prost și ce facem în privința asta.
 
 **1. Lotul e încă în fața noastră.**
-Primul nostru prototip funcțional e mărimea mai mare, M. SOUL pe care îl susții e S (63 × 71 mm, AMOLED rotund de 1,75″).
+Prototipul nostru de test, în construcție (placa e comandată, încă netestată), e mărimea mai mare, M. SOUL pe care îl susții e S (63 × 71 mm, AMOLED rotund de 1,75″).
 [[G1: „SoulOS rulează pe placa S reală, cu voce, din <data>.”]]
 [[G2: „Un SOUL S din aluminiu a fost asamblat și filmat funcționând dintr-o singură dublă pe <data>.”]]
 Între câteva bucăți făcute de mână și un lot de câteva sute mai e muncă: adâncimea finală, bateria finală, testarea fiecărei bucăți. Ce facem: nu am lansat pe randări. Pagina a apărut doar după ce un S real a mers în fața camerei, iar specificațiile spun clar ce e final și ce încă se decide.

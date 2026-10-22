@@ -77,7 +77,7 @@ const RO = {
   "os.a2": "Harta în SoulOS: ochii stau într-un cerc negru, sus, peste hartă, cu un buton Where to? dedesubt.",
   "os.a3": "Cadranul SoulOS în galben și albastru: culorile ochilor galbeni Sunday Toast pe un corp Albastru noapte.",
   "os.a4": "Ecranul Talk din SoulOS imediat după deschidere: ochii sus, Your Claude, Hold, or type și un buton Write to Claude.",
-  "os.fig": "Ecrane din prototipul web SoulOS, 480 × 480. Pe SOUL S rulează la 466 × 466.",
+  "os.fig": "Ecrane din prototipul web SoulOS, capturate la 480 × 480, mărimea prototipului M (12 oct.). Pe SOUL S rulează la 466 × 466.",
   "os.c1t": "un cadran făcut pentru cerc", "os.c1": "Aplicațiile stau în jurul ochilor ca niște pietricele. Rotești inelul cu degetul. Marginea rotundă nu taie nimic.",
   "os.c2t": "ochii rămân cu tine", "os.c2": "Deschizi o hartă, o notiță sau AI-ul: ochii urcă în partea de sus a cercului și reacționează în continuare. Nu pleacă niciodată de pe ecran.",
   "os.c3t": "culori din ochii cu care s-a născut", "os.c3": "Ecranele fiecărui SOUL își iau culorile din perechea lui de ochi și din corpul de aluminiu. Aici: ochi Sunday Toast pe Albastru noapte.",

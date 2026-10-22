@@ -231,7 +231,7 @@ Frame: Brain.update() → Shell.update() → renderFace(canvas, face, shell.face
 | 5 | Unelte telefon (mesaje, muzică, calendar), MCP (Home Assistant), Traduce, Memorie (vezi/șterge) | 3 săpt. |
 | 6 | Performanță (DMA dublu buffer, tranziții 30 fps), baterie (somn agresiv, AMOLED negru), teste `pio test -e native` pentru Shell/Notifier | 1,5 săpt. |
 
-Criterii de gata: nicio acțiune nu cere mai mult de 2 gesturi de pe față; de la eliberarea degetului la primul cuvânt < 1,8 s (p50); inelul gheață e prezent în 100% din cadrele cu microfon activ; 18 ore de folosire tipică pe 1000 mAh.
+Criterii de gata: nicio acțiune nu cere mai mult de 2 gesturi de pe față; de la eliberarea degetului la primul cuvânt < 1,8 s (p50); inelul gheață e prezent în 100% din cadrele cu microfon activ; 18 ore de folosire tipică pe bateria SOUL S de 750 mAh (LiPo 603040; estimarea de azi e ~27 h [E], interval 21–34 h: `docs/size-s.json`, `docs/12-SIZE-S.md` §2.5).
 
 ---
 

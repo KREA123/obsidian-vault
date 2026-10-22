@@ -264,6 +264,9 @@ def sheet_p0(v='plastic', theme='blue'):
     GL = mesh(v, 'board_glass')
     (x0, y0, z0), (x1, y1, z1) = allm.bounds
     W, D, H = x1 - x0, y1 - y0, z1 - z0
+    # labels use the CAD B-rep size (report_s_*.json, = size-s.json S-P0 25.65); the STL tessellation of the curved back reads ~0.03 less
+    Dm = D
+    Dl = rs.get('dims', {}).get('D', D)
     VF = View(92, 206, k)
     VS = View(206, 206, k)
     VT = View(326, 52, k)
@@ -297,7 +300,7 @@ def sheet_p0(v='plastic', theme='blue'):
         if n == 'usb_plug':
             p = p.intersection(_box(-100, -3, 100, 200))
         draw_poly(sh, VS, p, cls, extra='style="fill:url(#%s)"' % hatch if hatch else '')
-    sh.dim_h(*VS.p(y0, 0), *VS.p(y1, 0), VS.p(0, 0)[1] + 9, '%.2f' % D)
+    sh.dim_h(*VS.p(y0, 0), *VS.p(y1, 0), VS.p(0, 0)[1] + 9, '%.2f' % Dl)
     sh.line(*VS.p(g.SEAM_A, -2 + g.FOOT_H), *VS.p(g.SEAM_A + g.SEAM_B * (H + 2), H + 2 + g.FOOT_H), 'cut')
     sh.text(VS.p(0, 0)[0] + 6, TY, 'SECTION A-A (x = 0.3)', 3.2, 'middle', 'tx', weight='bold')
     sh.text(VS.p(0, 0)[0] + 6, TY + 3.8, 'glass, module, LiPo (tinted), 1511, chassis;', 2.0, 'middle', 'td')
@@ -307,7 +310,7 @@ def sheet_p0(v='plastic', theme='blue'):
     draw_poly(sh, VT, silhouette(allm, 'top'), 'o')
     sh.line(*VT.p(x0 - 4, g.SEAM_A + g.SEAM_B * g.G[2]), *VT.p(x1 + 4, g.SEAM_A + g.SEAM_B * g.G[2]), 'ph')
     sh.text(VT.p(x1 + 5, 0)[0], VT.p(0, g.SEAM_A + g.SEAM_B * g.G[2])[1] + 0.8, 'SEAM', 2.0, 'start', 'td')
-    sh.dim_v(*VT.p(x0, y0), *VT.p(x0, y1), VT.p(x0, 0)[0] - 8, '%.2f' % D)
+    sh.dim_v(*VT.p(x0, y0), *VT.p(x0, y1), VT.p(x0, 0)[0] - 8, '%.2f' % Dl)
     sh.text(VT.p(0, 0)[0], VT.p(0, y0)[1] + 8, 'TOP  (face toward the bottom of the sheet)', 2.8, 'middle', 'tx', weight='bold')
 
     inter = rs.get('interference', {})
@@ -319,8 +322,9 @@ def sheet_p0(v='plastic', theme='blue'):
     Up = [s['screw_len_max'] for s in sc if s['kind'] == 'up']
     L_lo = BP.screw_std(min(Lo)) if Lo else 12
     L_up = BP.screw_std(min(Up)) if Up else 8
-    rows = ['Envelope %.1f x %.1f x %.2f' % (W, H, D),
+    rows = ['Envelope %.1f x %.1f x %.2f (CAD B-rep)' % (W, H + g.FOOT_H if H < 70 else H, Dl),
             '  = S product W x H, uncompressed back (s_back 1.0)',
+            '  (the STL mesh reads %.2f deep: tessellation)' % Dm,
             'Board Waveshare ESP32-S3-Touch-AMOLED-1.75',
             '  stock glass Ø48.96 x 1.10 under a %.1f lip' % VAR[2],
             'Battery LiPo 503030 class, ~450 mAh [estimare]',

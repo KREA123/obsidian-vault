@@ -15,7 +15,7 @@ Length **2:21** (rough cut `rough-cut.mp4`, 141.1 s). Facts come from `../facts.
 
 ## 0. Rules this video follows
 
-1. **What backers buy is SOUL S:** 63 × 71 mm, 23–26 mm deep (being finalised), round 1.75″ AMOLED 466 × 466, aluminium. The working prototype today is **M** (90 × 101 mm, 2.8″). The video sells S.
+1. **What backers buy is SOUL S:** 63 × 71 mm, 23–26 mm deep (being finalised), round 1.75″ AMOLED 466 × 466, aluminium. The prototype being built is **M** (90 × 101 mm, 2.8″; board ordered, not yet tested). The video sells S.
 2. **The final video needs real footage of a working aluminium SOUL S.** That footage is gate **G2 (12 Feb 2027)**; shoot by 26 Feb 2027. There is no submission for review without it.
 3. Real footage of the **M** prototype carries this line, burned in, for the whole shot: *"Prototype shown at a larger size (M). The product you back is S: 63 × 71 mm with a 1.75″ AMOLED."* A G1 bench clip (15 Dec 2026) carries *"Development board, not the final product."*
 4. **Anything that shows scale is S only.** Allowed sources: real S footage (F07), `renders/v10/` (used only as `images/story_06b_in_hand.jpg` / `story_06c_on_desk.jpg`, with the old glowing eyes painted over by the eyes engine), or the true-scale graphic `images/gallery_2_size_1200x630.png`.
@@ -23,7 +23,7 @@ Length **2:21** (rough cut `rough-cut.mp4`, 141.1 s). Facts come from `../facts.
 5. Every picture that is not real footage carries its label, burned in, top-left:
    - "RENDER (CGI), NOT A PHOTO"
    - "EYES ENGINE: SCREEN ANIMATION FROM THE DEVICE CODE, NOT A PHOTO"
-   - "SOULOS SIMULATOR CAPTURE AT S SIZE, 466 × 466. NOT A REAL DEVICE" (firmware 1.9.0 has never run on a real board; "SoulOS (shown on the prototype)" only for real device recordings)
+   - "SOULOS SIMULATOR CAPTURE AT S SIZE, 466 × 466. NOT A REAL DEVICE" (firmware 1.9.1 has never run on a real board; "SoulOS (shown on the prototype)" only for real device recordings)
    - "ILLUSTRATION" / "ILLUSTRATION · TRUE SCALE"
 6. **No claim that SOUL includes AI.**
    - ChatGPT appears only as "your own OpenAI key, in development". "Sign in with ChatGPT" appears only as "pending OpenAI approval".
@@ -244,7 +244,7 @@ F03 needs the S board: the M dev board has no microphone. Anything filmed on M c
   - choose a human voice;
   - choose the body music track and file its licence;
   - review the teaser before it is posted.
-- **Renders:** swap in `soul_v10_ou_night.png` (8e) when it is rendered, with the flat eyes. `soul_v10_vs_m.png` is not needed in the film.
+- **Renders:** swap in `soul_v10_ou_night.png` (8e; rendered 2026-10-22), with the flat eyes. `soul_v10_vs_m.png` is not needed in the film.
 - **Trailer before campaign use:**
   - cut the M-scale hand at 19.2–22.2 s;
   - change "Join the waitlist" to "Back SOUL on Indiegogo";

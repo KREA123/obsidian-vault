@@ -6,7 +6,9 @@
 <!-- SOUL trailer v4. A deterministic, frame-addressable page: render(t) draws the frame at video time t (seconds).
      render.py steps it frame by frame with Playwright and encodes the PNGs. ?v=1 = vertical 1080x1920 (re-laid-out,
      same timeline). ?a=<dir>/ = asset folder (default assets/). Product images are Blender cut-outs (renders/v9,
-     CGI); the eyes and UI on the glass are drawn live onto the glass outline projected from the render camera. -->
+     CGI, object-only, so scale-neutral: v9's local geometry is SOUL S's design scale and renders/v10 hero/family/side use the
+     same body and camera); the eyes and UI on the glass are drawn live onto the glass outline projected from the render
+     camera, inside SOUL S's lit disc (Ø43.76 of the Ø52 glass, 2026-10-22). -->
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root{--ink:#16181D;--amber:#E8890C;--paper:#FAF8F3;--cream:#FFF0C8}
@@ -337,7 +339,7 @@ class Prod {
   }
   draw(t) {
     if (!this.ctx) return;
-    const x = this.ctx, N = this.N, R = N / 2, Rd = R * .957;   // the 2.8" display is Ø71 of the Ø74.3 glass
+    const x = this.ctx, N = this.N, R = N / 2, Rd = R * 43.76 / 52;   // SOUL S: the 1.75" AMOLED's lit disc is Ø43.76 of the Ø52 glass (docs/size-s.json); was .957 = M's 2.8" (Ø71 of Ø74.3)
     x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.clearRect(0, 0, N, N);
     x.save(); x.beginPath(); x.arc(R, R, Rd, 0, TAU); x.clip();
     let uiA = 0;

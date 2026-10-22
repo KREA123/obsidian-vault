@@ -281,7 +281,10 @@ Pick for v2: **EG800Q-EU** (size, LTE-only) with **SIM7672E** as the second sour
   research/08 already calls "an antenna window by design"), on its inside wall, with **≥ 10–15 mm clearance from
   aluminium** and the battery [E: typical keep-outs for FPC LTE antennas], fed by U.FL from the module.
 - Low bands (B20 800 MHz, B8 900 MHz) need a ground ~ λ/4 ≈ 80–90 mm; SOUL M is ~ 80 mm across, so expect **low-band
-  efficiency 10–25 %** (−6 to −10 dB) [E]; mid bands (B3 1800, B1 2100, B7 2600) will be fine. Rural/indoor coverage on
+  efficiency 10–25 %** (−6 to −10 dB) [E]; mid bands (B3 1800, B1 2100, B7 2600) will be fine. **On SOUL S** (63 mm
+  wide, a ~46 mm PCB, a polymer base of only ≈ 38 × 16 mm [E: docs/12 §4]) the ground is shorter still, so low-band
+  efficiency will be **lower than M's estimate** [E, not modelled] and the 10–15 mm keep-out from aluminium barely fits in
+  the base: on S a cellular option needs an antenna study (or the seam band, `alu_band`) before any promise. Rural/indoor coverage on
   B20 is the risk: measure with an operator-grade test before committing.
 - **Coexistence**: B7 (2.6 GHz) and B40 sit next to Wi-Fi/BLE 2.4 GHz: keep the cellular antenna ≥ 20 mm from the
   ESP32's antenna, orthogonal if possible.

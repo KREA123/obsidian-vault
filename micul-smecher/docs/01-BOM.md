@@ -24,7 +24,7 @@ Currencies:
 | **S-P0 plastic looks-like** (1 unit, SLA shells + metallic paint) | **≈ €211** [E] | – | Includes the OU print, box and freight share. Board alone is €33. |
 | **S-P0 aluminium** (1 unit, CNC set bought as a pair) | **≈ €363** [E] | ≈ €563 if you pay for both CNC sets | CNC shops quote 2 sets minimum. The second set is your spare. The alu STEP is not exported yet. |
 | First S batch hardware @ 10 units (ex Founders 00) | ≈ €271 [E] | ≈ €2.7k | Why 25 beats 10: CNC set-up is 40–60 % of the price at small quantities. |
-| **First S batch hardware @ 25 units** | **≈ €190** [E] (+10 % scrap reserve = €209) | **≈ €5.2k** | S-P0 aluminium bodies around the stock board (25.65 mm, 500 mAh). Matches research/10 §1.3 (≈ $230 ≈ €200). |
+| **First S batch hardware @ 25 units** | **≈ €190** [E] (+10 % scrap reserve = €209) | **≈ €5.2k** | S-P0 aluminium bodies around the stock board (25.65 mm, 503030 cell ≈ 450 mAh [E]). Matches research/10 §1.3 (≈ $230 ≈ €200). |
 | First S batch one-off costs (CE/RED, EN 18031, ANMAP, trademark, spares, tools, insurance) | – | **≈ €15.0k** [E] | CE/RED is €5–12k. That range decides the total. |
 | First S batch total cash out | ≈ €810 per unit if the one-off costs are spread over 25 | **≈ €20.3k** [E] | No batch is planned today: the site is a waitlist from €249, nothing charged before CE. Kept as the cost reference for small S runs (`12-SIZE-S.md` §3.1). |
 | M prototype parts (TRL 3 bench, own funds) | ≈ €95 per kit [E] (≈ 487 lei) | – | Table (d), from `prototip/COMANDA.md`. Not part of any S total. |
@@ -40,7 +40,7 @@ Not included:
 S-P0 is the DIY pilot of SOUL S: the MĂRGĂRITAR S outline around the **stock Waveshare ESP32-S3-Touch-AMOLED-1.75** with its stock Ø48.96 glass. CAD: `prototip/cad/soul_p0_s.py`; print files: `prototip/stl/s/` (with its assembly note), `prototip/step/s/`; drawing: `blueprints/final/soul_s_2_p0_kit.png`.
 - **Body: 63.0 × 70.8 × 25.65 mm** (the uncompressed back). It is the only depth where the stock 8.7 mm board stack plus a cell fits (`12-SIZE-S.md` §2.3–2.4). The product is 23.0 mm, with its own PCB.
 - **Parts:** front shell, back shell, a printed chassis, PWR/BOOT key pins.
-- **Cell:** `size-s.json` plans a 503035 (500 mAh, ≈ 18 h [E]); the exported CAD fits a 503030 class (≈ 450 mAh [E], ≈ 16 h [E]) because of the USB-C plug tunnel.
+- **Cell:** a 503030 class (≈ 450 mAh [E], ≈ 16 h [E]), as in `size-s.json` and the exported CAD. The 503035 (500 mAh) first planned does not fit beside the USB-C plug tunnel (`12-SIZE-S.md` §2.3).
 - **Closure:** 4 × M2 from the back (2 × M2×12 lower, 2 × M2×8 upper).
 - **Charging:** over the board's own USB-C. Pogo contacts and the OU dock are optional.
 
@@ -54,7 +54,7 @@ Qty 1 = one pilot. Build 2–3: the price per unit drops toward the @10 column o
 | ID | Part | Spec | Qty/unit | Supplier | €/unit @1 | @10 | @25 | Subtotal/unit @1 | Notes |
 |---|---|---|---|---|---|---|---|---|---|
 | P0-01 | **Waveshare ESP32-S3-Touch-AMOLED-1.75**  | ESP32-S3R8, 16 MB flash, 1.75" round AMOLED 466x466 (CO5300) + CST9217 touch, ES8311+ES7210 2 mics, QMI8658, RTC, AXP2101, PWR key; kit speaker | 1 | [Waveshare (or Eckstein DE / Botland PL)](https://www.waveshare.com/esp32-s3-touch-amoled-1.75.htm) | 33 | 31 | 29 | 33 | List $29.99-39.99 [V, docs/12 §1.1, 20 Oct 2026]; EUR incl. shipping share. Founder: buy 1 now; docs/12 §1.1 plans 3 (firmware, S-P0, spare). Firmware: pio run -e amoled175. |
-| P0-02 | **LiPo cell 503030 / 503035** [E] | 3.7 V ~450-500 mAh, protection PCM, 2-pin MX1.25 lead (check polarity vs board BAT connector); UN38.3 summary from seller | 1 | [AliExpress / Robofun / Optimus Digital](https://www.aliexpress.com/w/wholesale-503035-lipo.html) | 6 | 4.5 | 3.5 | 6 | size-s.json plans a 503035 (500 mAh, ~18 h); the exported S-P0 CAD (prototip/cad/soul_p0_s.py) fits a 503030 (~450 mAh [E], ~16 h): envelope 30.5 x 31 x 5.55 mm. Foam, never glue (Battery Reg. Art. 11). |
+| P0-02 | **LiPo cell 503030 class** [E] | 3.7 V ~450 mAh [E], 5.0 x 30 x 30 mm, protection PCM, 2-pin MX1.25 lead (check polarity vs board BAT connector); UN38.3 summary from seller | 1 | [AliExpress / Robofun / Optimus Digital](https://www.aliexpress.com/w/wholesale-503030-lipo.html) | 6 | 4.5 | 3.5 | 6 | size-s.json variants.S-P0_dev_board and the exported S-P0 CAD (prototip/cad/soul_p0_s.py): 503030 class, ~450 mAh [E], ~16 h [E], envelope 30.5 x 31 x 5.55 mm. The 503035 first planned does not fit beside the USB-C tunnel (docs/12 §2.3). Foam, never glue (Battery Reg. Art. 11). |
 | P0-03 | **Micro speaker 1511** [E] | 15 x 11 x 3.5 mm, 8 ohm 1 W, wire leads -> MX1.25 | 1 | [AliExpress](https://www.aliexpress.com/w/wholesale-1511-speaker-8ohm.html) | 2 | 1.5 | 1.2 | 2 | The board kit has an 8 ohm 2 W speaker [V]; the S-P0 chassis frame is 15 x 11, so measure the kit one or buy this. |
 | P0-04 | **M2 brass heat-set inserts** [E] | M2, OD 3.2 mm, L 4 mm (plastic variant only; alu variant uses tapped M2 holes) | 4 | [Ruthex / AliExpress](https://www.ruthex.de) | 0.08 | 0.06 | 0.05 | 0.32 | Pack of 100 ~EUR 6-9. |
 | P0-05 | **M2 screws, A2 stainless** [E] | M2 cylinder head: 2 x M2x12 (lower) + 2 x M2x8 (upper); max lengths 13.3 / 9.1 mm (prototip/stl/s/README.md) | 4 | [AliExpress / Bossard / local](https://www.aliexpress.com/w/wholesale-m2-torx-screw-stainless.html) | 0.1 | 0.08 | 0.06 | 0.4 | 2 lower (clamp chassis legs) + 2 upper (straight into front). Product S: 2 x Torx T5 in the foot. |
@@ -99,28 +99,28 @@ The "Subtotal/unit @1" column here is the line total for the batch.
 | B-11 | **Anodise colour golden sample** [E] | Physical sample per colour, approved under D65 light | 1 | [CNC supplier](https://jlccnc.com) | 100 | 100 | 100 | 100 |  |
 
 ### (c) SOUL S per unit at 100 and 1,000 (from `12-SIZE-S.md` §3.1)
-EUR net of VAT, $1 = €0.87; logistics ≈ 12 % of imports at 100 and ≈ 8 % at 1,000. At 100 the electronics are the Waveshare board, so the body is S-P0 (25.65 mm, 500 mAh). At 1,000 it is the product: own round PCB, 23.0 mm, 750 mAh LiPo 603040. All lines are [E] until quotes arrive. M is shown only for comparison.
+EUR net of VAT, $1 = €0.87; logistics ≈ 12 % of imports at 100 and ≈ 8 % at 1,000. At 100 the electronics are the Waveshare board, so the body is S-P0 (25.65 mm, 503030 ≈ 450 mAh [E]). At 1,000 it is the product: own round PCB, 23.0 mm, 750 mAh LiPo 603040. All lines are [E] until quotes arrive. M is shown only for comparison.
 
 | ID | Line | What | **S @100** | **S @1000** | M @100 | M @1000 | Notes |
 |---|---|---|---:|---:|---:|---:|---|
 | SV-01 | **Electronics** | @100: Waveshare ESP32-S3-Touch-AMOLED-1.75 (mics, codecs, speaker header on board); @1000: own round PCB ~46 mm = 1.75" AMOLED panel + ESP32-S3-WROOM-1-N16R8 + parts + 4-layer PCB | 26.09 | 16.76 | 45.35 | 18.67 | @100 board $29.99 [V]; @1000 panel $10 [E: $9-17 list] + WROOM $3.46 + parts $5 + PCB $0.8. M: 2.8C $39.99 + INMP441 + MAX98357; own PCB with 2.8" panel $12. |
-| SV-02 | **Battery** | @100: LiPo 503035 500 mAh (S-P0); @1000: LiPo 603040 750 mAh, 2.8 Wh, PCM | 3.00 | 1.31 | 3.92 | 1.83 | 603040 $1.5 [E]; A&S Power listing (HKTDC), no quote. M: 803450 1500 mAh. |
+| SV-02 | **Battery** | @100: LiPo 503030 class ~450 mAh (S-P0); @1000: LiPo 603040 750 mAh, 2.8 Wh, PCM | 3.00 | 1.31 | 3.92 | 1.83 | 603040 $1.5 [E]; A&S Power listing (HKTDC), no quote. M: 803450 1500 mAh. |
 | SV-03 | **Front glass** | Flat 2.5D cover glass dia 52, 0.7 mm, black print, chemically strengthened | 5.22 | 1.91 | 6.96 | 2.61 | Set-up dominated at 100; area x 0.49 at 1000 [E]. M: dia 74.3. |
 | SV-04 | **Speaker + small mechanics + cable** | Speaker 15 x 11 (kit speaker at 100), screws, magnets, foam, pogo coin, USB-C cable | 5.70 | 4.00 | 7.27 | 4.50 | [E] |
 | SV-05 | **Transport + duty** | Imports from Asia: freight + ~2 % duty electronics | 4.88 | 1.95 | 7.75 | 2.24 | Model: ~12 % of imports at 100, ~8 % at 1000. |
 | SV-06 | **Local: OU + packaging + chassis/foot** | OU capsule (15 / 10), box + certificate + guide (9 / 5), polymer chassis + foot (4.5 / 2.6) | 28.50 | 17.60 | 34.00 | 21.00 | [E] M: 18 + 10 + 6 at 100; 12 + 5.5 + 3.5 at 1000. |
-| SV-07 | **Aluminium shell, external** | CNC 6061 front + back + bead-blast + anodise, delivered | 71.00 | 30.85 | 109.30 | 47.46 | S = M x 0.65 [E]: surface x 0.50, billet 0.4 vs 1.0 kg, cycle ~24 vs 45 min (size-s.json cnc). |
+| SV-07 | **Aluminium shell, external** | CNC 6061 front + back + bead-blast + anodise, delivered | 71.00 | 30.85 | 109.30 | 47.46 | S = M x 0.65 [E] (size-s.json cnc.external_shell_factor_vs_M; same factor in the factory model and the campaign goal model): surface x 0.50, billet 0.4 vs 1.0 kg, cycle ~24 vs 45 min. |
 | | **BOM delivered (no shell, no labour)** | SV-01…06 | **73.39** | **43.53** | 105.25 | 50.85 | |
 | | **Hardware per unit** | SV-01…07 | **144.39** | **74.38** | 214.55 | 98.31 | |
 
 The factory model (`docs/factory/SOUL-fabrica-model.xlsx`, sheet *Ipoteze*) uses the same lines, plus PCBA and labour per scenario.
 
 ### (d) M prototype: parts for one P0-M kit (reference only)
-The M prototype (Waveshare 2.8C, 112.1 × 125.1 × 31.6 mm printed kit, firmware 1.9.0, `firmware/release/SOUL-2.8C-install.bin`) is the test and PoC TRL 3 bench. It is bought from own funds and is not part of any S total. Full list, small parts and tools: [`prototip/COMANDA.md`](../prototip/COMANDA.md).
+The M prototype (Waveshare 2.8C, 112.1 × 125.1 × 31.6 mm printed kit, SoulOS 1.9.1, `firmware/release/SOUL-2.8C-install.bin`) is the test and PoC TRL 3 bench. It is bought from own funds and is not part of any S total. Full list, small parts and tools: [`prototip/COMANDA.md`](../prototip/COMANDA.md).
 
 | ID | Part | Spec | lei @1 (incl. VAT) | ≈ € | Supplier | Notes |
 |---|---|---|---:|---:|---|---|
-| M-01 | **Waveshare ESP32-S3-Touch-LCD-2.8C** | round 2.8" IPS 480x480 (ST7701, RGB), GT911 touch, QMI8658, RTC, buzzer; the touch variant | 190 | 37 | [Waveshare / AliExpress](https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm) | $39.99 list; founder saw ~140 lei on Alibaba [unverified]. Firmware: pio run -e lcd28 or the 1.9.0 image. |
+| M-01 | **Waveshare ESP32-S3-Touch-LCD-2.8C** | round 2.8" IPS 480x480 (ST7701, RGB), GT911 touch, QMI8658, RTC, buzzer; the touch variant | 190 | 37 | [Waveshare / AliExpress](https://www.waveshare.com/esp32-s3-touch-lcd-2.8c.htm) | $39.99 list; founder saw ~140 lei on Alibaba [unverified]. Firmware: pio run -e lcd28 or the 1.9.1 image. |
 | M-02 | **LiPo 803450** | 8 x 34 x 50 mm, 1500 mAh, PCM, MX1.25 (pocket 8.6 x 34.5 x 50.5) | 35 | 7 | eMAG | Check polarity vs the BAT connector. |
 | M-03 | **Speaker 2030 (optional)** | 8 ohm 1 W, 20 x 30 x 5 mm box | 12 | 2 | AliExpress / eMAG |  |
 | M-04 | **MAX98357A I2S amplifier (optional)** | 3 W class D | 25 | 5 | [ArduShop / Optimus Digital](https://www.optimusdigital.ro/ro/audio-amplificatoare-audio/1656-modul-cu-amplificator-adafruit-i2s-de-3-w-in-clasa-d-max98357a.html) | Voice on M only; the S board has its own codecs. |

@@ -84,7 +84,7 @@
     "D12": {
       "q": "Batch 1 capacity: how many devices the first batch is planned and quoted for. Rewards beyond it are 'batch 2' with a later month (EU consumer law: the delivery date is an essential term).",
       "kit_default": 270,
-      "recommended": "270 (= the goal batch the timeline was sized for); raise it only with written CNC, anodising and EMS capacity at G3",
+      "recommended": "270 (the batch the timeline was sized for; ≥ the goal batch, 260 devices in tools/goal_model.out.json since the shell factor was unified on 2026-10-22); raise it only with written CNC, anodising and EMS capacity at G3",
       "decided": false,
       "must_decide_by": "2027-09-07"
     },
@@ -150,7 +150,7 @@
       "site_copy": "16+, not a toy",
       "rule": "the page says 'for people aged 18 and over' until D4 is decided otherwise"
     },
-    "firmware": {"version": "1.9.0", "status": "built and tested on PC and in the simulator (480 px M profile and 466 px S profile); NOT yet run on a real board"},
+    "firmware": {"version": "1.9.1", "status": "built and tested on PC and in the simulator (480 px M profile and 466 px S profile); NOT yet run on a real board"},
     "certification": {"CE_RED": "not yet certified", "FCC": "not started", "UKCA_UK": "not started"}
   },
   "size_S": {
@@ -182,7 +182,7 @@
     "battery_life_internal_estimate_h": {
       "route_A_750mAh_typical_day": 27,
       "route_A_range": [21, 34],
-      "route_B_500mAh": 18,
+      "route_B_450mAh": 16,
       "status": "estimate, internal only: never on the page until measured on a real S unit (battery.battery_life_rule)",
       "source": "docs/size-s.json est_battery_life"
     },
@@ -204,7 +204,7 @@
         "name": "Waveshare board inside",
         "what": "Waveshare ESP32-S3-Touch-AMOLED-1.75 (bare ESP32-S3R8)",
         "depth_mm": 25.65,
-        "battery_mAh": 500,
+        "battery_mAh": 450,
         "nre_eur_estimate": 0,
         "radio_testing": "full: bare chip, no module certificate to reuse",
         "supply": "single source (Waveshare); EU distributors out of stock on 2026-10-20"
@@ -212,7 +212,7 @@
     },
     "battery": {
       "capacity_mAh": null,
-      "range_mAh": [500, 750],
+      "range_mAh": [450, 750],
       "status": "variable",
       "display": "lithium, capacity being finalised",
       "must": "user-replaceable (EU Battery Regulation Art. 11, from 18 Feb 2027); IEC 62133-2 + UN38.3 summary from the cell maker",
@@ -228,19 +228,19 @@
     "shipping_parcel": {"weight_kg_estimate": 0.4, "box_mm_estimate": [140, 140, 90], "status": "estimate", "contents": "SOUL + OU + box + guide"},
     "lithium_shipping": "UN3481, PI 967 Section II (battery inside equipment), ship at ≤30 % charge",
     "cost_factors_vs_M": {
-      "cnc": 0.66,
-      "anodise_blast": 0.72,
+      "cnc": 0.65,
+      "anodise_blast": 0.65,
       "glass": 0.7,
       "ou": 0.85,
       "chassis": 0.85,
       "packaging": 0.9,
       "mech": 0.9,
-      "derivation": "Same exponent as the factory model's S+ factors, applied to S at 49 % of M's face area. [estimate]"
+      "derivation": "cnc and anodise_blast = docs/size-s.json cnc.external_shell_factor_vs_M (0.65): surface x 0.50, billet 0.4 vs 1.0 kg, cycle 24 vs 45 min, plus fixed set-up and lot shares; the same factor as docs/01-BOM SV-07 and the factory model. The other factors: the factory model's S+ exponent applied to S at 49 % of M's face area. [estimate]"
     }
   },
   "prototype_M": {
     "label": "M",
-    "status": "the working prototype that exists now; NOT the product sold",
+    "status": "the bench prototype being built (Waveshare 2.8C board ordered, not yet tested); NOT the product sold",
     "dims_mm": [90, 101, 31.5],
     "screen": {"diagonal_in": 2.8, "type": "IPS LCD", "resolution_px": [480, 480]},
     "board": "Waveshare ESP32-S3-Touch-LCD-2.8C (no microphone on the board: voice needs the add-on mic module)",
@@ -248,15 +248,15 @@
   },
   "renders_v10": {
     "path": "micul-smecher/renders/v10/",
-    "status": "in progress (checked 2026-10-22): hero, family, side, hand, desk rendered; ou_night and vs_m pending",
+    "status": "complete (checked 2026-10-22): hero, family, side, hand, desk, ou_night and vs_m rendered (renders/v10/README.md)",
     "files": {
       "hero": "soul_v10_hero.png",
       "family": "soul_v10_family.png",
       "side": "soul_v10_side.png",
       "hand": "soul_v10_hand.png",
       "desk": "soul_v10_desk.png",
-      "ou_night": null,
-      "vs_m": null
+      "ou_night": "soul_v10_ou_night.png",
+      "vs_m": "soul_v10_vs_m.png"
     },
     "use": "label 'Render (CGI), not a photo.'; hand/desk/vs_m are the only renders allowed to show scale. In the kit the v10 hand/desk renders are used with the old glowing eyes painted over and the flat SoulOS eyes drawn by the eyes engine (images/src/templates.js v10eyes).",
     "hand_note": "the v10 hand is a smooth CGI hand (looks like a mannequin): replace with a real hand holding an S-size model as soon as one exists"
@@ -274,7 +274,7 @@
     "ai_short": "Works with your own Claude or your own OpenAI API key (in development), or offline. SOUL does not include AI.",
     "soulos_s": "SoulOS simulator capture at the S screen size (466 × 466). Not a recording of a real device.",
     "soulos_device": "SoulOS (shown on the prototype).",
-    "soulos_device_rule": "use soulos_device only for real recordings of a real board; firmware 1.9.0 has not run on one yet",
+    "soulos_device_rule": "use soulos_device only for real recordings of a real board; firmware 1.9.1 has not run on one yet",
     "render_eyes": "Render (CGI), not a photo. Eyes drawn by the SOUL eyes engine."
   },
   "size_graphics": {

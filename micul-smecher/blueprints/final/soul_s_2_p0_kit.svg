@@ -235,7 +235,7 @@
 <line class="t" x1="186.606" y1="215" x2="237.838" y2="215" />
 <path class="ah" d="M186.606 215 L188.906 214.45 L188.906 215.55 Z" />
 <path class="ah" d="M237.838 215 L235.538 215.55 L235.538 214.45 Z" />
-<text class="td" x="212.222" y="214.1" font-size="2.6" text-anchor="middle" >25.62</text>
+<text class="td" x="212.222" y="214.1" font-size="2.6" text-anchor="middle" >25.65</text>
 <line class="cut" x1="204.678" y1="207.6" x2="216.522" y2="58.04" />
 <text class="tx" x="212" y="226" font-size="3.2" text-anchor="middle" font-weight="bold" >SECTION A-A (x = 0.3)</text>
 <text class="td" x="212" y="229.8" font-size="2" text-anchor="middle" >glass, module, LiPo (tinted), 1511, chassis;</text>
@@ -248,21 +248,22 @@
 <line class="t" x1="255.04" y1="20.162" x2="255.04" y2="71.394" />
 <path class="ah" d="M255.04 20.162 L255.59 22.462 L254.49 22.462 Z" />
 <path class="ah" d="M255.04 71.394 L254.49 69.094 L255.59 69.094 Z" />
-<text class="td" x="254.14" y="45.778" font-size="2.6" text-anchor="middle" transform="rotate(-90 254.14 45.778)" >25.62</text>
+<text class="td" x="254.14" y="45.778" font-size="2.6" text-anchor="middle" transform="rotate(-90 254.14 45.778)" >25.65</text>
 <text class="tx" x="326" y="79.394" font-size="2.8" text-anchor="middle" font-weight="bold" >TOP  (face toward the bottom of the sheet)</text>
 <text class="tx" x="262" y="98" font-size="2.6" text-anchor="start" font-weight="bold" >S-P0 KIT (plastic)</text>
-<text class="tx" x="262" y="102.2" font-size="2" text-anchor="start" >Envelope 63.0 x 70.8 x 25.62</text>
+<text class="tx" x="262" y="102.2" font-size="2" text-anchor="start" >Envelope 63.0 x 70.8 x 25.65 (CAD B-rep)</text>
 <text class="td" x="262" y="105.1" font-size="2" text-anchor="start" >  = S product W x H, uncompressed back (s_back 1.0)</text>
-<text class="tx" x="262" y="108" font-size="2" text-anchor="start" >Board Waveshare ESP32-S3-Touch-AMOLED-1.75</text>
-<text class="td" x="262" y="110.9" font-size="2" text-anchor="start" >  stock glass Ø48.96 x 1.10 under a 1.2 lip</text>
-<text class="tx" x="262" y="113.8" font-size="2" text-anchor="start" >Battery LiPo 503030 class, ~450 mAh [estimare]</text>
-<text class="td" x="262" y="116.7" font-size="2" text-anchor="start" >  envelope 30.5 x 31 x 5.55, 6° off the board</text>
-<text class="tx" x="262" y="119.6" font-size="2" text-anchor="start" >Speaker 1511 (kit), slot 12 x 1.2 in the +x seam</text>
-<text class="tx" x="262" y="122.5" font-size="2" text-anchor="start" >Walls 2.0, fit clearance 0.2 (plastic)</text>
-<text class="tx" x="262" y="125.4" font-size="2" text-anchor="start" >Interference: 60 pairs, 0 &gt; 0.01 mm3</text>
-<text class="tx" x="262" y="128.3" font-size="2" text-anchor="start" >Masses: front 8 g, back 12 g, chassis 1 g</text>
-<text class="tx" x="262" y="131.2" font-size="2" text-anchor="start" >UNVERIFIED (calipers first): USB-C cable overmold</text>
-<text class="td" x="262" y="134.1" font-size="2" text-anchor="start" >  12.4 x 7.0, MX1.25 plug heights, button travel</text>
+<text class="td" x="262" y="108" font-size="2" text-anchor="start" >  (the STL mesh reads 25.62 deep: tessellation)</text>
+<text class="tx" x="262" y="110.9" font-size="2" text-anchor="start" >Board Waveshare ESP32-S3-Touch-AMOLED-1.75</text>
+<text class="td" x="262" y="113.8" font-size="2" text-anchor="start" >  stock glass Ø48.96 x 1.10 under a 1.2 lip</text>
+<text class="tx" x="262" y="116.7" font-size="2" text-anchor="start" >Battery LiPo 503030 class, ~450 mAh [estimare]</text>
+<text class="td" x="262" y="119.6" font-size="2" text-anchor="start" >  envelope 30.5 x 31 x 5.55, 6° off the board</text>
+<text class="tx" x="262" y="122.5" font-size="2" text-anchor="start" >Speaker 1511 (kit), slot 12 x 1.2 in the +x seam</text>
+<text class="tx" x="262" y="125.4" font-size="2" text-anchor="start" >Walls 2.0, fit clearance 0.2 (plastic)</text>
+<text class="tx" x="262" y="128.3" font-size="2" text-anchor="start" >Interference: 60 pairs, 0 &gt; 0.01 mm3</text>
+<text class="tx" x="262" y="131.2" font-size="2" text-anchor="start" >Masses: front 8 g, back 12 g, chassis 1 g</text>
+<text class="tx" x="262" y="134.1" font-size="2" text-anchor="start" >UNVERIFIED (calipers first): USB-C cable overmold</text>
+<text class="td" x="262" y="137" font-size="2" text-anchor="start" >  12.4 x 7.0, MX1.25 plug heights, button travel</text>
 <rect class="o2" x="262" y="150" width="141" height="38.5" rx="0" />
 <text class="tx" x="262.8" y="152.5" font-size="1.9" text-anchor="start" font-weight="bold" >#</text>
 <line class="o3" x1="269" y1="150" x2="269" y2="188.5" />

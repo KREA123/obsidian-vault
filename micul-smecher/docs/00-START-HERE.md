@@ -7,7 +7,7 @@
   - Funcționează **fără AI**, cu **Claude-ul tău**, cu **ChatGPT-ul tău** sau cu cheia ta API.
   - Are **SoulOS** (designul „Alive”, `os/DESIGN-ALIVE.md`) cu tastatură (scrii lui Claude, notițe, alarme).
   - Doarme în capsula **OU**.
-- **SOUL M = prototipul de lucru** (≈ 90 × 101 × 31,5 mm, placa **Waveshare ESP32-S3-Touch-LCD-2.8C**, 2,8″ 480 × 480, firmware 1.9.0, `release/SOUL-2.8C-install.bin`): pentru teste și dovada TRL 3 a dosarului PoC.
+- **SOUL M = prototipul de lucru** (≈ 90 × 101 × 31,5 mm, placa **Waveshare ESP32-S3-Touch-LCD-2.8C**, 2,8″ 480 × 480, SoulOS 1.9.1, `release/SOUL-2.8C-install.bin`; pentru S: `release/SOUL-1.75-install.bin`, tot 1.9.1): pentru teste și dovada TRL 3 a dosarului PoC.
 - **Ce e gata:**
   - designul final S (randări **v10**, planșa `blueprints/final/soul_s_1_general_arrangement*`) + logo-ul „The Glass O” (`brand/logo/`); M în randările v9;
   - firmware-ul: compilează pentru **AMOLED-1.75** (`amoled175`, SOUL S) și pentru **2.8C** (`lcd28`, SOUL M);
@@ -49,12 +49,12 @@ Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026); costs from `01-
 | Screen | 2.8" IPS 480² (grey blacks) | **1.75" AMOLED 466²**, true black, CO5300 / QSPI |
 | Board | ESP32-S3-Touch-LCD-2.8C + optional mic/amp | **ESP32-S3-Touch-AMOLED-1.75** (dev, $29.99–39.99, mics + codec + speaker on board); product: custom PCB [E] |
 | Battery | 1500 mAh (803450), ≈ 32 h [E] | **750 mAh (603040), ≈ 27 h [E]** |
-| DIY prototype body | P0-M kit 112.1 × 125.1 × 31.6 mm (stock 2.8C glass Ø95.86) | **S-P0 63 × 70.8 × 25.65 mm** (stock AMOLED-1.75 glass; 500 mAh 503035 planned, the exported CAD fits a 503030 ≈ 450 mAh [E]) |
+| DIY prototype body | P0-M kit 112.1 × 125.1 × 31.6 mm (stock 2.8C glass Ø95.86) | **S-P0 63 × 70.8 × 25.65 mm** (stock AMOLED-1.75 glass; LiPo 503030 class ≈ 450 mAh [E], ≈ 16 h [E]; the 503035 first planned does not fit beside the USB-C tunnel) |
 | CNC shell | billet 1.0 kg, ~45 min/set [E] | **billet 0.4 kg, ~24 min/set** [E] |
-| Firmware | `pio run -e lcd28`, SoulOS Alive 1.9.0, image `firmware/release/SOUL-2.8C-install.bin` | `pio run -e amoled175`: S density profile + every Alive screen on 466 px (`firmware/SOUL-S.md`; 237 native tests on both); ES8311/ES7210 audio and light sleep still to do |
+| Firmware | `pio run -e lcd28`, SoulOS Alive 1.9.1, image `firmware/release/SOUL-2.8C-install.bin` (sha256 `62c2838c…`) | `pio run -e amoled175`, SoulOS Alive 1.9.1, image `firmware/release/SOUL-1.75-install.bin` (sha256 `b208fbbb…`): S layout done (every Alive screen on 466 px, b3aee4c/b9c683d), ES8311 speaker driven in 1.9.1; ES7210 mics and light sleep still to do (`firmware/SOUL-S.md`; 245 native tests on both) |
 | Weight [E] | – | ≈ 85 g (75–95) |
 | Hardware per unit [E] | ≈ €215 @100 · ≈ €98 @1000 | **≈ €144 @100 · ≈ €74 @1000** (`01-BOM.md` (c), `12-SIZE-S.md` §3.1) |
-| Role | tests + PoC TRL 3 proof (firmware 1.9.0) | the product, from €249 |
+| Role | tests + PoC TRL 3 proof (SoulOS 1.9.1) | the product, from €249 |
 | Renders / drawings | `renders/v9/`, `blueprints/final/soul_m_*` | **`renders/v10/`, `blueprints/final/soul_s_*`**, `prototip/stl/s/`, `prototip/step/s/` |
 
 ## State of every part
@@ -66,11 +66,11 @@ Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026); costs from `01-
 | Size study (v7 S/M/L) | ✅ **decided: S is the product** (20 Oct; M on 25 Sep, now the prototype) | `renders/v7/`, `research/12`, `docs/12-SIZE-S.md` | – |
 | Production CAD of S (Ø52 custom glass, 23.0 mm) | ❌ **to do** | `renders/v9/src/marg_geo.py` (MargaritarV9, s_back 0.807); S-P0 shells in `prototip/step/s/` | Needs the custom PCB (docs/12 §4) |
 | S-P0, the DIY pilot of S (CAD, STL, STEP) | ✅ plastic variant exported + checked (60 pairs) + assembly note (RO); ❌ alu variant not exported | `prototip/cad/soul_p0_s.py`, `prototip/stl/s/`, `prototip/step/s/`, `blueprints/final/soul_s_2_p0_kit.*` | Buy the AMOLED-1.75 board, print, measure the UNVERIFIED items |
-| M prototype kit P0-M (CAD, STL, STEP) | ✅ plastic + alu exported, `COMANDA.md` written | `prototip/cad/soul_p0.py`, `prototip/stl/{plastic,alu}/`, `prototip/step/{plastic,alu}/`, `prototip/COMANDA.md` | Print + flash 1.9.0 for TRL 3 |
+| M prototype kit P0-M (CAD, STL, STEP) | ✅ plastic + alu exported, `COMANDA.md` written | `prototip/cad/soul_p0.py`, `prototip/stl/{plastic,alu}/`, `prototip/step/{plastic,alu}/`, `prototip/COMANDA.md` | Print + flash 1.9.1 for TRL 3 |
 | Technical drawings | ✅ S: GA + S-P0 kit (`blueprints/final/soul_s_*`); M: 4 sheets (`soul_m_*`) | older: `blueprints/` rev A + `v3` | S production drawing after the 23 mm CAD |
 | Older parametric shells (coin/drop/gem/cloud) | ✅ done, legacy | `cad/` | Reference only |
 | OU capsule | 🟡 designed (research/09 §4) + rendered; **no CAD** | `renders/v6/soul_v6_ou_night.png`, `renders/v5/` | CAD for the SLA pilot capsule |
-| Firmware SoulOS Alive (1.9.0) | ✅ **compiles** (`lcd28` = M, `amoled175` = S, `sim`), **237/237 native tests**; S layout done (`firmware/SOUL-S.md`); ❌ not yet run on hardware | `firmware/` | First flash on the 2.8C (TRL 3), then on the AMOLED-1.75 |
+| Firmware SoulOS Alive (1.9.1) | ✅ **compiles** (`lcd28` = M, `amoled175` = S, `sim`), **245/245 native tests**; install images for both boards (`firmware/release/`); S layout + ES8311 speaker done (`firmware/SOUL-S.md`); ❌ not yet run on hardware | `firmware/` | First flash on the 2.8C (TRL 3), then on the AMOLED-1.75 |
 | SoulOS (the full OS) | 🟡 ~10 % of 1.0; spec + architecture done | `os/SPEC.md`, `os/ARCHITECTURE.md` | Roadmap 0.1 → 1.0 |
 | SoulOS web prototype | ✅ done | `os/index.html` (= `site/os.html`) | User tests of the keyboard |
 | AI service (companion, 3 modes, BYO key, MCP) | ✅ **49/49 tests pass**; no production deploy, no OAuth | `ai/` | OAuth + EU hosting + voice |

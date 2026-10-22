@@ -189,7 +189,7 @@ intents [plant.water{name:string}]   triggers [time "daily 09:00"]
 | Oprit | stins | deep sleep / PMU oprit | oprit | buton ținut 4 s (deja setat în PMU [V]) | buton, alarmă RTC |
 
 - **Alarmele sună din orice stare:** următoarea alarmă stă în memoria RTC, în alarma PCF85063 și într-un timer ESP. Nivelul „critical” trece peste nu deranja, cu difuzor și haptic.
-- *Buget pe 1000 mAh [E]:* ambient 12–18 mA × 10 h, activ 70–100 mA × 1 h, voce 200–300 mA × 20 min, în buzunar 3–6 mA × 5 h, noaptea 1–3 mA × 8 h. Totalul e ~360 mAh/zi, deci ~2,5 zile tipic și 1–1,5 zile la folosire intensă. Criteriul minim din SPEC e 18 h.
+- *Buget pe 750 mAh (SOUL S, LiPo 603040; `docs/size-s.json`) [E]:* ambient 12–18 mA × 10 h, activ 70–100 mA × 1 h, voce 200–300 mA × 20 min, în buzunar 3–6 mA × 5 h, noaptea 1–3 mA × 8 h. Totalul e ~360 mAh/zi, deci ~2 zile tipic cu toate stările de mai sus (light sleep inclus; `docs/12-SIZE-S.md` §2.5 dă ~55 h) și ~1 zi la folosire intensă. Cu firmware-ul de azi, fără light sleep: ~27 h (21–34 h) [E]. Criteriul minim din SPEC e 18 h. Cifrele S de referință sunt în `docs/12-SIZE-S.md` §2.5.
 - *Motiv:* AMOLED-ul e cel mai mare consumator, iar pixelii negri consumă aproape zero. Light sleep păstrează BLE [V].
 - *Alternative:* fața mereu aprinsă (mai drăguț, dar ~1,5× consum [E]); deep sleep între interacțiuni (pierde BLE și se trezește greu).
 - *Cost:* depinde de D1. Pe schema plăcii 1.75 trebuie verificate: rutarea IMU_INT și RTC_INT (ambele −1 în `board.h` [V]), cristalul de 32 kHz (necesar pentru BLE în light sleep) și driverul haptic. Consumul se măsoară cu un analizor de curent.
@@ -312,7 +312,7 @@ ota.begin / chunk / end      imagine semnată, bucăți de 4 KB, reluabil
 |---|---|---|
 | 1 | Tastatura pe Ø44 mm e prea greu de folosit | test A/B în prototipul web (WPM, erori) cu 5–8 oameni înainte de firmware; decodor + auto-diacritice; voce și tastatura telefonului ca alternative; T9 mare pentru accesibilitate |
 | 2 | Nu ajunge SRAM-ul intern (BLE + Wi-Fi + TLS + audio + DMA) | buget per componentă, măsurat automat pe placă (`heap_caps`); bufferele TLS și Wi-Fi în PSRAM; NimBLE, nu Bluedroid; Wi-Fi pornit doar pentru voce |
-| 3 | Autonomia iese sub țintă | serviciul Energie din 0.3; analizor de curent din prima zi; fața ambientală la 2–5 fps; ecran stins agresiv; baterie de 1000 mAh |
+| 3 | Autonomia iese sub țintă | serviciul Energie din 0.3; analizor de curent din prima zi; fața ambientală la 2–5 fps; ecran stins agresiv; baterie de 750 mAh (S, 603040; `docs/12-SIZE-S.md` §2.4) |
 | 4 | Necunoscute pe placa 1.75 (IMU_INT, RTC_INT, cristal 32 kHz, haptic) | verificăm schema acum; plan B: trezire prin timer ESP și citirea IMU în light sleep; PCB propriu pentru producție |
 | 5 | Migrarea Arduino → ESP-IDF strică ce merge | biblioteca rămâne fără dependențe hardware, cu cele 24 de teste și simulatorul; migrăm o singură dată (0.3), în doi pași |
 | 6 | Scrierea în flash sacadează UI-ul | scrieri grupate când ecranul e liniștit; `SPIRAM_XIP_FROM_PSRAM`; task Store cu prioritate mică |

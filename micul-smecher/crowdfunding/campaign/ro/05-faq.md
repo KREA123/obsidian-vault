@@ -52,7 +52,7 @@ Fiecare SOUL se naște cu ochii lui, deci rareori se potrivesc: șansa ca doi s�
 SOUL S are 63 × 71 mm, <!--f:depth-->23–26 mm<!--/f--> adâncime (adâncimea exactă se finalizează), cu un AMOLED rotund de 1,75″ cu 466 × 466 pixeli sub sticlă neagră. Greutatea e <!--f:weight-->~75–95 g<!--/f--> (estimare până cântărim S-ul real).
 
 **De ce unele filmări arată un SOUL mai mare?**
-Primul nostru prototip funcțional e mărimea M (90 × 101 mm, ecran de 2,8″). SOUL-ul pe care îl susții e S. Tot ce arată M pe pagină o spune. Randările cu obiectul singur nu arată scara; desenul de mărime e la scară reală.
+Prototipul nostru de test e mărimea M (90 × 101 mm, ecran de 2,8″) și e în construcție: placa e comandată, încă netestată. SOUL-ul pe care îl susții e S. Tot ce arată M pe pagină o spune. Randările cu obiectul singur nu arată scara; desenul de mărime e la scară reală.
 
 **De ce AMOLED?**
 Pe AMOLED, pixelii negri sunt stinși, deci negrul e negru de-adevăratelea. Ochii plutesc pe sticlă, iar în repaus nu se vede nimic în afară de ochi.
@@ -101,7 +101,7 @@ Personalitatea lui SOUL rulează pe dispozitiv și merge offline. Dacă dispăre
 E totul sau nimic: nu plătește nimeni și nu facem lotul.
 
 **De ce obiectivul e <!--f:goal-->€70.000<!--/f-->?**
-E cel mai mic lot (cam <!--f:devices-->270<!--/f--> de SOUL) la care banii acoperă fabricarea și livrarea fiecărei recompense, după TVA și comisioane, cu o marjă de siguranță de 15 % și o rezervă pentru rambursări. Certificarea, sculele și unitățile de test se plătesc înainte de campanie. Detaliile sunt la „Budget & timeline”.
+E cel mai mic lot (cam <!--f:devices-->260<!--/f--> de SOUL) la care banii acoperă fabricarea și livrarea fiecărei recompense, după TVA și comisioane, cu o marjă de siguranță de 15 % și o rezervă pentru rambursări. Certificarea, sculele și unitățile de test se plătesc înainte de campanie. Detaliile sunt la „Budget & timeline”.
 
 **Când primesc SOUL-ul?**
 Lotul 1 (First Light, Campaign Price, Two Souls): estimat <!--f:delivery-->mai 2028 (UE)<!--/f-->. <!--f:delivery_risk-->CE trebuie să treacă înainte de lansare; dacă întârzie, se mută lansarea, nu data ta de livrare. Ce mai poate muta data: frezarea și anodizarea lotului și coletele din perioada sărbătorilor. Am păstrat cam 10 săptămâni de rezervă.<!--/f--> Campaign Price · lotul 2 și Late Pledge: estimat <!--f:delivery_b2-->august 2028<!--/f-->. Dacă ceva alunecă, îți spunem într-un update în aceeași săptămână.

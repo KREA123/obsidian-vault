@@ -8,7 +8,7 @@ Format: 16:9, black background, one idea per slide, the eyes as the only colour 
 
 ## 1. Title
 **On screen:** SOUL — *Your AI. Your object. Nobody else's.* · "Pre-seed · Bucharest · [month] 2027" · Andu, founder · [email]
-**Visual:** `renders/v6/soul_v6_hero.png` full-bleed (natural silver, 3/4 view, OU blurred behind). Loop `media/idle.mp4` on the face if the tool allows.
+**Visual:** `renders/v10/soul_v10_hero.png` full-bleed (size S, CGI). Loop `media/idle.mp4` on the face if the tool allows.
 **Notes:** "This is SOUL. It fits in your palm, it's machined aluminium, and the only thing on the front is a face. In the next ten minutes I'll show you why the most interesting AI device of the next two years isn't one the labs will make."
 
 ## 2. Problem
@@ -27,7 +27,7 @@ Model-neutral · private by design · alive without the cloud.
 
 ## 4. Product
 **On screen:** 63 × 71 × 23 mm (size S, `docs/size-s.json`) · machined 6061 aluminium, bead-blasted, anodised · round AMOLED face with living eyes · nothing else on the front · no camera · OU: the charging egg that cuts the mic in hardware.
-**Visual:** left `renders/v6/soul_v6_family.png` (5 colourways); right-top `renders/v5/soul_v5_ou_night.png` (asleep in OU); right-bottom `renders/v6/soul_v6_macro.png` (bead-blast + chamfer). Optional scale: `renders/v5/soul_v5_hand.png`.
+**Visual:** left `renders/v10/soul_v10_family.png` (5 colourways, size S); right-top `renders/v10/soul_v10_ou_night.png` (asleep in OU); right-bottom `renders/v6/soul_v6_macro.png` (bead-blast + chamfer; material close-up only, pre-MĂRGĂRITAR shape, shows no scale). Scale: `renders/v10/soul_v10_hand.png` or `renders/v10/soul_v10_vs_m.png` (S next to the M prototype).
 **Notes:** "One object you want to hold. Every day it hatches from OU, its charging egg; at night OU cuts the microphone's power in hardware, so in the egg it is physically deaf [V-vault 09]. In the hand it's hold-to-talk. Five anodised colours. Designed in Romania." Be explicit: these are renders; the pilot shell is CNC-machined (10).
 
 ## 5. How it works: four AI modes
@@ -43,7 +43,7 @@ Model-neutral · private by design · alive without the cloud.
 
 ## 6. Demo moments (3 × 15 seconds)
 **On screen:** 1) Claude Code asks → SOUL's eyes get eager → hold to approve. 2) "Remind me at 7 to call Mum" → eyes nod → alarm dial. 3) Nudge it at night in OU → it blinks, sleeps again.
-**Visual:** `media/claude_buddy.mp4` (or `media/claude_buddy.gif`), `os/screenshots/soulos-notes-type-reminder-dial-1440.png` + `os/screenshots/soulos-alarm-ring-awake-1440.png`, `media/sleep.mp4` / `renders/v5/soul_v5_ou_night.png`. Live: bring the dev board.
+**Visual:** `media/claude_buddy.mp4` (or `media/claude_buddy.gif`), `os/screenshots/soulos-notes-type-reminder-dial-1440.png` + `os/screenshots/soulos-alarm-ring-awake-1440.png`, `media/sleep.mp4` / `renders/v10/soul_v10_ou_night.png`. Live: bring the dev board.
 **Notes:** Run the Claude approval live on the dev board if at all possible: it's the one demo nobody else has on a beautiful object (Buddy clones are ASCII on plastic, $110–125 [V-vault 11]). Then the notes/reminder: "it does things". End with sleep: calm, no guilt, no nagging (the #10 complaint in the category, 11 §4).
 
 ## 7. Why now
@@ -65,7 +65,7 @@ Model-neutral · private by design · alive without the cloud.
 | Fuzozo (CN) | ~300k AI companions sold, 40k in one shopping festival [V-vault 11] |
 | Starboy (metal, no AI) | $139–599, batches sold out [V-vault 11] |
 | Tamagotchi | 100M+ units lifetime [V-vault 05] |
-**Visual:** `renders/v5/soul_v5_family.png` faded right, table left.
+**Visual:** `renders/v10/soul_v10_family.png` faded right, table left.
 **Notes:** Don't show a top-down TAM number we can't defend. Say: "our beachhead is people who already pay for Claude or ChatGPT and care about objects: developers, designers, the Claude Code community. Our plan is 25 → 300 → 1,000 → 10,000 units [E]." Be honest that no one has yet built a large AI-companion business in the West; that's the risk and the opportunity.
 
 ## 9. Competition map
@@ -84,7 +84,7 @@ Model-neutral · private by design · alive without the cloud.
 | **Gross margin / unit** | **~€75 (26 %)** | **~€100 (48 %)** | **~€145 (70 %)** |
 | × landed (rule ≥ 2.5) | 1.3 × | **2.0 × (below rule)** | 3.4–3.7 × |
 Plus: optional voice/relay subscription ~€4.99/month (model: 30 % attach) [E].
-**Visual:** table only; small `blueprints/soul_blueprint_exploded.png` in the corner.
+**Visual:** table only; small `blueprints/final/soul_s_1_general_arrangement.png` (size S drawing) in the corner.
 **Notes:** Say it straight: "The pilot loses money once you add CE testing (€5–12k) [V-vault 10]; it's a proof purchase, not a business. Standard at €249 only clears our 2.5× rule on steel/stamped tooling at ≥ 5–10k units; at 1k we either price €279 or accept 2×." Sources: COGS €200 at 25 units (CNC aluminium, 10 §1.3); PC-shell system COGS $94 @1k and $52 @10k (09 §3.7) plus an aluminium premium of +$1–6 at 10k for stamped 5052 (10 §0) [E]. Tooling for 10k ≈ €64–107k all-in (09) [E]. Voice cost ~$1–4/user/month + LLM, but BYO-AI moves the model cost to the user's own plan [E, money plan].
 
 ## 11. Go-to-market: Founders 00 → Standard
@@ -94,7 +94,7 @@ Plus: optional voice/relay subscription ~€4.99/month (model: 30 % attach) [E].
 3. **Batch 1**: 300 units on bridge tools, own Shopify (Kickstarter is not open to Romanian companies [V]).
 4. **Standard €249** after the OpenAI reveal sets the ceiling.
 Channels: Claude/dev community (r/ClaudeAI, HN, X, Product Hunt), design press, 20–30 creators under embargo, Romania + DE/FR/IT/PL.
-**Visual:** `renders/v5/soul_v5_unbox.png` (the "birth" unboxing) + `site/screenshots` landing page capture (or `site/media/render-desk.jpg`).
+**Visual:** `renders/v5/soul_v5_unbox.png` (the "birth" unboxing; older pre-MĂRGĂRITAR shape, no S unboxing render yet) + `site/screenshots` landing page capture (or `site/media/render-desk.jpg`).
 **Notes:** "Founder's edge: Andu runs e-commerce and paid acquisition (MundiShop) [add real numbers]. Lesson from Friend: $1M of ads for ~3k units [V-vault 11]. We start where the community already is and where the demo is native: Claude Code users." Gate A from the money plan: ≥ 100 paid reservations within 14 days of the clip [V-vault].
 
 ## 12. Traction & milestones
@@ -113,7 +113,7 @@ Channels: Claude/dev community (r/ClaudeAI, HN, X, Product Hunt), design press, 
 - **Technical co-founder** (firmware + electronics): [name, signed / in final talks]
 - **Advisors**: hardware operations (EVT→PVT), industrial design/CMF, AI/agents, a Romanian angel
 - **First hires with the round**: RF/hardware engineer (contract → hire), part-time community/content
-**Visual:** portraits or silhouettes; `renders/v6/soul_v6_side.png` as a quiet background.
+**Visual:** portraits or silhouettes; `renders/v10/soul_v10_side.png` as a quiet background.
 **Notes:** Name the risk before they do: "I'm not an engineer. That's why the first money goes to a technical co-founder with vesting, and why we already have firmware, tests and CAD instead of a slide." Show full-time commitment and how the other businesses run without you.
 
 ## 14. The ask
@@ -129,14 +129,14 @@ Channels: Claude/dev community (r/ClaudeAI, HN, X, Product Hunt), design press, 
 | Cloud, voice, tools | 10k |
 | Contingency (10 %) | 35k |
 **Milestones it buys (9–12 months):** CE-tested Founders 00 shipped · 2,000 paid deposits · 300 units in customers' hands · DVT on a custom board · pre-seed €1–1.5M ready (EGV/Credo/Inovo).
-**Visual:** `renders/v6/soul_v6_back.png` or `renders/v6/soul_v6_hero.png` small; closing line: "The labs make the brain. Help us make the body."
+**Visual:** `renders/v10/soul_v10_hero.png` or `renders/v10/soul_v10_desk.png` small; closing line: "The labs make the brain. Help us make the body."
 **Notes:** "The round is structured so every euro unlocks a gate: no tooling without paid orders, bridge tools only for Founders [V-vault 05/09]." Numbers are [E]; sanity check: CE €5–12k small lot and €30–80k for 1,000+ units incl. cyber [V-vault 09/10]; PCBA design $15–30k [V-vault 09]. If an investor wants more, the €1–1.5M version adds steel tooling (€64–107k) and a 1,000-unit run (05: €0.36–0.75M all-in for 1,000 units [V-vault]).
 
 ---
 
 ## Appendix slides (backup, not presented)
-- **A1 Privacy & compliance:** no camera, hold-to-talk, mic hardware-gated in OU, AI Act Art. 50 disclosure at first boot, 18+ AI account, EU relay, offline for life ("Soul Pledge") [V-vault 09/11]. Visual: `renders/v5/soul_v5_ou_closed.png`.
-- **A2 Hardware stack:** ESP32-S3, round AMOLED 466 × 466, 2 mics, speaker, AXP2101 PMU, IMU, RTC, ~1000 mAh user-replaceable cell (EU battery rule from 18 Feb 2027) [V-vault 09, money plan]. Visual: `blueprints/soul_blueprint_section.png`, `renders/v6/soul_v6_bottom.png`.
+- **A1 Privacy & compliance:** no camera, hold-to-talk, mic hardware-gated in OU, AI Act Art. 50 disclosure at first boot, 18+ AI account, EU relay, offline for life ("Soul Pledge") [V-vault 09/11]. Visual: `renders/v10/soul_v10_ou_night.png`.
+- **A2 Hardware stack:** ESP32-S3, round AMOLED 466 × 466, 2 mics, speaker, AXP2101 PMU, IMU, RTC, 750 mAh LiPo 603040 user-replaceable cell [estimare] (≈ 27 h on the model day [E]; EU battery rule from 18 Feb 2027) [`docs/size-s.json`, `docs/12-SIZE-S.md`]. Visual: `blueprints/final/soul_s_1_general_arrangement.png`.
 - **A3 Risks & mitigations:** table from INVESTORS §5.
 - **A4 Roadmap to 10k:** EVT → DVT → PVT 16–30 weeks, $65–210k [V-vault 05]; tooling €47–79k (09).
 - **A5 SoulOS gallery:** `os/screenshots/soulos-today-1440.png`, `os/screenshots/soulos-translate-1440.png`, `os/screenshots/soulos-reminders-1440.png`, `os/screenshots/soulos2-weather-1440.png`, `os/screenshots/soulos2-timer-countdown-1440.png`.

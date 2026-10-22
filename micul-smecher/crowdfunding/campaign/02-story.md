@@ -106,7 +106,7 @@ Touch the glass and the eyes glide up to become the face of every screen. Pure b
 {{img:soulos-screens}}
 *SoulOS simulator capture at the S screen size (466 × 466). Not a recording of a real device. Answers on these screens are a scripted demo, not a live AI.*
 
-SoulOS Alive is designed and runs in our simulator, including the S profile at 466 × 466. Firmware 1.9.0 hasn't run on a real board yet. [[G1: "It runs on the real S board since <date>." once true]] Updates arrive over Wi-Fi, signed, so only our own firmware can install.
+SoulOS Alive is designed and runs in our simulator, including the S profile at 466 × 466. Firmware 1.9.1 hasn't run on a real board yet. [[G1: "It runs on the real S board since <date>." once true]] Updates arrive over Wi-Fi, signed, so only our own firmware can install.
 
 ### a stone you want to hold.
 
@@ -134,7 +134,7 @@ Its shape is called **MĂRGĂRITAR**: a pebble with soft shoulders at the crown,
 {{img:prototype-m}}
 *Prototype shown at a larger size (M). The product you back is S: 63 × 71 mm with a 1.75″ AMOLED.* [de completat: a real photo of the working M prototype, or delete these two lines (DECIZII-FONDATOR.md)]
 
-Why S? Our first working prototype is bigger (size M, 90 × 101 mm, 2.8″ screen). Living with it, we wanted something that disappears into a hand, with a screen where black is really black. So the SOUL you back is S, with a round 1.75″ AMOLED. Anything on this page that shows the M prototype says so.
+Why S? Our first design is bigger (size M, 90 × 101 mm, 2.8″ screen), and we're building it now as our bench prototype: the board is ordered, not yet tested. Drawing both sizes side by side, we wanted something that disappears into a hand, with a screen where black is really black. So the SOUL you back is S, with a round 1.75″ AMOLED. Anything on this page that shows the M design says so.
 
 ### at night, it sleeps in its egg.
 
@@ -218,7 +218,7 @@ No power adapter in the box: any USB-C phone charger works, and it's better for 
 
 ### all or nothing
 
-<!--f:goal_para-->This campaign is **all-or-nothing**. If we don't reach €70,000, nobody is charged and nothing is made. €70,000 isn't a marketing number: it's the smallest batch (about 270 SOULs) at which the money covers making and delivering every reward, after VAT and fees, with a safety margin.<!--/f-->
+<!--f:goal_para-->This campaign is **all-or-nothing**. If we don't reach €70,000, nobody is charged and nothing is made. €70,000 isn't a marketing number: it's the smallest batch (about 260 SOULs) at which the money covers making and delivering every reward, after VAT and fees, with a safety margin.<!--/f-->
 
 ### how your money is used
 
@@ -230,13 +230,13 @@ At the <!--f:goal-->€70,000<!--/f--> goal:
 <!--f:budget_table-->
 | | € | share |
 |---|---|---|
-| **Making every SOUL**: parts, aluminium shells in 3 colours, OU eggs, assembly, testing, packaging, 2 % spares | 37,753 | 54 % |
+| **Making every SOUL**: parts, aluminium shells in 3 colours, OU eggs, assembly, testing, packaging, 2 % spares | 36,388 | 52 % |
 | **Batch set-up**: golden samples per colour, anodise set-up, product insurance, fulfilment set-up | 3,400 | 5 % |
-| **Contingency**: 15 % on every cost until supplier quotes are in writing, plus the rest up to a round goal | 6,702 | 10 % |
-| **VAT we expect to owe**: paid out of the money raised, never added to your price | 11,767 | 17 % |
-| **Indiegogo and payment fees**: 5 % platform + 3 % + €0.20 per payment | 5,479 | 8 % |
-| **Pledges that fail to collect**: about 3 %, after three retries | 2,097 | 3 % |
-| **Refund reserve (5 %)**: so anyone who cancels before shipping gets a full refund | 2,802 | 4 % |
+| **Contingency**: 15 % on every cost until supplier quotes are in writing, plus the rest up to a round goal | 8,924 | 13 % |
+| **VAT we expect to owe**: paid out of the money raised, never added to your price | 11,311 | 16 % |
+| **Indiegogo and payment fees**: 5 % platform + 3 % + €0.20 per payment | 5,267 | 8 % |
+| **Pledges that fail to collect**: about 3 %, after three retries | 2,016 | 3 % |
+| **Refund reserve (5 %)**: so anyone who cancels before shipping gets a full refund | 2,693 | 4 % |
 | **Total** | **70,000** | **100 %** |
 <!--/f-->
 
@@ -269,7 +269,7 @@ We'll never use stretch goals for a bigger battery, a new board, new colours, mo
 Honestly, so you know exactly what you're backing:
 
 - **Designed:** the MĂRGĂRITAR shape, five finishes, OU, the 120 eye designs and SoulOS Alive.
-- **Built:** a larger working prototype (size M, 2.8″ screen). SoulOS firmware 1.9.0, tested on a PC and in our simulator; it hasn't run on a real board yet.
+- **Being built:** a larger bench prototype (size M, 2.8″ screen); its board is ordered, not yet tested. SoulOS firmware 1.9.1, tested on a PC and in our simulator; it hasn't run on a real board yet.
 - **Before this page went live:**
 <!--f:before_launch-->
 - planned December 2026: SoulOS runs on the S board, with hold-to-talk voice

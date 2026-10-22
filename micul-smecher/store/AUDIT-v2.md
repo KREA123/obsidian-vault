@@ -14,7 +14,7 @@ Measured locally: 17,272 px tall at 1440, 18,418 px at 390. About 0.7 MB transfe
 ## Weak
 - The hero is static after load. Scroll only nudges the letters, so there is no reveal.
 - The colours are a sideways carousel of small cards, not a configurator. There is no single big object you can change.
-- No section on material or form. The 31.5 mm profile, the bead-blasted aluminium and the MĂRGĂRITAR shape never get a close-up.
+- No section on material or form. The 31.5 mm profile, the bead-blasted aluminium and the MĂRGĂRITAR shape never get a close-up. *(Then size M. Since 2026-10-20 the product is size S: 63 × 70.8 × 23 mm, `docs/size-s.json`, renders in `renders/v10/`.)*
 - The AI copy is out of date. It treats "No AI / Claude / ChatGPT / API key" as four equal cards, and never says that SOUL Memory lives on the device or that we never sell AI.
 - The hold-the-glass demo is a tap on a picture. Nothing shows what you said or what it answered.
 - The desk section talks about approving Claude's requests (Hardware Buddy), a claim the current product story doesn't need.

@@ -12,7 +12,7 @@
 | Board (EU stock) | Eckstein (DE) · Botland (PL) | Waveshare boards without China shipping | EU | https://eckstein-shop.de · https://botland.store | [V price for Eckstein]/[K] |
 | Electronics | LCSC · Mouser · TME · Farnell | Passives, connectors, pogo, switches | CN / EU | https://www.lcsc.com · https://www.mouser.com · https://www.tme.eu · https://ro.farnell.com | [K] |
 | Electronics (RO) | Robofun · Optimus Digital | Cells, USB-C breakouts, wires, tools, fast delivery in RO | RO | https://www.robofun.ro · https://www.optimusdigital.ro | [K] |
-| Electronics (cheap) | AliExpress | 503035 LiPo, 1511 speaker, magnets, magnetic pogo, M2 screws | CN | https://www.aliexpress.com | [K] |
+| Electronics (cheap) | AliExpress | 503030 LiPo (S-P0), 1511 speaker, magnets, magnetic pogo, M2 screws | CN | https://www.aliexpress.com | [K] |
 | Inserts | Ruthex | M2 heat-set inserts | DE | https://www.ruthex.de | [K] |
 | Magnets | supermagnete.de | Ø6×2 N52 | DE | https://www.supermagnete.de | [K] |
 | **CNC** | JLCCNC | Aluminium shells, blast + anodise, from 3 days | CN | https://jlccnc.com | [V-s] |

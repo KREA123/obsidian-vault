@@ -105,7 +105,7 @@ Atingi sticla și ochii urcă și devin fața fiecărui ecran. Negru pur, culori
 {{img:soulos-screens}}
 *Captură din simulatorul SoulOS, la mărimea ecranului S (466 × 466). Nu e o înregistrare de pe un dispozitiv real. Răspunsurile de pe ecrane sunt un demo scris dinainte, nu un AI real.*
 
-SoulOS Alive e proiectat și rulează în simulatorul nostru, inclusiv în profilul S de 466 × 466. Firmware-ul 1.9.0 n-a rulat încă pe o placă reală. [[G1: „Rulează pe placa S reală din <data>.” când e adevărat]] Actualizările vin prin Wi-Fi, semnate, ca să se poată instala doar firmware-ul nostru.
+SoulOS Alive e proiectat și rulează în simulatorul nostru, inclusiv în profilul S de 466 × 466. Firmware-ul 1.9.1 n-a rulat încă pe o placă reală. [[G1: „Rulează pe placa S reală din <data>.” când e adevărat]] Actualizările vin prin Wi-Fi, semnate, ca să se poată instala doar firmware-ul nostru.
 
 ### o piatră pe care vrei s-o ții în mână.
 
@@ -133,7 +133,7 @@ Forma se numește **MĂRGĂRITAR**: o pietricică cu umeri moi la creștet, tăi
 {{img:prototype-m}}
 *Prototip arătat la o mărime mai mare (M). Produsul pe care îl susții e S: 63 × 71 mm, cu AMOLED de 1,75″.* [de completat: o fotografie reală a prototipului M care funcționează, sau ștergi aceste două rânduri (DECIZII-FONDATOR.md)]
 
-De ce S? Primul nostru prototip funcțional e mai mare (mărimea M, 90 × 101 mm, ecran de 2,8″). Trăind cu el, am vrut ceva care să dispară într-o mână, cu un ecran unde negrul e chiar negru. Așa că SOUL pe care îl susții e S, cu AMOLED rotund de 1,75″. Orice arată prototipul M pe pagină o spune.
+De ce S? Primul nostru design e mai mare (mărimea M, 90 × 101 mm, ecran de 2,8″), iar acum îl construim ca prototip de test: placa e comandată, încă netestată. Desenând cele două mărimi una lângă alta, am vrut ceva care să dispară într-o mână, cu un ecran unde negrul e chiar negru. Așa că SOUL pe care îl susții e S, cu AMOLED rotund de 1,75″. Orice arată designul M pe pagină o spune.
 
 ### noaptea doarme în oul lui.
 
@@ -217,7 +217,7 @@ Fără încărcător în cutie: merge orice încărcător USB-C de telefon, și 
 
 ### totul sau nimic
 
-<!--f:goal_para-->Campania e **totul sau nimic**. Dacă nu ajungem la €70.000, nu plătește nimeni și nu se face nimic. €70.000 nu e un număr de marketing: e cel mai mic lot (cam 270 de SOUL) la care banii acoperă fabricarea și livrarea fiecărei recompense, după TVA și comisioane, cu o marjă de siguranță.<!--/f-->
+<!--f:goal_para-->Campania e **totul sau nimic**. Dacă nu ajungem la €70.000, nu plătește nimeni și nu se face nimic. €70.000 nu e un număr de marketing: e cel mai mic lot (cam 260 de SOUL) la care banii acoperă fabricarea și livrarea fiecărei recompense, după TVA și comisioane, cu o marjă de siguranță.<!--/f-->
 
 ### cum sunt folosiți banii tăi
 
@@ -229,13 +229,13 @@ La obiectivul de <!--f:goal-->€70.000<!--/f-->:
 <!--f:budget_table-->
 | | € | parte |
 |---|---|---|
-| **Fabricarea fiecărui SOUL**: piese, carcase din aluminiu în trei culori, ouăle OU, asamblare, testare, ambalare, 2 % rezerve | 37.753 | 54 % |
+| **Fabricarea fiecărui SOUL**: piese, carcase din aluminiu în trei culori, ouăle OU, asamblare, testare, ambalare, 2 % rezerve | 36.388 | 52 % |
 | **Pregătirea lotului**: mostre de referință pe culoare, pregătirea anodizării, asigurarea produsului, pregătirea depozitului | 3.400 | 5 % |
-| **Rezervă pentru neprevăzute**: 15 % peste fiecare cost estimat până primim oferte scrise, plus restul până la o sumă rotundă | 6.702 | 10 % |
-| **TVA pe care ne așteptăm să-l datorăm**: plătit din banii strânși, nu se adaugă niciodată la prețul tău | 11.767 | 17 % |
-| **Comisioanele Indiegogo și de plată**: 5 % platforma + 3 % + €0,20 pe plată | 5.479 | 8 % |
-| **Susțineri care nu se încasează**: cam 3 %, după trei încercări | 2.097 | 3 % |
-| **Rezervă pentru rambursări (5 %)**: ca oricine anulează înainte de livrare să-și primească banii | 2.802 | 4 % |
+| **Rezervă pentru neprevăzute**: 15 % peste fiecare cost estimat până primim oferte scrise, plus restul până la o sumă rotundă | 8.924 | 13 % |
+| **TVA pe care ne așteptăm să-l datorăm**: plătit din banii strânși, nu se adaugă niciodată la prețul tău | 11.311 | 16 % |
+| **Comisioanele Indiegogo și de plată**: 5 % platforma + 3 % + €0,20 pe plată | 5.267 | 8 % |
+| **Susțineri care nu se încasează**: cam 3 %, după trei încercări | 2.016 | 3 % |
+| **Rezervă pentru rambursări (5 %)**: ca oricine anulează înainte de livrare să-și primească banii | 2.693 | 4 % |
 | **Total** | **70.000** | **100 %** |
 <!--/f-->
 
@@ -268,7 +268,7 @@ Nu folosim niciodată stretch goals pentru o baterie mai mare, o placă nouă, c
 Sincer, ca să știi exact ce susții:
 
 - **Proiectat:** forma MĂRGĂRITAR, cinci finisaje, OU, cele 120 de modele de ochi și SoulOS Alive.
-- **Construit:** un prototip funcțional mai mare (mărimea M, ecran de 2,8″). Firmware-ul SoulOS 1.9.0, testat pe PC și în simulator; n-a rulat încă pe o placă reală.
+- **În construcție:** un prototip de test mai mare (mărimea M, ecran de 2,8″); placa lui e comandată, încă netestată. Firmware-ul SoulOS 1.9.1, testat pe PC și în simulator; n-a rulat încă pe o placă reală.
 - **Înainte ca pagina asta să fie publică:**
 <!--f:before_launch-->
 - planificat decembrie 2026: SoulOS rulează pe placa S, cu vocea „ține degetul și vorbește”

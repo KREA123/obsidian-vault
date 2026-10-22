@@ -10,7 +10,7 @@ Captions (copy them exactly; they come from `facts.json → labels`):
 - **OS-W** = "SoulOS web prototype capture, 480 × 480; on S it runs on a 466 × 466 AMOLED."
 - **E** = "The SOUL eyes engine, recorded from the same code that runs on the device. Screen animation, not a photo."
 - **G** = "Illustration."
-- "SoulOS (shown on the prototype)." is used **only** for real recordings of a real board. Firmware 1.9.0 hasn't run on one yet, so no image in this kit uses it.
+- "SoulOS (shown on the prototype)." is used **only** for real recordings of a real board. Firmware 1.9.1 hasn't run on one yet, so no image in this kit uses it.
 
 ## Story (each placeholder = one file)
 

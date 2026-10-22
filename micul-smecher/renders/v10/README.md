@@ -2,7 +2,7 @@
 
 **Toate imaginile din acest folder sunt randări / concept (CGI), nu fotografii.** Oriunde le folosești, etichetează-le „randare / concept (CGI)".
 
-Decizia fondatorului (2026-10-20, `03 Decizii/Jurnal decizii.md`): **produsul final e mărimea S**. Prototipul de lucru rămâne **M** (placa 2.8C, firmware 1.9.0), pentru teste și dovada TRL 3. v10 e v9 (MĂRGĂRITAR) la **scara lui de design**, fără mărirea × 1,43 a lui M. Restul e neschimbat:
+Decizia fondatorului (2026-10-20, `03 Decizii/Jurnal decizii.md`): **produsul final e mărimea S**. Prototipul de lucru rămâne **M** (placa 2.8C, SoulOS 1.9.1), pentru teste și dovada TRL 3. v10 e v9 (MĂRGĂRITAR) la **scara lui de design**, fără mărirea × 1,43 a lui M. Restul e neschimbat:
 - aluminiu 6061 sablat și anodizat, în Argint, Grafit, Albastru noapte, Jar și Șampanie;
 - sticlă neagră plată **Ø52**, cu teșitura de 45°, și nimic altceva pe față;
 - ecran rotund **1,75″ AMOLED 466×466**: negru adevărat, ochii stau pe negru;
@@ -41,7 +41,7 @@ Planșele cotate ale lui S sunt în `blueprints/final/soul_s_1_general_arrangeme
 - Ochii ocupă tot cercul Ø43,76 al ecranului (raportul v6 21,88 / 26). Pe AMOLED-ul real zona activă e exact Ø43,76.
 - La S, sticla de 0,7 mm și panoul AMOLED de ~0,95 mm sunt din stiva de produs (`docs/12` §2.2), nu de pe placa Waveshare. Prototipul S-P0 de pe placa de dezvoltare are sticla ei, Ø48,96, și adâncimea de 25,65 mm (`prototip/stl/s/`).
 - În `vs_m`, M e corpul v9 (s_back 0,735) mărit cu 90/63. Ambele sunt construite din același cod, deci comparația e exactă.
-- Fără `typing` în v10: tastatura SoulOS pe 1,75″ e încă de proiectat (to-do „SoulOS pe 1,75″”).
+- Fără `typing` în v10: tastatura S există deja în firmware (5 rânduri, taste de 5,1 mm, alfabetică; `Keyboard::setDense`, `firmware/SOUL-S.md`, decizia în `os/DESIGN-ALIVE.md` §S). Lipsește doar randarea cu mâna care scrie.
 
 ## Cum se regenerează
 `src/soul_v10.py` încarcă v9 prin `exec` (v9 → v8 → v7 → v6 → v5, nimic duplicat). Înainte, înlocuiește corpul din `marg_geo` cu `MargaritarV9(adâncime 23,0)` și apoi pune `K = 1`. Aici sunt și cadrele noi `vs_m` și `hand` (camera la distanța reală din v9), plus încadrarea `desk`.

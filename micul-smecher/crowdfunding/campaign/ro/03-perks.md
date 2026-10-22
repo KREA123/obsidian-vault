@@ -73,4 +73,4 @@ SOUL conține o baterie cu litiu, deci pleacă pe drum sau prin curier ca „bat
 - **Two Souls** costă prețul First Light pe bucată (€249), ca recompensa-cadou să atragă; contribuția e aceeași ca la First Light. Limitat la 10 seturi în lotul 1.
 - **Prețul pe bucată nu scade**: contribuția la First Light e mică (vezi ultimul rând). Prețul se justifică prin obiectul din aluminiu frezat: filmări macro ale finisajului sablat sunt pe lista de cadre G2.
 - Raritatea nu intră niciodată în preț.
-- <!--f:internal_contrib-->Contribution per device after unit cost at the goal batch (270 units, €136 each) [estimate, tools/goal_model.py]: First Light €49 · Campaign Price €64 · Two Souls €49 per device · Late Pledge €87.<!--/f-->
+- <!--f:internal_contrib-->Contribution per device after unit cost at the goal batch (260 units, €136 each) [estimate, tools/goal_model.py]: First Light €49 · Campaign Price €64 · Two Souls €49 per device · Late Pledge €87.<!--/f-->

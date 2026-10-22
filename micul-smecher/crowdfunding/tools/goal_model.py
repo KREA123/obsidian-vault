@@ -58,7 +58,7 @@ def unit_cost(n, route="B", colours=3):
         c["cell 603040, 750 mAh"] = li([(100, 2.6), (1000, 1.31), (5000, 1.1)], n)          # [s]
     else:              # [s] Waveshare AMOLED-1.75 list $29.99–41.99; volume price by RFQ [E]
         c["electronics: Waveshare ESP32-S3-Touch-AMOLED-1.75"] = li([(100, 34.0), (1000, 29.0), (5000, 26.0)], n)
-        c["cell 503035, 500 mAh"] = li([(100, 3.0), (1000, 1.9), (5000, 1.6)], n)            # [s]
+        c["cell 503030 class, ~450 mAh"] = li([(100, 3.0), (1000, 1.9), (5000, 1.6)], n)            # [s]
     c["front glass Ø52 2.5D black print"] = li([(100, 8 * USD), (1000, 3 * USD), (5000, 1.9 * USD)], n) * SF["glass"]
     c["speaker"] = li([(100, 1.07), (1000, 0.8), (5000, 0.6)], n)
     imported = sum(c.values())

@@ -168,7 +168,7 @@ Linkul devine activ la 09:00: {{URL:campaign}}
 
 Salut,
 
-când te-ai înscris, pagina noastră arăta SOUL în mărimea M: 90 × 101 mm, cu ecran de 2,8″. Acela e în continuare prototipul nostru funcțional.
+când te-ai înscris, pagina noastră arăta SOUL în mărimea M: 90 × 101 mm, cu ecran de 2,8″. Acela e în continuare prototipul nostru de test, în construcție (placa e comandată, încă netestată).
 
 SOUL-ul pe care îl vom face și livra e **mărimea S**:
 - **63 × 71 mm**, <!--f:depth-->23–26 mm<!--/f--> adâncime (se finalizează)

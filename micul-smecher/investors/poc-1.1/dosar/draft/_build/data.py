@@ -22,8 +22,8 @@ SCREEN_S = 'afișaj rotund AMOLED 1,75″ 466×466'
 BATT_S = 'LiPo 750 mAh (603040)'
 LIFE_S = '~27 h [estimare] (interval 21–34 h; docs/12 §2.5)'
 PRET = 'de la 249 €'
-FW = 'SoulOS 1.9.0 „Alive”'
-FW_TESTS = '237'   # pio test -e native, 22.10.2026 (firmware/SOUL-S.md: both audits run on M and on S)
+FW = 'SoulOS 1.9.1 „Alive”'   # 1.9.1 = commit fe9fbe4, 22.10.2026; Alive first shipped in 1.9.0 = commit 52689e4, 12.10.2026
+FW_TESTS = '245'   # pio test -e native, 1.9.1, 22.10.2026 (firmware/release/README.md) (firmware/SOUL-S.md: both audits run on M and on S)
 CLOUD_TESTS = '283'
 
 # ---- AI wording (decision 03.10.2026): only Claude works today; ChatGPT own-key is in development, "Sign in with ChatGPT" awaits OpenAI.
@@ -356,7 +356,7 @@ NOVELTY = [
 
 # existing evidence (TRL 3); state verified 12.10.2026 in the vault (git log, firmware/README.md, docs/07, docs/10, firmware/PERF.md)
 EVIDENCE = [
-    ('D1', 'Rezultat experimental (teste automate) + cod sursă', 'Firmware SoulOS 1.9.0 „Alive” (lansat 12.10.2026, compilat fără avertismente; imaginea de instalare `release/SOUL-2.8C-install.bin`): motorul ochilor (randare SDF, 120 de designuri, 31 de expresii, fiecare unitate primește o pereche din ID-ul cipului), IMU/giroscop, tastatura circulară, alarme, notițe, hărți/vreme/aplicații, SOUL Memory, comenzi vocale offline EN (ESP-SR), legătura Claude Hardware Buddy (BLE), protocolul SOUL Cloud; 237 de teste native trec pe PC (`pio test -e native`); build-uri `lcd28` (placa 2.8C, prototipul SOUL M), `lcd28_voice`, `amoled175` (placa AMOLED-1.75, SOUL S: profilul de densitate și toate ecranele Alive pe 466 px, 20–22.10.2026) și `sim`', '2026-10', 'depozit git, `firmware/` (README, PERF.md, BRINGUP.md); commit 52689e4 (1.9.0); S: b3aee4c, b9c683d [[A: export log + hash la data depunerii]]'),
+    ('D1', 'Rezultat experimental (teste automate) + cod sursă', 'Firmware SoulOS 1.9.1 „Alive” (Alive lansat în 1.9.0 pe 12.10.2026, commit 52689e4; 1.9.1 pe 22.10.2026, compilat fără avertismente; imaginile de instalare `release/SOUL-2.8C-install.bin` pentru M și `release/SOUL-1.75-install.bin` pentru S): motorul ochilor (randare SDF, 120 de designuri, 31 de expresii, fiecare unitate primește o pereche din ID-ul cipului), IMU/giroscop, tastatura circulară, alarme, notițe, hărți/vreme/aplicații, SOUL Memory, comenzi vocale offline EN (ESP-SR), legătura Claude Hardware Buddy (BLE), protocolul SOUL Cloud; 245 de teste native trec pe PC (`pio test -e native`); build-uri `lcd28` (placa 2.8C, prototipul SOUL M), `lcd28_voice`, `amoled175` (placa AMOLED-1.75, SOUL S: profilul de densitate și toate ecranele Alive pe 466 px, 20–22.10.2026) și `sim`', '2026-10', 'depozit git, `firmware/` (README, PERF.md, BRINGUP.md); commit 52689e4 (1.9.0); S: b3aee4c, b9c683d; 1.9.1: fe9fbe4 [[A: export log + hash la data depunerii]]'),
     ('D2', 'Simulator / model software', 'Simulator pe PC care rulează aceeași bibliotecă `lib/Suflet` ca placa și produce cadrele reale (clipuri: idle, boop, purr, dizzy, sleep…, tastatura, ecranele SoulOS la 480 px pe M și 466 px pe S) + banc de performanță (`tools/perf_bench.py`: ≈ 30 fps estimat pe toate scenariile [E], de măsurat pe placă)', '2026-10', '`firmware/sim`, `firmware/PERF.md`, `media/` (clipuri MP4/GIF anexate)'),
     ('D3', 'Rezultat experimental (teste automate) + cod sursă', 'SOUL Cloud: împerechere cu chei de dispozitiv, gateway WebSocket, conector MCP cu OAuth 2.1 (Claude), cheie API proprie criptată, export și ștergere date (GDPR), backup criptat opțional al memoriei; 283 de teste trec; rulat cap-coadă cu simulatorul firmware-ului ca dispozitiv (fără claude.ai real încă). SOUL Bridge: canalul Claude Code de pe computerul proprietarului, open source (MIT). Fără AI inclus (decizia din 03.10.2026)', '2026-10', '`ai/` (README, tests/), `bridge/`, `docs/07-CONNECT-AI.md`, `docs/10-SOUL-MEMORY.md`'),
     ('D4', 'Prototip interactiv (software)', 'SoulOS pe web: ochii ca interfață, tastatura rotundă interactivă testabilă la scara reală, demo public; reproiectarea „Alive” aprobată 12.10.2026', '2026-10', '`os/index.html`, `os/DESIGN-ALIVE.md`, `os/ARCHITECTURE.md`'),
@@ -367,7 +367,7 @@ EVIDENCE = [
 ]
 
 XTESTS = [
-    ('X1', 'Bring-up pe 2.8C: imaginea SoulOS 1.9.0 (`release/SOUL-2.8C-install.bin`) încărcată pe placă; ecran ST7701 RGB, touch GT911, IMU QMI8658, RTC, BLE (pașii din BRINGUP.md)', 'build `lcd28` (compilează fără avertismente; placa e comandată, încă netestată)', 'firmware rulând pe placa reală; video cu marcaj de timp'),
+    ('X1', 'Bring-up pe 2.8C: imaginea SoulOS 1.9.1 (`release/SOUL-2.8C-install.bin`) încărcată pe placă; ecran ST7701 RGB, touch GT911, IMU QMI8658, RTC, BLE (pașii din BRINGUP.md)', 'build `lcd28` (compilează fără avertismente; placa e comandată, încă netestată)', 'firmware rulând pe placa reală; video cu marcaj de timp'),
     ('X2', 'fps la ochi', 'linia `[perf]` pe serial (BRINGUP §5), 10 min, cu Wi-Fi oprit/pornit', 'median/p5 fps (baseline pentru H1)'),
     ('X3', 'Precizia touch', 'test „grilă de ținte” 6,7 mm, 200 de atingeri, 3 persoane', '% atingeri corecte, eroare medie în mm'),
     ('X4', 'Tastare pilot pe SoulOS web (la scara reală) și pe placă', 'fraze standard (MacKenzie), N = 5', 'WPM, rata de eroare (baseline pentru H2)'),

@@ -24,7 +24,7 @@
 | **OpenAI usage policies / Apps SDK** | Public ChatGPT app needs OpenAI review (policies, privacy policy, OAuth) | Submit in SoulOS 0.6. Developer mode for tests. Never ask users for ChatGPT/Claude account passwords. | – |
 | **GDPR / privacy** | On-device only: not a controller. Cloud memory, voice, BYO-key relay, waitlist: **controller**. | Privacy notice (purpose, basis, retention, rights, transfers), EU hosting, memory view and erase (endpoint exists), DPA with processors (Anthropic/OpenAI/hosting), double opt-in waitlist, cookie consent only if analytics are added | €0.3–1.5k |
 | **Consumer law (preorders)** | 14-day withdrawal from receipt; **online withdrawal button required since 19 Jun 2026** (Directive 2023/2673); delivery ≤ 30 days unless an estimated month is agreed; 2-year legal guarantee; ANPC/SAL links | Wording in research/03 ("Pre-order – Founders 00 … Estimated shipping: [Month Year] … cancel for a full refund …"). Charge only after CE tests pass, or with a clear ship month. | drafting |
-| **Shipping lithium** | SOUL S: **2.8 Wh** (750 mAh LiPo 603040); S-P0 1.85 Wh (500 mAh); the M prototype's 5.55 Wh (1500 mAh) is not shipped. All in equipment = **UN3481, PI 967 Section II** (well under 20 Wh, standard UN38.3), ≤ 30 % SoC recommended | DHL/UPS/FedEx or RO couriers by road; no Deutsche Post / Poste Italiane | ~€0 |
+| **Shipping lithium** | SOUL S: **2.8 Wh** (750 mAh LiPo 603040); S-P0 ≈ 1.7 Wh (503030 class, ≈ 450 mAh [E]); the M prototype's 5.55 Wh (1500 mAh) is not shipped. All in equipment = **UN3481, PI 967 Section II** (well under 20 Wh, standard UN38.3), ≤ 30 % SoC recommended | DHL/UPS/FedEx or RO couriers by road; no Deutsche Post / Poste Italiane | ~€0 |
 | **Trademark "SOUL"** | **High conflict risk**: the word is crowded in classes 9 and 42 (many "Soul" marks: headphones, software, cars) | **TMview/EUIPO search this week** in classes 9, 42 (+14, 28). File an EU mark (€850 for 1 class + €50 for the 2nd + €150 each after). Apply for the **EUIPO SME Fund voucher first** (75 %, up to €1,000; deadline 4 Dec 2026). Keep a fallback: "SOUL by Suflet", a figurative mark, or a registered design for the shell. Check the domain and handles. | €0.9–3k (+ lawyer €300–600) |
 | **Registered design (shell)** | Protects the MĂRGĂRITAR silhouette (size S) | EU registered Community design (~€350) with the v10 renders or the S GA drawing, **before public launch** or within 12 months of disclosure (grace period) | ~€350 |
 
@@ -42,7 +42,7 @@ Owners:
 | 2 | Week 0 | Check the ARTEMIS eligibility list (FINANTARE §1); EORI number for imports | A + L | €0 | [ ] |
 | 3 | Week 1 | 1 h compliance consultant: scope (RED + 18031 + battery + GPSR), Waveshare-in-a-case question | A + C | €200 | [ ] |
 | 4 | Week 1 | RFQ to 3 labs for RED + EMC + safety + EN 18031, with a pre-scan option | A (+Cl emails) | €0 | [ ] |
-| 5 | Week 1–2 | Cell supplier: DoC + UN38.3 summary + MSDS for the 603040 750 mAh (product S) and the 503035 (S-P0) | A | €0–300 | [ ] |
+| 5 | Week 1–2 | Cell supplier: DoC + UN38.3 summary + MSDS for the 603040 750 mAh (product S) and the 503030-class cell (S-P0) | A | €0–300 | [ ] |
 | 6 | Week 2 | EUIPO SME Fund voucher application (before paying fees) | A | €0 | [ ] |
 | 7 | Week 3 | File the EU trademark (+ design) | A / L | €0.9–1.3k | [ ] |
 | 8 | Week 3–6 | Firmware security for 18031: unique BLE credentials, signed OTA plan, secure-boot/flash-encryption build flags, debug lock, SBOM | Cl + A | €0 | [ ] |

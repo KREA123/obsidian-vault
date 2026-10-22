@@ -292,7 +292,7 @@ put(B[102], ['**Publicații științifice recente (≤ 5 ani; DOI verificate la 
     ['**Acte normative și standarde:**'] + ['- ' + x for x in NORMS] +
     ['**Surse de piață și context (link, dată):**'] + [f'- {a} — {u}' for a, u in MARKET_SOURCES[:8]])
 put(B[104], [
-    f'- D1 — depozitul git, `micul-smecher/firmware/` (README, PERF.md, BRINGUP.md, test/: {FW_TESTS}+ teste native), {FW}, commit 52689e4 din 12.10.2026; profilul S: b3aee4c, b9c683d [[A: export + hash la data depunerii]].',
+    f'- D1 — depozitul git, `micul-smecher/firmware/` (README, PERF.md, BRINGUP.md, test/: {FW_TESTS}+ teste native), {FW}, commit fe9fbe4 din 22.10.2026 (Alive 1.9.0: commit 52689e4 din 12.10.2026); profilul S: b3aee4c, b9c683d [[A: export + hash la data depunerii]].',
     '- D2 — `firmware/sim` + `firmware/PERF.md` + `media/` (clipurile simulatorului, MP4/GIF).',
     f'- D3 — `micul-smecher/ai/` (SOUL Cloud: README, tests/: {CLOUD_TESTS} de teste), `bridge/` (SOUL Bridge, MIT), `docs/07-CONNECT-AI.md`, `docs/10-SOUL-MEMORY.md`.',
     '- D4 — `os/index.html`, `os/DESIGN-ALIVE.md`, `os/ARCHITECTURE.md` (SoulOS pe web).',

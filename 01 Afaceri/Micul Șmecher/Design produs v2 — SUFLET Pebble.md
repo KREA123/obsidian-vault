@@ -1,10 +1,12 @@
 ---
 tip: produs
 afacere: Micul Șmecher
-status: activ
-actualizat: 2026-09-24
+status: abandonat
+actualizat: 2026-10-22
 ---
 # Design produs v2 — SUFLET Pebble
+
+> **Istoric (marcat 2026-10-22):** notă din 24.09.2026, dinainte de MĂRGĂRITAR. Cifrele de produs de aici (oval 68 × 60 × 19 mm, ~80 g, 1.000 mAh) nu mai sunt valabile. **Produsul final e SOUL S**: 63 × 70,8 × 23 mm, AMOLED rotund 1,75″ 466×466, sticlă plată Ø52, LiPo 750 mAh, de la 249 €, fără ediție Founders (sursa unică: `micul-smecher/docs/size-s.json`; [[Micul Șmecher]], [[Jurnal decizii]] 2026-10-20). Mărimea M (placa 2.8C) e prototipul de test.
 
 > **Pe scurt:** v2 e o **piatră de râu care deschide ochii**: ovală **68 × 60 × 19 mm, ~80 g**, ecran rotund AMOLED **1,75″ (466×466)**, baterie **1.000 mAh (~2,5 zile normal)**, un singur buton fizic pentru „ține și vorbește”, vibrații „tors”, curea de mână / șnur și un **„Cuib”** magnetic care o încarcă și o ține pe birou. Face lucruri pentru tine cu Claude/ChatGPT (mementouri, notițe vocale, briefing, aprobări Claude Code), dar **nu încearcă să fie telefon**.
 > Prototipul pe placa Waveshare iese mai mare: **~72 × 64 × 24 mm, ~100 g**.

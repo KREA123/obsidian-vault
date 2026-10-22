@@ -27,7 +27,7 @@ Modelul: `../../cad/soul_p0_s.py` (CadQuery), portat din kitul S vechi (`../../l
 | Spumă EVA 0,3–0,5 mm, bandă VHB, Kapton | puțin | sub baterie și sub difuzor, niciodată lipici pe baterie |
 | Cablu USB-C cu mufa dreaptă **subțire** | 1 | tunelul e făcut pentru o mufă de cel mult **12,4 × 7,0 mm** (NEVERIFICAT: măsori-ți cablul) |
 
-**De ce 503030 și nu 503035** (cum scrie în `docs/size-s.json`): cu tunelul mufei USB-C sub placă, o celulă de 35 mm nu mai încape în partea de jos, mai îngustă, a lui MĂRGĂRITAR (căutarea de poziții din 2026-10-20). Autonomia scade de la ~18 h la ~16 h [estimare, proporțional cu capacitatea].
+**De ce 503030 și nu 503035** (planul de hârtie din `docs/12-SIZE-S.md` §2.3): cu tunelul mufei USB-C sub placă, o celulă de 35 mm nu mai încape în partea de jos, mai îngustă, a lui MĂRGĂRITAR (căutarea de poziții din 2026-10-20). `docs/size-s.json` (`variants.S-P0_dev_board`) e aliniat cu acest kit din 22.10.2026: ~450 mAh, ~16 h [estimare, proporțional cu capacitatea; cu 503035 ar fi fost ~18 h].
 
 ## Asamblarea, pe scurt
 

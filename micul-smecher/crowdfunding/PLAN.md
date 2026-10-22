@@ -7,7 +7,7 @@ actualizat: 2026-10-22
 # SOUL on Indiegogo: campaign plan (v3, 2026-10-22, after the review)
 
 > Company: **ARTEMIS DIGITAL S.R.L.** (Bucharest, CUI 53145290, reg. no. J2025098748009, micro SME, not VAT-registered today).
-> Product backed: **SOUL size S** (MĂRGĂRITAR, 63 × 71 × 23–26 mm, round 1.75″ AMOLED 466 × 466). The working prototype today is the bigger **M** (90 × 101 mm, 2.8″ 480 × 480).
+> Product backed: **SOUL size S** (MĂRGĂRITAR, 63 × 71 × 23–26 mm, round 1.75″ AMOLED 466 × 466). The prototype being built is the bigger **M** (90 × 101 mm, 2.8″ 480 × 480; board ordered, not yet tested).
 > **One source of numbers:** every size, price, date and campaign fact is in [`facts.json`](facts.json) (+ `../docs/size-s.json`, checked by `tools/facts.py`). The goal is computed by `tools/goal_model.py` → `tools/goal_model.out.json`. If this text and those files disagree, the files win. Change them, then run `goal_model.py`, `build_copy.py` and `check_copy.py --strict`.
 > Tags: **[E]** = estimate, no quote yet · **[verify]** = not confirmed from a primary source · **[snippet]** = only seen in a search excerpt (Indiegogo Creator Guidelines/ToU are Cloudflare-blocked).
 > **v3 (2026-10-22, later the same day) applies the 25-issue review of the kit** (copy EN+RO, images, rewards, video, guide): new reward ladder and batch caps, D9 applied as the safe default, UK out of campaign 1, US/Canada no longer a stretch goal, fixed shipping, CE wording in one state, no grant named as a money source. Open founder decisions: `DECIZII-FONDATOR.md`.
@@ -19,7 +19,7 @@ actualizat: 2026-10-22
 ## Rezumat (RO)
 
 - **Indiegogo merge pentru ARTEMIS, pe hârtie.** România e listată cu plata în EUR, firma intră ca „Business”, verificarea (KYC) o face Adyen. Două posibile piedici la KYC: numărul ONRC în formatul nou (J2025098748009) și CUI-ul fără „RO”. Testul gratuit: **Andu își face contul și un draft până pe 15.11.2026.** Dacă nu merge: Ulule [verify], apoi precomenzi pe site-ul nostru după CE.
-- **Doar „totul sau nimic”. Obiectiv €70,000 = 270 de SOUL S** (lotul 1), cel mai mic lot la care livrăm tot: fabricație, pregătirea lotului, rezervă pentru neprevăzute (15 % + rotunjirea), TVA, comisioane 8 %, plăți eșuate, rezervă de rambursare 5 %. **CE-ul (~€42k) și marketingul (€17,5k) se plătesc înainte de campanie**, din bani proprii și împrumuturi (decizia D11), niciodată din grant.
+- **Doar „totul sau nimic”. Obiectiv €70,000 = 260 de SOUL S** (lotul 1 are 270), cel mai mic lot la care livrăm tot: fabricație, pregătirea lotului, rezervă pentru neprevăzute (15 % + rotunjirea), TVA, comisioane 8 %, plăți eșuate, rezervă de rambursare 5 %. **CE-ul (~€42k) și marketingul (€17,5k) se plătesc înainte de campanie**, din bani proprii și împrumuturi (decizia D11), niciodată din grant.
 - **Recompense (scara B, după review):** Soul Supporter €10 · First Light €249 (primii 150, cu numărul gravat pe picior) · Campaign Price €269 (100, lotul 1) · Two Souls €498 (€249 bucata, 10 seturi, lotul 1) · **Campaign Price · lotul 2** €269 (fără limită, livrare mai târzie) · OU în plus €35 · Late Pledge €299 (lotul 2). Culoarea e opțiune la același preț (Argint, Grafit, Jar). Ochii nu se aleg și nu se vând.
 - **Calendar:** nicio lansare fără filmare reală. S pe placa reală 15.12.2026 → SOUL S din aluminiu filmat 12.02.2027 → CE gata 31.08.2027 → go/no-go 07.09 → **lansare marți 05.10.2027, 35 de zile, până pe 09.11.2027** → Late Pledge ~30.11.2027. **Livrare estimată: mai 2028 (UE) pentru lotul 1, august 2028 pentru lotul 2** (D9 aplicat ca variantă sigură). UK nu e în campania 1 (D13).
 - **Listă de email:** minim 2,500 de adrese confirmate, țintă 3,300 (5.000 ideal), ca să facem 30 % din obiectiv în prima zi.
@@ -29,7 +29,7 @@ actualizat: 2026-10-22
 
 - **Sold:** SOUL **S**. **Shown working:** the M prototype until the aluminium S exists (G2), always with the label *"Prototype shown at a larger size (M). The product you back is S: 63 × 71 mm with a 1.75″ AMOLED."* (`labels.prototype_footage`).
 - **Renders:** always labelled *"Render (CGI), not a photo."* v9 object-only renders are scale-neutral and may be reused. Anything showing scale uses **`renders/v10/`** hand/desk, with the old glowing eyes painted over and the flat SoulOS eyes drawn by the eyes engine (`images/src/templates.js → v10eyes`, caption "Render (CGI), not a photo. Eyes drawn by the SOUL eyes engine."); ou_night and vs_m are pending. The other option is the true-scale vector graphic (`images/gallery_1_size_1200x630.png`, `story_06_size.png`: S next to a card and a €2 coin). **Never** `soul_v9_hand.png` / `soul_v9_desk.png`.
-- **SoulOS screens:** firmware 1.9.0 has never run on a real board, so every screen is a simulator or web capture and says so: *"SoulOS simulator capture at the S screen size (466 × 466). Not a recording of a real device."* (`labels.soulos_s`). *"SoulOS (shown on the prototype)"* only for real device recordings.
+- **SoulOS screens:** firmware 1.9.1 has never run on a real board, so every screen is a simulator or web capture and says so: *"SoulOS simulator capture at the S screen size (466 × 466). Not a recording of a real device."* (`labels.soulos_s`). *"SoulOS (shown on the prototype)"* only for real device recordings.
 - **Never claim** that AI is included (*"Works with your own Claude or your own OpenAI API key (in development), or offline. SOUL does not include AI."*; a ChatGPT account never works), CE/FCC/UKCA, invented backers, press or reviews, battery life (`null` until measured), a single thickness (*"23–26 mm, being finalised"*), "% off" or a struck-through retail price, or "incl. VAT" while unregistered. **No Founders edition.**
 - **Founder rule kept:** *"no customer payment before grant and CE"* → scenario **after_ce** (D1). The kit can switch to `before_ce` only with the founder's written waiver.
 
@@ -63,30 +63,30 @@ Not to use now: **Express crowdfunding** (HC/641, for products ready to ship), *
 ### 2.1 Funding type
 **Fixed goal, all-or-nothing.** It's the only model for new campaigns (flexible was discontinued, HC/645), and the right one: if the minimum batch isn't funded, nobody is charged. Fees are **5 % + 3 % + €0.20 per payment**, and nothing if the goal is missed (HC/596). On a €249 pledge that is €20.12 (8.08 %). Indiegogo also **holds 5 % of net volume for 6 months** as a reserve (HC/766), which is cash flow, not cost: ~€3.5k at the goal.
 
-### 2.2 Unit cost of SOUL S at 270 units (route B: Waveshare board inside, 3 colours)
+### 2.2 Unit cost of SOUL S at 260 units (route B: Waveshare board inside, 3 colours)
 From `tools/goal_model.py`. M prices come from the factory model (`docs/factory/SOUL-fabrica-model.xlsx`, scenario A, everything outsourced, the cheapest route below 5,000/yr per `SOUL — Fabrică și lanț de producție.md` §1) × S factors (`facts.json → size_S.cost_factors_vs_M`). The board is priced from Waveshare's list. **All [E] until written quotes.**
 
 | Group | Lines | €/unit |
 |---|---|---|
-| Imported parts | Waveshare ESP32-S3-Touch-AMOLED-1.75 31.75 · cell 2.46 · glass Ø52 3.19 · speaker 0.94 · freight + duty 3.84 | 42.18 |
-| Aluminium shell | CNC 2 halves 38.26 · blast + anodise + lot fees 6.47 · transport 2.57 | 47.30 |
-| Other parts | OU egg 12.84 · packaging 6.95 · chassis + foot 4.04 · mechanics 2.94 · USB-C cable 1.69 · laser mark 1.60 | 30.06 |
-| Assembly | EMS box build (assembly, flash, test, pack) 12.59 · internal QC 0.60 | 13.19 |
+| Imported parts | Waveshare ESP32-S3-Touch-AMOLED-1.75 31.83 · cell (503030 class) 2.48 · glass Ø52 3.24 · speaker 0.95 · freight + duty 3.88 | 42.38 |
+| Aluminium shell (S = M × 0.65, `size-s.json` `cnc.external_shell_factor_vs_M`) | CNC 2 halves 38.23 · blast + anodise + lot fees 6.12 · transport 2.54 | 46.89 |
+| Other parts | OU egg 12.93 · packaging 7.02 · chassis + foot 4.08 · mechanics 2.96 · USB-C cable 1.71 · laser mark 1.62 | 30.32 |
+| Assembly | EMS box build (assembly, flash, test, pack) 12.68 · internal QC 0.60 | 13.28 |
 | Scrap 3 % | | 3.59 |
-| **Total** | | **136.35** |
+| **Total** | | **136.47** |
 
 ### 2.3 Goal: €70,000 (ladder B after the review, after CE, route B)
 The model finds the smallest batch at which collected money minus VAT, fees, failed payments and the refund reserve covers every cost of delivering. Mix [E]: First Light (150) sells out, 6 % of devices go in Two Souls, the rest at Campaign Price, 5 % add an extra OU, and supporters equal 5 % of backers. The average pledge is **€254.18**. Two Souls at €498 (the First Light price per unit) brought the goal from €75k to €70k: the old €5.5k "rounding" is gone.
 
 | Build-up of the goal (`goal_model.out.json → budget_lines`) | € | % |
 |---|---|---|
-| Making 270 SOULs + 2 % spares + extra OU add-ons | 37,753 | 54 % |
+| Making 260 SOULs + 2 % spares + extra OU add-ons | 36,388 | 52 % |
 | Batch set-up: golden samples (3 colours), anodise set-up, packaging samples €1,900 · product liability insurance €800 · 3PL onboarding, UN3481 labels €700 | 3,400 | 5 % |
-| Contingency: 15 % on every cost (all [E] until quotes) plus the rest up to a round goal (the separate 'rounding' line read as padding, review 2026-10-22) | 6,702 | 10 % |
-| VAT we expect to owe (21 %, inside the prices; never added on top) | 11,767 | 17 % |
-| Indiegogo 5 % + Adyen 3 % + €0.20 per payment | 5,479 | 8 % |
-| Pledges that fail after 3 retries (~3 %) [E] | 2,097 | 3 % |
-| Refund reserve 5 % (D15: the lawyer sizes it to the refund promise) | 2,802 | 4 % |
+| Contingency: 15 % on every cost (all [E] until quotes) plus the rest up to a round goal (the separate 'rounding' line read as padding, review 2026-10-22) | 8,924 | 13 % |
+| VAT we expect to owe (21 %, inside the prices; never added on top) | 11,311 | 16 % |
+| Indiegogo 5 % + Adyen 3 % + €0.20 per payment | 5,267 | 8 % |
+| Pledges that fail after 3 retries (~3 %) [E] | 2,016 | 3 % |
+| Refund reserve 5 % (D15: the lawyer sizes it to the refund promise) | 2,693 | 4 % |
 | **Goal** | **70,000** | |
 
 **Paid before the campaign, so outside the goal (€42,000, `one_offs_before_campaign`):**
@@ -112,10 +112,10 @@ Sources: `docs/04-COMPLIANCE.md`, `Finanțare — oferte de preț pentru PoC 1.1
 
 | Case | Devices | Goal |
 |---|---|---|
-| Base (B after the review, after CE, route B) | 270 | €70k |
-| unit costs +15 % | 400 | €110k |
+| Base (B after the review, after CE, route B) | 260 | €70k |
+| unit costs +15 % | 390 | €105k |
 | unit costs −15 % | 180 | €50k |
-| 5 colours instead of 3 | 290 | €80k |
+| 5 colours instead of 3 | 280 | €75k |
 | marketing recovered inside the goal | 510 | €135k |
 
 The goal is **recomputed at G3 (7 Sep 2027) with written quotes**. If the quotes come in more than 15 % above the model, the goal moves up before submission. It can't change after launch (HC/517).
@@ -146,7 +146,7 @@ Indiegogo sorts rewards by price, and one can be pinned (HC/478). Each reward sh
 - **Colour is a variant** with its own SKU (`SOUL-S-SIL/-GRA/-EMB`), no price difference. Launch colours: **Silver, Graphite, Ember** (D7).
 - **Eyes:** born from the chip ID with published odds; never priced, sold, rerolled or used as a prize. Two SOULs share a pair ~0.9 % of the time.
 - **Contribution per device** after unit cost, VAT and fees: First Light €49.31, Campaign €64.24, Two Souls €49.41, Late Pledge €86.64.
-- **Ladder A (alternative):** First Light €199 (cap 300), Campaign €219, Two Souls €418, Late Pledge €249; needs a ~€120k goal and a ~7,000-email list. Not recommended for a first-time creator with no audience yet.
+- **Ladder A (alternative):** First Light €199 (cap 300), Campaign €219, Two Souls €418, Late Pledge €249; needs a ~€115k goal and a ~6,700-email list. Not recommended for a first-time creator with no audience yet.
 - **Settings:** Stretch Pay off. Allow-list the shipping countries (§5). Pin First Light while it lasts, then Two Souls. **Stable Pledge (D10):** irreversible; turn it on at G3 only if every batch quote and the courier quote are in writing.
 
 ## 4. Delivery estimate and critical path
@@ -292,7 +292,7 @@ US/Canada (FCC + ISED) is **not** a stretch goal any more: it rewarded nobody wh
 | Risk | Likelihood | Mitigation |
 |---|---|---|
 | **PoC 1.1 blocked by the missing scientific expert** → "grant decided" condition fails | high today | expert note, 3 paths in parallel this week |
-| Firmware 1.9.0 has never run on a real board; the S port and voice not proven | high | G1/G2 before anything public beyond the waitlist |
+| Firmware 1.9.1 has never run on a real board; the S port and voice not proven | high | G1/G2 before anything public beyond the waitlist |
 | €59.5k pre-campaign cash not found | high | D11 by 31 Jan 2027; loans; route B (no NRE); delay rather than cut CE |
 | CE/RED fails (bare ESP32-S3R8 in an aluminium shell) | medium | pre-scan in May; 1 re-test budgeted; nothing ships before the DoC |
 | Unit costs above the model | high | 15 % contingency; G3 quotes ≤ +15 % or recompute the goal |

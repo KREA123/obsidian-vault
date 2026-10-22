@@ -11,12 +11,12 @@
 - **Autonomie [estimare]: ~27 h** pe ziua-model din docs/09 (interval 21–34 h). E aproape cât M-ul (~32 h cu 1500 mAh), pentru că AMOLED-ul nu are lumină de fundal și ochii stau pe negru. Cu firmware care pune procesorul în light sleep (posibil pe AMOLED, imposibil pe ecranul RGB al lui M): **~2 zile**.
 - **Placa de dezvoltare** Waveshare ESP32-S3-Touch-AMOLED-1.75, verificată azi: are 2 microfoane, codec și difuzor din cutie. **$29,99–39,99** la Waveshare (se poate comanda). Pe Pi Hut e £28,80 (standard), dar e epuizată. Nu am găsit vânzător în România.
 - **Produsul final** are PCB propriu (ESP32-S3-WROOM-1 + panou AMOLED 1,75″ gol). Panouri goale există: Tailor-Pixels TOH175XRT-02CG, 0,8 mm, $9–17; NoseDisplay ND018ECG466466-A02; Lianxun LX175A3101CTP01. MOQ-ul se află doar prin cerere de ofertă.
-- **Prototipul S-P0**, pe placa Waveshare cu sticla ei: **63 × 70,8 × 25,65 mm** (forma MĂRGĂRITAR necomprimată), baterie 503035 de 500 mAh, ~18 h.
+- **Prototipul S-P0**, pe placa Waveshare cu sticla ei: **63 × 70,8 × 25,65 mm** (forma MĂRGĂRITAR necomprimată), baterie LiPo clasa 503030, ~450 mAh [estimare], ~16 h [estimare]. Planul de hârtie era 503035 / 500 mAh / ~18 h; CAD-ul exportat (22.10) arată că 35 mm nu încap lângă tunelul mufei USB-C (§2.3).
 - **Costuri [estimare]:**
   - Placa + carcasa la 100 buc.: **≈ −70 € / buc. față de M** (−33 %). Placa e mai ieftină și nu mai trebuie microfon + amplificator, dar cel mai mult scade carcasa.
   - La 1.000 buc.: **≈ −24 € / buc.**
   - Carcasa CNC: semifabricat **0,4 kg** (M: 1,0 kg), ciclu **~24 min** (M: 45). Rezultă ~17 seturi / schimb / mașină în loc de 9.
-- **M rămâne prototipul** pentru teste și dovada TRL 3. Nimic din firmware-ul 1.9.0 nu se schimbă pentru asta.
+- **M rămâne prototipul** pentru teste și dovada TRL 3, cu SoulOS 1.9.1 (`firmware/release/SOUL-2.8C-install.bin`; pentru S: `SOUL-1.75-install.bin`, tot 1.9.1).
 
 ---
 
@@ -30,8 +30,8 @@
 | Screen | 1.75″ round AMOLED 466², active Ø43.76, CO5300 / QSPI [V] | same panel on the board | 2.8″ round IPS 480², ST7701 / RGB [R] |
 | Electronics | custom PCB: ESP32-S3-WROOM-1-N16R8 + bare panel [E, EVT] | Waveshare ESP32-S3-Touch-AMOLED-1.75 | Waveshare ESP32-S3-Touch-LCD-2.8C |
 | Audio | 2 MEMS mics + codec + 15 × 11 mm speaker in the +x seam [E] | on board: dual mics, ES7210 + ES8311, 8 Ω 2 W kit speaker [V] | optional INMP441 + MAX98357 [R] |
-| Battery | **750 mAh** LiPo 603040 class (2.8 Wh) | 500 mAh LiPo 503035 | 1500 mAh LiPo 803450 [R] |
-| Battery life (docs/09 day) [E] | **≈ 27 h** (21–34); ≈ 55 h with light-sleep firmware | ≈ 18 h | ≈ 32 h [R: docs/09 §3] |
+| Battery | **750 mAh** LiPo 603040 class (2.8 Wh) | ≈ 450 mAh LiPo 503030 class [E] (§2.3) | 1500 mAh LiPo 803450 [R] |
+| Battery life (docs/09 day) [E] | **≈ 27 h** (21–34); ≈ 55 h with light-sleep firmware | ≈ 16 h | ≈ 32 h [R: docs/09 §3] |
 | Weight [E] | **≈ 85 g** (75–95) | ≈ 90 g | – |
 
 Why 23.0 mm and 750 mAh: §2.4. What it costs: §3.
@@ -66,7 +66,7 @@ Why 23.0 mm and 750 mAh: §2.4. What it costs: §3.
 
 **Buy plan:** order **3 Standard boards from waveshare.com directly** (EU distributors are out of stock). That is 1 for firmware, 1 for the S-P0 build and 1 spare. Add **2 × AMOLED-1.75C** for the aluminium-case RSSI test (docs/01 B-01). The extra cost is about €100 [E].
 
-**Firmware state [R]:** `pio run -e amoled175` exists (`src/board.h`: CST9217, QMI8658, AXP2101 set-up as in xiaozhi-esp32). The ES8311/ES7210 audio path is **not driven yet** (`src/audio.h`, docs/09 §6). SoulOS Alive 1.9.0 is laid out on 480 px (lcd28), and the 466 px S layout is the open to-do "SoulOS pe 1,75″".
+**Firmware state [R, updated 22 Oct 2026]:** `pio run -e amoled175` builds SoulOS **1.9.1** (`firmware/release/SOUL-1.75-install.bin`, sha256 `b208fbbb…`; `src/board.h`: CST9217, QMI8658, AXP2101 set up register by register). **S layout done:** the S density profile and every SoulOS Alive screen on 466 px (commits b3aee4c, b9c683d; `firmware/SOUL-S.md`). **ES8311 speaker driven** in 1.9.1 (DAC + amplifier on GPIO 46: alarms, test tone `A`; `firmware/SOUL-S.md` §4, §9). **Still to do:** the ES7210 microphones (voice) and light sleep between frames (§2.5). 245 native tests green; not yet run on a board (`firmware/BRINGUP.md` §S).
 
 ### 1.2 Bare 1.75″ round panel + custom PCB (the product path)
 
@@ -129,12 +129,14 @@ Speaker: a 15 × 11 × 3.5 mm unit (docs/01 P0-03) **in the +x seam beside the c
 
 ### 2.3 Stack, S-P0 (stock Waveshare board)
 
-The glass sits 0.65 mm behind the face, under a 0.8 mm lip. The layers then add up as follows:
+The glass sits 0.65 mm behind the face, under a 0.8 mm lip. The layers then add up as follows (first paper plan, 503035):
 - tallest SMD at **8.70** [V] → 9.35 mm;
 - foam 0.3 → 9.65 mm;
 - **503035** cell, 5.05 + 0.5 swell → 15.20 mm;
 - air 0.2 → 15.40 mm;
 - wall 1.6 → **17.0 mm** (alu) or 17.6 mm (plastic).
+
+**What the exported S-P0 uses (22 Oct 2026): a 503030-class cell, ≈ 450 mAh [E], ≈ 16 h [E].** The depth stack above holds, but the footprint does not: in the CAD (`prototip/cad/soul_p0_s.py`, batfit search of 20 Oct) the USB-C plug tunnel under the board takes the bottom of the cavity, and a 35 mm-long cell no longer fits the narrower MĂRGĂRITAR bottom. A 30 mm cell (envelope 30.5 × 31 × 5.55 mm incl. PCM tape + 0.5 swell, tilted 6°) does, with 0.43 mm to the back shell (`prototip/stl/s/README.md`). `size-s.json` `variants.S-P0_dev_board` follows the CAD. The capacity is the listing class [E] until a cell is in hand; the life is 18 h × 450 / 500 [E].
 
 The MX1.25 plugs on the −x edge reach 14.0 mm behind the board glass (`soul_p0.py`, plug height UNVERIFIED) → 16.25 mm with the wall.
 
@@ -159,8 +161,9 @@ What fits where (needed depth → margin at the worst corner):
 | Product + 603035, ≈ 600 mAh [E] | 13.15 | +1.45 | +2.35 | +4.45 |
 | Product + 703035, ≈ 700 mAh [E: capacity per listing varies] | 14.25 | +0.35 | +1.25 | +3.35 |
 | **Product + 603040, 750 mAh** | **13.37** (31 × 43) | +0.13 ✗ | **+0.93** | +2.83 |
-| S-P0 (stock board) + 503035, alu wall | 17.0 | ✗ | ✗ | **+0.8** |
-| S-P0 (stock board) + 503035, plastic wall | 17.6 | ✗ | ✗ | +0.2 (tight) |
+| S-P0 (stock board) + 503035, alu wall | 17.0 | ✗ | ✗ | **+0.8** in depth (footprint ✗ beside the USB-C tunnel, §2.3) |
+| S-P0 (stock board) + 503035, plastic wall | 17.6 | ✗ | ✗ | +0.2 (tight; footprint ✗) |
+| **S-P0 (stock board) + 503030, as exported** | 17.0 / 17.6 | ✗ | ✗ | **fits** (CAD: 0.43 mm to the back shell) |
 
 Decisions:
 - **Minimum realistic depth: ≈ 20.5 mm** for the product with a 500 mAh cell. That gives 13.4 available vs 12.1 needed, so 1.3 mm of margin. Below ~19.5 mm, even 500 mAh no longer has a safe margin. The back would also be compressed to about half, and MĂRGĂRITAR would stop reading as a pebble.
@@ -170,14 +173,15 @@ Decisions:
   3. At 22.0 mm the margin is 0.13 mm. That is not buildable with CNC tolerances and a pouch cell.
   4. +1 mm only fills the back half (s_back 0.807 instead of the M renders' 0.735). The face, glass, chamfer, rolls and silhouette are identical. The body is still 2.65 mm thinner than the uncompressed shape.
   5. 2.8 Wh is far below 20 Wh, so standard UN38.3 shipping applies (04-COMPLIANCE).
-- **S-P0: 25.65 mm** (the uncompressed shape) with the 503035. It is the only depth where the stock 8.7 mm board stack plus a ≥ 500 mAh cell fits. Build the **alu or alu_band** variant; plastic is tight.
+- **S-P0: 25.65 mm** (the uncompressed shape). It is the only depth where the stock 8.7 mm board stack plus a ≈ 450–500 mAh cell fits. The exported CAD uses a **503030-class cell (≈ 450 mAh [E])**: the 503035 fits in depth but not beside the USB-C plug tunnel (§2.3). The plastic variant is exported and checked; alu / alu_band are generated on demand.
 - **Optional for S-P0:** a Ø52 × 0.7 black overlay glass over the stock glass gives the product's face. It costs +0.85 mm, taken from the 0.8 mm margin, so it fits only with a 403035-class cell [E] (research/08 §infinity glass).
 
 Candidate cells (all 3.7 V, with PCM, 2-pin lead; check polarity vs the board, docs/01):
 
 | Cell | Size (T × W × L) | mAh | Wh | Use | Sources |
 |---|---|---:|---:|---|---|
-| 503035 | 5.05 × 30.0 × 35.5 | 500 | 1.85 | S-P0; product fallback | [V-s] PKCell LP503035 sheet (TI-hosted), BerryBase, Welectron; eBay.de €6–9 |
+| 503030 class | 5.0 × 30 × 30 | ≈ 450 [E] | ≈ 1.7 | **S-P0 (as exported)** | AliExpress size class, listing capacity [E] |
+| 503035 | 5.05 × 30.0 × 35.5 | 500 | 1.85 | first S-P0 plan (does not fit beside the USB-C tunnel); product fallback | [V-s] PKCell LP503035 sheet (TI-hosted), BerryBase, Welectron; eBay.de €6–9 |
 | 603035 | 6.0 × 30 × 35 | ≈ 600 [E] | ≈ 2.2 | product fallback | AliExpress size class [E] |
 | **603040** | **6.2 × 30.5 × 42** | **750 typ / 720 min** | **2.8** | **product (EVT)** | [V-s] A&S Power listing (HKTDC): 4.2 V charge, 750 mA max charge/discharge, UL2054/CB/KC; eBay.de 800 mAh listings of the same size class |
 | custom pouch | ≤ 6.2 × 31 × 43, top corners cut to the back curve | 750–800 [E] | ≈ 2.9 | product (DVT, IEC 62133-2 + UN38.3) | 02-MANUFACTURING §11 |
@@ -204,7 +208,7 @@ docs/09's model day: 1 h awake, 15 h asleep or screen off, 8 h night deep sleep,
 | Screen off (Mode Off, 80 MHz) | 35–60 mA | 25–35 mA (panel sleep-in) |
 | Deep sleep | ≈ 0 (docs/09) | dev board ≈ 2 mA [V-s, sibling board]; custom PCB ≤ 0.3 mA target |
 | **mAh per model day** | ≈ 1,130 | **≈ 661** (85 + 15 h × 38 + 2 + 4) |
-| **Battery life** | 1500 mAh → **≈ 32 h** | **750 mAh → ≈ 27 h** (21–34 h); S-P0 500 mAh with a 2 mA deep sleep → ≈ 18 h |
+| **Battery life** | 1500 mAh → **≈ 32 h** | **750 mAh → ≈ 27 h** (21–34 h); S-P0 ≈ 450 mAh (503030) with a 2 mA deep sleep → ≈ 16 h (≈ 18 h with the 500 mAh first planned) |
 
 **Redo with the 1.9.1 numbers [E] (`firmware/SOUL-S.md` §8):** awake ≈ 77–87 mA, asleep glow ≈ 45–55 mA, screen off 25–35 mA → ≈ 690 mAh for the model day → **≈ 26 h** (21–33 h). The ≈ 27 h above stays inside that range; both wait for BRINGUP §S-f's meter.
 
@@ -234,7 +238,7 @@ The table uses the factory model's lines and conventions (`docs/factory/SOUL-fab
 | Line | M @100 (Waveshare 2.8C) [R] | **S @100 (Waveshare AMOLED-1.75)** | M @1000 (own PCB) [R] | **S @1000 (own PCB)** |
 |---|---:|---:|---:|---:|
 | Electronics | 45.35 (board $39.99 + INMP441 + MAX98357) | **26.09** (board $29.99; mics, codec, speaker header on board) [V price] | 18.67 (2.8″ panel $12 + WROOM $3.46 + parts $5 + PCB $1) | **16.76** (1.75″ panel $10 [E: $9–17 list] + WROOM $3.46 + parts $5 + PCB $0.8) |
-| Battery | 3.92 (803450 1500 mAh) | 3.00 (503035) [E] | 1.83 | 1.31 (603040 750 mAh, $1.5) [E] |
+| Battery | 3.92 (803450 1500 mAh) | 3.00 (503030 class, S-P0) [E] | 1.83 | 1.31 (603040 750 mAh, $1.5) [E] |
 | Front glass 2.5D | 6.96 | 5.22 (Ø52, set-up dominated) [E] | 2.61 | 1.91 (area × 0.49) [E] |
 | Speaker + small mech + cable | 7.27 | 5.70 (no extra speaker: kit) [E] | 4.50 | 4.00 [E] |
 | Transport + duty | 7.75 | 4.88 | 2.24 | 1.95 |
@@ -245,7 +249,7 @@ The table uses the factory model's lines and conventions (`docs/factory/SOUL-fab
 
 - The shell factor × 0.65 is [E]. The geometry gives surface × 0.50 and billet × 0.40 vs M (§3.2). External prices keep a fixed set-up and handling share. The model already used × 0.75 for S+ (70 × 79 mm), and S is ≈ 0.81 of S+'s face area.
 - The model also adds 21 % non-deductible VAT at 100 units, and PCBA €4 at 1,000. Both are unchanged by the size.
-- docs/01's S tables (P0 and Founders 00 @25, ≈ €190 hardware per unit) remain the per-part reference for small S batches. The only change is the battery line: 750 mAh in the product, 500 mAh in S-P0.
+- docs/01's S tables (P0 and Founders 00 @25, ≈ €190 hardware per unit) remain the per-part reference for small S batches. The only change is the battery line: 750 mAh in the product, ≈ 450 mAh (503030 class) in S-P0.
 
 ### 3.2 CNC and material
 
@@ -281,13 +285,13 @@ Per unit, the anodise and blast cost scales with surface (× 0.5); the lot fees 
    - Run BRINGUP §5d on the AMOLED-1.75: awake with eyes, asleep glow, screen off, deep sleep.
    - Run a white-screen test.
    - Put the measured values into §2.5 and `size-s.json`.
-5. **Firmware for S.** The 466 px Alive layout (the to-do "SoulOS pe 1,75″"), the ES8311/ES7210 audio driver, and light sleep between frames.
+5. **Firmware for S.** Done in 1.9.1: the 466 px Alive layout and the ES8311 speaker. Still to do: the ES7210 microphones and light sleep between frames.
 6. **Stability.** The base narrows to ≈ 38 × 16 mm at S [E]. research/09 and the v9 README already flag tip-over. Test it on the S-P0 at 85–90 g.
 7. **CAD.**
    - Production S body at **23.0 mm**: s_back 0.807 in `marg_geo.MargaritarV9(s_back=0.807)`, plus a chassis for the custom stack.
-   - S-P0 at **25.65 mm**: port `prototip/legacy-S/cad/soul_p0.py` from HOPA to `marg_geo` at s_back 1.0. Its board constants are already verified (§1.1).
+   - S-P0 at **25.65 mm**: done (22 Oct 2026). `prototip/cad/soul_p0_s.py` ports `prototip/legacy-S/cad/soul_p0.py` from HOPA to `marg_geo` at s_back 1.0, with a 503030-class cell (§2.3); plastic variant exported (`prototip/stl/s/`, `prototip/step/s/`).
 
-Unchanged by this document: the 5 anodised colours, the living eyes (120 designs, rarities), the SoulOS Alive design (`os/DESIGN-ALIVE.md`), the owner's own AI (never included), no camera, no CE yet, from €249. The M prototype (2.8C, firmware 1.9.0, `release/SOUL-2.8C-install.bin`) stays the test and PoC TRL 3 device.
+Unchanged by this document: the 5 anodised colours, the living eyes (120 designs, rarities), the SoulOS Alive design (`os/DESIGN-ALIVE.md`), the owner's own AI (never included), no camera, no CE yet, from €249. The M prototype (2.8C, SoulOS 1.9.1, `release/SOUL-2.8C-install.bin`) stays the test and PoC TRL 3 device.
 
 ---
 

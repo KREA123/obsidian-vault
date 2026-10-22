@@ -5,7 +5,7 @@
 SOUL is a product in development, made by a small company. Backing it is not buying from a shop: you are helping us build the first batch, and some things can go wrong. Here is what we know can go wrong, and what we do about it.
 
 **1. The batch is still ahead of us.**
-Our first working prototype is the bigger M size. The SOUL you back is S (63 × 71 mm, round 1.75″ AMOLED).
+Our bench prototype, being built now (board ordered, not yet tested), is the bigger M size. The SOUL you back is S (63 × 71 mm, round 1.75″ AMOLED).
 [[G1: "SoulOS runs on the real S board with hold-to-talk voice since <date>."]]
 [[G2: "An aluminium SOUL S has been assembled and filmed working in one take on <date>."]]
 Between a few hand-built units and a batch of a few hundred there is still work: the final depth, the final battery, testing every unit. What we do: we didn't launch on renders. This page went live only after a real S worked on camera, and the specifications say clearly what is final and what is still being decided.

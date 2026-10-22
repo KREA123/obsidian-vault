@@ -148,7 +148,7 @@ inp("vat_threshold_lei", "Plafon de scutire TVA (cifra de afaceri anuală)", 395
     "[de verificat cu contabilul] 395.000 lei (art. 310 Cod fiscal, din 1.09.2025, după cunoștințele mele; nu am verificat în această rundă). "
     "Sub plafon ARTEMIS nu recuperează TVA → TVA = cost real pe achiziții (aplicat automat).", E, NUM0)
 inp("el_route", "Arhitectura electronică: 1 = PCB propriu (ESP32-S3-WROOM-1 + panou AMOLED 1,75″), 2 = placă Waveshare ESP32-S3-Touch-AMOLED-1.75",
-    [2, 1, 1, 1], "cod", "02-MANUFACTURING §11: PCB custom de la ~1k buc. La 100 buc. NRE-ul PCB (~$15–30k) nu se justifică → placa Waveshare [estimare]. Atenție: cu placa Waveshare corpul e S-P0 (25,65 mm, 500 mAh; docs/12 §2.3), nu produsul de 23 mm", E, NUM0, True)
+    [2, 1, 1, 1], "cod", "02-MANUFACTURING §11: PCB custom de la ~1k buc. La 100 buc. NRE-ul PCB (~$15–30k) nu se justifică → placa Waveshare [estimare]. Atenție: cu placa Waveshare corpul e S-P0 (25,65 mm, LiPo 503030 ~450 mAh [estimare]; docs/12 §2.3), nu produsul de 23 mm", E, NUM0, True)
 inp("pcba_sel", "Referință PCBA externalizat: 1 = JLCPCB (Asia), 2 = EMS România", 2, "cod",
     "Lanțul recomandat în cercetare (15.10.2026): Felix EMS / EMS-Electra fac PCBA + box build + flash/test. JLCPCB = cel mai ieftin reper public.", "input", NUM0, True)
 inp("days", "Zile lucrătoare pe an", 220, "zile", "Cercetare T1 (15.10.2026): 220 zile/an", E, NUM0)
@@ -175,8 +175,8 @@ inp("ws_board_usd", "Placă Waveshare ESP32-S3-Touch-AMOLED-1.75 (doar la arhite
     "docs/12 §1.1: $29,99–39,99 pe waveshare.com, verificat 20.10.2026 (https://www.waveshare.com/esp32-s3-touch-amoled-1.75.htm); split pe variante nepublicat", V, USD)
 inp("mic_lei", "Microfon extern (arhitectura 2) — la S nu trebuie: placa AMOLED-1.75 are 2 microfoane", 0, "lei cu TVA", "docs/12 §1.1 [V]; la M era INMP441, Bitmi 20,99 lei", V, NUM2)
 inp("amp_lei", "Amplificator extern (arhitectura 2) — la S nu trebuie: codecul ES8311 e pe placă", 0, "lei cu TVA", "docs/12 §1.1 [V]; la M era MAX98357A, Robofun 44,18 lei", V, NUM2)
-inp("battery_usd", "Celulă LiPo 603040 750 mAh cu PCM (la 100 buc. cu placa Waveshare: 503035 500 mAh, S-P0)", [3.45, 1.50, 1.40, 1.35], "$/buc",
-    "docs/12 §3.1: 503035 ≈ 3,00 € la 100 (S-P0); 603040 $1,5 la 1.000 [estimare]; listarea A&S Power 603040 750 mAh (HKTDC). Cere UN38.3 + IEC 62133.", E, USD)
+inp("battery_usd", "Celulă LiPo 603040 750 mAh cu PCM (la 100 buc. cu placa Waveshare: 503030 ~450 mAh, S-P0)", [3.45, 1.50, 1.40, 1.35], "$/buc",
+    "docs/12 §3.1: 503030 ≈ 3,00 € la 100 (S-P0) [estimare]; 603040 $1,5 la 1.000 [estimare]; listarea A&S Power 603040 750 mAh (HKTDC). Cere UN38.3 + IEC 62133.", E, USD)
 inp("speaker_eur", "Difuzor 15×11 mm (la 100 buc.: difuzorul din kitul plăcii Waveshare)", [0, 0.8, 0.6, 0.5], "€/buc", "docs/12 §3.1: la 100 fără difuzor separat (kit); volume mari [estimare]", E, EUR2)
 inp("glass_usd", "Sticlă frontală plată Ø52, 2.5D, întărită chimic, print negru", [6.0, 2.2, 1.4, 0.9], "$/buc",
     "docs/12 §3.1: × ~0,75 față de M (Ø74 → Ø52, setup dominant). Felix Glass $2,88–8,11; Hengping $0,60–1,90 @MOQ 100; Saida $0,20–3,00 @MOQ 100 (https://saidaglass.en.made-in-china.com/product/ZdbJyzMDEYWm/, listări 2–2,5 ani) — ales în interval [estimare]", E, USD)
@@ -202,7 +202,7 @@ inp("jlc_joint_usd", "JLCPCB preț per punct de lipire", [0.0016, 0.0016, 0.0014
 inp("ems_pcba_eur", "EMS România: asamblare PCBA per placă (fără componente)", [12, 4, 2.5, 1.8], "€/placă",
     "[estimare] Felix EMS / EMS-Electra / ICCO nu publică prețuri; o ofertă UE de 6 plăci = €312,81 (forum, cercetare). Cere RFQ cu Gerber+BOM+CPL.", E, EUR2, True)
 inp("cnc_buy_eur", "Prelucrare CNC set S (față + spate), externalizat, fără finisaj", [55, 23, 17.5, 14.3], "€/set",
-    "[estimare] = valorile M (85 / 35 / 27 / 22) × 0,65, factorul carcasei S externe din docs/12 §3.1 (suprafață × 0,50, semifabricat × 0,40, taxe fixe); Vault: S @25 = 92 €/set cu finisaj (BOM P0-12); 1k China $25–45/set pentru S (02-MANUFACTURING §11); "
+    "[estimare] = valorile M (85 / 35 / 27 / 22) × 0,65, factorul carcasei S externe din docs/12 §3.1 și size-s.json cnc.external_shell_factor_vs_M, același în modelul de obiectiv al campaniei (suprafață × 0,50, semifabricat × 0,40, taxe fixe); Vault: S @25 = 92 €/set cu finisaj (BOM P0-12); 1k China $25–45/set pentru S (02-MANUFACTURING §11); "
     "curba PREMSA 6061 ~100×70×40: $118 @1 / $61 @25 / $54 @100 (https://premsaindustries.com/en/aluminum-machining). La ≥10k dosarul trece pe ambutisare 5052 (nemodelat).", E, EUR2, True)
 inp("blast_buy_eur", "Sablare externalizată (glass bead) per set S", [1.3, 1.0, 0.8, 0.65], "€/set", "[estimare] M × 0,65 (docs/12 §3.1)", E, EUR2)
 inp("anod_base_eur", "Anodizare tip II colorată + sigilare, per set S (fără taxa de lot)", [3.25, 2.6, 2.3, 1.95], "€/set", "[estimare] M (5 / 4 / 3,5 / 3) × 0,65 (docs/12 §3.1); Anorom/Alvi/ARSAT nu publică prețuri", E, EUR2)
@@ -379,7 +379,7 @@ srow("vatcost", "TVA nerecuperabil aplicat achizițiilor", "=[vat_rate]*(1-{vatf
 srow("hourly_op", "Cost operator per oră productivă", "=[sal_op_lei]*(1+[cam_rate])*12/[fx_eur_lei]/[hours_fte]", EUR2)
 srow("el_comp", "Electronică (panou + modul + componente + PCB gol, sau placa Waveshare AMOLED-1.75)",
      "=IF({route}=1,([display_usd]+[mcu_usd]+[other_el_usd]+[pcb_bare_usd])*[fx_usd_eur],[ws_board_usd]*[fx_usd_eur]+([mic_lei]+[amp_lei])/(1+[vat_rate])/[fx_eur_lei])")
-srow("batt", "Baterie LiPo 750 mAh (500 mAh la S-P0)", "=[battery_usd]*[fx_usd_eur]")
+srow("batt", "Baterie LiPo 750 mAh (~450 mAh la S-P0)", "=[battery_usd]*[fx_usd_eur]")
 srow("glass", "Sticlă frontală 2.5D", "=[glass_usd]*[fx_usd_eur]")
 srow("small", "Difuzor + mecanice mici + cablu", "=[speaker_eur]+[mech_eur]+[cable_eur]")
 srow("imp_el", "Subtotal piese importate", "={el_comp}+{batt}+{glass}+{small}")
