@@ -129,6 +129,7 @@ Legendă: ✔ = verificat pe pagină · ✎ = corectat la verificare · **[never
 
 | Linie | Furnizor | Preț | Termen | Link | Cum ceri oferta |
 |---|---|---|---|---|---|
+| **L12 reper S [estimare]** | – | **~200 €/set la 3, ~145 la 5, ~92 la 15 seturi** (01-BOM P0-12, research/10 §1.3, aceeași clasă de mărime) → ≈ 2.700 € net pe 23 de seturi; plus bază, șasiu, mostre de culoare, marcare, transport. Bugetul L12 (5.550 € net) **rămâne neschimbat** până vin ofertele | – | `micul-smecher/docs/01-BOM.md`, `docs/12-SIZE-S.md` §3.2 (semifabricat 0,4 kg, ~24 min/set) | RFQ §4.3 |
 | L12 CNC + anodizare | ✔ Weerg, IT | ofertă instant după STEP | expediere ~3 zile | https://www.weerg.com/en/ | cont + date firmă salvate → „Download” ofertă PDF; 6082 (nu 6061), culori: roșu, albastru, negru, verde, natur, auriu |
 | L12 | ✔ Hubs (Protolabs Network), NL | ofertă instant | – | https://www.hubs.com/instant-quotes/ | ofertă PDF / „share quote”; preț blocat 30 de zile; **nu plăti** |
 | L12 | ✔ PCBWay CNC, CN | ofertă instant | 1–2 zile + transport | https://www.pcbway.com/rapid-prototyping/CNC-machining/ | ofertă online + email 3dcnc@pcbway.com pentru culori și marcare |
@@ -160,7 +161,7 @@ Perechi independente: JLCPCB, JLCCNC și JLC3DP sunt **același grup**. Hubs și
 | Oul OU | ✘ Capib | tabelul e „medie de piață”, nu ofertă | – | doar prin configurator |
 | Lentilă PMMA (prototip) | ✔ LASER CUT București | 4,5 lei/ml (2 mm) cu TVA, min. 30 lei | https://www.lasercutbucuresti.ro/pret-debitare-si-gravura-laser/ | formularul de contact |
 | Lentilă PMMA | ✔ FabLab Jilava | 7 lei/ml (2–3 mm) fără TVA, min. 100 lei | https://www.fablab.ro/index.php/preturi/prelucrare-laser/ | contact@fablab.ro |
-| Lentilă sticlă călită | ✔ Mirit Glas, DK / Felix Glass, CN | la cerere | https://miritglas.com/en/contact-us/ | post@miritglas.com / formularul Felix |
+| Sticlă frontală S: plată **Ø52 × 0,7 mm**, 2.5D, călită chimic, print negru, teșitură 45° [estimare: spec din `docs/12` §2.2] | ✔ Mirit Glas, DK / Felix Glass, CN | la cerere; reper [estimare] ~5 €/buc. la 100, ~1,9 € la 1.000 (01-BOM SV-03) | https://miritglas.com/en/contact-us/ | post@miritglas.com / formularul Felix |
 | 2 unități RF de referință | ✔ Waveshare AMOLED-1.75C cu carcasă Al | $39,99–41,99 | https://www.waveshare.com/esp32-s3-touch-amoled-1.75c.htm | a 2-a sursă: Kamami sau OpenELAB |
 
 ### Servicii (L14–L27)

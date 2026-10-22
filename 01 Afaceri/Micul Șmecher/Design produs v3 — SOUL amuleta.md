@@ -2,12 +2,12 @@
 tip: afacere
 afacere: Micul Șmecher
 status: direcție în lucru (concept E)
-actualizat: 2026-10-03
+actualizat: 2026-10-22
 ---
 
 # Design produs v3 — SOUL (familia de forme, fără toartă)
 
-> **Actualizare 2026-10-20 — mărimea finală e S.** Forma rămâne MĂRGĂRITAR, la scara ei de design: **63 × 70,8 × 23 mm**, sticlă neagră plată **Ø52**, ecran rotund **AMOLED 1,75″ 466×466**, LiPo 750 mAh, randări `renders/v10/` (`micul-smecher/docs/size-s.json`). Mărimea M de mai jos e acum **prototipul** (placa 2.8C), pentru teste și dovada TRL 3.
+> **Actualizare 2026-10-20 — mărimea finală e S.** Forma rămâne MĂRGĂRITAR, la scara ei de design: **63 × 70,8 × 23 mm**, sticlă neagră plată **Ø52**, ecran rotund **AMOLED 1,75″ 466×466**, LiPo 750 mAh, randări `renders/v10/` (`micul-smecher/docs/size-s.json`). Mărimea M de mai jos e acum **prototipul** (placa 2.8C), pentru teste și dovada TRL 3. Pilotul S de printat (S-P0, placa AMOLED-1.75, 63 × 70,8 × 25,65 mm): `micul-smecher/prototip/stl/s/`; planșe `blueprints/final/soul_s_*`; stiva internă și bateria: `docs/12-SIZE-S.md`.
 
 > **Actualizare 2026-10-03 — designul FINAL e MĂRGĂRITAR** (decizia lui Andu din 2026-09-26, după HOPA): mărimea **M ≈ 90 × 101 × 31,5 mm** (89,9 × 101,1 × 31,5), **aluminiu 6061** sablat + anodizat în **5 culori** (Argint, Grafit, Albastru noapte, Jar, Șampanie), sticlă neagră Ø74,3 cu teșitură de 45°, nimic altceva pe față, bază plată cu picior oval, difuzor în cusătura laterală, încărcare jos în capsula OU. Randări: `micul-smecher/renders/v9/` (CGI). Prototipul P0 printat e mai mare (≈ 112 × 125 × 31,6 mm după STL), pentru că placa Waveshare 2.8C are sticla Ø95,9 lipită: `micul-smecher/prototip/`, planșe `micul-smecher/blueprints/final/`. **Tot ce urmează mai jos (Ø64, plastic PC, concept E) e istoric.** Harta: [[SOUL — Harta memoriei]] · pași: [[De continuat — SOUL]].
 

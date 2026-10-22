@@ -16,9 +16,11 @@ actualizat: 2026-10-22
 | Parte | Stare | Unde |
 |---|---|---|
 | **Designul final** | **MĂRGĂRITAR, mărimea S** (decizia din 2026-10-20) ≈ 63 × 70,8 × 23 mm, aluminiu 6061 sablat + anodizat, 5 culori (Argint, Grafit, Albastru noapte / Midnight, Jar / Ember, Șampanie); sticlă neagră plată Ø52, ecran AMOLED 1,75″ 466×466, nimic altceva pe față. **Mărimea M** (≈ 90 × 101 × 31,5 mm, sticlă Ø74,3, ecran 2,8″) = prototipul | randări `renders/v10/` (S) și `renders/v9/` (M), CGI, nu poze; `docs/size-s.json`, `docs/12-SIZE-S.md`, planșe `blueprints/final/soul_s_*` |
-| **Prototipul P0** (de făcut acasă) | corp printat 3D ≈ 112 × 125 (cu piciorul) × 31,6 mm după STL-uri (placa 2.8C are sticla Ø95,9 lipită, de aceea e mai mare); `docs/00-START-HERE.md` dă încă 112 × 128 × 34 (cifră HOPA mai veche) — **de măsurat pe print** | `prototip/stl/plastic/` (6 STL-uri), `prototip/COMANDA.md`, planșe `blueprints/final/` |
-| **Electronica P0** | Waveshare ESP32-S3-Touch-LCD-2.8C (de pe Alibaba, ~140 lei — preț de la fondator, **[neverificat]**; `COMANDA.md` dă ~190 lei Waveshare/AliExpress) + LiPo **803450** 1500 mAh de pe eMAG (~35 lei) | `prototip/COMANDA.md` |
-| **Firmware** | **SoulOS 1.2.0** pe ESP32-S3: ochii v2 portați în C++, IMU (giroscop), portal Wi-Fi, Claude/OpenAI direct cu cheia omului, protocolul SOUL Cloud rev. 2, BLE Hardware Buddy. Compilat fără avertismente + teste pe PC + simulator end-to-end; **încă neîncărcat pe o placă** | `firmware/`, imaginea `firmware/release/SOUL-2.8C-install.bin`, checklist `firmware/BRINGUP.md` |
+| **S-P0** (pilotul S, de făcut acasă) | MĂRGĂRITAR S în jurul plăcii Waveshare ESP32-S3-Touch-AMOLED-1.75, **63 × 70,8 × 25,65 mm**, varianta plastic exportată și verificată; baterie LiPo 503030/503035 | `prototip/stl/s/` (+ README RO), `prototip/step/s/`, planșa `blueprints/final/soul_s_2_p0_kit.png` |
+| **Prototipul M** (P0-M, teste + TRL 3) | corp printat ≈ 112 × 125 × 31,6 mm (placa 2.8C are sticla Ø95,9 lipită) — **de măsurat pe print** | `prototip/stl/plastic/`, `prototip/COMANDA.md`, planșe `blueprints/final/soul_m_*` |
+| **Electronica** | M: Waveshare ESP32-S3-Touch-LCD-2.8C (~140 lei pe Alibaba **[neverificat]**; ~190 lei Waveshare/AliExpress) + LiPo 803450 1500 mAh. S: **o placă** Waveshare ESP32-S3-Touch-AMOLED-1.75 ($29,99–39,99) — de cumpărat | `prototip/COMANDA.md`, `docs/01-BOM.md` |
+| **Firmware** | **SoulOS Alive 1.9.0**: M = `lcd28` (imaginea `release/SOUL-2.8C-install.bin`), S = `amoled175` (profilul de densitate + toate ecranele pe 466 px); **237 de teste** pe PC; **încă neîncărcat pe o placă** | `firmware/`, `firmware/SOUL-S.md`, `firmware/BRINGUP.md` |
+| **Cost și fabrică (S)** | ≈ 144 €/buc. la 100, ≈ 74 € la 1.000 [estimare]; CNC 0,4 kg și ~24 min/set; scenariile A–D | `docs/01-BOM.md`, `docs/12-SIZE-S.md` §3, `docs/factory/SOUL-fabrica-model.xlsx`, [[SOUL — Fabrică și lanț de producție]] |
 | **Conectarea AI** | SOUL Cloud (pairing, gateway, conector MCP cu OAuth, `/pair`, `/me`) construit și testat cu falsuri; AI inclus plătit de noi **oprit** (decizia 2026-10-03). SOUL Bridge (Pro/Max prin Claude Code oficial) = prototip, zonă gri | `ai/`, `bridge/`, `docs/07-CONNECT-AI.md`, `docs/08-OWN-CLAUDE.md` |
 | **Ochii SOUL v2** | perechea-semnătură aprobată + colecție de **120 de designuri**, **31 de expresii**, comportamente cu giroscopul | `eyes/` · galerie https://claude.ai/artifact/M8CVFPvTN3FCj6fC9UbA3D · semnătura https://claude.ai/artifact/36i5S4iZkq3t48ZqJZwFt5 |
 | **SoulOS v4** (prototip web) | ochii ca interfață, Claude real (cu cheie), primul pornit, My SOUL, UX review | `os/index.html` (+ `site/os.html`) · https://claude.ai/artifact/BFboeyYNYTUBrzsiB9uEfA |
@@ -29,7 +31,7 @@ actualizat: 2026-10-22
 
 ## Start și pachetul complet
 - [[micul-smecher/docs/00-START-HERE|SOUL: start here]] — `docs/00-START-HERE.md`
-- [[micul-smecher/docs/01-BOM|01 · Bill of materials (P0 prototype + Founders 00)]] — `docs/01-BOM.md` (Founders 00 a fost scos de pe site pe 2026-09-26; BOM-ul rămâne referință de cost)
+- [[micul-smecher/docs/01-BOM|01 · Bill of materials: SOUL S, S-P0, M]] — `docs/01-BOM.md` + `BOM.csv` (S la 100 / 1.000, pilotul S-P0, un prim lot S de 25 = fostul Founders 00, piesele prototipului M)
 - [[micul-smecher/docs/02-MANUFACTURING|02 · Manufacturing dossier]] — `docs/02-MANUFACTURING.md`
 - [[micul-smecher/docs/03-SOFTWARE|03 · Software]] — `docs/03-SOFTWARE.md`
 - [[micul-smecher/docs/04-COMPLIANCE|04 · Compliance (EU / Romania)]] — `docs/04-COMPLIANCE.md`
@@ -37,6 +39,7 @@ actualizat: 2026-10-22
 - [[micul-smecher/docs/06-SUPPLIERS|06 · Suppliers and contacts (one table)]] — `docs/06-SUPPLIERS.md`
 - [[micul-smecher/docs/07-CONNECT-AI|07 · Connect AI: SOUL Cloud, pairing, conectorul Claude/ChatGPT]] — `docs/07-CONNECT-AI.md`
 - [[micul-smecher/docs/08-OWN-CLAUDE|08 · Claude-ul tău pe SOUL (Pro/Max prin SOUL Bridge)]] — `docs/08-OWN-CLAUDE.md`
+- [[micul-smecher/docs/12-SIZE-S|12 · SOUL S: specificația hardware]] — `docs/12-SIZE-S.md` + `docs/size-s.json` (**sursa unică pentru mărimea S**: placa, stiva internă, bateria de 750 mAh, autonomia, costul și CNC față de M)
 - Arhiva: `dist/SOUL-package.zip` (generată de `docs/_tools/build_zip.py`; fișierele prea mari sunt listate în `SKIPPED.txt` din zip)
 
 ## Notele proiectului (vault)
@@ -51,15 +54,17 @@ actualizat: 2026-10-22
 - [[Planul de bani Micul Șmecher]] · [[Produs și dezvoltare Micul Șmecher]] · [[Brand și lansare Micul Șmecher]] · [[Conformitate și riscuri Micul Șmecher]] · [[Piață și concurență Micul Șmecher]]
 - [[Jurnal decizii]] — toate deciziile SOUL, datate
 
-## Planul de construcție (prototip P0)
-- [[micul-smecher/prototip/COMANDA|Ce comanzi azi: SOUL-P0 mărimea M]] — `prototip/COMANDA.md`
-- [[micul-smecher/prototip/README|SOUL-P0 mărimea M: kitul de prototip făcut acasă]] — `prototip/README.md` (STL-urile de plastic sunt MĂRGĂRITAR; STEP-urile, varianta aluminiu și imaginile din `prototip/img/` sunt încă HOPA rev A)
-- Fișiere de print: `prototip/stl/plastic/` (front shell, back shell, base plate, chassis, pin boot, pin rst) · STEP: `prototip/step/` · surse CAD: `prototip/cad/`
-- [[micul-smecher/prototip/legacy-S/README|SOUL-P0 mărimea S (1,75″), oprită]] — `prototip/legacy-S/README.md`
+## Planul de construcție (S-P0 și prototipul M)
+- [[micul-smecher/prototip/stl/s/README|SOUL S-P0: kitul de printat pentru mărimea S (placa AMOLED-1.75)]] — `prototip/stl/s/README.md` · STEP `prototip/step/s/` · CAD `prototip/cad/soul_p0_s.py` · verificări `prototip/cad/report_s_plastic.json`
+- [[micul-smecher/prototip/COMANDA|Ce comanzi azi: SOUL-P0 mărimea M]] — `prototip/COMANDA.md` (prototipul de teste / TRL 3)
+- [[micul-smecher/prototip/README|SOUL-P0 mărimea M: kitul de prototip făcut acasă]] — `prototip/README.md` · print `prototip/stl/plastic/`, `prototip/stl/alu/` · STEP `prototip/step/{plastic,alu}/`
+- Foaia la scară reală S / S+ / M: `prototip/SOUL-marimi-scara-reala.pdf`
+- [[micul-smecher/prototip/legacy-S/README|SOUL-P0 S vechi (HOPA, 1,75″), înlocuit de S-P0]] — `prototip/legacy-S/README.md`
 
 ## Planuri tehnice (blueprint)
 - [[micul-smecher/blueprints/README|SOUL · planșe tehnice (blueprint), rev A]] — `blueprints/README.md` (planșele vechi)
-- **Planșele SOUL-P0 M în forma MĂRGĂRITAR** (4 foi: GA, secțiunea A-A, explodat + BOM, variante): `blueprints/final/soul_m_1_general_arrangement.png` … `soul_m_4_variants.png` (+ SVG, + varianta albă de printat)
+- **Planșele SOUL S**: `blueprints/final/soul_s_1_general_arrangement.png` (produsul, 63 × 70,8 × 23, sticlă Ø52; + SVG, + varianta albă) și `soul_s_2_p0_kit.png` (kitul S-P0 cotat)
+- **Planșele SOUL-P0 M în forma MĂRGĂRITAR** (prototipul; 4 foi: GA, secțiunea A-A, explodat + BOM, variante): `blueprints/final/soul_m_1_general_arrangement.png` … `soul_m_4_variants.png` (+ SVG, + varianta albă de printat)
 
 ## CAD
 - [[micul-smecher/cad/README|Carcasa SUFLET / Micul Șmecher: CAD parametric (OpenSCAD)]] — `cad/README.md` (istoric)
@@ -98,7 +103,8 @@ actualizat: 2026-10-22
 ## Firmware (programul plăcii)
 - [[micul-smecher/firmware/README|Firmware: SoulOS pe ESP32-S3 (SOUL M = mediul lcd28)]] — `firmware/README.md`
 - [[micul-smecher/firmware/BRINGUP|BRINGUP: primele 15 minute pe o placă 2.8C reală]] — `firmware/BRINGUP.md`
-- [[micul-smecher/firmware/release/README|Imaginea de instalare 1.2.0 (flash la 0x0 din browser)]] — `firmware/release/README.md` → `firmware/release/SOUL-2.8C-install.bin`
+- [[micul-smecher/firmware/SOUL-S|SoulOS Alive pe S (AMOLED 1,75″, 466 px)]] — `firmware/SOUL-S.md` (`pio run -e amoled175`)
+- [[micul-smecher/firmware/release/README|Imaginea de instalare 1.9.0 pentru M (flash la 0x0 din browser)]] — `firmware/release/README.md` → `firmware/release/SOUL-2.8C-install.bin`
 - [[micul-smecher/firmware/LICENSE-THIRD-PARTY|Third-party code]] · [[micul-smecher/firmware/tools/words/README|Keyboard word lists (EN + RO)]]
 
 ## Conectarea AI (SOUL Cloud, conector, Bridge)

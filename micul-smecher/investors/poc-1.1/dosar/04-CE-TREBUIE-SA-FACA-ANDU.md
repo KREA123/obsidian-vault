@@ -45,7 +45,8 @@ Datele firmei (le folosim peste tot): **ARTEMIS DIGITAL S.R.L.**, CUI **53145290
 ## Pasul 3 — Dovada TRL 3 pe placa reală · **gata la T−3 săpt.**
 Fără asta **TRL 3 nu poate fi atestat** (Anexa 18 cere măsurători inițiale de laborator; simularea doar completează) → risc de **respingere**, nu doar puncte pierdute la Grila 2.3b. Până atunci scriem „TRL 3 — de atestat după D8”, iar Anexa 16 are mesajul „NU SE SEMNEAZĂ”.
 - [ ] Placa **Waveshare ESP32-S3-Touch-LCD-2.8C** e comandată. Când vine, cumperi și **bateria LiPo 803450, 1500 mAh** (cu mufă MX1.25), un microfon INMP441 și un amplificator MAX98357 + difuzor mic, plus o tablă de aluminiu de 1,5 mm. **Din banii tăi. Nu intră în buget.** Păstrezi facturile.
-- [ ] **Încarci firmware-ul 1.8.0** (`firmware/release/`) și urmezi `firmware/BRINGUP.md`. Îmi trimiți ce vezi (ecran, touch, giroscop, BLE).
+- [ ] Comanzi **o placă Waveshare ESP32-S3-Touch-AMOLED-1.75** ($29,99–39,99, waveshare.com; placa produsului SOUL S, pentru TRL 4 în proiect). Tot din banii tăi, în afara bugetului. **Testele TRL 3 rămân pe placa 2.8C.**
+- [ ] **Încarci firmware-ul 1.9.0** (`firmware/release/SOUL-2.8C-install.bin`, la `0x0`) pe placa 2.8C și urmezi `firmware/BRINGUP.md`. Îmi trimiți ce vezi (ecran, touch, giroscop, BLE).
 - [ ] Rulăm împreună testele **X1–X8**: ochii pe placă, fps, touch, tastare cu 5 persoane, comenzi offline, un tur Claude cu cheia ta de test, BLE prin aluminiu, consum.
 - [ ] **Filmezi fiecare test pe placa reală**, cu data vizibilă. Fără montaj.
 - [ ] Semnezi „Raportul de laborator TRL 3” (îl scriu eu din măsurătorile tale). Abia apoi trec `D8_DONE = True` în `draft/_build/data.py` și refac drafturile; textele trec automat pe „atestat”.

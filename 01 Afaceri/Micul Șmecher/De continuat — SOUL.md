@@ -1,10 +1,12 @@
 ---
 tip: listă de lucru
 afacere: Micul Șmecher
-actualizat: 2026-10-12
+actualizat: 2026-10-22
 ---
 
 # De continuat — SOUL (pașii următori)
+
+**Stare (2026-10-22): produsul e mărimea S** (AMOLED 1,75″, 63 × 70,8 × 23 mm; `micul-smecher/docs/12-SIZE-S.md`). Firmware-ul are deja toate ecranele Alive pe S (`pio run -e amoled175`, 237 de teste, `firmware/SOUL-S.md`). Kitul de printat S-P0 e gata (`prototip/stl/s/`). Docs, BOM (≈ 144 €/buc. la 100, ≈ 74 € la 1.000 [estimare]), modelul fabricii și dosarul PoC sunt pe S. **M (placa 2.8C) rămâne prototipul pentru teste și TRL 3.**
 
 **Stare (2026-10-12): SoulOS Alive e pe dispozitiv — firmware v1.9.0 gata de flash** (`micul-smecher/firmware/release/SOUL-2.8C-install.bin`, la `0x0`, 2.643.088 B, sha256 `a3de844d64bcd44c6f1d46384dc84bb2e5f5a922743eb9107fdb1372aa02e152`). Testat doar pe PC și în simulator (226 de teste, zero avertismente la compilare, `pio check` curat); pe placă **[neverificat]** până trece BRINGUP §5f.
 
@@ -20,7 +22,8 @@ actualizat: 2026-10-12
 
 ## A. Ce face Andu (fondatorul), în ordine
 - [ ] 1. **Cumpără placa** Waveshare ESP32-S3-Touch-LCD-2.8C (varianta cu touch) de pe **Alibaba (~140 lei)** [preț de la fondator, neverificat; `prototip/COMANDA.md` dă ~190 lei Waveshare/AliExpress] + **bateria LiPo 803450** 1500 mAh, cu PCM și mufă MX1.25, de pe **eMAG** (~35 lei; nu mai mare de 8,6 × 34,5 × 50,5 mm). Lista completă: [[micul-smecher/prototip/COMANDA|COMANDA]].
-- [ ] 2. **Printează P0**: cele 6 STL-uri din `micul-smecher/prototip/stl/plastic/` (PETG/PLA, 3 pereți, 20 %), la printeaza3d.ro sau capib.ro. Corp ≈ 112 × 125 × 31,6 mm după STL [de măsurat cu șublerul pe print; `docs/00-START-HERE.md` mai dă 112 × 128 × 34]. Planșe: `micul-smecher/blueprints/final/`.
+- [ ] 1b. **Cumpără o placă Waveshare ESP32-S3-Touch-AMOLED-1.75** (placa produsului S; $29,99–39,99 pe waveshare.com, varianta Standard, are 2 microfoane și difuzor; în UE e epuizată, în RO n-am găsit vânzător). **Testele continuă pe 2.8C** (TRL 3); placa S e pentru S-P0 și firmware-ul `amoled175`. Când vine: flash `pio run -e amoled175 -t upload`, apoi printezi S-P0 (`micul-smecher/prototip/stl/s/`, README în română) cu o baterie LiPo 503030/503035 (`docs/01-BOM.md` P0-02).
+- [ ] 2. **Printează P0-M**: cele 6 STL-uri din `micul-smecher/prototip/stl/plastic/` (PETG/PLA, 3 pereți, 20 %), la printeaza3d.ro sau capib.ro. Corp ≈ 112 × 125 × 31,6 mm după STL [de măsurat cu șublerul pe print; `docs/00-START-HERE.md` mai dă 112 × 128 × 34]. Planșe: `micul-smecher/blueprints/final/`.
 - [ ] 3. **Flash firmware 1.9.0 (SoulOS Alive)** + testul BRINGUP: `firmware/release/SOUL-2.8C-install.bin` la adresa `0x0` din https://espressif.github.io/esptool-js/ → urmezi [[micul-smecher/firmware/BRINGUP|BRINGUP.md]] (15 min) și scrii valorile măsurate în tabelul de la final (axele IMU, touch, ecran, BLE cu Claude Desktop). Apoi **§5f, noul UI**: în ce parte se rotește discul când înclini SOUL (și că nu se mai rotește singur când îl ții înclinat), dacă atingerile nimeresc rândurile din liste, dacă „clipitul” la deschiderea aplicațiilor e fluid, fără rupturi, și memoria internă după 10 deschideri ale discului + o întrebare către Claude cu BLE pornit. Setări › Dispozitiv trebuie să arate 1.9.0.
 - [ ] 4. **Cont pe console.anthropic.com** pentru teste: o cheie numită SOUL cu limită lunară mică (ex. $5). Cheia se pune doar pe dispozitiv / pagina telefonului, **niciodată în vault sau în git**.
 - [ ] 5. **Trimite cererile**: emailul către Anthropic (formularul Contact sales) și formularul OpenAI „Sign in with ChatGPT” https://openai.com/form/sign-in-with-chatgpt-interest/ — textele gata în [[SOUL — Cereri parteneriat Anthropic și OpenAI]]. La Anthropic adaugă și cererea pentru canalul SOUL Bridge (docs/08 §7).
@@ -44,11 +47,13 @@ actualizat: 2026-10-12
 - [ ] 3. **Sign in with ChatGPT:** azi doar „coming soon” pe `/pair` și `/me/signin-chatgpt`; se construiește abia după aprobarea scrisă a OpenAI (docs/07 §1.10).
 - [ ] 4. **SOUL Bridge (docs/08 §7):** endpoint-ul `/bridge` în firmware + ecranul de pairing + brain `bridge`; în cloud `/v1/bridge` (opțional) și `/v1/pt/inbox`; installer semnat, iconiță în tray, pornire automată. Rămâne „experimental” până la acordul Anthropic.
 - [ ] 5. **Repo separat:** după ce Andu creează `krea123/soul`, rulează `bash micul-smecher/tools/sync-soul-repo.sh` după fiecare push (vault-ul rămâne sursa).
-- [ ] 6. Refă STEP-urile, varianta aluminiu și imaginile P0 (`prototip/step/`, `prototip/img/`) pe MĂRGĂRITAR — azi sunt încă HOPA rev A (vezi `prototip/README.md`); corectează cota P0 din `docs/00-START-HERE.md`.
+- [ ] 6. **CAD-ul de producție S la 23 mm** (`marg_geo.MargaritarV9(s_back=0.807)` + șasiu pentru PCB-ul propriu, `docs/12` §4.7) și varianta aluminiu a S-P0 (`python3 prototip/cad/soul_p0_s.py alu`). Apoi simulare CAM ca să verificăm 24 min/set [estimare].
+- [ ] 6b. **Firmware S:** driverul audio ES8311/ES7210 și light sleep între cadre (autonomia ~27 h → ~2 zile [estimare]); măsurătorile BRINGUP §5d pe AMOLED-1.75 intră în `docs/size-s.json`.
 - [ ] 7. Pachetul zip: `python3 micul-smecher/docs/_tools/build_zip.py` după schimbări mari (sub 95 MB; ultima refacere 2026-10-03, ~90 MB).
 - [—] **Trailer v4: oprit de Andu** (WIP salvat în commit `cfe5104`). Valabil rămâne trailerul v3 (`trailer/`). Nu se reia fără cererea lui.
 
 ## Gata (istoric scurt)
+- [x] **Mărimea S** (2026-10-20/22): specificația `docs/12-SIZE-S.md` + `size-s.json`, SoulOS Alive pe S (237 de teste), randări v10, kitul S-P0 + planșe `blueprints/final/soul_s_*`, docs/BOM/fabrică/dosar PoC pe S
 - [x] Forma MĂRGĂRITAR + randări v9; P0 STL-uri de plastic + planșele `blueprints/final/` (2026-09-26)
 - [x] Brand Package v1.0 + brand book 19 pagini; trailer v3; pagina de lansare v2
 - [x] Ochii SOUL v2: semnătura, 120 de designuri, 31 de expresii, comportamente cu giroscopul (web + firmware)

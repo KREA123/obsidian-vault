@@ -13,10 +13,10 @@
   - firmware-ul: compilează pentru **AMOLED-1.75** (`amoled175`, SOUL S) și pentru **2.8C** (`lcd28`, SOUL M);
   - serviciul AI, SoulOS pe web, pagina de lansare;
   - kitul S-P0 (`prototip/stl/s/`, `prototip/step/s/`), kitul P0-M, dosarul PR BI PoC 1.1.
-- **Ce urmează:** flash pe placa 2.8C și filmare (= dovada TRL 3), comanda plăcilor AMOLED-1.75 (`12-SIZE-S.md` §1.1), CAD-ul de producție al lui S la 23 mm, apoi CNC.
+- **Ce urmează:** flash pe placa 2.8C și filmare (= dovada TRL 3; testele continuă pe 2.8C), **cumperi o placă Waveshare ESP32-S3-Touch-AMOLED-1.75** (01-BOM P0-01, $29,99–39,99), printezi S-P0, CAD-ul de producție al lui S la 23 mm, apoi CNC.
 - **Bani:** **PR BI 1.1 Proof of Concept** prin ARTEMIS DIGITAL (€191k, 24 luni) — [`investors/poc-1.1/`](../investors/poc-1.1/).
 
-> Notă: 01-BOM și 02-MANUFACTURING au fost scrise inițial pentru vechiul S (HOPA). Cifrele lor de mărime sunt acum aliniate la `size-s.json`; pentru S, `12-SIZE-S.md` are stiva internă, bateria și diferența de cost față de M.
+> Notă: 01-BOM, 02-MANUFACTURING și 04-COMPLIANCE sunt pe S din 22.10.2026: produsul S (23 mm, PCB propriu), pilotul S-P0 (placa AMOLED-1.75, 25,65 mm) și prototipul M (doar referință). Cost pe bucată S [estimare]: ≈ 144 € la 100, ≈ 74 € la 1.000 (M: 215 / 98 €). Modelul fabricii (`factory/SOUL-fabrica-model.xlsx`) e tot pe S.
 
 ---
 
@@ -37,10 +37,10 @@ SOUL is a personal AI object you keep on your desk and hold in your hand. The pi
 
 **Hardware:** the product dev board is the Waveshare **ESP32-S3-Touch-AMOLED-1.75** (CO5300 QSPI, CST9217 touch, QMI8658, PCF85063, AXP2101, 2 mics + ES7210/ES8311 + speaker); the product itself gets a custom round PCB [E]. The working prototype is the Waveshare **ESP32-S3-Touch-LCD-2.8C** (ST7701 RGB, GT911, IMU, RTC, buzzer; voice needs an INMP441 + MAX98357). See `firmware/README.md`.
 
-**Sale:** pre-launch waitlist only, **from €249**, no Founders edition, nothing charged before CE (`site/README.md`). The Founders 00 plan in 01-BOM / 05-LAUNCH-PLAN is history.
+**Sale:** pre-launch waitlist only, **from €249**, no Founders edition, nothing charged before CE (`site/README.md`). The Founders 00 plan in 05-LAUNCH-PLAN is history; 01-BOM keeps its costs as "a first S batch of 25".
 
-### M (prototype) vs S (product, now)
-Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026).
+### M → S: prototype vs product (refreshed 22 Oct 2026)
+Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026); costs from `01-BOM.md` (c). [E] = estimate.
 
 | | M (prototype) | **S (product, now)** |
 |---|---|---|
@@ -49,8 +49,11 @@ Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026).
 | Screen | 2.8" IPS 480² (grey blacks) | **1.75" AMOLED 466²**, true black, CO5300 / QSPI |
 | Board | ESP32-S3-Touch-LCD-2.8C + optional mic/amp | **ESP32-S3-Touch-AMOLED-1.75** (dev, $29.99–39.99, mics + codec + speaker on board); product: custom PCB [E] |
 | Battery | 1500 mAh (803450), ≈ 32 h [E] | **750 mAh (603040), ≈ 27 h [E]** |
-| DIY prototype body | P0-M kit 112.1 × 125.1 × 31.6 mm (stock 2.8C glass Ø95.86) | **S-P0 63 × 70.8 × 25.65 mm** (stock AMOLED-1.75 glass, 500 mAh 503035) |
+| DIY prototype body | P0-M kit 112.1 × 125.1 × 31.6 mm (stock 2.8C glass Ø95.86) | **S-P0 63 × 70.8 × 25.65 mm** (stock AMOLED-1.75 glass; 500 mAh 503035 planned, the exported CAD fits a 503030 ≈ 450 mAh [E]) |
 | CNC shell | billet 1.0 kg, ~45 min/set [E] | **billet 0.4 kg, ~24 min/set** [E] |
+| Firmware | `pio run -e lcd28`, SoulOS Alive 1.9.0, image `firmware/release/SOUL-2.8C-install.bin` | `pio run -e amoled175`: S density profile + every Alive screen on 466 px (`firmware/SOUL-S.md`; 237 native tests on both); ES8311/ES7210 audio and light sleep still to do |
+| Weight [E] | – | ≈ 85 g (75–95) |
+| Hardware per unit [E] | ≈ €215 @100 · ≈ €98 @1000 | **≈ €144 @100 · ≈ €74 @1000** (`01-BOM.md` (c), `12-SIZE-S.md` §3.1) |
 | Role | tests + PoC TRL 3 proof (firmware 1.9.0) | the product, from €249 |
 | Renders / drawings | `renders/v9/`, `blueprints/final/soul_m_*` | **`renders/v10/`, `blueprints/final/soul_s_*`**, `prototip/stl/s/`, `prototip/step/s/` |
 
@@ -62,11 +65,12 @@ Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026).
 | Logo „The Glass O” | ✅ done | `brand/logo/` | Trademark search |
 | Size study (v7 S/M/L) | ✅ **decided: S is the product** (20 Oct; M on 25 Sep, now the prototype) | `renders/v7/`, `research/12`, `docs/12-SIZE-S.md` | – |
 | Production CAD of S (Ø52 custom glass, 23.0 mm) | ❌ **to do** | `renders/v9/src/marg_geo.py` (MargaritarV9, s_back 0.807); S-P0 shells in `prototip/step/s/` | Needs the custom PCB (docs/12 §4) |
-| DIY prototype P0 (CAD, STL, STEP) | 🟡 **prototype, in progress** (another agent is finishing it) | `prototip/cad/soul_p0.py`, `prototip/stl/`, `prototip/step/` | Plastic variant exported; alu has only the front shell; README/COMANDA not written yet (see gaps) |
-| Technical drawings of the final design (M) | ✅ `blueprints/final/` | older: `blueprints/` rev A + `v3` | Update after P0 rev B |
+| S-P0, the DIY pilot of S (CAD, STL, STEP) | ✅ plastic variant exported + checked (60 pairs) + assembly note (RO); ❌ alu variant not exported | `prototip/cad/soul_p0_s.py`, `prototip/stl/s/`, `prototip/step/s/`, `blueprints/final/soul_s_2_p0_kit.*` | Buy the AMOLED-1.75 board, print, measure the UNVERIFIED items |
+| M prototype kit P0-M (CAD, STL, STEP) | ✅ plastic + alu exported, `COMANDA.md` written | `prototip/cad/soul_p0.py`, `prototip/stl/{plastic,alu}/`, `prototip/step/{plastic,alu}/`, `prototip/COMANDA.md` | Print + flash 1.9.0 for TRL 3 |
+| Technical drawings | ✅ S: GA + S-P0 kit (`blueprints/final/soul_s_*`); M: 4 sheets (`soul_m_*`) | older: `blueprints/` rev A + `v3` | S production drawing after the 23 mm CAD |
 | Older parametric shells (coin/drop/gem/cloud) | ✅ done, legacy | `cad/` | Reference only |
 | OU capsule | 🟡 designed (research/09 §4) + rendered; **no CAD** | `renders/v6/soul_v6_ou_night.png`, `renders/v5/` | CAD for the SLA pilot capsule |
-| Firmware "Suflet" + SoulOS v1 modules | ✅ **compiles** (lcd28 + amoled143/175/sim), **61/61 tests pass**; ❌ not yet run on hardware | `firmware/` | First flash + calibration |
+| Firmware SoulOS Alive (1.9.0) | ✅ **compiles** (`lcd28` = M, `amoled175` = S, `sim`), **237/237 native tests**; S layout done (`firmware/SOUL-S.md`); ❌ not yet run on hardware | `firmware/` | First flash on the 2.8C (TRL 3), then on the AMOLED-1.75 |
 | SoulOS (the full OS) | 🟡 ~10 % of 1.0; spec + architecture done | `os/SPEC.md`, `os/ARCHITECTURE.md` | Roadmap 0.1 → 1.0 |
 | SoulOS web prototype | ✅ done | `os/index.html` (= `site/os.html`) | User tests of the keyboard |
 | AI service (companion, 3 modes, BYO key, MCP) | ✅ **49/49 tests pass**; no production deploy, no OAuth | `ai/` | OAuth + EU hosting + voice |
@@ -84,13 +88,15 @@ Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026).
 
 | # | Document | Read it for |
 |---|---|---|
-| 01 | [01-BOM.md](01-BOM.md) + [BOM.csv](BOM.csv) | Every part, supplier, URL, price at qty 1/10/25; totals (P0 ≈ €211 plastic / €363 alu; Founders 00 ≈ €190 per unit + ≈ €15k one-off) |
+| 01 | [01-BOM.md](01-BOM.md) + [BOM.csv](BOM.csv) | SOUL S per unit at 100 / 1,000 (≈ €144 / €74 [E]); S-P0 parts at qty 1/10/25 (≈ €211 plastic / €363 alu); a first S batch of 25 (≈ €190 per unit + ≈ €15k one-off); the M prototype parts (reference) |
 | 02 | [02-MANUFACTURING.md](02-MANUFACTURING.md) | Which file goes to which supplier, CNC/print settings, colours + hex, tolerances, assembly, QC, packaging, OU, base marking, 1k/10k |
 | 03 | [03-SOFTWARE.md](03-SOFTWARE.md) | How to build, flash, test and run the firmware, AI service, MCP connector, SoulOS prototype and site (verified today) |
 | 04 | [04-COMPLIANCE.md](04-COMPLIANCE.md) | CE/RED, EN 18031, battery, WEEE/ANMAP, GPSR, AI Act, AI policies, trademark, GDPR, with owners, costs and order |
-| 05 | [05-LAUNCH-PLAN.md](05-LAUNCH-PLAN.md) | Week-by-week plan to Founders 00, costs, funding in 5 lines, one checklist |
+| 05 | [05-LAUNCH-PLAN.md](05-LAUNCH-PLAN.md) | Week-by-week launch plan, costs, funding in 5 lines, one checklist (written for Founders 00, now history: the site is a waitlist) |
 | 06 | [06-SUPPLIERS.md](06-SUPPLIERS.md) | Every supplier and contact link in one table |
 | 07 | [07-CONNECT-AI.md](07-CONNECT-AI.md) | How SOUL gets Claude/ChatGPT (SOUL Cloud, your API key, the SOUL connector for your own Claude/ChatGPT app, Hardware Buddy, offline), what is not possible, the device↔cloud protocol and the firmware contract |
+| 12 | [12-SIZE-S.md](12-SIZE-S.md) + [size-s.json](size-s.json) | **The S spec (single source of truth):** board and panel checks, internal stack-up, the 750 mAh battery, battery life, cost and CNC delta vs M |
+| – | [factory/](factory/) | Small factory vs production chain on S: `SOUL-fabrica-model.xlsx` (scenarios A–D at 100 / 1k / 5k / 20k), `SOUL-fabrica.pdf` |
 
 ## Map of every file (vault folder `micul-smecher/`)
 
@@ -104,7 +110,7 @@ Values from [`size-s.json`](size-s.json) (decision 20 Oct 2026).
 | `renders/v6/` | Same look at size S: hero, family (5 colours), side, back, bottom, hand, macro, OU at night, `alive.mp4/.gif`; `README.md` (CMF, hex, geometry); `src/` (Blender) |
 | `renders/v7/` | Size study S/M/L: `soul_v7_hands.png`, `soul_v7_lineup.png`, `soul_v7_typing.png`, README |
 | `renders/v4`, `v5`, root `*.png` | Earlier concepts (shape family, HOPA rocker, glass/pearl), for history |
-| `prototip/` | DIY P0: `cad/soul_p0.py` (CadQuery; variants plastic / alu / alu_band), `soul_geom.py`, `render_p0.py`, `blueprints_p0.py`, `report_plastic.json`; `stl/plastic/`, `stl/alu/`, `stl/assembly/`; `step/plastic/`, `step/alu/`, `step/soul_p0_plastic_ASSEMBLY_with_board.step` |
+| `prototip/` | **S-P0** (S pilot): `cad/soul_p0_s.py`, `cad/blueprints_s.py`, `cad/report_s_plastic.json`, `stl/s/` (+ `assembly/`, README RO), `step/s/*.step.gz`; **P0-M** (M prototype kit): `cad/soul_p0.py`, `stl/plastic/`, `stl/alu/`, `step/plastic/`, `step/alu/`, `COMANDA.md`, `README.md`; `SOUL-marimi-scara-reala.pdf` (true-scale sheet); `legacy-S/` (old HOPA S) |
 | `cad/` | Older OpenSCAD shells (4 shapes × 2 boards, 33 checked STLs, renders) |
 | `blueprints/` | A3 sheets rev A (GA, section, exploded + BOM, 1.75 prototype) + `v3/`; generators in `src/` |
 | `firmware/` | PlatformIO project: `src/` (board), `lib/Suflet/src/` (engine + SoulOS modules), `sim/`, `test/`, `tools/` (fonts, word lists, media export) |
@@ -127,7 +133,7 @@ Vault notes (`01 Afaceri/Micul Șmecher/`):
 - „Piață și concurență";
 - „Viziunea — momentul iPhone".
 
-## Known gaps (25 Sep 2026)
+## Known gaps (updated 22 Oct 2026)
 
 1. **Nothing has run on real hardware yet.** First job: flash the 2.8C board, film it (TRL 3 evidence for the grant).
 2. **No production CAD for the final S body** (23.0 mm, custom glass Ø52, custom PCB). S-P0 (25.65 mm) and P0-M are the buildable pilots around the stock boards.

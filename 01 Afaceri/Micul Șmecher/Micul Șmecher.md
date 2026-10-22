@@ -2,7 +2,7 @@
 tip: afacere
 afacere: Micul Șmecher
 status: activ
-actualizat: 2026-10-03
+actualizat: 2026-10-22
 ---
 
 ![[suflet_hero.png]]
@@ -22,9 +22,11 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 | Piesă | Stare | Unde |
 |---|---|---|
 | Designul final MĂRGĂRITAR, **mărimea S** (din 2026-10-20), aluminiu, 5 culori | ✅ randări v10 (CGI, nu poze); M = prototipul, randări v9 | `micul-smecher/renders/v10/`, `renders/v9/`, `docs/size-s.json` |
-| Prototipul P0 (printat 3D, ≈ 112 × 125 × 31,6 mm după STL [de măsurat]) | ✅ STL-uri de print + planșe; ⏳ de comandat și printat | `prototip/stl/plastic/`, `prototip/COMANDA.md`, `blueprints/final/` |
-| Electronica P0: Waveshare 2.8C (Alibaba ~140 lei [neverificat]) + LiPo 803450 (eMAG) | ⏳ de cumpărat | `prototip/COMANDA.md` |
-| Firmware **SoulOS 1.2.0** (ochii, IMU, portal Wi-Fi, Claude/OpenAI cu cheia omului, SOUL Cloud, BLE Hardware Buddy) | ✅ compilat + testat pe PC/simulator; ⏳ neîncărcat pe placă | `firmware/`, `firmware/BRINGUP.md`, `firmware/release/` |
+| **S-P0**, pilotul lui S (placa Waveshare AMOLED-1.75, 63 × 70,8 × 25,65 mm) | ✅ STL/STEP plastic + notă de asamblare + planșă; ⏳ placa de cumpărat | `prototip/stl/s/`, `prototip/step/s/`, `blueprints/final/soul_s_2_p0_kit.png` |
+| Prototipul M (P0-M printat, ≈ 112 × 125 × 31,6 mm), pentru teste și TRL 3 | ✅ STL-uri + planșe; ⏳ de comandat și printat | `prototip/stl/plastic/`, `prototip/COMANDA.md`, `blueprints/final/soul_m_*` |
+| Electronica: M = Waveshare 2.8C + LiPo 803450; S = Waveshare AMOLED-1.75 + LiPo 503030/503035 | ⏳ de cumpărat (câte o placă) | `prototip/COMANDA.md`, `docs/01-BOM.md` |
+| Firmware **SoulOS Alive 1.9.0** (M: `lcd28`, imaginea `release/SOUL-2.8C-install.bin`; S: `amoled175`, toate ecranele pe 466 px) | ✅ 237 de teste pe PC/simulator; ⏳ neîncărcat pe placă | `firmware/`, `firmware/SOUL-S.md`, `firmware/BRINGUP.md` |
+| Cost S pe bucată [estimare] | ≈ 144 € la 100, ≈ 74 € la 1.000 (M: 215 / 98 €) | `docs/01-BOM.md`, `docs/factory/SOUL-fabrica-model.xlsx` |
 | SOUL Cloud (pairing, gateway, conector OAuth MCP, `/pair`, `/me`); AI inclus oprit | ✅ testat cu falsuri; ⏳ nedeployat, netestat cu claude.ai real | `ai/`, `docs/07-CONNECT-AI.md` |
 | SOUL Bridge (Claude Pro/Max prin Claude Code oficial) | 🧪 prototip, zonă gri de politică | `bridge/`, `docs/08-OWN-CLAUDE.md` |
 | Ochii v2: 120 de designuri, 31 de expresii, giroscop | ✅ | `eyes/` · https://claude.ai/artifact/M8CVFPvTN3FCj6fC9UbA3D |
@@ -65,7 +67,7 @@ Continuarea proiectului [[Gadget WISP]] (sesiunile de concept „Cubul viu” ș
 - [x] **Numele**: **SOUL** (ales de Andu, 2026-09-24) — urmează verificare EUIPO + domeniu înainte de orice cheltuială pe brand.
 - [x] **Forma**: MĂRGĂRITAR (2026-09-26). **Fără Founders 00** (2026-09-26). **Fără AI inclus plătit de noi** (2026-10-03). **Firmă**: ARTEMIS DIGITAL S.R.L., fără firmă nouă (2026-09-25).
 - [ ] ~~Prețul Founders Desk Edition~~ — scos odată cu Founders 00; pe site „de la €249”, doar listă de așteptare.
-- [ ] Cumperi placa 2.8C + bateria și printezi P0 — vezi [[De continuat — SOUL]].
+- [ ] Cumperi placa 2.8C + bateria și printezi P0-M (teste, TRL 3) și **o placă Waveshare ESP32-S3-Touch-AMOLED-1.75** pentru S — vezi [[De continuat — SOUL]].
 
 ## Următoarele 7 zile (lista din 24 sep., depășită — valabilă e [[De continuat — SOUL]])
 1. Comanzi plăcile (1.43 pentru Claude Buddy, 1.75 pentru voce) + bateria + comutatorul.
