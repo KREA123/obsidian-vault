@@ -1,13 +1,75 @@
 ---
 tip: finanțare
 afacere: Micul Șmecher
-actualizat: 2026-10-12
+actualizat: 2026-10-22
 ---
 
 # Expertul științific pentru PoC 1.1 (Anexa 16)
 
 > Dosarul principal: [[Finanțare — PR BI PoC 1.1 pentru SOUL]] · toate sursele de bani: [[Finanțare — toate sursele pentru SOUL]] · pași: [[De continuat — SOUL]] · harta: [[SOUL — Harta memoriei]].
 > **[neverificat]** = nu e confirmat într-o sursă oficială.
+
+## Calea rapidă (actualizat 2026-10-22)
+
+**Pe scurt:** pornești **3 căi în paralel săptămâna asta**. Prima care dă un om semnat câștigă, celelalte rămân rezervă. Combinația cea mai sigură la evaluare: **inginerul senior angajat pe CIM** (coordonator tehnic, 3.1) **+ un academic extern** care validează raportul. Dacă academicul refuză, inginerul intern semnează singur Anexa 16, iar criteriile o permit.
+
+### A) Angajezi part-time un inginer embedded senior = expert intern + coordonator tehnic
+- **De ce merge:** criteriile (Decizia CM 54, Anexa 1) acceptă „un expert științific intern (angajat al solicitantului)”, cu aceleași condiții ca expertul independent: **a)** „experiență profesională, științifică sau tehnică dovedită de cel puțin 5 ani, relevantă pentru tehnologia și produsul” **+ c)** „cel puțin o calificare, acreditare, certificare sau un rezultat profesional, științific ori tehnic relevant”, inclusiv „diplome și titluri științifice; certificări tehnice; atestate profesionale; … contribuția documentată la dezvoltarea, testarea ori validarea unor tehnologii, prototipuri sau produse relevante”. Articolele (b) nu sunt obligatorii. Același om punctează și la **3.1(i)**, cu ≥ 5 ani în domeniu.
+- **3 condiții:**
+  1. Trebuie să fie **deja angajat (CIM în REVISAL)** în ziua în care semnează Anexa 16. Pentru 3.1 ajunge și „care urmează să fie angajat”, dar pentru expertul intern nu.
+  2. Salariul de până la contractul de finanțare (estimat aug.–oct. 2027) **se plătește din banii firmei**. Linia II.2 acoperă doar expertul *extern* independent sau colectivul.
+  3. Limita legală e de 48 h/săptămână pe toate contractele, deci un om cu normă întreagă în altă parte mai poate lucra doar ~8 h/săptămână la voi. **De confirmat cu contabilul.**
+- **Acte:**
+  - pentru (a): CV Europass semnat, adeverințe de vechime sau extras REVISAL, fișe de post sau scrisori de la angajatori care descriu munca pe firmware și microcontrolere, contracte și facturi pentru perioadele pe PFA;
+  - pentru (c): diploma de Electronică, Calculatoare sau Automatică cu suplimentul, și/sau o scrisoare de la angajator despre un produs dus până la testare, repo-uri publice cu istoric, certificări (**valabile la data depunerii**).
+- **Plată:**
+  - În buget e linia 1: 1.200 h × **34 €/h** = 40.800 €. Plafonul HG 1188/2022 e 35 €/h.
+  - Ca normă, înseamnă ≈ **2,5 h/zi**, adică ≈ **9.090 lei brut/lună** (≈ 5.300 lei net). La **4 h/zi** ar fi ≈ 14.540 lei brut (≈ 8.500 net), dar asta depășește linia 1 cu ~27.700 € pe 24 de luni.
+  - Piața, după [devjob.ro](https://devjob.ro/en/salaries/Embedded/Bucuresti/Senior): Senior Embedded în București, mediana **17.500 lei net/lună** la normă întreagă (p25 14.500, p75 20.000). Echivalentul e ~35 €/h brut.
+  - Înainte de contract: CIM de 1–2 h/zi cu ~1 lună înainte de semnarea Anexei 16, apoi act adițional la începutul proiectului.
+- **Unde postezi** (azi):
+  - [LinkedIn Jobs](https://business.linkedin.com/in/en/hire/post-jobs): un anunț gratuit.
+  - [BestJobs](https://support.bestjobs.eu/ro/knowledge/cat-ma-costa-un-anunt): Freemium 0 €, se plătește per interviu (5–10 €); self-service de la 150 € + TVA.
+  - [Undelucram](https://www.undelucram.ro/en/employers/post-a-job): 50 € + TVA, 45 de zile.
+  - [POLIJobs UPB](https://polijobs.upb.ro): preț de întrebat.
+  - Mesaje directe (20–30) din căutarea [LinkedIn embedded + ESP32/STM32/Zephyr](https://www.linkedin.com/search/results/people/?keywords=%28embedded%20OR%20firmware%29%20AND%20%28ESP32%20OR%20%22ESP-IDF%22%20OR%20STM32%20OR%20nRF52%20OR%20Zephyr%20OR%20FreeRTOS%29) (filtrul Locations = Bucharest) și din [GitHub: București + esp32](https://github.com/search?q=location%3ABucharest%20esp32&type=users).
+  - Anunțul e gata, în RO și EN: [[Anunț — inginer embedded SOUL (expert intern)]].
+- **Durată estimată** (presupunere, nu e o cifră publicată): **3–6 săptămâni până la CIM semnat**.
+
+### B) Emailul către Tudose și Radovici (textul e mai jos, la §7)
+- **Conf. dr. Dan-Ștefan Tudose**, dan.tudose@upb.ro. Conduce Laboratorul de Sisteme Embedded UPB și a fondat start-up-uri IoT/wearable, ultimul cumpărat de Fitbit ([PRECIS](https://precis.upb.ro/staff/dan-stefan-tudose/)). **Primul contactat.**
+- **Conf. dr. Alexandru Radovici**, alexandru.radovici@upb.ro ([profil](https://cs.pub.ro/team/alexandru.radovici)).
+- În același email ceri **două lucruri**:
+  1. să valideze el raportul, contra cost, ca expert extern (linia 24, II.2: **4.500 €** în buget, eligibil chiar dacă e plătit înainte de depunere);
+  2. să trimită anunțul de la A) doctoranzilor și absolvenților din laborator.
+- Direct cu o persoană: **~1–2 săptămâni** (estimare).
+
+### C) Firmă de consultanță sau colectiv de cercetare (rezervă)
+Niciuna dintre firmele verificate nu spune public că aduce expertul. **Întrebarea de pus înainte de orice semnătură:** „Aduceți un expert numit care îndeplinește a) + b) sau c) din Decizia CM 54?”
+1. **Todos & Company** are pagină PoC BI și pomenește TRL 3. Telefon 0755 167 167, office@todos-company.ro ([pagina PoC](https://todos-company.ro/finantari/bucuresti-ilfov-proof-of-concept/)). Tariful nu e public.
+2. **ARIA United** are pagină PoC și experiență CDI. Telefon 0732 077 575, office@ariaunited.com. Tarif: „de la 5% din valoarea nerambursabila”, în 2 tranșe (la semnare și la succes). Pagina de prețuri e din 2020 ([PoC](https://ariaunited.com/programul-operational-regional-1-2-proof-of-concept/), [tarife](https://ariaunited.com/consultanta-fonduri-europene-si-consultanta-in-afaceri-tarife-servicii/)).
+3. **European Consulting** listează apelul PR BI 1.1 ca „În curând” și face gratuit verificarea eligibilității. Telefon +40 756 409 534, mailcontact@europeanconsulting.ro ([site](https://www.europeanconsulting.ro/)). Tariful nu e public.
+
+**Colectiv de cercetare** (contract cu universitatea: mai solid la evaluare, dar durează mai multe săptămâni):
+- **UPB PRECIS** (aici e laboratorul lui Tudose): +40 21 402 99 58, erica.pluti@upb.ro ([contact](https://precis.upb.ro/contact-us/));
+- **ICI București** (testare dispozitive IoT): office@ici.ro ([contact](https://www.ici.ro/ro/contact/));
+- **IMT București** (senzori, RF; se potrivește slab cu firmware și AI): office@imt.ro ([imt.ro](https://www.imt.ro/)).
+
+Gratuit, în paralel: o cerere pe [BrokerMap UEFISCDI](https://www.brainmap.ro/brokermap-search). Ai nevoie de cont, iar titlul poate fi „IMM caută expert științific embedded/IoT/edge AI pentru validare raport TRL 3, PR BI PoC”.
+
+### Calendarul pe 10 zile
+| Ziua | Ce faci |
+|---|---|
+| **Joi 22.10** | Trimiți emailul către Tudose (cu cele 2 cereri), apoi către Radovici. Postezi anunțul gratuit pe LinkedIn Jobs și în BestJobs Freemium |
+| **Vin 23.10** | Trimiți 20–30 de mesaje pe LinkedIn și GitHub. Suni la Todos, ARIA United și European Consulting și pui întrebarea despre expertul numit |
+| **Lun 26.10** | Dacă ai sub 10 aplicanți, postezi pe Undelucram (50 €) și ceri prețul de la POLIJobs. Faci cont pe Brainmap și publici cererea pe BrokerMap |
+| **Mar 27.10** | Dacă academicii n-au răspuns, le scrii din nou sau suni la secretariatul PRECIS. Faci primele interviuri de 30 de minute și verifici actele pentru a) și c) |
+| **Mie 28.10** | Discuția cu academicul (onorariul, termenul, actele: CV, publicații, diplomă) |
+| **Joi 29.10** | Proba practică pe placa 2.8C cu 1–2 candidați |
+| **Vin 30.10** | Decizia: oferta scrisă pentru inginer, plus academicul sau firma care aduce un expert numit |
+| **Lun 2.11** | Cu contabilul: CIM part-time (normă, REVISAL cel târziu în ziua dinainte de început, limita de 48 h) și contractul de servicii cu expertul extern |
+
+---
 
 **Răspuns scurt:** e mai ușor decât credeam. Criteriile aprobate pe 29.09.2026 cer doar **5 ani experiență + (2 articole SAU o certificare/diplomă/rezultat)**. Orice conferențiar de la Politehnică trece. Primii 3 de contactat: **Dan Tudose**, **Alexandru Radovici**, **Horia Cucu** (UPB). Trimite emailul de mai jos în octombrie.
 
@@ -63,7 +125,7 @@ Rezervă pentru partea radio (Bluetooth prin aluminiu): prof. Dan Neculoiu, UPB 
 - **Varianta A (cea mai bună):** un asistent/lector UPB cu doctorat în embedded, angajat part-time. Îl cauți prin Tudose sau Radovici.
 - **Varianta B:** un inginer embedded senior (≥ 5 ani) angajat part-time, plus un inginer firmware cu ≥ 2 ani.
 - Bonus 3.2b (3 puncte): un al treilea om pe CIM cu experiență CDI.
-- Expertul intern poate fi, teoretic, și coordonator **[neverificat]**. Noi le ținem separate.
+- Expertul intern (angajat pe CIM) poate fi și coordonator: textul Deciziei CM 54 nu interzice asta (verificat 2026-10-22). Vezi „Calea rapidă”, varianta A.
 
 ## 7. Emailul gata de trimis
 **Subiect:** Colaborare plătită: raport științific TRL 3 pentru un proiect PR BI Proof of Concept (dispozitiv AI embedded)
