@@ -1,0 +1,517 @@
+{
+  "_meta": {
+    "purpose": "Single source of truth for every campaign fact. Size-dependent design facts (dimensions, battery, weight, electronics variants) live in ../docs/size-s.json and are merged in by tools/facts.py, which fails if the two disagree. Campaign copy blocks (<!--f:...-->), page images, video cards, perks.csv and tools/goal_model.py read from here. Change a value here (or in size-s.json) first, then run tools/build_all.sh.",
+    "version": 3,
+    "updated": "2026-10-22",
+    "size_swap": "If the founder changes the size sold (S → S+ or M), change ONLY: size_S (or add a size_<X> block and point product.size_sold_in_campaign at it), ../docs/size-s.json, renders_v10.path, labels.prototype_footage, size_S.cost_factors_vs_M; then re-run tools/goal_model.py, tools/build_copy.py, tools/check_copy.py --strict and the image build. Nothing else in the kit hard-codes a size.",
+    "owner": "ARTEMIS DIGITAL S.R.L. (Bucharest, RO, CUI 53145290)",
+    "status_tags": {
+      "final": "decided by the founder",
+      "proposal": "recommended by this kit; the founder decides (see decisions)",
+      "variable": "being finalised; copy shows the range or 'being finalised', never a single invented number",
+      "estimate": "calculated, no measurement or quote yet"
+    },
+    "rules": [
+      "Renders are always labelled 'Render (CGI), not a photo.'",
+      "Real footage or photos of the M prototype always carry labels.prototype_footage.",
+      "Never claim CE, FCC or UKCA before gates.CE.passed is true and the EU DoC is signed. On the live page (scenario after_ce) CE lines come from the passed state; 'not CE-certified yet' appears only in messages sent before the DoC (block ce_now). Never claim SOUL includes, bundles or resells AI.",
+      "Never invent backers, press, reviews, certifications or specs.",
+      "Anything that shows scale (hand, desk, size graphic) must be size S: renders/v10 (labelled Render (CGI)) or the true-scale vector graphic.",
+      "Never write 'incl. VAT' while pricing.vat_registered is false. Prices are final either way.",
+      "Never show the planned retail price as an old or struck-through price, or as '% off'.",
+      "Never say a ChatGPT account works: only the owner's own OpenAI API key (in development). Never name a grant as a source of money on public pages."
+    ]
+  },
+  "decisions": {
+    "_note": "Founder decisions. Nothing is posted on Indiegogo until D1 is written in '03 Decizii/Jurnal decizii.md'. 'kit_default' is what this kit is built with; flip it here and rebuild.",
+    "D1": {
+      "q": "Keep the rule 'no customer payment before grant and CE' (campaign after CE, scenario after_ce) or waive it for a pre-CE campaign (scenario before_ce)?",
+      "kit_default": "after_ce",
+      "decided": false
+    },
+    "D2": {
+      "q": "VAT + OSS registration (with the accountant). Cross-border B2C sales above €10k/yr (OSS) and, depending on the amount raised and other turnover in the year, the 395,000-lei threshold make VAT likely; it is paid from the money raised, never added to prices.",
+      "kit_default": "not registered today; VAT modelled as owed",
+      "decided": false
+    },
+    "D3": {
+      "q": "Price ladder A (from €199, planned retail €249; goal ~€120k) or B (from €249 = the approved site price, planned retail €299; goal ~€75k)",
+      "kit_default": "B",
+      "decided": false
+    },
+    "D4": {
+      "q": "Age on the page: 16+ (site) or 18+ (compliance note)",
+      "kit_default": 18,
+      "decided": false,
+      "recommended": "18+ (the AI features need the owner's own API account, which requires 18+); applied as the safe default in the copy"
+    },
+    "D5": {
+      "q": "Shipping countries",
+      "kit_default": "RO, DE, AT, FR, BE, NL, IT, ES, PL, SE (GB moved to Late Pledge until the UK gate passes, D13)",
+      "decided": false
+    },
+    "D6": {"q": "Marketing cash at risk before the first payout", "kit_default": "up to €17,500 (scaled to the smaller goal)", "decided": false},
+    "D7": {
+      "q": "Launch colours: 3 of the 5 designed finishes (fewer anodising lots and golden samples)",
+      "kit_default": ["Silver", "Graphite", "Ember"],
+      "decided": false
+    },
+    "D8": {
+      "q": "Electronics route for batch 1: A = custom round PCB with a pre-certified ESP32-S3-WROOM-1 module (docs/size-s.json 'product'), B = Waveshare ESP32-S3-Touch-AMOLED-1.75 board inside (size-s.json 'S-P0_dev_board')",
+      "kit_default": "B",
+      "decided": false,
+      "must_decide_by": "2027-01-15"
+    },
+    "D9": {
+      "q": "Delivery promise: keep EU April 2028 / UK May 2028 (~6 weeks of buffer after best-case shipping) or move to EU May 2028 / UK June 2028 (~10 weeks; comparable campaigns slipped 1–13 months)",
+      "kit_default": "move (applied as the safe default 2026-10-22): EU May 2028, batch 2 August 2028, ~10 weeks of buffer",
+      "recommended": "move: set campaign.scenarios.after_ce.estimated_delivery to EU 2028-05, UK 2028-06, late_pledge_batch_2 2028-08, reward_delivery_field 2028-06, reward_delivery_remark 'EU: May 2028 · UK: June 2028 (estimates)', buffer_weeks 10, then rebuild copy, images and video",
+      "decided": false,
+      "must_decide_by": "2027-09-07"
+    },
+    "D10": {
+      "q": "Stable Pledge (HC/471): on or off? Can only be switched on before launch and can never be switched off; backers get a 100 % refund window if estimated costs rise more than 10 %.",
+      "kit_default": "decide at G3: on only if every batch quote and the courier/3PL quote are in writing",
+      "decided": false,
+      "must_decide_by": "2027-09-21"
+    },
+    "D11": {
+      "q": "Who pays the RF/EMC pre-scan and the CE/EN 18031 lab before the campaign (~€42k one-offs)? PoC 1.1 lines L14/L15 cover pre-tests only after the financing contract (est. Aug–Oct 2027) and exclude final CE, so anything done earlier is paid from non-grant money and must NOT also be claimed in PoC 1.1.",
+      "kit_default": "own money / KREA or friends-and-family loans / Patria Credit, kept out of the PoC budget",
+      "decided": false,
+      "must_decide_by": "2027-01-31"
+    },
+    "D12": {
+      "q": "Batch 1 capacity: how many devices the first batch is planned and quoted for. Rewards beyond it are 'batch 2' with a later month (EU consumer law: the delivery date is an essential term).",
+      "kit_default": 270,
+      "recommended": "270 (= the goal batch the timeline was sized for); raise it only with written CNC, anodising and EMS capacity at G3",
+      "decided": false,
+      "must_decide_by": "2027-09-07"
+    },
+    "D13": {
+      "q": "UK in campaign 1? Needs a UK gate: PSTI statement of compliance (support period, vulnerability disclosure, no default passwords), UK WEEE/battery distance-seller arrangements, CE accepted in GB, DAP import VAT.",
+      "kit_default": "not in campaign 1; open in Late Pledge once the UK gate passes",
+      "decided": false,
+      "must_decide_by": "2027-06-01"
+    },
+    "D14": {
+      "q": "US/Canada: add FCC Part 15 + ISED to the same lab order (~€15k [E], before the campaign) or keep them out of campaign 1?",
+      "kit_default": "out of campaign 1 (no cash for it before the payout); not a stretch goal",
+      "decided": false,
+      "must_decide_by": "2027-01-31"
+    },
+    "D15": {
+      "q": "Refund policy wording and reserve (lawyer, before G3): full refund before shipping (likely required for consumers anyway) vs. a cut-off when batch orders are placed; size of the refund reserve.",
+      "kit_default": "full refund until shipping + 5 % reserve, marked 'draft for the lawyer'",
+      "decided": false,
+      "must_decide_by": "2027-09-07"
+    }
+  },
+  "product": {
+    "name": "SOUL",
+    "os": "SoulOS Alive",
+    "shape": "MĂRGĂRITAR",
+    "size_sold_in_campaign": "S",
+    "size_decision": "founder, 2026-10-20",
+    "body": "aluminium 6061, bead-blasted, anodised type II",
+    "colours_designed": ["Silver", "Graphite", "Midnight", "Ember", "Champagne"],
+    "colours_launch": {
+      "value": ["Silver", "Graphite", "Ember"],
+      "status": "proposal",
+      "decision": "D7",
+      "later": ["Midnight", "Champagne"],
+      "later_rule": "not offered and not promised in this campaign"
+    },
+    "colour_price_rule": "every colour costs the same",
+    "front": "one round black glass, nothing else (no logo, no buttons)",
+    "camera": "none",
+    "microphone_policy": "listens only while a finger is on the glass",
+    "ai": "connects the owner's own AI: Claude (own Anthropic API key, plus the Claude app connector), OpenAI (own OpenAI API key: in development; Sign in with ChatGPT: pending OpenAI approval, never promised), or offline. A ChatGPT account/subscription does NOT work. ARTEMIS never includes or resells AI.",
+    "voice": {
+      "status": "speech-to-text uses a speech service: today OpenAI's, with the owner's own OpenAI key. Voice for Claude-only owners is in development.",
+      "claude_only_voice_works": false,
+      "rule": "Never show or say 'hold the glass and talk to Claude' for a Claude-only owner unless claude_only_voice_works is true (set it after G1 proves it on the S board)."
+    },
+    "memory": "SOUL Memory lives on the device",
+    "eyes": {
+      "designs": 120,
+      "expressions": 31,
+      "birth": "each unit is born with one pair from its chip ID; nobody picks them",
+      "rarity_odds_at_birth": {"Common": 0.5, "Uncommon": 0.25, "Rare": 0.15, "Epic": 0.07, "Legendary": 0.025, "Mythic": 0.005},
+      "same_pair_probability": "sum of p^2 over the 120 designs ≈ 0.9 % (about 1 in 112): two SOULs rarely share eyes, but it happens. Never say 'no two are alike'.",
+      "odds_source": "micul-smecher/eyes/eyes.js RARITIES",
+      "rule": "Rarity changes only the eyes. Never price, sell, reroll or auction a rarity."
+    },
+    "charging": "OU, its charging egg, through gold contacts in the foot",
+    "age": {
+      "page": 18,
+      "status": "proposal",
+      "decision": "D4",
+      "site_copy": "16+, not a toy",
+      "rule": "the page says 'for people aged 18 and over' until D4 is decided otherwise"
+    },
+    "firmware": {"version": "1.9.0", "status": "built and tested on PC and in the simulator (480 px M profile and 466 px S profile); NOT yet run on a real board"},
+    "certification": {"CE_RED": "not yet certified", "FCC": "not started", "UKCA_UK": "not started"}
+  },
+  "size_S": {
+    "source": "../docs/size-s.json",
+    "label": "S",
+    "status": "the product backers receive",
+    "width_mm": 63,
+    "height_mm": 71,
+    "thickness_mm": {
+      "min": 23,
+      "max": 26,
+      "final": null,
+      "status": "variable",
+      "note": "product target 23.0 mm (route A, size-s.json dims_mm.d); 25.65 mm with the Waveshare board inside (route B, variants.S-P0_dev_board). Final depth follows D8. Lower bound 23, not 22: docs/12-SIZE-S.md §2.4 rules 22.0 mm out (0.13 mm battery margin)."
+    },
+    "display_dims": "63 × 71 × 23–26 mm (depth being finalised)",
+    "glass": "round black glass; Ø52 mm flat 2.5D in the product design (size-s.json glass_d) [estimate]",
+    "screen": {
+      "diagonal_in": 1.75,
+      "type": "AMOLED",
+      "resolution_px": [466, 466],
+      "active_area_mm": 43.76,
+      "true_black": true,
+      "shape": "round",
+      "under": "black glass",
+      "display_text": "round 1.75″ AMOLED, 466 × 466, true black"
+    },
+    "glass_mm": {"product_route_A": 52.0, "dev_board_route_B": 48.96, "source": "docs/size-s.json glass_d and variants.S-P0_dev_board"},
+    "battery_life_internal_estimate_h": {
+      "route_A_750mAh_typical_day": 27,
+      "route_A_range": [21, 34],
+      "route_B_500mAh": 18,
+      "status": "estimate, internal only: never on the page until measured on a real S unit (battery.battery_life_rule)",
+      "source": "docs/size-s.json est_battery_life"
+    },
+    "mcu": "ESP32-S3 (Wi-Fi 2.4 GHz + Bluetooth LE)",
+    "audio": "2 microphones + codec, speaker",
+    "sensors": "touch glass, 6-axis motion sensor",
+    "electronics_routes": {
+      "A": {
+        "name": "custom round PCB",
+        "what": "ESP32-S3-WROOM-1-N16R8 module (pre-certified radio evidence) + bare 1.75\" AMOLED panel",
+        "depth_mm": 23.0,
+        "battery_mAh": 750,
+        "nre_eur_estimate": 26000,
+        "nre_basis": "PCBA design $15–30k + custom glass/lamination $5–15k (docs/12-SIZE-S.md §1.2, 02-MANUFACTURING §11) [estimate, mid]",
+        "radio_testing": "partial: module evidence reused for radio; EMC + safety + EN 18031 still full",
+        "supply": "panel from 3 named module houses (MOQ by RFQ), module from Espressif distributors"
+      },
+      "B": {
+        "name": "Waveshare board inside",
+        "what": "Waveshare ESP32-S3-Touch-AMOLED-1.75 (bare ESP32-S3R8)",
+        "depth_mm": 25.65,
+        "battery_mAh": 500,
+        "nre_eur_estimate": 0,
+        "radio_testing": "full: bare chip, no module certificate to reuse",
+        "supply": "single source (Waveshare); EU distributors out of stock on 2026-10-20"
+      }
+    },
+    "battery": {
+      "capacity_mAh": null,
+      "range_mAh": [500, 750],
+      "status": "variable",
+      "display": "lithium, capacity being finalised",
+      "must": "user-replaceable (EU Battery Regulation Art. 11, from 18 Feb 2027); IEC 62133-2 + UN38.3 summary from the cell maker",
+      "battery_life_claim": null,
+      "battery_life_rule": "publish battery life only after measuring it on the real S unit"
+    },
+    "weight_g": {
+      "min": 75,
+      "max": 95,
+      "status": "estimate",
+      "basis": "docs/size-s.json weight_note (75–95 g, component sum); S-P0 dev-board build ≈ 90 g. Supersedes the older 95–120 g guess based on a 29.5 mm-deep P0."
+    },
+    "shipping_parcel": {"weight_kg_estimate": 0.4, "box_mm_estimate": [140, 140, 90], "status": "estimate", "contents": "SOUL + OU + box + guide"},
+    "lithium_shipping": "UN3481, PI 967 Section II (battery inside equipment), ship at ≤30 % charge",
+    "cost_factors_vs_M": {
+      "cnc": 0.66,
+      "anodise_blast": 0.72,
+      "glass": 0.7,
+      "ou": 0.85,
+      "chassis": 0.85,
+      "packaging": 0.9,
+      "mech": 0.9,
+      "derivation": "Same exponent as the factory model's S+ factors, applied to S at 49 % of M's face area. [estimate]"
+    }
+  },
+  "prototype_M": {
+    "label": "M",
+    "status": "the working prototype that exists now; NOT the product sold",
+    "dims_mm": [90, 101, 31.5],
+    "screen": {"diagonal_in": 2.8, "type": "IPS LCD", "resolution_px": [480, 480]},
+    "board": "Waveshare ESP32-S3-Touch-LCD-2.8C (no microphone on the board: voice needs the add-on mic module)",
+    "renders": "micul-smecher/renders/v9/ (M scale)"
+  },
+  "renders_v10": {
+    "path": "micul-smecher/renders/v10/",
+    "status": "in progress (checked 2026-10-22): hero, family, side, hand, desk rendered; ou_night and vs_m pending",
+    "files": {
+      "hero": "soul_v10_hero.png",
+      "family": "soul_v10_family.png",
+      "side": "soul_v10_side.png",
+      "hand": "soul_v10_hand.png",
+      "desk": "soul_v10_desk.png",
+      "ou_night": null,
+      "vs_m": null
+    },
+    "use": "label 'Render (CGI), not a photo.'; hand/desk/vs_m are the only renders allowed to show scale. In the kit the v10 hand/desk renders are used with the old glowing eyes painted over and the flat SoulOS eyes drawn by the eyes engine (images/src/templates.js v10eyes).",
+    "hand_note": "the v10 hand is a smooth CGI hand (looks like a mannequin): replace with a real hand holding an S-size model as soon as one exists"
+  },
+  "labels": {
+    "render": "Render (CGI), not a photo.",
+    "render_scale_neutral_note": "Object-only renders from renders/v9 may be reused for S because they show no scale. Hand, desk and size graphics from v9 may NOT be used.",
+    "prototype_footage": "Prototype shown at a larger size (M). The product you back is S: 63 × 71 mm with a 1.75\" AMOLED.",
+    "soulos": "SoulOS simulator capture, 480 × 480; on S it runs on a 466 × 466 AMOLED.",
+    "soulos_web": "SoulOS web prototype capture, 480 × 480; on S it runs on a 466 × 466 AMOLED.",
+    "eyes_engine": "The SOUL eyes engine, recorded from the same code that runs on the device. Screen animation, not a photo.",
+    "illustration": "Illustration.",
+    "ai": "Works with your own Claude (API key, or the Claude app connector) or your own OpenAI API key (in development), or offline. SOUL does not include AI. Claude is a trademark of Anthropic; ChatGPT and OpenAI are trademarks of OpenAI. SOUL is independent and not affiliated with or endorsed by either.",
+    "ce_not_yet": "SOUL is not CE-certified yet. It is tested at an accredited lab and ships only after it passes.",
+    "ai_short": "Works with your own Claude or your own OpenAI API key (in development), or offline. SOUL does not include AI.",
+    "soulos_s": "SoulOS simulator capture at the S screen size (466 × 466). Not a recording of a real device.",
+    "soulos_device": "SoulOS (shown on the prototype).",
+    "soulos_device_rule": "use soulos_device only for real recordings of a real board; firmware 1.9.0 has not run on one yet",
+    "render_eyes": "Render (CGI), not a photo. Eyes drawn by the SOUL eyes engine."
+  },
+  "size_graphics": {
+    "rule": "true scale: 1 mm = same px everywhere in the graphic; S silhouette next to a reference object",
+    "reference_objects_mm": {"credit_card_ID-1": [85.6, 53.98], "euro_coin_2": 25.75, "euro_coin_1": 23.25},
+    "silhouette_source": "MĂRGĂRITAR outline scaled to width_mm × height_mm above"
+  },
+  "indiegogo": {
+    "_note": "Platform facts, help centre checked 2026-10-22 (HC/<id> = https://help.indiegogo.com/article/<id>). [snippet] = only seen in a search excerpt of the Creator Guidelines/ToU (Cloudflare-blocked).",
+    "platform": "Indiegogo on Gamefound's platform since 2025-10-16; payments by Adyen",
+    "creator_country": {"RO_listed": true, "currency": "EUR", "source": "HC/671 (currency table, not an eligibility promise; eligibility shows in the dashboard, HC/494)"},
+    "account_type": "Business (SRL); KYC by Adyen; 'Submit for review' (HC/470)",
+    "kyc_documents": [
+      "ONRC extract (certificat constatator) ≤ 12 months",
+      "bank document ≤ 12 months showing the exact legal name, full IBAN, bank logo/stamp",
+      "director ID: valid, colour, MRZ visible, front and back as separate files",
+      "English documents; sworn translations may be requested [snippet]",
+      "ID of key shareholders and of the signer [snippet]"
+    ],
+    "kyc_frictions": {
+      "registration_number": "ARTEMIS has the new ONRC format J2025098748009 (Jurnal decizii 2026-10-12); Indiegogo's sample is J40/8302/1997 (HC/506). Enter it exactly as on the extract; ask support if rejected.",
+      "tax_number": "CUI 53145290 has no RO prefix (not VAT-registered); 'missing country prefix' is a listed error (HC/507). Ask support if rejected; disappears if ARTEMIS registers for VAT (D2)."
+    },
+    "kyc_before_upcoming_page": true,
+    "funding_model": "fixed goal, all-or-nothing only (flexible discontinued, HC/645)",
+    "fees": {"platform_pct": 0.05, "processing_pct": 0.03, "per_transaction_eur": 0.2, "if_goal_missed": "nothing", "source": "HC/596"},
+    "reserve": {"pct_of_net_volume": 0.05, "window_months": 6, "recalculated": "weekly", "source": "HC/766"},
+    "extra_holds": "elevated-risk creators can be asked for production agreements, manufacturing estimates, escrow/milestone release or guarantees [snippet]",
+    "payouts": {
+      "funds_to_balance": "3–5 business days after each charge",
+      "payout_day": "weekly, Friday night CET",
+      "collection_after_end_days": 15,
+      "retries": 3,
+      "unpaid_orders": "not cancelled by default for campaigns starting after 2025-12-16 (HC/637)"
+    },
+    "campaign_length_days": {"min": 1, "max": 60},
+    "submit_before_launch_days_min": 7,
+    "review": "usually up to 3 business days; launch date can only move later once approved (HC/486)",
+    "locks": {"url_and_category": "when the Upcoming page is published", "name_goal_end_date": "at launch (HC/485, HC/517)"},
+    "endgame": "on by default: each pledge in the last 10 min resets the timer to 10 min, once per backer (HC/605)",
+    "required_story_sections": ["Risks and challenges", "Refunds and cancellation"],
+    "reward_prices": "entered NET; EU tax rates are pre-filled per country since EU VAT handling stopped on 2026-08-04: set every EU rate to 0 % (HC/478, HC/597)",
+    "uk_vat": "Indiegogo collects UK VAT only up to £135 → SOUL ships DAP to the UK",
+    "late_pledge": "replaces InDemand; opens after a cooldown of up to 15 days and its own review; same fees (HC/602)",
+    "not_for_SOUL_now": ["Express crowdfunding (HC/641)", "Preorders (HC/690)", "Shipping Guarantee (holds funds until shipment)", "Stretch Pay during the campaign"],
+    "images_px": {
+      "thumbnail": [700, 700],
+      "cover_min": [1743, 498],
+      "social": [1200, 630],
+      "gallery": [1200, 630],
+      "reward": [700, 700],
+      "update_header": [700, 700],
+      "avatar": [700, 700],
+      "launch_email": [700, 700],
+      "story_width": [840, 1200]
+    },
+    "story_video": "MP4/WebM ≤ 20 MB, ≥ 840 px wide; gallery video via YouTube (no custom thumbnail) or Vimeo",
+    "title_tagline_limits": "not documented; read them in the dashboard (old limits 50/100 chars are legacy, unverified)"
+  },
+  "pricing": {
+    "currency": "EUR",
+    "vat_registered": false,
+    "vat_status_today": "ARTEMIS is not VAT-registered",
+    "vat_rule_for_copy": "Prices are final. While vat_registered is false, never write 'incl. VAT'; the budget line reads 'VAT we will owe once registered'. If registered (D2), prices stay the same and include VAT.",
+    "vat_threshold_lei": 395000,
+    "vat_rate_assumed_for_model": 0.21,
+    "indiegogo_tax_rates": "set every EU tax rate to 0 % in all cases (Indiegogo treats reward prices as net and pre-fills EU rates, HC/478, HC/597)",
+    "platform_fee_pct": 0.05,
+    "processing_fee_pct": 0.03,
+    "processing_fee_fixed_eur": 0.2,
+    "ladders": {
+      "A": {
+        "retail_planned_eur": 249,
+        "retail_note": "approved site copy 'from €249'",
+        "launch": {"name": "First Light", "price_eur": 199, "cap": 300},
+        "campaign": {"name": "Campaign Price", "price_eur": 219},
+        "two": {"name": "Two Souls", "price_eur": 418, "cap": 200},
+        "late_pledge_eur": 249
+      },
+      "B": {
+        "retail_planned_eur": 299,
+        "retail_note": "'from €249' becomes the campaign entry price; the site changes after the campaign",
+        "launch": {"name": "First Light", "price_eur": 249, "cap": 150, "extra": "its First Light number (001–150) laser-engraved on its foot"},
+        "campaign": {"name": "Campaign Price", "price_eur": 269, "cap": 100, "batch": 1},
+        "two": {"name": "Two Souls", "price_eur": 498, "cap": 10, "batch": 1},
+        "late_pledge_eur": 299,
+        "campaign_b2": {"name": "Campaign Price · batch 2", "price_eur": 269, "cap": null, "batch": 2},
+        "batch_note": "batch 1 = First Light 150 + Campaign Price 100 + Two Souls 10 × 2 = 270 devices (campaign.batch_1, D12)"
+      }
+    },
+    "supporter_eur": 10,
+    "ou_extra_eur": 35
+  },
+  "gates": {
+    "_note": "Set passed=true and fill date/proof when a gate passes, then rebuild: the copy blocks switch from plan to proof.",
+    "G1": {
+      "what": "SoulOS Alive + hold-to-talk voice running on the S board, with the founder's own keys",
+      "target": "2026-12-15",
+      "passed": false,
+      "date": null,
+      "proof": null
+    },
+    "G2": {"what": "an aluminium SOUL S, assembled and working, filmed in one take", "target": "2027-02-12", "passed": false, "date": null, "proof": null},
+    "EN18031_FW": {
+      "what": "secure boot v2, flash/NVS encryption, signed OTA, unique credentials, debug locked: built into SoulOS",
+      "target": "2027-05-07",
+      "passed": false
+    },
+    "PRESCAN": {"what": "RF/EMC pre-scan at the lab on DVT units, no blocker", "target": "2027-05-21", "passed": false, "lab": null, "date": null},
+    "CE": {
+      "what": "full RED/EMC/safety + EN 18031 tests passed; EU Declaration of Conformity signed",
+      "target": "2027-08-31",
+      "passed": false,
+      "lab": null,
+      "date": null
+    },
+    "QUOTES": {"what": "written supplier quotes within +15 % of the model", "target": "2027-08-31", "passed": false},
+    "G3": {"what": "go / no-go", "target": "2027-09-07", "passed": false}
+  },
+  "campaign": {
+    "platform": "Indiegogo (Gamefound platform), Fixed Funding (all-or-nothing)",
+    "posting_blocked_until": "D1 written in Jurnal decizii, and every gate of the active scenario passed",
+    "scenario": "after_ce",
+    "ladder": "B",
+    "length_days": 35,
+    "scenarios": {
+      "after_ce": {
+        "label": "campaign after CE (keeps the founder's rule: no customer payment before grant and CE)",
+        "needs": ["PoC 1.1 decided", "gates.CE passed (EU DoC signed)", "G2 video", "QUOTES", "real footage of SOUL S (G2) and the founder on the page"],
+        "submit_for_review_by": "2027-09-21",
+        "launch": "2027-10-05",
+        "end": "2027-11-09",
+        "late_pledge_open": "2027-11-30",
+        "estimated_delivery": {"EU": "2028-05", "late_pledge_batch_2": "2028-08"},
+        "reward_delivery_field": "2028-05",
+        "reward_delivery_remark": "EU: May 2028 (estimate)",
+        "best_case_ship": "early March 2028",
+        "buffer_weeks": 10,
+        "one_offs_in_goal": ["insurance", "batch_setup", "fulfilment"],
+        "timeline": [
+          ["2027-10-05", "2027-11-09", "the campaign ({days} days, all-or-nothing)", "campaign"],
+          ["2027-11-10", "2027-11-26", "payments collected; you confirm colour, address and add-ons in the Pledge Manager", "money"],
+          [
+            "2027-11-22",
+            "2027-12-10",
+            "batch orders: boards, cells, glass, aluminium shells, OU, packaging (tooling and the first article were approved before launch)",
+            "make"
+          ],
+          ["2027-12-06", "2028-01-21", "machining the shells (5–6 weeks, holidays included)", "make"],
+          ["2028-01-17", "2028-02-11", "anodising in {colours_n} colours, against the golden samples approved before launch", "make"],
+          ["2028-02-07", "2028-02-11", "pilot run of 25 units, full quality check", "make"],
+          ["2028-02-14", "2028-03-03", "assembly and testing of the batch", "make"],
+          ["2028-03-01", "2028-03-31", "shipping starts (best case)", "ship"],
+          ["2028-05", null, "estimated delivery, batch 1 (EU)", "promise"],
+          ["2028-08", null, "estimated delivery, batch 2 (only pledges beyond batch 1)", "promise"]
+        ],
+        "before_launch": [
+          ["2026-12-15", "G1", "SoulOS runs on the S board, with hold-to-talk voice"],
+          ["2027-02-12", "G2", "an aluminium SOUL S, filmed working in one take"],
+          ["2027-05-07", "EN18031_FW", "EU cybersecurity features built into SoulOS"],
+          ["2027-05-21", "PRESCAN", "radio/EMC pre-scan at the lab"],
+          ["2027-06-01", "EPR", "recycling (WEEE, battery, packaging) registrations started in the shipping countries"],
+          ["2027-08-31", "CE", "CE/RED + EN 18031 tests passed, EU Declaration of Conformity signed"],
+          ["2027-09-07", "G3", "go / no-go: quotes in writing, list size, KYC, VAT"]
+        ],
+        "batch_2_delivery_field": "2028-08",
+        "batch_2_delivery_remark": "Batch 2, EU: August 2028 (estimate)"
+      },
+      "before_ce": {
+        "label": "pre-CE campaign (only with the founder's written waiver of the rule, D1)",
+        "needs": ["D1 waiver written", "G2 video", "PRESCAN", "QUOTES"],
+        "submit_for_review_by": "2027-03-30",
+        "launch": "2027-04-13",
+        "end": "2027-05-18",
+        "late_pledge_open": "2027-06-15",
+        "estimated_delivery": {"EU": "2028-02", "UK": "2028-03", "late_pledge_batch_2": "2028-05"},
+        "reward_delivery_field": "2028-03",
+        "reward_delivery_remark": "EU: February 2028 · UK: March 2028 (estimates)",
+        "best_case_ship": "November 2027",
+        "buffer_weeks": 12,
+        "one_offs_in_goal": ["ce_lab", "tech_file", "legal", "insurance", "tooling", "batch_setup", "fulfilment"],
+        "timeline": [
+          ["2027-04-13", "2027-05-18", "the campaign ({days} days, all-or-nothing)", "campaign"],
+          ["2027-05-19", "2027-06-04", "payments collected; Pledge Manager", "money"],
+          ["2027-06-01", "2027-06-30", "EPR registrations in the shipping countries (weeks per country)", "make"],
+          ["2027-06-07", "2027-09-03", "CE/RED + EN 18031 testing at an accredited lab (6–12 weeks, re-test included)", "make"],
+          ["2027-06-07", "2027-08-27", "machining the shells", "make"],
+          ["2027-08-23", "2027-09-24", "anodising in {colours_n} colours", "make"],
+          ["2027-09-27", "2027-10-29", "pilot run, then assembly and testing", "make"],
+          ["2027-11-01", "2027-11-30", "shipping starts (best case), only after the EU DoC is signed", "ship"],
+          ["2028-02", null, "estimated delivery, EU", "promise"],
+          ["2028-03", null, "estimated delivery, UK", "promise"]
+        ],
+        "before_launch": [
+          ["2026-12-15", "G1", "SoulOS runs on the S board, with hold-to-talk voice"],
+          ["2027-02-12", "G2", "an aluminium SOUL S, filmed working in one take"],
+          ["2027-03-12", "EN18031_FW", "EU cybersecurity features built into SoulOS"],
+          ["2027-03-12", "PRESCAN", "radio/EMC pre-scan at the lab"],
+          ["2027-03-16", "G3", "go / no-go"]
+        ]
+      }
+    },
+    "shipping_countries_campaign_1": ["RO", "DE", "AT", "FR", "BE", "NL", "IT", "ES", "PL", "SE"],
+    "shipping_eur": {
+      "status": "fixed per zone and published before anyone pledges; collected after the campaign in the Pledge Manager; if the courier costs more, ARTEMIS pays the difference (the rates already cover the 8 % + €0.20 fees)",
+      "RO": 6,
+      "EU_zone_1 (AT, DE, PL, NL, BE)": 12,
+      "EU_zone_2 (FR, IT, ES, SE)": 15,
+      "extra_unit_same_parcel": 4,
+      "not_in_campaign_1": ["GB", "US", "CA", "CH", "NO", "AU", "rest of world"],
+      "not_in_campaign_1_reason": "GB: UK gate (PSTI, UK WEEE/battery, DAP VAT) not passed yet (D13); US/CA: FCC/ISED (D14); others: local EPR/VAT set-up. Opened in Late Pledge only when done.",
+      "wording_en": "These rates are fixed: if the courier costs more, we pay the difference.",
+      "wording_ro": "Tarifele sunt fixe: dacă firma de curierat cere mai mult, diferența o plătim noi.",
+      "GB_later_eur": 19
+    },
+    "stretch_goals_rule": "Amounts are recomputed by tools/goal_model.py as goal × 1.3 / × 1.8 / × 2.5, rounded to €5k. Every stretch goal reaches backers who can pledge now; US/Canada access is a separate pre-launch decision (D14), never a stretch goal.",
+    "stretch_goals": [
+      {"id": "languages", "factor": 1.3, "what": "SoulOS interface in German, French, Spanish and Italian", "cost_eur_estimate": 4000},
+      {"id": "pouch", "factor": 1.8, "what": "a felt travel pouch in every box", "cost_eur_estimate_per_unit": 4},
+      {
+        "id": "birth_card",
+        "factor": 2.5,
+        "what": "a printed birth card in every box: your SOUL's eyes, its chip ID and its birth date",
+        "cost_eur_estimate_per_unit": 1
+      }
+    ],
+    "realistic_range_note": {
+      "eur": [20000, 60000],
+      "list": [3000, 5000],
+      "source": "01 Afaceri/Micul Șmecher/Finanțare — crowdfunding și alte surse pentru SOUL.md §2 [estimate]"
+    },
+    "list_rules": {"day1_share_of_goal": 0.3, "day1_list_conversion": 0.025, "campaign_list_conversion": 0.05},
+    "batch_1": {
+      "devices": 270,
+      "status": "proposal",
+      "decision": "D12",
+      "basis": "the goal batch from tools/goal_model.py; the post-campaign timeline (CNC 5–6 weeks, 25-unit pilot, EMS build) is sized for it"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+TEAM
+(Story section "Team". Never add a person, title, partner or achievement that isn't real and confirmed.
+ The review (2026-10-22) found no face and no name anywhere: a real photo, the full name and the 60–80-word story are REQUIRED before the Upcoming page. See DECIZII-FONDATOR.md.)
+
+who makes SOUL
+
+SOUL is made by ARTEMIS DIGITAL S.R.L., a small company in Bucharest, Romania. Designed in Romania.
+
+[de completat: founder photo, 1:1, real]
+
+[de completat: founder full name], founder
+[de completat: 60–80 words, first person, in the landing's voice. Suggested shape:
+ - one line on who you are and what you've built before (only real things);
+ - one line on why SOUL: "AI got a brain; I wanted to give it a face you can hold, that never spies and never becomes a brick";
+ - one line on how you work: small, honest, everything published (odds, budget, risks).]
+
+How we build SOUL
+- Design, SoulOS and the eyes engine: in-house, in Bucharest.
+- Machining, anodising, assembly and lab testing: specialist partners.
+  [[G3: name each partner and its role, once contracts are signed. The landing already promised: "We'll name our manufacturing partners before we ask anyone to pay."]]
+- [de completat: anyone else who really works on SOUL (only with their written OK to be named).]
+
+Our promises to backers
+- An update every two weeks, weekly once shipping starts, and the same week for any delay.
+- Backers get their SOULs before any shop order.
+- Everything we publish is real: renders are labelled as renders, prototype footage is labelled as prototype footage, and odds, budget and risks are on the page.
+
+Company
+ARTEMIS DIGITAL S.R.L.
+Str. Vlăhița nr. 1, bl. PM18bis, sc. 2, ap. 123, Sector 3, București, Romania
+CUI 53145290 · Trade Register J2025098748009 · EUID ROONRC.J2025098748009
+office@krea.ro
+
+Claude is a trademark of Anthropic; ChatGPT and OpenAI are trademarks of OpenAI. SOUL is independent and not affiliated with or endorsed by either.

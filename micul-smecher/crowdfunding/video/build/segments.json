@@ -1,0 +1,560 @@
+{
+ "_meta": "Edit-decision list for build.py (v4, 2026-10-22, after the review: 75–90 s, a cut every 2–4 s, no static card over 3 s, hook paid off by 0:20, founder in the first 30 s, ends on living eyes, no CE card). Times in seconds. kind: clip | film (full '[PROTOTYPE SHOT — to film]' card: F01, F09) | image | soulos | chatbox | odds | privacy | honesty | end. standin = the real shot that replaces this picture (a '[PROTOTYPE SHOT — to film]' banner over the stand-in). label keys map to facts.json labels in build.py. {{path}} pulls a value from facts.json; {{colours_n_word}}, {{delivery_eu}}, {{ce_vo}} are derived. Scale shots only from renders/v10 (S) or the true-scale graphic; never v9 hand/desk/typing, never the trailer 19.2-22.2 s hand. One eye style only (the flat SoulOS eyes): no soul_eye_v1, no v9 launch film, no trailer peach-gradient scenes. no_tts = no guide voice (the founder speaks). music = the licensed track (Mixkit 464, trailer/MUSIC-LICENSE.md) starts here; music_ss = where in the track.",
+ "film_shots": [
+  {
+   "id": "F01",
+   "title": "The wake, in one take",
+   "action": "SOUL S asleep on the desk (standby: only the eyes). One finger taps the glass: the eyes open, look around, look into the lens. The finger slides left and right, the eyes follow. The hand leaves; after a few seconds the eyes get sleepy and doze.",
+   "framing": "3/4 front, lens at glass height, phone 2x lens, locked on a tripod. 25 s continuous take; we use 8 s of it, the full take goes on the page as proof.",
+   "proof": "A phone lock screen showing the date and time, readable, in the background left for the whole take."
+  },
+  {
+   "id": "F02",
+   "title": "Birth at first power-on",
+   "action": "A brand-new SOUL S is switched on for the first time. The chip ID appears, then the eyes it is born with. Then My SOUL shows the name, rarity and chip ID.",
+   "framing": "Top-down, phone parallel to the glass, 1x lens at 25-30 cm, exposure locked 0.7 stop under so the AMOLED stays true black.",
+   "proof": "Dated clock beside the unit. Film three units in a row, uncut, so viewers see different eyes come out."
+  },
+  {
+   "id": "F03",
+   "title": "Hold the glass, ask your own AI",
+   "action": "The founder rests a finger on the glass: listening ring. He asks a real question (e.g. 'Remind me to call Mum at six'). He lifts the finger; Claude's reply appears and is spoken; the reminder is created.",
+   "framing": "Medium close-up, 3/4, founder's hand and SOUL in frame, his face out of focus. Lavalier mic on the founder; SOUL's own speaker recorded clean.",
+   "proof": "Dated clock in frame. Settings > Your AI shows the keys with the keys hidden; never show an API key. Film only what works on the S board at G1: if voice for Claude-only owners isn't ready, the speech-to-text key (your own OpenAI key) is shown in Settings and the on-screen note stays."
+  },
+  {
+   "id": "F04",
+   "title": "Claude app puts a plan on SOUL",
+   "action": "On the laptop, in the Claude app (founder's own account), he types: 'Put tomorrow's plan on my SOUL.' SOUL, next to the laptop, reacts and the plan appears on the glass.",
+   "framing": "One wide take showing laptop and SOUL together, then a close-up of the glass. Blur any personal data on the laptop. No Anthropic logo close-ups.",
+   "proof": "Dated clock (the laptop's own clock is fine if readable)."
+  },
+  {
+   "id": "F05",
+   "title": "Offline: still alive",
+   "action": "The router is switched off (its lights go out) or Wi-Fi is turned off on SOUL. SOUL keeps blinking; the founder sets an alarm and writes a note. Settings shows 'no AI'.",
+   "framing": "Wide shot with the router in frame, then a close-up of the glass.",
+   "proof": "Dated clock in frame, router lights visible."
+  },
+  {
+   "id": "F06",
+   "title": "SoulOS on the real S glass",
+   "action": "Thumb turns the dial of pebbles, opens Notes, scrolls a wheel list, closes it; the lids open and close; the eyes come back.",
+   "framing": "Macro straight-on, phone on an overhead arm parallel to the glass, focus locked, exposure -0.7, shutter 1/50 (25 fps) to avoid AMOLED flicker.",
+   "proof": "One continuous take; dated clock at the frame edge."
+  },
+  {
+   "id": "F07",
+   "title": "In the hand: the real size",
+   "action": "Open palm, SOUL S resting in it, slow turn to show the {{size_S.display_dims}} body. Second take: on the table next to a bank card and a 2-euro coin.",
+   "framing": "Eye level, 1x lens, neutral background, soft side light so the bead-blasted aluminium reads. ONLY the S unit here: never the M prototype.",
+   "proof": "Ruler or calipers in the second take reading {{size_S.width_mm}} mm."
+  },
+  {
+   "id": "F08",
+   "title": "Privacy, in one gesture",
+   "action": "Finger rests on the glass: the listening ring appears. Finger lifts: the ring disappears at once, the eyes relax. Then turn SOUL around: no camera anywhere.",
+   "framing": "Macro 3/4, focus on the glass edge, dark background.",
+   "proof": "One take, dated clock in frame."
+  },
+  {
+   "id": "F09",
+   "title": "The founder, to camera",
+   "action": "The founder at the bench in Bucharest, to camera, 10–15 s, in his own words: who he is and why he built SOUL. It sits at 0:15–0:26 of the film (review: the founder in the first 30 s). On the bench: the M prototype and SOUL S side by side, each with a small card 'M prototype' / 'S'. While M is in frame, the M label stays on screen.",
+   "framing": "Eye level, 1x lens, soft key light 45 degrees, lavalier mic, 10–15 s.",
+   "proof": "Real person, real place. No actors, no stock footage."
+  },
+  {
+   "id": "F10",
+   "title": "Vertical: SOUL wakes in the hand",
+   "action": "SOUL S in the palm, a thumb touches the glass, the eyes open and look at the lens.",
+   "framing": "9:16, 1x lens, 3 s usable, natural light.",
+   "proof": "Dated clock in a longer take kept as proof. Only the S unit."
+  },
+  {
+   "id": "F11",
+   "title": "The finish, in macro",
+   "action": "Slow macro slide across the bead-blasted, anodised aluminium of SOUL S (each launch colour), ending on the edge of the black glass while the eyes open.",
+   "framing": "Macro lens or phone macro mode, raking side light so the bead-blast grain reads, 3 × 4 s.",
+   "proof": "Only the real S shells; no render."
+  }
+ ],
+ "rough": {
+  "size": [
+   1920,
+   1080
+  ],
+  "out": "rough-cut.mp4",
+  "maxrate": "1500k",
+  "sections": [
+   {
+    "num": "01",
+    "name": "Hook",
+    "segs": [
+     {
+      "id": "1a",
+      "kind": "clip",
+      "src": "crowdfunding/video/build/assets/hook_object_wake.mp4",
+      "ss": 0,
+      "dur": 3.0,
+      "label": "render",
+      "standin": "F01: a finger wakes a real aluminium SOUL S, the eyes open and look into the lens",
+      "vo": "It just looked back at you.",
+      "vo_ro": "Tocmai s-a uitat înapoi la tine."
+     },
+     {
+      "id": "1b",
+      "kind": "chatbox",
+      "dur": 1.5,
+      "label": "illustration",
+      "vo": "All day, you talk to AI in a chat box.",
+      "vo_ro": "Toată ziua vorbești cu un AI într-o căsuță de chat."
+     },
+     {
+      "id": "1c",
+      "kind": "soulos",
+      "shots": [
+       "s-35-voice-answer"
+      ],
+      "dur": 3.0,
+      "label": "soulos_s",
+      "vo": "SOUL gives it a face on your desk, and the answer lands on the glass.",
+      "vo_ro": "SOUL îi dă o față pe birou, iar răspunsul apare pe sticlă."
+     },
+     {
+      "id": "1d",
+      "kind": "clip",
+      "src": "crowdfunding/images/anim_1_eyes_alive.mp4",
+      "ss": 3.5,
+      "dur": 2.5,
+      "fit": "square",
+      "label": "eyes",
+      "vo": "And it smiles back.",
+      "vo_ro": "Și îți zâmbește."
+     }
+    ]
+   },
+   {
+    "num": "02",
+    "name": "It looks up when your AI needs you",
+    "segs": [
+     {
+      "id": "2a",
+      "kind": "soulos",
+      "shots": [
+       "s-12-claude"
+      ],
+      "dur": 2.5,
+      "label": "soulos_s",
+      "note": "Claude connector: being built · scripted demo",
+      "vo": "Claude works in the Claude app.",
+      "vo_ro": "Claude lucrează în aplicația Claude."
+     },
+     {
+      "id": "2b",
+      "kind": "soulos",
+      "shots": [
+       "s-13-claude-ask"
+      ],
+      "dur": 3.0,
+      "label": "soulos_s",
+      "note": "Claude connector: being built · scripted demo",
+      "vo": "When it needs a yes, SOUL looks up at you. Hold to allow.",
+      "vo_ro": "Când are nevoie de un „da”, SOUL se uită la tine. Ții degetul ca să aprobi."
+     }
+    ]
+   },
+   {
+    "num": "03",
+    "name": "Why I built it (founder)",
+    "segs": [
+     {
+      "id": "3a",
+      "kind": "film",
+      "shot": "F09",
+      "dur": 3.0,
+      "label": "card",
+      "no_tts": true,
+      "vo": "(founder) I'm [name]. I build SOUL in Bucharest.",
+      "vo_ro": "(fondatorul) Sunt [nume]. Fac SOUL în București."
+     },
+     {
+      "id": "3b",
+      "kind": "image",
+      "src": "crowdfunding/images/story_01_object.jpg",
+      "fit": "band",
+      "dur": 3.5,
+      "label": "render",
+      "no_tts": true,
+      "standin": "F09 continued: the founder to camera",
+      "vo": "(founder) I wanted the AI I already use to have a face I can hold.",
+      "vo_ro": "(fondatorul) Am vrut ca AI-ul pe care îl folosesc deja să aibă o față pe care s-o țin în mână."
+     },
+     {
+      "id": "3c",
+      "kind": "clip",
+      "src": "crowdfunding/images/anim_1_eyes_alive.mp4",
+      "ss": 0.5,
+      "dur": 3.5,
+      "fit": "square",
+      "label": "eyes",
+      "no_tts": true,
+      "standin": "F09 continued: the founder to camera",
+      "vo": "(founder) One that never watches you, and never stops working because a server went away.",
+      "vo_ro": "(fondatorul) Una care nu te urmărește niciodată și nu se oprește pentru că a picat un server."
+     }
+    ]
+   },
+   {
+    "num": "04",
+    "name": "Alive",
+    "segs": [
+     {
+      "id": "4a",
+      "kind": "clip",
+      "src": "eyes/soul_eye_v2.mp4",
+      "ss": 0,
+      "dur": 3.0,
+      "fit": "square",
+      "label": "eyes",
+      "vo": "It blinks when it wants to. It follows your finger.",
+      "vo_ro": "Clipește când vrea. Îți urmărește degetul."
+     },
+     {
+      "id": "4b",
+      "kind": "clip",
+      "src": "eyes/soul_eye_motion.mp4",
+      "ss": 0,
+      "dur": 3.0,
+      "fit": "square",
+      "label": "eyes",
+      "vo": "Leave it alone, it dozes off. Shake it, it gets dizzy.",
+      "vo_ro": "Lasă-l, ațipește. Scutură-l, amețește."
+     }
+    ]
+   },
+   {
+    "num": "05",
+    "name": "Born with its eyes",
+    "segs": [
+     {
+      "id": "5a",
+      "kind": "image",
+      "src": "crowdfunding/images/story_02_eyes.png",
+      "fit": "band",
+      "dur": 2.5,
+      "label": "eyes",
+      "vo": "{{product.eyes.designs}} eyes. One is yours.",
+      "vo_ro": "{{product.eyes.designs}} de ochi. Unii sunt ai tăi."
+     },
+     {
+      "id": "5b",
+      "kind": "clip",
+      "src": "crowdfunding/images/anim_1_eyes_alive.mp4",
+      "ss": 0,
+      "dur": 2.5,
+      "fit": "square",
+      "label": "eyes",
+      "vo": "Born from its chip. Nobody picks them.",
+      "vo_ro": "Născuți din cip. Nu-i alege nimeni."
+     }
+    ]
+   },
+   {
+    "num": "06",
+    "name": "Your own AI, or none",
+    "segs": [
+     {
+      "id": "6a",
+      "kind": "soulos",
+      "shots": [
+       "s-20-aimode"
+      ],
+      "dur": 3.0,
+      "label": "soulos_s",
+      "note": "OpenAI key: in development · SOUL does not include AI",
+      "vo": "Your own Claude, your own OpenAI key, or no AI at all.",
+      "vo_ro": "Propriul Claude, propria cheie OpenAI sau niciun AI."
+     },
+     {
+      "id": "6b",
+      "kind": "soulos",
+      "shots": [
+       "s-01-standby"
+      ],
+      "dur": 2.5,
+      "label": "soulos_s",
+      "vo": "Offline, it's still alive.",
+      "vo_ro": "Offline, tot e viu."
+     },
+     {
+      "id": "6c",
+      "kind": "soulos",
+      "shots": [
+       "s-33-voice-listen"
+      ],
+      "dur": 3.0,
+      "label": "soulos_s",
+      "note": "voice today: your own OpenAI key · Claude-only voice in development",
+      "vo": "Hold the glass to talk. Let go, and it stops listening.",
+      "vo_ro": "Ții degetul pe sticlă ca să vorbești. Îl ridici și nu mai ascultă."
+     }
+    ]
+   },
+   {
+    "num": "07",
+    "name": "SoulOS",
+    "segs": [
+     {
+      "id": "7a",
+      "kind": "clip",
+      "src": "crowdfunding/images/anim_2_dial_turning.mp4",
+      "ss": 1.0,
+      "dur": 3.0,
+      "fit": "square",
+      "label": "soulos_web",
+      "vo": "The eyes lead the whole OS.",
+      "vo_ro": "Ochii conduc tot sistemul."
+     },
+     {
+      "id": "7b",
+      "kind": "soulos",
+      "shots": [
+       "s-08-notes",
+       "s-07-alarms"
+      ],
+      "dur": 3.0,
+      "label": "soulos_s",
+      "vo": "Notes, alarms, focus. All on the stone.",
+      "vo_ro": "Notițe, alarme, concentrare. Toate pe piatră."
+     }
+    ]
+   },
+   {
+    "num": "08",
+    "name": "The object",
+    "segs": [
+     {
+      "id": "8a",
+      "kind": "image",
+      "src": "crowdfunding/images/story_05_colours.jpg",
+      "fit": "band",
+      "dur": 2.5,
+      "label": "render",
+      "standin": "F11: macro of the bead-blasted aluminium",
+      "vo": "Machined aluminium, bead-blasted, anodised.",
+      "vo_ro": "Aluminiu frezat, sablat, anodizat."
+     },
+     {
+      "id": "8b",
+      "kind": "image",
+      "src": "crowdfunding/images/gallery_2_size_1200x630.png",
+      "fit": "band",
+      "dur": 3.0,
+      "label": "true_scale",
+      "vo": "SOUL S is {{size_S.width_mm}} by {{size_S.height_mm}} millimetres.",
+      "vo_ro": "SOUL S are {{size_S.width_mm}} pe {{size_S.height_mm}} de milimetri."
+     },
+     {
+      "id": "8c",
+      "kind": "image",
+      "src": "crowdfunding/images/story_06b_in_hand.jpg",
+      "fit": "band",
+      "dur": 2.5,
+      "label": "render_eyes",
+      "standin": "F07: SOUL S in a real palm",
+      "vo": "It sits in your palm.",
+      "vo_ro": "Stă în palmă."
+     },
+     {
+      "id": "8d",
+      "kind": "clip",
+      "src": "crowdfunding/images/anim_3_colour_swap.mp4",
+      "ss": 0,
+      "dur": 3.0,
+      "fit": "square",
+      "label": "render",
+      "vo": "{{colours_n_word}} colours, one price.",
+      "vo_ro": "{{colours_n_word_ro}} culori, un singur preț."
+     },
+     {
+      "id": "8e",
+      "kind": "image",
+      "src": "crowdfunding/images/story_07_ou_night.jpg",
+      "fit": "band",
+      "dur": 2.5,
+      "label": "render",
+      "vo": "At night it sleeps in its egg, and charges.",
+      "vo_ro": "Noaptea doarme în oul lui și se încarcă."
+     }
+    ]
+   },
+   {
+    "num": "09",
+    "name": "Promises",
+    "segs": [
+     {
+      "id": "9a",
+      "kind": "soulos",
+      "shots": [
+       "s-01-standby"
+      ],
+      "dur": 2.5,
+      "label": "soulos_s",
+      "vo": "No camera. Its memory stays on the device.",
+      "vo_ro": "Fără cameră. Memoria stă pe dispozitiv."
+     }
+    ]
+   },
+   {
+    "num": "10",
+    "name": "The ask",
+    "segs": [
+     {
+      "id": "10a",
+      "kind": "clip",
+      "src": "crowdfunding/video/build/assets/hook_object_wake.mp4",
+      "ss": 0.6,
+      "dur": 3.0,
+      "label": "render",
+      "music": true,
+      "standin": "F01 again: the real SOUL S, eyes on the lens",
+      "vo": "The first {{lad.launch.cap}} are €{{lad.launch.price_eur}}. Then €{{lad.campaign.price_eur}}.",
+      "vo_ro": "Primii {{lad.launch.cap}} costă €{{lad.launch.price_eur}}. Apoi €{{lad.campaign.price_eur}}."
+     },
+     {
+      "id": "10b",
+      "kind": "clip",
+      "src": "crowdfunding/images/anim_1_eyes_alive.mp4",
+      "ss": 3.4,
+      "dur": 3.0,
+      "fit": "square",
+      "label": "eyes",
+      "music": true,
+      "vo": "All or nothing, on Indiegogo. Estimated delivery {{delivery_eu}}.",
+      "vo_ro": "Totul sau nimic, pe Indiegogo. Livrare estimată {{delivery_eu_ro}}."
+     },
+     {
+      "id": "10c",
+      "kind": "end",
+      "eyes": true,
+      "eyes_src": "crowdfunding/images/anim_1_eyes_alive.mp4",
+      "ss": 0.2,
+      "mode": "campaign",
+      "dur": 3.0,
+      "label": null,
+      "caption": false,
+      "music": true,
+      "vo": "Back SOUL on Indiegogo.",
+      "vo_ro": "Susține SOUL pe Indiegogo."
+     }
+    ]
+   }
+  ]
+ },
+ "teaser": {
+  "size": [
+   1080,
+   1920
+  ],
+  "out": "teaser-vertical.mp4",
+  "maxrate": "1400k",
+  "audio": true,
+  "sections": [
+   {
+    "num": "T",
+    "name": "Teaser",
+    "segs": [
+     {
+      "id": "t1",
+      "kind": "clip",
+      "src": "crowdfunding/video/build/assets/hook_object_wake.mp4",
+      "ss": 0,
+      "dur": 3.5,
+      "label": "render",
+      "music": true,
+      "vo": "It looks back.",
+      "vo_ro": "Se uită înapoi."
+     },
+     {
+      "id": "t2",
+      "kind": "clip",
+      "src": "eyes/soul_eye_v2.mp4",
+      "ss": 0,
+      "dur": 3.5,
+      "fit": "square",
+      "label": "eyes",
+      "vo": "Two living eyes. Born, not chosen.",
+      "vo_ro": "Doi ochi vii. Născuți, nu aleși."
+     },
+     {
+      "id": "t3",
+      "kind": "image",
+      "src": "crowdfunding/images/story_02_eyes.png",
+      "fit": "contain",
+      "dur": 3.5,
+      "label": "eyes",
+      "vo": "One of {{product.eyes.designs}} pairs, picked by its chip.",
+      "vo_ro": "Una din {{product.eyes.designs}} de perechi, aleasă de cip."
+     },
+     {
+      "id": "t4",
+      "kind": "soulos",
+      "shots": [
+       "s-13-claude-ask"
+      ],
+      "dur": 4,
+      "label": "soulos_s",
+      "vo": "It looks up when your AI needs you.",
+      "vo_ro": "Se uită în sus când AI-ul are nevoie de tine.",
+      "note": "Claude connector: being built"
+     },
+     {
+      "id": "t5",
+      "kind": "image",
+      "src": "crowdfunding/images/story_06b_in_hand.jpg",
+      "fit": "contain",
+      "dur": 3.5,
+      "label": "render_eyes",
+      "vo": "Palm-sized. Aluminium.",
+      "vo_ro": "Cât palma. Din aluminiu."
+     },
+     {
+      "id": "t6",
+      "kind": "soulos",
+      "shots": [
+       "s-01-standby"
+      ],
+      "dur": 3.5,
+      "label": "soulos_s",
+      "vo": "No camera. It listens only while you hold it.",
+      "vo_ro": "Fără cameră. Ascultă doar cât îl ții."
+     },
+     {
+      "id": "t7",
+      "kind": "clip",
+      "src": "crowdfunding/images/anim_3_colour_swap.mp4",
+      "ss": 0,
+      "dur": 3.5,
+      "fit": "square",
+      "label": "render",
+      "vo": "{{colours_n_word}} colours. One price.",
+      "vo_ro": "{{colours_n_word_ro}} culori. Un singur preț."
+     },
+     {
+      "id": "t8",
+      "kind": "end",
+      "mode": "prelaunch",
+      "dur": 5,
+      "label": null,
+      "caption": false,
+      "vo": ""
+     }
+    ],
+    "publishable": true
+   }
+  ],
+  "tts": false,
+  "music_ss": 16.68
+ }
+}

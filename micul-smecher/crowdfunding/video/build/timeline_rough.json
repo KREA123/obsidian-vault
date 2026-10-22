@@ -1,0 +1,374 @@
+{
+ "file": "rough-cut.mp4",
+ "duration_s": 76.0,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 3.0,
+   "section": "01 Hook",
+   "no_tts": false,
+   "music": false,
+   "id": "1a",
+   "kind": "clip",
+   "label": "render",
+   "vo": "It just looked back at you.",
+   "vo_ro": "Tocmai s-a uitat înapoi la tine.",
+   "src": "crowdfunding/video/build/assets/hook_object_wake.mp4"
+  },
+  {
+   "start": 3.0,
+   "end": 4.5,
+   "section": "01 Hook",
+   "no_tts": false,
+   "music": false,
+   "id": "1b",
+   "kind": "chatbox",
+   "label": "illustration",
+   "vo": "All day, you talk to AI in a chat box.",
+   "vo_ro": "Toată ziua vorbești cu un AI într-o căsuță de chat.",
+   "src": null
+  },
+  {
+   "start": 4.5,
+   "end": 7.5,
+   "section": "01 Hook",
+   "no_tts": false,
+   "music": false,
+   "id": "1c",
+   "kind": "soulos",
+   "label": "soulos_s",
+   "vo": "SOUL gives it a face on your desk, and the answer lands on the glass.",
+   "vo_ro": "SOUL îi dă o față pe birou, iar răspunsul apare pe sticlă.",
+   "src": [
+    "s-35-voice-answer"
+   ]
+  },
+  {
+   "start": 7.5,
+   "end": 10.0,
+   "section": "01 Hook",
+   "no_tts": false,
+   "music": false,
+   "id": "1d",
+   "kind": "clip",
+   "label": "eyes",
+   "vo": "And it smiles back.",
+   "vo_ro": "Și îți zâmbește.",
+   "src": "crowdfunding/images/anim_1_eyes_alive.mp4"
+  },
+  {
+   "start": 10.0,
+   "end": 12.5,
+   "section": "02 It looks up when your AI needs you",
+   "no_tts": false,
+   "music": false,
+   "id": "2a",
+   "kind": "soulos",
+   "label": "soulos_s",
+   "vo": "Claude works in the Claude app.",
+   "vo_ro": "Claude lucrează în aplicația Claude.",
+   "src": [
+    "s-12-claude"
+   ]
+  },
+  {
+   "start": 12.5,
+   "end": 15.5,
+   "section": "02 It looks up when your AI needs you",
+   "no_tts": false,
+   "music": false,
+   "id": "2b",
+   "kind": "soulos",
+   "label": "soulos_s",
+   "vo": "When it needs a yes, SOUL looks up at you. Hold to allow.",
+   "vo_ro": "Când are nevoie de un „da”, SOUL se uită la tine. Ții degetul ca să aprobi.",
+   "src": [
+    "s-13-claude-ask"
+   ]
+  },
+  {
+   "start": 15.5,
+   "end": 18.5,
+   "section": "03 Why I built it (founder)",
+   "no_tts": true,
+   "music": false,
+   "id": "3a",
+   "kind": "film",
+   "label": "card",
+   "vo": "(founder) I'm [name]. I build SOUL in Bucharest.",
+   "vo_ro": "(fondatorul) Sunt [nume]. Fac SOUL în București.",
+   "src": "F09"
+  },
+  {
+   "start": 18.5,
+   "end": 22.0,
+   "section": "03 Why I built it (founder)",
+   "no_tts": true,
+   "music": false,
+   "id": "3b",
+   "kind": "image",
+   "label": "render",
+   "vo": "(founder) I wanted the AI I already use to have a face I can hold.",
+   "vo_ro": "(fondatorul) Am vrut ca AI-ul pe care îl folosesc deja să aibă o față pe care s-o țin în mână.",
+   "src": "crowdfunding/images/story_01_object.jpg"
+  },
+  {
+   "start": 22.0,
+   "end": 25.5,
+   "section": "03 Why I built it (founder)",
+   "no_tts": true,
+   "music": false,
+   "id": "3c",
+   "kind": "clip",
+   "label": "eyes",
+   "vo": "(founder) One that never watches you, and never stops working because a server went away.",
+   "vo_ro": "(fondatorul) Una care nu te urmărește niciodată și nu se oprește pentru că a picat un server.",
+   "src": "crowdfunding/images/anim_1_eyes_alive.mp4"
+  },
+  {
+   "start": 25.5,
+   "end": 28.5,
+   "section": "04 Alive",
+   "no_tts": false,
+   "music": false,
+   "id": "4a",
+   "kind": "clip",
+   "label": "eyes",
+   "vo": "It blinks when it wants to. It follows your finger.",
+   "vo_ro": "Clipește când vrea. Îți urmărește degetul.",
+   "src": "eyes/soul_eye_v2.mp4"
+  },
+  {
+   "start": 28.5,
+   "end": 31.5,
+   "section": "04 Alive",
+   "no_tts": false,
+   "music": false,
+   "id": "4b",
+   "kind": "clip",
+   "label": "eyes",
+   "vo": "Leave it alone, it dozes off. Shake it, it gets dizzy.",
+   "vo_ro": "Lasă-l, ațipește. Scutură-l, amețește.",
+   "src": "eyes/soul_eye_motion.mp4"
+  },
+  {
+   "start": 31.5,
+   "end": 34.0,
+   "section": "05 Born with its eyes",
+   "no_tts": false,
+   "music": false,
+   "id": "5a",
+   "kind": "image",
+   "label": "eyes",
+   "vo": "120 eyes. One is yours.",
+   "vo_ro": "120 de ochi. Unii sunt ai tăi.",
+   "src": "crowdfunding/images/story_02_eyes.png"
+  },
+  {
+   "start": 34.0,
+   "end": 36.5,
+   "section": "05 Born with its eyes",
+   "no_tts": false,
+   "music": false,
+   "id": "5b",
+   "kind": "clip",
+   "label": "eyes",
+   "vo": "Born from its chip. Nobody picks them.",
+   "vo_ro": "Născuți din cip. Nu-i alege nimeni.",
+   "src": "crowdfunding/images/anim_1_eyes_alive.mp4"
+  },
+  {
+   "start": 36.5,
+   "end": 39.5,
+   "section": "06 Your own AI, or none",
+   "no_tts": false,
+   "music": false,
+   "id": "6a",
+   "kind": "soulos",
+   "label": "soulos_s",
+   "vo": "Your own Claude, your own OpenAI key, or no AI at all.",
+   "vo_ro": "Propriul Claude, propria cheie OpenAI sau niciun AI.",
+   "src": [
+    "s-20-aimode"
+   ]
+  },
+  {
+   "start": 39.5,
+   "end": 42.0,
+   "section": "06 Your own AI, or none",
+   "no_tts": false,
+   "music": false,
+   "id": "6b",
+   "kind": "soulos",
+   "label": "soulos_s",
+   "vo": "Offline, it's still alive.",
+   "vo_ro": "Offline, tot e viu.",
+   "src": [
+    "s-01-standby"
+   ]
+  },
+  {
+   "start": 42.0,
+   "end": 45.0,
+   "section": "06 Your own AI, or none",
+   "no_tts": false,
+   "music": false,
+   "id": "6c",
+   "kind": "soulos",
+   "label": "soulos_s",
+   "vo": "Hold the glass to talk. Let go, and it stops listening.",
+   "vo_ro": "Ții degetul pe sticlă ca să vorbești. Îl ridici și nu mai ascultă.",
+   "src": [
+    "s-33-voice-listen"
+   ]
+  },
+  {
+   "start": 45.0,
+   "end": 48.0,
+   "section": "07 SoulOS",
+   "no_tts": false,
+   "music": false,
+   "id": "7a",
+   "kind": "clip",
+   "label": "soulos_web",
+   "vo": "The eyes lead the whole OS.",
+   "vo_ro": "Ochii conduc tot sistemul.",
+   "src": "crowdfunding/images/anim_2_dial_turning.mp4"
+  },
+  {
+   "start": 48.0,
+   "end": 51.0,
+   "section": "07 SoulOS",
+   "no_tts": false,
+   "music": false,
+   "id": "7b",
+   "kind": "soulos",
+   "label": "soulos_s",
+   "vo": "Notes, alarms, focus. All on the stone.",
+   "vo_ro": "Notițe, alarme, concentrare. Toate pe piatră.",
+   "src": [
+    "s-08-notes",
+    "s-07-alarms"
+   ]
+  },
+  {
+   "start": 51.0,
+   "end": 53.5,
+   "section": "08 The object",
+   "no_tts": false,
+   "music": false,
+   "id": "8a",
+   "kind": "image",
+   "label": "render",
+   "vo": "Machined aluminium, bead-blasted, anodised.",
+   "vo_ro": "Aluminiu frezat, sablat, anodizat.",
+   "src": "crowdfunding/images/story_05_colours.jpg"
+  },
+  {
+   "start": 53.5,
+   "end": 56.5,
+   "section": "08 The object",
+   "no_tts": false,
+   "music": false,
+   "id": "8b",
+   "kind": "image",
+   "label": "true_scale",
+   "vo": "SOUL S is 63 by 71 millimetres.",
+   "vo_ro": "SOUL S are 63 pe 71 de milimetri.",
+   "src": "crowdfunding/images/gallery_2_size_1200x630.png"
+  },
+  {
+   "start": 56.5,
+   "end": 59.0,
+   "section": "08 The object",
+   "no_tts": false,
+   "music": false,
+   "id": "8c",
+   "kind": "image",
+   "label": "render_eyes",
+   "vo": "It sits in your palm.",
+   "vo_ro": "Stă în palmă.",
+   "src": "crowdfunding/images/story_06b_in_hand.jpg"
+  },
+  {
+   "start": 59.0,
+   "end": 62.0,
+   "section": "08 The object",
+   "no_tts": false,
+   "music": false,
+   "id": "8d",
+   "kind": "clip",
+   "label": "render",
+   "vo": "Three colours, one price.",
+   "vo_ro": "Trei culori, un singur preț.",
+   "src": "crowdfunding/images/anim_3_colour_swap.mp4"
+  },
+  {
+   "start": 62.0,
+   "end": 64.5,
+   "section": "08 The object",
+   "no_tts": false,
+   "music": false,
+   "id": "8e",
+   "kind": "image",
+   "label": "render",
+   "vo": "At night it sleeps in its egg, and charges.",
+   "vo_ro": "Noaptea doarme în oul lui și se încarcă.",
+   "src": "crowdfunding/images/story_07_ou_night.jpg"
+  },
+  {
+   "start": 64.5,
+   "end": 67.0,
+   "section": "09 Promises",
+   "no_tts": false,
+   "music": false,
+   "id": "9a",
+   "kind": "soulos",
+   "label": "soulos_s",
+   "vo": "No camera. Its memory stays on the device.",
+   "vo_ro": "Fără cameră. Memoria stă pe dispozitiv.",
+   "src": [
+    "s-01-standby"
+   ]
+  },
+  {
+   "start": 67.0,
+   "end": 70.0,
+   "section": "10 The ask",
+   "no_tts": false,
+   "music": true,
+   "id": "10a",
+   "kind": "clip",
+   "label": "render",
+   "vo": "The first 150 are €249. Then €269.",
+   "vo_ro": "Primii 150 costă €249. Apoi €269.",
+   "src": "crowdfunding/video/build/assets/hook_object_wake.mp4"
+  },
+  {
+   "start": 70.0,
+   "end": 73.0,
+   "section": "10 The ask",
+   "no_tts": false,
+   "music": true,
+   "id": "10b",
+   "kind": "clip",
+   "label": "eyes",
+   "vo": "All or nothing, on Indiegogo. Estimated delivery May 2028.",
+   "vo_ro": "Totul sau nimic, pe Indiegogo. Livrare estimată mai 2028.",
+   "src": "crowdfunding/images/anim_1_eyes_alive.mp4"
+  },
+  {
+   "start": 73.0,
+   "end": 76.0,
+   "section": "10 The ask",
+   "no_tts": false,
+   "music": true,
+   "id": "10c",
+   "kind": "end",
+   "label": null,
+   "vo": "Back SOUL on Indiegogo.",
+   "vo_ro": "Susține SOUL pe Indiegogo.",
+   "src": null
+  }
+ ]
+}

@@ -1,0 +1,51 @@
+/* SOUL campaign images: the landing v3 look on its dark ground. Brand fonts from brand/SOUL-Brand-Package/Fonts. */
+@font-face{font-family:"Bricolage Grotesque";src:url("../../../brand/SOUL-Brand-Package/Fonts/Bricolage-Grotesque/BricolageGrotesque%5Bopsz,wdth,wght%5D.ttf") format("truetype");font-weight:200 800;font-stretch:75% 100%}
+@font-face{font-family:"Martian Mono";src:url("../../../brand/SOUL-Brand-Package/Fonts/Martian-Mono/MartianMono%5Bwdth,wght%5D.ttf") format("truetype");font-weight:100 800;font-stretch:75% 112.5%}
+:root{
+  --bg:#0D0D0F;--bg2:#151518;--card:#1A1A1E;--card2:#202025;--line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.26);
+  --ink:#F6F3EC;--ink2:#A4A7AE;--ink3:#74777F;--grey:#8C8F96;
+  --cream:#FFF0C8;--ember:#D2622C;--tang:#FF5A1F;--cobalt:#2440FF;--glass:#0B0B0C;
+  --f-d:"Bricolage Grotesque",system-ui,sans-serif;--f-m:"Martian Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#000}
+#root{position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--f-d);font-optical-sizing:auto;-webkit-font-smoothing:antialiased;font-size:28px;line-height:1.4}
+.abs{position:absolute}
+.eb{display:inline-flex;align-items:center;gap:.75em;font:500 18px/1.3 var(--f-m);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+.eb::before{content:"";width:28px;height:2px;background:currentColor;opacity:.6}
+.eb.nodash::before{display:none}
+.h{font-weight:740;letter-spacing:-.052em;line-height:.9;margin:0;text-wrap:balance}
+.h .g{color:var(--grey)}
+.lead{color:var(--ink2);line-height:1.42;margin:0;text-wrap:pretty}
+.mono{font-family:var(--f-m);letter-spacing:0;font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:.55em;border:1.5px solid var(--line2);border-radius:999px;padding:.6em 1.05em;font:500 18px/1 var(--f-m);letter-spacing:.03em;color:var(--ink);white-space:nowrap}
+.pill.cream{background:var(--cream);color:#16181D;border-color:var(--cream)}
+.pill.dot::before{content:"";width:.55em;height:.55em;border-radius:50%;background:var(--tang)}
+.chips{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:.5em;background:var(--cream);color:#16181D;border-radius:999px;font-weight:650;letter-spacing:-.01em;padding:.62em 1.3em;white-space:nowrap}
+.lbl{position:absolute;z-index:30;display:inline-flex;align-items:center;gap:.6em;padding:.62em 1em;border-radius:999px;background:rgba(8,8,10,.74);border:1px solid rgba(255,255,255,.22);color:#F6F3EC;font:500 14px/1 var(--f-m);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.lbl::before{content:"";width:.62em;height:.62em;border-radius:50%;background:var(--tang)}
+.lbl.info::before{background:var(--cobalt)}
+.prod{position:relative;flex:none}
+.prod-in{position:absolute;left:0;top:0;transform-origin:0 0}
+.prod-in img{position:absolute;left:0;top:0;display:block;max-width:none}
+.prod-in canvas{position:absolute;left:0;top:0;transform-origin:0 0}
+.prod .shadow{position:absolute;left:50%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.75),rgba(0,0,0,0));z-index:-1}
+.spot{position:absolute;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(255,244,222,.13),rgba(255,244,222,.04) 55%,rgba(255,244,222,0))}
+.disc{position:relative;border-radius:50%;flex:none}
+.disc canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:36px}
+.wm{display:block;height:auto}
+.story{padding:88px 80px 84px;display:flex;flex-direction:column;gap:0}
+.story .head{display:flex;flex-direction:column;gap:26px;margin-bottom:56px}
+.story .head .h{font-size:112px}
+.story .head .lead{font-size:31px;max-width:30em}
+.foot{font:400 17px/1.55 var(--f-m);color:var(--ink3);letter-spacing:0}
+.foot b{color:var(--ink2);font-weight:500}
+.grid{display:grid}
+.tbl{width:100%;border-collapse:collapse}
+.tbl td,.tbl th{padding:17px 0;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.rule{height:1px;background:var(--line)}
+.ph{border:3px dashed rgba(255,240,200,.55);color:var(--cream)}
+.rar{display:inline-flex;align-items:center;gap:.45em;font:500 15px/1 var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.rar i{display:inline-block;width:.7em;height:.7em;border-radius:50%}
